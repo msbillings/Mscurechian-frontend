@@ -1,0 +1,1291 @@
+'use client';
+
+import React, { useState, useRef, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Plus, Trash2, ArrowLeft, HeartPulse, Stethoscope, User, ClipboardList, Save, History, Image as ImageIcon, Camera } from 'lucide-react';
+import { Card, Button, FormInput, FormSelect, FormTextarea, ConfirmModal } from '@/components/admin';
+import toast from 'react-hot-toast';
+import { useReactToPrint } from 'react-to-print';
+import { useQueryClient } from '@tanstack/react-query';
+import { dischargeService } from '@/lib/integrations/services/discharge.service';
+import { useDischargeRecord } from '@/lib/hooks/discharge/useDischargeRecord';
+import { PrintableDischargeSummary } from './PrintableDischargeSummary';
+import { useAuthStore } from '@/stores/authStore';
+
+const INITIAL_FORM_STATE = {
+    patientName: '',
+    age: '',
+    gender: '',
+    phone: '',
+    address: '',
+    roomNo: '',
+    mrn: '',
+    roomType: '',
+    admissionDate: '',
+    dischargeDate: '',
+    department: '',
+    reasonForAdmission: '',
+    provisionalDiagnosis: '',
+    diagnosis: '',
+    chiefComplaints: '',
+    historyOfPresentIllness: '',
+    pastMedicalHistory: '',
+    vitals: {
+        height: '',
+        weight: '',
+        bloodPressure: '',
+        temperature: '',
+        pulse: '',
+        spO2: '',
+        glucose: '',
+    },
+    generalAppearance: '',
+    treatmentGiven: '',
+    surgicalProcedures: '',
+    surgeryNotes: '',
+    investigationsPerformed: '',
+    hospitalCourse: '',
+    conditionAtDischarge: '',
+    suggestedDoctorName: '',
+    hospitalName: '',
+    medicationsPrescribed: '',
+    adviceAtDischarge: '',
+    activityRestrictions: '',
+    followUpInstructions: '',
+    patientTitle: '',
+    primaryDoctor: '',
+    dob: '',
+    email: '',
+    nationality: '',
+    bloodGroup: '',
+    maritalStatus: '',
+    govtId: '',
+    attendantName: '',
+    attendantRelationship: '',
+    attendantPhone: '',
+    hospitalRegNo: '',
+    admissionType: '',
+    bedNo: '',
+    icdCode: '',
+    dietInstructions: '',
+    warningSigns: '',
+    followUpDate: '',
+    totalBillAmount: 0,
+    advanceAmount: 0,
+    finalPayment: 0,
+    paymentMode: 'Cash',
+    insuranceName: '',
+    allergyHistory: '',
+    specialistType: '',
+    ipdHistory: [] as any[],
+    hospitalLogo: '',
+};
+
+const SAMPLE_DATA = {
+    patientName: 'John Michael Doe',
+    age: '45 Years',
+    gender: 'Male',
+    phone: '9876543210',
+    address: '123, Healthcare Garden, Medical District, Central City - 400001',
+    roomNo: 'ICU-B12',
+    mrn: 'MRN-882941',
+    roomType: 'Critical Care (ICU)',
+    admissionDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+    dischargeDate: new Date().toISOString().slice(0, 16),
+    department: 'Cardiology',
+    reasonForAdmission: 'Acute chest pain and respiratory distress',
+    provisionalDiagnosis: 'Acute Myocardial Infarction (AMI)',
+    diagnosis: 'ST-Elevation Myocardial Infarction (STEMI), Hypertension, Hyperlipidemia',
+    chiefComplaints: 'Crushing chest pain radiating to left arm, shortness of breath, excessive sweating for 3 hours.',
+    historyOfPresentIllness: 'The patient presented with sudden onset of severe resternal chest pain... Vital signs showed BP 160/100, PR 110/min.',
+    pastMedicalHistory: 'Known hypertensive for 5 years on Telmisartan 40mg. No history of diabetes or surgeries.',
+    vitals: {
+        height: '170',
+        weight: '70',
+        bloodPressure: '120/80',
+        temperature: '98.6',
+        pulse: '78',
+        spO2: '98',
+        glucose: '100',
+    },
+    generalAppearance: 'Alert, cooperative, well-hydrated, no pallor or edema.',
+    treatmentGiven: 'Emergency Angioplasty with DES stenting to LAD. Dual anti-platelet therapy initiated.',
+    surgicalProcedures: 'Primary Percutaneous Coronary Intervention (PCI)',
+    surgeryNotes: 'Successful deployment of 3.5x20mm DES in proximal LAD. TIMI 3 flow restored.',
+    investigationsPerformed: 'ECG: ST elevation in V1-V6. Cardiac Markers: Troponin I elevated (4.2 ng/ml). ECHO: LVEF 45%.',
+    hospitalCourse: 'Patient stabilized post-PCI. Monitored in ICCU for 3 days, then shifted to ward. Vital signs remained stable.',
+    conditionAtDischarge: 'Stable',
+    suggestedDoctorName: 'Dr. Sarah Williams',
+    hospitalName: 'MsCure Advanced Heart Center',
+    medicationsPrescribed: 'Tab. Aspirin 75mg OD\nTab. Clopidogrel 75mg OD\nTab. Atorvastatin 40mg HS\nTab. Ramipril 2.5mg OD',
+    adviceAtDischarge: 'Complete bed rest for 1 week. Avoid heavy lifting. Low salt, low fat diet.',
+    activityRestrictions: 'No strenuous physical activity for 4 weeks.',
+    followUpInstructions: 'Follow up in Cardiology OPD after 10 days or immediately if chest pain recurs.',
+    patientTitle: 'Mr',
+    primaryDoctor: 'Dr. Robert Smith',
+    dob: '1979-05-15',
+    email: 'john.doe@sample.com',
+    nationality: 'American',
+    bloodGroup: 'O+',
+    maritalStatus: 'Married',
+    govtId: 'AB1234567890',
+    attendantName: 'Jane Doe',
+    attendantRelationship: 'Spouse',
+    attendantPhone: '9001122334',
+    hospitalRegNo: 'HOSP-2024-001',
+    admissionType: 'Emergency',
+    bedNo: 'B-12',
+    icdCode: 'I21.09',
+    dietInstructions: 'Low salt, heart-healthy diet (DASH diet).',
+    warningSigns: 'Sudden chest pain, severe breathlessness, fainting spells, or cold sweats.',
+    followUpDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+    totalBillAmount: 125000,
+    advanceAmount: 25000,
+    finalPayment: 100000,
+    paymentMode: 'Insurance',
+    insuranceName: 'Global Health Care TPA',
+    allergyHistory: 'Sulfa drugs (Skin rashes)',
+    specialistType: 'Senior Consultant',
+    ipdHistory: [
+        {
+            admissionId: 'IPD-2024-001',
+            admissionDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+            status: 'Discharged',
+            clinicalNotes: 'Recovered from mild fever'
+        }
+    ],
+    hospitalLogo: '',
+};
+
+export function DischargeSummaryForm() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const { user } = useAuthStore();
+    const isNurse = user?.role === 'nurse';
+    const isHelpdesk = user?.role === 'helpdesk';
+    const recordId = searchParams.get('id');
+    const queryClient = useQueryClient();
+    const [loading, setLoading] = useState(false);
+    const [consultants, setConsultants] = useState<string[]>(['']);
+    const [isInitialized, setIsInitialized] = useState(false);
+    const initializedRef = useRef(false);
+    const componentRef = useRef<HTMLDivElement>(null);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: "",
+        message: "",
+        onConfirm: () => { }
+    });
+
+    const handlePrint = useReactToPrint({
+        contentRef: componentRef,
+        documentTitle: `Discharge_Summary_${recordId || 'New'}`,
+    });
+
+    const [formData, setFormData] = useState(INITIAL_FORM_STATE);
+
+    useEffect(() => {
+        if (!initializedRef.current) {
+            console.log("[DischargeForm] Component Mount - User Role:", user?.role);
+            console.log("[DischargeForm] RecordId:", recordId);
+        }
+    }, [user, recordId]);
+
+    // Use React Query to fetch record when editing
+    const { data: recordData, isLoading: isLoadingRecord } = useDischargeRecord(recordId);
+
+    // Format dates for datetime-local input (Local Time)
+    const formatDate = (date: string | Date) => {
+        if (!date) return '';
+        const d = new Date(date);
+        // Adjust for timezone offset to get local time in ISO format substring
+        const offset = d.getTimezoneOffset() * 60000;
+        const localISOTime = new Date(d.getTime() - offset).toISOString().slice(0, 16);
+        return localISOTime;
+    };
+
+    // Helper function to determine title based on gender and age
+    const determineTitle = (gender: string, age: string) => {
+        const ageNum = parseInt(age);
+        if (gender?.toLowerCase() === 'male') {
+            return ageNum < 18 ? 'Master' : 'Mr';
+        } else if (gender?.toLowerCase() === 'female') {
+            return ageNum < 18 ? 'Miss' : 'Mrs';
+        }
+        return 'Mr';
+    };
+
+    const validateField = (name: string, value: any): string => {
+        if (!value && name.includes('*')) return 'This field is required';
+
+        switch (name) {
+            case 'patientName':
+                if (!value) return 'Patient name is required';
+                if (value.length < 3) return 'Name is too short';
+                if (value.length > 150) return 'Name cannot exceed 150 characters';
+                return '';
+            case 'mrn':
+                if (!value) return 'MRN is required';
+                return '';
+            case 'diagnosis':
+                if (!value) return 'Final diagnosis is required';
+                return '';
+            case 'chiefComplaints':
+                if (!value) return 'Chief complaints are required';
+                return '';
+            case 'treatmentGiven':
+                if (!value) return 'Treatment details are required';
+                return '';
+            case 'conditionAtDischarge':
+                if (!value) return 'Discharge condition is required';
+                return '';
+            case 'phone':
+                if (value && !/^\d{10}$/.test(value)) return 'Invalid phone number';
+                return '';
+            case 'email':
+                if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Invalid email address';
+                return '';
+            default:
+                return '';
+        }
+    };
+
+    const sanitizeData = (data: any): typeof INITIAL_FORM_STATE => {
+        const sanitized = { ...INITIAL_FORM_STATE, ...data };
+
+        // Handle vitals specifically as it is nested
+        if (data.vitals) {
+            sanitized.vitals = { ...INITIAL_FORM_STATE.vitals, ...data.vitals };
+            Object.keys(sanitized.vitals).forEach(key => {
+                if (sanitized.vitals[key as keyof typeof sanitized.vitals] === null || sanitized.vitals[key as keyof typeof sanitized.vitals] === undefined) {
+                    sanitized.vitals[key as keyof typeof sanitized.vitals] = '';
+                }
+            });
+        }
+
+        // Sanitize top-level fields
+        Object.keys(sanitized).forEach(key => {
+            if (key !== 'vitals' && key !== 'ipdHistory' && key !== 'followUpDate') {
+                if (sanitized[key as keyof typeof sanitized] === null || sanitized[key as keyof typeof sanitized] === undefined) {
+                    (sanitized as any)[key] = (INITIAL_FORM_STATE as any)[key] ?? '';
+                }
+            }
+        });
+
+        return sanitized as typeof INITIAL_FORM_STATE;
+    };
+
+    // Update form data when record is fetched
+    useEffect(() => {
+        if (initializedRef.current) return;
+
+        const fetchAdmissionDetails = async (id: string) => {
+            setLoading(true);
+            setFormData(INITIAL_FORM_STATE);
+            setConsultants(['']);
+            localStorage.removeItem('discharge_form_draft');
+
+            try {
+                const response = await dischargeService.getAdmissionDetails(id);
+                if (response) {
+                    const formattedGender = response.gender ?
+                        response.gender.charAt(0).toUpperCase() + response.gender.slice(1).toLowerCase()
+                        : '';
+                    const formattedAge = response.age && !response.age.toString().toLowerCase().includes('year') ?
+                        `${response.age} Years`
+                        : response.age || '';
+
+                    const sanitizedResponse = sanitizeData(response);
+                    setFormData({
+                        ...sanitizedResponse,
+                        gender: formattedGender,
+                        age: formattedAge,
+                        admissionDate: response.admissionDate ? formatDate(response.admissionDate) : '',
+                        dischargeDate: formatDate(new Date()),
+                        followUpDate: response.followUpDate ? formatDate(response.followUpDate) : '',
+                        dob: response.dob ? new Date(response.dob).toISOString().split('T')[0] : '',
+                        patientTitle: determineTitle(formattedGender, formattedAge),
+                        primaryDoctor: response.primaryDoctor || response.suggestedDoctorName || '',
+                        suggestedDoctorName: response.suggestedDoctorName || '',
+                        specialistType: response.specialistType || '',
+                        ipdHistory: response.ipdHistory || [],
+                        // Auto-fill condition from vitals condition (Nurse's selection) or status
+                        conditionAtDischarge: response.vitals?.condition
+                            ? (response.vitals.condition.charAt(0).toUpperCase() + response.vitals.condition.slice(1).toLowerCase())
+                            : (response.vitals?.status ? (response.vitals.status.charAt(0).toUpperCase() + response.vitals.status.slice(1).toLowerCase()) : ''),
+
+                        // Ensure vitals are explicitly set and map glucose
+                        vitals: response.vitals ? {
+                            ...INITIAL_FORM_STATE.vitals,
+                            ...(response.vitals as any),
+                            glucose: (response.vitals as any).glucose || ''
+                        } : INITIAL_FORM_STATE.vitals
+                    });
+
+                    console.log('[Discharge Debug] Fetched Admission Full Response:', response);
+                    console.log('[Discharge Debug] Vitals Object:', response.vitals);
+                    console.log('[Discharge Debug] Glucose Value (Raw):', response.vitals?.glucose);
+                    console.log('[Discharge Debug] Condition at Discharge (Calculated):', response.vitals?.condition
+                        ? (response.vitals.condition.charAt(0).toUpperCase() + response.vitals.condition.slice(1).toLowerCase())
+                        : (response.vitals?.status ? (response.vitals.status.charAt(0).toUpperCase() + response.vitals.status.slice(1).toLowerCase()) : 'None'));
+
+                    if (response.consultants && response.consultants.length > 0) {
+                        setConsultants(response.consultants.filter((c: string) => c));
+                    } else if (response.suggestedDoctorName) {
+                        setConsultants([response.suggestedDoctorName]);
+                    }
+
+                    toast.success("Patient details synced from admission record", {
+                        id: 'sync-admission-toast',
+                        icon: '✅',
+                        duration: 3000
+                    });
+                }
+            } catch (err) {
+                console.error("[DISCHARGE FORM] Failed to fetch admission details:", err);
+                toast.error("Failed to sync patient details", { id: 'sync-error' });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (recordId && recordData) {
+            initializedRef.current = true;
+            const sanitizedRecord = sanitizeData(recordData);
+            setFormData(prev => ({
+                ...prev,
+                ...sanitizedRecord,
+                admissionDate: formatDate(recordData.admissionDate),
+                dischargeDate: formatDate(recordData.dischargeDate),
+                followUpDate: recordData.followUpDate ? formatDate(recordData.followUpDate) : '',
+                dob: recordData.dob ? new Date(recordData.dob).toISOString().split('T')[0] : '',
+            }));
+            setConsultants(recordData.consultants || ['']);
+            setIsInitialized(true);
+        } else if (searchParams.get('mode') === 'sample') {
+            initializedRef.current = true;
+            setFormData(SAMPLE_DATA);
+            setConsultants(['Dr. Robert Smith', 'Dr. Sarah Williams']);
+            setIsInitialized(true);
+            toast.success("Viewing Sample Form with dummy data", { id: 'sample-mode-toast', icon: '🧪' });
+        } else if (!recordId && !recordData) {
+            const mrn = searchParams.get('mrn');
+            const admissionId = searchParams.get('admissionId');
+            const idToFetch = mrn || admissionId;
+
+            if (idToFetch) {
+                initializedRef.current = true;
+                fetchAdmissionDetails(idToFetch);
+                setIsInitialized(true);
+            } else {
+                const savedDraft = localStorage.getItem('discharge_form_draft');
+                if (savedDraft) {
+                    try {
+                        const parsed = JSON.parse(savedDraft);
+                        if (parsed.formData) setFormData(parsed.formData);
+                        if (parsed.consultants) setConsultants(parsed.consultants);
+                    } catch (e) {
+                        console.error('Failed to restore draft', e);
+                    }
+                }
+                initializedRef.current = true;
+                setIsInitialized(true);
+            }
+        }
+    }, [recordData, recordId, searchParams]);
+
+    // Save draft to local storage
+    useEffect(() => {
+        if (!recordId && isInitialized) {
+            const draft = { formData, consultants };
+            localStorage.setItem('discharge_form_draft', JSON.stringify(draft));
+        }
+    }, [formData, consultants, recordId, isInitialized]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+
+        if (name === 'patientName') {
+            const charOnly = value.replace(/[0-9]/g, '');
+            setFormData(prev => ({ ...prev, [name]: charOnly }));
+            return;
+        }
+
+        if (name === 'phone') {
+            const digitsOnly = value.replace(/\D/g, '').slice(0, 10);
+            setFormData(prev => ({ ...prev, [name]: digitsOnly }));
+            return;
+        }
+
+        if (name === 'totalBillAmount') {
+            setFormData(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
+            return;
+        }
+
+        if (name.includes('.')) {
+            const [parent, child] = name.split('.');
+            setFormData(prev => ({
+                ...prev,
+                [parent]: {
+                    ...(prev[parent as keyof typeof prev] as any),
+                    [child]: value
+                }
+            }));
+            return;
+        }
+
+        const error = validateField(name, value);
+        setErrors(prev => ({ ...prev, [name]: error }));
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleConsultantChange = (index: number, value: string) => {
+        if (/^[^0-9]*$/.test(value)) {
+            const newConsultants = [...consultants];
+            newConsultants[index] = value;
+            setConsultants(newConsultants);
+        }
+    };
+
+    const addConsultant = () => setConsultants([...consultants, '']);
+    const removeConsultant = (index: number) => {
+        if (consultants.length > 1) {
+            setConsultants(consultants.filter((_, i) => i !== index));
+        }
+    };
+
+    const handleReset = () => {
+        setConfirmModal({
+            isOpen: true,
+            title: "Reset Form",
+            message: "Are you sure you want to reset the form? All unsaved data will be lost.",
+            onConfirm: () => {
+                setFormData(INITIAL_FORM_STATE);
+                setConsultants(['']);
+                localStorage.removeItem('discharge_form_draft');
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                toast.success("Form reset successfully");
+            }
+        });
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        const newErrors: Record<string, string> = {};
+        const requiredFields = ['patientName', 'mrn', 'diagnosis', 'chiefComplaints', 'treatmentGiven', 'conditionAtDischarge'];
+
+        requiredFields.forEach(field => {
+            const error = validateField(field, formData[field as keyof typeof formData]);
+            if (error) newErrors[field] = error;
+        });
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            toast.error("Please fill all required fields correctly");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const isNurse = user?.role === 'nurse';
+            const isHelpdesk = user?.role === 'helpdesk' || user?.role === 'hospital-admin';
+
+            const computedLogo = formData.hospitalLogo || user?.image || (user as any)?.avatar || '';
+            const payload = {
+                ...formData,
+                consultants: consultants.filter(c => c.trim() !== ''),
+                hospitalLogo: computedLogo,
+                status: isNurse ? 'PREPARED_BY_NURSE' : 'completed'
+            };
+
+            // Update local state so print component sees the logo
+            setFormData(prev => ({ ...prev, hospitalLogo: computedLogo }));
+
+            console.log('[DEBUG] Submitting Payload:', payload);
+
+            if (recordId) {
+                await dischargeService.updateRecord(recordId, payload);
+                toast.success("Record updated successfully");
+
+                if (!isNurse) {
+                    setTimeout(() => handlePrint(), 500); // Slight delay to ensure state update
+                } else {
+                    router.push('/nurse/discharge');
+                }
+            } else {
+                await dischargeService.saveRecord(payload);
+                toast.success(isNurse ? "Discharge form prepared" : "Record saved successfully");
+                localStorage.removeItem('discharge_form_draft');
+                await queryClient.refetchQueries({ queryKey: ['discharge', 'history'] });
+
+                if (isNurse) {
+                    router.push('/nurse/discharge');
+                } else {
+                    setTimeout(() => handlePrint(), 500);
+                }
+            }
+        } catch (err: any) {
+            toast.error(err.message || "Failed to save record");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (isLoadingRecord && recordId) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+                <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <p className="text-gray-500 font-bold animate-pulse">Loading patient record...</p>
+            </div>
+        );
+    }
+
+    return (
+        <>
+            <form onSubmit={handleSubmit} className="space-y-8">
+                {/* Patient Demographics */}
+                <Card className="p-6 bg-white rounded-2xl border-white shadow-xl shadow-blue-900/5">
+                    <div className="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
+                        <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                            <User size={20} />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-black text-gray-900">Patient Demographics</h2>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Personal identity profile</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <FormSelect
+                            label="Title"
+                            name="patientTitle"
+                            value={formData.patientTitle}
+                            onChange={handleChange}
+                            className="border-gray-400 font-bold"
+                            options={[
+                                { value: 'Mr', label: 'Mr' },
+                                { value: 'Mrs', label: 'Mrs' },
+                                { value: 'Ms', label: 'Ms' },
+                                { value: 'Dr', label: 'Dr' },
+                                { value: 'Master', label: 'Master' },
+                                { value: 'Baby', label: 'Baby' }
+                            ]}
+                        />
+                        <div className="md:col-span-2">
+                            <FormInput
+                                label="Patient Name *"
+                                name="patientName"
+                                value={formData.patientName}
+                                onChange={handleChange}
+                                placeholder="Enter patient name"
+                                className="border-gray-400 font-bold"
+                                error={errors.patientName}
+                                required
+                            />
+                        </div>
+                        <FormInput
+                            label="Age *"
+                            name="age"
+                            value={formData.age}
+                            onChange={handleChange}
+                            placeholder="e.g., 45 years"
+                            className="border-gray-400 font-bold"
+                            required
+                        />
+                        <FormSelect
+                            label="Gender"
+                            name="gender"
+                            value={formData.gender}
+                            onChange={handleChange}
+                            className="border-gray-400 font-bold"
+                            options={[
+                                { value: 'Male', label: 'Male' },
+                                { value: 'Female', label: 'Female' },
+                                { value: 'Other', label: 'Other' }
+                            ]}
+                        />
+                        <FormInput
+                            label="Phone"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleChange}
+                            placeholder="10-digit mobile number"
+                            className="border-gray-400 font-bold"
+                            error={errors.phone}
+                        />
+                        <div className="md:col-span-3">
+                            <FormTextarea
+                                label="Address"
+                                name="address"
+                                value={formData.address}
+                                onChange={handleChange}
+                                placeholder="Complete residential address"
+                                className="border-gray-400 font-bold"
+                                rows={2}
+                            />
+                        </div>
+
+                        <FormInput
+                            label="Date of Birth"
+                            name="dob"
+                            type="date"
+                            value={formData.dob}
+                            onChange={handleChange}
+                            className="border-gray-400 font-bold"
+                        />
+                        <FormInput
+                            label="Email Address"
+                            name="email"
+                            type="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            placeholder="patient@example.com"
+                            className="border-gray-400 font-bold"
+                            error={errors.email}
+                        />
+                        <FormInput
+                            label="Nationality"
+                            name="nationality"
+                            value={formData.nationality}
+                            onChange={handleChange}
+                            placeholder="e.g., Indian"
+                            className="border-gray-400 font-bold"
+                        />
+                        <FormSelect
+                            label="Blood Group"
+                            name="bloodGroup"
+                            value={formData.bloodGroup}
+                            onChange={handleChange}
+                            className="border-gray-400 font-bold"
+                            options={[
+                                { value: '', label: 'Select' },
+                                { value: 'Unknown', label: 'Unknown' },
+                                { value: 'A+', label: 'A+' },
+                                { value: 'A-', label: 'A-' },
+                                { value: 'B+', label: 'B+' },
+                                { value: 'B-', label: 'B-' },
+                                { value: 'O+', label: 'O+' },
+                                { value: 'O-', label: 'O-' },
+                                { value: 'AB+', label: 'AB+' },
+                                { value: 'AB-', label: 'AB-' }
+                            ]}
+                        />
+                        <FormSelect
+                            label="Marital Status"
+                            name="maritalStatus"
+                            value={formData.maritalStatus}
+                            onChange={handleChange}
+                            className="border-gray-400 font-bold"
+                            options={[
+                                { value: '', label: 'Select' },
+                                { value: 'Single', label: 'Single' },
+                                { value: 'Married', label: 'Married' },
+                                { value: 'Divorced', label: 'Divorced' },
+                                { value: 'Widowed', label: 'Widowed' }
+                            ]}
+                        />
+                        <FormInput
+                            label="Government ID Number"
+                            name="govtId"
+                            value={formData.govtId}
+                            onChange={handleChange}
+                            placeholder="e.g., Aadhar/PAN Number"
+                            className="border-gray-400 font-bold"
+                        />
+                    </div>
+                </Card>
+
+                {/* Attendant / Guardian Information */}
+                <Card className="p-6 bg-white rounded-2xl border-white shadow-xl shadow-blue-900/5">
+                    <div className="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
+                        <div className="p-2.5 bg-orange-50 text-orange-600 rounded-xl">
+                            <User size={20} />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-black text-gray-900">Attendant / Guardian Information</h2>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Primary contact and backup</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <FormInput
+                            label="Guardian Name"
+                            name="attendantName"
+                            value={formData.attendantName}
+                            onChange={handleChange}
+                            placeholder="Name of attendant"
+                            className="border-gray-400 font-bold"
+                        />
+                        <FormInput
+                            label="Relationship"
+                            name="attendantRelationship"
+                            value={formData.attendantRelationship}
+                            onChange={handleChange}
+                            placeholder="e.g., Spouse, Child, Parent"
+                            className="border-gray-400 font-bold"
+                        />
+                        <FormInput
+                            label="Guardian Phone"
+                            name="attendantPhone"
+                            value={formData.attendantPhone}
+                            onChange={handleChange}
+                            placeholder="Contact number"
+                            className="border-gray-400 font-bold"
+                        />
+                    </div>
+                </Card>
+
+                {/* Admission Details */}
+                <Card className="p-6 bg-white rounded-2xl border-white shadow-xl shadow-blue-900/5">
+                    <div className="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
+                        <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+                            <ClipboardList size={20} />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-black text-gray-900">Admission Details</h2>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Hospitalization and routing</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormInput
+                            label="MRN *"
+                            name="mrn"
+                            value={formData.mrn}
+                            onChange={handleChange}
+                            placeholder="Medical Record Number"
+                            className="border-gray-400 font-bold"
+                            error={errors.mrn}
+                            required
+                        />
+                        <FormSelect
+                            label="Room Type"
+                            name="roomType"
+                            value={formData.roomType}
+                            onChange={handleChange}
+                            className="border-gray-400 font-bold"
+                            options={[
+                                { value: 'General Ward', label: 'General Ward' },
+                                { value: 'Private Room', label: 'Private Room' },
+                                { value: 'ICU', label: 'ICU' },
+                                { value: 'Semi-Private', label: 'Semi-Private' }
+                            ]}
+                        />
+                        <FormInput
+                            label="Room Number"
+                            name="roomNo"
+                            value={formData.roomNo}
+                            onChange={handleChange}
+                            placeholder="e.g., 303"
+                            className="border-gray-400 font-bold"
+                        />
+                        <FormInput
+                            label="Department"
+                            name="department"
+                            value={formData.department}
+                            onChange={handleChange}
+                            placeholder="e.g., Cardiology"
+                            className="border-gray-400 font-bold"
+                        />
+                        <FormInput
+                            label="Admission Date"
+                            name="admissionDate"
+                            type="datetime-local"
+                            value={formData.admissionDate}
+                            onChange={handleChange}
+                            className="border-gray-400 font-bold"
+                        />
+                        <FormInput
+                            label="Discharge Date"
+                            name="dischargeDate"
+                            type="datetime-local"
+                            value={formData.dischargeDate}
+                            onChange={handleChange}
+                            className="border-gray-400 font-bold"
+                        />
+                        <FormSelect
+                            label="Admission Type"
+                            name="admissionType"
+                            value={formData.admissionType}
+                            onChange={handleChange}
+                            className="border-gray-400 font-bold"
+                            options={[
+                                { value: 'IPD', label: 'IPD' },
+                                { value: 'Emergency', label: 'Emergency' },
+                                { value: 'ICU', label: 'ICU' },
+                                { value: 'Day Care', label: 'Day Care' }
+                            ]}
+                        />
+                        <FormInput
+                            label="Bed Number"
+                            name="bedNo"
+                            value={formData.bedNo}
+                            onChange={handleChange}
+                            placeholder="e.g., Bed-01"
+                            className="border-gray-400 font-bold"
+                        />
+                        <FormInput
+                            label="Specialist Type"
+                            name="specialistType"
+                            value={formData.specialistType}
+                            onChange={handleChange}
+                            placeholder="e.g., Senior Consultant"
+                            className="border-gray-400 font-bold"
+                        />
+                        <FormInput
+                            label="ICD-10 Code"
+                            name="icdCode"
+                            value={formData.icdCode}
+                            onChange={handleChange}
+                            placeholder="e.g., J45.901"
+                            className="border-gray-400 font-bold"
+                        />
+                    </div>
+                </Card>
+
+                {/* Clinical Information */}
+                <Card className="p-6 bg-white rounded-2xl border-white shadow-xl shadow-blue-900/5">
+                    <div className="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
+                        <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
+                            <Stethoscope size={20} />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-black text-gray-900">Clinical Information</h2>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Examination and Diagnosis</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        <FormTextarea
+                            label="Reason for Admission"
+                            name="reasonForAdmission"
+                            value={formData.reasonForAdmission}
+                            onChange={handleChange}
+                            placeholder="Why was the patient admitted?"
+                            className="border-gray-400 font-bold"
+                            rows={2}
+                        />
+                        <FormTextarea
+                            label="Chief Complaints *"
+                            name="chiefComplaints"
+                            value={formData.chiefComplaints}
+                            onChange={handleChange}
+                            placeholder="Main symptoms presented by patient"
+                            className="border-gray-400 font-bold"
+                            error={errors.chiefComplaints}
+                            rows={2}
+                            required
+                        />
+                        <FormTextarea
+                            label="History of Present Illness"
+                            name="historyOfPresentIllness"
+                            value={formData.historyOfPresentIllness}
+                            onChange={handleChange}
+                            placeholder="Detailed history of current illness"
+                            className="border-gray-400 font-bold"
+                            rows={3}
+                        />
+                        <FormTextarea
+                            label="Past Medical History"
+                            name="pastMedicalHistory"
+                            value={formData.pastMedicalHistory}
+                            onChange={handleChange}
+                            placeholder="Previous medical conditions, surgeries, etc."
+                            className="border-gray-400 font-bold"
+                            rows={2}
+                        />
+                        <FormTextarea
+                            label="Provisional Diagnosis"
+                            name="provisionalDiagnosis"
+                            value={formData.provisionalDiagnosis}
+                            onChange={handleChange}
+                            placeholder="Initial diagnosis at admission"
+                            className="border-gray-400 font-bold"
+                            rows={2}
+                        />
+                        <FormTextarea
+                            label="Final Diagnosis *"
+                            name="diagnosis"
+                            value={formData.diagnosis}
+                            onChange={handleChange}
+                            placeholder="Confirmed medical diagnosis"
+                            className="border-gray-400 font-bold"
+                            error={errors.diagnosis}
+                            rows={2}
+                            required
+                        />
+                        <FormTextarea
+                            label="Allergy History"
+                            name="allergyHistory"
+                            value={formData.allergyHistory}
+                            onChange={handleChange}
+                            placeholder="Known allergies"
+                            className="border-gray-400 font-bold"
+                            rows={2}
+                        />
+                    </div>
+                </Card>
+
+                {/* Treatment & Procedures */}
+                <Card className="p-6 bg-white rounded-2xl border-white shadow-xl shadow-blue-900/5">
+                    <div className="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
+                        <div className="p-2.5 bg-rose-50 text-rose-600 rounded-xl">
+                            <HeartPulse size={20} />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-black text-gray-900">Treatment & Procedures</h2>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Medical interventions and care</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-4">
+                            <FormInput label="Height (cm)" name="vitals.height" value={formData.vitals.height} onChange={handleChange} placeholder="170" className="border-gray-400 font-bold" />
+                            <FormInput label="Weight (kg)" name="vitals.weight" value={formData.vitals.weight} onChange={handleChange} placeholder="70" className="border-gray-400 font-bold" />
+                            <FormInput label="BP" name="vitals.bloodPressure" value={formData.vitals.bloodPressure} onChange={handleChange} placeholder="120/80" className="border-gray-400 font-bold" />
+                            <FormInput label="Pulse" name="vitals.pulse" value={formData.vitals.pulse} onChange={handleChange} placeholder="72" className="border-gray-400 font-bold" />
+                            <FormInput label="Temp (°F)" name="vitals.temperature" value={formData.vitals.temperature} onChange={handleChange} placeholder="98.6" className="border-gray-400 font-bold" />
+                            <FormInput label="SpO2 (%)" name="vitals.spO2" value={formData.vitals.spO2} onChange={handleChange} placeholder="99" className="border-gray-400 font-bold" />
+                            <FormInput label="Glucose" name="vitals.glucose" value={formData.vitals.glucose} onChange={handleChange} placeholder="100" className="border-gray-400 font-bold" />
+                        </div>
+                        <FormTextarea
+                            label="General Appearance"
+                            name="generalAppearance"
+                            value={formData.generalAppearance}
+                            onChange={handleChange}
+                            placeholder="Physical examination findings"
+                            className="border-gray-400 font-bold"
+                            rows={2}
+                        />
+                        <FormTextarea
+                            label="Treatment Given *"
+                            name="treatmentGiven"
+                            value={formData.treatmentGiven}
+                            onChange={handleChange}
+                            placeholder="Summary of all treatments provided"
+                            className="border-gray-400 font-bold"
+                            error={errors.treatmentGiven}
+                            rows={3}
+                            required
+                        />
+                        <FormTextarea
+                            label="Surgical Procedures"
+                            name="surgicalProcedures"
+                            value={formData.surgicalProcedures}
+                            onChange={handleChange}
+                            placeholder="Any surgeries performed"
+                            className="border-gray-400 font-bold"
+                            rows={2}
+                        />
+                        <FormTextarea
+                            label="Surgery Notes"
+                            name="surgeryNotes"
+                            value={formData.surgeryNotes}
+                            onChange={handleChange}
+                            placeholder="Detailed surgical notes if applicable"
+                            className="border-gray-400 font-bold"
+                            rows={3}
+                        />
+                        <FormTextarea
+                            label="Investigations Performed"
+                            name="investigationsPerformed"
+                            value={formData.investigationsPerformed}
+                            onChange={handleChange}
+                            placeholder="Labs, Radiology, etc."
+                            className="border-gray-400 font-bold"
+                            rows={3}
+                        />
+                        <FormTextarea
+                            label="Hospital Course"
+                            name="hospitalCourse"
+                            value={formData.hospitalCourse}
+                            onChange={handleChange}
+                            placeholder="Summary of patient's stay and progress"
+                            className="border-gray-400 font-bold"
+                            rows={3}
+                        />
+                        <FormTextarea
+                            label="Medications Prescribed"
+                            name="medicationsPrescribed"
+                            value={formData.medicationsPrescribed}
+                            onChange={handleChange}
+                            placeholder="Post-discharge medications (one per line)"
+                            className="border-gray-400 font-bold"
+                            rows={5}
+                        />
+                    </div>
+                </Card>
+
+                {/* Discharge Advice */}
+                <Card className="p-6 bg-white rounded-2xl border-white shadow-xl shadow-blue-900/5">
+                    <div className="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
+                        <div className="p-2.5 bg-rose-50 text-rose-600 rounded-xl">
+                            <ClipboardList size={20} />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-black text-gray-900">Discharge Advice</h2>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Post-hospital care instructions</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        <FormSelect
+                            label="Condition at Discharge *"
+                            name="conditionAtDischarge"
+                            value={formData.conditionAtDischarge}
+                            onChange={handleChange}
+                            className="border-gray-400 font-bold"
+                            error={errors.conditionAtDischarge}
+                            options={[
+                                { value: 'Stable', label: 'Stable' },
+                                { value: 'Fair', label: 'Fair' },
+                                { value: 'Serious', label: 'Serious' },
+                                { value: 'Critical', label: 'Critical' }
+                            ]}
+                            required
+                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <FormTextarea
+                                label="Advice at Discharge"
+                                name="adviceAtDischarge"
+                                value={formData.adviceAtDischarge}
+                                onChange={handleChange}
+                                placeholder="General health advice"
+                                className="border-gray-400 font-bold"
+                                rows={2}
+                            />
+                            <FormTextarea
+                                label="Diet Instructions"
+                                name="dietInstructions"
+                                value={formData.dietInstructions}
+                                onChange={handleChange}
+                                placeholder="Nutritional advice"
+                                className="border-gray-400 font-bold"
+                                rows={2}
+                            />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <FormTextarea
+                                label="Activity Restrictions"
+                                name="activityRestrictions"
+                                value={formData.activityRestrictions}
+                                onChange={handleChange}
+                                placeholder="Physical activity limitations"
+                                className="border-gray-400 font-bold"
+                                rows={2}
+                            />
+                            <FormTextarea
+                                label="Warning Signs"
+                                name="warningSigns"
+                                value={formData.warningSigns}
+                                onChange={handleChange}
+                                placeholder="Symptoms requiring immediate attention"
+                                className="border-gray-400 font-bold"
+                                rows={2}
+                            />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <FormTextarea
+                                label="Follow-up Instructions"
+                                name="followUpInstructions"
+                                value={formData.followUpInstructions}
+                                onChange={handleChange}
+                                placeholder="When and where to follow up"
+                                className="border-gray-400 font-bold"
+                                rows={2}
+                            />
+                            <FormInput
+                                label="Follow-up Date & Time"
+                                name="followUpDate"
+                                type="datetime-local"
+                                value={formData.followUpDate}
+                                onChange={handleChange}
+                                className="border-gray-400 font-bold"
+                            />
+                        </div>
+
+                        {/* Consultants Section */}
+                        <div className="pt-4 border-t border-gray-50">
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Consultants Involved</label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {consultants.map((consultant, index) => (
+                                    <div key={index} className="flex gap-2">
+                                        <div className="flex-1">
+                                            <input
+                                                type="text"
+                                                value={consultant}
+                                                onChange={(e) => handleConsultantChange(index, e.target.value)}
+                                                placeholder={`Consultant ${index + 1} Name`}
+                                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-400 rounded-xl focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-bold"
+                                            />
+                                        </div>
+                                        {consultants.length > 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => removeConsultant(index)}
+                                                className="p-2.5 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                            <Button
+                                type="button"
+                                onClick={addConsultant}
+                                className="mt-4 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider"
+                            >
+                                <Plus size={16} className="mr-2" />
+                                Add Consultant
+                            </Button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                            <FormInput
+                                label="Suggested Doctor"
+                                name="suggestedDoctorName"
+                                value={formData.suggestedDoctorName}
+                                onChange={handleChange}
+                                placeholder="Doctor for follow-up"
+                                className="border-gray-400 font-bold"
+                            />
+                            <FormInput
+                                label="Referral Hospital"
+                                name="hospitalName"
+                                value={formData.hospitalName}
+                                onChange={handleChange}
+                                placeholder="If referral suggested"
+                                className="border-gray-400 font-bold"
+                            />
+                        </div>
+                    </div>
+                </Card>
+
+                {/* Billing & Insurance - HIDDEN FOR NURSES */}
+                {!isNurse && (
+                    <Card className="p-6 bg-white rounded-2xl border-white shadow-xl shadow-blue-900/5">
+                        <div className="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
+                            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+                                <Save size={20} />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-black text-gray-900">Billing & Insurance</h2>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Financial summary</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <FormInput
+                                label="Advance Paid"
+                                name="advanceAmount"
+                                type="number"
+                                value={formData.advanceAmount}
+                                onChange={handleChange}
+                                placeholder="0.00"
+                                className="border-gray-400 font-bold"
+                                disabled={isHelpdesk}
+                            />
+                            <FormInput
+                                label="Final Payment"
+                                name="finalPayment"
+                                type="number"
+                                value={formData.finalPayment}
+                                onChange={handleChange}
+                                placeholder="0.00"
+                                className="border-gray-400 font-bold"
+                                disabled={isHelpdesk}
+                            />
+                            <FormInput
+                                label="Total Amount"
+                                name="totalBillAmount"
+                                type="number"
+                                value={formData.totalBillAmount}
+                                onChange={handleChange}
+                                placeholder="0.00"
+                                className="border-gray-400 font-bold"
+                                disabled={isHelpdesk}
+                            />
+                            <FormSelect
+                                label="Payment Mode"
+                                name="paymentMode"
+                                value={formData.paymentMode}
+                                onChange={handleChange}
+                                className="border-gray-400 font-bold"
+                                disabled={isHelpdesk}
+                                options={[
+                                    { value: 'Cash', label: 'Cash' },
+                                    { value: 'Card', label: 'Card' },
+                                    { value: 'Insurance', label: 'Insurance' },
+                                    { value: 'UPI', label: 'UPI' }
+                                ]}
+                            />
+                            <div className="md:col-span-4">
+                                <FormInput
+                                    label="Insurance Name"
+                                    name="insuranceName"
+                                    value={formData.insuranceName}
+                                    onChange={handleChange}
+                                    placeholder="If applicable"
+                                    className="border-gray-400 font-bold"
+                                    disabled={isHelpdesk}
+                                />
+                            </div>
+                        </div>
+                    </Card>
+                )}
+
+                {/* Footer Actions */}
+                <div className="flex items-center justify-between pt-6 border-t border-gray-100">
+                    <Button
+                        type="button"
+                        onClick={() => {
+                            if (isNurse) router.push('/nurse/discharge');
+                            else if (user?.role === 'helpdesk') router.push('/helpdesk/discharge/history');
+                            else router.push('/discharge');
+                        }}
+                        className="bg-gray-600 text-gray-700 hover:bg-gray-400 rounded-2xl px-6 py-3 font-bold"
+                    >
+                        <ArrowLeft size={20} className="mr-2" />
+                        Back to Queue
+                    </Button>
+                    <div className="flex items-center gap-4">
+                        <Button
+                            type="button"
+                            onClick={handleReset}
+                            className="bg-rose-600 text-white hover:bg-rose-300 rounded-2xl px-6 py-3 font-bold"
+                        >
+                            <Trash2 size={20} className="mr-2" />
+                            Reset
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={loading}
+                            className="bg-blue-600 text-white hover:bg-blue-700 rounded-2xl px-8 py-3 font-bold shadow-lg shadow-blue-200"
+                        >
+                            {loading ? 'Saving...' : (isNurse ? 'Prepare Discharge' : 'Commit & Print')}
+                        </Button>
+                    </div>
+                </div>
+            </form>
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+            />
+
+            <div className="hidden">
+                <PrintableDischargeSummary
+                    ref={componentRef}
+                    data={formData}
+                    consultants={consultants}
+                />
+            </div>
+        </>
+    );
+}

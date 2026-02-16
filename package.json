@@ -1,0 +1,53 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbo",
+    "dev:webpack": "next dev",
+    "dev:fast": "NEXT_DISABLE_SOURCEMAPS=1 next dev --turbo",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test:prod": "next build && next start"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@tanstack/react-query": "^5.90.20",
+    "apexcharts": "^5.3.6",
+    "axios": "^1.13.2",
+    "date-fns": "^4.1.0",
+    "exceljs": "^4.4.0",
+    "file-saver": "^2.0.5",
+    "framer-motion": "^12.27.5",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.0.0",
+    "lucide-react": "^0.562.0",
+    "next": "^15.1.6",
+    "react": "^18.2.0",
+    "react-advanced-cropper": "^0.20.1",
+    "react-apexcharts": "^1.9.0",
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.70.0",
+    "react-hot-toast": "^2.6.0",
+    "react-to-print": "^3.2.0",
+    "recharts": "^3.6.0",
+    "socket.io-client": "^4.8.3",
+    "tesseract.js": "^7.0.0",
+    "zod": "^4.3.5",
+    "zustand": "^5.0.9"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/file-saver": "^2.0.7",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/recharts": "^1.8.29",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

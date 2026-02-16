@@ -1,0 +1,258 @@
+'use client';
+
+import React, { useState, useEffect } from "react";
+import {
+    Users,
+    Stethoscope,
+    Building2,
+    Beaker,
+    Pill,
+    ShieldCheck,
+    Activity,
+    Layers,
+    Zap,
+    ChevronRight,
+    ArrowRight,
+    CheckCircle2,
+    HeartPulse
+} from "lucide-react";
+import LandingNavbar from "@/components/navbar/LandingNavbar";
+import Footer from "@/components/footer/Footer";
+import { useRouter } from "next/navigation";
+
+function PortalsPage() {
+    const router = useRouter();
+    const [hasAgreed, setHasAgreed] = useState(false);
+
+    useEffect(() => {
+        const agreed = localStorage.getItem('mscurechain_terms_accepted');
+        if (agreed === 'true') {
+            setHasAgreed(true);
+        }
+    }, []);
+
+    const handleProtectedClick = (path: string) => {
+        if (hasAgreed) {
+            router.push(path);
+        } else {
+            router.push('/#terms-section');
+        }
+    };
+    // Theme logic removed - handled by LandingNavbar
+    const portals = [
+        {
+            title: "Helpdesk Portal",
+            slug: "helpdesk-reception",
+            icon: ShieldCheck,
+            desc: "Ultimate governance and security for the entire clinical network.",
+            features: ["patient Registration ", "Appointment Booking", "OPD payments ", "Appointment tracking "],
+            color: "text-slate-900",
+            bg: "bg-slate-100",
+            loginUrl: "/auth/login"
+        },
+        {
+            title: "Patient Portal",
+            slug: "patient-portal",
+            icon: Users,
+            desc: "Empowering patients with self-service tools for a streamlined healthcare journey.",
+            features: ["View  Appointments", "Lab Report History", "Digital Prescriptions", "Medication History", "Medication History"],
+            color: "text-blue-600",
+            bg: "bg-blue-50",
+            loginUrl: "/auth/login"
+        },
+        {
+            title: "Doctor Portal",
+            slug: "doctor-terminal",
+            icon: Stethoscope,
+            desc: "A clinical command center designed for maximum consultation efficiency.",
+            features: ["Smart Patient Queues", "One-Click Consultations", "AI-Suggested Diagnoses", "Digital Prescription Engine", "Patient Clinical History"],
+            color: "text-emerald-600",
+            bg: "bg-emerald-50",
+            loginUrl: "/auth/login"
+        },
+        {
+            title: "Hospital Admin Portal",
+            slug: "hospital-admin",
+            icon: Building2,
+            desc: "Complete operational control over every department and resource.",
+            features: ["Staff & Role Management", "Real-time Hospital Analytics", "OPD/IPD Operations", "Centralized Billing Control", ""],
+            color: "text-purple-600",
+            bg: "bg-purple-50",
+            loginUrl: "/auth/login"
+        },
+        {
+            title: "Lab Portal",
+            slug: "lab-diagnostics",
+            icon: Beaker,
+            desc: "Precision management for diagnostic workflows and laboratory results.",
+            features: ["Manage Test Requests", "Sample Collection Tracking", "Result Analysis Tools", "Automated Report Generation", "Instant Result Notifications"],
+            color: "text-rose-600",
+            bg: "bg-rose-50",
+            loginUrl: "/lab/login"
+        },
+        {
+            title: "Pharmacy Portal",
+            slug: "pharmacy-pos",
+            icon: Pill,
+            desc: "Modernizing medication dispensing and inventory logistics.",
+            features: ["Supplier & Batch Management", "Real-time Stock Tracking", "Automated Inventory Alerts", "Point of Sale (POS) Billing", "Supplier & Batch Management"],
+            color: "text-amber-600",
+            bg: "bg-amber-50",
+            loginUrl: "/pharmacy/login"
+        },
+        {
+            title: "Discharge Portal",
+            slug: "discharge-center",
+            icon: ShieldCheck,
+            desc: "Ultimate governance and security for the entire clinical network.",
+            features: ["Discharge Summary", "Discharge Instructions", "Discharge Medications", "Discharge Instructions", "Discharge Instructions"],
+            color: "text-slate-900",
+            bg: "bg-slate-100",
+            loginUrl: "/discharge/login"
+        },
+        {
+            title: "Emergency Portal",
+            slug: "emergency-ems",
+            icon: ShieldCheck,
+            desc: "Ultimate governance and security for the entire clinical network.",
+            features: ["Critical care documentation", " Incident Logging", "Live Trauma Feed", "Discharge Instructions", "Discharge Instructions"],
+            color: "text-slate-900",
+            bg: "bg-slate-100",
+            loginUrl: "/emergency-login"
+        },
+        {
+            title: "Nurse Portal",
+            slug: "nurse-portal",
+            icon: HeartPulse,
+            desc: "Real-time nursing dashboard for vitals monitoring, MAR, and ward management.",
+            features: ["Medication Administration (MAR)", "Patient Vitals Monitoring", "Nursing Task Queue", "Ward & Bed Management"],
+            color: "text-emerald-600",
+            bg: "bg-emerald-50",
+            loginUrl: "/nurse-login"
+        },
+        {
+            title: "Staff Portal",
+            slug: "staff-portal",
+            icon: Users,
+            desc: "Comprehensive staff management, attendance tracking, and internal communication hub.",
+            features: ["Staff Attendance Tracking", "Shift Management", "Internal Messaging System", "Performance Analytics"],
+            color: "text-amber-600",
+            bg: "bg-amber-50",
+            loginUrl: "/auth/login"
+        },
+    ]
+
+    return (
+        <div className="min-h-screen bg-background text-foreground font-sans flex flex-col">
+            <LandingNavbar variant="home" />
+
+            {/* Hero Section */}
+            <header className="pt-32 pb-20 px-6 bg-muted/5 relative overflow-hidden">
+                <div className="absolute inset-0 bg-[url('/assets/grid.svg')] opacity-5 pointer-events-none" />
+                <div className="max-w-7xl mx-auto text-center space-y-8 relative">
+
+                    <h1 className="text-5xl md:text-7xl font-black text-slate-900 leading-[1.1] tracking-tighter uppercase">
+                        One Platform. <br />
+                        <span className="text-primary-theme">Infinite Sync.</span>
+                    </h1>
+                    <p className="text-xl text-slate-500 font-medium leading-relaxed max-w-3xl mx-auto">
+                        MSCureChain isn&apos;t just software—it&apos;s a connected clinical universe. Every portal works in perfect harmony, ensuring that data flows instantly from the patient to the doctor, lab, pharmacy, and admin.
+                    </p>
+                </div>
+            </header>
+
+            {/* Portals Grid */}
+            <main className="flex-grow py-24 px-6">
+                <div className="max-w-7xl mx-auto">
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {portals.map((portal, idx) => (
+                            <div key={idx} className="group p-8 bg-card border  rounded-[0.5rem] border-primary-theme/50 shadow-sm hover:shadow-2xl hoverShadow-primary-theme/5 flex flex-col">
+                                <div className={`w-14 h-14 ${portal.bg} rounded-2xl flex items-center justify-center ${portal.color} mb-6 group-hover:scale-110`}>
+                                    <portal.icon size={28} />
+                                </div>
+                                <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tight uppercase leading-none">{portal.title}</h3>
+                                <p className="text-slate-500 font-medium leading-relaxed mb-8 flex-1">
+                                    {portal.desc}
+                                </p>
+                                <div className="space-y-3 pt-6 border-t border-border">
+                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Key Functionalities:</div>
+                                    {portal.features.slice(0, 3).map((feature, fIdx) => (
+                                        <div key={fIdx} className="flex items-center gap-3 text-sm font-bold text-slate-700">
+                                            <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                                                <CheckCircle2 size={12} className="text-emerald-500" />
+                                            </div>
+                                            {feature}
+                                        </div>
+                                    ))}
+                                    {portal.features.length > 3 && (
+                                        <button
+                                            onClick={() => handleProtectedClick(`/about/${portal.slug}`)}
+                                            className="mt-2 text-primary-theme text-[10px] font-black uppercase tracking-widest hover:underline flex items-center gap-1"
+                                        >
+                                            See More <ArrowRight size={10} />
+                                        </button>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => handleProtectedClick(portal.loginUrl || '/auth/login')}
+                                    className="mt-8 w-full py-3 bg-slate-50 hover:bg-primary-theme hover:text-white text-slate-900 border border-primary-theme/40 rounded-xl font-bold flex items-center justify-center gap-2 group/btn"
+                                >
+                                    Access Portal
+                                    <ChevronRight size={16} className="group-hover/btn:translate-x-1" />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Clinical Unified Workspace Section */}
+                    <section className="mt-32 p-12 bg-white dark:bg-slate-900 rounded-[1.5rem] border border-border shadow-2xl relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-linear-to-br from-primary-theme/5 to-transparent opacity-50 pointer-events-none" />
+
+                        <div className="relative grid lg:grid-cols-2 gap-16 items-center">
+                            <div className="space-y-8">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary-theme/10 text-primary-theme rounded-full text-xs font-bold uppercase tracking-widest">
+                                    <Zap size={14} /> Unified Architecture
+                                </div>
+                                <h2 className="text-4xl font-black tracking-tight leading-tight uppercase text-slate-900">
+                                    A Complete <br />
+                                    <span className="text-primary-theme">Clinical Universe.</span>
+                                </h2>
+                                <p className="text-slate-500 text-lg leading-relaxed font-medium">
+                                    Experience the power of a fully synchronized healthcare ecosystem. From the moment a patient registers at the helpdesk to the final pharmacy dispensing, every action is tracked, secured, and instantly shared across all relevant portals.
+                                </p>
+                                <ul className="space-y-4">
+                                    {[
+                                        "Instant cross-portal data synchronization",
+                                        "Unified patient medical history access",
+                                        "Automated departmental handovers",
+                                        "Real-time operational transparency"
+                                    ].map((text, i) => (
+                                        <li key={i} className="flex items-center gap-3 font-bold uppercase text-xs tracking-widest text-slate-600">
+                                            <CheckCircle2 size={16} className="text-primary-theme" />
+                                            {text}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            <div className="relative group/image">
+                                <div className="absolute -inset-1 bg-gradient-to-r from-primary-theme/20 to-blue-500/20 rounded-[2rem] blur opacity-25 group-hover/image:opacity-40 transition"></div>
+                                <div className="relative rounded-[1.5rem] overflow-hidden border border-slate-200 shadow-2xl bg-white aspect-[4/3] flex items-center justify-center p-4">
+                                    <img
+                                        src="/assets/portal.png"
+                                        alt="Portal Ecosystem Overview"
+                                        className="w-full h-full object-contain transform group-hover/image:scale-[1.03]"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </main>
+
+            <Footer />
+        </div>
+    );
+}
+
+export default React.memo(PortalsPage);
