@@ -130,7 +130,7 @@ export const ipdService = {
    */
   confirmDischarge: (admissionId: string) =>
     apiClient<{ success: boolean; message: string; data: any }>(
-      `/ipd/admissions/${admissionId}/confirm-discharge`,
+      IPD_ENDPOINTS.CONFIRM_DISCHARGE(admissionId),
       {
         method: "POST",
       },
@@ -141,7 +141,7 @@ export const ipdService = {
    */
   quickUpdateBedStatus: (bedId: string, status: string) =>
     apiClient<{ message: string; bed: Bed }>(
-      `/ipd/beds/${bedId}/quick-status`,
+      IPD_ENDPOINTS.BED_STATUS(bedId), // Reusing status endpoint for quick status
       {
         method: "PATCH",
         body: JSON.stringify({ status }),
@@ -183,7 +183,7 @@ export const ipdService = {
    * Cancel Patient Discharge Request
    */
   cancelDischargeRequest: (admissionId: string) =>
-    apiClient<any>(`/ipd/admissions/${admissionId}/cancel-discharge`, {
+    apiClient<any>(IPD_ENDPOINTS.CANCEL_DISCHARGE(admissionId), {
       method: "POST",
     }),
 
@@ -191,7 +191,7 @@ export const ipdService = {
    * Cancel Patient Transfer Request
    */
   cancelTransferRequest: (admissionId: string) =>
-    apiClient<any>(`/ipd/admissions/${admissionId}/cancel-transfer`, {
+    apiClient<any>(IPD_ENDPOINTS.CANCEL_TRANSFER(admissionId), {
       method: "POST",
     }),
 
@@ -224,9 +224,12 @@ export const ipdService = {
       body: JSON.stringify({ oldType, newType }),
     }),
   deleteUnitType: (type: string) =>
-    apiClient<string[]>(`${IPD_ENDPOINTS.BEDS}/unit-types/${encodeURIComponent(type)}`, {
-      method: "DELETE",
-    }),
+    apiClient<string[]>(
+      `${IPD_ENDPOINTS.BEDS}/unit-types/${encodeURIComponent(type)}`,
+      {
+        method: "DELETE",
+      },
+    ),
 
   // ==================== Department Management ====================
 
@@ -338,87 +341,101 @@ export const ipdService = {
     apiClient<any[]>(IPD_ENDPOINTS.LAB_REPORTS(admissionId)),
 
   getClinicalHistory: (admissionId: string) =>
-    apiClient<any>(
-      `${IPD_ENDPOINTS.ADMISSIONS}/${admissionId}/clinical-history`,
-    ),
+    apiClient<any>(IPD_ENDPOINTS.CLINICAL_HISTORY(admissionId)),
 
   // ==================== Vitals Threshold Management ====================
   getHospitalThresholds: (hospitalId: string) =>
-    apiClient<any[]>(`/ipd/thresholds/${hospitalId}`),
+    apiClient<any[]>(`${IPD_ENDPOINTS.THRESHOLDS.BASE}/${hospitalId}`),
 
   saveThresholds: (data: any) =>
-    apiClient<any>(`/ipd/thresholds`, {
+    apiClient<any>(IPD_ENDPOINTS.THRESHOLDS.BASE, {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   getWardThresholds: (hospitalId: string, wardType: string) =>
-    apiClient<any>(`/ipd/thresholds/${hospitalId}/${wardType}`),
+    apiClient<any>(
+      `${IPD_ENDPOINTS.THRESHOLDS.BASE}/${hospitalId}/${wardType}`,
+    ),
 
   // ==================== Vitals Threshold Templates (New System) ====================
-  getVitalsTemplates: () =>
-    apiClient<any>("/ipd/thresholds/templates"),
+  getVitalsTemplates: () => apiClient<any>(IPD_ENDPOINTS.THRESHOLDS.TEMPLATES),
 
   createVitalsTemplate: (data: { templateName: string; wardType: string }) =>
-    apiClient<any>("/ipd/thresholds/templates", {
+    apiClient<any>(IPD_ENDPOINTS.THRESHOLDS.TEMPLATES, {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   getTemplateThresholds: (templateId: string) =>
-    apiClient<any>(`/ipd/thresholds/templates/${templateId}`),
+    apiClient<any>(IPD_ENDPOINTS.THRESHOLDS.TEMPLATE_DETAIL(templateId)),
 
   saveTemplateThresholds: (templateId: string, thresholds: any[]) =>
-    apiClient<any>(`/ipd/thresholds/templates/${templateId}/save`, {
-      method: "POST",
-      body: JSON.stringify({ thresholds }),
-    }),
+    apiClient<any>(
+      `${IPD_ENDPOINTS.THRESHOLDS.TEMPLATE_DETAIL(templateId)}/save`,
+      {
+        method: "POST",
+        body: JSON.stringify({ thresholds }),
+      },
+    ),
 
-  copyVitalsTemplate: (templateId: string, data: { newTemplateName: string; newWardType?: string }) =>
-    apiClient<any>(`/ipd/thresholds/templates/${templateId}/copy`, {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+  copyVitalsTemplate: (
+    templateId: string,
+    data: { newTemplateName: string; newWardType?: string },
+  ) =>
+    apiClient<any>(
+      `${IPD_ENDPOINTS.THRESHOLDS.TEMPLATE_DETAIL(templateId)}/copy`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      },
+    ),
 
-  updateVitalsTemplate: (templateId: string, data: { templateName: string; wardType: string }) =>
-    apiClient<any>(`/ipd/thresholds/templates/${templateId}`, {
+  updateVitalsTemplate: (
+    templateId: string,
+    data: { templateName: string; wardType: string },
+  ) =>
+    apiClient<any>(IPD_ENDPOINTS.THRESHOLDS.TEMPLATE_DETAIL(templateId), {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
 
   deleteVitalsTemplate: (templateId: string) =>
-    apiClient<any>(`/ipd/thresholds/templates/${templateId}`, {
+    apiClient<any>(IPD_ENDPOINTS.THRESHOLDS.TEMPLATE_DETAIL(templateId), {
       method: "DELETE",
     }),
 
   getAdmissionThresholds: (admissionId: string) =>
-    apiClient<any>(`/ipd/thresholds/admission/${admissionId}`),
+    apiClient<any>(IPD_ENDPOINTS.THRESHOLDS.ADMISSION(admissionId)),
 
   importVitalsThresholds: (formData: FormData) =>
-    apiClient<{ success: boolean; message: string }>(`/ipd/thresholds/import`, {
-      method: "POST",
-      body: formData,
-    }),
+    apiClient<{ success: boolean; message: string }>(
+      `${IPD_ENDPOINTS.THRESHOLDS.BASE}/import`,
+      {
+        method: "POST",
+        body: formData,
+      },
+    ),
 
   // ==================== Vitals Alert Management ====================
   getActiveAlerts: (params: { hospitalId?: string; doctorId?: string }) => {
     const query = new URLSearchParams();
     if (params.hospitalId) query.append("hospitalId", params.hospitalId);
     if (params.doctorId) query.append("doctorId", params.doctorId);
-    return apiClient<any[]>(`/ipd/alerts?${query.toString()}`);
+    return apiClient<any[]>(`${IPD_ENDPOINTS.ALERTS.BASE}?${query.toString()}`);
   },
 
   updateAlertStatus: (
     alertId: string,
     data: { status: string; notes?: string; userId: string },
   ) =>
-    apiClient<any>(`/ipd/alerts/${alertId}`, {
+    apiClient<any>(IPD_ENDPOINTS.ALERTS.DETAIL(alertId), {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
 
   getPatientAlertHistory: (patientId: string) =>
-    apiClient<any[]>(`/ipd/alerts/history/${patientId}`),
+    apiClient<any[]>(IPD_ENDPOINTS.ALERTS.HISTORY(patientId)),
 
   // ==================== Bulk Import ====================
 
@@ -431,7 +448,7 @@ export const ipdService = {
   // ==================== IPD Billing ====================
 
   getBillSummary: (admissionId: string) =>
-    apiClient<any>(`/ipd/billing/summary/${admissionId}`),
+    apiClient<any>(IPD_ENDPOINTS.BILLING.SUMMARY(admissionId)),
 
   addExtraCharge: (data: {
     admissionId: string;
@@ -440,13 +457,13 @@ export const ipdService = {
     amount: number;
     date?: string | Date;
   }) =>
-    apiClient<any>("/ipd/billing/charge", {
+    apiClient<any>(IPD_ENDPOINTS.BILLING.CHARGE, {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   removeExtraCharge: (chargeId: string) =>
-    apiClient<any>(`/ipd/billing/charge/${chargeId}`, {
+    apiClient<any>(IPD_ENDPOINTS.BILLING.CHARGE_DETAIL(chargeId), {
       method: "DELETE",
     }),
 
@@ -458,7 +475,7 @@ export const ipdService = {
     transactionType: "Advance" | "Refund";
     date?: string | Date;
   }) =>
-    apiClient<any>("/ipd/billing/advance", {
+    apiClient<any>(IPD_ENDPOINTS.BILLING.ADVANCE, {
       method: "POST",
       body: JSON.stringify(data),
     }),
@@ -468,13 +485,13 @@ export const ipdService = {
     amount: number;
     reason: string;
   }) =>
-    apiClient<any>("/ipd/billing/discount", {
+    apiClient<any>(IPD_ENDPOINTS.BILLING.DISCOUNT, {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   lockBill: (admissionId: string) =>
-    apiClient<any>(`/ipd/billing/lock/${admissionId}`, {
+    apiClient<any>(IPD_ENDPOINTS.BILLING.LOCK(admissionId), {
       method: "PATCH",
     }),
 };

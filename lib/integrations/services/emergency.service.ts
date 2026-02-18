@@ -1,4 +1,5 @@
 import { emergencyApiClient } from "../api/emergencyApiClient";
+import { apiClient } from "../api/apiClient";
 import {
   EmergencyLoginResponse,
   EmergencyRequest,
@@ -6,31 +7,39 @@ import {
   Hospital,
 } from "../types/emergency";
 
+// ─── Endpoint Map (mirrors backend emergencyAuthRoutes + emergencyRequestRoutes) ───
 const EMERGENCY_ENDPOINTS = {
+  // Auth  →  /api/emergency/auth/*
   LOGIN: "/emergency/auth/login",
   LOGOUT: "/emergency/auth/logout",
   REFRESH: "/emergency/auth/refresh",
   ME: "/emergency/auth/me",
+
+  // Requests  →  /api/emergency/requests/*
   CREATE_REQUEST: "/emergency/requests",
-  MY_REQUESTS: "/emergency/requests/my-requests",
-  HOSPITALS: "/emergency/requests/hospitals",
   CREATE_PATIENT_REQUEST: "/emergency/requests/patient",
+  MY_REQUESTS: "/emergency/requests/my-requests",
+  HOSPITAL_REQUESTS: "/emergency/requests/hospital",
+  HOSPITAL_STATS: "/emergency/requests/hospital/stats",
+  ACCEPT_REQUEST: (id: string) => `/emergency/requests/${id}/accept`,
+  REJECT_REQUEST: (id: string) => `/emergency/requests/${id}/reject`,
+  AVAILABLE_HOSPITALS: "/emergency/requests/hospitals",
 } as const;
 
 class EmergencyService {
-  // Authentication
+  // ─── Auth ───────────────────────────────────────────────────────────────────
+
   async login(
     identifier: string,
     password: string,
   ): Promise<EmergencyLoginResponse> {
-    const response = await emergencyApiClient<EmergencyLoginResponse>(
+    return emergencyApiClient<EmergencyLoginResponse>(
       EMERGENCY_ENDPOINTS.LOGIN,
       {
         method: "POST",
         body: JSON.stringify({ identifier, password }),
       },
     );
-    return response;
   }
 
   async logout(refreshToken: string): Promise<void> {
@@ -41,49 +50,100 @@ class EmergencyService {
   }
 
   async refreshToken(refreshToken: string): Promise<{ accessToken: string }> {
-    return await emergencyApiClient(EMERGENCY_ENDPOINTS.REFRESH, {
+    return emergencyApiClient(EMERGENCY_ENDPOINTS.REFRESH, {
       method: "POST",
       body: JSON.stringify({ refreshToken }),
     });
   }
 
   async getCurrentUser(): Promise<{ user: any }> {
-    return await emergencyApiClient(EMERGENCY_ENDPOINTS.ME, {
-      method: "GET",
-    });
+    return emergencyApiClient(EMERGENCY_ENDPOINTS.ME);
   }
 
-  // Emergency Requests
+  // ─── Emergency Requests (Ambulance Personnel) ────────────────────────────────
+
+  /** Create an emergency request (ambulance personnel) */
   async createEmergencyRequest(data: CreateEmergencyRequestData): Promise<{
     message: string;
     request: EmergencyRequest;
   }> {
-    return await emergencyApiClient(EMERGENCY_ENDPOINTS.CREATE_REQUEST, {
+    return emergencyApiClient(EMERGENCY_ENDPOINTS.CREATE_REQUEST, {
       method: "POST",
       body: JSON.stringify(data),
     });
   }
 
-  async createPatientEmergencyRequest(data: any): Promise<{
-    message: string;
-    request: EmergencyRequest;
-  }> {
-    const { apiClient } = await import("../api/apiClient");
-    return await apiClient(EMERGENCY_ENDPOINTS.CREATE_PATIENT_REQUEST, {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
+  /** Get all requests created by the current ambulance personnel */
   async getMyRequests(): Promise<{ requests: EmergencyRequest[] }> {
-    return await emergencyApiClient(EMERGENCY_ENDPOINTS.MY_REQUESTS, {
-      method: "GET",
+    return emergencyApiClient(EMERGENCY_ENDPOINTS.MY_REQUESTS);
+  }
+
+  /** Get all available hospitals (ambulance personnel) */
+  async getAvailableHospitals(): Promise<{ hospitals: Hospital[] }> {
+    return emergencyApiClient(EMERGENCY_ENDPOINTS.AVAILABLE_HOSPITALS);
+  }
+
+  // ─── Emergency Requests (Patient) ────────────────────────────────────────────
+
+  /** Create an emergency request as a patient (uses standard auth token) */
+  async createPatientEmergencyRequest(data: {
+    emergencyType: string;
+    description: string;
+    severity: "critical" | "high" | "medium" | "low";
+    currentLocation: string;
+    hospitalId: string;
+    patientName?: string;
+    patientAge?: number;
+    patientGender?: string;
+  }): Promise<{ message: string; request: EmergencyRequest }> {
+    return apiClient(EMERGENCY_ENDPOINTS.CREATE_PATIENT_REQUEST, {
+      method: "POST",
+      body: JSON.stringify(data),
     });
   }
 
-  async getAvailableHospitals(): Promise<{ hospitals: Hospital[] }> {
-    return await emergencyApiClient(EMERGENCY_ENDPOINTS.HOSPITALS, {
-      method: "GET",
+  // ─── Emergency Requests (Helpdesk / Hospital) ────────────────────────────────
+
+  /** Get all emergency requests for the hospital (helpdesk view) */
+  async getHospitalEmergencyRequests(params?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ requests: EmergencyRequest[]; total?: number }> {
+    const query = new URLSearchParams();
+    if (params?.status) query.append("status", params.status);
+    if (params?.page) query.append("page", String(params.page));
+    if (params?.limit) query.append("limit", String(params.limit));
+    const qs = query.toString();
+    return apiClient(
+      `${EMERGENCY_ENDPOINTS.HOSPITAL_REQUESTS}${qs ? `?${qs}` : ""}`,
+    );
+  }
+
+  /** Get dashboard stats for the hospital emergency view */
+  async getEmergencyStats(): Promise<any> {
+    return apiClient(EMERGENCY_ENDPOINTS.HOSPITAL_STATS);
+  }
+
+  /** Accept an emergency request (helpdesk) */
+  async acceptRequest(
+    requestId: string,
+    notes?: string,
+  ): Promise<{ message: string; request: EmergencyRequest }> {
+    return apiClient(EMERGENCY_ENDPOINTS.ACCEPT_REQUEST(requestId), {
+      method: "PUT",
+      body: JSON.stringify({ notes }),
+    });
+  }
+
+  /** Reject an emergency request (helpdesk) */
+  async rejectRequest(
+    requestId: string,
+    rejectionReason?: string,
+  ): Promise<{ message: string; request: EmergencyRequest }> {
+    return apiClient(EMERGENCY_ENDPOINTS.REJECT_REQUEST(requestId), {
+      method: "PUT",
+      body: JSON.stringify({ rejectionReason }),
     });
   }
 }

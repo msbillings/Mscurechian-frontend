@@ -35,27 +35,42 @@ export const USER_ENDPOINTS = {
 export const ADMIN_ENDPOINTS = {
   DASHBOARD: "/super-admin/stats",
   ANALYTICS: "/super-admin/analytics",
-  EMERGENCY_USERS: "/super-admin/emergency-users",
+  AUDITS: "/super-admin/audits",
+  BROADCAST: "/super-admin/broadcast",
+  PROFILE: "/super-admin/profile",
+
+  // User Management
   USERS: "/super-admin/users",
+  CREATE_USER: "/super-admin/users",
+  UPDATE_USER: (id: string) => `/super-admin/users/${id}`,
+  DELETE_USER: (id: string) => `/super-admin/users/${id}`,
+
+  // Ambulance Personnel
+  EMERGENCY_USERS: "/super-admin/emergency-users",
+  CREATE_EMERGENCY_USER: "/super-admin/emergency-users",
+  UPDATE_EMERGENCY_USER: (id: string) => `/super-admin/emergency-users/${id}`,
+  DELETE_EMERGENCY_USER: (id: string) => `/super-admin/emergency-users/${id}`,
+
+  // Hospital Management
+  HOSPITALS: "/super-admin/hospitals",
+  CREATE_HOSPITAL: "/super-admin/create-hospital",
+  CREATE_HOSPITAL_ADMIN: "/super-admin/create-hospital-admin",
+  UPDATE_HOSPITAL_STATUS: (id: string) => `/super-admin/hospitals/${id}/status`,
+  HOSPITAL_PERSONNEL: (id: string) => `/super-admin/hospitals/${id}/personnel`,
+  BULK_HOSPITALS: "/super-admin/hospitals/upload",
+
+  // Legacy/Compatibility
   DOCTORS: "/super-admin/users?role=doctor",
   PATIENTS: "/super-admin/users?role=patient",
   HELPDESKS: "/super-admin/users?role=helpdesk",
   ADMINS: "/super-admin/users?role=admin",
-  HOSPITALS: "/super-admin/hospitals",
-  CREATE_HOSPITAL: "/super-admin/create-hospital",
   UPDATE_HOSPITAL: (id: string) => `/hospitals/${id}`,
   DELETE_HOSPITAL: (id: string) => `/hospitals/${id}`,
-  UPDATE_HOSPITAL_STATUS: (id: string) => `/super-admin/hospitals/${id}/status`,
   ASSIGN_DOCTOR: "/hospital/assign-doctor",
   ASSIGN_HELPDESK: "/hospital/assign-helpdesk",
   CREATE_ADMIN: "/super-admin/create-hospital-admin",
-  CREATE_HOSPITAL_ADMIN: "/super-admin/create-hospital-admin",
   CREATE_DOCTOR: "/hospital/create-doctor",
-  UPDATE_USER: (id: string) => `/super-admin/users/${id}`,
-  DELETE_USER: (id: string, _role?: string) => `/super-admin/users/${id}`,
   DELETE_HELPDESK: (id: string) => `/helpdesk/${id}`,
-  BROADCAST: "/super-admin/broadcast",
-  AUDITS: "/super-admin/audits",
   HOSPITAL_DETAILS: (id: string) => `/hospital/hospitals/${id}/details`,
   HOSPITAL_DOCTORS: (id: string) => `/hospital/hospitals/${id}/doctors`,
   SUPPORT_REQUESTS: "/support",
@@ -267,20 +282,53 @@ export const COMMON_ENDPOINTS = {
 
 export const NURSE_ENDPOINTS = {
   DASHBOARD: {
+    // GET /nurse/dashboard/stats
     STATS: "/nurse/dashboard/stats",
   },
   PATIENTS: {
+    // GET /nurse/patients
     BASE: "/nurse/patients",
+    // GET /nurse/patients/:id
     BY_ID: (id: string) => `/nurse/patients/${id}`,
   },
   TASKS: {
+    // GET /nurse/tasks
     BASE: "/nurse/tasks",
+    // PUT /nurse/tasks/:id
     UPDATE_STATUS: (id: string) => `/nurse/tasks/${id}`,
   },
   WARD: {
-    BEDS: "/ipd/beds", // Reuses IPD bed listing
+    BEDS: "/ipd/beds",
     DETAILS: (id: string) => `/ipd/beds/${id}`,
   },
+};
+
+// ─── Emergency / Ambulance ──────────────────────────────────────────────────
+export const EMERGENCY_ENDPOINTS = {
+  // Auth  →  /api/emergency/auth/*
+  AUTH: {
+    LOGIN: "/emergency/auth/login",
+    LOGOUT: "/emergency/auth/logout",
+    REFRESH: "/emergency/auth/refresh",
+    ME: "/emergency/auth/me",
+  },
+  // Requests  →  /api/emergency/requests/*
+  REQUESTS: {
+    BASE: "/emergency/requests",
+    PATIENT: "/emergency/requests/patient",
+    MY_REQUESTS: "/emergency/requests/my-requests",
+    HOSPITAL: "/emergency/requests/hospital",
+    HOSPITAL_STATS: "/emergency/requests/hospital/stats",
+    AVAILABLE_HOSPITALS: "/emergency/requests/hospitals",
+    ACCEPT: (id: string) => `/emergency/requests/${id}/accept`,
+    REJECT: (id: string) => `/emergency/requests/${id}/reject`,
+  },
+};
+
+// ─── Super-Admin Ambulance Personnel ────────────────────────────────────────
+export const AMBULANCE_ENDPOINTS = {
+  BASE: "/super-admin/emergency-users",
+  BY_ID: (id: string) => `/super-admin/emergency-users/${id}`,
 };
 
 export const IPD_ENDPOINTS = {
@@ -293,10 +341,33 @@ export const IPD_ENDPOINTS = {
   DISCHARGE: (id: string) => `/ipd/admissions/${id}/discharge`,
   REQUEST_DISCHARGE: (id: string) => `/ipd/admissions/${id}/request-discharge`,
   REQUEST_TRANSFER: (id: string) => `/ipd/admissions/${id}/request-transfer`,
-  PENDING_REQUESTS: '/ipd/admissions/pending-requests',
+  PENDING_REQUESTS: "/ipd/admissions/pending-requests",
   ADMISSION_DETAILS: (id: string) => `/ipd/admissions/${id}`,
+  CONFIRM_DISCHARGE: (id: string) => `/ipd/admissions/${id}/confirm-discharge`,
+  CANCEL_DISCHARGE: (id: string) => `/ipd/admissions/${id}/cancel-discharge`,
+  CANCEL_TRANSFER: (id: string) => `/ipd/admissions/${id}/cancel-transfer`,
   PRESCRIPTIONS: (id: string) => `/ipd/admissions/${id}/prescriptions`,
   LAB_REPORTS: (id: string) => `/ipd/admissions/${id}/lab-reports`,
+  CLINICAL_HISTORY: (id: string) => `/ipd/admissions/${id}/clinical-history`,
+  BILLING: {
+    SUMMARY: (id: string) => `/ipd/billing/summary/${id}`,
+    CHARGE: "/ipd/billing/charge",
+    CHARGE_DETAIL: (id: string) => `/ipd/billing/charge/${id}`,
+    ADVANCE: "/ipd/billing/advance",
+    DISCOUNT: "/ipd/billing/discount",
+    LOCK: (id: string) => `/ipd/billing/lock/${id}`,
+  },
+  THRESHOLDS: {
+    BASE: "/ipd/thresholds",
+    TEMPLATES: "/ipd/thresholds/templates",
+    TEMPLATE_DETAIL: (id: string) => `/ipd/thresholds/templates/${id}`,
+    ADMISSION: (id: string) => `/ipd/thresholds/admission/${id}`,
+  },
+  ALERTS: {
+    BASE: "/ipd/alerts",
+    DETAIL: (id: string) => `/ipd/alerts/${id}`,
+    HISTORY: (id: string) => `/ipd/alerts/history/${id}`,
+  },
 };
 
 export const INCIDENT_ENDPOINTS = {
