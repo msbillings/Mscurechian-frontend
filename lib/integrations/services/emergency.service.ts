@@ -7,7 +7,7 @@ import {
 } from "../types/emergency";
 
 const EMERGENCY_ENDPOINTS = {
-  LOGIN: "/emergency/auth/login",
+  LOGIN: "/auth/emergency/login",
   LOGOUT: "/emergency/auth/logout",
   REFRESH: "/emergency/auth/refresh",
   ME: "/emergency/auth/me",

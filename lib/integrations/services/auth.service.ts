@@ -1,4 +1,5 @@
 import { endpoints } from '../config';
+import { AUTH_ENDPOINTS } from '../config/endpoints';
 import { apiClient } from '../api';
 import type {
   LoginRequest,
@@ -17,6 +18,24 @@ export const authService = {
       body: JSON.stringify(data),
     }),
 
+  // Role-specific login endpoints (server enforces role)
+  loginNurse: (data: LoginRequest) =>
+    apiClient<AuthResponse>(AUTH_ENDPOINTS.NURSE_LOGIN, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  loginLab: (data: LoginRequest) =>
+    apiClient<AuthResponse>(AUTH_ENDPOINTS.LAB_LOGIN, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  loginPharmacy: (data: LoginRequest) =>
+    apiClient<AuthResponse>(AUTH_ENDPOINTS.PHARMACY_LOGIN, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 
   registerClient: (data: RegisterRequest) =>
     apiClient<AuthResponse>(endpoints.auth.register, {

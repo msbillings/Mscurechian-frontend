@@ -3,25 +3,21 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from '@/stores/authStore';
+import { authService } from '@/lib/integrations/services/auth.service';
 import toast from "react-hot-toast";
 
 import {
     Eye,
     EyeOff,
-    QrCode,
-    ShieldCheck,
-    Building,
     Smartphone,
     Loader2,
-    Mail,
-    User as UserIcon,
     Lock,
     ArrowLeft,
     ChevronRight
 } from "lucide-react";
 
 const LabLoginPage = () => {
-    const { login, logout, isLoading } = useAuthStore();
+    const { setUser } = useAuthStore();
     const router = useRouter();
 
     // ✅ SPEED FIX: Prefetch dashboard
@@ -37,8 +33,7 @@ const LabLoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [serverMsg, setServerMsg] = useState("");
-
-    const mobileRegex = /^[6-9]\d{9}$/;
+    const [isLoading, setIsLoading] = useState(false);
 
     const validate = () => {
         const err: Record<string, string> = {};
@@ -80,24 +75,32 @@ const LabLoginPage = () => {
 
         setServerMsg("");
         setErrors({});
+        setIsLoading(true);
 
         try {
-            await login(form.identifier, form.password);
-            const user = useAuthStore.getState().user;
+            // ✅ Calls dedicated lab-only endpoint — server enforces role server-side
+            const response = await authService.loginLab({
+                identifier: form.identifier,
+                password: form.password,
+            });
 
-            if (!user) {
-                throw new Error("Login failed to retrieve user session.");
+            const { tokens, user } = response;
+
+            // Normalize _id → id
+            if ((user as any)._id && !(user as any).id) {
+                (user as any).id = (user as any)._id;
             }
 
-            // Strict Role Validation
-            if (user.role !== 'lab') {
-                logout(); // Ensure clean logout
-                setServerMsg("Unauthorized access – Lab users only");
-                toast.error("Unauthorized access – Lab users only", {
-                    icon: '🚫',
-                });
-                return;
-            }
+            // Store tokens in session + cookies (mirrors authStore.login pattern)
+            sessionStorage.setItem("accessToken", tokens.accessToken);
+            sessionStorage.setItem("refreshToken", tokens.refreshToken);
+            sessionStorage.setItem("user", JSON.stringify(user));
+            sessionStorage.setItem("lastAuthCheck", Date.now().toString());
+            document.cookie = `accessToken=${tokens.accessToken}; path=/; max-age=86400; SameSite=Lax`;
+            document.cookie = `refreshToken=${tokens.refreshToken}; path=/; max-age=604800; SameSite=Lax`;
+
+            // Update store
+            setUser(user as any);
 
             toast.success("Welcome to Lab Portal!", {
                 icon: '🧪',
@@ -113,6 +116,8 @@ const LabLoginPage = () => {
         } catch (err: any) {
             const errorMessage = err?.message || err?.response?.data?.message || 'Login failed. Please check your credentials.';
             setServerMsg(errorMessage);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -157,7 +162,7 @@ const LabLoginPage = () => {
                         </div>
                     </div>
 
-            
+
                 </div>
 
                 {/* Right Side: Form */}

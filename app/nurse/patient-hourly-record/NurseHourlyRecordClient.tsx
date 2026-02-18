@@ -405,19 +405,298 @@ export default function NurseHourlyRecordClient() {
                         </div>
                     </div>
 
-                    {/* Tables and other logs omitted for brevity in Nurse copy, keeping core structure */}
+                    {/* Vitals Log */}
                     <div className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm">
                         <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                             <div className="flex items-center gap-3">
                                 <div className="p-1.5 bg-blue-50 text-blue-600 rounded-xl">
                                     <Activity size={18} />
                                 </div>
-                                <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Hourly Observation History</h3>
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Hourly Vitals Observation</h3>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Nurse Monitoring History</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase mr-4">
+                                    Total Readings: <span className="text-blue-600 font-black">{hourlyData.data.vitals.length}</span>
+                                </div>
+                                {hourlyData.data.vitals.length > 0 && (
+                                    <div className="flex items-center bg-slate-100/80 rounded-xl p-1 border border-slate-200 shadow-sm no-print">
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                            disabled={currentPage === 1}
+                                            className="p-1.5 hover:bg-white rounded-lg disabled:opacity-30 transition-all"
+                                        >
+                                            <ChevronDown size={14} className="rotate-90 text-slate-600" />
+                                        </button>
+                                        <div className="px-3 flex flex-col items-center">
+                                            <span className="text-[10px] font-black text-blue-600 leading-none">{currentPage}</span>
+                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter mt-0.5">
+                                                {Math.max(0, Math.ceil(hourlyData.data.vitals.length / itemsPerPage) - currentPage)} more
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.min(Math.ceil(hourlyData.data.vitals.length / itemsPerPage), prev + 1))}
+                                            disabled={currentPage === Math.ceil(hourlyData.data.vitals.length / itemsPerPage) || hourlyData.data.vitals.length === 0}
+                                            className="p-1.5 hover:bg-white rounded-lg disabled:opacity-30 transition-all"
+                                        >
+                                            <ChevronDown size={14} className="-rotate-90 text-slate-600" />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
-                        <div className="p-6 text-center py-20 text-slate-400">
-                            <FileText size={48} className="mx-auto mb-4 opacity-20" />
-                            <p className="text-xs font-bold uppercase tracking-widest">Select "Download Report" to view consolidated PDF logic</p>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead className="bg-slate-50 border-b border-slate-100">
+                                    <tr>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date / Time</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Heart Rate</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">BP (Sys/Dia)</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">SpO2</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Temp</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center text-rose-500">Resp. Rate</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Glucose</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Nurse</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {hourlyData.data.vitals.length > 0 ? (
+                                        [...hourlyData.data.vitals].reverse().map((v: any, idx: number) => {
+                                            const isPageRecord = idx >= (currentPage - 1) * itemsPerPage && idx < currentPage * itemsPerPage;
+                                            return (
+                                                <tr key={idx} className={`hover:bg-slate-50/50 transition-colors group ${!isPageRecord ? 'hidden-on-ui' : ''}`}>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <Clock size={14} className="text-slate-300" />
+                                                            <span className="text-xs font-black text-slate-700">{format(new Date(v.timestamp), 'HH:mm')}</span>
+                                                        </div>
+                                                        <div className="flex flex-col mt-0.5">
+                                                            <span className="text-[10px] font-black text-slate-500 uppercase">{format(new Date(v.timestamp), 'dd MMM (EEE)')}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className={`text-sm font-black ${v.heartRate > 100 || v.heartRate < 60 ? 'text-rose-500' : 'text-slate-700'}`}>
+                                                            {v.heartRate}
+                                                        </span>
+                                                        <span className="text-[10px] font-bold text-slate-400 ml-1">bpm</span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className="text-xs font-black text-slate-700">
+                                                            {v.systolicBP}/{v.diastolicBP}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <div className="flex flex-col items-center">
+                                                            <span className={`text-sm font-black ${v.spO2 < 94 ? 'text-rose-600 animate-pulse' : 'text-slate-700'}`}>
+                                                                {v.spO2}%
+                                                            </span>
+                                                            <div className="w-12 h-1 bg-slate-100 rounded-full mt-1 overflow-hidden">
+                                                                <div
+                                                                    className={`h-full ${v.spO2 < 94 ? 'bg-rose-50' : 'bg-emerald-500'}`}
+                                                                    style={{ width: `${v.spO2}%` }}
+                                                                ></div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className="text-xs font-bold text-slate-700">{v.temperature}°F</span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className="text-xs font-black text-rose-500">{v.respiratoryRate || '--'}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-xs font-bold text-slate-700">{v.glucose || '--'} mg/dL</span>
+                                                            <span className="text-[10px] font-black text-slate-400 uppercase">{v.glucoseType}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-7 h-7 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black uppercase border border-indigo-100">
+                                                                {v.recordedBy?.name?.charAt(0)}
+                                                            </div>
+                                                            <span className="text-xs font-bold text-slate-600">{v.recordedBy?.name}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter border ${v.status === 'Critical' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                                            v.status === 'Warning' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                                                'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                                            }`}>
+                                                            {v.status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={9} className="px-6 py-12 text-center">
+                                                <div className="bg-slate-50 inline-flex p-4 rounded-3xl mb-4">
+                                                    <Activity size={32} className="text-slate-300" />
+                                                </div>
+                                                <p className="text-sm font-black text-slate-500 uppercase tracking-widest">No vitals logged yet</p>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Medication Log */}
+                        <div className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm">
+                            <div className="p-6 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
+                                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
+                                    <Pill size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Medication Administration</h3>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Treatment Execution Record</p>
+                                </div>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="bg-slate-50 border-b border-slate-100">
+                                        <tr>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Drug & Dose</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Time & Slot</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Nurse</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {hourlyData.data.meds.length > 0 ? (
+                                            [...hourlyData.data.meds].map((m: any, idx: number) => (
+                                                <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-xs font-black text-slate-800">{m.drugName}</span>
+                                                            <span className="text-[10px] font-bold text-slate-500">{m.dose} • {m.route}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-xs font-black text-slate-700">{format(new Date(m.timestamp), 'HH:mm')}</span>
+                                                            <span className={`text-[9px] font-black uppercase tracking-widest ${m.timeSlot === 'Morning' ? 'text-amber-500' :
+                                                                m.timeSlot === 'Afternoon' ? 'text-blue-500' : 'text-indigo-600'
+                                                                }`}>{m.timeSlot}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-xs font-bold text-slate-600">{m.administeredBy?.name}</span>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={3} className="px-6 py-8 text-center text-xs font-bold text-slate-400 uppercase">No Medications Administered</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Diet Log */}
+                        <div className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm">
+                            <div className="p-6 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
+                                <div className="p-2 bg-orange-50 text-orange-600 rounded-xl">
+                                    <Utensils size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Dietary Intake Log</h3>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Food & Drink Consumption</p>
+                                </div>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="bg-slate-50 border-b border-slate-100">
+                                        <tr>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Items</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Category</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Time/Nurse</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {hourlyData.data.diet?.length > 0 ? (
+                                            [...hourlyData.data.diet].map((d: any, idx: number) => (
+                                                <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-xs font-black text-slate-800">{d.items?.join(', ')}</span>
+                                                            {d.notes && <span className="text-[9px] text-slate-400 italic font-medium">{d.notes}</span>}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="px-2 py-0.5 bg-orange-50 text-orange-600 rounded text-[9px] font-black uppercase tracking-widest border border-orange-100">
+                                                            {d.category}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-xs font-black text-slate-700">{d.recordedTime}</span>
+                                                            <span className="text-[9px] font-black text-slate-500 uppercase">{format(new Date(d.timestamp), 'dd MMM (EEE)')}</span>
+                                                            <span className="text-[9px] font-bold text-slate-400 uppercase">{d.recordedBy?.name}</span>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={3} className="px-6 py-8 text-center text-xs font-bold text-slate-400 uppercase">No Diet Logs Recorded</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Recent Tests */}
+                        <div className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm lg:col-span-2">
+                            <div className="p-6 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
+                                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                                    <ClipboardList size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Diagnostics & Investigations</h3>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Recent Lab Results</p>
+                                </div>
+                            </div>
+                            <div className="p-6">
+                                <div className="space-y-4">
+                                    {hourlyData.data.labOrders.length > 0 ? (
+                                        hourlyData.data.labOrders.map((order: any, idx: number) => (
+                                            <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex justify-between items-center group hover:border-indigo-200 transition-all">
+                                                <div className="flex gap-3">
+                                                    <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+                                                        <ClipboardList size={18} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-black text-slate-800">{order.tests?.[0]?.test?.name || 'Lab Investigation'}</p>
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">By Dr. {hourlyData.data.admission.doctorName}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter border ${order.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'
+                                                        }`}>
+                                                        {order.status}
+                                                    </span>
+                                                    <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase">{format(new Date(order.createdAt), 'dd MMM, HH:mm')}</p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-8">
+                                            <AlertCircle size={24} className="text-slate-200 mx-auto mb-2" />
+                                            <p className="text-xs font-bold text-slate-400 uppercase">No lab reports found for this admission</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -482,6 +761,78 @@ export default function NurseHourlyRecordClient() {
                     </div>
                 </div>
             )}
+            <style jsx global>{`
+                @media print {
+                    @page { 
+                        size: A4 portrait; 
+                        margin: 15mm 10mm;
+                    }
+                    .no-print { display: none !important; }
+                    body { 
+                        background: white !important; 
+                        margin: 0 !important; 
+                        padding: 0 !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                        font-size: 10pt;
+                    }
+                    .print-container { 
+                        width: 100% !important; 
+                        margin: 0 !important; 
+                        padding: 0 !important;
+                    }
+                    /* Force layout to be visible and properly spaced */
+                    .grid { display: flex !important; flex-wrap: wrap !important; gap: 15px !important; }
+                    .lg\\:grid-cols-3 > :nth-child(1) { width: 65% !important; }
+                    .lg\\:grid-cols-3 > :nth-child(2) { width: 32% !important; }
+                    .lg\\:grid-cols-2 > * { width: 48% !important; }
+                    
+                    .Card, .bg-white {
+                        border: 1px solid #f1f5f9 !important;
+                        box-shadow: none !important;
+                        border-radius: 12px !important;
+                        margin-bottom: 12px !important;
+                        break-inside: avoid;
+                    }
+                    
+                    tbody { display: table-row-group !important; }
+                    tr { page-break-inside: avoid !important; }
+                    
+                    /* Reset sticky for print */
+                    .sticky { position: static !important; }
+                    
+                    /* Ensure all data shows in PDF */
+                    .hidden-on-ui {
+                        display: table-row !important;
+                    }
+                    
+                    /* Tighten table spacing for "near near" look */
+                    th, td {
+                        padding: 6px 8px !important;
+                    }
+                    
+                    /* Maintain colors */
+                    .bg-blue-600 { background-color: #2563eb !important; border-radius: 8px !important; }
+                    .text-white { color: white !important; }
+                    .bg-emerald-500 { background-color: #10b981 !important; }
+                }
+
+                .hidden-on-ui {
+                    display: none;
+                }
+
+                /* Custom Scrollbar for Dropdown */
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 4px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: #f1f5f9;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: #cbd5e1;
+                    border-radius: 10px;
+                }
+            `}</style>
         </div>
     );
 }

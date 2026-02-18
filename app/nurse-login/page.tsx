@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from '@/stores/authStore';
+import { authService } from '@/lib/integrations/services/auth.service';
 import toast from "react-hot-toast";
 
 import {
@@ -17,7 +18,7 @@ import {
 } from "lucide-react";
 
 const NurseLoginPage = () => {
-    const { login, logout, isLoading } = useAuthStore();
+    const { setUser } = useAuthStore();
     const router = useRouter();
 
     // ✅ SPEED FIX: Prefetch dashboard
@@ -33,6 +34,7 @@ const NurseLoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [serverMsg, setServerMsg] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
     const [isNavigating, setIsNavigating] = useState(false);
 
     const validate = () => {
@@ -75,24 +77,32 @@ const NurseLoginPage = () => {
 
         setServerMsg("");
         setErrors({});
+        setIsLoading(true);
 
         try {
-            await login(form.identifier, form.password);
-            const user = useAuthStore.getState().user;
+            // ✅ Calls dedicated nurse-only endpoint — server enforces role server-side
+            const response = await authService.loginNurse({
+                identifier: form.identifier,
+                password: form.password,
+            });
 
-            if (!user) {
-                throw new Error("Login failed to retrieve user session.");
+            const { tokens, user } = response;
+
+            // Normalize _id → id
+            if ((user as any)._id && !(user as any).id) {
+                (user as any).id = (user as any)._id;
             }
 
-            // Strict Role Validation - Only Nurse
-            if (user.role !== 'nurse') {
-                logout(); // Ensure clean logout
-                setServerMsg("Unauthorized access – Nurse users only");
-                toast.error("Unauthorized access – Nurse users only", {
-                    icon: '🚫',
-                });
-                return;
-            }
+            // Store tokens in session + cookies (mirrors authStore.login pattern)
+            sessionStorage.setItem("accessToken", tokens.accessToken);
+            sessionStorage.setItem("refreshToken", tokens.refreshToken);
+            sessionStorage.setItem("user", JSON.stringify(user));
+            sessionStorage.setItem("lastAuthCheck", Date.now().toString());
+            document.cookie = `accessToken=${tokens.accessToken}; path=/; max-age=86400; SameSite=Lax`;
+            document.cookie = `refreshToken=${tokens.refreshToken}; path=/; max-age=604800; SameSite=Lax`;
+
+            // Update store
+            setUser(user as any);
 
             toast.success("Welcome to Nurse Portal!", {
                 icon: '💉',
@@ -104,13 +114,13 @@ const NurseLoginPage = () => {
                 }
             });
 
-            // Show navigation feedback
             setIsNavigating(true);
-
             router.replace('/nurse');
         } catch (err: any) {
             const errorMessage = err?.message || err?.response?.data?.message || 'Login failed. Please check your credentials.';
             setServerMsg(errorMessage);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -152,7 +162,7 @@ const NurseLoginPage = () => {
                         </div>
                     </div>
 
-                
+
                 </div>
 
                 {/* Right Side: Form */}

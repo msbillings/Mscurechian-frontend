@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
+import { authService } from '@/lib/integrations/services/auth.service';
 import toast from "react-hot-toast";
 import {
     Lock,
@@ -15,7 +16,7 @@ import {
 
 function PharmacyLogin() {
     const router = useRouter();
-    const { login, logout } = useAuthStore();
+    const { setUser } = useAuthStore();
     const [identifier, setIdentifier] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -48,32 +49,26 @@ function PharmacyLogin() {
         setPasswordError("");
 
         try {
-            // Use the centralized auth store login
-            await login(identifier, password);
+            // ✅ Calls dedicated pharmacy-only endpoint — server enforces role server-side
+            const response = await authService.loginPharmacy({ identifier, password });
 
-            // Get the user state after successful login logic
-            const user = useAuthStore.getState().user;
+            const { tokens, user } = response;
 
-            if (!user) {
-                throw new Error("Login failed to retrieve user session.");
+            // Normalize _id → id
+            if ((user as any)._id && !(user as any).id) {
+                (user as any).id = (user as any)._id;
             }
 
-            // Strict Role Validation for Pharmacy
-            if (user.role !== 'pharma-owner' && user.role !== 'pharmacy') {
-                // Unauthorized: Logout immediately
-                logout();
+            // Store tokens in session + cookies (mirrors authStore.login pattern)
+            sessionStorage.setItem("accessToken", tokens.accessToken);
+            sessionStorage.setItem("refreshToken", tokens.refreshToken);
+            sessionStorage.setItem("user", JSON.stringify(user));
+            sessionStorage.setItem("lastAuthCheck", Date.now().toString());
+            document.cookie = `accessToken=${tokens.accessToken}; path=/; max-age=86400; SameSite=Lax`;
+            document.cookie = `refreshToken=${tokens.refreshToken}; path=/; max-age=604800; SameSite=Lax`;
 
-                toast.error("Unauthorized access – Pharmacy users only", {
-                    icon: '🚫',
-                    style: {
-                        borderRadius: '1rem',
-                        background: '#1e293b',
-                        color: '#fff',
-                        fontWeight: 'bold'
-                    }
-                });
-                return;
-            }
+            // Update store
+            setUser(user as any);
 
             // Success Redirect
             toast.success("Login successful!", {

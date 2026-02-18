@@ -1,5 +1,9 @@
 export const AUTH_ENDPOINTS = {
   LOGIN: "/auth/login",
+  NURSE_LOGIN: "/auth/nurse/login",
+  LAB_LOGIN: "/auth/lab/login",
+  PHARMACY_LOGIN: "/auth/pharmacy/login",
+  EMERGENCY_LOGIN: "/auth/emergency/login",
   REGISTER: "/auth/register",
   SEND_OTP: "/auth/send-otp",
   VERIFY_OTP: "/auth/verify-otp",
@@ -8,6 +12,7 @@ export const AUTH_ENDPOINTS = {
   REFRESH: "/auth/refresh",
   CHECK_EXISTENCE: "/auth/check-existence",
 };
+
 
 export const DISCHARGE_ENDPOINTS = {
   LOGIN: "/discharge/auth/login",

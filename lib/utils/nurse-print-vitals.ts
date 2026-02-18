@@ -323,6 +323,39 @@ export const generateNurseHourlyRecordHtml = (data: any) => {
 
             <div class="section no-break">
                 <div class="section-header">
+                    <h2>Dietary Intake Log</h2>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Items Consumed</th>
+                                <th>Category/Slot</th>
+                                <th>Time Recorded</th>
+                                <th>Nurse</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sortedDiet.length > 0 ? sortedDiet.map((d: any) => `
+                                <tr>
+                                    <td><strong>${d.items?.join(', ')}</strong></td>
+                                    <td><span class="status-badge" style="background-color: #ffedd5; color: #ea580c;">${d.category}</span></td>
+                                    <td>
+                                        ${d.recordedTime}<br/>
+                                        <span style="font-size: 7px; color: #94a3b8;">${format(new Date(d.timestamp), 'dd MMM (EEE)')}</span>
+                                    </td>
+                                    <td>${d.recordedBy?.name?.split(' ')[0]}</td>
+                                    <td>${d.notes || '-'}</td>
+                                </tr>
+                            `).join('') : '<tr><td colspan="5" style="text-align: center; padding: 15px; color: #94a3b8;">No dietary intake recorded.</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="section no-break">
+                <div class="section-header">
                     <h2>Recent Diagnostics</h2>
                 </div>
                 <div class="lab-grid">
