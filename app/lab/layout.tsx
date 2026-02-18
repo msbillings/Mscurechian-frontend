@@ -13,6 +13,7 @@ import { LabDashboardService } from "@/lib/integrations/services/labDashboard.se
 import { getSocket } from "@/lib/integrations/api/socket";
 import { clearApiCache } from "@/lib/integrations/api/apiClient";
 import LabSupportFloatingBox from "@/components/lab/LabSupportFloatingBox";
+import { useTenantLink } from "@/hooks/useTenantLink";
 
 const LabLayout = ({ children }: { children: React.ReactNode }) => {
     const router = useRouter();
@@ -21,6 +22,7 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const [activeTestCount, setActiveTestCount] = useState(0);
+    const { getPath } = useTenantLink(); // ✅ MULTI-TENANCY
 
     const labUser = user || {
         name: "Lab User",
@@ -220,8 +222,8 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
                     <div className="flex-1 flex justify-center items-center mx-4">
                         <div className="flex items-center p-1 bg-gray-50/50 dark:bg-gray-800/40 rounded-full border border-gray-100/50 dark:border-gray-700/50 backdrop-blur-sm">
                             <Link
-                                href="/lab/billing"
-                                className={`px-3 py-1.5 sm:px-6 sm:py-2 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${pathname === '/lab/billing'
+                                href={getPath('/lab/billing')}
+                                className={`px-3 py-1.5 sm:px-6 sm:py-2 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${pathname.includes('/lab/billing')
                                     ? "bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none"
                                     : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
                                     }`}
@@ -230,14 +232,14 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
                             </Link>
 
                             <Link
-                                href="/lab/samples"
-                                className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-6 sm:py-2 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${pathname.startsWith('/lab/samples') || pathname === '/lab/dashboard'
+                                href={getPath('/lab/samples')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-6 sm:py-2 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${pathname.includes('/lab/samples') || pathname.includes('/lab/dashboard')
                                     ? "bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none"
                                     : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
                                     }`}
                             >
                                 Sample
-                                <span className={`flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full text-[9px] font-bold ${pathname.startsWith('/lab/samples') || pathname === '/lab/dashboard'
+                                <span className={`flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full text-[9px] font-bold ${pathname.includes('/lab/samples') || pathname.includes('/lab/dashboard')
                                     ? "bg-white text-blue-600"
                                     : "bg-blue-600 text-white"
                                     }`}>
@@ -246,7 +248,7 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
                             </Link>
 
                             <Link
-                                href="/lab/results"
+                                href={getPath('/lab/results')}
                                 className={`px-3 py-1.5 sm:px-6 sm:py-2 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${pathname.includes('/lab/results')
                                     ? "bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none"
                                     : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"

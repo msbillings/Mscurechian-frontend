@@ -30,6 +30,7 @@ import HelpdeskNavbar from "@/components/navbar/HelpdeskNavbar";
 import LogoutModal from "@/components/auth/LogoutModal";
 import { usePrefetch } from "@/lib/integrations";
 import HelpdeskSupportFloatingBox from "@/app/helpdesk/components/HelpdeskSupportFloatingBox";
+import { useTenantLink } from "@/hooks/useTenantLink";
 
 const helpdeskMenu = [
     { icon: <LayoutDashboard size={18} />, label: "Dashboard", path: "/helpdesk" },
@@ -49,6 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const { user, logout, isAuthenticated, checkAuth, isLoading, isInitialized } = useAuthStore();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+    const { getPath } = useTenantLink(); // ✅ MULTI-TENANCY
 
     // ⚡ PERFORMANCE: Prefetch hook for zero-latency navigation
     const {
@@ -179,7 +181,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <button
                                 key={item.path}
                                 onClick={() => {
-                                    router.push(item.path);
+                                    router.push(getPath(item.path));
                                     setIsSidebarOpen(false);
                                 }}
                                 onMouseEnter={() => {

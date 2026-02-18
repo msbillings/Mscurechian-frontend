@@ -8,6 +8,7 @@ import Sidebar, { SidebarItem } from '@/components/slidebar/Sidebar';
 import Navbar from '@/components/navbar/Navbar';
 import LogoutModal from '@/components/auth/LogoutModal';
 import PharmacySupportFloatingBox from '@/components/pharmacy/PharmacySupportFloatingBox';
+import { useTenantLink } from '@/hooks/useTenantLink';
 import {
     LayoutDashboard,
     Package,
@@ -37,6 +38,7 @@ const PharmacyLayout = ({ children }: { children: React.ReactNode }) => {
     const { theme, toggleTheme } = useThemeStore();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+    const { getPath } = useTenantLink(); // ✅ MULTI-TENANCY
 
     const isPharma = user?.role === 'pharma-owner' || user?.role === 'pharmacy';
     const isLoginPage = pathname === '/pharmacy/login';
@@ -136,7 +138,7 @@ const PharmacyLayout = ({ children }: { children: React.ReactNode }) => {
                     onThemeToggle={toggleTheme}
                     onLogout={() => setIsLogoutModalOpen(true)}
                     title="Pharmacy Panel"
-                    profileHref="/pharmacy/profile"
+                    profileHref={getPath('/pharmacy/profile')}
                 />
 
                 <main className="flex-1 p-4 lg:p-8 overflow-y-auto">

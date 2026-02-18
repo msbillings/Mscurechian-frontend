@@ -126,9 +126,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       // ✅ CLEANUP: Clear any stale cookies from other portals
-      if (typeof document !== 'undefined') {
-        document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
-        document.cookie = 'refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+      if (typeof document !== "undefined") {
+        document.cookie =
+          "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+        document.cookie =
+          "refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+        document.cookie =
+          "hospitalId=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
       }
 
       // PER-TAB ISOLATION
@@ -137,9 +141,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       sessionStorage.setItem("user", JSON.stringify(user));
       sessionStorage.setItem("lastAuthCheck", Date.now().toString()); // ✅ SPEED FIX: Throttle next check
 
+      // ✅ MULTI-TENANCY: Store hospitalId in sessionStorage and cookie
+      // Cookie is needed by Next.js middleware (edge runtime, no sessionStorage)
+      const userHospitalId = (user as any).hospital || (user as any).hospitalId;
+      if (userHospitalId) {
+        sessionStorage.setItem("activeHospitalId", userHospitalId.toString());
+        document.cookie = `hospitalId=${userHospitalId}; path=/; max-age=86400; SameSite=Lax`;
+      }
+
       // ✅ SYNC TO COOKIES: Standardized longevity
       // 7 days for Patient/Doctor, 1 day for others
-      const isLongLived = user.role === 'patient' || user.role === 'doctor';
+      const isLongLived = user.role === "patient" || user.role === "doctor";
       const accessMaxAge = isLongLived ? 604800 : 86400;
       const refreshMaxAge = 604800; // Keep refresh tokens for 7 days always
 
@@ -152,7 +164,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         safeLocalStorage.setItem("lastUserId", user.id);
 
         // ✅ PERSISTENT LOGIN: If patient, mirror tokens to localStorage to prevent session termination
-        if (user.role === 'patient') {
+        if (user.role === "patient") {
           localStorage.setItem("accessToken", tokens.accessToken);
           localStorage.setItem("refreshToken", tokens.refreshToken);
         }
@@ -186,9 +198,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     sessionStorage.removeItem("accessToken");
     sessionStorage.removeItem("refreshToken");
     sessionStorage.removeItem("user");
+    sessionStorage.removeItem("activeHospitalId"); // ✅ MULTI-TENANCY: Clear tenant context
 
     // Clear localStorage mirroring
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
     }
@@ -198,14 +211,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
     document.cookie =
       "refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+    document.cookie =
+      "hospitalId=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT"; // ✅ MULTI-TENANCY: Clear hospitalId cookie
 
     set({ user: null, isAuthenticated: false });
   },
 
   checkAuth: async (force = false) => {
     // Try sessionStorage first, fallback to localStorage (for persistent patient sessions)
-    let token = sessionStorage.getItem("accessToken") || (typeof window !== "undefined" ? localStorage.getItem("accessToken") : null);
-    let refreshToken = sessionStorage.getItem("refreshToken") || (typeof window !== "undefined" ? localStorage.getItem("refreshToken") : null);
+    let token =
+      sessionStorage.getItem("accessToken") ||
+      (typeof window !== "undefined"
+        ? localStorage.getItem("accessToken")
+        : null);
+    let refreshToken =
+      sessionStorage.getItem("refreshToken") ||
+      (typeof window !== "undefined"
+        ? localStorage.getItem("refreshToken")
+        : null);
     let sessionUser = sessionStorage.getItem("user");
 
     // If no sessionUser, try to find the last logged in user in localStorage
@@ -236,7 +259,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             document.cookie = `refreshToken=${rfToken}; path=/; max-age=604800; SameSite=Lax`;
           }
         }
-      } catch (e) { }
+      } catch (e) {}
     }
 
     // ✅ SPEED FIX: Throttle network calls for session validation
@@ -290,28 +313,42 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Keep session updated
       sessionStorage.setItem("user", JSON.stringify(user));
 
+      // ✅ MULTI-TENANCY: Sync hospitalId to sessionStorage and cookie
+      const userHospitalId = (user as any).hospital || (user as any).hospitalId;
+      if (userHospitalId && typeof document !== "undefined") {
+        const hospitalIdStr = userHospitalId.toString();
+        sessionStorage.setItem("activeHospitalId", hospitalIdStr);
+        document.cookie = `hospitalId=${hospitalIdStr}; path=/; max-age=86400; SameSite=Lax`;
+      }
+
       if (user.id) {
         safeLocalStorage.setItem(`profile_${user.id}`, JSON.stringify(user));
         safeLocalStorage.setItem("lastUserId", user.id);
       }
 
       // SYNC TO COOKIES: Ensure tokens are always in cookies after successful check
-      if (typeof document !== 'undefined') {
-        const currentToken = token || sessionStorage.getItem('accessToken');
-        const currentRefresh = refreshToken || sessionStorage.getItem('refreshToken');
+      if (typeof document !== "undefined") {
+        const currentToken = token || sessionStorage.getItem("accessToken");
+        const currentRefresh =
+          refreshToken || sessionStorage.getItem("refreshToken");
 
         if (currentToken) {
-          const isLongLived = user.role === 'patient' || user.role === 'doctor';
+          const isLongLived = user.role === "patient" || user.role === "doctor";
           const accessMaxAge = isLongLived ? 604800 : 86400;
-          document.cookie = `accessToken=${currentToken}; path=/; max-age=${accessMaxAge}; SameSite=Lax${window.location.protocol === 'https:' ? '; Secure' : ''}`;
+          document.cookie = `accessToken=${currentToken}; path=/; max-age=${accessMaxAge}; SameSite=Lax${window.location.protocol === "https:" ? "; Secure" : ""}`;
         }
 
         if (currentRefresh) {
-          document.cookie = `refreshToken=${currentRefresh}; path=/; max-age=604800; SameSite=Lax${window.location.protocol === 'https:' ? '; Secure' : ''}`;
+          document.cookie = `refreshToken=${currentRefresh}; path=/; max-age=604800; SameSite=Lax${window.location.protocol === "https:" ? "; Secure" : ""}`;
         }
       }
 
-      set({ user: stabilizeUser(user), isAuthenticated: true, isLoading: false, isInitialized: true });
+      set({
+        user: stabilizeUser(user),
+        isAuthenticated: true,
+        isLoading: false,
+        isInitialized: true,
+      });
     } catch (error: any) {
       console.log("[Auth] Error during auth check:", error.message);
 

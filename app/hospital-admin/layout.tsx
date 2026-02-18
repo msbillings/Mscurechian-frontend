@@ -34,6 +34,7 @@ import TransactionDropdown from "./components/TransactionDropdown";
 import ClinicalTeamDropdown from "./components/ClinicalTeamDropdown";
 import HospitalAdminSupportFloatingBox from "./components/HospitalAdminSupportFloatingBox";
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
+import { useTenantLink } from "@/hooks/useTenantLink";
 
 interface MenuItem {
   icon: any;
@@ -134,6 +135,7 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const { getPath } = useTenantLink(); // ✅ MULTI-TENANCY
 
   const hasInitialized = useRef(false);
 
@@ -289,7 +291,7 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
         currentPath={pathname}
         onMenuItemClick={path => {
           setIsSidebarOpen(false);
-          startTransition(() => router.push(path));
+          startTransition(() => router.push(getPath(path)));
         }}
       />
 
@@ -305,8 +307,8 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
             </div>
           }
           profileLinks={[
-            { label: "Official Profile", path: "/hospital-admin/profile", icon: User },
-            { label: "System Settings", path: "/hospital-admin/settings", icon: Settings },
+            { label: "Official Profile", path: getPath('/hospital-admin/profile'), icon: User },
+            { label: "System Settings", path: getPath('/hospital-admin/settings'), icon: Settings },
           ]}
           onLogout={() => setIsLogoutModalOpen(true)}
         />

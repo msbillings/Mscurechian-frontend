@@ -28,6 +28,7 @@ import toast from 'react-hot-toast';
 import { useNotifications } from '@/lib/integrations/hooks';
 import NurseShiftButton from './components/NurseShiftButton';
 import NurseSupportFloatingBox from './components/NurseSupportFloatingBox';
+import { useTenantLink } from '@/hooks/useTenantLink';
 
 
 const nurseMenuItems: SidebarItem[] = [
@@ -54,6 +55,7 @@ export default function NurseLayout({ children }: { children: React.ReactNode })
   const { theme, toggleTheme } = useThemeStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const { getPath } = useTenantLink(); // ✅ MULTI-TENANCY
 
   useEffect(() => {
     initEvents();
@@ -183,7 +185,7 @@ export default function NurseLayout({ children }: { children: React.ReactNode })
           actions={<NurseShiftButton />}
           onLogout={() => setIsLogoutModalOpen(true)}
           className="sticky top-0 z-30"
-          profileHref="/nurse/profile"
+          profileHref={getPath('/nurse/profile')}
         />
         <main className="p-2 sm:p-4 md:p-6 flex-1 overflow-y-auto relative">
           {children}

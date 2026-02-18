@@ -19,6 +19,7 @@ import {
 import LogoutModal from '../auth/LogoutModal';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
+import { useTenantLink } from '@/hooks/useTenantLink';
 
 export interface SidebarItem {
     icon: LucideIcon;
@@ -85,6 +86,7 @@ function Sidebar({
     const pathname = usePathname();
     const router = useRouter();
     const { user } = useAuthStore();
+    const { getPath } = useTenantLink(); // ✅ MULTI-TENANCY: Prefix hrefs with hospitalId
 
     const handleLogoutClick = () => {
         if (onLogout) {
@@ -104,7 +106,7 @@ function Sidebar({
 
             {/* Sidebar Container */}
             <aside
-                className={`fixed top-0 left-0 z-[60] h-screen ${width} bg-card lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+                className={`fixed top-0 left-0 z-60 h-screen ${width} bg-card lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
                     } ${className}`}
             >
                 <div className="flex flex-col h-full">
@@ -127,11 +129,12 @@ function Sidebar({
                     <div className="flex-1 overflow-y-auto py-4">
                         <nav className="space-y-1 px-3">
                             {items.map((item) => {
-                                const isActive = pathname === item.href;
+                                const tenantHref = getPath(item.href);
+                                const isActive = pathname === item.href || pathname === tenantHref || pathname.includes(item.href);
                                 return (
                                     <Link
                                         key={item.href}
-                                        href={item.href}
+                                        href={tenantHref}
                                         onClick={(e) => {
                                             if (item.href === '#logout') {
                                                 e.preventDefault();

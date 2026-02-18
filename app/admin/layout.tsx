@@ -9,6 +9,7 @@ import LogoutModal from "@/components/auth/LogoutModal";
 import { ThemeToggle } from '@/components/ThemeToggle';
 import NotificationCenter from "@/components/navbar/NotificationCenter";
 import AdminSupportFloatingBox from "@/components/admin/AdminSupportFloatingBox";
+import HospitalSwitcher from "@/components/admin/HospitalSwitcher";
 
 interface MenuItem {
     icon: string;
@@ -319,6 +320,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                         />
                     </div>
                     <div className="flex items-center gap-3">
+                        <HospitalSwitcher />
                         <NotificationCenter />
                         <ThemeToggle />
                         <div className="h-6 w-px" style={{ backgroundColor: 'var(--border-color)' }}></div>
