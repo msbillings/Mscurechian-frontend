@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import { useNotifications } from '@/lib/integrations/hooks';
 import { staffService } from '@/lib/integrations';
 import StaffSupportFloatingBox from '@/components/staff/StaffSupportFloatingBox';
+import { useTenantLink } from '@/hooks/useTenantLink';
 
 
 const staffMenuItems: SidebarItem[] = [
@@ -31,6 +32,7 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
     const { theme, toggleTheme } = useThemeStore();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+    const { getPath } = useTenantLink(); // ✅ MULTI-TENANCY
 
     useEffect(() => {
         initEvents();
@@ -297,15 +299,14 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
 
                 {/* Navbar */}
                 <Navbar
-                    title="Staff Portal"
-                    titleHref="/staff"
+                    titleHref={getPath('/staff')}
                     user={staffUser}
                     onMenuClick={() => setIsSidebarOpen(true)}
                     isDarkMode={theme === 'dark'}
                     onThemeToggle={toggleTheme}
                     onLogout={() => setIsLogoutModalOpen(true)}
                     className="sticky top-0 z-30"
-                    profileHref="/staff/profile"
+                    profileHref={getPath('/staff/profile')}
                     actions={attendanceButtons}
                 />
 

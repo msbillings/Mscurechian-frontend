@@ -114,50 +114,59 @@ const LoginPage = () => {
       await login(form.identifier, form.password);
 
       const { user, logout } = useAuthStore.getState();
-      const ALLOWED_ROLES = ['admin', 'super-admin', 'doctor', 'hospital-admin', 'helpdesk', 'staff', 'patient'];
+      
+      // ✅ UNIVERSAL LOGIN ROLES ONLY
+      const ALLOWED_ROLES = [
+        'admin', 'super-admin', 'doctor', 'hospital-admin', 
+        'helpdesk', 'staff', 'patient'
+      ];
 
-      if (user && !ALLOWED_ROLES.includes(user.role)) {
+      const role = user?.role?.toLowerCase() || '';
+      const hospitalId = (user as any).hospitalId || (user as any).hospital;
+
+      if (user && !ALLOWED_ROLES.includes(role)) {
         logout();
-        setServerMsg("Your role is not supported on this login page.");
+        setServerMsg(`Access Denied: The "${user.role}" role must use its dedicated secure login page.`);
         return;
       }
 
-      let redirectPath = '/hospital-admin'; // Default fallback
-      let name = "Dashboard";
+      // 🚀 MULTI-TENANCY REDIRECTION LOGIC (Allowed Roles Only)
+      let finalPath = '/hospital-admin'; // Default fallback
+      let dashboardLabel = "Dashboard";
 
-      if (user?.role === 'admin' || user?.role === 'super-admin') {
-        redirectPath = '/admin';
-        name = "Super Admin Panel";
-      } else if (user?.role === 'doctor') {
-        if (user?.hospitalId || user?.hospital) {
-          redirectPath = '/hospital-admin';
-          name = "Hospital Admin Panel";
-        } else {
-          redirectPath = '/doctor';
-          name = "Doctor Portal";
-        }
-      } else if (user?.role === 'hospital-admin') {
-        redirectPath = '/hospital-admin';
-        name = "Hospital Admin Panel";
-      } else if (user?.role === 'helpdesk') {
-        redirectPath = '/helpdesk';
-        name = "Helpdesk Portal";
-      } else if (user?.role === 'staff') {
-        redirectPath = '/staff';
-        name = "Staff Portal";
-      } else if (user?.role === 'patient') {
-        redirectPath = '/patient';
-        name = "Patient Portal";
+      if (role === 'admin' || role === 'super-admin') {
+        finalPath = '/admin';
+        dashboardLabel = "Super Admin Panel";
+      } else if (hospitalId) {
+        // Map roles to their respective portal paths
+        const rolePathMap: Record<string, string> = {
+          'doctor': 'doctor',
+          'hospital-admin': 'hospital-admin',
+          'helpdesk': 'helpdesk',
+          'staff': 'staff',
+          'patient': 'patient'
+        };
+
+        const portal = rolePathMap[role] || 'hospital-admin';
+        finalPath = `/${hospitalId}/${portal}`;
+        
+        // Pretty name for the feedback UI
+        dashboardLabel = portal.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') + " Portal";
+      } else if (role === 'patient') {
+        finalPath = '/patient';
+        dashboardLabel = "Patient Portal";
       } else {
-        name = "Dashboard";
+        // Fallback for users without hospital assignment
+        finalPath = role ? `/${role}` : '/auth/login';
+        dashboardLabel = "User Portal";
       }
 
       // Show navigation feedback
-      setDashboardName(name);
+      setDashboardName(dashboardLabel);
       setIsNavigating(true);
 
       // Use replace for login to prevent user from going back to login page
-      router.replace(redirectPath);
+      router.replace(finalPath);
     } catch (err: any) {
       // Extract error message
       const errorMessage = err?.message || err?.response?.data?.message || err?.error?.message || '';

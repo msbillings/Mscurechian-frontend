@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useParams } from "next/navigation";
 import { useAuthStore } from '@/stores/authStore';
 import {
     LayoutDashboard,
@@ -28,6 +28,8 @@ import Navbar from "@/components/navbar/Navbar";
 import Link from "next/link";
 import { useThemeStore } from '@/stores/themeStore';
 import DoctorSupportFloatingBox from "@/components/doctor/DoctorSupportFloatingBox";
+import { useTenantLink } from "@/hooks/useTenantLink";
+
 
 const doctorMenu = [
     {
@@ -71,6 +73,8 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const queryClient = useQueryClient();
+    const { getPath } = useTenantLink(); // ✅ MULTI-TENANCY: Tenant-aware path generator
+
 
     // ✅ HOOKS MUST BE AT THE TOP (Rules of Hooks)
 
@@ -268,15 +272,15 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
     const doctorActions = (
         <div className="flex items-center p-1 bg-slate-100 dark:bg-gray-800/40 rounded-full border border-slate-200/50 dark:border-gray-700/50 backdrop-blur-sm shadow-sm">
             <Link
-                href="/doctor/inpatients"
-                className={`px-3 py-1.5 sm:px-6 sm:py-2 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-200 flex items-center gap-2.5 ${pathname.startsWith('/doctor/inpatients')
+                href={getPath('/doctor/inpatients')}
+                className={`px-3 py-1.5 sm:px-6 sm:py-2 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-200 flex items-center gap-2.5 ${pathname.includes('/doctor/inpatients')
                     ? "bg-primary-theme text-white shadow-lg shadow-primary-theme/20"
                     : "text-slate-500 hover:text-slate-900 dark:text-gray-400 dark:hover:text-gray-200"
                     }`}
             >
                 Inpatients
                 <div className="flex items-center gap-1.5 border-l border-white/20 pl-2">
-                    <span className={`px-1.5 py-0.5 rounded-md tabular-nums text-[9px] min-w-[20px] text-center ${pathname.startsWith('/doctor/inpatients') ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-gray-700 text-slate-600"}`}>
+                    <span className={`px-1.5 py-0.5 rounded-md tabular-nums text-[9px] min-w-[20px] text-center ${pathname.includes('/doctor/inpatients') ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-gray-700 text-slate-600"}`}>
                         {inpatientStats.total}
                     </span>
                     {inpatientStats.critical > 0 && (
@@ -294,8 +298,8 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
             </Link>
 
             <Link
-                href="/doctor/appointments"
-                className={`px-3 py-1.5 sm:px-6 sm:py-2 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${pathname.startsWith('/doctor/appointments')
+                href={getPath('/doctor/appointments')}
+                className={`px-3 py-1.5 sm:px-6 sm:py-2 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${pathname.includes('/doctor/appointments')
                     ? "bg-primary-theme text-white  dark:shadow-none"
                     : "text-slate-500 hover:text-slate-900 dark:text-gray-400 dark:hover:text-gray-200"
                     }`}
@@ -304,8 +308,8 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
             </Link>
 
             <Link
-                href="/doctor/prescription"
-                className={`px-3 py-1.5 sm:px-6 sm:py-2 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${pathname.startsWith('/doctor/prescription')
+                href={getPath('/doctor/prescription')}
+                className={`px-3 py-1.5 sm:px-6 sm:py-2 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${pathname.includes('/doctor/prescription')
                     ? "bg-primary-theme text-white  dark:shadow-none"
                     : "text-slate-500 hover:text-slate-900 dark:text-gray-400 dark:hover:text-gray-200"
                     }`}
@@ -347,7 +351,8 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
                             </h3>
                             <div className="space-y-1">
                                 {group.items.map((item) => {
-                                    const isActive = pathname === item.path;
+                                    const tenantPath = getPath(item.path);
+                                    const isActive = pathname === item.path || pathname === tenantPath || pathname.includes(item.path);
                                     const isInpatients = item.path === '/doctor/inpatients';
                                     const showCriticalAlert = isInpatients && inpatientStats.critical > 0;
                                     const showWarningAlert = isInpatients && inpatientStats.warning > 0 && !showCriticalAlert;
@@ -358,7 +363,7 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
                                         <button
                                             key={item.path}
                                             onClick={() => {
-                                                router.push(item.path);
+                                                router.push(tenantPath);
                                                 setIsSidebarOpen(false);
                                             }}
                                             className={`
@@ -426,9 +431,9 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
                     onThemeToggle={toggleTheme}
                     onLogout={() => setIsLogoutModalOpen(true)}
                     className="sticky top-0 z-30 shrink-0"
-                    profileHref="/doctor/profile"
+                    profileHref={getPath('/doctor/profile')}
                     centerActions={doctorActions}
-                    titleHref="/doctor"
+                    titleHref={getPath('/doctor')}
                     showLogo={false}
                 />
 
