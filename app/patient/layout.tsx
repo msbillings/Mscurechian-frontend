@@ -19,7 +19,7 @@ import SharedSidebar from '@/components/navbar/SharedSidebar';
 const queryClient = new QueryClient();
 
 const patientMenuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/patient' },
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/patient/dashboard' },
 ];
 
 function PatientPortalLayout({ children }: { children: React.ReactNode }) {
@@ -112,7 +112,7 @@ function PatientPortalLayout({ children }: { children: React.ReactNode }) {
                     title="Patient Dashboard"
                     description="Personal Health & Medical Records"
                     profileLinks={[
-                        { label: "My Profile", path: "/patient?tab=profile", icon: User },
+                        { label: "My Profile", path: "/patient/dashboard?tab=profile", icon: User },
                     ]}
                     onLogout={() => setIsLogoutModalOpen(true)}
                 />

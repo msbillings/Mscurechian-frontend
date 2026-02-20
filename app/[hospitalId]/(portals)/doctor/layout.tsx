@@ -112,7 +112,7 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
                 const routeMap: Record<string, string> = {
                     'staff': '/staff',
                     'lab': '/lab/dashboard',
-                    'patient': '/patient'
+                    'patient': '/patient/dashboard'
                 };
                 router.push(routeMap[user?.role || ''] || '/auth/login');
             }
