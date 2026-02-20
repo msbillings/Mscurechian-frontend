@@ -246,14 +246,35 @@ export async function apiClient<T>(
               cachedToken = null;
               window.dispatchEvent(new Event("auth-logout"));
 
-              // Redirect to login page
+              // Smart role-aware redirect to correct login page
               const currentPath = window.location.pathname.toLowerCase();
               const isLoginPage =
                 currentPath.includes("/login") ||
                 currentPath.includes("sign-in") ||
                 currentPath.includes("signin");
               if (!isLoginPage) {
-                window.location.href = "/lab/login";
+                // Determine redirect based on current path context
+                const pathParts = window.location.pathname
+                  .split("/")
+                  .filter(Boolean);
+                const firstSegment = pathParts[0] || "";
+                const secondSegment = pathParts[1] || "";
+
+                // Check if we're in a tenant-prefixed portal (/{hospitalId}/lab, etc.)
+                const portalSegment =
+                  pathParts.length >= 2 ? secondSegment : firstSegment;
+
+                const roleLoginMap: Record<string, string> = {
+                  lab: "/auth/lab/login",
+                  nurse: "/auth/nurse/login",
+                  pharmacy: "/auth/pharmacy/login",
+                  pharma: "/auth/pharmacy/login",
+                  emergency: "/emergency-login",
+                  discharge: "/auth/login",
+                };
+
+                const redirectTo = roleLoginMap[portalSegment] || "/auth/login";
+                window.location.href = redirectTo;
               }
 
               const sessionError = new Error(

@@ -112,20 +112,35 @@ export function middleware(request: NextRequest) {
       }
 
       // 🚨 STRICT ENFORCEMENT: Check if path hospital matches cookie hospital
-      // Skip this check for SuperAdmins (we'd need to decode JWT to be sure,
-      // but for now we trust the cookie which is set on login)
       if (hospitalIdCookie?.value && hospitalIdCookie.value !== firstSegment) {
-        console.warn(
-          `[Middleware] Tenant mismatch: path=${firstSegment}, cookie=${hospitalIdCookie.value}. Redirecting...`,
-        );
+        // ALLOW SuperAdmins to bypass tenant mismatch
+        let isSuperAdmin = false;
+        try {
+          if (accessToken?.value) {
+            const token = accessToken.value;
+            const payloadBase64 = token.split(".")[1];
+            if (payloadBase64) {
+              const payload = JSON.parse(atob(payloadBase64));
+              isSuperAdmin = payload.role === "super-admin";
+            }
+          }
+        } catch (e) {
+          console.error("[Middleware] JWT Decode Error:", e);
+        }
 
-        // Redirect to the correct portal based on their actual hospitalId
-        const remainingPath = "/" + pathParts.slice(1).join("/");
-        const redirectUrl = new URL(
-          `/${hospitalIdCookie.value}${remainingPath}`,
-          request.url,
-        );
-        return NextResponse.redirect(redirectUrl);
+        if (!isSuperAdmin) {
+          console.warn(
+            `[Middleware] Tenant mismatch: path=${firstSegment}, cookie=${hospitalIdCookie.value}. Redirecting...`,
+          );
+
+          // Redirect to the correct portal based on their actual hospitalId
+          const remainingPath = "/" + pathParts.slice(1).join("/");
+          const redirectUrl = new URL(
+            `/${hospitalIdCookie.value}${remainingPath}`,
+            request.url,
+          );
+          return NextResponse.redirect(redirectUrl);
+        }
       }
 
       // Authenticated — pass through and set X-Hospital-Id header
@@ -140,5 +155,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/).*)"],
 };

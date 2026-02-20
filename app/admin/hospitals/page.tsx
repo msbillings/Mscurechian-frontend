@@ -229,25 +229,33 @@ const HospitalsList = () => {
                         </div>
                     </div>
 
-                    <div className="p-6 pt-0 mt-auto flex gap-3">
-                        <button
-                            onClick={() => setSelectedHospital(hospital)}
-                            className="flex-1 bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2 group/btn"
-                        >
-                            <Eye size={16} className="group-hover/btn:scale-110 text-blue-500" /> Infrastructure
-                        </button>
-                        <button
-                            onClick={() => handleStatusToggle(hospital._id, hospital.status)}
-                            className={`px-4 rounded-xl text-white shadow-lg active:scale-95 ${
-                                (hospital.status === 'approved' || hospital.status === 'active') 
-                                ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20' 
-                                : 'bg-green-600 hover:bg-green-700 shadow-green-600/20'
-                            }`}
-                            title={hospital.status === 'approved' ? 'Suspend Access' : 'Approve Network Member'}
-                        >
-                            <Activity size={18} />
-                        </button>
+                    <div className="p-6 pt-0 mt-auto flex flex-col gap-3">
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setSelectedHospital(hospital)}
+                                className="flex-1 bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2 group/btn"
+                            >
+                                <Eye size={16} className="group-hover/btn:scale-110 text-blue-500" /> Infrastructure
+                            </button>
+                            <button
+                                onClick={() => handleStatusToggle(hospital._id, hospital.status)}
+                                className={`px-4 rounded-xl text-white shadow-lg active:scale-95 ${
+                                    (hospital.status === 'approved' || hospital.status === 'active') 
+                                    ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20' 
+                                    : 'bg-green-600 hover:bg-green-700 shadow-green-600/20'
+                                }`}
+                                title={hospital.status === 'approved' ? 'Suspend Access' : 'Approve Network Member'}
+                            >
+                                <Activity size={18} />
+                            </button>
+                        </div>
+                        <Link href={`/admin/hospitals/${hospital._id}`}>
+                            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-transform">
+                                <ShieldCheck size={16} /> Hospital Personnel & Login IDs
+                            </button>
+                        </Link>
                     </div>
+
                 </div>
             ))}
           </div>
