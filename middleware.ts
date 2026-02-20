@@ -21,13 +21,13 @@ const PORTAL_PATHS = [
   "/staff",
   "/discharge",
   "/emergency",
-  "/patient-portal",
 ];
 
 // Paths that are completely public / don't need tenant context
 const PUBLIC_PATHS = [
   "/auth",
   "/admin",
+  "/patient", // Added back to prevent it being treated as a hospitalId
   "/ambulance",
   "/about",
   "/features",
@@ -38,11 +38,48 @@ const PUBLIC_PATHS = [
   "/support",
   "/emergency-login",
   "/nurse-login",
-  "/patient",
-  "/_next",
-  "/favicon",
-  "/api",
+  "/pharmacy/login",
+  "/lab/login",
+  "/discharge/login",
 ];
+
+const ROUTE_MAP: Record<string, string> = {
+  staff: "/staff",
+  doctor: "/doctor",
+  "hospital-admin": "/hospital-admin",
+  lab: "/lab/dashboard",
+  "pharma-owner": "/pharmacy/dashboard",
+  "super-admin": "/admin",
+  admin: "/admin",
+  helpdesk: "/helpdesk",
+  nurse: "/nurse",
+};
+
+/**
+ * Robust JWT payload decoding for Edge Runtime
+ */
+function decodeJwt(token: string) {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+
+    let payload = parts[1];
+    // Replace URL-safe characters
+    payload = payload.replace(/-/g, "+").replace(/_/g, "/");
+
+    // Add padding if missing
+    const pad = payload.length % 4;
+    if (pad) {
+      if (pad === 1) return null;
+      payload += new Array(5 - pad).join("=");
+    }
+
+    return JSON.parse(atob(payload));
+  } catch (e) {
+    console.error("[Middleware] JWT Decode Error:", e);
+    return null;
+  }
+}
 
 /**
  * Validate if a string looks like a MongoDB ObjectId (24 hex chars)
@@ -50,6 +87,32 @@ const PUBLIC_PATHS = [
  */
 function isValidHospitalId(segment: string): boolean {
   if (!segment) return false;
+
+  // EXCLUDE RESERVED ROOT PATHS
+  const reserved = [
+    "patient",
+    "auth",
+    "admin",
+    "ambulance",
+    "about",
+    "features",
+    "pricing",
+    "solutions",
+    "coming-soon",
+    "portals",
+    "support",
+    "api",
+    "favicon",
+    "doctor",
+    "lab",
+    "pharmacy",
+    "staff",
+    "nurse",
+    "helpdesk",
+    "discharge",
+  ];
+  if (reserved.includes(segment.toLowerCase())) return false;
+
   // MongoDB ObjectId: exactly 24 hex characters
   if (/^[a-f0-9]{24}$/i.test(segment)) return true;
   // Hospital slug: alphanumeric with hyphens
@@ -60,17 +123,42 @@ function isValidHospitalId(segment: string): boolean {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip static files, Next.js internals, and API routes
+  // 1. SKIP STATIC FILES & API
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
-    pathname.startsWith("/api") ||
-    pathname.includes(".")
+    pathname.includes(".") ||
+    pathname.startsWith("/api")
   ) {
     return NextResponse.next();
   }
 
-  // Check if path starts with a public path — let it through
+  const accessToken = request.cookies.get("accessToken")?.value;
+  const hospitalIdCookie = request.cookies.get("hospitalId")?.value;
+
+  // 2. DECODE ROLE IF TOKEN EXISTS
+  const payload = accessToken ? decodeJwt(accessToken) : null;
+  const userRole = payload?.role?.toLowerCase() || "";
+
+  // 3. ENFORCE PATIENT PORTAL RESTRICTIONS
+  // Patients should ONLY be on /patient paths. Others should be redirected AWAY.
+  if (pathname.startsWith("/patient")) {
+    if (!accessToken) {
+      const loginUrl = new URL("/auth/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    if (userRole && userRole !== "patient" && userRole !== "super-admin") {
+      console.log(
+        `[Middleware] Non-patient user (${userRole}) on patient path. Redirecting...`,
+      );
+      const targetPortal = ROUTE_MAP[userRole] || "/auth/login";
+      return NextResponse.redirect(new URL(targetPortal, request.url));
+    }
+  }
+
+  // 4. PUBLIC PATHS BYPASS
   const isPublicPath = PUBLIC_PATHS.some(
     (p) => pathname === p || pathname.startsWith(p + "/"),
   );
@@ -78,79 +166,64 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const hospitalIdCookie = request.cookies.get("hospitalId");
-  const accessToken = request.cookies.get("accessToken");
-
-  // Check if this is a legacy portal path (without hospitalId prefix)
+  // 5. LEGACY PORTAL REDIRECTION
   const isLegacyPortalPath = PORTAL_PATHS.some(
     (p) => pathname === p || pathname.startsWith(p + "/"),
   );
 
   if (isLegacyPortalPath) {
-    // If user has a hospitalId cookie, redirect to tenant-prefixed path
-    if (hospitalIdCookie?.value && accessToken?.value) {
-      const tenantId = hospitalIdCookie.value;
-      const redirectUrl = new URL(`/${tenantId}${pathname}`, request.url);
+    if (hospitalIdCookie && accessToken) {
+      const redirectUrl = new URL(
+        `/${hospitalIdCookie}${pathname}`,
+        request.url,
+      );
       redirectUrl.search = request.nextUrl.search;
       return NextResponse.redirect(redirectUrl);
     }
-    // No hospitalId cookie — will likely be caught by page-level auth or just pass
     return NextResponse.next();
   }
 
-  // Check if this is a tenant-prefixed path (/{hospitalId}/...)
+  // 6. TENANT-PREFIXED VALIDATION
   const pathParts = pathname.split("/").filter(Boolean);
   if (pathParts.length >= 1) {
     const firstSegment = pathParts[0];
 
     if (isValidHospitalId(firstSegment)) {
-      if (!accessToken?.value) {
-        // Not authenticated — redirect to login
+      if (!accessToken) {
         const loginUrl = new URL("/auth/login", request.url);
         loginUrl.searchParams.set("redirect", pathname);
         return NextResponse.redirect(loginUrl);
       }
 
-      // 🚨 STRICT ENFORCEMENT: Check if path hospital matches cookie hospital
-      if (hospitalIdCookie?.value && hospitalIdCookie.value !== firstSegment) {
-        // ALLOW SuperAdmins to bypass tenant mismatch
-        let isSuperAdmin = false;
-        try {
-          if (accessToken?.value) {
-            const token = accessToken.value;
-            const payloadBase64 = token.split(".")[1];
-            if (payloadBase64) {
-              const payload = JSON.parse(atob(payloadBase64));
-              isSuperAdmin = payload.role === "super-admin";
-            }
-          }
-        } catch (e) {
-          console.error("[Middleware] JWT Decode Error:", e);
-        }
+      // 🚨 FAST PATH: Patients should ALWAYS be on the global root dashboard. No tenant prefix allowed.
+      if (userRole === "patient") {
+        console.log(
+          `[Middleware] Patient on tenant path ${pathname}. Redirecting to global...`,
+        );
+        return NextResponse.redirect(
+          new URL("/patient/dashboard", request.url),
+        );
+      }
 
-        if (!isSuperAdmin) {
+      // 🚨 TENANT MISMATCH PROTECTION
+      if (hospitalIdCookie && hospitalIdCookie !== firstSegment) {
+        if (userRole !== "super-admin") {
           console.warn(
-            `[Middleware] Tenant mismatch: path=${firstSegment}, cookie=${hospitalIdCookie.value}. Redirecting...`,
+            `[Middleware] Tenant mismatch: path=${firstSegment}, cookie=${hospitalIdCookie}. Redirecting...`,
           );
-
-          // Redirect to the correct portal based on their actual hospitalId
           const remainingPath = "/" + pathParts.slice(1).join("/");
-          const redirectUrl = new URL(
-            `/${hospitalIdCookie.value}${remainingPath}`,
-            request.url,
+          return NextResponse.redirect(
+            new URL(`/${hospitalIdCookie}${remainingPath}`, request.url),
           );
-          return NextResponse.redirect(redirectUrl);
         }
       }
 
-      // Authenticated — pass through and set X-Hospital-Id header
       const response = NextResponse.next();
       response.headers.set("X-Hospital-Id", firstSegment);
       return response;
     }
   }
 
-  // Default: pass through
   return NextResponse.next();
 }
 

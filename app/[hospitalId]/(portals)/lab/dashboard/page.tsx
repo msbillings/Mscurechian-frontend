@@ -52,11 +52,22 @@ function LabDashboard() {
   useEffect(() => {
     fetchStats();
 
-    // 1. Listen for socket-triggered events
+    // 2. Listen for socket-triggered events
     const handleRefresh = () => fetchStats(true, true);
     window.addEventListener("refresh-lab-data", handleRefresh);
 
-    // 2. Poll as a fallback every 30 seconds
+    // 3. Socket.IO Real-time Updates
+    const hospitalId = (user as any)?.hospital;
+    if (hospitalId) {
+        import('@/lib/integrations/api/socket').then(({ subscribeToSocket }) => {
+            subscribeToSocket(`hospital_${hospitalId}`, 'new_lab_order', () => {
+                console.log("🔔 New Lab Order Received via Socket");
+                fetchStats(true, true);
+            });
+        });
+    }
+
+    // 4. Poll as a fallback every 30 seconds
     const pollInterval = setInterval(() => {
         console.log('🔄 Periodic Sync: Fetching fresh dashboard data');
         fetchStats(true, true);
@@ -65,8 +76,13 @@ function LabDashboard() {
     return () => {
         window.removeEventListener("refresh-lab-data", handleRefresh);
         clearInterval(pollInterval);
+        if (hospitalId) {
+            import('@/lib/integrations/api/socket').then(({ unsubscribeFromSocket }) => {
+                unsubscribeFromSocket(`hospital_${hospitalId}`, 'new_lab_order', handleRefresh);
+            });
+        }
     };
-  }, [range]);
+  }, [range, user]);
 
   const fetchStats = async (silent = false, skipCache = false) => {
     if (!silent) setLoading(true);

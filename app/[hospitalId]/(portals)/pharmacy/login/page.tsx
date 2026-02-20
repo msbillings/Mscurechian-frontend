@@ -86,9 +86,6 @@ function PharmacyLogin() {
                 }
             });
 
-            // Redirect will be handled by middleware or by direct push
-            // In a legacy path like /pharmacy/login, we push to /pharmacy/dashboard
-            // and the middleware will redirect to /[hospitalId]/pharmacy/dashboard
             router.push("/pharmacy/dashboard");
 
         } catch (err: any) {
@@ -112,15 +109,20 @@ function PharmacyLogin() {
 
     return (
         <div className="min-h-screen w-full flex justify-center items-center p-0 sm:p-4 lg:p-8 bg-background">
-            <div className="flex w-full max-w-5xl bg-card sm:rounded-lg overflow-hidden shadow-2xl border-0 sm:border border-primary-theme/30 min-h-screen sm:min-h-[600px] lg:min-h-[700px]">
+            <div className="flex w-full max-w-5xl bg-card sm:rounded-[0.5rem] overflow-hidden shadow-2xl border-0 sm:border border-primary-theme/30 min-h-screen sm:min-h-[600px] lg:min-h-[700px]">
 
                 {/* Left Side: Illustration & Branding - Hidden on touch devices/small screens */}
                 <div className="hidden lg:flex w-5/12 flex-col justify-center items-center gap-10 p-12 relative overflow-hidden bg-muted/5 border-r border-border/50">
+                    {/* Background Decor */}
+
+
                     <div className="flex items-center justify-center gap-3 cursor-pointer" onClick={() => router.push('/')}>
                         <span className="text-2xl font-bold bg-linear-to-r from-primary-theme to-blue-400 bg-clip-text text-transparent">
                             MScurechain
                         </span>
                     </div>
+
+
 
                     <div className="space-y-6">
                         <div className="relative group">
@@ -141,6 +143,7 @@ function PharmacyLogin() {
                             </p>
                         </div>
                     </div>
+
                 </div>
 
                 {/* Right Side: Form */}
@@ -166,7 +169,7 @@ function PharmacyLogin() {
 
                     <div className="w-full max-w-[400px] space-y-8 mt-12 lg:mt-0">
                         <div className="text-center lg:text-left space-y-2">
-                            <h1 className="text-3xl font-black tracking-tight underline decoration-primary-theme/30 underline-offset-8">Pharmacy Portal Login</h1>
+                            <h1 className="text-3xl font-black tracking-tight">Pharmacy Portal</h1>
                             <p className="text-muted text-sm">Sign in to manage pharmacy operations.</p>
                         </div>
 
@@ -199,7 +202,7 @@ function PharmacyLogin() {
                                         Password
                                     </label>
                                 </div>
-                                <div className={`group flex items-center bg-muted/5 border rounded-[0.4rem] px-4 py-3.5 sm:py-4 focus-within:border-primary-theme focus-within:bg-background relative ${passwordError ? 'border-red-500/50 bg-red-500/5' : 'border-border'
+                                <div className={`group flex items-center bg-muted/5 border-1 rounded-[0.4rem] px-4 py-3.5 sm:py-4 focus-within:border-primary-theme focus-within:bg-background relative ${passwordError ? 'border-red-500/50 bg-red-500/5' : 'border-border'
                                     }`}>
                                     <Lock size={20} className={`mr-3 ${passwordError ? 'text-red-500' : 'text-muted group-focus-within:text-primary-theme'}`} />
                                     <input
@@ -234,7 +237,7 @@ function PharmacyLogin() {
                                 {loading ? (
                                     <Loader2 size={20} className="animate-spin" />
                                 ) : (
-                                    "Sign In Pharma Portal"
+                                    "Sign In"
                                 )}
                             </button>
 

@@ -4,9 +4,9 @@
  * Aligned with backend cache TTLs for optimal performance
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { helpdeskService } from '../services/helpdesk.service';
-import { HelpdeskProfile } from '../types';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { helpdeskService } from "../services/helpdesk.service";
+import { HelpdeskProfile } from "../types";
 
 /**
  * ⚡ PERFORMANCE-OPTIMIZED HELPDESK QUERIES
@@ -18,32 +18,43 @@ import { HelpdeskProfile } from '../types';
  * - Use manual refresh buttons when fresh data needed
  */
 const HELPDESK_QUERY_DEFAULTS = {
-    staleTime: 5 * 60 * 1000, // ✅ 5min - Cache stays fresh
-    gcTime: 15 * 60 * 1000,   // ✅ Keep in memory
-    refetchOnWindowFocus: false, // ✅ Don't refetch on tab switch
-    refetchOnReconnect: false,   // ✅ Don't refetch on reconnect
-    refetchOnMount: false, // ✅ CRITICAL: No refetch = instant navigation!
-    retry: 1,
+  staleTime: 5 * 60 * 1000, // ✅ 5min - Cache stays fresh
+  gcTime: 15 * 60 * 1000, // ✅ Keep in memory
+  refetchOnWindowFocus: false, // ✅ Don't refetch on tab switch
+  refetchOnReconnect: false, // ✅ Don't refetch on reconnect
+  refetchOnMount: false, // ✅ CRITICAL: No refetch = instant navigation!
+  retry: 1,
 };
 
 // ==================== Query Keys ====================
 
-const BASE_KEY = ['helpdesk'] as const;
+const BASE_KEY = ["helpdesk"] as const;
 
 export const helpdeskKeys = {
-    all: BASE_KEY,
-    dashboard: () => [...BASE_KEY, 'dashboard'] as const,
-    doctors: () => [...BASE_KEY, 'doctors'] as const,
-    patients: (query?: string, page?: number, limit?: number, type?: string) =>
-        [...BASE_KEY, 'patients', { query, page, limit, type }] as const,
-    patient: (id: string) => [...BASE_KEY, 'patient', id] as const,
-    appointments: (page?: number, limit?: number, patientId?: string) =>
-        [...BASE_KEY, 'appointments', { page, limit, patientId }] as const,
-    transactions: (page?: number, limit?: number, range?: string, startDate?: string, endDate?: string, type?: string) =>
-        [...BASE_KEY, 'transactions', { page, limit, range, startDate, endDate, type }] as const,
-    transits: (params?: any) => [...BASE_KEY, 'transits', params] as const,
-    availability: (doctorId: string, hospitalId: string, date: string) =>
-        [...BASE_KEY, 'availability', { doctorId, hospitalId, date }] as const,
+  all: BASE_KEY,
+  dashboard: () => [...BASE_KEY, "dashboard"] as const,
+  doctors: () => [...BASE_KEY, "doctors"] as const,
+  patients: (query?: string, page?: number, limit?: number, type?: string) =>
+    [...BASE_KEY, "patients", { query, page, limit, type }] as const,
+  patient: (id: string) => [...BASE_KEY, "patient", id] as const,
+  appointments: (page?: number, limit?: number, patientId?: string) =>
+    [...BASE_KEY, "appointments", { page, limit, patientId }] as const,
+  transactions: (
+    page?: number,
+    limit?: number,
+    range?: string,
+    startDate?: string,
+    endDate?: string,
+    type?: string,
+  ) =>
+    [
+      ...BASE_KEY,
+      "transactions",
+      { page, limit, range, startDate, endDate, type },
+    ] as const,
+  transits: (params?: any) => [...BASE_KEY, "transits", params] as const,
+  availability: (doctorId: string, hospitalId: string, date: string) =>
+    [...BASE_KEY, "availability", { doctorId, hospitalId, date }] as const,
 };
 
 // ==================== Dashboard Hook ====================
@@ -51,13 +62,15 @@ export const helpdeskKeys = {
  * ⚡ FAST: Shows cached data in <200ms, refreshes in background
  */
 export const useHelpdeskDashboard = () => {
-    return useQuery({
-        queryKey: helpdeskKeys.dashboard(),
-        queryFn: helpdeskService.getDashboard,
-        ...HELPDESK_QUERY_DEFAULTS,
-        placeholderData: (previousData) => previousData, // ✅ INSTANT cache display
-        // ❌ NO POLLING - kills performance!
-    });
+  return useQuery({
+    queryKey: helpdeskKeys.dashboard(),
+    queryFn: helpdeskService.getDashboard,
+    ...HELPDESK_QUERY_DEFAULTS,
+    staleTime: 30 * 1000, // ✅ FIX: 30s - dashboard needs to be fresh
+    refetchOnMount: true, // ✅ FIX: Always refetch dashboard on mount
+    refetchOnWindowFocus: true, // ✅ FIX: Refetch when tab is focused
+    placeholderData: (previousData) => previousData, // ✅ INSTANT cache display
+  });
 };
 
 // ==================== Doctors Hooks ====================
@@ -65,13 +78,13 @@ export const useHelpdeskDashboard = () => {
  * ⚡ FAST: Doctors list cached, instant on navigation
  */
 export const useHelpdeskDoctors = () => {
-    return useQuery({
-        queryKey: helpdeskKeys.doctors(),
-        queryFn: helpdeskService.getDoctors,
-        ...HELPDESK_QUERY_DEFAULTS,
-        placeholderData: (previousData) => previousData, // ✅ INSTANT cache display
-        // ❌ NO POLLING
-    });
+  return useQuery({
+    queryKey: helpdeskKeys.doctors(),
+    queryFn: helpdeskService.getDoctors,
+    ...HELPDESK_QUERY_DEFAULTS,
+    placeholderData: (previousData) => previousData, // ✅ INSTANT cache display
+    // ❌ NO POLLING
+  });
 };
 
 // ==================== Patient Search Hook ====================
@@ -79,22 +92,22 @@ export const useHelpdeskDoctors = () => {
  * ⚡ Search patients - no polling, cache search results briefly
  */
 export const usePatientSearch = (
-    query: string,
-    page: number = 1,
-    limit: number = 10,
-    type?: string,
-    enabled: boolean = true
+  query: string,
+  page: number = 1,
+  limit: number = 10,
+  type?: string,
+  enabled: boolean = true,
 ) => {
-    return useQuery({
-        queryKey: helpdeskKeys.patients(query, page, limit, type),
-        queryFn: () => helpdeskService.searchPatients(query, page, limit, type),
-        staleTime: 2 * 60 * 1000, // ✅ 2min cache for search results
-        gcTime: 10 * 60 * 1000,
-        enabled: enabled && query.length > 0,
-        refetchOnWindowFocus: false,
-        refetchOnMount: false, // ✅ Don't refetch searches
-        retry: 1,
-    });
+  return useQuery({
+    queryKey: helpdeskKeys.patients(query, page, limit, type),
+    queryFn: () => helpdeskService.searchPatients(query, page, limit, type),
+    staleTime: 2 * 60 * 1000, // ✅ 2min cache for search results
+    gcTime: 10 * 60 * 1000,
+    enabled: enabled && query.length > 0,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false, // ✅ Don't refetch searches
+    retry: 1,
+  });
 };
 
 /**
@@ -102,185 +115,239 @@ export const usePatientSearch = (
  * NO automatic refetching to prevent connection resets on large data
  */
 export const useHelpdeskPatients = (
-    query: string,
-    page: number = 1,
-    limit: number = 10,
-    type?: string,
-    enabled: boolean = true
+  query: string,
+  page: number = 1,
+  limit: number = 10,
+  type?: string,
+  enabled: boolean = true,
 ) => {
-    return useQuery({
-        queryKey: helpdeskKeys.patients(query, page, limit, type),
-        queryFn: () => helpdeskService.searchPatients(query || '', page, limit, type),
-        staleTime: 2 * 60 * 1000, // ✅ 2min cache
-        gcTime: 10 * 60 * 1000,
-        enabled,
-        placeholderData: (previousData) => previousData, // ✅ Instant display
-        refetchOnWindowFocus: false,  // ✅ Don't refetch on tab switch
-        refetchOnMount: false,        // ✅ CRITICAL: Don't auto-refetch (prevents ERR_CONNECTION_RESET)
-        retry: 1,
-    });
+  return useQuery({
+    queryKey: helpdeskKeys.patients(query, page, limit, type),
+    queryFn: () =>
+      helpdeskService.searchPatients(query || "", page, limit, type),
+    staleTime: 2 * 60 * 1000, // ✅ 2min cache
+    gcTime: 10 * 60 * 1000,
+    enabled,
+    placeholderData: (previousData) => previousData, // ✅ Instant display
+    refetchOnWindowFocus: false, // ✅ Don't refetch on tab switch
+    refetchOnMount: false, // ✅ CRITICAL: Don't auto-refetch (prevents ERR_CONNECTION_RESET)
+    retry: 1,
+  });
 };
 
 // ==================== Patient Details Hook ====================
-export const usePatientDetails = (patientId: string, enabled: boolean = true) => {
-    return useQuery({
-        queryKey: helpdeskKeys.patient(patientId),
-        queryFn: () => helpdeskService.getPatientById(patientId),
-        staleTime: 5 * 60 * 1000, // ✅ 5min cache
-        gcTime: 15 * 60 * 1000,
-        enabled: enabled && !!patientId,
-        placeholderData: (previousData) => previousData, // ✅ Instant display
-        refetchOnWindowFocus: false,
-        refetchOnMount: false,
-        retry: 1,
-    });
+export const usePatientDetails = (
+  patientId: string,
+  enabled: boolean = true,
+) => {
+  return useQuery({
+    queryKey: helpdeskKeys.patient(patientId),
+    queryFn: () => helpdeskService.getPatientById(patientId),
+    staleTime: 5 * 60 * 1000, // ✅ 5min cache
+    gcTime: 15 * 60 * 1000,
+    enabled: enabled && !!patientId,
+    placeholderData: (previousData) => previousData, // ✅ Instant display
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: 1,
+  });
 };
 
 /**
  * Patient registration mutation
  */
 export const useRegisterPatient = () => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: helpdeskService.registerPatient,
-        onSuccess: () => {
-            // Invalidate patients list to show new patient
-            queryClient.invalidateQueries({ queryKey: helpdeskKeys.all });
-        },
-    });
+  return useMutation({
+    mutationFn: helpdeskService.registerPatient,
+    onSuccess: () => {
+      // ✅ FIX: Force immediate refetch (not just mark stale)
+      queryClient.invalidateQueries({
+        queryKey: helpdeskKeys.dashboard(),
+        refetchType: "all",
+      });
+      queryClient.invalidateQueries({
+        queryKey: helpdeskKeys.appointments(),
+        refetchType: "all",
+      });
+      queryClient.invalidateQueries({ queryKey: helpdeskKeys.patients() });
+    },
+  });
 };
 
 /**
  * Patient update mutation
  */
 export const useUpdatePatient = () => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: ({ patientId, data }: { patientId: string; data: any }) =>
-            helpdeskService.updatePatient(patientId, data),
-        onSuccess: (_, { patientId }) => {
-            // Invalidate specific patient and list
-            queryClient.invalidateQueries({ queryKey: helpdeskKeys.patient(patientId) });
-            queryClient.invalidateQueries({ queryKey: helpdeskKeys.patients() });
-        },
-    });
+  return useMutation({
+    mutationFn: ({ patientId, data }: { patientId: string; data: any }) =>
+      helpdeskService.updatePatient(patientId, data),
+    onSuccess: (_, { patientId }) => {
+      // Invalidate specific patient and list
+      queryClient.invalidateQueries({
+        queryKey: helpdeskKeys.patient(patientId),
+      });
+      queryClient.invalidateQueries({ queryKey: helpdeskKeys.patients() });
+    },
+  });
 };
 
 // ==================== Appointments Hook ====================
 /**
  * ⚡ Appointments list - cached, no constant polling
  */
-export const useAppointments = (page?: number, limit?: number, patientId?: string) => {
-    return useQuery({
-        queryKey: helpdeskKeys.appointments(page, limit, patientId),
-        queryFn: () => helpdeskService.getAppointments(page, limit, patientId),
-        ...HELPDESK_QUERY_DEFAULTS,
-        placeholderData: (previousData) => previousData, // ✅ Instant display
-        // ❌ NO POLLING - refreshes on mount anyway
-    });
+export const useAppointments = (
+  page?: number,
+  limit?: number,
+  patientId?: string,
+) => {
+  return useQuery({
+    queryKey: helpdeskKeys.appointments(page, limit, patientId),
+    queryFn: () => helpdeskService.getAppointments(page, limit, patientId),
+    ...HELPDESK_QUERY_DEFAULTS,
+    staleTime: 30 * 1000, // ✅ FIX: 30s - appointments need to be fresh
+    refetchOnMount: true, // ✅ FIX: Always check for new appointments
+    placeholderData: (previousData) => previousData, // ✅ Instant display
+  });
 };
 
 /**
  * Create appointment mutation
  */
 export const useCreateAppointment = () => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: helpdeskService.createAppointment,
-        onSuccess: () => {
-            // Invalidate appointments and dashboard
-            queryClient.invalidateQueries({ queryKey: helpdeskKeys.appointments() });
-            queryClient.invalidateQueries({ queryKey: helpdeskKeys.dashboard() });
-        },
-    });
+  return useMutation({
+    mutationFn: helpdeskService.createAppointment,
+    onSuccess: () => {
+      // ✅ FIX: Force immediate refetch (not just mark stale)
+      queryClient.invalidateQueries({
+        queryKey: helpdeskKeys.appointments(),
+        refetchType: "all",
+      });
+      queryClient.invalidateQueries({
+        queryKey: helpdeskKeys.dashboard(),
+        refetchType: "all",
+      });
+    },
+  });
 };
 
 /**
  * Update appointment status mutation
  */
 export const useUpdateAppointmentStatus = () => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: ({ appointmentId, status }: { appointmentId: string; status: string }) =>
-            helpdeskService.updateAppointmentStatus(appointmentId, status),
-        onSuccess: () => {
-            // Invalidate appointments and dashboard
-            queryClient.invalidateQueries({ queryKey: helpdeskKeys.appointments() });
-            queryClient.invalidateQueries({ queryKey: helpdeskKeys.dashboard() });
-        },
-    });
+  return useMutation({
+    mutationFn: ({
+      appointmentId,
+      status,
+    }: {
+      appointmentId: string;
+      status: string;
+    }) => helpdeskService.updateAppointmentStatus(appointmentId, status),
+    onSuccess: () => {
+      // Invalidate appointments and dashboard
+      queryClient.invalidateQueries({ queryKey: helpdeskKeys.appointments() });
+      queryClient.invalidateQueries({ queryKey: helpdeskKeys.dashboard() });
+    },
+  });
 };
 
 /**
  * Cancel appointment mutation
  */
 export const useCancelAppointment = () => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: helpdeskService.cancelAppointment,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: helpdeskKeys.appointments() });
-            queryClient.invalidateQueries({ queryKey: helpdeskKeys.dashboard() });
-        },
-    });
+  return useMutation({
+    mutationFn: helpdeskService.cancelAppointment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: helpdeskKeys.appointments() });
+      queryClient.invalidateQueries({ queryKey: helpdeskKeys.dashboard() });
+    },
+  });
 };
 
 // ==================== Availability Hook ====================
 export const useDoctorAvailability = (
-    doctorId: string,
-    hospitalId: string,
-    date: string,
-    enabled: boolean = true
+  doctorId: string,
+  hospitalId: string,
+  date: string,
+  enabled: boolean = true,
 ) => {
-    return useQuery({
-        queryKey: helpdeskKeys.availability(doctorId, hospitalId, date),
-        queryFn: () => helpdeskService.getAvailability(doctorId, hospitalId, date),
-        staleTime: 1 * 60 * 1000, // ✅ 1min - availability changes  
-        gcTime: 5 * 60 * 1000,
-        enabled: enabled && !!doctorId && !!hospitalId && !!date,
-        refetchOnWindowFocus: false,
-        refetchOnMount: false,
-        retry: 1,
-    });
+  return useQuery({
+    queryKey: helpdeskKeys.availability(doctorId, hospitalId, date),
+    queryFn: () => helpdeskService.getAvailability(doctorId, hospitalId, date),
+    staleTime: 1 * 60 * 1000, // ✅ 1min - availability changes
+    gcTime: 5 * 60 * 1000,
+    enabled: enabled && !!doctorId && !!hospitalId && !!date,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: 1,
+  });
 };
 
 // ==================== Transactions Hook ====================
-export const useTransactions = (page?: number, limit?: number, range?: string, nopage?: boolean, startDate?: string, endDate?: string, type?: string) => {
-    return useQuery({
-        queryKey: helpdeskKeys.transactions(page, limit, range, startDate, endDate, type),
-        queryFn: () => helpdeskService.getTransactions(page, limit, range, nopage, startDate, endDate, type),
-        ...HELPDESK_QUERY_DEFAULTS,
-        // ❌ NO POLLING
-    });
+export const useTransactions = (
+  page?: number,
+  limit?: number,
+  range?: string,
+  nopage?: boolean,
+  startDate?: string,
+  endDate?: string,
+  type?: string,
+) => {
+  return useQuery({
+    queryKey: helpdeskKeys.transactions(
+      page,
+      limit,
+      range,
+      startDate,
+      endDate,
+      type,
+    ),
+    queryFn: () =>
+      helpdeskService.getTransactions(
+        page,
+        limit,
+        range,
+        nopage,
+        startDate,
+        endDate,
+        type,
+      ),
+    ...HELPDESK_QUERY_DEFAULTS,
+    // ❌ NO POLLING
+  });
 };
 
 // ==================== Transits Hook ====================
 export const useTransits = (params?: any) => {
-    return useQuery({
-        queryKey: helpdeskKeys.transits(params),
-        queryFn: () => helpdeskService.getTransits(params),
-        ...HELPDESK_QUERY_DEFAULTS,
-        // ❌ NO POLLING
-    });
+  return useQuery({
+    queryKey: helpdeskKeys.transits(params),
+    queryFn: () => helpdeskService.getTransits(params),
+    ...HELPDESK_QUERY_DEFAULTS,
+    // ❌ NO POLLING
+  });
 };
 
 /**
  * Collect transit mutation
  */
 export const useCollectTransit = () => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: helpdeskService.collectTransit,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: helpdeskKeys.transits() });
-        },
-    });
+  return useMutation({
+    mutationFn: helpdeskService.collectTransit,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: helpdeskKeys.transits() });
+    },
+  });
 };
 
 // ==================== Doctor Creation Hook ====================
@@ -288,32 +355,33 @@ export const useCollectTransit = () => {
  * Create doctor mutation
  */
 export const useCreateDoctor = () => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: helpdeskService.createDoctor,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: helpdeskKeys.doctors() });
-        },
-    });
+  return useMutation({
+    mutationFn: helpdeskService.createDoctor,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: helpdeskKeys.doctors() });
+    },
+  });
 };
 // ==================== Profile Hooks ====================
 export const useHelpdeskProfile = () => {
-    return useQuery({
-        queryKey: [...BASE_KEY, 'me'] as const,
-        queryFn: helpdeskService.getMe,
-        ...HELPDESK_QUERY_DEFAULTS,
-        placeholderData: (previousData) => previousData,
-    });
+  return useQuery({
+    queryKey: [...BASE_KEY, "me"] as const,
+    queryFn: helpdeskService.getMe,
+    ...HELPDESK_QUERY_DEFAULTS,
+    placeholderData: (previousData) => previousData,
+  });
 };
 
 export const useUpdateHelpdeskProfile = () => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: (data: Partial<HelpdeskProfile>) => helpdeskService.updateProfile(data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: [...BASE_KEY, 'me'] });
-        },
-    });
+  return useMutation({
+    mutationFn: (data: Partial<HelpdeskProfile>) =>
+      helpdeskService.updateProfile(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...BASE_KEY, "me"] });
+    },
+  });
 };

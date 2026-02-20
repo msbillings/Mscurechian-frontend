@@ -11,7 +11,8 @@ import {
 } from "lucide-react";
 
 import NotificationCenter from "@/components/navbar/NotificationCenter";
-import HelpdeskQuickActions from "@/app/helpdesk/components/HelpdeskQuickActions";
+import HelpdeskQuickActions from "@/app/[hospitalId]/(portals)/helpdesk/components/HelpdeskQuickActions";
+import { useTenantLink } from "@/hooks/useTenantLink";
 
 interface HelpdeskNavbarProps {
     onMenuClick: () => void;
@@ -22,6 +23,7 @@ const HelpdeskNavbar: React.FC<HelpdeskNavbarProps> = ({ onMenuClick, onLogoutCl
     const router = useRouter();
     const { user } = useAuthStore();
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+    const { getPath } = useTenantLink();
 
     return (
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 fixed top-0 left-0 lg:left-64 right-0 z-40 shadow-sm">
@@ -76,7 +78,7 @@ const HelpdeskNavbar: React.FC<HelpdeskNavbarProps> = ({ onMenuClick, onLogoutCl
                                 </div>
                                 <div className="p-4 space-y-1">
                                     <button
-                                        onClick={() => { router.push('/helpdesk/profile'); setIsProfileDropdownOpen(false); }}
+                                        onClick={() => { router.push(getPath('/helpdesk/profile')); setIsProfileDropdownOpen(false); }}
                                         className="w-full flex items-center gap-4 px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 hover:text-teal-600 rounded-2xl transition-all"
                                     >
                                         <User size={18} className="text-slate-300" />

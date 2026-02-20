@@ -232,13 +232,22 @@ export default function LabRecordsSection({
                                 </div>
                             </div>
 
-                            <div className="flex flex-wrap gap-2 items-center">
-                                <span className={`px-3 py-1 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest shadow-sm ${getStatusColor(record.status)}`}>
-                                    {record.status?.toUpperCase() || 'UNKNOWN'}
-                                </span>
-                                <span className={`px-3 py-1 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest shadow-sm ${getPriorityColor(record.priority)}`}>
-                                    {record.priority?.toUpperCase() || 'ROUTINE'}
-                                </span>
+                            <div className="flex flex-wrap gap-4 items-center">
+                                <div>
+                                    <p className="text-[8px] sm:text-[9px] font-black uppercase text-gray-400 tracking-widest mb-0.5">Hospital</p>
+                                    <p className="font-black text-gray-900 dark:text-white text-xs sm:text-sm uppercase flex items-center gap-1">
+                                        {record.hospital?.name || 'Medical Facility'}
+                                    </p>
+                                </div>
+                                <div className="hidden lg:block w-px h-8 bg-gray-100 dark:bg-white/5 mx-2" />
+                                <div className="flex flex-wrap gap-2 items-center">
+                                    <span className={`px-3 py-1 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest shadow-sm ${getStatusColor(record.status)}`}>
+                                        {record.status?.toUpperCase() || 'UNKNOWN'}
+                                    </span>
+                                    <span className={`px-3 py-1 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest shadow-sm ${getPriorityColor(record.priority)}`}>
+                                        {record.priority?.toUpperCase() || 'ROUTINE'}
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
@@ -310,8 +319,7 @@ export default function LabRecordsSection({
                         {/* Footer */}
                         <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-50 dark:border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
                             <div className="text-[8px] sm:text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                <span className="text-gray-300">Facility:</span>
-                                {record.hospital?.name}
+                                <span className="text-gray-300">CureChain Integrated Records</span>
                             </div>
                             <div className="text-[8px] sm:text-[9px] font-black text-gray-300 dark:text-gray-600 uppercase tracking-widest font-mono">
                                 HASH: {record._id.slice(-12).toUpperCase()}

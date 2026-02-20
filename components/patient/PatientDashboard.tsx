@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, Pill, FlaskConical, FileCheck, Activity, Loader2, UserCircle, AlertTriangle } from 'lucide-react';
+import { Calendar, Pill, FlaskConical, FileCheck, Activity, Loader2, UserCircle, AlertTriangle, Building2, ChevronDown, Check, Globe } from 'lucide-react';
 import { patientService } from '@/lib/integrations/services/patient.service';
 import AppointmentsSection from './AppointmentsSection';
 import PrescriptionsSection from './PrescriptionsSection';
@@ -32,6 +32,9 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
     const [dashboardData, setDashboardData] = useState<DashboardData | null>(initialData || null);
     const [error, setError] = useState<string | null>(null);
     const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState(false);
+    const [hospitals, setHospitals] = useState<any[]>([]);
+    const [selectedHospitalId, setSelectedHospitalId] = useState<string>(''); // empty means All Hospitals
+    const [isHospitalDropdownOpen, setIsHospitalDropdownOpen] = useState(false);
 
     const searchParams = useSearchParams();
     const queryTab = searchParams.get('tab') as TabType;
@@ -43,20 +46,31 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
     }, [queryTab]);
 
     useEffect(() => {
-        console.log("[Dashboard Debug] initialData received:", initialData);
-        if (!initialData) {
-            fetchDashboardData();
-        }
-    }, [initialData]);
+        fetchHospitals();
+    }, []);
 
-    const fetchDashboardData = async () => {
+    useEffect(() => {
+        if (!initialData || selectedHospitalId !== '') {
+            fetchDashboardData(selectedHospitalId);
+        }
+    }, [initialData, selectedHospitalId]);
+
+    const fetchHospitals = async () => {
+        try {
+            const response = await patientService.getHospitals();
+            if (response.success) {
+                setHospitals(response.data || []);
+            }
+        } catch (err) {
+            console.error('Error fetching hospitals:', err);
+        }
+    };
+
+    const fetchDashboardData = async (hospitalId?: string) => {
         try {
             setLoading(true);
             setError(null);
-            console.log("[Dashboard Debug] Calling getDashboardData...");
-            const response = await patientService.getDashboardData();
-            console.log("[Dashboard Debug] Response from service:", response);
-
+            const response = await patientService.getDashboardData(hospitalId);
             if (response.success && response.data) {
                 setDashboardData(response.data);
             } else {
@@ -197,6 +211,93 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
                     <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     Emergency
                 </button>
+            </div>
+
+            {/* Hospital Switcher Section */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-[24px] border border-slate-200/50 dark:border-white/5 shadow-sm">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-white dark:bg-gray-900 border border-slate-200 dark:border-white/10 flex items-center justify-center text-blue-600 shadow-sm">
+                        <Building2 className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h2 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tighter italic">
+                            Facility <span className="text-blue-600">Context</span>
+                        </h2>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">
+                            {selectedHospitalId ? 'Viewing Single Hospital Data' : 'Viewing Global Medical History'}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="relative w-full sm:w-72">
+                    <button
+                        onClick={() => setIsHospitalDropdownOpen(!isHospitalDropdownOpen)}
+                        className="w-full flex items-center justify-between gap-3 px-5 py-3 bg-white dark:bg-gray-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-sm hover:border-blue-300 dark:hover:border-blue-900/40 transition-all group"
+                    >
+                        <div className="flex items-center gap-3 overflow-hidden">
+                            {selectedHospitalId ? (
+                                <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
+                            ) : (
+                                <Globe className="w-4 h-4 text-emerald-600 shrink-0" />
+                            )}
+                            <span className="text-xs font-black text-slate-700 dark:text-slate-200 truncate uppercase tracking-tight">
+                                {selectedHospitalId 
+                                    ? hospitals.find(h => h._id === selectedHospitalId)?.name || 'Loading...' 
+                                    : 'Global Health Network'}
+                            </span>
+                        </div>
+                        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isHospitalDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {isHospitalDropdownOpen && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-900 border border-slate-100 dark:border-white/10 rounded-3xl shadow-2xl p-2 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="max-h-64 overflow-y-auto no-scrollbar space-y-1">
+                                <button
+                                    onClick={() => {
+                                        setSelectedHospitalId('');
+                                        setIsHospitalDropdownOpen(false);
+                                    }}
+                                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-left transition-colors ${selectedHospitalId === '' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-400'}`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Globe className={`w-4 h-4 ${selectedHospitalId === '' ? 'text-blue-600' : 'text-slate-400'}`} />
+                                        <div>
+                                            <p className="text-xs font-black uppercase tracking-tight">Global History</p>
+                                            <p className="text-[9px] font-bold opacity-60">Unified view of all hospitals</p>
+                                        </div>
+                                    </div>
+                                    {selectedHospitalId === '' && <Check className="w-4 h-4" />}
+                                </button>
+                                
+                                <div className="h-px bg-slate-100 dark:bg-white/5 my-2 mx-2" />
+                                
+                                {hospitals.length > 0 ? hospitals.map((h) => (
+                                    <button
+                                        key={h._id}
+                                        onClick={() => {
+                                            setSelectedHospitalId(h._id);
+                                            setIsHospitalDropdownOpen(false);
+                                        }}
+                                        className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-left transition-colors ${selectedHospitalId === h._id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-400'}`}
+                                    >
+                                        <div className="flex items-center gap-3 overflow-hidden">
+                                            <Building2 className={`w-4 h-4 shrink-0 ${selectedHospitalId === h._id ? 'text-blue-600' : 'text-slate-400'}`} />
+                                            <div className="overflow-hidden">
+                                                <p className="text-xs font-black uppercase tracking-tight truncate">{h.name}</p>
+                                                <p className="text-[9px] font-bold opacity-60 truncate">{h.city} • {h.visitCount} Visits</p>
+                                            </div>
+                                        </div>
+                                        {selectedHospitalId === h._id && <Check className="w-4 h-4 shrink-0" />}
+                                    </button>
+                                )) : (
+                                    <div className="p-4 text-center">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No other hospitals found</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Responsive Tabs - More Compact on Mobile */}

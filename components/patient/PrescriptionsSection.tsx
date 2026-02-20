@@ -228,6 +228,16 @@ export default function PrescriptionsSection({
                                         {prescription.doctor?.specialties?.[0] || 'Medical Unit'}
                                     </p>
                                 </div>
+                                <div className="hidden lg:block ml-4 pr-4 border-r border-gray-100 dark:border-white/5 h-8" />
+                                <div>
+                                    <p className="text-[8px] sm:text-[9px] font-black uppercase text-gray-400 tracking-widest mb-0.5">Hospital</p>
+                                    <p className="font-black text-gray-900 dark:text-white text-xs sm:text-sm uppercase">
+                                        {prescription.hospital?.name || 'Global Care'}
+                                    </p>
+                                    <p className="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-tighter">
+                                        Medical Facility
+                                    </p>
+                                </div>
                                 <div className="hidden sm:block">
                                     <p className="text-[8px] sm:text-[9px] font-black uppercase text-gray-400 tracking-widest mb-0.5">Reference ID</p>
                                     <p className="font-mono text-[10px] sm:text-xs font-bold text-gray-500 uppercase">#{prescription.appointment?.appointmentId?.slice(-6) || prescription._id.slice(-6)}</p>

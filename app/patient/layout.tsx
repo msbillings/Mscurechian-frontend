@@ -39,7 +39,8 @@ function PatientPortalLayout({ children }: { children: React.ReactNode }) {
         if (isInitialized) {
             if (!isAuthenticated) {
                 router.push('/auth/login');
-            } else if (user?.role !== 'patient') {
+            } else if (user?.role && user.role.toLowerCase() !== 'patient') {
+                const role = user.role.toLowerCase();
                 const routeMap: Record<string, string> = {
                     'staff': '/staff',
                     'doctor': '/doctor',
@@ -48,9 +49,11 @@ function PatientPortalLayout({ children }: { children: React.ReactNode }) {
                     'pharma-owner': '/pharmacy/dashboard',
                     'super-admin': '/admin',
                     'admin': '/admin',
-                    'helpdesk': '/helpdesk'
+                    'helpdesk': '/helpdesk',
+                    'nurse': '/nurse'
                 };
-                router.push(routeMap[user?.role || ''] || '/auth/login');
+                console.log(`[PatientLayout] Non-patient user (${role}) detected. Redirecting...`);
+                router.push(routeMap[role] || '/auth/login');
             }
         }
     }, [isAuthenticated, isInitialized, user?.role, router]);
