@@ -5,8 +5,6 @@ import React from 'react';
 import { Pill, Calendar, User, FileText } from 'lucide-react';
 import { Card } from '@/components/admin';
 import { format } from 'date-fns';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 
 interface Medicine {
     name: string;
@@ -57,120 +55,7 @@ export default function PrescriptionsSection({
     patientEmail = ''
 }: PrescriptionsSectionProps) {
     console.log("[PrescriptionsSection Debug] Prescriptions prop:", prescriptions);
-    const downloadPDF = async (prescriptionId: string) => {
-        const prescription = prescriptions.find(p => p._id === prescriptionId);
-        if (!prescription) return;
 
-        // 1. DATA PREP
-        const doctorName = prescription.doctor?.name || prescription.doctor?.user?.name || 'Medical Practitioner';
-        const hospitalName = prescription.hospital?.name || 'Medical Clinic';
-        const pName = patientName || 'Valued Patient';
-        const pEmail = patientEmail || '';
-        const date = prescription.prescriptionDate ? new Date(prescription.prescriptionDate).toLocaleDateString() : new Date().toLocaleDateString();
-
-        // 2. CREATE CLEAN CONTAINER
-        const container = document.createElement('div');
-        container.style.position = 'fixed';
-        container.style.left = '-9999px';
-        container.style.top = '0';
-        container.style.width = '800px';
-        container.style.minWidth = '800px';
-        container.style.maxWidth = '800px';
-        container.style.padding = '60px';
-        container.style.background = '#ffffff';
-        container.style.fontFamily = 'Arial, sans-serif';
-        container.style.color = '#1e293b';
-        container.style.boxSizing = 'border-box';
-
-        container.innerHTML = `
-            <table style="width: 100%; margin-bottom: 30px; border-bottom: 2px solid #1e293b; padding-bottom: 20px; border-collapse: separate; border-spacing: 0;">
-                <tr>
-                    <td style="vertical-align: top; text-align: left;">
-                        <h1 style="margin: 0; font-size: 32px; color: #1e293b; letter-spacing: 2px; white-space: nowrap;">PRESCRIPTION</h1>
-                        <p style="margin: 5px 0 0 0; color: #64748b;">Visit Date: ${date}</p>
-                    </td>
-                    <td style="vertical-align: top; text-align: right;">
-                        <p style="margin: 0; font-weight: bold; font-size: 18px; white-space: nowrap;">${hospitalName}</p>
-                        <p style="margin: 2px 0 0 0; font-size: 14px;">Dr. ${doctorName}</p>
-                        <p style="margin: 2px 0 0 0; font-size: 12px; color: #64748b;">Ref: #CURE-${prescriptionId.slice(-6).toUpperCase()}</p>
-                    </td>
-                </tr>
-            </table>
-
-            <div style="margin-bottom: 40px; background: #f8fafc; padding: 20px; border-radius: 8px;">
-                <p style="margin: 0; font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase;">Patient Details</p>
-                <h2 style="margin: 5px 0 0 0; font-size: 24px; color: #000;">${pName}</h2>
-                ${pEmail ? `<p style="margin: 2px 0 0 0; font-size: 14px; color: #64748b;">${pEmail}</p>` : ''}
-            </div>
-
-            <h2 style="font-size: 16px; font-weight: bold; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 20px;">MEDICATIONS</h2>
-            <div style="margin-bottom: 40px;">
-                ${prescription.medicines.map(med => `
-                    <div style="padding: 15px 0; border-bottom: 1px solid #f1f5f9;">
-                        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px;">
-                            <span style="font-size: 18px; font-weight: bold; color: #000;">${med.name}</span>
-                            <span style="font-size: 14px; color: #3b82f6; font-weight: bold;">${med.dosage}</span>
-                        </div>
-                        <p style="margin: 5px 0; font-size: 14px; color: #475569;">
-                            <strong>Frequency:</strong> ${med.frequency} | <strong>Duration:</strong> ${med.duration}
-                        </p>
-                        ${med.instructions ? `<p style="margin: 5px 0; font-size: 13px; color: #64748b; font-style: italic;">Note: ${med.instructions}</p>` : ''}
-                    </div>
-                `).join('')}
-            </div>
-
-            ${prescription.diagnosis ? `
-                <div style="margin-bottom: 30px;">
-                    <h3 style="font-size: 14px; color: #64748b; text-transform: uppercase;">Diagnosis</h3>
-                    <p style="margin: 5px 0; font-size: 14px;">${prescription.diagnosis}</p>
-                </div>
-            ` : ''}
-
-            ${prescription.advice ? `
-                <div style="margin-top: 50px;">
-                    <h3 style="font-size: 14px; color: #64748b; text-transform: uppercase;">Doctor's Advice</h3>
-                    <p style="margin: 5px 0; font-size: 14px; line-height: 1.5;">${prescription.advice}</p>
-                </div>
-            ` : ''}
-
-            <div style="margin-top: 100px; display: flex; justify-content: flex-end;">
-                <div style="text-align: center; width: 200px;">
-                    <div style="border-top: 1px solid #1e293b; padding-top: 10px;">
-                        <p style="margin: 0; font-weight: bold; font-size: 14px;">Dr. ${doctorName}</p>
-                        <p style="margin: 2px 0 0 0; font-size: 12px; color: #64748b;">(Digital Signature)</p>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(container);
-
-        try {
-            const canvas = await html2canvas(container, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: '#ffffff',
-                logging: false,
-                width: 800, // Match the distinct container width
-                windowWidth: 1200, // Simulate desktop viewport
-                x: 0, // Explicitly start from container left
-                y: 0  // Explicitly start from container top (relative to node)
-            });
-
-            const imgData = canvas.toDataURL('image/jpeg', 0.95);
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save(`Prescription_${pName.replace(/\s+/g, '_')}_${date}.pdf`);
-        } catch (error) {
-            console.error('Prescription Export Error:', error);
-            alert('Prescription Export failed. Please try again.');
-        } finally {
-            document.body.removeChild(container);
-        }
-    };
 
     if (!prescriptions || prescriptions.length === 0) {
         return (
@@ -242,13 +127,7 @@ export default function PrescriptionsSection({
                                     <p className="text-[8px] sm:text-[9px] font-black uppercase text-gray-400 tracking-widest mb-0.5">Reference ID</p>
                                     <p className="font-mono text-[10px] sm:text-xs font-bold text-gray-500 uppercase">#{prescription.appointment?.appointmentId?.slice(-6) || prescription._id.slice(-6)}</p>
                                 </div>
-                                <button
-                                    onClick={() => downloadPDF(prescription._id)}
-                                    className="p-2 sm:p-2.5 bg-gray-50 dark:bg-white/5 hover:bg-blue-600 hover:text-white text-gray-400 rounded-xl transition-all duration-300 group/btn"
-                                    title="Download PDF"
-                                >
-                                    <FileText className="w-4 h-4 sm:w-5 sm:h-5 group-hover/btn:scale-110 transition-transform" />
-                                </button>
+
                             </div>
                         </div>
 

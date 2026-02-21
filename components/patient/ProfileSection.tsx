@@ -2,8 +2,6 @@ import React from 'react';
 import { User, Phone, Activity, FileText, Droplets, Thermometer, Heart, Wind } from 'lucide-react';
 import { Card } from '@/components/admin';
 import { format } from 'date-fns';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 
 interface ProfileSectionProps {
     profile: any;
@@ -44,121 +42,7 @@ function ProfileSection({ profile, appointments }: ProfileSectionProps) {
         bloodGroup: profile.bloodGroup
     };
 
-    const downloadPDF = async () => {
-        // 1. DATA PREP
-        const name = profile.user?.name || profile.name || 'N/A';
-        const mrn = profile.mrn || 'N/A';
-        const age = profile.dob ? (profile as any).age + ' Y' : profile.age ? profile.age + ' Y' : '---';
-        const gender = profile.gender || '---';
-        const email = profile.user?.email || profile.email || profile.emergencyContactEmail || profile.contactEmail || '---';
-        const mobile = profile.contactNumber || profile.user?.mobile || profile.mobile || '---';
-        const address = profile.address || '---';
 
-        // 2. CREATE CLEAN CONTAINER
-        const container = document.createElement('div');
-        container.style.position = 'fixed';
-        container.style.left = '-9999px';
-        container.style.top = '0';
-        container.style.width = '800px';
-        container.style.minWidth = '800px';
-        container.style.maxWidth = '800px';
-        container.style.padding = '50px';
-        container.style.background = '#ffffff';
-        container.style.fontFamily = 'Arial, sans-serif';
-        container.style.color = '#1e293b';
-        container.style.boxSizing = 'border-box';
-
-        container.innerHTML = `
-            <table style="width: 100%; margin-bottom: 30px; border-bottom: 3px solid #1e293b; padding-bottom: 20px; border-collapse: separate; border-spacing: 0;">
-                <tr>
-                    <td style="vertical-align: bottom; text-align: left;">
-                        <h1 style="margin: 0; font-size: 32px; letter-spacing: 1px; white-space: nowrap;">MEDICAL REPORT</h1>
-                        <p style="margin: 5px 0 0 0; color: #64748b; font-size: 14px; font-weight: bold;">CURECHAIN HEALTH SYSTEMS</p>
-                    </td>
-                    <td style="vertical-align: bottom; text-align: right;">
-                        <p style="margin: 0; font-size: 14px; color: #64748b; white-space: nowrap;">Report Date: ${new Date().toLocaleDateString()}</p>
-                        <p style="margin: 2px 0 0 0; font-size: 14px; color: #3b82f6; font-weight: bold; white-space: nowrap;">MRN: ${mrn}</p>
-                    </td>
-                </tr>
-            </table>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px;">
-                <div>
-                    <h2 style="font-size: 14px; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; text-transform: uppercase;">Patient Identity</h2>
-                    <p style="margin: 5px 0; font-size: 18px; font-weight: bold;">${name}</p>
-                    <p style="margin: 2px 0; font-size: 14px;">Gender: ${gender}</p>
-                    <p style="margin: 2px 0; font-size: 14px;">Age: ${age}</p>
-                </div>
-                <div>
-                    <h2 style="font-size: 14px; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; text-transform: uppercase;">Contact info</h2>
-                    <p style="margin: 5px 0; font-size: 14px;">Phone: ${mobile}</p>
-                    <p style="margin: 2px 0; font-size: 14px;">Email: ${email}</p>
-                    <p style="margin: 2px 0; font-size: 14px;">Address: ${address}</p>
-                </div>
-            </div>
-
-            <h2 style="font-size: 14px; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 15px; text-transform: uppercase;">Current Vitals</h2>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 40px;">
-                <div style="background: #f8fafc; padding: 15px; border-radius: 8px;">
-                    <p style="margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase;">Height/Weight</p>
-                    <p style="margin: 5px 0 0 0; font-size: 16px; font-weight: bold;">${displayVitals.height}cm / ${displayVitals.weight}kg</p>
-                </div>
-                <div style="background: #f8fafc; padding: 15px; border-radius: 8px;">
-                    <p style="margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase;">Blood Pressure</p>
-                    <p style="margin: 5px 0 0 0; font-size: 16px; font-weight: bold; color: #ef4444;">${displayVitals.bloodPressure}</p>
-                </div>
-                <div style="background: #f8fafc; padding: 15px; border-radius: 8px;">
-                    <p style="margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase;">Heart Rate</p>
-                    <p style="margin: 5px 0 0 0; font-size: 16px; font-weight: bold; color: #10b981;">${displayVitals.pulse} BPM</p>
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px;">
-                <div>
-                    <h2 style="font-size: 14px; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; text-transform: uppercase;">Medical Conditions</h2>
-                    <p style="margin: 5px 0; font-size: 14px;"><strong>Issues:</strong> ${profile.conditions || 'None'}</p>
-                    <p style="margin: 5px 0; font-size: 14px;"><strong>Allergies:</strong> ${profile.allergies || 'None'}</p>
-                </div>
-                <div>
-                    <h2 style="font-size: 14px; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; text-transform: uppercase;">Medical History</h2>
-                    <p style="margin: 5px 0; font-size: 13px; line-height: 1.5;">${profile.medicalHistory || 'No history recorded.'}</p>
-                </div>
-            </div>
-
-            <p style="margin-top: 100px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center;">
-                This is a computer-generated medical document. Patient confidentiality applies.
-            </p>
-        `;
-
-        document.body.appendChild(container);
-
-        try {
-            // No nuclear purge needed because we aren't using global classes in this container!
-            const canvas = await html2canvas(container, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: '#ffffff',
-                logging: false,
-                width: 800, // Match container width
-                windowWidth: 1200,
-                x: 0,
-                y: 0
-            });
-
-            const imgData = canvas.toDataURL('image/jpeg', 0.95);
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save(`Medical_Report_${name.replace(/\s+/g, '_')}.pdf`);
-        } catch (error) {
-            console.error('PDF Export Error:', error);
-            alert('PDF Export failed. Please try again.');
-        } finally {
-            document.body.removeChild(container);
-        }
-    };
 
     return (
         <div className="space-y-3 sm:space-y-4">

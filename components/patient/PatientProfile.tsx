@@ -14,8 +14,6 @@ import {
 
 import { format } from 'date-fns';
 import { Card } from '@/components/admin';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 
 interface PatientProfileProps {
   profile: any;
@@ -46,122 +44,7 @@ function PatientProfile({ profile, appointments }: PatientProfileProps) {
     bloodGroup: profile.bloodGroup
   };
 
-  const downloadPDF = async () => {
-    const element = document.getElementById('patient-profile-content');
-    if (!element) return;
 
-    // 1. MEASURE
-    const width = 850;
-
-    // 2. CREATE ISOLATED CLONE
-    const clone = element.cloneNode(true) as HTMLElement;
-    clone.style.position = 'fixed';
-    clone.style.left = '-9999px';
-    clone.style.top = '0';
-    clone.style.width = `${width}px`;
-    clone.style.padding = '60px';
-    clone.style.background = '#ffffff';
-    clone.style.visibility = 'visible';
-    clone.style.opacity = '1';
-    clone.id = 'full-profile-clone-capture';
-
-    // --- APPLY PROFILE THEME ---
-    const primaryHospital = appointments[0]?.hospital?.name || 'Medical Center';
-    const header = document.createElement('div');
-    header.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #1e293b; padding-bottom: 30px; margin-bottom: 40px;">
-            <div style="display: flex; gap: 20px; align-items: center;">
-                <div style="width: 80px; height: 80px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #64748b; border: 2px solid #e2e8f0;">👤</div>
-                <div>
-                    <h1 style="margin: 0; font-size: 32px; color: #1e293b; font-family: sans-serif;">${profile.name}</h1>
-                    <p style="margin: 5px 0 0 0; color: #3b82f6; font-weight: bold; font-size: 16px;">MRN: ${profile.mrn}</p>
-                    <p style="margin: 2px 0 0 0; color: #64748b; font-size: 14px;">Total Health Profile</p>
-                </div>
-            </div>
-            <div style="text-align: right;">
-                <h2 style="margin: 0; font-size: 18px; color: #64748b;">${primaryHospital}</h2>
-                <p style="margin: 2px 0 0 0; font-size: 14px;">Generated: ${new Date().toLocaleDateString()}</p>
-                <p style="margin: 2px 0 0 0; font-size: 14px; color: #10b981; font-weight: bold;">DOCUMENT AUTHENTICATED</p>
-            </div>
-        </div>
-    `;
-    clone.prepend(header);
-
-    // Style sections
-    clone.querySelectorAll('.bg-white, .rounded-xl, .border, .p-6').forEach(section => {
-      const s = section as HTMLElement;
-      if (s.textContent?.trim()) {
-        s.style.boxShadow = 'none';
-        s.style.border = 'none';
-        s.style.borderBottom = '1px solid #f1f5f9';
-        s.style.borderRadius = '0';
-        s.style.padding = '20px 0';
-        s.style.marginBottom = '20px';
-      }
-    });
-
-    document.body.appendChild(clone);
-
-    // 3. INLINE STYLES
-    const sourceNodes = [element, ...Array.from(element.querySelectorAll('*'))];
-    const cloneNodes = [clone, ...Array.from(clone.querySelectorAll('*'))];
-
-    cloneNodes.forEach((node, i) => {
-      const src = sourceNodes[i] as HTMLElement;
-      const tgt = node as HTMLElement;
-      if (!src || !tgt.style) return;
-
-      try {
-        const computed = window.getComputedStyle(src);
-        ['font-size', 'font-weight', 'color', 'line-height'].forEach(prop => {
-          let val = computed.getPropertyValue(prop);
-          if (val && (val.includes('lab(') || val.includes('lch(') || val.includes('oklch'))) {
-            val = '#000000';
-          }
-          tgt.style.setProperty(prop, val);
-        });
-      } catch (e) { }
-
-      if (tgt.tagName === 'BUTTON' || tgt.classList.contains('no-print')) {
-        tgt.style.display = 'none';
-      }
-    });
-
-    // 4. NUCLEAR STYLE PURGE
-    const styleTags = Array.from(document.querySelectorAll('style'));
-    const linkTags = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
-    const originalStyles = styleTags.map(t => t.innerHTML);
-    const originalLinks = linkTags.map(l => (l as any).disabled);
-
-    try {
-      await new Promise(r => setTimeout(r, 200));
-      styleTags.forEach(t => t.innerHTML = '');
-      linkTags.forEach(l => (l as any).disabled = true);
-
-      const canvas = await html2canvas(clone, {
-        scale: 1.5,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        width: width,
-        height: clone.offsetHeight,
-      });
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Comprehensive_Profile_${profile.name.replace(/\s+/g, '_')}.pdf`);
-    } catch (error) {
-      console.error('Profile Export Critical Error:', error);
-      alert('Profile Export failed. Try browser print.');
-    } finally {
-      styleTags.forEach((t, i) => t.innerHTML = originalStyles[i]);
-      linkTags.forEach((l, i) => (l as any).disabled = originalLinks[i]);
-      document.body.removeChild(clone);
-    }
-  };
 
   const infoGroups = [
     {
@@ -204,15 +87,7 @@ function PatientProfile({ profile, appointments }: PatientProfileProps) {
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-end">
-        <button
-          onClick={downloadPDF}
-          className="flex items-center gap-2 px-6 py-3 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-blue-500/20 active:scale-95"
-        >
-          <FileText size={16} />
-          Save Medical Record as PDF
-        </button>
-      </div>
+
 
       <div id="patient-profile-content" className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

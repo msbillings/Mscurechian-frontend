@@ -16,7 +16,6 @@ import {
     Stethoscope,
     Pill
 } from 'lucide-react';
-import { useReactToPrint } from 'react-to-print';
 import toast from 'react-hot-toast';
 import { apiClient } from '@/lib/integrations/api';
 
@@ -53,11 +52,7 @@ export default function PatientDischargeView() {
 
     const componentRef = useRef<HTMLDivElement>(null);
 
-    const handlePrint = useReactToPrint({
-        contentRef: componentRef as any,
-        documentTitle: `Discharge_Summary_${record?.mrn || 'Patient'}`,
-        onAfterPrint: () => toast.success("Downloaded Successfully")
-    });
+
 
     useEffect(() => {
         const fetchRecord = async () => {
@@ -121,15 +116,7 @@ export default function PatientDischargeView() {
                     <ArrowLeft size={20} className="text-slate-600" />
                 </button>
                 <p className="text-xs font-black text-slate-900 uppercase tracking-widest">Discharge Summary</p>
-                <div className="flex gap-2">
-                    <button
-                        onClick={handlePrint}
-                        className="p-2 bg-teal-50 text-teal-600 rounded-full hover:bg-teal-100 transition-colors"
-                        title="Download PDF"
-                    >
-                        <Download size={20} />
-                    </button>
-                </div>
+
             </div>
 
             {/* CONTENT CONTAINER */}

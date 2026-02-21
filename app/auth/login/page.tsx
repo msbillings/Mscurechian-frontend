@@ -137,6 +137,9 @@ const LoginPage = () => {
       if (role === 'admin' || role === 'super-admin') {
         finalPath = '/admin';
         dashboardLabel = "Super Admin Panel";
+      } else if (role === 'patient') {
+        finalPath = '/patient/dashboard';
+        dashboardLabel = "Patient Portal";
       } else if (hospitalId) {
         // Map roles to their respective portal paths
         const rolePathMap: Record<string, string> = {
@@ -144,7 +147,6 @@ const LoginPage = () => {
           'hospital-admin': 'hospital-admin',
           'helpdesk': 'helpdesk',
           'staff': 'staff',
-          'patient': 'patient'
         };
 
         const portal = rolePathMap[role] || 'hospital-admin';
@@ -152,11 +154,8 @@ const LoginPage = () => {
         
         // Pretty name for the feedback UI
         dashboardLabel = portal.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') + " Portal";
-      } else if (role === 'patient') {
-        finalPath = '/patient';
-        dashboardLabel = "Patient Portal";
       } else {
-        // Fallback for users without hospital assignment
+        // Fallback for users without hospital assignment 
         finalPath = role ? `/${role}` : '/auth/login';
         dashboardLabel = "User Portal";
       }

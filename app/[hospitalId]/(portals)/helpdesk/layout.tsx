@@ -110,7 +110,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     'pharma-owner': '/pharmacy/dashboard',
                     'super-admin': '/admin',
                     'admin': '/admin',
-                    'patient': '/patient'
+                    'patient': '/patient/dashboard'
                 };
                 const targetRoute = routeMap[user?.role || ''] || '/auth/login';
                 window.location.href = targetRoute;

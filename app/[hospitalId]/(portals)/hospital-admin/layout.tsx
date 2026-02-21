@@ -166,7 +166,7 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
         "pharma-owner": "/pharmacy/dashboard",
         admin: "/admin",
         "super-admin": "/admin",
-        patient: "/patient",
+        patient: "/patient/dashboard",
         doctor: "/doctor",
       };
 
