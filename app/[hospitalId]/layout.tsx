@@ -1,16 +1,18 @@
+'use client';
+
 import { ReactNode } from 'react';
+import { useTenantContext } from '@/hooks/useTenantContext';
 
 /**
- * [hospitalId] Layout
- *
+ * [hospitalId] Tenant Layout
+ * 
  * This layout wraps all tenant-specific portal routes.
- * It provides the hospitalId context to all child components via URL params.
- *
- * The hospitalId is automatically available via useParams() in any child component:
- *   const { hospitalId } = useParams();
- *
- * The apiClient.ts reads this from the URL to inject X-Hospital-Id header.
+ * It uses useTenantContext to ensure the activeHospitalId is synced
+ * to sessionStorage for the apiClient to pick up.
  */
 export default function TenantLayout({ children }: { children: ReactNode }) {
+  // ✅ SYNC: This hook ensures hospitalId from URL is synced to sessionStorage
+  useTenantContext();
+  
   return <>{children}</>;
 }

@@ -92,8 +92,6 @@ function CreatePrescriptionPage() {
     const [formData, setFormData] = useState<PrescriptionForm>(INITIAL_FORM);
     const [loading, setLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [isSending, setIsSending] = useState(false);
-    const [isSendingLab, setIsSendingLab] = useState(false);
 
     // Suggestion State
     const [activeMedIndex, setActiveMedIndex] = useState<number | null>(null);
@@ -456,7 +454,7 @@ function CreatePrescriptionPage() {
                 billing: billingHtml
             });
             setShowSuccess(true);
-            toast.success("Prescription Created Successfully!");
+            toast.success("Prescription Saved & Sent to Pharmacy/Lab Successfully!");
 
         } catch (error: any) {
             toast.error(error.message || "Failed to save prescription");
@@ -465,47 +463,7 @@ function CreatePrescriptionPage() {
         }
     };
 
-    const handleSendToPharmacy = async () => {
-        if (!appointmentId && !patientId) return toast.error("Appointment ID or Patient ID is required");
-        if (formData.medicines.length === 0) return toast.error("At least one medicine is required");
 
-        try {
-            setIsSending(true);
-            await doctorService.createPharmacyToken({
-                appointmentId,
-                patientId, // Pass patientId
-                medicines: formData.medicines,
-                priority: 'routine',
-                notes: formData.followUp
-            });
-            toast.success("Sent to Pharmacy Successfully!");
-        } catch (error: any) {
-            toast.error(error.message || "Failed to send to pharmacy");
-        } finally {
-            setIsSending(false);
-        }
-    };
-
-    const handleSendToLab = async () => {
-        if (!appointmentId && !patientId) return toast.error("Appointment ID or Patient ID is required");
-        if (formData.suggestedTests.length === 0) return toast.error("At least one test is required");
-
-        try {
-            setIsSendingLab(true);
-            await doctorService.createLabToken({
-                appointmentId,
-                patientId, // Pass patientId
-                tests: formData.suggestedTests.map(t => ({ testName: t, testId: 'MANUAL', type: 'Pathology' })),
-                priority: 'regular',
-                notes: formData.diagnosis
-            });
-            toast.success("Sent to Lab Successfully!");
-        } catch (error: any) {
-            toast.error(error.message || "Failed to send to lab");
-        } finally {
-            setIsSendingLab(false);
-        }
-    };
 
 
     const generatePrescriptionHTML = () => {
@@ -1165,6 +1123,7 @@ function CreatePrescriptionPage() {
                 </div>
 
                 {/* Footer Actions */}
+                {/* Footer Actions */}
                 <div className="fixed bottom-0 left-0 lg:left-64 right-0 z-40 flex justify-center gap-4 p-4 bg-white/90 backdrop-blur-lg border-t border-slate-200">
                     <button
                         onClick={() => setFormData(INITIAL_FORM)}
@@ -1173,20 +1132,12 @@ function CreatePrescriptionPage() {
                         Clear Form
                     </button>
                     <button
-                        onClick={handleSendToPharmacy}
-                        disabled={isSending || formData.medicines.length === 0}
-                        className="px-6 py-3 bg-indigo-600 text-white shadow-xl shadow-indigo-600/20 rounded-xl font-bold uppercase text-xs tracking-wider hover:bg-indigo-700 active:scale-95 flex items-center gap-2"
-                    >
-                        {isSending ? <Loader2 className="animate-spin" size={16} /> : <Pill size={16} />}
-                        Send to Pharmacy
-                    </button>
-                    <button
                         onClick={handleSubmit}
                         disabled={isSaving}
                         className="px-10 py-3 bg-teal-600 text-white shadow-xl shadow-teal-600/20 rounded-xl font-bold uppercase text-xs tracking-wider hover:bg-teal-700 active:scale-95 flex items-center gap-2"
                     >
                         {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Printer size={16} />}
-                        Save & Print
+                        Save, Send & Print
                     </button>
                 </div>
 

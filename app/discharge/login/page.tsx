@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from '@/stores/authStore';
-import { authService } from '@/lib/integrations/services/auth.service';
 import toast from "react-hot-toast";
 
 import {
@@ -14,20 +13,20 @@ import {
     Lock,
     ArrowLeft,
     ChevronRight,
-    Beaker
+    FileText,
+    ShieldCheck
 } from "lucide-react";
 
 /**
- * ROOT-LEVEL LAB LOGIN PAGE
- * Useful as a generic entry point before hospital ID is known.
+ * ROOT-LEVEL DISCHARGE LOGIN PAGE
  */
-const LabLoginPage = () => {
-    const { setUser } = useAuthStore();
+const DischargeLoginPage = () => {
+    const { login, logout, isLoading } = useAuthStore();
     const router = useRouter();
 
     // ✅ SPEED FIX: Prefetch dashboard
     React.useEffect(() => {
-        router.prefetch('/lab/dashboard');
+        router.prefetch('/discharge');
     }, [router]);
 
     const [form, setForm] = useState({
@@ -79,35 +78,30 @@ const LabLoginPage = () => {
 
         setServerMsg("");
         setErrors({});
-        setIsLoading(true);
 
         try {
-            // ✅ Calls dedicated lab-only endpoint — server enforces role server-side
-            const response = await authService.loginLab({
-                identifier: form.identifier,
-                password: form.password,
-            });
+            await login(form.identifier, form.password);
+            const user = useAuthStore.getState().user;
 
-            const { tokens, user } = response;
-
-            // Normalize _id → id
-            if ((user as any)._id && !(user as any).id) {
-                (user as any).id = (user as any)._id;
+            if (!user) {
+                throw new Error("Login failed to retrieve user session.");
             }
 
-            // Store tokens in session + cookies (mirrors authStore.login pattern)
-            sessionStorage.setItem("accessToken", tokens.accessToken);
-            sessionStorage.setItem("refreshToken", tokens.refreshToken);
-            sessionStorage.setItem("user", JSON.stringify(user));
-            sessionStorage.setItem("lastAuthCheck", Date.now().toString());
-            document.cookie = `accessToken=${tokens.accessToken}; path=/; max-age=86400; SameSite=Lax`;
-            document.cookie = `refreshToken=${tokens.refreshToken}; path=/; max-age=604800; SameSite=Lax`;
+            // Roles allowed for discharge (based on DischargeLayout)
+            const allowedRoles = ["nurse", "helpdesk", "doctor", "admin", "super-admin", "hospital-admin", "staff"];
+            const role = user.role.toLowerCase();
 
-            // Update store
-            setUser(user as any);
+            if (!allowedRoles.includes(role)) {
+                logout(); 
+                setServerMsg(`Unauthorized access – Your role (${user.role}) is not authorized for Discharge Management.`);
+                toast.error("Unauthorized access for Discharge Management", {
+                    icon: '🚫',
+                });
+                return;
+            }
 
-            toast.success("Welcome to Lab Portal!", {
-                icon: '🧪',
+            toast.success("Access Granted to Discharge Portal", {
+                icon: '📝',
                 style: {
                     borderRadius: '1rem',
                     background: '#1e293b',
@@ -116,96 +110,91 @@ const LabLoginPage = () => {
                 }
             });
 
-            // Redirect to dashboard (middleware will handle tenant prefixing)
-            router.push('/lab/dashboard');
+            // Redirect to discharge root (middleware will handle tenant prefixing)
+            router.push('/discharge');
         } catch (err: any) {
             const errorMessage = err?.message || err?.response?.data?.message || 'Login failed. Please check your credentials.';
             setServerMsg(errorMessage);
-        } finally {
-            setIsLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen w-full flex justify-center items-center p-0 sm:p-4 lg:p-8 bg-background">
-            <div className="flex w-full max-w-6xl bg-card sm:rounded-lg overflow-hidden shadow-2xl border-0 sm:border border-primary-theme/30 min-h-screen sm:min-h-[600px] lg:min-h-[700px]">
+        <div className="min-h-screen w-full flex justify-center items-center p-0 sm:p-4 lg:p-8 bg-background text-slate-900">
+            <div className="flex w-full max-w-6xl bg-card sm:rounded-lg overflow-hidden shadow-2xl border-0 sm:border border-slate-200 min-h-screen sm:min-h-[600px] lg:min-h-[700px]">
 
                 {/* Left Side: Illustration & Branding */}
-                <div className="hidden lg:flex w-5/12 flex-col justify-between p-12 relative overflow-hidden bg-muted/5 border-r border-border/50">
-                    <div className="absolute top-0 left-0 w-full h-full -z-10">
-                        <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-primary-theme/5 rounded-full blur-[100px]" />
-                        <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-blue-400/5 rounded-full blur-[80px]" />
+                <div className="hidden lg:flex w-5/12 flex-col justify-between p-12 relative overflow-hidden bg-slate-50 border-r border-slate-200">
+                    <div className="absolute top-0 left-0 w-full h-full -z-10 text-slate-900">
+                        <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-blue-500/5 rounded-full blur-[100px]" />
+                        <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-slate-500/5 rounded-full blur-[80px]" />
                     </div>
 
                     <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push('/')}>
-                        <div className="w-10 h-10 bg-primary-theme/10 rounded-xl flex items-center justify-center p-2">
-                             <Beaker size={24} className="text-primary-theme" />
+                        <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center p-2">
+                             <ShieldCheck size={24} className="text-white" />
                         </div>
-                        <span className="text-xl font-bold bg-linear-to-r from-primary-theme to-blue-400 bg-clip-text text-transparent">
+                        <span className="text-xl font-bold tracking-tighter text-slate-900">
                             MSCureChain
                         </span>
                     </div>
 
                     <div className="space-y-6">
                         <div className="relative group">
-                            <div className="absolute -inset-2 bg-primary-theme/10 rounded-3xl blur-xl group-hover:bg-primary-theme/20" />
-                            <img
-                                src="/assets/image.png"
-                                className="relative w-full rounded-2xl shadow-xl border border-primary-theme/30 shadow-primary-theme/5"
-                                alt="Laboratory Portal"
-                            />
+                            <div className="absolute -inset-2 bg-slate-900/5 rounded-3xl blur-xl" />
+                             <div className="relative w-full aspect-square bg-white rounded-2xl border border-slate-200 shadow-sm flex items-center justify-center p-12">
+                                <FileText size={120} className="text-slate-200 animate-pulse" />
+                             </div>
                         </div>
                         <div className="space-y-3">
-                            <h2 className="text-3xl font-black tracking-tight leading-tight">
-                                Precision Diagnostics. <br />
-                                <span className="text-primary-theme">Secure & Rapid.</span>
+                            <h2 className="text-3xl font-black tracking-tight leading-tight uppercase">
+                                Clinical Handover. <br />
+                                <span className="text-slate-500">Secure & Structured.</span>
                             </h2>
-                            <p className="text-muted text-sm leading-relaxed max-w-sm">
-                                Managing samples, tests, and reports with clinical accuracy and real-time data transparency.
+                            <p className="text-slate-500 text-sm leading-relaxed max-w-sm font-medium">
+                                Finalizing patient episodes with precision, ensuring accurate medical summaries and financial clearance.
                             </p>
                         </div>
                     </div>
                 </div>
 
                 {/* Right Side: Form */}
-                <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-10 lg:p-16 relative bg-card">
+                <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-10 lg:p-16 relative bg-white">
                     {/* Header for mobile only */}
                     <div className="flex lg:hidden items-center gap-2 mb-8 absolute top-6 left-6">
                         <div
                             onClick={() => router.push('/')}
-                            className="p-2 rounded-xl bg-muted/10 text-muted flex items-center justify-center"
+                            className="p-2 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center"
                         >
                             <ArrowLeft size={18} />
                         </div>
-                        <img src="/assets/logo.png" alt="Logo" className="w-6 h-6 object-contain" />
-                        <span className="text-sm font-black tracking-tighter text-primary-theme uppercase">MSCureChain</span>
+                        <span className="text-sm font-black tracking-tighter text-slate-900 uppercase">Discharge Portal</span>
                     </div>
 
                     <button
                         onClick={() => router.push('/')}
-                        className="hidden lg:flex absolute top-8 left-8 p-2 rounded-xl hover:bg-muted/10 text-muted items-center gap-2 text-xs font-bold"
+                        className="hidden lg:flex absolute top-8 left-8 p-2 rounded-xl hover:bg-slate-50 text-slate-500 items-center gap-2 text-xs font-bold"
                     >
                         <ArrowLeft size={16} /> Back to Home
                     </button>
 
                     <div className="w-full max-w-[400px] space-y-8 mt-12 lg:mt-0">
                         <div className="text-center lg:text-left space-y-2">
-                            <h1 className="text-3xl font-black tracking-tight underline decoration-primary-theme/30 underline-offset-8 text-rose-600">Lab Portal Login</h1>
-                            <p className="text-muted text-sm">Access the laboratory management systems.</p>
+                            <h1 className="text-3xl font-black tracking-tight underline decoration-slate-900/10 underline-offset-8">Discharge Login</h1>
+                            <p className="text-slate-500 text-sm font-medium">Secure access for clinical and administrative staff.</p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold uppercase tracking-widest text-muted ml-1">
+                                <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">
                                     Mobile Number
                                 </label>
-                                <div className={`group flex items-center bg-muted/5 border rounded-lg px-4 py-3.5 sm:py-4 focus-within:border-primary-theme focus-within:bg-background ${errors.identifier ? 'border-red-500/50 bg-red-500/5' : 'border-border'
+                                <div className={`group flex items-center bg-slate-50 border rounded-lg px-4 py-3.5 sm:py-4 focus-within:border-slate-900 focus-within:bg-white ${errors.identifier ? 'border-red-500/50 bg-red-500/5' : 'border-slate-200'
                                     }`}>
-                                    <Smartphone size={20} className={`mr-3 ${errors.identifier ? 'text-red-500' : 'text-muted group-focus-within:text-primary-theme'}`} />
+                                    <Smartphone size={20} className={`mr-3 ${errors.identifier ? 'text-red-500' : 'text-slate-400 group-focus-within:text-slate-900'}`} />
                                     <input
                                         type="tel"
-                                        className="w-full bg-transparent outline-none placeholder:text-muted/50 text-foreground font-medium text-base sm:text-sm"
-                                        placeholder="Enter mobile number"
+                                        className="w-full bg-transparent outline-none placeholder:text-slate-300 text-slate-900 font-medium text-base sm:text-sm"
+                                        placeholder="Enter registered mobile"
                                         value={form.identifier}
                                         onChange={handleIdentifierChange}
                                         suppressHydrationWarning
@@ -218,16 +207,16 @@ const LabLoginPage = () => {
 
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center px-1">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-muted">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-slate-400">
                                         Password
                                     </label>
                                 </div>
-                                <div className={`group flex items-center bg-muted/5 border rounded-lg px-4 py-3.5 sm:py-4 focus-within:border-primary-theme focus-within:bg-background relative ${errors.password ? 'border-red-500/50 bg-red-500/5' : 'border-border'
+                                <div className={`group flex items-center bg-slate-50 border rounded-lg px-4 py-3.5 sm:py-4 focus-within:border-slate-900 focus-within:bg-white relative ${errors.password ? 'border-red-500/50 bg-red-500/5' : 'border-slate-200'
                                     }`}>
-                                    <Lock size={20} className={`mr-3 ${errors.password ? 'text-red-500' : 'text-muted group-focus-within:text-primary-theme'}`} />
+                                    <Lock size={20} className={`mr-3 ${errors.password ? 'text-red-500' : 'text-slate-400 group-focus-within:text-slate-900'}`} />
                                     <input
                                         type={showPassword ? "text" : "password"}
-                                        className="w-full bg-transparent outline-none placeholder:text-muted/50 text-foreground font-medium text-base sm:text-sm"
+                                        className="w-full bg-transparent outline-none placeholder:text-slate-300 text-slate-900 font-medium text-base sm:text-sm"
                                         placeholder="••••••••"
                                         value={form.password}
                                         onChange={handlePasswordChange}
@@ -235,7 +224,7 @@ const LabLoginPage = () => {
                                     />
                                     <button
                                         type="button"
-                                        className="p-1 text-muted hover:text-foreground"
+                                        className="p-1 text-slate-400 hover:text-slate-900"
                                         onClick={() => setShowPassword(!showPassword)}
                                     >
                                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -255,30 +244,30 @@ const LabLoginPage = () => {
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="w-full bg-primary-theme hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed py-4 sm:py-4.5 rounded-2xl text-white font-black text-sm uppercase tracking-widest shadow-xl shadow-primary-theme/20 hover:shadow-primary-theme/30 active:scale-[0.98] flex items-center justify-center gap-3"
+                                className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed py-4 sm:py-4.5 rounded-2xl text-white font-black text-sm uppercase tracking-widest shadow-xl shadow-slate-900/10 active:scale-[0.98] flex items-center justify-center gap-3"
                             >
                                 {isLoading ? (
                                     <>
                                         <Loader2 size={20} className="animate-spin" />
-                                        <span>Signing In...</span>
+                                        <span>Verifying...</span>
                                     </>
                                 ) : (
                                     <>
-                                        <span>Sign In Lab Portal</span>
+                                        <span>Secure Login</span>
                                         <ChevronRight size={18} />
                                     </>
                                 )}
                             </button>
 
                             <div className="flex items-center gap-4 py-2 sm:py-4">
-                                <div className="grow h-px bg-border/50" />
-                                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted">Laboratory Access</span>
-                                <div className="grow h-px bg-border/50" />
+                                <div className="grow h-px bg-slate-100" />
+                                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Personnel Authorization</span>
+                                <div className="grow h-px bg-slate-100" />
                             </div>
 
-                            <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 text-center">
-                                <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest leading-relaxed">
-                                    Restricted Access • Precision Authorized Lab Technicians Only
+                            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                                    Authorized clinical roles: Doctor, Nurse, Helpdesk, Admin
                                 </p>
                             </div>
                         </form>
@@ -289,4 +278,4 @@ const LabLoginPage = () => {
     );
 };
 
-export default React.memo(LabLoginPage);
+export default React.memo(DischargeLoginPage);

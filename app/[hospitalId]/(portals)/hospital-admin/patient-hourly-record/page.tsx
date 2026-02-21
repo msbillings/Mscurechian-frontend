@@ -1,5 +1,5 @@
 import React from 'react';
-import HourlyRecordClient from "@/app/hospital-admin/patient-hourly-record/HourlyRecordClient";
+import HourlyRecordClient from "@/app/[hospitalId]/(portals)/hospital-admin/patient-hourly-record/HourlyRecordClient";
 
 export const metadata = {
     title: 'Patient Hourly Monitoring | CureChain Admin',

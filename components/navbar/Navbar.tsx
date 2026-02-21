@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
+import { useTenantLink } from '@/hooks/useTenantLink';
 
 interface NavbarProps {
     title?: string;
@@ -56,6 +57,7 @@ function Navbar({
     const dropdownRef = useRef<HTMLDivElement>(null);
     const { logout, user: authUser } = useAuthStore();
     const router = useRouter();
+    const { getPath } = useTenantLink();
 
     const user = propUser || (authUser ? {
         name: authUser.name,
@@ -145,7 +147,7 @@ function Navbar({
                                 </div>
 
                                 <Link
-                                    href={profileHref || (user?.role?.toLowerCase() === 'pharma-owner' ? '/pharmacy/profile' : `/${user?.role?.toLowerCase()}/profile`)}
+                                    href={profileHref || getPath(`/${user?.role?.toLowerCase()}/profile`)}
                                     onClick={() => setIsProfileOpen(false)}
                                     className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl group"
                                 >

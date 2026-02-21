@@ -3,26 +3,25 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from '@/stores/authStore';
-import { authService } from '@/lib/integrations/services/auth.service';
 import toast from "react-hot-toast";
 
 import {
     Eye,
     EyeOff,
+    QrCode,
+    ShieldCheck,
+    Building,
     Smartphone,
     Loader2,
+    Mail,
+    User as UserIcon,
     Lock,
     ArrowLeft,
-    ChevronRight,
-    Beaker
+    ChevronRight
 } from "lucide-react";
 
-/**
- * ROOT-LEVEL LAB LOGIN PAGE
- * Useful as a generic entry point before hospital ID is known.
- */
 const LabLoginPage = () => {
-    const { setUser } = useAuthStore();
+    const { login, logout, isLoading } = useAuthStore();
     const router = useRouter();
 
     // ✅ SPEED FIX: Prefetch dashboard
@@ -38,6 +37,8 @@ const LabLoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [serverMsg, setServerMsg] = useState("");
+
+    const mobileRegex = /^[6-9]\d{9}$/;
 
     const validate = () => {
         const err: Record<string, string> = {};
@@ -79,32 +80,24 @@ const LabLoginPage = () => {
 
         setServerMsg("");
         setErrors({});
-        setIsLoading(true);
 
         try {
-            // ✅ Calls dedicated lab-only endpoint — server enforces role server-side
-            const response = await authService.loginLab({
-                identifier: form.identifier,
-                password: form.password,
-            });
+            await login(form.identifier, form.password);
+            const user = useAuthStore.getState().user;
 
-            const { tokens, user } = response;
-
-            // Normalize _id → id
-            if ((user as any)._id && !(user as any).id) {
-                (user as any).id = (user as any)._id;
+            if (!user) {
+                throw new Error("Login failed to retrieve user session.");
             }
 
-            // Store tokens in session + cookies (mirrors authStore.login pattern)
-            sessionStorage.setItem("accessToken", tokens.accessToken);
-            sessionStorage.setItem("refreshToken", tokens.refreshToken);
-            sessionStorage.setItem("user", JSON.stringify(user));
-            sessionStorage.setItem("lastAuthCheck", Date.now().toString());
-            document.cookie = `accessToken=${tokens.accessToken}; path=/; max-age=86400; SameSite=Lax`;
-            document.cookie = `refreshToken=${tokens.refreshToken}; path=/; max-age=604800; SameSite=Lax`;
-
-            // Update store
-            setUser(user as any);
+            // Strict Role Validation
+            if (user.role !== 'lab') {
+                logout(); // Ensure clean logout
+                setServerMsg("Unauthorized access – Lab users only");
+                toast.error("Unauthorized access – Lab users only", {
+                    icon: '🚫',
+                });
+                return;
+            }
 
             toast.success("Welcome to Lab Portal!", {
                 icon: '🧪',
@@ -116,22 +109,20 @@ const LabLoginPage = () => {
                 }
             });
 
-            // Redirect to dashboard (middleware will handle tenant prefixing)
-            router.push('/lab/dashboard');
+            router.replace('/lab/dashboard');
         } catch (err: any) {
             const errorMessage = err?.message || err?.response?.data?.message || 'Login failed. Please check your credentials.';
             setServerMsg(errorMessage);
-        } finally {
-            setIsLoading(false);
         }
     };
 
     return (
         <div className="min-h-screen w-full flex justify-center items-center p-0 sm:p-4 lg:p-8 bg-background">
-            <div className="flex w-full max-w-6xl bg-card sm:rounded-lg overflow-hidden shadow-2xl border-0 sm:border border-primary-theme/30 min-h-screen sm:min-h-[600px] lg:min-h-[700px]">
+            <div className="flex w-full max-w-6xl bg-card sm:rounded-[0.5rem] overflow-hidden shadow-2xl border-0 sm:border border-primary-theme/30 min-h-screen sm:min-h-[600px] lg:min-h-[700px]">
 
                 {/* Left Side: Illustration & Branding */}
                 <div className="hidden lg:flex w-5/12 flex-col justify-between p-12 relative overflow-hidden bg-muted/5 border-r border-border/50">
+                    {/* Background Decor */}
                     <div className="absolute top-0 left-0 w-full h-full -z-10">
                         <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-primary-theme/5 rounded-full blur-[100px]" />
                         <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-blue-400/5 rounded-full blur-[80px]" />
@@ -139,7 +130,7 @@ const LabLoginPage = () => {
 
                     <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push('/')}>
                         <div className="w-10 h-10 bg-primary-theme/10 rounded-xl flex items-center justify-center p-2">
-                             <Beaker size={24} className="text-primary-theme" />
+                            <img src="/assets/logo.png" alt="Logo" className="w-full h-full object-contain" />
                         </div>
                         <span className="text-xl font-bold bg-linear-to-r from-primary-theme to-blue-400 bg-clip-text text-transparent">
                             MSCureChain
@@ -165,6 +156,8 @@ const LabLoginPage = () => {
                             </p>
                         </div>
                     </div>
+
+            
                 </div>
 
                 {/* Right Side: Form */}
@@ -190,7 +183,7 @@ const LabLoginPage = () => {
 
                     <div className="w-full max-w-[400px] space-y-8 mt-12 lg:mt-0">
                         <div className="text-center lg:text-left space-y-2">
-                            <h1 className="text-3xl font-black tracking-tight underline decoration-primary-theme/30 underline-offset-8 text-rose-600">Lab Portal Login</h1>
+                            <h1 className="text-3xl font-black tracking-tight underline decoration-primary-theme/30 underline-offset-8">Lab Portal Login</h1>
                             <p className="text-muted text-sm">Access the laboratory management systems.</p>
                         </div>
 
@@ -199,7 +192,7 @@ const LabLoginPage = () => {
                                 <label className="text-xs font-bold uppercase tracking-widest text-muted ml-1">
                                     Mobile Number
                                 </label>
-                                <div className={`group flex items-center bg-muted/5 border rounded-lg px-4 py-3.5 sm:py-4 focus-within:border-primary-theme focus-within:bg-background ${errors.identifier ? 'border-red-500/50 bg-red-500/5' : 'border-border'
+                                <div className={`group flex items-center bg-muted/5 border rounded-[0.4rem] px-4 py-3.5 sm:py-4 focus-within:border-primary-theme focus-within:bg-background ${errors.identifier ? 'border-red-500/50 bg-red-500/5' : 'border-border'
                                     }`}>
                                     <Smartphone size={20} className={`mr-3 ${errors.identifier ? 'text-red-500' : 'text-muted group-focus-within:text-primary-theme'}`} />
                                     <input
@@ -208,7 +201,6 @@ const LabLoginPage = () => {
                                         placeholder="Enter mobile number"
                                         value={form.identifier}
                                         onChange={handleIdentifierChange}
-                                        suppressHydrationWarning
                                     />
                                 </div>
                                 {errors.identifier && (
@@ -222,7 +214,7 @@ const LabLoginPage = () => {
                                         Password
                                     </label>
                                 </div>
-                                <div className={`group flex items-center bg-muted/5 border rounded-lg px-4 py-3.5 sm:py-4 focus-within:border-primary-theme focus-within:bg-background relative ${errors.password ? 'border-red-500/50 bg-red-500/5' : 'border-border'
+                                <div className={`group flex items-center bg-muted/5 border-1 rounded-[0.4rem] px-4 py-3.5 sm:py-4 focus-within:border-primary-theme focus-within:bg-background relative ${errors.password ? 'border-red-500/50 bg-red-500/5' : 'border-border'
                                     }`}>
                                     <Lock size={20} className={`mr-3 ${errors.password ? 'text-red-500' : 'text-muted group-focus-within:text-primary-theme'}`} />
                                     <input
@@ -231,7 +223,6 @@ const LabLoginPage = () => {
                                         placeholder="••••••••"
                                         value={form.password}
                                         onChange={handlePasswordChange}
-                                        suppressHydrationWarning
                                     />
                                     <button
                                         type="button"
@@ -289,4 +280,4 @@ const LabLoginPage = () => {
     );
 };
 
-export default React.memo(LabLoginPage);
+export default LabLoginPage;

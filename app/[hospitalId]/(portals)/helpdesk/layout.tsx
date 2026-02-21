@@ -29,7 +29,7 @@ import NotificationCenter from "@/components/navbar/NotificationCenter";
 import HelpdeskNavbar from "@/components/navbar/HelpdeskNavbar";
 import LogoutModal from "@/components/auth/LogoutModal";
 import { usePrefetch } from "@/lib/integrations";
-import HelpdeskSupportFloatingBox from "@/app/helpdesk/components/HelpdeskSupportFloatingBox";
+import HelpdeskSupportFloatingBox from "./components/HelpdeskSupportFloatingBox";
 import { useTenantLink } from "@/hooks/useTenantLink";
 
 const helpdeskMenu = [

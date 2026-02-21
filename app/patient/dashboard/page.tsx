@@ -2,8 +2,8 @@ import React from 'react';
 import { getPatientDashboardDataAction } from '@/lib/integrations';
 import PatientDashboard from '@/components/patient/PatientDashboard';
 import { AlertCircle } from 'lucide-react';
-import FeedbackForm from './components/FeedbackForm';
-import ReLoginButton from './components/ReLoginButton';
+import FeedbackForm from '../components/FeedbackForm';
+import ReLoginButton from '../components/ReLoginButton';
 
 export default async function PatientPage() {
     // Fetch all dashboard data in one go on the server

@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
-import { authService } from '@/lib/integrations/services/auth.service';
 import toast from "react-hot-toast";
 import {
     Lock,
@@ -16,7 +15,7 @@ import {
 
 function PharmacyLogin() {
     const router = useRouter();
-    const { setUser } = useAuthStore();
+    const { login, logout } = useAuthStore();
     const [identifier, setIdentifier] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -49,26 +48,32 @@ function PharmacyLogin() {
         setPasswordError("");
 
         try {
-            // ✅ Calls dedicated pharmacy-only endpoint — server enforces role server-side
-            const response = await authService.loginPharmacy({ identifier, password });
+            // Use the centralized auth store login
+            await login(identifier, password);
 
-            const { tokens, user } = response;
+            // Get the user state after successful login logic
+            const user = useAuthStore.getState().user;
 
-            // Normalize _id → id
-            if ((user as any)._id && !(user as any).id) {
-                (user as any).id = (user as any)._id;
+            if (!user) {
+                throw new Error("Login failed to retrieve user session.");
             }
 
-            // Store tokens in session + cookies (mirrors authStore.login pattern)
-            sessionStorage.setItem("accessToken", tokens.accessToken);
-            sessionStorage.setItem("refreshToken", tokens.refreshToken);
-            sessionStorage.setItem("user", JSON.stringify(user));
-            sessionStorage.setItem("lastAuthCheck", Date.now().toString());
-            document.cookie = `accessToken=${tokens.accessToken}; path=/; max-age=86400; SameSite=Lax`;
-            document.cookie = `refreshToken=${tokens.refreshToken}; path=/; max-age=604800; SameSite=Lax`;
+            // Strict Role Validation for Pharmacy
+            if (user.role !== 'pharma-owner' && user.role !== 'pharmacy') {
+                // Unauthorized: Logout immediately
+                logout();
 
-            // Update store
-            setUser(user as any);
+                toast.error("Unauthorized access – Pharmacy users only", {
+                    icon: '🚫',
+                    style: {
+                        borderRadius: '1rem',
+                        background: '#1e293b',
+                        color: '#fff',
+                        fontWeight: 'bold'
+                    }
+                });
+                return;
+            }
 
             // Success Redirect
             toast.success("Login successful!", {
@@ -81,9 +86,6 @@ function PharmacyLogin() {
                 }
             });
 
-            // Redirect will be handled by middleware or by direct push
-            // In a legacy path like /pharmacy/login, we push to /pharmacy/dashboard
-            // and the middleware will redirect to /[hospitalId]/pharmacy/dashboard
             router.push("/pharmacy/dashboard");
 
         } catch (err: any) {
@@ -107,15 +109,20 @@ function PharmacyLogin() {
 
     return (
         <div className="min-h-screen w-full flex justify-center items-center p-0 sm:p-4 lg:p-8 bg-background">
-            <div className="flex w-full max-w-5xl bg-card sm:rounded-lg overflow-hidden shadow-2xl border-0 sm:border border-primary-theme/30 min-h-screen sm:min-h-[600px] lg:min-h-[700px]">
+            <div className="flex w-full max-w-5xl bg-card sm:rounded-[0.5rem] overflow-hidden shadow-2xl border-0 sm:border border-primary-theme/30 min-h-screen sm:min-h-[600px] lg:min-h-[700px]">
 
                 {/* Left Side: Illustration & Branding - Hidden on touch devices/small screens */}
                 <div className="hidden lg:flex w-5/12 flex-col justify-center items-center gap-10 p-12 relative overflow-hidden bg-muted/5 border-r border-border/50">
+                    {/* Background Decor */}
+
+
                     <div className="flex items-center justify-center gap-3 cursor-pointer" onClick={() => router.push('/')}>
                         <span className="text-2xl font-bold bg-linear-to-r from-primary-theme to-blue-400 bg-clip-text text-transparent">
                             MScurechain
                         </span>
                     </div>
+
+
 
                     <div className="space-y-6">
                         <div className="relative group">
@@ -136,6 +143,7 @@ function PharmacyLogin() {
                             </p>
                         </div>
                     </div>
+
                 </div>
 
                 {/* Right Side: Form */}
@@ -161,7 +169,7 @@ function PharmacyLogin() {
 
                     <div className="w-full max-w-[400px] space-y-8 mt-12 lg:mt-0">
                         <div className="text-center lg:text-left space-y-2">
-                            <h1 className="text-3xl font-black tracking-tight underline decoration-primary-theme/30 underline-offset-8">Pharmacy Portal Login</h1>
+                            <h1 className="text-3xl font-black tracking-tight">Pharmacy Portal</h1>
                             <p className="text-muted text-sm">Sign in to manage pharmacy operations.</p>
                         </div>
 
@@ -194,7 +202,7 @@ function PharmacyLogin() {
                                         Password
                                     </label>
                                 </div>
-                                <div className={`group flex items-center bg-muted/5 border rounded-[0.4rem] px-4 py-3.5 sm:py-4 focus-within:border-primary-theme focus-within:bg-background relative ${passwordError ? 'border-red-500/50 bg-red-500/5' : 'border-border'
+                                <div className={`group flex items-center bg-muted/5 border-1 rounded-[0.4rem] px-4 py-3.5 sm:py-4 focus-within:border-primary-theme focus-within:bg-background relative ${passwordError ? 'border-red-500/50 bg-red-500/5' : 'border-border'
                                     }`}>
                                     <Lock size={20} className={`mr-3 ${passwordError ? 'text-red-500' : 'text-muted group-focus-within:text-primary-theme'}`} />
                                     <input
@@ -229,7 +237,7 @@ function PharmacyLogin() {
                                 {loading ? (
                                     <Loader2 size={20} className="animate-spin" />
                                 ) : (
-                                    "Sign In Pharma Portal"
+                                    "Sign In"
                                 )}
                             </button>
 

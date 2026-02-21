@@ -1,25 +1,25 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useParams, usePathname, useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { useAuthStore } from '@/stores/authStore';
+import { useTenantLink } from '@/hooks/useTenantLink';
 
 /**
- * Tenant-Aware Portal Redirect
+ * Tenant-Aware Portal Home Redirect
  *
- * This page handles routes like /{hospitalId}/doctor/...
+ * This page handles routes like /{hospitalId}/
  * It:
  * 1. Extracts the hospitalId from the URL
  * 2. Stores it in sessionStorage for the apiClient
- * 3. Renders the existing portal content (via the existing app/doctor/ routes)
- *
- * Strategy: We use Next.js rewrites in next.config.ts to map
- * /{hospitalId}/doctor/* → /doctor/* while keeping hospitalId in the URL.
+ * 3. Redirects the user to their respective portal (doctor, nurse, etc.)
  */
 export default function TenantPortalRedirect() {
   const params = useParams();
   const router = useRouter();
-  const pathname = usePathname();
   const hospitalId = params?.hospitalId as string;
+  const { user, isAuthenticated, isInitialized } = useAuthStore();
+  const { getPath } = useTenantLink();
 
   useEffect(() => {
     if (hospitalId && typeof window !== 'undefined') {
@@ -28,9 +28,36 @@ export default function TenantPortalRedirect() {
     }
   }, [hospitalId]);
 
+  useEffect(() => {
+    if (isInitialized && isAuthenticated && user) {
+      const role = user.role;
+      const portalMap: Record<string, string> = {
+        'doctor': '/doctor',
+        'hospital-admin': '/hospital-admin',
+        'helpdesk': '/helpdesk',
+        'nurse': '/nurse',
+        'lab': '/lab/dashboard',
+        'pharmacy': '/pharmacy/dashboard',
+        'patient': '/patient',
+        'staff': '/staff',
+        'discharge': '/discharge',
+      };
+
+      const targetPath = portalMap[role] || '/auth/login';
+      router.replace(getPath(targetPath));
+    } else if (isInitialized && !isAuthenticated) {
+      router.replace('/auth/login');
+    }
+  }, [isInitialized, isAuthenticated, user, router, getPath]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="animate-spin h-8 w-8 border-4 border-emerald-500 border-t-transparent rounded-full" />
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="flex flex-col items-center gap-4">
+        <div className="animate-spin h-10 w-10 border-4 border-emerald-500 border-t-transparent rounded-full" />
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">
+          Initializing Tenant Context...
+        </p>
+      </div>
     </div>
   );
 }
