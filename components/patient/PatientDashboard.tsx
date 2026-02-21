@@ -168,7 +168,7 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
                     </h2>
                     <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
                     <button
-                        onClick={fetchDashboardData}
+                        onClick={() => fetchDashboardData()}
                         className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg"
                     >
                         Retry
@@ -364,6 +364,7 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
                 isOpen={isEmergencyModalOpen}
                 onClose={() => setIsEmergencyModalOpen(false)}
                 patientProfile={dashboardData?.profile}
+                availableHospitals={hospitals}
             />
         </div>
     );

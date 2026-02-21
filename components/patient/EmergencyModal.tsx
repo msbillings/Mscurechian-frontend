@@ -2,7 +2,7 @@
  
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, X, Navigation, Loader2, Send, Activity, ShieldAlert } from 'lucide-react';
+import { AlertCircle, X, Navigation, Loader2, Send, Activity, ShieldAlert, Check, Building2 } from 'lucide-react';
 import { emergencyService } from '@/lib/integrations/services/emergency.service';
 import toast from 'react-hot-toast';
  
@@ -10,6 +10,7 @@ interface EmergencyModalProps {
     isOpen: boolean;
     onClose: () => void;
     patientProfile: any;
+    availableHospitals?: any[];
 }
  
 const EMERGENCY_TYPES = [
@@ -24,16 +25,38 @@ const SEVERITY_LEVELS = [
     { value: "low", label: "Low", color: "bg-blue-500", bg: "bg-blue-50" }
 ];
  
-export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose, patientProfile }) => {
+export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose, patientProfile, availableHospitals = [] }) => {
     const [loading, setLoading] = useState(false);
+    const [selectedHospitalIds, setSelectedHospitalIds] = useState<string[]>([]);
     const [formData, setFormData] = useState({
         emergencyType: '',
         description: '',
         severity: 'high' as "critical" | "high" | "medium" | "low",
         currentLocation: '',
     });
+
+    // Initialize selected hospitals when modal opens
+    React.useEffect(() => {
+        if (isOpen && availableHospitals.length > 0) {
+            // Default to all acquainted hospitals for maximum safety, or just the primary one
+            // The user said "make it as a checkbox to select", so let's pre-select the primary one if it exists
+            const primaryId = patientProfile?.hospital?._id || patientProfile?.hospital;
+            if (primaryId) {
+                setSelectedHospitalIds([primaryId.toString()]);
+            } else if (availableHospitals.length > 0) {
+                 // Or pre-select all if no primary
+                 setSelectedHospitalIds(availableHospitals.map(h => h._id.toString()));
+            }
+        }
+    }, [isOpen, availableHospitals, patientProfile]);
  
     if (!isOpen) return null;
+
+    const toggleHospital = (id: string) => {
+        setSelectedHospitalIds(prev => 
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
  
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -42,22 +65,21 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose,
             toast.error("Please fill all mandatory fields");
             return;
         }
+
+        if (selectedHospitalIds.length === 0) {
+            toast.error("Please select at least one hospital to alert");
+            return;
+        }
  
         try {
             setLoading(true);
-            const hospitalId = patientProfile?.hospital?._id || patientProfile?.hospital;
             
-            if (!hospitalId) {
-                toast.error("Hospital association not found. Please contact support.");
-                return;
-            }
- 
             await emergencyService.createPatientEmergencyRequest({
                 ...formData,
-                hospitalId
+                hospitalIds: selectedHospitalIds
             });
  
-            toast.success("Emergency request sent! Helpdesk will contact you immediately.", {
+            toast.success(`Emergency alert broadcasted to ${selectedHospitalIds.length} hospital(s)!`, {
                 duration: 6000,
                 icon: '🚨'
             });
@@ -157,6 +179,40 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose,
                             />
                         </div>
  
+                        {/* Hospital Selection */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 flex items-center gap-1.5">
+                                <Building2 size={10} className="text-red-500" /> Select Hospitals to Alert *
+                            </label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1 no-scrollbar">
+                                {availableHospitals.map((hospital) => {
+                                    const isSelected = selectedHospitalIds.includes(hospital._id.toString());
+                                    return (
+                                        <button
+                                            key={hospital._id}
+                                            type="button"
+                                            onClick={() => toggleHospital(hospital._id.toString())}
+                                            className={`flex items-center justify-between p-3 rounded-2xl border-2 transition-all ${
+                                                isSelected
+                                                    ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 text-blue-700 dark:text-blue-300'
+                                                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                <Building2 size={14} className={isSelected ? 'text-blue-500' : 'text-slate-400'} />
+                                                <span className="text-[10px] font-bold uppercase truncate tracking-tight">{hospital.name}</span>
+                                            </div>
+                                            {isSelected && (
+                                                <div className="bg-blue-500 rounded-full p-0.5">
+                                                    <Check size={10} className="text-white" />
+                                                </div>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
                         {/* Description */}
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 flex items-center gap-1.5">
