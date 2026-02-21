@@ -26,6 +26,7 @@ const adminMenu: MenuItem[] = [
     { icon: "/assets/doctor.png", label: "Doctors", path: "/admin/doctors" },
     { icon: "/assets/user.png", label: "Patients", path: "/admin/patients" },
     { icon: "/assets/user.png", label: "Front Desk", path: "/admin/helpdesks" },
+    { icon: "/assets/user.png", label: "HR Management", path: "/admin/hr" },
 
     // Creating Credentials Dropdown
     {
@@ -35,6 +36,7 @@ const adminMenu: MenuItem[] = [
         children: [
 
             { icon: "/assets/doctor.png", label: "Create Hospital Admin", path: "/admin/create-hospital-admin" },
+            { icon: "/assets/user.png", label: "Create HR", path: "/admin/create-hr" },
             { icon: "/assets/prescription.png", label: "Create Pharmacy", path: "/admin/create-pharma" },
             { icon: "/assets/reports.png", label: "Create Lab", path: "/admin/create-lab" },
             { icon: "/assets/eme.png", label: "Create Emergency", path: "/admin/create-emergency" },

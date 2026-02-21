@@ -3,8 +3,13 @@
  * Optimized data fetching hooks for <1.5s UI load performance
  */
 
-export * from './useHelpdeskQueries';
-export * from './useStaffQueries';
-export * from './usePrefetch';
-export * from './useDoctorQueries';
-export { useNotifications, useMarkAsRead, useMarkAllAsRead } from './notificationHooks';
+export * from "./useHelpdeskQueries";
+export * from "./useStaffQueries";
+export * from "./usePrefetch";
+export * from "./useDoctorQueries";
+export * from "./useHRQueries";
+export {
+  useNotifications,
+  useMarkAsRead,
+  useMarkAllAsRead,
+} from "./notificationHooks";

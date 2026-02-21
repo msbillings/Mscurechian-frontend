@@ -19,7 +19,7 @@ const PORTAL_PATHS = [
   "/pharmacy",
   "/nurse",
   "/staff",
-  "/discharge",
+  "/hr",
   "/emergency",
 ];
 
@@ -40,7 +40,7 @@ const PUBLIC_PATHS = [
   "/nurse-login",
   "/pharmacy/login",
   "/lab/login",
-  "/discharge/login",
+  "/hr/login",
 ];
 
 const ROUTE_MAP: Record<string, string> = {
@@ -109,7 +109,7 @@ function isValidHospitalId(segment: string): boolean {
     "staff",
     "nurse",
     "helpdesk",
-    "discharge",
+    "hr",
   ];
   if (reserved.includes(segment.toLowerCase())) return false;
 

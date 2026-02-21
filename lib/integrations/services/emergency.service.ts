@@ -9,12 +9,8 @@ import {
 
 // ─── Endpoint Map (mirrors backend emergencyAuthRoutes + emergencyRequestRoutes) ───
 const EMERGENCY_ENDPOINTS = {
-<<<<<<< HEAD
-  LOGIN: "/auth/emergency/login",
-=======
   // Auth  →  /api/emergency/auth/*
   LOGIN: "/emergency/auth/login",
->>>>>>> a4788a90211d3c0f2bd8613965c7fae6c85a2c7e
   LOGOUT: "/emergency/auth/logout",
   REFRESH: "/emergency/auth/refresh",
   ME: "/emergency/auth/me",

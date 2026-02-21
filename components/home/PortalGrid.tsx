@@ -156,6 +156,21 @@ const adminPortals = [
     },
     path: '/nurse-login',
   },
+  {
+    title: 'HR Portal',
+    desc: 'Manage staff, handle payroll, track attendance, and recruit seamlessly.',
+    icon: Users,
+    color: 'blue',
+    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=800',
+    classes: {
+      bg: 'bg-blue-500/10',
+      text: 'text-blue-600',
+      border: 'hover:border-blue-500/50',
+      shadow: 'hover:shadow-blue-500/20',
+      iconBg: 'bg-blue-50',
+    },
+    path: '/hr/login',
+  }
 ];
 
 const PortalCard = ({ portal, onClick }: { portal: any, onClick: (path: string) => void }) => (
