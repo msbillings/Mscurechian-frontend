@@ -85,12 +85,12 @@ function HelpDesksList() {
         setIsDeleting(true);
         try {
           // Use the dedicated helpdesk delete endpoint
-          await adminService.deleteHelpdeskClient(id);
+          await adminService.deleteUserClient(id);
 
           // Remove from local state
           setHelpdesks(prev => prev.filter((h) => h._id !== id));
           toast.success("Staff deleted successfully");
-          
+
           // Refresh the list to ensure consistency
           await fetchHelpDesks();
         } catch (err: any) {

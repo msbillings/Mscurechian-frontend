@@ -53,7 +53,7 @@ export function useUpdateTaskStatus() {
 
     return useMutation({
         mutationFn: ({ id, status }: { id: string; status: string }) =>
-            NurseService.updateTaskStatus(id, status),
+            NurseService.updateTaskStatus(id, status as "pending" | "completed" | "in-progress"),
         onSuccess: () => {
             // Invalidate tasks list to refetch
             queryClient.invalidateQueries({

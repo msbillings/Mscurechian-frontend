@@ -110,6 +110,20 @@ export const PHARMACY_ENDPOINTS = {
   ORDERS: (hospitalId: string) => `/pharmacy/orders/hospital/${hospitalId}`,
   UPLOAD_DOCUMENT: "/pharmacy/upload-document",
   AUDITS: "/pharmacy/audit-logs",
+
+  // ─── IPD Medicine Reconciliation ──────────────────────────────────────────
+  IPD_ISSUANCE: {
+    BASE: "/pharmacy/ipd-issuance",
+    BY_ADMISSION: (admissionId: string) => `/pharmacy/ipd-issuance/${admissionId}`,
+    SUMMARY: (admissionId: string) => `/pharmacy/ipd-issuance/${admissionId}/summary`,
+  },
+  MEDICINE_RETURN: {
+    BASE: "/pharmacy/medicine-return",
+    BY_ADMISSION: (admissionId: string) => `/pharmacy/medicine-return/${admissionId}`,
+    APPROVE: (id: string) => `/pharmacy/medicine-return/${id}/approve`,
+    REJECT: (id: string) => `/pharmacy/medicine-return/${id}/reject`,
+  },
+  PHARMACY_SIGNOFF: (admissionId: string) => `/pharmacy/signoff/${admissionId}`,
 };
 
 export const LAB_ENDPOINTS = {
