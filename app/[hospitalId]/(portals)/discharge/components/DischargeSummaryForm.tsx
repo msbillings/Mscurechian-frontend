@@ -492,7 +492,10 @@ export function DischargeSummaryForm() {
             const isNurse = user?.role === 'nurse';
             const isHelpdesk = user?.role === 'helpdesk' || user?.role === 'hospital-admin';
 
-            const computedLogo = formData.hospitalLogo || user?.image || (user as any)?.avatar || '';
+            let computedLogo = formData.hospitalLogo || user?.image || (user as any)?.avatar || '';
+            if (typeof computedLogo === 'string' && computedLogo.includes('example.com/logo.png')) {
+                computedLogo = '';
+            }
             const payload = {
                 ...formData,
                 consultants: consultants.filter(c => c.trim() !== ''),

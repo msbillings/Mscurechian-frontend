@@ -137,24 +137,32 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
         }
     };
 
-    const NoRecordsFound = () => (
-        <tr>
-            <td colSpan={5} className="p-0">
-                <div className="py-20 text-center bg-white rounded-[2rem] border border-dashed border-slate-200">
-                    <div className="max-w-xs mx-auto space-y-4">
-                        <div className="mx-auto w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-300">
-                            <Search size={40} />
-                        </div>
-                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">No records found</h3>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed px-4">Try adjusting your search filters or create a new discharge summary for this hospital.</p>
-                        <Button onClick={() => router.push(basePath)} className="bg-blue-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest px-8 shadow-lg shadow-blue-200">
-                            Create New Summary
-                        </Button>
+    const NoRecordsFound = ({ variant = 'table' }: { variant?: 'table' | 'grid' }) => {
+        const content = (
+            <div className={`py-20 text-center bg-white rounded-[2rem] border border-dashed border-slate-200 ${variant === 'grid' ? 'col-span-full' : ''}`}>
+                <div className="max-w-xs mx-auto space-y-4">
+                    <div className="mx-auto w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-300">
+                        <Search size={40} />
                     </div>
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">No records found</h3>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed px-4">Try adjusting your search filters or create a new discharge summary for this hospital.</p>
+                    <Button onClick={() => router.push(basePath)} className="bg-blue-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest px-8 shadow-lg shadow-blue-200">
+                        Create New Summary
+                    </Button>
                 </div>
-            </td>
-        </tr>
-    );
+            </div>
+        );
+
+        if (variant === 'grid') return content;
+
+        return (
+            <tr>
+                <td colSpan={5} className="p-0">
+                    {content}
+                </td>
+            </tr>
+        );
+    };
 
     return (
         <div className="min-h-screen bg-gray-50/50">
@@ -164,6 +172,8 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2 pt-2">
                         <div className="flex items-center gap-3">
                             <button
+                                type="button"
+                                suppressHydrationWarning
                                 onClick={() => router.push(basePath)}
                                 className="p-2 bg-slate-100 rounded-xl text-slate-400 hover:text-blue-600 transition-all shadow-sm"
                                 title="Back to Portal"
@@ -195,6 +205,8 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
                             {user?.role === 'hospital-admin' && (
                                 <div className="flex items-center gap-2">
                                     <button
+                                        type="button"
+                                        suppressHydrationWarning
                                         onClick={() => setIsBrandingModalOpen(true)}
                                         className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-900 rounded-xl font-bold hover:bg-slate-50 transition-all text-[10px] uppercase tracking-wider shadow-sm"
                                     >
@@ -239,12 +251,16 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
 
                         <div className="flex bg-slate-100 p-1 rounded-xl">
                             <button
+                                type="button"
+                                suppressHydrationWarning
                                 onClick={() => setViewMode('grid')}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm border border-slate-200/50' : 'text-slate-400 hover:text-slate-600'}`}
                             >
                                 <LayoutGrid size={12} /> Card
                             </button>
                             <button
+                                type="button"
+                                suppressHydrationWarning
                                 onClick={() => setViewMode('table')}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm border border-slate-200/50' : 'text-slate-400 hover:text-slate-600'}`}
                             >
@@ -268,6 +284,8 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
 
                         <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/50 shadow-inner">
                             <button
+                                type="button"
+                                suppressHydrationWarning
                                 onClick={() => setPage(p => Math.max(1, p - 1))}
                                 disabled={page === 1}
                                 className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-blue-600 disabled:opacity-20 transition-all"
@@ -278,6 +296,8 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
                                 {page}/{pagination.totalPages}
                             </div>
                             <button
+                                type="button"
+                                suppressHydrationWarning
                                 onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
                                 disabled={page === pagination.totalPages || pagination.totalPages === 0}
                                 className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-blue-600 disabled:opacity-20 transition-all font-black"
@@ -312,7 +332,7 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
                                             </tr>
                                         ))
                                     ) : records.length === 0 ? (
-                                        <NoRecordsFound />
+                                        <NoRecordsFound variant="table" />
                                     ) : (
                                         records.map((record) => (
                                             <tr key={record._id} className="hover:bg-blue-50/20 transition-colors border-b border-slate-50 last:border-0 group">
@@ -354,6 +374,8 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
                                                     <div className="flex items-center justify-end gap-1.5">
                                                         {user?.role === 'helpdesk' && (
                                                             <button
+                                                                type="button"
+                                                                suppressHydrationWarning
                                                                 onClick={() => handleEdit(record._id)}
                                                                 className="p-2.5 bg-white border border-slate-200 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all shadow-sm"
                                                                 title="Edit Summary"
@@ -362,6 +384,8 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
                                                             </button>
                                                         )}
                                                         <button
+                                                            type="button"
+                                                            suppressHydrationWarning
                                                             onClick={() => triggerPrint(record)}
                                                             className="p-2.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-800 hover:text-white rounded-xl transition-all shadow-sm"
                                                             title="Print Directly"
@@ -370,6 +394,8 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
                                                         </button>
                                                         {user?.role === 'hospital-admin' && (
                                                             <button
+                                                                type="button"
+                                                                suppressHydrationWarning
                                                                 onClick={() => handleDelete(record._id)}
                                                                 className="p-2.5 bg-white border border-slate-200 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all shadow-sm"
                                                                 title="Delete Record"
@@ -403,13 +429,13 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
                                 </div>
                             ))
                         ) : records.length === 0 ? (
-                            <NoRecordsFound />
+                            <NoRecordsFound variant="grid" />
                         ) : (
                             records.map((record) => (
                                 <div key={record._id} className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm hover:border-blue-400 transition-all flex flex-col gap-6 relative group overflow-hidden">
                                     <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <div className="flex gap-1.5">
-                                            <button onClick={() => triggerPrint(record)} className="p-2 bg-slate-900 text-white rounded-xl shadow-lg"><Printer size={14} /></button>
+                                            <button type="button" suppressHydrationWarning onClick={() => triggerPrint(record)} className="p-2 bg-slate-900 text-white rounded-xl shadow-lg"><Printer size={14} /></button>
                                         </div>
                                     </div>
 
@@ -436,6 +462,8 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
 
                                     <div className="mt-auto pt-4 flex gap-2">
                                         <button
+                                            type="button"
+                                            suppressHydrationWarning
                                             onClick={() => triggerPrint(record)}
                                             className="flex-1 py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all"
                                         >
@@ -443,6 +471,8 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
                                         </button>
                                         {user?.role === 'helpdesk' && (
                                             <button
+                                                type="button"
+                                                suppressHydrationWarning
                                                 onClick={() => handleEdit(record._id)}
                                                 className="px-4 py-3 border border-slate-200 text-slate-400 rounded-2xl hover:text-blue-600 hover:border-blue-200 transition-all"
                                             >

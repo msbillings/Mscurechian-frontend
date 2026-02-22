@@ -107,7 +107,7 @@ const servicePortals = [
     },
     path: '/emergency-login',
   },
-  
+
 ];
 
 const adminPortals = [
@@ -141,7 +141,7 @@ const adminPortals = [
     },
     path: '/auth/login',
   }
-  ,{
+  , {
     title: 'Nurse Portal',
     desc: 'Dynamic nursing dashboard for vitals, medication, and ward management.',
     icon: HeartPulse,
@@ -281,6 +281,8 @@ const PortalGrid = ({ onPortalClick }: { onPortalClick?: (path: string) => void 
         {/* See More Button */}
         <section className="max-w-7xl mx-auto  flex justify-center">
           <button
+            type="button"
+            suppressHydrationWarning
             onClick={() => handlePortalClick('/coming-soon')}
             className="group relative px-12 py-5 rounded-2xl bg-primary-theme border border-slate-200 text-white font-black text-sm  tracking-[0.2em] hover:bg-primary-theme/90 hover:text-white shadow-xl hover:shadow-slate-200 active:scale-95 flex items-center gap-3"
           >

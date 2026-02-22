@@ -129,7 +129,7 @@ export const PrintableDischargeSummary = React.forwardRef<HTMLDivElement, { data
                                 let logoUrl = hospitalInfo?.logo || data.hospitalLogo;
 
                                 // Defensive check: ignore junk values
-                                if (!logoUrl || logoUrl === 'undefined' || logoUrl === 'null' || (typeof logoUrl === 'object' && Object.keys(logoUrl).length === 0)) {
+                                if (!logoUrl || logoUrl === 'undefined' || logoUrl === 'null' || (typeof logoUrl === 'object' && Object.keys(logoUrl).length === 0) || (typeof logoUrl === 'string' && logoUrl.includes('example.com/logo.png'))) {
                                     logoUrl = '';
                                 }
 

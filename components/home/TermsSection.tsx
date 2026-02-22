@@ -88,6 +88,7 @@ const TermsSection: React.FC<TermsSectionProps> = ({ onAccept, hasAgreed }) => {
                                                 type="checkbox"
                                                 checked={agreed}
                                                 disabled={hasAgreed}
+                                                suppressHydrationWarning
                                                 onChange={(e) => {
                                                     const isChecked = e.target.checked;
                                                     setAgreed(isChecked);

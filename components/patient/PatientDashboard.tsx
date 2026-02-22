@@ -168,7 +168,7 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
                     </h2>
                     <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
                     <button
-                        onClick={() => fetchDashboardData()}
+                        onClick={() => fetchDashboardData(selectedHospitalId)}
                         className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg"
                     >
                         Retry
@@ -241,8 +241,8 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
                                 <Globe className="w-4 h-4 text-emerald-600 shrink-0" />
                             )}
                             <span className="text-xs font-black text-slate-700 dark:text-slate-200 truncate uppercase tracking-tight">
-                                {selectedHospitalId 
-                                    ? hospitals.find(h => h._id === selectedHospitalId)?.name || 'Loading...' 
+                                {selectedHospitalId
+                                    ? hospitals.find(h => h._id === selectedHospitalId)?.name || 'Loading...'
                                     : 'Global Health Network'}
                             </span>
                         </div>
@@ -268,9 +268,9 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
                                     </div>
                                     {selectedHospitalId === '' && <Check className="w-4 h-4" />}
                                 </button>
-                                
+
                                 <div className="h-px bg-slate-100 dark:bg-white/5 my-2 mx-2" />
-                                
+
                                 {hospitals.length > 0 ? hospitals.map((h) => (
                                     <button
                                         key={h._id}
@@ -359,7 +359,7 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
                     <DischargeRecordsSection />
                 )}
             </div>
- 
+
             <EmergencyModal
                 isOpen={isEmergencyModalOpen}
                 onClose={() => setIsEmergencyModalOpen(false)}
