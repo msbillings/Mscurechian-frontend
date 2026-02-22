@@ -20,37 +20,39 @@ const FloatingChat = () => {
     return (
         <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-4">
             {/* Chat Window */}
-            
-                {isOpen && (
-                    <div
-                        className="w-[400px] max-w-[calc(100vw-2rem)] rounded-3xl overflow-hidden shadow-2xl border border-slate-200"
-                    >
-                        <SelectionChat onClose={() => setIsOpen(false)} />
-                    </div>
-                )}
-            
+
+            {isOpen && (
+                <div
+                    className="w-[400px] max-w-[calc(100vw-2rem)] rounded-3xl overflow-hidden shadow-2xl border border-slate-200"
+                >
+                    <SelectionChat onClose={() => setIsOpen(false)} />
+                </div>
+            )}
+
 
             {/* Toggle Button */}
             <button
+                type="button"
+                suppressHydrationWarning
                 onClick={() => setIsOpen(!isOpen)}
                 className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl ${isOpen ? 'bg-slate-900 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
                     }`}
             >
-                
-                    {isOpen ? (
-                        <div
-                            key="close"
-                        >
-                            <X className="w-6 h-6" />
-                        </div>
-                    ) : (
-                        <div
-                            key="chat"
-                        >
-                            <MessageSquare className="w-6 h-6" />
-                        </div>
-                    )}
-                
+
+                {isOpen ? (
+                    <div
+                        key="close"
+                    >
+                        <X className="w-6 h-6" />
+                    </div>
+                ) : (
+                    <div
+                        key="chat"
+                    >
+                        <MessageSquare className="w-6 h-6" />
+                    </div>
+                )}
+
 
                 {/* Pulsing Notification Dot */}
                 {!isOpen && (

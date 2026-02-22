@@ -26,6 +26,8 @@ function FloatingAudioPlayer({
                 >
                     <div className="flex items-start gap-4">
                         <button
+                            type="button"
+                            suppressHydrationWarning
                             onClick={onClose}
                             className="absolute -top-2 -right-2 bg-white rounded-full p-1 shadow-md hover:bg-slate-100"
                         >
@@ -46,6 +48,8 @@ function FloatingAudioPlayer({
 
                             <div className="flex items-center gap-3">
                                 <button
+                                    type="button"
+                                    suppressHydrationWarning
                                     onClick={togglePlay}
                                     className="w-8 h-8 rounded-lg bg-primary-theme text-white flex items-center justify-center hover:scale-105 active:scale-95"
                                 >

@@ -42,7 +42,7 @@ export default function TransactionsPage() {
 
         const typeMap: Record<string, string> = {
             'opd': 'appointment_booking,consultation',
-            'ipd': ipdPaymentType === 'advance' ? 'ipd_advance' : ipdPaymentType === 'discharge' ? 'ipd_final_settlement' : 'ipd_advance,ipd,ipd_final_settlement',
+            'ipd': ipdPaymentType === 'advance' ? 'ipd_advance,ipd_refund' : ipdPaymentType === 'discharge' ? 'ipd_final_settlement' : 'ipd_advance,ipd,ipd_refund,ipd_admission_fee,ipd_bill_payment',
         };
 
         return typeMap[filterValue] || filterValue;
@@ -383,7 +383,7 @@ export default function TransactionsPage() {
 
                                     // Get clinical detail from populated referenceId (appointment/admission data)
                                     const appointmentData = tx.referenceId || {};
-                                    const isDischargeTransaction = rawType.toLowerCase() === 'discharge' || rawType.toLowerCase() === 'ipd_final_settlement';
+                                    const isDischargeTransaction = rawType.toLowerCase() === 'discharge' || rawType.toLowerCase() === 'ipd_final_settlement' || rawType.toLowerCase() === 'ipd_bill_payment';
                                     const isAdvancePayment = rawType.toLowerCase() === 'ipd_advance';
 
                                     // 🔧 FIX: Prioritize 'reason' over 'diagnosis' for discharge transactions
@@ -401,10 +401,10 @@ export default function TransactionsPage() {
                                             '-');
 
                                     // 🔧 FIX: Amount display logic based on filter type
-                                    // - "Discharge Only" filter (ipdPaymentType === 'discharge'): Show totalBillAmount
-                                    // - "All IPD Payments" or "Advance Only": Show individual transaction amount
-                                    const displayAmount = (ipdPaymentType === 'discharge' && isDischargeTransaction && appointmentData.totalBillAmount)
-                                        ? appointmentData.totalBillAmount
+                                    // - Only show Discharge totals when "Discharge Only" filter is explicitly selected
+                                    // - In all other cases (Global view, All IPD), hide the discharge specific totals
+                                    const displayAmount = isDischargeTransaction
+                                        ? (ipdPaymentType === 'discharge' ? (appointmentData.totalBillAmount || amount) : null)
                                         : amount;
 
                                     // 🔧 FIX: Filter out incomplete discharge records (GOVIND TANAKALA case)
@@ -499,7 +499,9 @@ export default function TransactionsPage() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <p className="text-sm font-bold text-slate-900 tracking-tight">₹{displayAmount.toLocaleString()}.00</p>
+                                                <p className="text-sm font-bold text-slate-900 tracking-tight">
+                                                    {displayAmount !== null ? `₹${displayAmount.toLocaleString()}.00` : '-'}
+                                                </p>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${status.toLowerCase() === 'paid' || status.toLowerCase() === 'completed'

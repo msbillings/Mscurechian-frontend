@@ -133,6 +133,8 @@ function LandingNavbar({ variant = 'home', title, onProtectedClick }: LandingNav
 
 
                     <button
+                        type="button"
+                        suppressHydrationWarning
                         onClick={() => handleProtectedClick('/auth/login')}
                         className="hidden sm:block bg-primary-theme hover:bg-primary-theme/90 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-lg shadow-primary-theme/20 hover:-translate-y-0.5"
                     >
@@ -141,6 +143,8 @@ function LandingNavbar({ variant = 'home', title, onProtectedClick }: LandingNav
 
                     {/* Mobile Menu Toggle */}
                     <button
+                        type="button"
+                        suppressHydrationWarning
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                         className="lg:hidden p-2.5 rounded-xl hover:bg-muted/10 text-muted"
                     >
@@ -164,6 +168,8 @@ function LandingNavbar({ variant = 'home', title, onProtectedClick }: LandingNav
                         </Link>
                     ))}
                     <button
+                        type="button"
+                        suppressHydrationWarning
                         onClick={() => {
                             setMobileMenuOpen(false);
                             handleProtectedClick('/auth/login');

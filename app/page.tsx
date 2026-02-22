@@ -157,7 +157,7 @@ export default function Home() {
                 <section
                     className="relative flex h-[90vh] w-full items-center justify-center bg-cover bg-center"
                     style={{
-                        backgroundImage: "url('../assets/lan3.png')",
+                        backgroundImage: "url('/assets/lan3.png')",
                     }}
                 >
                     <div className="absolute inset-0 bg-slate-900/70" />
@@ -171,7 +171,7 @@ export default function Home() {
                             AI-powered prescriptions, smart bookings, and integrated records ensure smooth, accurate, and efficient care delivery.
                         </p>
                         <div className="flex flex-wrap items-center justify-center gap-4">
-                            <button onClick={() => handleProtectedClick('/pricing')} className="rounded-xl bg-primary-theme px-10 py-5 text-lg font-bold text-primary-theme-foreground shadow-2xl shadow-primary-theme/40 transition-all hover:scale-105 hover:bg-primary-theme/90 active:scale-95">
+                            <button type="button" suppressHydrationWarning onClick={() => handleProtectedClick('/pricing')} className="rounded-xl bg-primary-theme px-10 py-5 text-lg font-bold text-primary-theme-foreground shadow-2xl shadow-primary-theme/40 transition-all hover:scale-105 hover:bg-primary-theme/90 active:scale-95">
                                 Request a Live Hospital Demo
                             </button>
                         </div>
@@ -214,7 +214,7 @@ export default function Home() {
                                                 &quot;Listen to our founder&apos;s vision for revolutionizing healthcare.&quot;
                                             </p>
                                             <div className="flex items-center gap-4">
-                                                <button onClick={togglePlay} className="w-12 h-12 rounded-xl bg-primary-theme text-white flex items-center justify-center hover:shadow-lg transition-all active:scale-95 shrink-0">
+                                                <button type="button" suppressHydrationWarning onClick={togglePlay} className="w-12 h-12 rounded-xl bg-primary-theme text-white flex items-center justify-center hover:shadow-lg transition-all active:scale-95 shrink-0">
                                                     {isPlaying ? <Pause size={20} fill="white" /> : <Play size={20} fill="white" className="ml-0.5" />}
                                                 </button>
                                                 <div className="flex-1 space-y-1.5 pt-1">
@@ -277,7 +277,7 @@ export default function Home() {
                                         ))}
                                     </div>
                                     <div className="pt-4">
-                                        <button onClick={() => router.push('/features')} className="bg-primary-theme hover:bg-primary-theme/90 text-white px-10 py-5 rounded-2xl font-bold transition-all shadow-xl shadow-primary-theme/25 flex items-center justify-center gap-3 group w-full sm:w-auto hover:scale-105 active:scale-95">
+                                        <button type="button" suppressHydrationWarning onClick={() => router.push('/features')} className="bg-primary-theme hover:bg-primary-theme/90 text-white px-10 py-5 rounded-2xl font-bold transition-all shadow-xl shadow-primary-theme/25 flex items-center justify-center gap-3 group w-full sm:w-auto hover:scale-105 active:scale-95">
                                             Book a 15-Minute Product Walkthrough
                                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                         </button>
@@ -437,10 +437,10 @@ export default function Home() {
                                             ))}
                                         </ul>
                                         <div className="flex gap-4 pt-6 relative">
-                                            <button className="bg-white text-primary-theme px-10 py-5 rounded-xl font-bold text-sm uppercase hover:bg-white/90 transition-all shadow-xl active:scale-95 hover:scale-105">
+                                            <button type="button" suppressHydrationWarning className="bg-white text-primary-theme px-10 py-5 rounded-xl font-bold text-sm uppercase hover:bg-white/90 transition-all shadow-xl active:scale-95 hover:scale-105">
                                                 Request a Live Demo
                                             </button>
-                                            <button className="bg-transparent border-2 border-white text-white px-10 py-5 rounded-xl font-bold text-sm uppercase hover:bg-white/10 transition-all active:scale-95">
+                                            <button type="button" suppressHydrationWarning className="bg-transparent border-2 border-white text-white px-10 py-5 rounded-xl font-bold text-sm uppercase hover:bg-white/10 transition-all active:scale-95">
                                                 Talk to an Expert
                                             </button>
                                         </div>
@@ -505,7 +505,7 @@ export default function Home() {
                                             </div>
                                         </div>
                                         <div className="pt-8 border-t border-border-theme">
-                                            <button onClick={() => router.push('/portals')} className="w-full bg-primary-theme text-background py-6 rounded-2xl font-black text-sm uppercase hover:bg-primary-theme/90 hover:text-white transition-all tracking-[0.2em] shadow-xl hover:shadow-primary-theme/20 active:scale-[0.98] flex items-center justify-center gap-3 group">
+                                            <button type="button" suppressHydrationWarning onClick={() => router.push('/portals')} className="w-full bg-primary-theme text-background py-6 rounded-2xl font-black text-sm uppercase hover:bg-primary-theme/90 hover:text-white transition-all tracking-[0.2em] shadow-xl hover:shadow-primary-theme/20 active:scale-[0.98] flex items-center justify-center gap-3 group">
                                                 Talk to a Healthcare Solutions Expert
                                                 <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                                             </button>
@@ -593,7 +593,7 @@ export default function Home() {
                                 ))}
                             </div>
                             <div className="flex justify-center">
-                                <button onClick={() => handleProtectedClick('/pricing')} className="inline-flex items-center gap-4 px-12 py-6 font-bold group overflow-hidden relative bg-primary-theme text-background rounded-2xl tracking-[0.2em] hover:bg-primary-theme/90 hover:text-white transition-all shadow-2xl hover:scale-105 active:scale-95">
+                                <button type="button" suppressHydrationWarning onClick={() => handleProtectedClick('/pricing')} className="inline-flex items-center gap-4 px-12 py-6 font-bold group overflow-hidden relative bg-primary-theme text-background rounded-2xl tracking-[0.2em] hover:bg-primary-theme/90 hover:text-white transition-all shadow-2xl hover:scale-105 active:scale-95">
                                     <span className="relative z-10 uppercase">Get Started with MSCureChain</span>
                                     <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform" />
                                 </button>
@@ -669,6 +669,7 @@ export default function Home() {
 
                         <div className="mt-16 text-center">
                             <button
+                                type="button" suppressHydrationWarning
                                 onClick={() => router.push('/pricing')}
                                 className="inline-flex items-center gap-3 bg-primary-theme text-white px-10 py-5 rounded-2xl font-bold shadow-xl shadow-primary-theme/20 hover:scale-105 transition-all active:scale-95"
                             >

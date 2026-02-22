@@ -40,7 +40,7 @@ function PricingPage() {
             <section className="relative pt-32 pb-60 text-white overflow-hidden bg-slate-900">
                 <div
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-40"
-                    style={{ backgroundImage: "url('../assets/pricebg.jpg')" }}
+                    style={{ backgroundImage: "url('/assets/pricebg.jpg')" }}
                 ></div>
                 <div className="absolut"></div>
                 <div className="max-w-7xl mx-auto px-6 relative text-center">
@@ -95,7 +95,7 @@ function PricingPage() {
                                 <p className="text-slate-500 text-sm font-medium mt-2">Get the full-featured MSCureChain platform for a lifetime.</p>
                             </div>
 
-                            <button className="w-full group relative flex flex-col items-center justify-center bg-primary-theme hover:bg-primary-theme/90 text-white rounded-xl py-3 shadow-2xl shadow-primary-theme/30 transform hover:-translate-y-1 active:scale-95 overflow-hidden">
+                            <button type="button" suppressHydrationWarning className="w-full group relative flex flex-col items-center justify-center bg-primary-theme hover:bg-primary-theme/90 text-white rounded-xl py-3 shadow-2xl shadow-primary-theme/30 transform hover:-translate-y-1 active:scale-95 overflow-hidden">
                                 <div className="absolute inset-0 bg-linear-to-tr from-white/10 to-transparent"></div>
                                 <div className="relative flex flex-col items-center">
                                     <div className={`flex items-baseline gap-1`}>
