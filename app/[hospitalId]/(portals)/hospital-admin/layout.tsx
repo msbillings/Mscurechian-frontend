@@ -64,6 +64,7 @@ const hospitalAdminMenu: MenuItem[] = [
       { label: "Internship Training", path: "/hospital-admin/training" },
       { label: "Payroll Management", path: "/hospital-admin/payroll" },
       { label: "SOP & Policies", path: "/hospital-admin/sop" },
+      { label: "HR Management", path: "/hospital-admin/management/hr" },
       {
         label: "Shift Management",
         path: "/hospital-admin/attendance/schedules",

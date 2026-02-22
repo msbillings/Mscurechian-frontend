@@ -74,7 +74,7 @@ function HospitalAdminsList() {
       onConfirm: async () => {
         setIsDeleting(true);
         try {
-          await adminService.deleteUserClient(id, 'hospital-admin');
+          await adminService.deleteUserClient(id);
           setHospitalAdmins(hospitalAdmins.filter((a) => a._id !== id));
           toast.success("Hospital admin deleted successfully");
         } catch (err: any) {

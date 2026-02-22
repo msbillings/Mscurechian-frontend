@@ -507,5 +507,105 @@ export const pharmacyService = {
     },
     transactions: () => ["pharmacy", "transactions"] as const,
     auditLogs: () => ["pharmacy", "audit-logs"] as const,
+    // IPD Reconciliation keys
+    ipdIssuance: (admissionId: string) => ["pharmacy", "ipd-issuance", admissionId] as const,
+    ipdIssuanceSummary: (admissionId: string) => ["pharmacy", "ipd-issuance-summary", admissionId] as const,
+    medicineReturns: (admissionId: string) => ["pharmacy", "medicine-returns", admissionId] as const,
+  },
+};
+
+// ─── IPD Medicine Issuance Service ──────────────────────────────────────────
+export const ipdIssuanceService = {
+  /** POST /pharmacy/ipd-issuance — Pharmacist issues medicines to IPD patient */
+  issueForIPD: async (data: {
+    admissionId: string;
+    orderId?: string;
+    requestedBy?: string;
+    items: Array<{
+      productId: string;
+      batchId?: string;
+      productName: string;
+      issuedQty: number;
+    }>;
+    notes?: string;
+    receivedByNurse?: string;
+    nurseNote?: string;
+  }): Promise<any> => {
+    return apiClient(PHARMACY_ENDPOINTS.IPD_ISSUANCE.BASE, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /** GET /pharmacy/ipd-issuance/:admissionId — All issuances for an admission */
+  getIssuancesByAdmission: async (admissionId: string): Promise<any[]> => {
+    const response: any = await apiClient(
+      PHARMACY_ENDPOINTS.IPD_ISSUANCE.BY_ADMISSION(admissionId),
+    );
+    return response.data || [];
+  },
+
+  /** GET /pharmacy/ipd-issuance/:admissionId/summary — Balance summary */
+  getIssuanceSummary: async (admissionId: string): Promise<{
+    totalIssued: number;
+    totalReturned: number;
+    totalConsumed: number;
+    totalIssuedAmount: number;
+    totalReturnedAmount: number;
+    netBillableAmount: number;
+    pendingReturnRequests: number;
+    pharmacyClearanceStatus: "NOT_REQUIRED" | "PENDING" | "CLEARED";
+    issuanceCount: number;
+  }> => {
+    const response: any = await apiClient(
+      PHARMACY_ENDPOINTS.IPD_ISSUANCE.SUMMARY(admissionId),
+    );
+    return response.data || {};
+  },
+
+  /** POST /pharmacy/medicine-return — Nurse submits return request */
+  submitReturn: async (data: {
+    issuanceId: string;
+    items: Array<{
+      productId: string;
+      returnedQty: number;
+      reason?: string;
+    }>;
+    notes?: string;
+  }): Promise<any> => {
+    return apiClient(PHARMACY_ENDPOINTS.MEDICINE_RETURN.BASE, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /** GET /pharmacy/medicine-return/:admissionId — Returns for an admission */
+  getReturnsByAdmission: async (admissionId: string): Promise<any[]> => {
+    const response: any = await apiClient(
+      PHARMACY_ENDPOINTS.MEDICINE_RETURN.BY_ADMISSION(admissionId),
+    );
+    return response.data || [];
+  },
+
+  /** PATCH /pharmacy/medicine-return/:id/approve — Pharmacist approves */
+  approveReturn: async (returnId: string): Promise<any> => {
+    return apiClient(PHARMACY_ENDPOINTS.MEDICINE_RETURN.APPROVE(returnId), {
+      method: "PATCH",
+    });
+  },
+
+  /** PATCH /pharmacy/medicine-return/:id/reject — Pharmacist rejects */
+  rejectReturn: async (returnId: string, rejectionReason?: string): Promise<any> => {
+    return apiClient(PHARMACY_ENDPOINTS.MEDICINE_RETURN.REJECT(returnId), {
+      method: "PATCH",
+      body: JSON.stringify({ rejectionReason }),
+    });
+  },
+
+  /** POST /pharmacy/signoff/:admissionId — Pharmacist manually clears */
+  signoffPharmacy: async (admissionId: string): Promise<any> => {
+    return apiClient(PHARMACY_ENDPOINTS.PHARMACY_SIGNOFF(admissionId), {
+      method: "POST",
+    });
   },
 };

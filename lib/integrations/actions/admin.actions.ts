@@ -1,7 +1,7 @@
 "use server";
 
-import { apiServer } from '../api/apiServer';
-import { endpoints, ADMIN_ENDPOINTS } from '../config';
+import { apiServer } from "../api/apiServer";
+import { endpoints, ADMIN_ENDPOINTS } from "../config";
 
 // ... existing code ...
 
@@ -12,22 +12,26 @@ export async function getEmergencyPersonnelAction() {
 export async function createEmergencyPersonnelAction(data: any) {
   try {
     const result = await apiServer<any>(ADMIN_ENDPOINTS.EMERGENCY_USERS, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
     });
-    import('next/cache').then(m => m.revalidatePath('/admin/create-emergency'));
+    import("next/cache").then((m) =>
+      m.revalidatePath("/admin/create-emergency"),
+    );
     return { success: true, data: result };
   } catch (error: any) {
-    return { success: false, error: error.message || 'Failed' };
+    return { success: false, error: error.message || "Failed" };
   }
 }
 
 export async function deleteEmergencyPersonnelAction(id: string) {
   try {
     await apiServer<any>(`${ADMIN_ENDPOINTS.EMERGENCY_USERS}/${id}`, {
-      method: 'DELETE'
+      method: "DELETE",
     });
-    import('next/cache').then(m => m.revalidatePath('/admin/create-emergency'));
+    import("next/cache").then((m) =>
+      m.revalidatePath("/admin/create-emergency"),
+    );
     return { success: true };
   } catch (e: any) {
     return { success: false, error: e.message };
@@ -35,11 +39,16 @@ export async function deleteEmergencyPersonnelAction(id: string) {
 }
 export async function updateEmergencyPersonnelAction(id: string, data: any) {
   try {
-    const result = await apiServer<any>(`${ADMIN_ENDPOINTS.EMERGENCY_USERS}/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
-    import('next/cache').then(m => m.revalidatePath('/admin/create-emergency'));
+    const result = await apiServer<any>(
+      `${ADMIN_ENDPOINTS.EMERGENCY_USERS}/${id}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      },
+    );
+    import("next/cache").then((m) =>
+      m.revalidatePath("/admin/create-emergency"),
+    );
     return { success: true, data: result };
   } catch (e: any) {
     return { success: false, error: e.message };
@@ -52,8 +61,8 @@ import type {
   Patient,
   Helpdesk,
   AuditLog,
-  SupportTicket
-} from '../types';
+  SupportTicket,
+} from "../types";
 
 export async function getDashboardAction() {
   return apiServer<DashboardStats>(endpoints.admin.dashboard);
@@ -87,34 +96,39 @@ export async function getSupportRequestsAction() {
   return apiServer<SupportTicket[]>(endpoints.admin.supportRequests);
 }
 export async function getUsersByRoleAction(role?: string) {
-  const url = role ? `${endpoints.admin.users}?role=${role}` : endpoints.admin.users;
+  const url = role
+    ? `${endpoints.admin.users}?role=${role}`
+    : endpoints.admin.users;
   return apiServer<any[]>(url);
 }
 
 // Mutations
 export async function createHospitalAction(data: any) {
   const result = await apiServer<Hospital>(endpoints.admin.createHospital, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(data),
   });
-  import('next/cache').then(m => m.revalidatePath('/admin/hospitals'));
+  import("next/cache").then((m) => m.revalidatePath("/admin/hospitals"));
   return result;
 }
 
 export async function updateHospitalStatusAction(id: string, status: string) {
-  const result = await apiServer<Hospital>(endpoints.admin.updateHospitalStatus(id), {
-    method: 'PATCH',
-    body: JSON.stringify({ status }),
-  });
-  import('next/cache').then(m => m.revalidatePath('/admin/hospitals'));
+  const result = await apiServer<Hospital>(
+    endpoints.admin.updateHospitalStatus(id),
+    {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    },
+  );
+  import("next/cache").then((m) => m.revalidatePath("/admin/hospitals"));
   return result;
 }
 
 export async function deleteHospitalAction(id: string) {
   const result = await apiServer<void>(endpoints.admin.deleteHospital(id), {
-    method: 'DELETE',
+    method: "DELETE",
   });
-  import('next/cache').then(m => m.revalidatePath('/admin/hospitals'));
+  import("next/cache").then((m) => m.revalidatePath("/admin/hospitals"));
   return result;
 }
 
@@ -122,50 +136,80 @@ export async function deleteHospitalAction(id: string) {
 export async function createHospitalAdminAction(data: any) {
   try {
     const result = await apiServer<any>(ADMIN_ENDPOINTS.CREATE_HOSPITAL_ADMIN, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
     });
-    import('next/cache').then(m => m.revalidatePath('/admin/hospital-admins'));
+    import("next/cache").then((m) =>
+      m.revalidatePath("/admin/hospital-admins"),
+    );
     return { success: true, data: result };
   } catch (error: any) {
-    return { success: false, error: error.message || 'Failed to create hospital admin' };
+    return {
+      success: false,
+      error: error.message || "Failed to create hospital admin",
+    };
   }
 }
 
 export async function createPharmaAction(data: any) {
   try {
     const result = await apiServer<any>(ADMIN_ENDPOINTS.CREATE_HOSPITAL_ADMIN, {
-      method: 'POST',
-      body: JSON.stringify({ ...data, role: 'pharma-owner' }),
+      method: "POST",
+      body: JSON.stringify({ ...data, role: "pharma-owner" }),
     });
-    import('next/cache').then(m => m.revalidatePath('/admin/users'));
+    import("next/cache").then((m) => m.revalidatePath("/admin/users"));
     return { success: true, data: result };
   } catch (error: any) {
-    return { success: false, error: error.message || 'Failed to create pharma staff' };
+    return {
+      success: false,
+      error: error.message || "Failed to create pharma staff",
+    };
   }
 }
 
 export async function createLabsAction(data: any) {
   try {
     const result = await apiServer<any>(ADMIN_ENDPOINTS.CREATE_HOSPITAL_ADMIN, {
-      method: 'POST',
-      body: JSON.stringify({ ...data, role: 'lab' }),
+      method: "POST",
+      body: JSON.stringify({ ...data, role: "lab" }),
     });
-    import('next/cache').then(m => m.revalidatePath('/admin/users'));
+    import("next/cache").then((m) => m.revalidatePath("/admin/users"));
     return { success: true, data: result };
   } catch (error: any) {
-    return { success: false, error: error.message || 'Failed to create labs staff' };
+    return {
+      success: false,
+      error: error.message || "Failed to create labs staff",
+    };
   }
 }
 export async function createEmergencyAction(data: any) {
   try {
     const result = await apiServer<any>(ADMIN_ENDPOINTS.CREATE_HOSPITAL_ADMIN, {
-      method: 'POST',
-      body: JSON.stringify({ ...data, role: 'emergency' }),
+      method: "POST",
+      body: JSON.stringify({ ...data, role: "emergency" }),
     });
-    import('next/cache').then(m => m.revalidatePath('/admin/users'));
+    import("next/cache").then((m) => m.revalidatePath("/admin/users"));
     return { success: true, data: result };
   } catch (error: any) {
-    return { success: false, error: error.message || 'Failed to create emergency staff' };
+    return {
+      success: false,
+      error: error.message || "Failed to create emergency staff",
+    };
+  }
+}
+
+export async function createHRAction(data: any) {
+  try {
+    const result = await apiServer<any>(ADMIN_ENDPOINTS.CREATE_HOSPITAL_ADMIN, {
+      method: "POST",
+      body: JSON.stringify({ ...data, role: "hr" }),
+    });
+    import("next/cache").then((m) => m.revalidatePath("/admin/hr"));
+    return { success: true, data: result };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || "Failed to create HR staff",
+    };
   }
 }

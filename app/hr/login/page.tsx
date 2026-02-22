@@ -8,25 +8,25 @@ import toast from "react-hot-toast";
 import {
     Eye,
     EyeOff,
-    Smartphone,
+    User as UserIcon,
     Loader2,
     Lock,
     ArrowLeft,
     ChevronRight,
-    FileText,
+    Briefcase,
     ShieldCheck
 } from "lucide-react";
 
 /**
- * ROOT-LEVEL DISCHARGE LOGIN PAGE
+ * ROOT-LEVEL HR LOGIN PAGE
  */
-const DischargeLoginPage = () => {
+const HRLoginPage = () => {
     const { login, logout, isLoading } = useAuthStore();
     const router = useRouter();
 
     // ✅ SPEED FIX: Prefetch dashboard
     React.useEffect(() => {
-        router.prefetch('/discharge');
+        router.prefetch('/hr');
     }, [router]);
 
     const [form, setForm] = useState({
@@ -42,9 +42,7 @@ const DischargeLoginPage = () => {
         const err: Record<string, string> = {};
 
         if (!form.identifier || !form.identifier.trim()) {
-            err.identifier = "Enter mobile number.";
-        } else if (!/^\d{10}$/.test(form.identifier)) {
-            err.identifier = "Enter valid 10-digit mobile number.";
+            err.identifier = "Enter your credential.";
         }
 
         if (!form.password || form.password.length < 6) {
@@ -60,9 +58,7 @@ const DischargeLoginPage = () => {
         if (errors.identifier) setErrors({ ...errors, identifier: '' });
         if (serverMsg) setServerMsg('');
 
-        // Enforce numeric only and max 10 chars
-        const numericValue = value.replace(/\D/g, '').slice(0, 10);
-        setForm({ ...form, identifier: numericValue });
+        setForm({ ...form, identifier: value });
     };
 
     const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,21 +83,21 @@ const DischargeLoginPage = () => {
                 throw new Error("Login failed to retrieve user session.");
             }
 
-            // Roles allowed for discharge (based on DischargeLayout)
-            const allowedRoles = ["nurse", "helpdesk", "doctor", "admin", "super-admin", "hospital-admin", "staff"];
+            // Roles allowed for HR
+            const allowedRoles = ["hr", "admin", "super-admin", "hospital-admin"];
             const role = user.role.toLowerCase();
 
             if (!allowedRoles.includes(role)) {
                 logout(); 
-                setServerMsg(`Unauthorized access – Your role (${user.role}) is not authorized for Discharge Management.`);
-                toast.error("Unauthorized access for Discharge Management", {
+                setServerMsg(`Unauthorized access – Your role (${user.role}) is not authorized for HR Management.`);
+                toast.error("Unauthorized access for HR Management", {
                     icon: '🚫',
                 });
                 return;
             }
 
-            toast.success("Access Granted to Discharge Portal", {
-                icon: '📝',
+            toast.success("Access Granted to HR Portal", {
+                icon: '👥',
                 style: {
                     borderRadius: '1rem',
                     background: '#1e293b',
@@ -110,8 +106,13 @@ const DischargeLoginPage = () => {
                 }
             });
 
-            // Redirect to discharge root (middleware will handle tenant prefixing)
-            router.push('/discharge');
+            // Redirect to normal hr root, or tenant prefixed hr
+            const hospitalId = (user as any).hospitalId || (user as any).hospital;
+            if (hospitalId) {
+                router.push(`/${hospitalId}/hr`);
+            } else {
+                router.push('/hr');
+            }
         } catch (err: any) {
             const errorMessage = err?.message || err?.response?.data?.message || 'Login failed. Please check your credentials.';
             setServerMsg(errorMessage);
@@ -141,17 +142,17 @@ const DischargeLoginPage = () => {
                     <div className="space-y-6">
                         <div className="relative group">
                             <div className="absolute -inset-2 bg-slate-900/5 rounded-3xl blur-xl" />
-                             <div className="relative w-full aspect-square bg-white rounded-2xl border border-slate-200 shadow-sm flex items-center justify-center p-12">
-                                <FileText size={120} className="text-slate-200 animate-pulse" />
+                             <div className="relative w-full aspect-square bg-white rounded-2xl border border-slate-200 shadow-sm flex items-center justify-center p-12 overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=800" alt="HR" className="w-full h-full object-cover rounded-xl" />
                              </div>
                         </div>
                         <div className="space-y-3">
                             <h2 className="text-3xl font-black tracking-tight leading-tight uppercase">
-                                Clinical Handover. <br />
-                                <span className="text-slate-500">Secure & Structured.</span>
+                                Talent Management. <br />
+                                <span className="text-slate-500">Payroll & Staff Affairs.</span>
                             </h2>
                             <p className="text-slate-500 text-sm leading-relaxed max-w-sm font-medium">
-                                Finalizing patient episodes with precision, ensuring accurate medical summaries and financial clearance.
+                                Empowering hospital administration with comprehensive HR solutions for managing the entire workforce efficiently.
                             </p>
                         </div>
                     </div>
@@ -167,7 +168,7 @@ const DischargeLoginPage = () => {
                         >
                             <ArrowLeft size={18} />
                         </div>
-                        <span className="text-sm font-black tracking-tighter text-slate-900 uppercase">Discharge Portal</span>
+                        <span className="text-sm font-black tracking-tighter text-slate-900 uppercase">HR Portal</span>
                     </div>
 
                     <button
@@ -179,22 +180,22 @@ const DischargeLoginPage = () => {
 
                     <div className="w-full max-w-[400px] space-y-8 mt-12 lg:mt-0">
                         <div className="text-center lg:text-left space-y-2">
-                            <h1 className="text-3xl font-black tracking-tight underline decoration-slate-900/10 underline-offset-8">Discharge Login</h1>
-                            <p className="text-slate-500 text-sm font-medium">Secure access for clinical and administrative staff.</p>
+                            <h1 className="text-3xl font-black tracking-tight underline decoration-slate-900/10 underline-offset-8">HR Login</h1>
+                            <p className="text-slate-500 text-sm font-medium">Secure access for Human Resources personnel.</p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">
-                                    Mobile Number
+                                    Email / Mobile
                                 </label>
                                 <div className={`group flex items-center bg-slate-50 border rounded-lg px-4 py-3.5 sm:py-4 focus-within:border-slate-900 focus-within:bg-white ${errors.identifier ? 'border-red-500/50 bg-red-500/5' : 'border-slate-200'
                                     }`}>
-                                    <Smartphone size={20} className={`mr-3 ${errors.identifier ? 'text-red-500' : 'text-slate-400 group-focus-within:text-slate-900'}`} />
+                                    <UserIcon size={20} className={`mr-3 ${errors.identifier ? 'text-red-500' : 'text-slate-400 group-focus-within:text-slate-900'}`} />
                                     <input
-                                        type="tel"
+                                        type="text"
                                         className="w-full bg-transparent outline-none placeholder:text-slate-300 text-slate-900 font-medium text-base sm:text-sm"
-                                        placeholder="Enter registered mobile"
+                                        placeholder="Enter registered credential"
                                         value={form.identifier}
                                         onChange={handleIdentifierChange}
                                         suppressHydrationWarning
@@ -267,7 +268,7 @@ const DischargeLoginPage = () => {
 
                             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
-                                    Authorized clinical roles: Doctor, Nurse, Helpdesk, Admin
+                                    Authorized clinical roles: HR Manager, Admin
                                 </p>
                             </div>
                         </form>
@@ -278,4 +279,4 @@ const DischargeLoginPage = () => {
     );
 };
 
-export default React.memo(DischargeLoginPage);
+export default React.memo(HRLoginPage);

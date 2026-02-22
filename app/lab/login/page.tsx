@@ -39,6 +39,7 @@ const LabLoginPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [serverMsg, setServerMsg] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
     const validate = () => {
         const err: Record<string, string> = {};

@@ -93,7 +93,10 @@ export const hospitalAdminService = {
     apiClient<{ hospital: Hospital }>(HOSPITAL_ADMIN_ENDPOINTS.HOSPITAL),
 
   updateHospital: (data: Partial<CreateHospitalRequest> | FormData) => {
-    console.log("[hospitalAdminService.updateHospital] Updating hospital. Is FormData?", data instanceof FormData);
+    console.log(
+      "[hospitalAdminService.updateHospital] Updating hospital. Is FormData?",
+      data instanceof FormData,
+    );
     if (!(data instanceof FormData)) {
       console.log("[hospitalAdminService.updateHospital] Payload:", data);
     }
@@ -105,23 +108,38 @@ export const hospitalAdminService = {
 
   getHospitalStaffCounts: async () => {
     try {
-      console.log("[hospitalAdminService.getHospitalStaffCounts] Fetching staff counts...");
+      console.log(
+        "[hospitalAdminService.getHospitalStaffCounts] Fetching staff counts...",
+      );
       const [doctorsRes, nursesRes] = await Promise.all([
         hospitalAdminService.getDoctors(),
-        hospitalAdminService.getNurses()
+        hospitalAdminService.getNurses(),
       ]);
-      console.log("[hospitalAdminService.getHospitalStaffCounts] Doctors raw:", doctorsRes);
-      console.log("[hospitalAdminService.getHospitalStaffCounts] Nurses raw:", nursesRes);
+      console.log(
+        "[hospitalAdminService.getHospitalStaffCounts] Doctors raw:",
+        doctorsRes,
+      );
+      console.log(
+        "[hospitalAdminService.getHospitalStaffCounts] Nurses raw:",
+        nursesRes,
+      );
 
       const count = {
         doctors: doctorsRes.doctors?.length || 0,
         nurses: nursesRes.nurses?.length || 0,
-        total: (doctorsRes.doctors?.length || 0) + (nursesRes.nurses?.length || 0)
+        total:
+          (doctorsRes.doctors?.length || 0) + (nursesRes.nurses?.length || 0),
       };
-      console.log("[hospitalAdminService.getHospitalStaffCounts] Calculated:", count);
+      console.log(
+        "[hospitalAdminService.getHospitalStaffCounts] Calculated:",
+        count,
+      );
       return count;
     } catch (e) {
-      console.error("[hospitalAdminService.getHospitalStaffCounts] Failed to fetch staff counts", e);
+      console.error(
+        "[hospitalAdminService.getHospitalStaffCounts] Failed to fetch staff counts",
+        e,
+      );
       return { doctors: 0, nurses: 0, total: 0 };
     }
   },
@@ -277,6 +295,42 @@ export const hospitalAdminService = {
   // Nurses
   getNurses: () =>
     apiClient<{ nurses: any[] }>(HOSPITAL_ADMIN_ENDPOINTS.NURSES),
+
+  // HR Management
+  getHR: () => apiClient<{ hrs: any[] }>(HOSPITAL_ADMIN_ENDPOINTS.HR),
+
+  createHR: (data: any) =>
+    apiClient<any>(HOSPITAL_ADMIN_ENDPOINTS.CREATE_HR, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateHR: (id: string, data: any) =>
+    apiClient<any>(HOSPITAL_ADMIN_ENDPOINTS.UPDATE_HR(id), {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  deleteHR: (id: string) =>
+    apiClient<{ message: string }>(HOSPITAL_ADMIN_ENDPOINTS.DELETE_HR(id), {
+      method: "DELETE",
+    }),
+
+  deactivateHR: (id: string) =>
+    apiClient<any>(HOSPITAL_ADMIN_ENDPOINTS.UPDATE_HR(id), {
+      method: "PUT",
+      body: JSON.stringify({ status: "inactive" }),
+    }),
+
+  activateHR: (id: string) =>
+    apiClient<any>(HOSPITAL_ADMIN_ENDPOINTS.UPDATE_HR(id), {
+      method: "PUT",
+      body: JSON.stringify({ status: "active" }),
+    }),
+
+  getHRById: async (id: string) => {
+    return hospitalAdminService.getStaffById(id);
+  },
 
   // Placeholders
   getPharma: () => apiClient<any>(HOSPITAL_ADMIN_ENDPOINTS.PHARMA),
@@ -626,8 +680,7 @@ export const hospitalAdminService = {
   },
 
   // Reminder Configuration
-  getReminderConfig: () =>
-    apiClient<any>("/hospitals/reminders/config"),
+  getReminderConfig: () => apiClient<any>("/hospitals/reminders/config"),
 
   updateReminderConfig: (data: any) =>
     apiClient<any>("/hospitals/reminders/config", {
@@ -636,24 +689,29 @@ export const hospitalAdminService = {
     }),
 
   updateBillingCategories: (categories: string[]) =>
-    apiClient<{ success: boolean; data: string[] }>("/hospitals/billing-categories", {
-      method: "PATCH",
-      body: JSON.stringify({ categories }),
-    }),
-
-  updateClinicalNoteMetadata: (data: { types?: string[]; visibilities?: string[] }) =>
-    apiClient<{ success: boolean; data: { types: string[]; visibilities: string[] } }>(
-      "/hospitals/clinical-notes-metadata",
+    apiClient<{ success: boolean; data: string[] }>(
+      "/hospitals/billing-categories",
       {
         method: "PATCH",
-        body: JSON.stringify(data),
+        body: JSON.stringify({ categories }),
       },
     ),
+
+  updateClinicalNoteMetadata: (data: {
+    types?: string[];
+    visibilities?: string[];
+  }) =>
+    apiClient<{
+      success: boolean;
+      data: { types: string[]; visibilities: string[] };
+    }>("/hospitals/clinical-notes-metadata", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
 
   // Hourly Monitoring
   getPatientHourlyRecord: (admissionId: string) =>
     apiClient<any>(`/ipd/hourly-monitoring/${admissionId}`),
 
-  getActiveAdmissions: () =>
-    apiClient<any[]>("/ipd/admissions/active"),
+  getActiveAdmissions: () => apiClient<any[]>("/ipd/admissions/active"),
 };

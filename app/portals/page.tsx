@@ -101,14 +101,14 @@ function PortalsPage() {
             loginUrl: "/pharmacy/login"
         },
         {
-            title: "Discharge Portal",
-            slug: "discharge-center",
-            icon: ShieldCheck,
-            desc: "Ultimate governance and security for the entire clinical network.",
-            features: ["Discharge Summary", "Discharge Instructions", "Discharge Medications", "Discharge Instructions", "Discharge Instructions"],
+            title: "HR Portal",
+            slug: "hr-management",
+            icon: Users,
+            desc: "Manage hospital staff, payroll, attendance, and recruitment efficiently.",
+            features: ["Staff Management", "Payroll & Attendance", "Recruitment", "Leave Approvals", "Performance Reviews"],
             color: "text-slate-900",
             bg: "bg-slate-100",
-            loginUrl: "/discharge/login"
+            loginUrl: "/hr/login"
         },
         {
             title: "Emergency Portal",

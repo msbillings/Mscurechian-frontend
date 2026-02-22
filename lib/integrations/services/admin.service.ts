@@ -102,6 +102,17 @@ export const adminService = {
   deleteUserClient: (id: string) =>
     apiClient<void>(ADMIN_ENDPOINTS.DELETE_USER(id), { method: "DELETE" }),
 
+  // ─── HR Management ─────────────────────────────────────────────────────────────
+
+  /** GET /super-admin/hr-users */
+  getHRUsersClient: () => apiClient<any[]>(ADMIN_ENDPOINTS.HR_USERS),
+
+  /** POST /super-admin/seed-hr */
+  seedHRUsersClient: () =>
+    apiClient<any>(ADMIN_ENDPOINTS.SEED_HR, {
+      method: "POST",
+    }),
+
   // ─── Role-specific user shortcuts ────────────────────────────────────────────
 
   getDoctorsClient: () => apiClient<Doctor[]>(ADMIN_ENDPOINTS.DOCTORS),

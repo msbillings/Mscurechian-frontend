@@ -364,6 +364,7 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
                 isOpen={isEmergencyModalOpen}
                 onClose={() => setIsEmergencyModalOpen(false)}
                 patientProfile={dashboardData?.profile}
+                availableHospitals={hospitals}
             />
         </div>
     );

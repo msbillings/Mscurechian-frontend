@@ -91,7 +91,8 @@ class EmergencyService {
     description: string;
     severity: "critical" | "high" | "medium" | "low";
     currentLocation: string;
-    hospitalId: string;
+    hospitalId?: string;
+    hospitalIds?: string[];
     patientName?: string;
     patientAge?: number;
     patientGender?: string;

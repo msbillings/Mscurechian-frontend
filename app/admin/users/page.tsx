@@ -123,7 +123,7 @@ const UsersList = () => {
                     });
 
                     // Service now handles 404 fallbacks internally
-                    await adminService.deleteUserClient(userObj?.userId || id, roleParam);
+                    await adminService.deleteUserClient(userObj?.userId || id);
 
                     // Update UI
                     setUsers(prev => prev.filter(u => u._id !== id));

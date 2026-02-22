@@ -12,6 +12,7 @@ export * from "./ipd.service";
 export * from "./quality.service";
 export * from "./analytics.service";
 export * from "./feedback.service";
+export * from "./hr.service";
 
 // ─── Unified Services ────────────────────────────────────────────────────────
 // These replace the scattered sub-services below. Import directly from the

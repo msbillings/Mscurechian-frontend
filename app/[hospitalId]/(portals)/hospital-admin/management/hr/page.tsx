@@ -1,0 +1,197 @@
+"use client";
+
+import React, { useState, useMemo } from 'react';
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { useQuery } from '@tanstack/react-query';
+import { hospitalAdminService } from "@/lib/integrations";
+import {
+  Users,
+  Plus,
+  Trash2,
+  Edit,
+  Mail,
+  Phone,
+  Briefcase,
+  Calendar,
+  Search,
+  Filter,
+  Power,
+  Ban
+} from "lucide-react";
+
+function HospitalAdminHRManagement() {
+  const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+
+  const { data: hrs = [], isLoading: loading, refetch } = useQuery<any[]>({
+    queryKey: ['hospital-admin-hrs'],
+    queryFn: async () => {
+      try {
+        const data = await hospitalAdminService.getHR();
+        return data.hrs || [];
+      } catch (error: any) {
+        console.error("Failed to fetch HR users:", error);
+        toast.error(error.message || "Failed to load HR users");
+        return [];
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const handleDeactivate = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to deactivate ${name}?`)) return;
+    setDeleteLoading(`${id}:toggle`);
+    try {
+      await hospitalAdminService.deactivateHR(id);
+      toast.success(`${name} has been deactivated`);
+      refetch();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to deactivate");
+    } finally {
+      setDeleteLoading(null);
+    }
+  };
+
+  const handleActivate = async (id: string, name: string) => {
+    setDeleteLoading(`${id}:toggle`);
+    try {
+      await hospitalAdminService.activateHR(id);
+      toast.success(`${name} has been activated`);
+      refetch();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to activate");
+    } finally {
+      setDeleteLoading(null);
+    }
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`⚠️ PERMANENT DELETE: Are you sure you want to remove ${name}?`)) return;
+    setDeleteLoading(`${id}:delete`);
+    try {
+      await hospitalAdminService.deleteHR(id);
+      toast.success(`${name} has been removed`);
+      refetch();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete");
+    } finally {
+      setDeleteLoading(null);
+    }
+  };
+
+  const filteredHRs = useMemo(() => hrs.filter((hr) => {
+    return hr.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           hr.email?.toLowerCase().includes(searchTerm.toLowerCase());
+  }), [hrs, searchTerm]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-12 w-12 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">HR Management</h1>
+          <p className="text-sm text-slate-500 font-medium mt-1">Manage human resource personnel for your hospital</p>
+        </div>
+        <button
+          onClick={() => router.push('hr/create')}
+          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
+        >
+          <Plus size={16} strokeWidth={3} /> Add HR Manager
+        </button>
+      </div>
+
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+          />
+        </div>
+      </div>
+
+      {filteredHRs.length === 0 ? (
+        <div className="p-24 text-center bg-white rounded-3xl border border-dashed border-slate-200">
+          <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Users className="text-slate-200 w-10 h-10" />
+          </div>
+          <h3 className="text-xl font-black text-slate-900 italic">No HR personnel found</h3>
+          <p className="text-sm text-slate-400 mt-2 font-medium">Add your first HR manager to start managing staff.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredHRs.map((hr) => (
+            <div key={hr._id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col group overflow-hidden">
+              <div className="p-6 bg-slate-50 border-b border-slate-100 flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                  <Users size={24} strokeWidth={2.5} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-lg font-black text-slate-900 truncate">{hr.name}</h3>
+                  <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border ${hr.status === 'inactive' ? 'bg-rose-50 text-rose-500 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
+                    {hr.status || 'Active'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-4 flex-1">
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-3">
+                    <Mail size={12} className="text-slate-400" />
+                    <span className="text-xs font-bold text-slate-600 truncate">{hr.email}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Phone size={12} className="text-slate-400" />
+                    <span className="text-xs font-bold text-slate-600 truncate">{hr.mobile}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Briefcase size={12} className="text-slate-400" />
+                    <span className="text-xs font-bold text-slate-600 truncate">HR Manager</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-4">
+                  <button
+                    onClick={() => router.push(`hr/edit/${hr._id}`)}
+                    className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:text-blue-600 hover:bg-slate-50 transition-all font-bold text-xs flex items-center gap-2"
+                  >
+                    <Edit size={14} /> Edit
+                  </button>
+                  <button
+                    onClick={() => hr.status === 'inactive' ? handleActivate(hr._id, hr.name) : handleDeactivate(hr._id, hr.name)}
+                    disabled={!!deleteLoading && deleteLoading.startsWith(hr._id)}
+                    className={`p-2.5 rounded-xl border border-slate-200 transition-all font-bold text-xs flex items-center gap-2 ${hr.status === 'inactive' ? 'text-emerald-600 hover:bg-emerald-50' : 'text-amber-500 hover:bg-amber-50'}`}
+                  >
+                    {deleteLoading === `${hr._id}:toggle` ? <div className="h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin" /> : (hr.status === 'inactive' ? <Power size={14} /> : <Ban size={14} />)}
+                    {hr.status === 'inactive' ? 'Activate' : 'Deactivate'}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(hr._id, hr.name)}
+                    disabled={!!deleteLoading && deleteLoading.startsWith(hr._id)}
+                    className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default React.memo(HospitalAdminHRManagement);

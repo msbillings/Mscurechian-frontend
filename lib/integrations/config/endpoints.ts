@@ -13,7 +13,6 @@ export const AUTH_ENDPOINTS = {
   CHECK_EXISTENCE: "/auth/check-existence",
 };
 
-
 export const DISCHARGE_ENDPOINTS = {
   LOGIN: "/discharge/auth/login",
   LOGOUT: "/discharge/auth/logout",
@@ -49,6 +48,10 @@ export const ADMIN_ENDPOINTS = {
   CREATE_USER: "/super-admin/users",
   UPDATE_USER: (id: string) => `/super-admin/users/${id}`,
   DELETE_USER: (id: string) => `/super-admin/users/${id}`,
+
+  // HR Management
+  HR_USERS: "/super-admin/hr-users",
+  SEED_HR: "/super-admin/seed-hr",
 
   // Ambulance Personnel
   EMERGENCY_USERS: "/super-admin/emergency-users",
@@ -107,6 +110,20 @@ export const PHARMACY_ENDPOINTS = {
   ORDERS: (hospitalId: string) => `/pharmacy/orders/hospital/${hospitalId}`,
   UPLOAD_DOCUMENT: "/pharmacy/upload-document",
   AUDITS: "/pharmacy/audit-logs",
+
+  // ─── IPD Medicine Reconciliation ──────────────────────────────────────────
+  IPD_ISSUANCE: {
+    BASE: "/pharmacy/ipd-issuance",
+    BY_ADMISSION: (admissionId: string) => `/pharmacy/ipd-issuance/${admissionId}`,
+    SUMMARY: (admissionId: string) => `/pharmacy/ipd-issuance/${admissionId}/summary`,
+  },
+  MEDICINE_RETURN: {
+    BASE: "/pharmacy/medicine-return",
+    BY_ADMISSION: (admissionId: string) => `/pharmacy/medicine-return/${admissionId}`,
+    APPROVE: (id: string) => `/pharmacy/medicine-return/${id}/approve`,
+    REJECT: (id: string) => `/pharmacy/medicine-return/${id}/reject`,
+  },
+  PHARMACY_SIGNOFF: (admissionId: string) => `/pharmacy/signoff/${admissionId}`,
 };
 
 export const LAB_ENDPOINTS = {
@@ -167,6 +184,10 @@ export const HOSPITAL_ADMIN_ENDPOINTS = {
   ANALYTICS: "/hospital/analytics",
   NURSES: "/hospital/users?role=nurse",
   CREATE_NURSE: "/hospital/users",
+  HR: "/hospital/hrs",
+  CREATE_HR: "/hospital/hrs",
+  UPDATE_HR: (id: string) => `/hospital/hrs/${id}`,
+  DELETE_HR: (id: string) => `/hospital/hrs/${id}`,
   DISCHARGE_STAFF: "/hospital/users?role=DISCHARGE",
 };
 
@@ -404,6 +425,24 @@ export const QUALITY_ENDPOINTS = {
   ACTIONS: "/quality/actions",
   STATUS: (id: string) => `/quality/actions/${id}/status`,
   EVALUATE: (id: string) => `/quality/actions/${id}/evaluate`,
+};
+
+export const HR_ENDPOINTS = {
+  STATS: "/hr/stats",
+  STAFF: {
+    BASE: "/hr/staff",
+    BY_ID: (id: string) => `/hr/staff/${id}`,
+  },
+  LEAVES: {
+    BASE: "/hr/leaves",
+    BY_ID: (id: string) => `/hr/leaves/${id}`,
+  },
+  ATTENDANCE: "/hr/attendance",
+  PAYROLL: "/hr/payroll",
+  RECRUITMENT: "/hr/recruitment",
+  PERFORMANCE: "/hr/performance",
+  DOCUMENTS: "/hr/documents",
+  TRAINING: "/hr/training",
 };
 
 // Legacy support to avoid breaking existing code immediately

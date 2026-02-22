@@ -40,7 +40,7 @@ export default function TenantPortalRedirect() {
         'pharmacy': '/pharmacy/dashboard',
         'patient': '/patient',
         'staff': '/staff',
-        'discharge': '/discharge',
+        'hr': '/hr',
       };
 
       const targetPath = portalMap[role] || '/auth/login';
