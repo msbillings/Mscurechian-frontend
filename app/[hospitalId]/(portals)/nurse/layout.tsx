@@ -17,7 +17,8 @@ import {
   AlertTriangle,
   BookOpenCheck,
   LifeBuoy,
-  Settings
+  Settings,
+  RotateCcw
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
@@ -42,6 +43,7 @@ const nurseMenuItems: SidebarItem[] = [
   { icon: Calendar, label: 'Leave Management', href: '/nurse/leaves' },
   { icon: Calendar, label: 'My Schedule', href: '/nurse/schedule' },
   { icon: AlertTriangle, label: 'Medical Incident', href: '/nurse/incidents' },
+  { icon: RotateCcw, label: 'Medicine Return', href: '/nurse/medicine-return' },
   { icon: BookOpenCheck, label: 'Sop & Policies', href: '/nurse/sop' },
   { icon: Bell, label: 'Announcements', href: '/nurse/announcements' },
 
@@ -140,7 +142,7 @@ export default function NurseLayout({ children }: { children: React.ReactNode })
 
   const handleConfirmLogout = async () => {
     await logout();
-    router.push('/nurse-login');
+    router.push('/nurse/login');
   };
 
   if (isLoading || !isInitialized) {

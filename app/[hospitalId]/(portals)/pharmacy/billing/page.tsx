@@ -225,11 +225,14 @@ const BillingPage = () => {
         const delayDebounceFn = setTimeout(async () => {
             try {
                 const results = await ProductService.getProducts({ search: searchTerm });
-                const adjustedResults = results.map(p => {
+                const adjustedResults = (results || []).map((p: any) => {
+                    const unitsPerPack = p.unitsPerPack || 1;
+                    const availableUnits = p.currentStock * unitsPerPack;
                     const cartItem = cart.find((item: any) => item.drug === p._id || item.productId === p._id);
-                    return cartItem ? { ...p, currentStock: p.currentStock - cartItem.qty } : p;
+                    return cartItem ? { ...p, availableUnits: availableUnits - cartItem.qty } : { ...p, availableUnits };
                 });
-                setSearchResults(adjustedResults || []);
+                setSearchResults(adjustedResults);
+
             } catch (err) {
                 console.error("Search failed", err);
                 setSearchResults([]);
@@ -241,12 +244,14 @@ const BillingPage = () => {
         return () => clearTimeout(delayDebounceFn);
     }, [searchTerm, cart]);
 
-    const handleSelectProduct = (product: PharmacyProduct) => {
+    const handleSelectProduct = (product: any) => {
         setSelectedProduct(product);
         setSearchTerm(product.brandName);
-        setPrice(product.mrp);
+        const unitsPerPack = product.unitsPerPack || 1;
+        setPrice(product.mrp / unitsPerPack);
         setSearchResults([]);
     };
+
 
     const handleAddItem = () => {
         if (!selectedProduct) {
@@ -262,10 +267,11 @@ const BillingPage = () => {
             return;
         }
 
-        if (safeQty > selectedProduct.currentStock) {
-            toast.error(`Only ${selectedProduct.currentStock} units available in stock`);
+        if (safeQty > (selectedProduct as any).availableUnits) {
+            toast.error(`Only ${(selectedProduct as any).availableUnits} units available in stock`);
             return;
         }
+
 
         const total = safeQty * safePrice;
         const newItem: BillItem = {
@@ -550,8 +556,10 @@ const BillingPage = () => {
                                                 </div>
                                                 <div className="text-right shrink-0">
                                                     <p className="font-bold text-xs text-teal-600">₹{product.mrp}</p>
-                                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Stock: {product.currentStock}</p>
+                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Available: {(product as any).availableUnits} Units</p>
+                                                    <p className="text-[9px] font-bold text-indigo-500">₹{Math.round(product.mrp / ((product as any).unitsPerPack || 1)).toLocaleString()} / unit</p>
                                                 </div>
+
                                             </div>
                                         ))}
                                     </div>
@@ -622,8 +630,8 @@ const BillingPage = () => {
                                                         setCart(newCart);
                                                     }} />
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-semibold text-gray-500">₹{(item.rate || 0).toFixed(2)}</td>
-                                                <td className="px-8 py-5 text-right font-bold text-teal-600 text-sm">₹{(item.total || 0).toFixed(2)}</td>
+                                                <td className="px-8 py-5 text-right font-semibold text-gray-500">₹{Math.round(item.rate || 0).toLocaleString()}</td>
+                                                <td className="px-8 py-5 text-right font-bold text-teal-600 text-sm">₹{Math.round(item.total || 0).toLocaleString()}</td>
                                                 <td className="px-8 py-5 text-center">
                                                     <button className="p-2.5 bg-red-50 text-red-500 rounded-xl hover:bg-red-100" onClick={() => removeItem(index)}><Trash2 size={16} /></button>
                                                 </td>
@@ -709,11 +717,11 @@ const BillingPage = () => {
                         <div className="space-y-3 pt-6 border-t border-dashed dark:border-gray-700">
                             <div className="flex justify-between items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
                                 <span>Subtotal</span>
-                                <span className="text-gray-900 dark:text-white">₹{subtotal.toFixed(2)}</span>
+                                <span className="text-gray-900 dark:text-white">₹{Math.round(subtotal).toLocaleString()}</span>
                             </div>
                             <div className="flex justify-between items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
                                 <span>Tax (GST)</span>
-                                <span className="text-gray-900 dark:text-white">₹{taxGST.toFixed(2)}</span>
+                                <span className="text-gray-900 dark:text-white">₹{Math.round(taxGST).toLocaleString()}</span>
                             </div>
                             <div className="flex flex-col gap-1 py-4 border-y border-dashed border-teal-100 dark:border-gray-700 mt-2">
                                 <span className="text-xs font-bold text-teal-500 uppercase tracking-wider">Total Amount</span>

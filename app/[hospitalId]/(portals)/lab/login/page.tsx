@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useAuthStore } from '@/stores/authStore';
 import toast from "react-hot-toast";
 
@@ -25,9 +25,12 @@ const LabLoginPage = () => {
     const router = useRouter();
 
     // ✅ SPEED FIX: Prefetch dashboard
+    const { hospitalId } = useParams();
     React.useEffect(() => {
-        router.prefetch('/lab/dashboard');
-    }, [router]);
+        if (hospitalId) {
+            router.prefetch(`/${hospitalId}/lab/dashboard`);
+        }
+    }, [router, hospitalId]);
 
     const [form, setForm] = useState({
         identifier: "",
@@ -109,7 +112,8 @@ const LabLoginPage = () => {
                 }
             });
 
-            router.replace('/lab/dashboard');
+            const userHospitalId = user.hospital || user.hospitalId;
+            router.replace(`/${userHospitalId}/lab/dashboard`);
         } catch (err: any) {
             const errorMessage = err?.message || err?.response?.data?.message || 'Login failed. Please check your credentials.';
             setServerMsg(errorMessage);
@@ -157,7 +161,7 @@ const LabLoginPage = () => {
                         </div>
                     </div>
 
-            
+
                 </div>
 
                 {/* Right Side: Form */}

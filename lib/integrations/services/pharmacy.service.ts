@@ -511,6 +511,7 @@ export const pharmacyService = {
     ipdIssuance: (admissionId: string) => ["pharmacy", "ipd-issuance", admissionId] as const,
     ipdIssuanceSummary: (admissionId: string) => ["pharmacy", "ipd-issuance-summary", admissionId] as const,
     medicineReturns: (admissionId: string) => ["pharmacy", "medicine-returns", admissionId] as const,
+    allMedicineReturns: (filters?: any) => ["pharmacy", "medicine-returns", "all", filters] as const,
   },
 };
 
@@ -583,6 +584,18 @@ export const ipdIssuanceService = {
   getReturnsByAdmission: async (admissionId: string): Promise<any[]> => {
     const response: any = await apiClient(
       PHARMACY_ENDPOINTS.MEDICINE_RETURN.BY_ADMISSION(admissionId),
+    );
+    return response.data || [];
+  },
+
+  /** GET /pharmacy/medicine-return/all — All returns for the hospital */
+  getAllReturns: async (params?: { status?: string; admissionId?: string }): Promise<any[]> => {
+    const query = new URLSearchParams();
+    if (params?.status) query.append("status", params.status);
+    if (params?.admissionId) query.append("admissionId", params.admissionId);
+    const qs = query.toString();
+    const response: any = await apiClient(
+      `${PHARMACY_ENDPOINTS.MEDICINE_RETURN.BASE}/all${qs ? `?${qs}` : ""}`,
     );
     return response.data || [];
   },

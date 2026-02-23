@@ -81,10 +81,13 @@ function PharmacyLogin() {
                 }
             });
 
-            // Redirect will be handled by middleware or by direct push
-            // In a legacy path like /pharmacy/login, we push to /pharmacy/dashboard
-            // and the middleware will redirect to /[hospitalId]/pharmacy/dashboard
-            router.push("/pharmacy/dashboard");
+            // ✅ REDIRECT FIX: Include hospitalId in path to avoid 404
+            const userHospitalId = (user as any).hospital || (user as any).hospitalId;
+            if (userHospitalId) {
+                router.push(`/${userHospitalId}/pharmacy/dashboard`);
+            } else {
+                router.push("/pharmacy/dashboard");
+            }
 
         } catch (err: any) {
             console.error("❌ Login failed:", err);

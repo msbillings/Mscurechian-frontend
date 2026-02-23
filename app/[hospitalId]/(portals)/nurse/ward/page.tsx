@@ -23,6 +23,7 @@ import { ipdService, staffService } from '@/lib/integrations';
 import { Bed } from '@/lib/integrations/types';
 import toast from 'react-hot-toast';
 import { calculateStayDuration } from '@/lib/utils/date-utils';
+import HybridRoomSearch from '@/components/shared/HybridRoomSearch';
 import VitalsEntryModal from '../components/VitalsEntryModal';
 import ClinicalNotesViewModal from '../components/ClinicalNotesViewModal';
 import PrescriptionViewModal from '../components/PrescriptionViewModal';
@@ -69,8 +70,8 @@ const MonitoringTimer = ({ lastRecorded, status, hospitalId, wardType }: { lastR
     if (!lastRecorded || status === 'Stable') return null;
 
     return (
-        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[7px] font-black uppercase tracking-widest ${isOverdue ? 'bg-rose-600 text-white animate-pulse' : 'bg-amber-100 text-amber-600'}`}>
-            <Clock size={10} />
+        <div className={`flex items-center gap-1 px-1 py-0.5 rounded-md text-[6px] font-black uppercase tracking-widest ${isOverdue ? 'bg-rose-600 text-white animate-pulse' : 'bg-amber-100 text-amber-600'}`}>
+            <Clock size={8} />
             {timeLeft}
         </div>
     );
@@ -115,23 +116,29 @@ const BedBlock = ({ bed, selectedBedId, handleBedClick, getStatusColor }: any) =
             <button
                 onClick={() => handleBedClick(bed)}
                 className={`
-                    relative p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl border transition-all duration-500 text-left w-full aspect-square flex flex-col justify-between
+                    relative p-2 rounded-[20px] border transition-all duration-500 text-left w-full aspect-square flex flex-col justify-between overflow-hidden
                     ${selectedBedId === bed._id ? 'border-teal-500 bg-white ring-2 ring-teal-500/10 shadow-lg' :
                         bed.currentOccupancy?.condition === 'Critical' ? 'border-rose-200 bg-rose-50/30' :
                             'border-slate-100 bg-white hover:border-teal-400 hover:shadow-md'}
                 `}
             >
-                <div className="flex justify-between items-start mb-0.5 sm:mb-2">
-                    <div className={`w-4 h-4 sm:w-6 sm:h-6 rounded-md sm:rounded-lg ${getStatusColor(bed.status)} flex items-center justify-center text-white shadow-sm relative`}>
-                        <BedIcon size={8} className="sm:size-3" />
+                <div className="flex justify-between items-start w-full">
+                    <div className={`w-7 h-7 rounded-lg ${getStatusColor(bed.status)} flex items-center justify-center text-white shadow-sm relative shrink-0`}>
+                        <BedIcon size={12} />
                         {bed.currentOccupancy?.condition === 'Critical' && (
                             <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-rose-600 rounded-full border border-white animate-pulse" />
                         )}
                     </div>
-                    <div className="flex flex-col items-end gap-0.5 sm:gap-1">
-                        <span className={`text-[5px] sm:text-[7px] font-black uppercase px-1 sm:px-2 py-0.5 rounded-full ${getStatusColor(bed.status)} text-white tracking-widest`}>
+                    <div className="flex flex-col items-end gap-1">
+                        <span className={`text-[6px] font-black uppercase px-2 py-0.5 rounded-full ${getStatusColor(bed.status)} text-white tracking-widest`}>
                             {bed.status[0]}
                         </span>
+                        {bed.status === 'Occupied' && bed.currentOccupancy?.admissionDate && (
+                            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-rose-50 text-rose-600 rounded-full text-[6px] font-black uppercase tracking-tighter">
+                                <Clock size={8} />
+                                {calculateStayDuration(bed.currentOccupancy.admissionDate)}
+                            </div>
+                        )}
                         {bed.currentOccupancy && (
                             <MonitoringTimer
                                 lastRecorded={bed.currentOccupancy.lastVitalsRecordedAt}
@@ -141,21 +148,34 @@ const BedBlock = ({ bed, selectedBedId, handleBedClick, getStatusColor }: any) =
                     </div>
                 </div>
 
-                <div className="space-y-0 mt-auto">
-                    {bed.status === 'Occupied' && (
-                        <p className="text-[6px] sm:text-[8px] font-bold text-blue-600 uppercase truncate leading-none">
-                            {bed.currentOccupancy?.patientName || 'Loading...'}
-                        </p>
-                    )}
-                    <div className="flex items-center justify-between gap-1">
-                        <h3 className="text-[7px] sm:text-[10px] font-black text-slate-900 uppercase tracking-tight truncate leading-none">{bed.bedId}</h3>
+                <div className="mt-1">
+                    <h3 className="text-[12px] font-black text-slate-900 uppercase tracking-tight truncate leading-tight">{bed.bedId}</h3>
+                    <div className="flex items-center gap-1 mt-0.5">
+                        <span className="text-[9px] font-bold text-slate-400 capitalize truncate">
+                            {bed.status === 'Occupied' ? (bed.currentOccupancy?.patientName || 'Loading...') : bed.type}
+                        </span>
+                    </div>
+                </div>
+
+                <div className="mt-auto space-y-1 pt-2 border-t border-slate-50">
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="flex items-center gap-1 overflow-hidden">
+                            <span className="text-[8px] font-black text-slate-500 uppercase truncate">R:{bed.room || "?"}</span>
+                        </div>
+                        <div className="flex items-center gap-1 overflow-hidden">
+                            <span className="text-[8px] font-black text-slate-500 uppercase truncate">F:{bed.floor || "?"}</span>
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest truncate max-w-[80px]">
+                            {bed.department || bed.ward || "GEN"}
+                        </span>
                         {bed.currentOccupancy?.condition === 'Critical' && (
-                            <ShieldAlert size={8} className="text-rose-600 shrink-0 sm:size-[10px]" />
+                            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-rose-50 text-rose-600 rounded-full text-[6px] font-black uppercase tracking-widest">
+                                <ShieldAlert size={8} /> CRITICAL
+                            </div>
                         )}
                     </div>
-                    <p className="text-[6px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none">
-                        R-{bed.room} • F-{bed.floor}
-                    </p>
                 </div>
             </button>
         </div>
@@ -538,27 +558,16 @@ export default function WardStatus() {
                             ))}
                         </select>
 
-                        <select
-                            className="flex-1 sm:flex-none px-2 sm:px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg sm:rounded-xl text-[8px] sm:text-[9px] font-black uppercase tracking-widest outline-none appearance-none cursor-pointer"
+                        <HybridRoomSearch
                             value={filters.room}
-                            onChange={(e) => {
-                                setFilters(prev => ({ ...prev, room: e.target.value }));
+                            onSelect={(val) => {
+                                setFilters(prev => ({ ...prev, room: val }));
                                 setCurrentPage(1);
                             }}
-                        >
-                            <option value="">Rooms</option>
-                            {allRooms
-                                .filter(r => {
-                                    // Cascade: Filter rooms by selected type
-                                    const matchesType = filters.type === "" || r.type?.toLowerCase() === filters.type.toLowerCase();
-                                    // Restriction: If nurse has specific assigned rooms, only show those
-                                    const isAssigned = nurseRooms.length === 0 || nurseRooms.includes(r.label);
-                                    return matchesType && isAssigned;
-                                })
-                                .map(room => (
-                                    <option key={room._id} value={room.label}>{room.label}</option>
-                                ))}
-                        </select>
+                            rooms={allRooms.filter(r => nurseRooms.length === 0 || nurseRooms.includes(r.label))}
+                            typeFilter={filters.type}
+                            className="flex-1 sm:flex-none"
+                        />
                     </div>
 
                     {/* PAGINATION */}

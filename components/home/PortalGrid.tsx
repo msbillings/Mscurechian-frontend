@@ -154,7 +154,7 @@ const adminPortals = [
       shadow: 'hover:shadow-emerald-500/20',
       iconBg: 'bg-emerald-50',
     },
-    path: '/nurse-login',
+    path: '/nurse/login',
   },
   {
     title: 'HR Portal',

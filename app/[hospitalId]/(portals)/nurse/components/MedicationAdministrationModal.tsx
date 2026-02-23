@@ -30,7 +30,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
     const [showHistory, setShowHistory] = useState(false);
 
     // Diet Form State
-    const [dietItems, setDietItems] = useState<string[]>(['']);
+    const [dietItems, setDietItems] = useState<any[]>([{ name: '', quantity: '', calories: '' }]);
     const [dietForm, setDietForm] = useState({
         category: 'Morning',
         recordedDate: new Date().toISOString().split('T')[0],
@@ -112,21 +112,27 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
     };
 
     const handleLogDiet = async () => {
-        const items = dietItems.filter(i => i.trim() !== '');
+        const items = dietItems.filter(i => i.name?.trim() !== '');
         if (items.length === 0) {
             toast.error("Please enter at least one food item");
             return;
         }
 
+        const formattedItems = items.map(i => ({
+            name: i.name,
+            quantity: i.quantity || undefined,
+            calories: i.calories || undefined
+        }));
+
         try {
             setSubmitting('diet-submit');
             await ipdService.logDiet({
                 admissionId,
-                items,
+                items: formattedItems,
                 ...dietForm
             });
             toast.success("Diet logged successfully");
-            setDietItems(['']);
+            setDietItems([{ name: '', quantity: '', calories: '' }]);
             setDietForm({
                 ...dietForm,
                 notes: '',
@@ -308,9 +314,19 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                                                 const medsMap = new Map();
                                                 prescriptions.forEach(p => {
                                                     p.medicines?.forEach((m: any) => {
-                                                        const key = `${m.name}-${m.dosage}`;
-                                                        if (!medsMap.has(key)) {
-                                                            medsMap.set(key, { ...m, prescId: p._id });
+                                                        const key = `${m.name}-${m.dosage}`.toLowerCase();
+                                                        const existing = medsMap.get(key);
+
+                                                        // Priority: Pharma Order > Standard Prescription
+                                                        // This ensures we use the quantity/status from the actual pharmacy record if it exists
+                                                        if (!existing || p.type === 'pharma-order') {
+                                                            medsMap.set(key, {
+                                                                ...m,
+                                                                prescId: p._id,
+                                                                isPharmaOrder: p.type === 'pharma-order',
+                                                                paymentStatus: p.paymentStatus,
+                                                                orderStatus: p.orderStatus
+                                                            });
                                                         }
                                                     });
                                                 });
@@ -328,8 +344,17 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                                                                     <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                                                                         <p className="text-[8px] sm:text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">{med.dosage} • {med.frequency}</p>
                                                                         {calculateRemaining(med) !== null && (
-                                                                            <span className="px-1 py-0.5 bg-amber-50 text-amber-600 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border border-amber-100">
+                                                                            <span className={`px-1 py-0.5 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border ${calculateRemaining(med) === 0 ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
                                                                                 {calculateRemaining(med)} Left
+                                                                            </span>
+                                                                        )}
+                                                                        {med.isPharmaOrder ? (
+                                                                            <span className={`px-1 py-0.5 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border ${med.paymentStatus === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                                                                                {med.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="px-1 py-0.5 bg-slate-50 text-slate-500 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border border-slate-200">
+                                                                                OPD Presc
                                                                             </span>
                                                                         )}
                                                                     </div>
@@ -503,33 +528,66 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="space-y-4">
-                                                <div className="space-y-2">
-                                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Food Items</label>
+                                                <div className="space-y-4">
+                                                    <div className="grid grid-cols-12 gap-2 text-[8px] font-black text-slate-400 uppercase tracking-widest px-1">
+                                                        <div className="col-span-6 text-indigo-500">Food Item</div>
+                                                        <div className="col-span-3 text-emerald-500">Qty</div>
+                                                        <div className="col-span-3 text-amber-500">Kcal</div>
+                                                    </div>
+
                                                     {dietItems.map((item, idx) => (
-                                                        <div key={idx} className="flex gap-2">
-                                                            <input
-                                                                type="text"
-                                                                placeholder="e.g. Juice, Porridge, Tea..."
-                                                                value={item}
-                                                                onChange={(e) => {
-                                                                    const newItems = [...dietItems];
-                                                                    newItems[idx] = e.target.value;
-                                                                    setDietItems(newItems);
-                                                                }}
-                                                                className="flex-1 px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[11px] font-bold text-slate-700 focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all outline-none"
-                                                            />
-                                                            {idx > 0 && (
-                                                                <button onClick={() => setDietItems(dietItems.filter((_, i) => i !== idx))} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg">
-                                                                    <Trash2 size={14} />
-                                                                </button>
-                                                            )}
+                                                        <div key={idx} className="grid grid-cols-12 gap-2 items-center">
+                                                            <div className="col-span-6">
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="e.g. Juice..."
+                                                                    value={item.name}
+                                                                    onChange={(e) => {
+                                                                        const newItems = [...dietItems];
+                                                                        newItems[idx].name = e.target.value;
+                                                                        setDietItems(newItems);
+                                                                    }}
+                                                                    className="w-full px-2 py-2 bg-slate-50 border border-slate-100 rounded-lg text-[10px] font-bold text-slate-700 focus:bg-white focus:ring-1 focus:ring-emerald-500 transition-all outline-none"
+                                                                />
+                                                            </div>
+                                                            <div className="col-span-3">
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="200ml"
+                                                                    value={item.quantity}
+                                                                    onChange={(e) => {
+                                                                        const newItems = [...dietItems];
+                                                                        newItems[idx].quantity = e.target.value;
+                                                                        setDietItems(newItems);
+                                                                    }}
+                                                                    className="w-full px-2 py-2 bg-slate-50 border border-slate-100 rounded-lg text-[10px] font-bold text-slate-700 focus:bg-white focus:ring-1 focus:ring-emerald-500 transition-all outline-none"
+                                                                />
+                                                            </div>
+                                                            <div className="col-span-3 flex gap-1 items-center">
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="150"
+                                                                    value={item.calories}
+                                                                    onChange={(e) => {
+                                                                        const newItems = [...dietItems];
+                                                                        newItems[idx].calories = e.target.value;
+                                                                        setDietItems(newItems);
+                                                                    }}
+                                                                    className="w-full px-2 py-2 bg-slate-50 border border-slate-100 rounded-lg text-[10px] font-bold text-slate-700 focus:bg-white focus:ring-1 focus:ring-emerald-500 transition-all outline-none"
+                                                                />
+                                                                {idx > 0 && (
+                                                                    <button onClick={() => setDietItems(dietItems.filter((_, i) => i !== idx))} className="p-1 text-rose-500 hover:bg-rose-50 rounded">
+                                                                        <Trash2 size={12} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     ))}
                                                     <button
-                                                        onClick={() => setDietItems([...dietItems, ''])}
-                                                        className="w-full py-2 border-2 border-dashed border-slate-100 rounded-xl text-[9px] font-black text-slate-400 uppercase tracking-widest hover:border-emerald-200 hover:text-emerald-500 transition-all flex items-center justify-center gap-2"
+                                                        onClick={() => setDietItems([...dietItems, { name: '', quantity: '', calories: '' }])}
+                                                        className="w-full py-1.5 border border-dashed border-slate-200 rounded-lg text-[8px] font-black text-slate-400 uppercase tracking-widest hover:border-emerald-200 hover:text-emerald-500 transition-all flex items-center justify-center gap-2"
                                                     >
-                                                        <Plus size={12} /> Add More Item
+                                                        <Plus size={10} /> Add More
                                                     </button>
                                                 </div>
 
@@ -575,7 +633,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                                                 <div className="space-y-2">
                                                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Slot/Category</label>
                                                     <div className="grid grid-cols-2 gap-2">
-                                                        {['Morning', 'Afternoon', 'Evening', 'Night', 'Day'].map(cat => (
+                                                        {['Morning', 'Afternoon', 'Evening', 'Night'].map(cat => (
                                                             <button
                                                                 key={cat}
                                                                 onClick={() => setDietForm({ ...dietForm, category: cat })}
@@ -621,7 +679,16 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                                                             </div>
                                                             <div>
                                                                 <div className="flex items-center gap-2">
-                                                                    <span className="text-[10px] font-black text-slate-800 uppercase tracking-tight">{log.items?.join(', ') || 'Diet Item'}</span>
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-[10px] font-black text-slate-800 uppercase tracking-tight">
+                                                                            {log.items?.map((item: any) => `${item.name || item} ${item.quantity ? `(${item.quantity})` : ''}`).join(', ')}
+                                                                        </span>
+                                                                        {log.items?.some((item: any) => item.calories) && (
+                                                                            <span className="text-[7px] font-bold text-amber-600 uppercase tracking-widest">
+                                                                                Total Calories: {log.items.reduce((sum: number, i: any) => sum + (Number(i.calories) || 0), 0)} Kcal
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                     <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[7px] font-black uppercase tracking-widest border border-emerald-100">{log.category}</span>
                                                                 </div>
                                                                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">

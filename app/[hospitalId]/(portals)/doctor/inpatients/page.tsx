@@ -18,13 +18,16 @@ import {
     Receipt,
     X,
     LayoutGrid,
-    List
+    List,
+    Pill
 } from 'lucide-react';
+import { useTenantLink } from '@/hooks/useTenantLink';
 import AddClinicalChargeModal from '@/components/ipd/AddClinicalChargeModal';
 import { IPDBillingModal } from '@/components/helpdesk/IPDBillingModal';
 import TransferRequestModal from '@/components/ipd/TransferRequestModal';
 import { getDoctorInpatientsAction } from '@/lib/integrations/actions/doctor.actions';
 import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { calculateStayDuration } from '@/lib/utils/date-utils';
 import { ipdService } from '@/lib/integrations';
@@ -395,6 +398,7 @@ export default function DoctorInpatientsPage() {
                 isOpen={!!selectedAdmissionForLedger}
                 onClose={() => setSelectedAdmissionForLedger(null)}
                 admissionId={selectedAdmissionForLedger || ''}
+                hidePaymentActions={true}
             />
             <TransferRequestModal
                 isOpen={!!selectedAdmissionForTransfer}
@@ -409,6 +413,8 @@ export default function DoctorInpatientsPage() {
 
 function ActionButtons({ adm, onTransfer, onCharge, onLedger, fetchAdmissions, variant = 'full' }: any) {
     const isCompact = variant === 'compact';
+    const { getPath } = useTenantLink();
+    const router = useRouter();
 
     if (adm.dischargeRequested) {
         return (
@@ -455,6 +461,15 @@ function ActionButtons({ adm, onTransfer, onCharge, onLedger, fetchAdmissions, v
 
     return (
         <div className={isCompact ? "flex items-center gap-2" : "grid grid-cols-2 gap-2 w-full"}>
+            <button
+                onClick={(e) => { e.stopPropagation(); router.push(getPath(`/doctor/prescription/create?patientId=${adm.patient?._id || adm.patient?.id}&admissionId=${adm.admissionId}`)); }}
+                className={`${btnClass} bg-pink-50 text-pink-700 hover:bg-pink-100 hover:border-pink-200 dark:bg-pink-900/10 dark:text-pink-400 dark:hover:bg-pink-900/20`}
+                title="Add Prescription"
+            >
+                <Pill size={13} strokeWidth={3} />
+                {!isCompact && <span>Prescribe</span>}
+            </button>
+
             <button
                 onClick={(e) => { e.stopPropagation(); onTransfer(); }}
                 className={`${btnClass} bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-200 dark:bg-amber-900/10 dark:text-amber-400 dark:hover:bg-amber-900/20`}

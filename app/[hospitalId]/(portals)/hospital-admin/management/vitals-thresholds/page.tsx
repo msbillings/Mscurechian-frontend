@@ -12,19 +12,156 @@ import { toast } from 'react-hot-toast';
 import { ipdService } from '@/lib/integrations/services/ipd.service';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 import { useAuthStore } from '@/stores/authStore';
-
 const VITALS_METADATA = [
-    { name: 'Heart Rate', id: 'heartRate', unit: 'BPM', icon: Heart },
-    { name: 'SpO2', id: 'spO2', unit: '%', icon: Droplet, special: 'spo2' },
-    { name: 'Systolic BP', id: 'systolicBP', unit: 'mmHg', icon: Activity },
-    { name: 'Diastolic BP', id: 'diastolicBP', unit: 'mmHg', icon: Activity },
-    { name: 'Temperature', id: 'temperature', unit: '°F', icon: Thermometer },
-    { name: 'Respiratory Rate', id: 'respiratoryRate', unit: 'BPM', icon: Wind },
-    { name: 'Glucose: Fasting', id: 'glucose', glucoseType: 'Fasting', unit: 'mg/dL', icon: Beaker },
-    { name: 'Glucose: After Meal', id: 'glucose', glucoseType: 'After Meal', unit: 'mg/dL', icon: Beaker },
-    { name: 'Glucose: Random', id: 'glucose', glucoseType: 'Random', unit: 'mg/dL', icon: Beaker },
+    {
+        name: 'Heart Rate',
+        id: 'heartRate',
+        unit: 'BPM',
+        icon: Heart,
+        defaults: {
+            physicalMin: 20,
+            lowerCritical: 40,
+            lowerWarning: 50,
+            targetMin: 60,
+            targetMax: 100,
+            upperWarning: 110,
+            upperCritical: 130,
+            physicalMax: 220
+        }
+    },
+    {
+        name: 'SpO2',
+        id: 'spO2',
+        unit: '%',
+        icon: Droplet,
+        special: 'spo2',
+        defaults: {
+            physicalMin: 50,
+            lowerCritical: 85,
+            lowerWarning: 90,
+            targetMin: 95,
+            targetMax: 100,
+            upperWarning: 100,
+            upperCritical: 100,
+            physicalMax: 100
+        }
+    },
+    {
+        name: 'Systolic BP',
+        id: 'systolicBP',
+        unit: 'mmHg',
+        icon: Activity,
+        defaults: {
+            physicalMin: 40,
+            lowerCritical: 80,
+            lowerWarning: 90,
+            targetMin: 100,
+            targetMax: 120,
+            upperWarning: 140,
+            upperCritical: 180,
+            physicalMax: 300
+        }
+    },
+    {
+        name: 'Diastolic BP',
+        id: 'diastolicBP',
+        unit: 'mmHg',
+        icon: Activity,
+        defaults: {
+            physicalMin: 30,
+            lowerCritical: 50,
+            lowerWarning: 60,
+            targetMin: 70,
+            targetMax: 80,
+            upperWarning: 90,
+            upperCritical: 110,
+            physicalMax: 200
+        }
+    },
+    {
+        name: 'Temperature',
+        id: 'temperature',
+        unit: '°F',
+        icon: Thermometer,
+        defaults: {
+            physicalMin: 90,
+            lowerCritical: 95,
+            lowerWarning: 96.8,
+            targetMin: 97.0,
+            targetMax: 99.5,
+            upperWarning: 100.4,
+            upperCritical: 103,
+            physicalMax: 110
+        }
+    },
+    {
+        name: 'Respiratory Rate',
+        id: 'respiratoryRate',
+        unit: 'breaths/min',
+        icon: Wind,
+        defaults: {
+            physicalMin: 4,
+            lowerCritical: 8,
+            lowerWarning: 10,
+            targetMin: 12,
+            targetMax: 20,
+            upperWarning: 24,
+            upperCritical: 30,
+            physicalMax: 60
+        }
+    },
+    {
+        name: 'Glucose: Fasting',
+        id: 'glucose',
+        glucoseType: 'Fasting',
+        unit: 'mg/dL',
+        icon: Beaker,
+        defaults: {
+            physicalMin: 20,
+            lowerCritical: 54,
+            lowerWarning: 70,
+            targetMin: 80,
+            targetMax: 99,
+            upperWarning: 125,
+            upperCritical: 250,
+            physicalMax: 600
+        }
+    },
+    {
+        name: 'Glucose: After Meal',
+        id: 'glucose',
+        glucoseType: 'After Meal',
+        unit: 'mg/dL',
+        icon: Beaker,
+        defaults: {
+            physicalMin: 20,
+            lowerCritical: 70,
+            lowerWarning: 90,
+            targetMin: 100,
+            targetMax: 140,
+            upperWarning: 180,
+            upperCritical: 300,
+            physicalMax: 600
+        }
+    },
+    {
+        name: 'Glucose: Random',
+        id: 'glucose',
+        glucoseType: 'Random',
+        unit: 'mg/dL',
+        icon: Beaker,
+        defaults: {
+            physicalMin: 20,
+            lowerCritical: 60,
+            lowerWarning: 80,
+            targetMin: 90,
+            targetMax: 140,
+            upperWarning: 200,
+            upperCritical: 300,
+            physicalMax: 600
+        }
+    }
 ];
-
 const SeverityPreview = ({ thresholds }: { thresholds: any }) => {
     const { physicalMin, lowerCritical, lowerWarning, upperWarning, upperCritical, physicalMax, isSpO2UpperEnabled, vitalName } = thresholds;
 
@@ -176,15 +313,15 @@ export default function VitalsThresholdsPage() {
                 return match || {
                     vitalName: meta.id,
                     glucoseType: meta.glucoseType,
-                    physicalMin: 20,
-                    lowerCritical: 40,
-                    lowerWarning: 50,
-                    upperWarning: 120,
-                    upperCritical: 140,
-                    physicalMax: 300,
+                    physicalMin: meta.defaults.physicalMin,
+                    lowerCritical: meta.defaults.lowerCritical,
+                    lowerWarning: meta.defaults.lowerWarning,
+                    upperWarning: meta.defaults.upperWarning,
+                    upperCritical: meta.defaults.upperCritical,
+                    physicalMax: meta.defaults.physicalMax,
                     unit: meta.unit,
-                    targetMin: 60,
-                    targetMax: 100,
+                    targetMin: meta.defaults.targetMin,
+                    targetMax: meta.defaults.targetMax,
                     escalationCriticalMinutes: 60,
                     escalationWarningMinutes: 480,
                     isSpO2UpperEnabled: meta.id === 'spO2' ? false : undefined
@@ -207,22 +344,27 @@ export default function VitalsThresholdsPage() {
     };
 
     const validateOrder = (t: any) => {
-        const { physicalMin, lowerCritical, lowerWarning, targetMin, targetMax, upperWarning, upperCritical, physicalMax } = t;
-        return (physicalMin < lowerCritical &&
-            lowerCritical < lowerWarning &&
-            lowerWarning <= targetMin &&
-            targetMin < targetMax &&
-            targetMax <= upperWarning &&
-            upperWarning <= upperCritical &&
-            upperCritical <= physicalMax);
+        const { physicalMin, lowerCritical, lowerWarning, targetMin, targetMax, upperWarning, upperCritical, physicalMax, vitalName, glucoseType } = t;
+        const name = `${vitalName}${glucoseType ? ` (${glucoseType})` : ''}`;
+
+        if (!(physicalMin < lowerCritical)) return { error: `Invalid [${name}]: Physical Min (${physicalMin}) must be < Lower Critical (${lowerCritical})` };
+        if (!(lowerCritical < lowerWarning)) return { error: `Invalid [${name}]: Lower Critical (${lowerCritical}) must be < Lower Warning (${lowerWarning})` };
+        if (!(lowerWarning <= targetMin)) return { error: `Invalid [${name}]: Lower Warning (${lowerWarning}) must be <= Target Min (${targetMin})` };
+        if (!(targetMin < targetMax)) return { error: `Invalid [${name}]: Target Min (${targetMin}) must be < Target Max (${targetMax})` };
+        if (!(targetMax <= upperWarning)) return { error: `Invalid [${name}]: Target Max (${targetMax}) must be <= Upper Warning (${upperWarning})` };
+        if (!(upperWarning <= upperCritical)) return { error: `Invalid [${name}]: Upper Warning (${upperWarning}) must be <= Upper Critical (${upperCritical})` };
+        if (!(upperCritical <= physicalMax)) return { error: `Invalid [${name}]: Upper Critical (${upperCritical}) must be <= Physical Max (${physicalMax})` };
+
+        return { error: null };
     };
 
     const handleSave = async () => {
         try {
             // Validate all
             for (const t of thresholds) {
-                if (!validateOrder(t)) {
-                    toast.error(`Invalid order for ${t.vitalName}${t.glucoseType ? ` (${t.glucoseType})` : ''}`);
+                const validation = validateOrder(t);
+                if (validation.error) {
+                    toast.error(validation.error);
                     return;
                 }
                 if (t.escalationCriticalMinutes < 50) {
@@ -427,7 +569,8 @@ export default function VitalsThresholdsPage() {
                             {thresholds.map((t, idx) => {
                                 const meta = VITALS_METADATA.find(m => m.id === t.vitalName && (!m.glucoseType || m.glucoseType === t.glucoseType));
                                 const Icon = meta?.icon || Activity;
-                                const isValid = validateOrder(t);
+                                const validation = validateOrder(t);
+                                const isValid = !validation.error;
 
                                 return (
                                     <tr key={idx} className={`group transition-all hover:bg-slate-50/50 ${!isValid ? 'bg-rose-50/50' : ''}`}>

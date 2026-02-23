@@ -359,9 +359,9 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
                                 <td style={{ ...styles.tableCell, fontWeight: 'bold', textTransform: 'uppercase' }}>{item.itemName}</td>
                                 <td style={{ ...styles.tableCell, textAlign: 'center', fontFamily: 'monospace' }}>{item.hsn || '-'}</td>
                                 <td style={{ ...styles.tableCell, textAlign: 'center', fontWeight: 900 }}>{item.qty}</td>
-                                <td style={{ ...styles.tableCell, textAlign: 'right', fontWeight: 500 }}>₹{Number(item.rate || item.unitRate || 0).toFixed(2)}</td>
+                                <td style={{ ...styles.tableCell, textAlign: 'right', fontWeight: 500 }}>₹{Math.round(Number(item.rate || item.unitRate || 0)).toLocaleString()}</td>
                                 <td style={{ ...styles.tableCell, textAlign: 'right', fontWeight: 500 }}>{item.gstPct || item.gst || 12}%</td>
-                                <td style={{ ...styles.tableCell, textAlign: 'right', fontWeight: 900, fontSize: '12px' }}>₹{Number(item.total || item.amount || 0).toFixed(2)}</td>
+                                <td style={{ ...styles.tableCell, textAlign: 'right', fontWeight: 900, fontSize: '12px' }}>₹{Math.round(Number(item.total || item.amount || 0)).toLocaleString()}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -372,15 +372,15 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
                     <div style={{ width: '256px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', color: '#374151', fontStyle: 'italic', marginBottom: '4px' }}>
                             <span>Subtotal:</span>
-                            <span style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>₹{billData.paymentSummary.subtotal.toFixed(2)}</span>
+                            <span style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>₹{Math.round(billData.paymentSummary.subtotal).toLocaleString()}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', color: '#374151', fontStyle: 'italic', marginBottom: '4px' }}>
                             <span>Discount:</span>
-                            <span style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>-₹{billData.paymentSummary.discount.toFixed(2)}</span>
+                            <span style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>-₹{Math.round(billData.paymentSummary.discount).toLocaleString()}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', color: '#374151', fontStyle: 'italic' }}>
                             <span>Taxable Amount:</span>
-                            <span style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>₹{billData.paymentSummary.taxableAmount.toFixed(2)}</span>
+                            <span style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>₹{Math.round(billData.paymentSummary.taxableAmount).toLocaleString()}</span>
                         </div>
                     </div>
                 </div>
@@ -395,7 +395,7 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
                 <div style={{ marginTop: '8px', fontSize: '11px', paddingLeft: '8px', paddingRight: '8px', fontWeight: 'bold' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                         <span style={{ color: '#4b5563' }}>Paid Amount:</span>
-                        <span style={{ fontWeight: 900 }}>₹{billData.paymentSummary.paidAmount.toLocaleString()}</span>
+                        <span style={{ fontWeight: 900 }}>₹{Math.round(billData.paymentSummary.paidAmount).toLocaleString()}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ color: '#4b5563' }}>Payment Mode:</span>

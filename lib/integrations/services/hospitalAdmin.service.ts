@@ -155,9 +155,19 @@ export const hospitalAdminService = {
         billingCategories: string[];
         clinicalNoteTypes?: string[];
         clinicalNoteVisibilities?: string[];
+        ipdPharmaSettings?: { enabledWards: string[] };
         minEscalationMinutes?: number;
       };
     }>("/hospitals/metadata", options),
+
+  updateIPDPharmaSettings: (data: { enabledWards: string[] }) =>
+    apiClient<{ success: boolean; data: { enabledWards: string[] } }>(
+      "/hospitals/ipd-pharma-settings",
+      {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      },
+    ),
 
   // Doctors
   getDoctors: () =>

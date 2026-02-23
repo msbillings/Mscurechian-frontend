@@ -100,7 +100,7 @@ const hospitalAdminMenu: MenuItem[] = [
       { label: "Overview", path: "/hospital-admin/pharma/dashboard" },
       { label: "Medicine Inventory", path: "/hospital-admin/pharma/products" },
       { label: "Vendor Network", path: "/hospital-admin/pharma/suppliers" },
-
+      { label: "Pharmacy Settings", path: "/hospital-admin/management/pharmacy-settings" },
     ],
   },
   {

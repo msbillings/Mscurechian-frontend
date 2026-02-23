@@ -128,7 +128,7 @@ function PortalsPage() {
             features: ["Medication Administration (MAR)", "Patient Vitals Monitoring", "Nursing Task Queue", "Ward & Bed Management"],
             color: "text-emerald-600",
             bg: "bg-emerald-50",
-            loginUrl: "/nurse-login"
+            loginUrl: "/nurse/login"
         },
         {
             title: "Staff Portal",
