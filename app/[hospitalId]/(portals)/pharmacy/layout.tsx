@@ -23,7 +23,8 @@ import {
 // Pharmacy specific menu items
 const pharmacyMenu: SidebarItem[] = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/pharmacy/dashboard" },
-    { icon: BarChart, label: "Analytics", href: "/pharmacy/analytics" },
+    { icon: PlusCircle, label: "Create Invoice", href: "/pharmacy/billing" },
+    { icon : PlusCircle, label: "IPD Billing", href: "/pharmacy/ipd-billing" },
     { icon: Pill, label: "Active Orders", href: "/pharmacy/orders" },
     { icon: PlusCircle, label: "IPD Issuance", href: "/pharmacy/ipd-issuance" },
     { icon: RotateCcw, label: "Medicine Returns", href: "/pharmacy/medicine-return" },

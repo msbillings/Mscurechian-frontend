@@ -18,9 +18,11 @@ import { SupplierService } from '@/lib/integrations/services/supplier.service';
 import { PharmacyProductPayload } from '@/lib/integrations/types/product';
 import { Supplier } from '@/lib/integrations/types/supplier';
 import { toast } from 'react-hot-toast';
+import { useTenantLink } from '@/hooks/useTenantLink';
 
 const AddProductPage = () => {
     const router = useRouter();
+    const { getPath } = useTenantLink();
     const [loading, setLoading] = useState(false);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     
@@ -72,7 +74,7 @@ const AddProductPage = () => {
         try {
             await ProductService.addProduct(formData);
             toast.success('Medicine registered successfully');
-            router.push('/pharmacy/products');
+            router.push(getPath('/pharmacy/products'));
         } catch (error: any) {
             toast.error(error.message || 'Failed to save product');
         } finally {

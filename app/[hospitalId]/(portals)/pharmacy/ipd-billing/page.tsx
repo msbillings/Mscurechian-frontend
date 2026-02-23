@@ -20,12 +20,14 @@ import { PharmacyBillingService } from "@/lib/integrations/services/pharmacyBill
 import { ProductService } from "@/lib/integrations/services/product.service";
 import { hospitalAdminService } from "@/lib/integrations";
 import { useAuthStore } from "@/stores/authStore";
+import { useTenantLink } from "@/hooks/useTenantLink";
 
 const IPDBillingPage = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
     const orderId = searchParams.get("orderId");
     const { user } = useAuthStore();
+    const { getPath } = useTenantLink();
 
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -176,7 +178,7 @@ const IPDBillingPage = () => {
 
             await PharmacyBillingService.chargeIPDBill(payload);
             toast.success("Medicines charged to IPD bill successfully!");
-            router.push("/pharmacy/orders");
+            router.push(getPath("/pharmacy/orders"));
         } catch (error: any) {
             console.error("Charge failed", error);
             toast.error(error.message || "Failed to charge medicines to IPD");
