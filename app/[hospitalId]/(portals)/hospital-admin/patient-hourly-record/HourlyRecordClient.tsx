@@ -21,7 +21,8 @@ import {
     HeartPulse,
     Droplets,
     X,
-    Printer
+    Printer,
+    FlaskConical
 } from 'lucide-react';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 import { Card } from '@/components/admin';
@@ -110,9 +111,36 @@ export default function HourlyRecordClient() {
 
         // Patient Info
         worksheet.addRow(['Patient Name:', admission.patientName, '', 'Admission ID:', admission.admissionId]);
-        worksheet.addRow(['Doctor:', admission.doctorName, '', 'Admission Date:', format(new Date(admission.admissionDate), 'dd MMM yyyy HH:mm')]);
+        const docName = admission.doctorName?.startsWith('Dr.') ? admission.doctorName : `Dr. ${admission.doctorName}`;
+        worksheet.addRow(['Doctor:', docName, '', 'Admission Date:', format(new Date(admission.admissionDate), 'dd MMM yyyy HH:mm')]);
         worksheet.addRow(['Diet Plan:', admission.diet || 'Regular Diet']);
         worksheet.addRow([]);
+
+        // Lab Investigations
+        if (labOrders && labOrders.length > 0) {
+            worksheet.addRow(['LAB INVESTIGATIONS']).font = { bold: true };
+            worksheet.addRow(['Date', 'Test Name', 'Status', 'Result', 'Unit']);
+            labOrders.forEach((order: any) => {
+                const date = format(new Date(order.createdAt), 'dd MMM HH:mm');
+                order.tests?.forEach((test: any) => {
+                    const testName = test.testName || test.test?.testName || 'Test';
+
+                    // Add subtests if they exist
+                    if (test.subTests && test.subTests.length > 0) {
+                        test.subTests.forEach((st: any) => {
+                            if (st.result !== undefined && st.result !== null && st.result !== '') {
+                                worksheet.addRow([date, `${testName} - ${st.name}`, order.status, st.result, st.unit || '-']);
+                            }
+                        });
+                    } else if (test.resultValue) {
+                        worksheet.addRow([date, testName, order.status, test.resultValue, test.unit || '-']);
+                    } else {
+                        worksheet.addRow([date, testName, order.status, 'Pending', '-']);
+                    }
+                });
+            });
+            worksheet.addRow([]);
+        }
 
         // Vitals Table
         worksheet.addRow(['HOURLY VITALS']).font = { bold: true };
@@ -155,7 +183,7 @@ export default function HourlyRecordClient() {
         worksheet.addRow(['Items', 'Category', 'Time', 'Date', 'Nurse', 'Notes']);
 
         const dietRows = (diet || []).map((d: any) => [
-            d.items?.join(', '),
+            d.items?.map((item: any) => `${item.name || item} ${item.quantity ? `(${item.quantity})` : ''}`).join(', '),
             d.category,
             d.recordedTime,
             format(new Date(d.timestamp), 'dd MMM yyyy (EEEE)'),
@@ -340,7 +368,7 @@ export default function HourlyRecordClient() {
                                                 Primary Doctor
                                             </p>
                                             <p className="text-xs font-black text-slate-700 truncate">
-                                                Dr. {hourlyData.data.admission.doctorName}
+                                                {hourlyData.data.admission.doctorName?.startsWith('Dr.') ? hourlyData.data.admission.doctorName : `Dr. ${hourlyData.data.admission.doctorName}`}
                                             </p>
                                         </div>
                                         <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
@@ -639,7 +667,14 @@ export default function HourlyRecordClient() {
                                                 <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
                                                     <td className="px-6 py-4">
                                                         <div className="flex flex-col">
-                                                            <span className="text-xs font-black text-slate-800">{d.items?.join(', ')}</span>
+                                                            <span className="text-xs font-black text-slate-800">
+                                                                {d.items?.map((item: any) => `${item.name || item} ${item.quantity ? `(${item.quantity})` : ''}`).join(', ')}
+                                                            </span>
+                                                            {d.items?.some((item: any) => item.calories) && (
+                                                                <span className="text-[7px] font-bold text-amber-600 uppercase tracking-widest">
+                                                                    {d.items.reduce((sum: number, i: any) => sum + (Number(i.calories) || 0), 0)} Kcal
+                                                                </span>
+                                                            )}
                                                             {d.notes && <span className="text-[9px] text-slate-400 italic font-medium">{d.notes}</span>}
                                                         </div>
                                                     </td>
@@ -681,26 +716,69 @@ export default function HourlyRecordClient() {
                             <div className="p-6">
                                 <div className="space-y-4">
                                     {hourlyData.data.labOrders.length > 0 ? (
-                                        hourlyData.data.labOrders.map((order: any, idx: number) => (
-                                            <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex justify-between items-center group hover:border-indigo-200 transition-all">
-                                                <div className="flex gap-3">
-                                                    <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-                                                        <ClipboardList size={18} />
+                                        <div className="space-y-4">
+                                            {hourlyData.data.labOrders.map((order: any, idx: number) => (
+                                                <div key={idx} className="p-5 rounded-3xl bg-slate-50 border border-slate-100 group hover:border-indigo-200 transition-all shadow-sm">
+                                                    <div className="flex justify-between items-start mb-4">
+                                                        <div className="flex gap-3">
+                                                            <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform flex-shrink-0">
+                                                                <FlaskConical size={18} />
+                                                            </div>
+                                                            <div>
+                                                                <div className="flex flex-wrap gap-2 mb-1">
+                                                                    {order.tests?.map((t: any, tidx: number) => (
+                                                                        <span key={tidx} className="text-xs font-black text-slate-800 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-sm">
+                                                                            {t.testName || t.test?.testName || 'Lab Investigation'}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                                    By {hourlyData.data.admission.doctorName?.startsWith('Dr.') ? hourlyData.data.admission.doctorName : `Dr. ${hourlyData.data.admission.doctorName}`}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter border ${order.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'
+                                                                }`}>
+                                                                {order.status}
+                                                            </span>
+                                                            <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase">{format(new Date(order.createdAt), 'dd MMM, HH:mm')}</p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="text-xs font-black text-slate-800">{order.tests?.[0]?.test?.name || 'Lab Investigation'}</p>
-                                                        <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">By Dr. {hourlyData.data.admission.doctorName}</p>
+
+                                                    {/* Lab Results Detail Display */}
+                                                    <div className="mt-4 pt-4 border-t border-slate-200/50 space-y-3">
+                                                        {order.tests?.map((test: any, testIdx: number) => (
+                                                            <div key={testIdx} className="space-y-2">
+                                                                {(test.subTests && test.subTests.length > 0) ? (
+                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                                        {test.subTests.map((st: any, stIdx: number) => (
+                                                                            st.result !== undefined && st.result !== null && st.result !== '' ? (
+                                                                                <div key={stIdx} className="flex justify-between items-center bg-white/50 p-2.5 rounded-xl border border-slate-100 transition-colors hover:bg-white">
+                                                                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{st.name}</span>
+                                                                                    <div className="flex items-center gap-1.5">
+                                                                                        <span className="text-xs font-black text-slate-900">{st.result}</span>
+                                                                                        <span className="text-[9px] font-bold text-slate-400 uppercase">{st.unit || '-'}</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ) : null
+                                                                        ))}
+                                                                    </div>
+                                                                ) : test.resultValue ? (
+                                                                    <div className="flex justify-between items-center bg-white/50 p-3 rounded-xl border border-slate-100">
+                                                                        <span className="text-[11px] font-black text-slate-600 uppercase tracking-wide">Result</span>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-sm font-black text-blue-600">{test.resultValue}</span>
+                                                                            <span className="text-[10px] font-bold text-slate-400 uppercase">{test.unit || '-'}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : null}
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter border ${order.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'
-                                                        }`}>
-                                                        {order.status}
-                                                    </span>
-                                                    <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase">{format(new Date(order.createdAt), 'dd MMM, HH:mm')}</p>
-                                                </div>
-                                            </div>
-                                        ))
+                                            ))}
+                                        </div>
                                     ) : (
                                         <div className="text-center py-8">
                                             <AlertCircle size={24} className="text-slate-200 mx-auto mb-2" />

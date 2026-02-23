@@ -56,7 +56,7 @@ const TransactionRow = React.memo(({
                 </span>
             </td>
             <td className="px-8 py-5 text-right font-black text-gray-900 dark:text-white text-[14px]">
-                ₹{(bill.paymentSummary.grandTotal || 0).toLocaleString()}
+                ₹{Math.round(bill.paymentSummary.grandTotal || 0).toLocaleString()}
             </td>
             <td className="px-8 py-5 text-center">
                 <span className={`px-5 py-2 rounded-2xl text-[9px] font-black uppercase tracking-widest ${bill.paymentSummary.status === 'Paid' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>

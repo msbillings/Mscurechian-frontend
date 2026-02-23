@@ -16,6 +16,7 @@ import {
     PlusCircle,
     Users,
     Pill,
+    RotateCcw,
     Shield, // Added Shield
 } from "lucide-react";
 
@@ -24,7 +25,8 @@ const pharmacyMenu: SidebarItem[] = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/pharmacy/dashboard" },
     { icon: BarChart, label: "Analytics", href: "/pharmacy/analytics" },
     { icon: Pill, label: "Active Orders", href: "/pharmacy/orders" },
-    { icon: PlusCircle, label: "Create Invoice", href: "/pharmacy/billing" },
+    { icon: PlusCircle, label: "IPD Issuance", href: "/pharmacy/ipd-issuance" },
+    { icon: RotateCcw, label: "Medicine Returns", href: "/pharmacy/medicine-return" },
     { icon: Package, label: "Products", href: "/pharmacy/products" },
     { icon: Users, label: "Suppliers", href: "/pharmacy/suppliers" },
     { icon: BarChart, label: "Transactions", href: "/pharmacy/transactions" },

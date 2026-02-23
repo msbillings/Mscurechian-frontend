@@ -252,7 +252,7 @@ export default function FeedbacksPage() {
                                     {fb.doctor && (
                                         <div className="mt-4 pt-3 border-t border-slate-50 flex justify-end">
                                             <p className="text-[11px] text-slate-400 flex items-center gap-1">
-                                                Attended by <span className="font-bold text-slate-700">Dr. {fb.doctor.firstName} {fb.doctor.lastName}</span>
+                                                Attended by <span className="font-bold text-slate-700">{fb.doctor.firstName?.startsWith('Dr.') ? `${fb.doctor.firstName} ${fb.doctor.lastName}` : `Dr. ${fb.doctor.firstName} ${fb.doctor.lastName}`}</span>
                                             </p>
                                         </div>
                                     )}

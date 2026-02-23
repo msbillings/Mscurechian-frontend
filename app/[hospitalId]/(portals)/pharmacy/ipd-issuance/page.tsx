@@ -349,7 +349,9 @@ export default function IPDIssuancePage() {
                                         </div>
 
                                         {adm.primaryDoctor?.user?.name && (
-                                            <p className="text-xs text-gray-400 mb-3 truncate">Dr. {adm.primaryDoctor.user.name}</p>
+                                            <p className="text-xs text-gray-400 mb-3 truncate">
+                                                {adm.primaryDoctor.user.name.startsWith('Dr.') ? adm.primaryDoctor.user.name : `Dr. ${adm.primaryDoctor.user.name}`}
+                                            </p>
                                         )}
 
                                         {/* Pharmacy clearance */}

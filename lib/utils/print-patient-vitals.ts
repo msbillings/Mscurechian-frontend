@@ -216,7 +216,7 @@ export const generatePatientHourlyRecordHtml = (data: any) => {
                 </div>
                 <div class="info-item">
                     <span class="info-label">Primary Physician</span>
-                    <span class="info-value">Dr. ${admission.doctorName}</span>
+                    <span class="info-value">${admission.doctorName?.startsWith('Dr.') ? admission.doctorName : `Dr. ${admission.doctorName}`}</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Location</span>
@@ -331,7 +331,17 @@ export const generatePatientHourlyRecordHtml = (data: any) => {
                     <tbody>
                         ${sortedDiet.length > 0 ? sortedDiet.map((d: any) => `
                             <tr>
-                                <td><strong>${d.items?.join(', ')}</strong></td>
+                                    <td>
+                                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                                            <strong style="font-size: 10px;">
+                                                ${d.items?.map((item: any) => `${item.name || item} ${item.quantity ? `(${item.quantity})` : ''}`).join(', ')}
+                                            </strong>
+                                            ${d.items?.some((i: any) => i.calories) ? `
+                                            <span style="font-size: 7px; color: #b45309; font-weight: 800; text-transform: uppercase;">
+                                                Total: ${d.items.reduce((sum: number, i: any) => sum + (Number(i.calories) || 0), 0)} Kcal
+                                            </span>` : ''}
+                                        </div>
+                                    </td>
                                 <td><span class="status-badge" style="background-color: #ffedd5; color: #ea580c;">${d.category}</span></td>
                                 <td>
                                     ${d.recordedTime}<br/>
@@ -345,23 +355,56 @@ export const generatePatientHourlyRecordHtml = (data: any) => {
                 </table>
             </div>
 
-            <div class="section no-break">
+            <div class="section">
                 <div class="section-header">
-                    <h2>Recent Diagnostics & Investigations</h2>
+                    <h2>Diagnostics & Investigations Detail</h2>
                 </div>
-                <div class="lab-grid">
+                <div style="display: flex; flex-direction: column; gap: 15px;">
                     ${labOrders.length > 0 ? labOrders.map((order: any) => `
-                        <div class="lab-item">
-                            <div>
-                                <p style="font-weight: 800; font-size: 10px;">${order.tests?.[0]?.test?.name || 'Lab Test'}</p>
-                                <p style="font-size: 8px; color: #94a3b8; font-weight: 600; margin-top: 2px;">Ordered by Dr. ${order.doctor?.name}</p>
+                        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 10px;">
+                                <div>
+                                    <h3 style="font-size: 11px; font-weight: 800; color: #1e293b; margin-bottom: 4px; text-transform: uppercase;">
+                                        ${order.tests?.map((t: any) => t.testName || t.test?.testName || 'Investigation').join(', ')}
+                                    </h3>
+                                    <p style="font-size: 9px; color: #64748b; font-weight: 600;">By ${admission.doctorName?.startsWith('Dr.') ? admission.doctorName : `Dr. ${admission.doctorName}`}</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span class="status-badge" style="background-color: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;">${order.status}</span>
+                                    <p style="font-size: 8px; color: #94a3b8; font-weight: 600; margin-top: 4px;">${format(new Date(order.createdAt), 'dd MMM yyyy, HH:mm')}</p>
+                                </div>
                             </div>
-                            <div style="text-align: right;">
-                                <span class="status-badge status-stable">${order.status}</span>
-                                <p style="font-size: 8px; color: #94a3b8; margin-top: 4px;">${format(new Date(order.createdAt), 'dd MMM')}</p>
-                            </div>
+                            
+                            <table style="margin-top: 0; background: transparent;">
+                                <thead>
+                                    <tr>
+                                        <th style="font-size: 8px; border: none; background: transparent; padding: 4px 0;">Test Component</th>
+                                        <th style="font-size: 8px; border: none; background: transparent; padding: 4px 0; text-align: right;">Result</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${order.tests?.map((test: any) => {
+        if (test.subTests && test.subTests.length > 0) {
+            return test.subTests.map((st: any) => `
+                                                <tr>
+                                                    <td style="border: none; padding: 4px 0; font-size: 10px; color: #64748b;">${st.name}</td>
+                                                    <td style="border: none; padding: 4px 0; text-align: right; font-weight: 800; color: #1e293b;">${st.result} <span style="font-size: 8px; color: #94a3b8; font-weight: 400;">${st.unit || ''}</span></td>
+                                                </tr>
+                                            `).join('');
+        } else if (test.resultValue) {
+            return `
+                                                <tr>
+                                                    <td style="border: none; padding: 4px 0; font-size: 10px; color: #64748b;">${test.testName || test.test?.testName}</td>
+                                                    <td style="border: none; padding: 4px 0; text-align: right; font-weight: 800; color: #1e293b;">${test.resultValue} <span style="font-size: 8px; color: #94a3b8; font-weight: 400;">${test.unit || ''}</span></td>
+                                                </tr>
+                                            `;
+        }
+        return '';
+    }).join('')}
+                                </tbody>
+                            </table>
                         </div>
-                    `).join('') : '<p style="text-align: center; width: 100%; color: #94a3b8; padding: 10px;">No lab orders found.</p>'}
+                    `).join('') : '<p style="text-align: center; width: 100%; color: #94a3b8; padding: 20px; border: 1px dashed #e2e8f0; border-radius: 8px;">No diagnostic investigation reports found for this admission.</p>'}
                 </div>
             </div>
 

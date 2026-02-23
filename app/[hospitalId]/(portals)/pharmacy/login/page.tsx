@@ -86,7 +86,8 @@ function PharmacyLogin() {
                 }
             });
 
-            router.push("/pharmacy/dashboard");
+            const userHospitalId = user.hospital || user.hospitalId;
+            router.push(`/${userHospitalId}/pharmacy/dashboard`);
 
         } catch (err: any) {
             console.error("❌ Login failed:", err);

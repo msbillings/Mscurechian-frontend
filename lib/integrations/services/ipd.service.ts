@@ -318,7 +318,7 @@ export const ipdService = {
 
   logDiet: (data: {
     admissionId: string;
-    items: string[];
+    items: { name: string; quantity?: string; calories?: string | number }[];
     category: string;
     recordedDate: string;
     recordedTime: string;

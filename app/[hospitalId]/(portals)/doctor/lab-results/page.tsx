@@ -385,7 +385,7 @@ export default function DoctorLabResultsPage() {
                                         <div>
                                             <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Referred By</p>
                                             <p className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
-                                                Dr. {result.doctor?.name || 'Medical Staff'}
+                                                {result.doctor?.name ? (result.doctor.name.startsWith('Dr.') ? result.doctor.name : `Dr. ${result.doctor.name}`) : 'Medical Staff'}
                                             </p>
                                         </div>
                                     </div>

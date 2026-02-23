@@ -257,7 +257,9 @@ export default function NurseMedicineReturnPage() {
                                     </div>
 
                                     {adm.primaryDoctor?.user?.name && (
-                                        <p className="text-xs text-gray-400 truncate">Dr. {adm.primaryDoctor.user.name}</p>
+                                        <p className="text-xs text-gray-400 truncate">
+                                            {adm.primaryDoctor?.user?.name ? (adm.primaryDoctor.user.name.startsWith('Dr.') ? adm.primaryDoctor.user.name : `Dr. ${adm.primaryDoctor.user.name}`) : 'Attending Physician'}
+                                        </p>
                                     )}
 
                                     {/* Action highlight */}

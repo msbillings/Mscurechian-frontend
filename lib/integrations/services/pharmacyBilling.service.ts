@@ -141,6 +141,24 @@ export const PharmacyBillingService = {
     });
   },
 
+  chargeIPDBill: async (data: {
+    admissionId: string;
+    orderId?: string;
+    items: Array<{
+      productId: string;
+      productName: string;
+      issuedQty: number;
+      unitRate: number;
+      totalAmount: number;
+    }>;
+    notes?: string;
+  }) => {
+    return apiClient<any>("/pharmacy/ipd-issuance", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
   // ✅ Query key helpers for React Query
   queryKeys: {
     all: () => ["pharmacy"] as const,

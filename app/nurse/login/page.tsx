@@ -115,7 +115,8 @@ const NurseLoginPage = () => {
             });
 
             setIsNavigating(true);
-            router.replace('/nurse');
+            const userHospitalId = (user as any).hospital || (user as any).hospitalId;
+            router.replace(`/${userHospitalId}/nurse`);
         } catch (err: any) {
             const errorMessage = err?.message || err?.response?.data?.message || 'Login failed. Please check your credentials.';
             setServerMsg(errorMessage);
