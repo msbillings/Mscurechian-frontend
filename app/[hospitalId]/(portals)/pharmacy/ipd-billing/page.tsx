@@ -217,7 +217,7 @@ const IPDBillingPage = () => {
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 <div className="xl:col-span-2 space-y-6">
                     {/* Patient Card */}
-                    <div className="bg-white rounded-[2rem] border border-slate-100 p-8 shadow-sm">
+                    <div className="bg-white rounded-4xl border border-slate-100 p-8 shadow-sm">
                         <div className="flex items-center gap-4 mb-8">
                             <div className="w-16 h-16 bg-primary-theme/10 text-primary-theme rounded-2xl flex items-center justify-center">
                                 <User size={32} />
@@ -230,7 +230,7 @@ const IPDBillingPage = () => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-4xl border border-slate-100">
                             <div>
                                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Doctor</p>
                                 <p className="text-xs font-black text-slate-700 uppercase">
@@ -249,7 +249,7 @@ const IPDBillingPage = () => {
 
                     {/* Prescribed Medicines List - OPD Style */}
                     {prescribedMedicines.length > 0 && (
-                        <div className="bg-primary-theme/5 rounded-[2rem] border border-primary-theme/10 p-8 shadow-sm">
+                        <div className="bg-primary-theme/5 rounded-4xl border border-primary-theme/10 p-8 shadow-sm">
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="p-2 bg-primary-theme/10 text-primary-theme rounded-xl">
                                     <Pill size={18} />
@@ -283,7 +283,7 @@ const IPDBillingPage = () => {
                     )}
 
                     {/* Entry Section */}
-                    <div className="bg-white rounded-[2rem] border border-slate-100 p-8 shadow-sm">
+                    <div className="bg-white rounded-4xl border border-slate-100 p-8 shadow-sm">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="p-2 bg-slate-50 text-slate-400 rounded-xl">
                                 <Plus size={18} />
@@ -339,7 +339,7 @@ const IPDBillingPage = () => {
                     </div>
 
                     {/* Table */}
-                    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-4xl border border-slate-100 shadow-sm overflow-hidden">
                         <table className="w-full">
                             <thead className="bg-slate-50 border-b border-slate-100">
                                 <tr>
@@ -379,7 +379,7 @@ const IPDBillingPage = () => {
 
                 {/* Summary Sidebar */}
                 <div className="space-y-6">
-                    <div className="bg-white rounded-[2rem] border border-slate-100 p-8 shadow-sm space-y-8">
+                    <div className="bg-white rounded-4xl border border-slate-100 p-8 shadow-sm space-y-8">
                         <div className="flex items-center gap-3">
                             <div className="p-3 bg-primary-theme/10 text-primary-theme rounded-2xl">
                                 <Calculator size={20} />
@@ -401,7 +401,7 @@ const IPDBillingPage = () => {
                         <button
                             onClick={handleChargeToIPD}
                             disabled={submitting || cart.length === 0}
-                            className="w-full bg-primary-theme text-white py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-primary-theme/90 transition-all shadow-lg shadow-primary-theme/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                            className="w-full bg-primary-theme text-white py-5 rounded-4xl font-black text-xs uppercase tracking-widest hover:bg-primary-theme/90 transition-all shadow-lg shadow-primary-theme/20 disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                             {submitting ? (
                                 <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
