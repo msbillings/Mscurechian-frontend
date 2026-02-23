@@ -31,13 +31,19 @@ import medicineData from '@/medicine.json';
 
 // --- Types ---
 interface Medicine {
+    productId?: string;
     name: string;
     dosage: string;
     freq: string;
     duration: string;
     quantity: string;
     price: number;
+    unitsPerPack?: number;
+    availableUnits?: number;
+    pricePerUnit?: number;
+    error?: string;
 }
+
 
 interface PrescriptionForm {
     patientName: string;
@@ -87,6 +93,7 @@ function CreatePrescriptionPage() {
     const searchParams = useSearchParams();
     const appointmentId = searchParams.get('appointmentId');
     const patientId = searchParams.get('patientId');
+    const admissionId = searchParams.get('admissionId');
 
     const [mode, setMode] = useState<'AI' | 'SELF'>('SELF');
     const [formData, setFormData] = useState<PrescriptionForm>(INITIAL_FORM);
@@ -217,11 +224,20 @@ function CreatePrescriptionPage() {
         // Construct a nice name from the pharma data
         const fullName = `${med.brand} (${med.generic}) ${med.strength}`;
 
+        const unitsPerPack = med.unitsPerPack || 1;
+        const availableUnits = (med.stock || 0) * unitsPerPack;
+        const pricePerUnit = (med.mrp || 0) / unitsPerPack;
+
         newMeds[index] = {
             ...newMeds[index],
+            productId: med._id,
             name: fullName,
             dosage: med.form || '', // Default dosage form
-            price: med.mrp || 0
+            price: med.mrp || 0,
+            unitsPerPack,
+            availableUnits,
+            pricePerUnit,
+            error: ''
         };
 
         setFormData(prev => ({ ...prev, medicines: newMeds }));
@@ -231,6 +247,7 @@ function CreatePrescriptionPage() {
         setSuggestions([]);
         setActiveMedIndex(null);
     };
+
 
     const handleGeneratePrescription = () => {
         if (!formData.symptoms) {
@@ -363,24 +380,42 @@ function CreatePrescriptionPage() {
 
     const updateMedicine = (index: number, field: string, value: string | number) => {
         const newMeds = [...formData.medicines];
+        const med = newMeds[index] as Medicine;
         (newMeds[index] as any)[field] = value;
+
+        // Real-time validation for quantity
+        if (field === 'quantity') {
+            const qty = parseInt(String(value)) || 0;
+            if (med.availableUnits !== undefined && qty > med.availableUnits) {
+                med.error = `Only ${med.availableUnits} available`;
+            } else {
+                med.error = '';
+            }
+        }
+
         setFormData(prev => ({ ...prev, medicines: newMeds }));
 
         if (field === 'name') {
             handleMedicineSearch(value as string, index);
         }
 
-        if (field === 'price') {
+        if (field === 'price' || field === 'quantity') {
             calculateBilling(newMeds);
         }
     };
 
     const calculateBilling = (meds = formData.medicines) => {
-        const subtotal = meds.reduce((sum, med) => sum + (Number(med.price) || 0), 0);
+        const subtotal = meds.reduce((sum, med) => {
+            if (med.pricePerUnit && med.quantity) {
+                return sum + (med.pricePerUnit * (parseInt(med.quantity) || 0));
+            }
+            return sum + (Number(med.price) || 0);
+        }, 0);
         const tax = 0; // Tax removed
         const total = subtotal;
         setFormData(prev => ({ ...prev, subtotal, tax, total }));
     };
+
 
     const removeMedicine = (index: number) => {
         const newMeds = formData.medicines.filter((_, i) => i !== index);
@@ -417,6 +452,10 @@ function CreatePrescriptionPage() {
         if (!formData.diagnosis) return toast.error("Diagnosis is required");
         if (formData.medicines.length === 0) return toast.error("At least one medicine is required");
 
+        const hasErrors = formData.medicines.some(m => m.error);
+        if (hasErrors) return toast.error("Please resolve stock errors before submitting");
+
+
         try {
             setIsSaving(true);
 
@@ -424,9 +463,11 @@ function CreatePrescriptionPage() {
             await doctorService.createPrescription({
                 appointmentId,
                 patientId, // Pass patientId
+                admissionId, // Pass admissionId if present
                 diagnosis: formData.diagnosis,
                 symptoms: formData.symptoms.split(',').map(s => s.trim()),
                 medicines: formData.medicines.map(m => ({
+                    drug: (m as any).productId,
                     name: m.name,
                     dosage: m.dosage,
                     frequency: m.freq,
@@ -951,24 +992,36 @@ function CreatePrescriptionPage() {
                                                             <div>
                                                                 <div className="font-bold text-slate-800 text-sm">{s.brand}</div>
                                                                 <div className="text-xs text-slate-500">{s.generic}</div>
+                                                                <div className="mt-1 text-[10px] font-bold text-slate-400">
+                                                                    {s.unitsPerPack} units per pack
+                                                                </div>
                                                             </div>
                                                             <div className="text-right">
                                                                 {s.stock > 0 ? (
-                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                                                                        Stock: {s.stock}
-                                                                    </span>
+                                                                    <div className="flex flex-col items-end gap-1">
+                                                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                                                                            {s.stock} Packs Available
+                                                                        </span>
+                                                                        <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">
+                                                                            Total: {s.stock * (s.unitsPerPack || 1)} Units
+                                                                        </span>
+                                                                    </div>
                                                                 ) : (
                                                                     <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
                                                                         Out of Stock
                                                                     </span>
                                                                 )}
-                                                                <div className="text-xs font-bold text-slate-700 mt-1">₹{s.mrp}</div>
+                                                                <div className="text-xs font-bold text-slate-700 mt-1">₹{s.mrp} <span className="text-[10px] font-normal text-slate-400">/ pack</span></div>
+                                                                {s.unitsPerPack > 1 && (
+                                                                    <div className="text-[9px] font-bold text-indigo-500 mt-0.5">₹{(s.mrp / s.unitsPerPack).toFixed(2)} per unit</div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </button>
                                                 ))}
                                             </div>
                                         )}
+
                                     </div>
                                     <div className="col-span-6 md:col-span-2">
                                         <input
@@ -994,17 +1047,33 @@ function CreatePrescriptionPage() {
                                             className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-teal-500"
                                         />
                                     </div>
-                                    <div className="col-span-6 md:col-span-2 flex items-center gap-2">
-                                        <input
-                                            value={med.quantity}
-                                            onChange={(e) => updateMedicine(idx, 'quantity', e.target.value)}
-                                            placeholder="Qty"
-                                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-teal-500"
-                                        />
-                                        <button onClick={() => removeMedicine(idx)} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg">
-                                            <Trash2 size={16} />
-                                        </button>
+                                    <div className="col-span-6 md:col-span-2 flex flex-col gap-1">
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                value={med.quantity}
+                                                onChange={(e) => updateMedicine(idx, 'quantity', e.target.value)}
+                                                placeholder="Qty"
+                                                className={`w-full px-3 py-2 bg-white border ${med.error ? 'border-rose-500 focus:ring-rose-500/10' : 'border-slate-200 focus:border-teal-500'} rounded-lg text-sm font-bold focus:outline-none focus:ring-2`}
+                                            />
+                                            <button onClick={() => removeMedicine(idx)} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                        {med.availableUnits !== undefined && (
+                                            <div className="flex justify-between items-center px-1">
+                                                <span className="text-[9px] font-bold text-slate-400">Stock: {med.availableUnits}</span>
+                                                {med.pricePerUnit && (
+                                                    <span className="text-[9px] font-bold text-teal-600">₹{(med.pricePerUnit * (parseInt(med.quantity) || 0)).toFixed(2)}</span>
+                                                )}
+                                            </div>
+                                        )}
+                                        {med.error && (
+                                            <div className="text-[9px] font-bold text-rose-500 px-1 animate-pulse">
+                                                {med.error}
+                                            </div>
+                                        )}
                                     </div>
+
                                 </div>
                             </div>
                         ))}

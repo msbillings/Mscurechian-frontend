@@ -11,6 +11,7 @@ export interface Bed {
     currentOccupancy?: {
         patientName: string;
         admissionId: string;
+        admissionDate?: string | Date;
         condition?: string;
         lastVitalsRecordedAt?: string | Date;
     };

@@ -37,7 +37,7 @@ const PUBLIC_PATHS = [
   "/portals",
   "/support",
   "/emergency-login",
-  "/nurse-login",
+  "/nurse/login",
   "/pharmacy/login",
   "/lab/login",
   "/hr/login",

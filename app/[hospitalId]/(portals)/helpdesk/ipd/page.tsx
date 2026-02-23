@@ -16,13 +16,16 @@ import {
     ChevronLeft,
     ChevronRight,
     Receipt,
+    Clock,
 } from 'lucide-react';
 import { joinSocketRoom, getSocket } from '@/lib/integrations/api/socket';
 import { useRouter } from 'next/navigation';
 import { ipdService } from '@/lib/integrations';
+import { apiClient } from '@/lib/integrations/api';
 import { Bed } from '@/lib/integrations/types';
 import toast from 'react-hot-toast';
 import { calculateStayDuration } from '@/lib/utils/date-utils';
+import HybridRoomSearch from '@/components/shared/HybridRoomSearch';
 import { IPDBillingModal } from '@/components/helpdesk/IPDBillingModal';
 
 const AnimatedNumber = ({ value, trigger }: { value: number; trigger: any }) => {
@@ -90,6 +93,10 @@ export default function IPDCenter() {
     const [unitTypes, setUnitTypes] = useState<string[]>([]);
     const [transferBedRoomFilter, setTransferBedRoomFilter] = useState<string>('');
     const [showBillingModal, setShowBillingModal] = useState(false);
+    const [billingSummary, setBillingSummary] = useState<any>(null);
+    const [billingLoading, setBillingLoading] = useState(false);
+    const [pharmacyError, setPharmacyError] = useState<string | null>(null);
+    const [pharmacySignoffLoading, setPharmacySignoffLoading] = useState(false);
 
     const triggerActivityAnimation = () => {
         setIsAnimating(false);
@@ -257,6 +264,20 @@ export default function IPDCenter() {
         }
     };
 
+    const fetchBillingSummary = async (admissionId: string) => {
+        if (!admissionId) return;
+        try {
+            setBillingLoading(true);
+            const data = await ipdService.getBillSummary(admissionId);
+            setBillingSummary(data);
+        } catch (error: any) {
+            console.error("Billing Summary Fetch Error:", error);
+            toast.error("Could not verify payment status");
+        } finally {
+            setBillingLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchBeds();
     }, [filters]);
@@ -323,6 +344,7 @@ export default function IPDCenter() {
         if (!bedDetails) return;
 
         const admissionId = bedDetails.occupancyDetails.admissionId || bedDetails.occupancyDetails.admissionOID;
+        setPharmacyError(null);
 
         try {
             setDischargeLoading(true);
@@ -343,6 +365,7 @@ export default function IPDCenter() {
             setFilters({ status: 'Cleaning', type: '', room: '' });
             setSelectedBedId(null);
             setBedDetails(null);
+            setPharmacyError(null);
 
             // Brief delay to simulate/show cleaning beds animation
             setTimeout(() => {
@@ -354,15 +377,20 @@ export default function IPDCenter() {
         } catch (error: any) {
             console.error('[IPD] Discharge confirmation failed:', error);
 
+            // ✅ PHARMACY CLEARANCE BLOCK — show inline sign-off option
+            if (error.message && error.message.includes('Pharmacy clearance is pending')) {
+                setPharmacyError(admissionId);
+                // Don't toast — the modal UI will show actions
+                return;
+            }
+
             // Handle specific case where admission is missing but bed is occupied
-            // User requested: "if active admission not found... change its status to occupied to cleaning"
             if (error.message && (error.message.includes('Active admission not found') || error.message.includes('not found'))) {
                 toast.error("Admission not found. Force cleaning bed.", { icon: '🧹' });
 
                 if (bedDetails?.bed?._id) {
                     await handleQuickStatusUpdate(bedDetails.bed._id, 'Cleaning');
                     setShowDischargeModal(false);
-                    // Switch view to Cleaning to show the result
                     setIsCleaningFilterLoading(true);
                     setFilters({ status: 'Cleaning', type: '', room: '' });
                     setSelectedBedId(null);
@@ -380,6 +408,23 @@ export default function IPDCenter() {
             toast.error(error.message || "Discharge confirmation failed");
         } finally {
             setDischargeLoading(false);
+        }
+    };
+
+    const handlePharmacySignoff = async () => {
+        const admissionId = bedDetails?.occupancyDetails?.admissionId || bedDetails?.occupancyDetails?.admissionOID;
+        if (!admissionId) return;
+        try {
+            setPharmacySignoffLoading(true);
+            await apiClient(`/pharmacy/signoff/${admissionId}`, { method: 'POST' });
+            toast.success('Pharmacy cleared! Retrying discharge...');
+            setPharmacyError(null);
+            // Now immediately retry the discharge
+            await handleDischarge();
+        } catch (err: any) {
+            toast.error(err?.message || 'Pharmacy sign-off failed');
+        } finally {
+            setPharmacySignoffLoading(false);
         }
     };
 
@@ -521,18 +566,16 @@ export default function IPDCenter() {
                         ))}
                     </select>
 
-                    <select
-                        className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none"
+                    <HybridRoomSearch
                         value={filters.room}
-                        onChange={(e) => setFilters(prev => ({ ...prev, room: e.target.value }))}
-                    >
-                        <option value="">All Rooms</option>
-                        {hospitalRooms
-                            .filter(room => !filters.type || room.type === filters.type)
-                            .map(room => (
-                                <option key={room._id} value={room.label}>{room.label}</option>
-                            ))}
-                    </select>
+                        onSelect={(val) => {
+                            setFilters(prev => ({ ...prev, room: val }));
+                            setCurrentPage(1);
+                        }}
+                        rooms={hospitalRooms}
+                        typeFilter={filters.type}
+                        className="min-w-[160px]"
+                    />
 
                     {/* COMPACT PAGINATION */}
                     {!loading && totalPages > 1 && (
@@ -599,42 +642,65 @@ export default function IPDCenter() {
                             key={bed._id}
                             onClick={() => handleBedClick(bed)}
                             className={`
-                                relative p-3 rounded-2xl border transition-all duration-300 text-left w-full cursor-pointer
+                                relative p-3 rounded-[20px] border transition-all duration-300 text-left w-full cursor-pointer flex flex-col justify-between h-[140px] overflow-hidden
                                 ${selectedBedId === bed._id ? 'border-teal-500 bg-white ring-4 ring-teal-500/5 shadow-lg' : 'border-slate-100 bg-white hover:border-teal-400 hover:shadow-md'}
                             `}
                         >
-                            <div className="flex justify-between items-start mb-3">
-                                <div className={`w-8 h-8 rounded-lg ${getStatusColor(bed.status)} flex items-center justify-center text-white shadow-lg`}>
-                                    <BedIcon size={16} />
+                            <div>
+                                <div className="flex justify-between items-start mb-2">
+                                    <div className={`w-7 h-7 rounded-lg ${getStatusColor(bed.status)} flex items-center justify-center text-white shadow-sm relative shrink-0`}>
+                                        <BedIcon size={12} />
+                                        {bed.status === 'Occupied' && (
+                                            <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-rose-600 rounded-full border border-white animate-pulse" />
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1">
+                                        <span className={`text-[6px] font-black uppercase px-1.5 py-0.5 rounded-full ${getStatusColor(bed.status)} text-white tracking-widest`}>
+                                            {bed.status[0]}
+                                        </span>
+                                        {bed.status === 'Occupied' && bed.currentOccupancy?.admissionDate && (
+                                            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-rose-50 text-rose-600 rounded-full text-[6px] font-black uppercase tracking-tighter">
+                                                <Clock size={8} className="shrink-0" />
+                                                {calculateStayDuration(bed.currentOccupancy.admissionDate)}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                                <span className={`text-[7px] font-black uppercase px-2 py-0.5 rounded-full ${getStatusColor(bed.status)} text-white`}>
-                                    {bed.status}
-                                </span>
+
+                                <div className="mt-1">
+                                    <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-tight truncate leading-tight">{bed.bedId}</h3>
+                                    <div className="flex items-center gap-1 mt-0.5">
+                                        <span className="text-[7px] font-bold text-slate-400 capitalize truncate">
+                                            {bed.status === 'Occupied' ? bed.currentOccupancy?.patientName : bed.type}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="space-y-0.5">
-                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-tight truncate">{bed.bedId}</h3>
-                                <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none">
-                                    FL {bed.floor} • RM {bed.room}
-                                </p>
-                            </div>
-
-                            <div className="mt-3 pt-2 border-t border-slate-50 flex items-center justify-between">
-                                <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{bed.type}</span>
-                                {bed.status === 'Cleaning' ? (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleQuickStatusUpdate(bed._id, 'Vacant');
-                                        }}
-                                        className="p-1 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-all shadow-md"
-                                        title="Mark as Vacant"
-                                    >
-                                        <CheckCircle2 size={12} />
-                                    </button>
-                                ) : (
-                                    <div className={`w-1.5 h-1.5 rounded-full ${bed.status === 'Occupied' ? 'bg-rose-500 animate-pulse' : 'bg-slate-200'}`} />
-                                )}
+                            <div className="mt-auto space-y-1.5 pt-2 border-t border-slate-50">
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="flex items-center gap-1 overflow-hidden">
+                                        <span className="text-[7px] font-black text-slate-500 uppercase truncate">R:{bed.room || "?"}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 overflow-hidden">
+                                        <span className="text-[7px] font-black text-slate-500 uppercase truncate">F:{bed.floor || "?"}</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between border-t border-slate-50 pt-1.5 mt-1.5">
+                                    <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{bed.department || "GEN"}</span>
+                                    {bed.status === 'Cleaning' && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleQuickStatusUpdate(bed._id, 'Vacant');
+                                            }}
+                                            className="p-1 bg-emerald-500 text-white rounded-md hover:bg-emerald-600 transition-all shadow-sm"
+                                            title="Mark as Vacant"
+                                        >
+                                            <CheckCircle2 size={10} />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -806,6 +872,7 @@ export default function IPDCenter() {
                                                                         toast.error("Waiting for doctor's discharge request", { icon: '👨‍⚕️' });
                                                                         return;
                                                                     }
+                                                                    fetchBillingSummary(bedDetails?.occupancyDetails?.admissionId || bedDetails?.occupancyDetails?.admissionOID);
                                                                     setShowDischargeModal(true);
                                                                 }}
                                                                 className={`w-full py-2 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-1.5 ${hasDischargeRequest ? 'border-2 border-rose-500 text-rose-500 hover:bg-rose-50' : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'}`}
@@ -1033,21 +1100,94 @@ export default function IPDCenter() {
                                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Confirm Discharge</h3>
                                 <p className="text-sm font-bold text-slate-500 leading-relaxed">
                                     Are you sure you want to discharge <span className="text-slate-900">{bedDetails?.occupancyDetails?.patient?.name}</span>?
-                                    This will initiate the final summary process.
                                 </p>
                             </div>
 
+                            {/* Billing Verification Section */}
+                            <div className="bg-slate-50 border border-slate-100 rounded-3xl p-5 space-y-4">
+                                {billingLoading ? (
+                                    <div className="flex items-center justify-center gap-2 py-4">
+                                        <RefreshCw size={16} className="animate-spin text-teal-600" />
+                                        <p className="text-[10px] font-black uppercase text-slate-400">Verifying Payments...</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="text-left bg-white p-3 rounded-2xl border border-slate-100">
+                                                <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1">Advance Paid</p>
+                                                <p className="text-sm font-black text-teal-600">₹{Math.round(billingSummary?.financials?.totalAdvance || 0).toLocaleString()}</p>
+                                            </div>
+                                            <div className="text-left bg-white p-3 rounded-2xl border border-slate-100">
+                                                <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1">Current Balance</p>
+                                                <p className={`text-sm font-black ${Math.round(billingSummary?.financials?.balance || 0) > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                    ₹{Math.max(0, Math.round(billingSummary?.financials?.balance || 0)).toLocaleString()}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-center">
+                                            {Math.round(billingSummary?.financials?.balance || 0) > 0 ? (
+                                                <div className="flex items-center gap-2 px-4 py-1.5 bg-rose-100 text-rose-600 rounded-full border border-rose-200">
+                                                    <AlertCircle size={12} />
+                                                    <span className="text-[8px] font-black uppercase tracking-widest">Pending Balance</span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2 px-4 py-1.5 bg-emerald-100 text-emerald-600 rounded-full border border-emerald-200">
+                                                    <CheckCircle2 size={12} />
+                                                    <span className="text-[8px] font-black uppercase tracking-widest">Amount Cleared</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {Math.round(billingSummary?.financials?.balance || 0) > 0 && (
+                                            <p className="text-[8px] font-bold text-rose-500 italic">
+                                                * Patient has an outstanding balance of ₹{Math.round(billingSummary.financials.balance).toLocaleString()}.
+                                            </p>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+
+                            {/* ✅ Pharmacy Clearance Block Banner */}
+                            {pharmacyError && (
+                                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-left space-y-3">
+                                    <div className="flex items-start gap-2">
+                                        <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest">Pharmacy Clearance Required</p>
+                                            <p className="text-[9px] text-amber-700 mt-0.5 leading-relaxed">
+                                                Medicines were issued to this patient. Pharmacy must sign off before discharge.
+                                                Since the bill is fully paid, you can clear this now.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={handlePharmacySignoff}
+                                        disabled={pharmacySignoffLoading}
+                                        className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
+                                    >
+                                        {pharmacySignoffLoading ? (
+                                            <><RefreshCw size={13} className="animate-spin" /> Clearing...</>) : (
+                                            <><CheckCircle2 size={13} /> Clear Pharmacy & Discharge</>)}
+                                    </button>
+                                </div>
+                            )}
+
                             <div className="flex gap-3 pt-4">
                                 <button
-                                    onClick={() => setShowDischargeModal(false)}
+                                    onClick={() => {
+                                        setShowDischargeModal(false);
+                                        setBillingSummary(null);
+                                        setPharmacyError(null);
+                                    }}
                                     className="flex-1 py-4 border border-slate-200 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all"
                                 >
                                     Cancel
                                 </button>
                                 <button
-                                    disabled={dischargeLoading}
+                                    disabled={dischargeLoading || billingLoading}
                                     onClick={handleDischarge}
-                                    className="flex-1 py-4 bg-rose-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-900/10 flex items-center justify-center gap-2 disabled:opacity-50"
+                                    className="flex-2 py-4 bg-rose-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-900/10 flex items-center justify-center gap-2 disabled:opacity-50 px-8"
                                 >
                                     {dischargeLoading ? (
                                         <>

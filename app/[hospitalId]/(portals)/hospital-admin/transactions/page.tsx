@@ -342,7 +342,7 @@ function TransactionContent() {
       {/* Simple Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { label: "Gross Revenue", value: `₹${totalGlobalRevenue.toLocaleString()}`, icon: DollarSign, color: "text-blue-600", bg: "bg-blue-50" },
+          { label: "Gross Revenue", value: `₹${Math.round(totalGlobalRevenue).toLocaleString()}`, icon: DollarSign, color: "text-blue-600", bg: "bg-blue-50" },
           { label: "Operation Volume", value: totalCount, icon: TrendingUp, color: "text-indigo-600", bg: "bg-indigo-50" },
           { label: "Quantum Density", value: `₹${totalCount > 0 ? (totalGlobalRevenue / totalCount).toFixed(0) : 0}`, icon: CreditCard, color: "text-emerald-600", bg: "bg-emerald-50" }
         ].map((stat, i) => (
@@ -607,7 +607,7 @@ function TransactionContent() {
                     </td>
                     <td className="px-8 py-4">
                       <span className="text-sm font-thin text-slate-900 ">
-                        {displayAmount !== null ? `₹${Number(displayAmount).toLocaleString()}` : '-'}
+                        {displayAmount !== null ? `₹${Math.round(Number(displayAmount)).toLocaleString()}` : '-'}
                       </span>
                     </td>
                     <td className="px-8 py-4">
@@ -683,7 +683,7 @@ function TransactionContent() {
 
               <div className="flex justify-between items-center py-3 border-b border-slate-100">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount Paid</span>
-                <span className="text-lg font-black text-slate-900 ">₹{Number(selectedTransaction.amount).toLocaleString()}</span>
+                <span className="text-lg font-black text-slate-900 ">₹{Math.round(Number(selectedTransaction.amount)).toLocaleString()}</span>
               </div>
 
               <div className="flex justify-between items-center py-3 border-b border-slate-100">

@@ -3,8 +3,8 @@
 import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  Clock, FileText, Beaker, CheckCircle, Loader2, User, Pause, 
+import {
+  Clock, FileText, Beaker, CheckCircle, Loader2, User, Pause,
   Activity, Calendar, Heart, Thermometer, Droplets, Scale, ArrowsUpFromLine,
   History, Stethoscope, ClipboardList, Send, ArrowLeft, MoreHorizontal,
   ChevronRight, AlertCircle, Phone, MapPin, Search, Building, Bed
@@ -24,7 +24,7 @@ interface ConsultationPageProps {
 export default function ConsultationPage({ params }: ConsultationPageProps) {
   const router = useRouter();
   const { appointmentId } = use(params);
-  
+
   // State
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
@@ -38,7 +38,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
     reports: any[];
   } | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
-  
+
   // Clinical Notes State
   const [diagnosis, setDiagnosis] = useState('');
   const [clinicalNotes, setClinicalNotes] = useState('');
@@ -57,7 +57,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
       if (showLoading) setLoading(true);
       const data = await doctorService.startConsultation(appointmentId);
       setAppointment(data.appointment);
-      
+
       // Update local states only on initial load or if they were empty
       if (showLoading || (!diagnosis && data.appointment.diagnosis)) setDiagnosis(data.appointment.diagnosis || '');
       if (showLoading || (!clinicalNotes && data.appointment.clinicalNotes)) setClinicalNotes(data.appointment.clinicalNotes || '');
@@ -76,7 +76,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
   // Real-time Lab Updates via Socket.IO
   useEffect(() => {
     let socket: any;
-    
+
     const setupSocket = async () => {
       socket = await getSocket();
       if (!socket) return;
@@ -128,7 +128,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
         socket.off('sample_collected');
         socket.off('lab_result_notification');
         if (appointment?.patient?._id) {
-           socket.emit('unsubscribe-patient', appointment.patient._id);
+          socket.emit('unsubscribe-patient', appointment.patient._id);
         }
       }
     };
@@ -164,7 +164,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
     const timer = setTimeout(() => {
       // Check if there's actually something to save
       if (diagnosis !== appointment?.diagnosis || clinicalNotes !== appointment?.clinicalNotes || plan !== appointment?.plan) {
-         saveDraft();
+        saveDraft();
       }
     }, 2000);
 
@@ -173,7 +173,10 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
 
   // Timer logic
   useEffect(() => {
-    if (!appointment?.consultationStartTime) return;
+    if (!appointment?.consultationStartTime || appointment.status !== 'in-progress' || appointment.isPaused) return;
+
+    // Stop timer if status changed to completed/cancelled etc
+    if (appointment.status !== 'in-progress') return;
 
     const start = new Date(appointment.consultationStartTime).getTime();
     const pausedDurationMs = (appointment.pausedDuration || 0) * 1000;
@@ -185,17 +188,17 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [appointment?.consultationStartTime, appointment?.pausedDuration]);
+  }, [appointment?.consultationStartTime, appointment?.pausedDuration, appointment?.status, appointment?.isPaused]);
 
   const fetchPatientHistory = async () => {
     if (!appointment?.patient?._id) return;
     try {
       setLoadingHistory(true);
       const data = await doctorService.getPatientDetails(appointment.patient._id);
-      
+
       // Filter out CURRENT appointment from history
       const visits = (data.history || []).filter((v: any) => v._id !== appointmentId);
-      
+
       setPatientHistory({
         visits,
         prescriptions: data.prescriptions || [],
@@ -223,10 +226,10 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
 
   const handleEndConsultation = async () => {
     if (isSubmitting) return;
-    
+
     try {
       setIsSubmitting(true);
-      await doctorService.endConsultation(appointmentId, { 
+      await doctorService.endConsultation(appointmentId, {
         duration: elapsedTime,
         diagnosis,
         clinicalNotes,
@@ -269,7 +272,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
       <header className="z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-border-theme px-3 sm:px-6 py-3 sm:py-4">
         <div className="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-            <button 
+            <button
               onClick={() => router.back()}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors shrink-0"
             >
@@ -304,19 +307,26 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                 {formatTime(elapsedTime)}
               </span>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <button
                 onClick={handlePauseConsultation}
-                className="px-2 sm:px-4 py-1.5 sm:py-2 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/10 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all border border-amber-200 flex items-center gap-1.5 whitespace-nowrap"
+                disabled={appointment?.status !== 'in-progress' || appointment?.isPaused}
+                className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all border flex items-center gap-1.5 whitespace-nowrap ${(appointment?.status !== 'in-progress' || appointment?.isPaused)
+                  ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200'
+                  : 'text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/10 border-amber-200'
+                  }`}
               >
-                <Pause size={14} className="shrink-0" /> 
-                <span className="hidden sm:inline">Pause</span>
+                <Pause size={14} className="shrink-0" />
+                <span className="hidden sm:inline">{appointment?.isPaused ? 'Paused' : 'Pause'}</span>
               </button>
               <button
                 onClick={handleEndConsultation}
-                disabled={isSubmitting}
-                className="px-2 sm:px-5 py-1.5 sm:py-2 bg-primary-theme hover:bg-primary-theme/90 text-primary-theme-foreground rounded-lg text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-primary-theme/20 flex items-center gap-1.5 whitespace-nowrap"
+                disabled={isSubmitting || appointment?.status !== 'in-progress'}
+                className={`px-2 sm:px-5 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all shadow-lg flex items-center gap-1.5 whitespace-nowrap ${(isSubmitting || appointment?.status !== 'in-progress')
+                  ? 'bg-gray-400 cursor-not-allowed opacity-70'
+                  : 'bg-primary-theme hover:bg-primary-theme/90 text-primary-theme-foreground shadow-primary-theme/20'
+                  }`}
               >
                 {isSubmitting ? <Loader2 size={14} className="animate-spin shrink-0" /> : <CheckCircle size={14} className="shrink-0" />}
                 <span className="hidden sm:inline">Complete Session</span>
@@ -335,7 +345,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
             <div className="absolute top-0 right-0 p-8 -mt-6 -mr-6 opacity-[0.03] group-hover:scale-110 transition-transform duration-700">
               <User size={120} />
             </div>
-            
+
             <div className="relative z-10">
               <div className="flex items-start justify-between mb-6">
                 <div className="w-16 h-16 bg-primary-theme/10 rounded-2xl flex items-center justify-center">
@@ -343,9 +353,8 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                     {(appointment?.patient?.name || 'P').charAt(0)}
                   </span>
                 </div>
-                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                  appointment?.status === 'in-progress' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20' : 'bg-gray-100 text-gray-700 dark:bg-gray-800'
-                }`}>
+                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${appointment?.status === 'in-progress' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20' : 'bg-gray-100 text-gray-700 dark:bg-gray-800'
+                  }`}>
                   {appointment?.status || 'Active'}
                 </div>
               </div>
@@ -410,11 +419,11 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                   </div>
                   <div className="flex items-center justify-between relative z-10">
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-primary-theme flex items-center gap-2">
-                       <Building size={14} className="animate-pulse" /> In-Patient Context
+                      <Building size={14} className="animate-pulse" /> In-Patient Context
                     </h4>
                     <span className="px-3 py-1 rounded-full bg-primary-theme text-white text-[8px] font-black uppercase shadow-lg shadow-primary-theme/20">Active IPD</span>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 gap-3 relative z-10">
                     <div className="flex items-center gap-4 p-3.5 bg-white/50 dark:bg-gray-800/50 rounded-2xl border border-white/20 dark:border-gray-700/50 backdrop-blur-sm group-hover/ipd:bg-white dark:group-hover/ipd:bg-gray-800 transition-colors duration-500">
                       <div className="w-11 h-11 rounded-xl bg-primary-theme/10 flex items-center justify-center text-primary-theme shadow-inner shrink-0">
@@ -434,17 +443,17 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                       <div className="overflow-hidden">
                         <p className="text-[9px] font-bold text-muted-foreground uppercase leading-none mb-1.5 opacity-70">Primary Doctor</p>
                         <p className="text-xs font-black text-gray-900 dark:text-white uppercase leading-none tracking-tight truncate">
-                          Dr. {appointment.ipdDetails.primaryDoctor}
+                          {appointment.ipdDetails.primaryDoctor?.startsWith('Dr.') ? appointment.ipdDetails.primaryDoctor : `Dr. ${appointment.ipdDetails.primaryDoctor}`}
                         </p>
                       </div>
                     </div>
                   </div>
 
                   <div className="pt-2 relative z-10">
-                     <div className="flex justify-between items-center text-[10px] font-black text-muted-foreground uppercase border-t border-primary-theme/10 pt-4 px-1">
-                        <span className="opacity-60">Admission ID</span>
-                        <span className="text-primary-theme tracking-wider font-black">{appointment.ipdDetails.admissionId}</span>
-                     </div>
+                    <div className="flex justify-between items-center text-[10px] font-black text-muted-foreground uppercase border-t border-primary-theme/10 pt-4 px-1">
+                      <span className="opacity-60">Admission ID</span>
+                      <span className="text-primary-theme tracking-wider font-black">{appointment.ipdDetails.admissionId}</span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -455,7 +464,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
           <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 border border-border-theme shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-sm font-black uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
-                <Activity size={18} className={`${appointment?.ipdDetails ? 'text-primary-theme' : 'text-rose-500'}`} /> 
+                <Activity size={18} className={`${appointment?.ipdDetails ? 'text-primary-theme' : 'text-rose-500'}`} />
                 {appointment?.ipdDetails ? 'IPD Ward Vitals' : 'Patient Vitals'}
               </h3>
               <span className="text-[10px] font-bold text-muted-foreground">
@@ -464,50 +473,50 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <VitalGridItem 
-                icon={<Heart className="text-rose-500" size={14} />} 
-                label="B.P" 
+              <VitalGridItem
+                icon={<Heart className="text-rose-500" size={14} />}
+                label="B.P"
                 value={
-                  appointment?.ipdDetails?.latestVitals 
-                    ? `${appointment.ipdDetails.latestVitals.systolicBP}/${appointment.ipdDetails.latestVitals.diastolicBP}` 
+                  appointment?.ipdDetails?.latestVitals
+                    ? `${appointment.ipdDetails.latestVitals.systolicBP}/${appointment.ipdDetails.latestVitals.diastolicBP}`
                     : (appointment?.vitals?.bloodPressure || appointment?.vitals?.bp || '--')
-                } 
-                unit="mmHg" 
+                }
+                unit="mmHg"
                 color="rose"
               />
-              <VitalGridItem 
-                icon={<Activity className="text-blue-500" size={14} />} 
-                label={appointment?.ipdDetails ? "H.R" : "Pulse"} 
-                value={appointment?.ipdDetails?.latestVitals?.heartRate || appointment?.vitals?.pulse || '--'} 
-                unit="bpm" 
+              <VitalGridItem
+                icon={<Activity className="text-blue-500" size={14} />}
+                label={appointment?.ipdDetails ? "H.R" : "Pulse"}
+                value={appointment?.ipdDetails?.latestVitals?.heartRate || appointment?.vitals?.pulse || '--'}
+                unit="bpm"
                 color="blue"
               />
-              <VitalGridItem 
-                icon={<Thermometer className="text-amber-500" size={14} />} 
-                label="Temp" 
-                value={appointment?.ipdDetails?.latestVitals?.temperature || appointment?.vitals?.temperature || appointment?.vitals?.temp || '--'} 
-                unit="°F" 
+              <VitalGridItem
+                icon={<Thermometer className="text-amber-500" size={14} />}
+                label="Temp"
+                value={appointment?.ipdDetails?.latestVitals?.temperature || appointment?.vitals?.temperature || appointment?.vitals?.temp || '--'}
+                unit="°F"
                 color="amber"
               />
-              <VitalGridItem 
-                icon={<Droplets className="text-cyan-500" size={14} />} 
-                label="SpO2" 
-                value={appointment?.ipdDetails?.latestVitals?.spO2 || appointment?.vitals?.spO2 || appointment?.vitals?.spo2 || '--'} 
-                unit="%" 
+              <VitalGridItem
+                icon={<Droplets className="text-cyan-500" size={14} />}
+                label="SpO2"
+                value={appointment?.ipdDetails?.latestVitals?.spO2 || appointment?.vitals?.spO2 || appointment?.vitals?.spo2 || '--'}
+                unit="%"
                 color="cyan"
               />
-              <VitalGridItem 
-                icon={<Scale className="text-emerald-500" size={14} />} 
-                label="Weight" 
-                value={appointment?.vitals?.weight || '--'} 
-                unit="kg" 
+              <VitalGridItem
+                icon={<Scale className="text-emerald-500" size={14} />}
+                label="Weight"
+                value={appointment?.vitals?.weight || '--'}
+                unit="kg"
                 color="emerald"
               />
-              <VitalGridItem 
-                icon={<ArrowsUpFromLine className="text-indigo-500" size={14} />} 
-                label="Height" 
-                value={appointment?.vitals?.height || '--'} 
-                unit="cm" 
+              <VitalGridItem
+                icon={<ArrowsUpFromLine className="text-indigo-500" size={14} />}
+                label="Height"
+                value={appointment?.vitals?.height || '--'}
+                unit="cm"
                 color="indigo"
               />
             </div>
@@ -539,14 +548,14 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
         <div className="col-span-12 lg:col-span-8 xl:col-span-9 space-y-6">
           {/* Tab Navigation */}
           <div className="flex items-center gap-1 p-1 bg-white dark:bg-gray-900 rounded-2xl border border-border-theme w-fit">
-            <TabButton 
-              active={activeTab === 'consultation'} 
+            <TabButton
+              active={activeTab === 'consultation'}
               onClick={() => setActiveTab('consultation')}
               icon={<Stethoscope size={16} />}
               label="Consultation"
             />
-            <TabButton 
-              active={activeTab === 'history'} 
+            <TabButton
+              active={activeTab === 'history'}
               onClick={() => setActiveTab('history')}
               icon={<History size={16} />}
               label="Medical History"
@@ -566,7 +575,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                     <p className="text-[10px] font-bold text-muted-foreground uppercase">Toggle to prioritize laboratory diagnostics</p>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={() => setWantsLabToken(!wantsLabToken)}
                   className={`w-14 h-7 rounded-full transition-all relative p-1 ${wantsLabToken ? 'bg-purple-500' : 'bg-gray-200 dark:bg-gray-800'}`}
                 >
@@ -576,7 +585,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
 
               {/* Quick Actions Bar */}
               <div className={`grid grid-cols-1 ${wantsLabToken ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4`}>
-                <ActionCard 
+                <ActionCard
                   onClick={() => router.push(`/doctor/prescription/create?appointmentId=${appointmentId}`)}
                   icon={<FileText size={24} />}
                   title="Write Prescription"
@@ -584,7 +593,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                   color="blue"
                   disabled={isPrescriptionRestricted}
                 />
-                <ActionCard 
+                <ActionCard
                   onClick={() => router.push(`/doctor/lab-token/create?appointmentId=${appointmentId}`)}
                   icon={<Beaker size={24} />}
                   title="Order Lab Tests"
@@ -593,7 +602,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                   active={wantsLabToken}
                 />
                 {wantsLabToken && (
-                  <ActionCard 
+                  <ActionCard
                     onClick={() => {
                       setActiveTab('history');
                       setHistorySubTab('labs');
@@ -605,7 +614,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                   />
                 )}
               </div>
-              
+
               {/* Real-time Lab Results Tracking */}
               {appointment?.labResults && appointment.labResults.length > 0 && (
                 <div className="bg-white dark:bg-gray-900 rounded-4xl border border-border-theme shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
@@ -620,8 +629,8 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                       <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                       <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Live Updates</span>
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Live Updates</span>
                     </div>
                   </div>
                   <div className="p-6 space-y-6">
@@ -637,68 +646,66 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                             {order.status?.toLowerCase() === 'completed' && (
-                               <Link 
-                                 href={`/doctor/lab-results/${order._id}`}
-                                 className="text-[10px] font-black text-blue-600 hover:text-blue-700 underline uppercase tracking-widest mr-2"
-                               >
-                                 View Full Report
-                               </Link>
-                             )}
-                             <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-full border ${
-                               order.status?.toLowerCase() === 'completed' 
-                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                                 : (order.status?.toLowerCase() === 'processing' || order.status?.toLowerCase() === 'sample_collected')
-                                   ? 'bg-blue-50 text-blue-700 border-blue-100 px-4' 
-                                   : 'bg-purple-50 text-purple-700 border-purple-100'
-                             }`}>
-                               {order.status?.replace('_', ' ')}
-                             </span>
+                            {order.status?.toLowerCase() === 'completed' && (
+                              <Link
+                                href={`/doctor/lab-results/${order._id}`}
+                                className="text-[10px] font-black text-blue-600 hover:text-blue-700 underline uppercase tracking-widest mr-2"
+                              >
+                                View Full Report
+                              </Link>
+                            )}
+                            <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-full border ${order.status?.toLowerCase() === 'completed'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                              : (order.status?.toLowerCase() === 'processing' || order.status?.toLowerCase() === 'sample_collected')
+                                ? 'bg-blue-50 text-blue-700 border-blue-100 px-4'
+                                : 'bg-purple-50 text-purple-700 border-purple-100'
+                              }`}>
+                              {order.status?.replace('_', ' ')}
+                            </span>
                           </div>
                         </div>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {order.tests.map((test: any, tIdx: number) => (
                             <div key={tIdx} className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-800/20 rounded-2xl border border-gray-100 dark:border-gray-800/50 hover:border-purple-200 dark:hover:border-purple-900/30 transition-all group">
                               <div className="flex items-center gap-3">
-                                <div className={`w-2 h-2 rounded-full ${
-                                  (test.status === 'completed' || order.status?.toLowerCase() === 'completed') 
-                                    ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' 
-                                    : test.status === 'processing'
-                                      ? 'bg-blue-500 animate-pulse'
-                                      : 'bg-purple-300'
-                                }`} />
+                                <div className={`w-2 h-2 rounded-full ${(test.status === 'completed' || order.status?.toLowerCase() === 'completed')
+                                  ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
+                                  : test.status === 'processing'
+                                    ? 'bg-blue-500 animate-pulse'
+                                    : 'bg-purple-300'
+                                  }`} />
                                 <div>
                                   <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight">
                                     {test.test?.testName || test.test?.name || 'Diagnostic Test'}
                                   </p>
                                   <p className="text-[9px] font-bold text-muted-foreground uppercase">
-                                     {order.status?.toLowerCase() === 'completed' ? 'Finalized' : test.status}
+                                    {order.status?.toLowerCase() === 'completed' ? 'Finalized' : test.status}
                                   </p>
                                 </div>
                               </div>
-                              
-                               {(test.status === 'completed' || order.status?.toLowerCase() === 'completed') ? (
-                                 <div className="text-right">
-                                   <p className={`text-sm font-black ${(test.isAbnormal || test.result === 'Abnormal') ? 'text-rose-600' : 'text-emerald-600'}`}>
-                                     {test.result || 'Result Ready'}
-                                   </p>
-                                   {test.isAbnormal && (
-                                     <span className="text-[8px] font-black text-rose-600 uppercase animate-pulse">Abnormal</span>
-                                   )}
-                                 </div>
-                               ) : (
-                                 <div className={`flex items-center gap-1.5 ${test.status === 'processing' ? 'opacity-100' : 'opacity-50'}`}>
-                                   {test.status === 'processing' ? (
-                                      <Loader2 size={12} className="text-blue-500 animate-spin" />
-                                   ) : (
-                                      <Clock size={12} className="text-muted-foreground" />
-                                   )}
-                                   <span className={`text-[10px] font-black uppercase tracking-widest ${test.status === 'processing' ? 'text-blue-600' : 'text-muted-foreground'}`}>
-                                     {test.status === 'processing' ? 'Processing' : 'Waiting'}
-                                   </span>
-                                 </div>
-                               )}
+
+                              {(test.status === 'completed' || order.status?.toLowerCase() === 'completed') ? (
+                                <div className="text-right">
+                                  <p className={`text-sm font-black ${(test.isAbnormal || test.result === 'Abnormal') ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                    {test.result || 'Result Ready'}
+                                  </p>
+                                  {test.isAbnormal && (
+                                    <span className="text-[8px] font-black text-rose-600 uppercase animate-pulse">Abnormal</span>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className={`flex items-center gap-1.5 ${test.status === 'processing' ? 'opacity-100' : 'opacity-50'}`}>
+                                  {test.status === 'processing' ? (
+                                    <Loader2 size={12} className="text-blue-500 animate-spin" />
+                                  ) : (
+                                    <Clock size={12} className="text-muted-foreground" />
+                                  )}
+                                  <span className={`text-[10px] font-black uppercase tracking-widest ${test.status === 'processing' ? 'text-blue-600' : 'text-muted-foreground'}`}>
+                                    {test.status === 'processing' ? 'Processing' : 'Waiting'}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -719,10 +726,10 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Compulsory</span>
                   </div>
                   <div className="p-4 bg-gray-50 dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800">
-                     <p className="text-xs font-bold text-muted-foreground mb-3">Recorded by Nursing Staff:</p>
-                     <p className="text-sm font-medium text-gray-900 dark:text-white italic">
-                        "{appointment?.notes || appointment?.reason || 'No initial complaints described by staff'}"
-                     </p>
+                    <p className="text-xs font-bold text-muted-foreground mb-3">Recorded by Nursing Staff:</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white italic">
+                      "{appointment?.notes || appointment?.reason || 'No initial complaints described by staff'}"
+                    </p>
                   </div>
                   <textarea
                     value={clinicalNotes}
@@ -764,30 +771,30 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                   />
                 </div>
 
-                 <div className="flex items-center justify-between pt-6 border-t border-gray-100 dark:border-gray-800">
-                    <div className="flex items-center gap-2 text-muted-foreground italic text-xs">
-                       {isAutoSaving ? (
-                         <>
-                           <Loader2 size={12} className="animate-spin text-primary-theme" /> 
-                           <span className="animate-pulse">Saving changes...</span>
-                         </>
-                       ) : lastSaved ? (
-                         <>
-                           <CheckCircle size={12} className="text-emerald-500" />
-                           <span className="text-emerald-600/70 font-bold uppercase tracking-tighter text-[10px]">Last saved at {lastSaved.toLocaleTimeString()}</span>
-                         </>
-                       ) : (
-                         <>
-                           <Loader2 size={12} className="animate-spin" /> Auto-saving draft enabled
-                         </>
-                       )}
-                    </div>
-                   <button 
-                      onClick={handleEndConsultation}
-                      className="flex items-center gap-2 px-8 py-3 bg-primary-theme text-primary-theme-foreground font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl shadow-primary-theme/20 hover:scale-105 active:scale-95 transition-all"
-                   >
-                     <Send size={16} /> Finish consultation
-                   </button>
+                <div className="flex items-center justify-between pt-6 border-t border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center gap-2 text-muted-foreground italic text-xs">
+                    {isAutoSaving ? (
+                      <>
+                        <Loader2 size={12} className="animate-spin text-primary-theme" />
+                        <span className="animate-pulse">Saving changes...</span>
+                      </>
+                    ) : lastSaved ? (
+                      <>
+                        <CheckCircle size={12} className="text-emerald-500" />
+                        <span className="text-emerald-600/70 font-bold uppercase tracking-tighter text-[10px]">Last saved at {lastSaved.toLocaleTimeString()}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Loader2 size={12} className="animate-spin" /> Auto-saving draft enabled
+                      </>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleEndConsultation}
+                    className="flex items-center gap-2 px-8 py-3 bg-primary-theme text-primary-theme-foreground font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl shadow-primary-theme/20 hover:scale-105 active:scale-95 transition-all"
+                  >
+                    <Send size={16} /> Finish consultation
+                  </button>
                 </div>
               </div>
             </div>
@@ -795,29 +802,26 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
             <div className="space-y-6">
               {/* History Sub-tabs */}
               <div className="flex items-center gap-4 border-b border-border-theme pb-2 mb-6">
-                <button 
+                <button
                   onClick={() => setHistorySubTab('visits')}
-                  className={`text-xs font-black uppercase tracking-widest pb-2 px-2 transition-all relative ${
-                    historySubTab === 'visits' ? 'text-primary-theme' : 'text-muted-foreground'
-                  }`}
+                  className={`text-xs font-black uppercase tracking-widest pb-2 px-2 transition-all relative ${historySubTab === 'visits' ? 'text-primary-theme' : 'text-muted-foreground'
+                    }`}
                 >
                   Visits {patientHistory && `(${patientHistory.visits.length})`}
                   {historySubTab === 'visits' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-theme rounded-full" />}
                 </button>
-                <button 
+                <button
                   onClick={() => setHistorySubTab('prescriptions')}
-                  className={`text-xs font-black uppercase tracking-widest pb-2 px-2 transition-all relative ${
-                    historySubTab === 'prescriptions' ? 'text-primary-theme' : 'text-muted-foreground'
-                  }`}
+                  className={`text-xs font-black uppercase tracking-widest pb-2 px-2 transition-all relative ${historySubTab === 'prescriptions' ? 'text-primary-theme' : 'text-muted-foreground'
+                    }`}
                 >
                   Prescriptions {patientHistory && `(${patientHistory.prescriptions.length})`}
                   {historySubTab === 'prescriptions' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-theme rounded-full" />}
                 </button>
-                <button 
+                <button
                   onClick={() => setHistorySubTab('labs')}
-                  className={`text-xs font-black uppercase tracking-widest pb-2 px-2 transition-all relative ${
-                    historySubTab === 'labs' ? 'text-primary-theme' : 'text-muted-foreground'
-                  }`}
+                  className={`text-xs font-black uppercase tracking-widest pb-2 px-2 transition-all relative ${historySubTab === 'labs' ? 'text-primary-theme' : 'text-muted-foreground'
+                    }`}
                 >
                   Lab Reports {patientHistory && `(${patientHistory.reports.length})`}
                   {historySubTab === 'labs' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-theme rounded-full" />}
@@ -851,7 +855,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                                 <div className="flex items-center gap-3">
                                   <span className="text-[11px] font-bold text-muted-foreground flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800 px-3 py-1 rounded-full">
                                     <Stethoscope size={14} className="text-primary-theme" />
-                                    Dr. {visit.doctorName || 'Attending Physician'}
+                                    {visit.doctorName?.startsWith('Dr.') ? visit.doctorName : `Dr. ${visit.doctorName || 'Attending Physician'}`}
                                   </span>
                                   <span className="text-[11px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-100 text-emerald-700">
                                     {visit.status}
@@ -874,23 +878,23 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                         <div key={pres._id} className="bg-white dark:bg-gray-900 rounded-4xl border border-border-theme shadow-sm p-6 hover:shadow-md transition-all">
                           <div className="flex items-start justify-between mb-4">
                             <div>
-                               <p className="text-xs font-black text-primary-theme uppercase tracking-widest mb-1">
-                                 Prescribed on {new Date(pres.date || pres.createdAt).toLocaleDateString()}
-                               </p>
-                               <h4 className="text-sm font-bold text-gray-900 dark:text-white">Dr. {pres.doctorName}</h4>
+                              <p className="text-xs font-black text-primary-theme uppercase tracking-widest mb-1">
+                                Prescribed on {new Date(pres.date || pres.createdAt).toLocaleDateString()}
+                              </p>
+                              <h4 className="text-sm font-bold text-gray-900 dark:text-white">{pres.doctorName?.startsWith('Dr.') ? pres.doctorName : `Dr. ${pres.doctorName}`}</h4>
                             </div>
                             <FileText className="text-muted-foreground" size={20} />
                           </div>
                           <div className="space-y-2">
-                             {pres.medicines?.map((med: any, i: number) => (
-                               <div key={i} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
-                                  <div>
-                                    <p className="text-xs font-black text-gray-900 dark:text-white uppercase">{med.name}</p>
-                                    <p className="text-[10px] font-bold text-muted-foreground uppercase mt-0.5">{med.dosage} • {med.duration}</p>
-                                  </div>
-                                  <span className="text-[10px] font-black text-primary-theme uppercase">{med.frequency}</span>
-                               </div>
-                             ))}
+                            {pres.medicines?.map((med: any, i: number) => (
+                              <div key={i} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
+                                <div>
+                                  <p className="text-xs font-black text-gray-900 dark:text-white uppercase">{med.name}</p>
+                                  <p className="text-[10px] font-bold text-muted-foreground uppercase mt-0.5">{med.dosage} • {med.duration}</p>
+                                </div>
+                                <span className="text-[10px] font-black text-primary-theme uppercase">{med.frequency}</span>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       )) : (
@@ -904,26 +908,26 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                     <div className="grid gap-4">
                       {patientHistory.reports.length > 0 ? patientHistory.reports.map((report) => (
                         <div key={report._id} className="bg-white dark:bg-gray-900 rounded-4xl border border-border-theme shadow-sm p-6 hover:shadow-md transition-all flex items-center justify-between">
-                           <div className="flex items-center gap-4">
-                             <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center">
-                                <Beaker className="text-purple-600" size={20} />
-                             </div>
-                             <div>
-                               <p className="text-xs font-black text-primary-theme uppercase tracking-widest mb-0.5">
-                                 {new Date(report.date).toLocaleDateString()}
-                               </p>
-                               <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase">{report.name}</h4>
-                               <p className="text-[10px] font-bold text-muted-foreground uppercase">{report.type || 'Diagnostic Report'}</p>
-                             </div>
-                           </div>
-                           <a 
-                             href={report.url} 
-                             target="_blank" 
-                             rel="noopener noreferrer"
-                             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-primary-theme"
-                           >
-                              <Search size={20} />
-                           </a>
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center">
+                              <Beaker className="text-purple-600" size={20} />
+                            </div>
+                            <div>
+                              <p className="text-xs font-black text-primary-theme uppercase tracking-widest mb-0.5">
+                                {new Date(report.date).toLocaleDateString()}
+                              </p>
+                              <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase">{report.name}</h4>
+                              <p className="text-[10px] font-bold text-muted-foreground uppercase">{report.type || 'Diagnostic Report'}</p>
+                            </div>
+                          </div>
+                          <a
+                            href={report.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-primary-theme"
+                          >
+                            <Search size={20} />
+                          </a>
                         </div>
                       )) : (
                         <EmptyHistoryState message="No lab reports found" />
@@ -984,11 +988,10 @@ function TabButton({ active, onClick, icon, label }: any) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-        active 
-          ? 'bg-primary-theme text-primary-theme-foreground shadow-lg shadow-primary-theme/20' 
-          : 'text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-800'
-      }`}
+      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${active
+        ? 'bg-primary-theme text-primary-theme-foreground shadow-lg shadow-primary-theme/20'
+        : 'text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-800'
+        }`}
     >
       {icon} {label}
     </button>
@@ -1007,9 +1010,8 @@ function ActionCard({ onClick, icon, title, subtitle, color, disabled, active }:
     <button
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
-      className={`p-5 rounded-[1.75rem] text-left text-white flex gap-4 transition-all relative overflow-hidden ${
-        disabled ? colorMap.disabled : colorMap[color]
-      } ${!disabled && 'hover:-translate-y-1 hover:shadow-xl active:scale-95'}`}
+      className={`p-5 rounded-[1.75rem] text-left text-white flex gap-4 transition-all relative overflow-hidden ${disabled ? colorMap.disabled : colorMap[color]
+        } ${!disabled && 'hover:-translate-y-1 hover:shadow-xl active:scale-95'}`}
     >
       {active && (
         <div className="absolute top-0 right-0 p-2">

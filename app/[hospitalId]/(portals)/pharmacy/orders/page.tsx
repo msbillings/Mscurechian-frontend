@@ -24,6 +24,7 @@ interface PharmacyOrder {
     status: string;
     createdAt: string;
     isDeleted?: boolean;
+    admission?: string | any;
 }
 
 function ActiveOrdersPage() {
@@ -40,9 +41,9 @@ function ActiveOrdersPage() {
             // Real-time updates
             const handleNewOrder = (data: any) => {
                 console.log("🔔 New Pharmacy Order Received:", data);
-               
+
                 toast.success('New Prescription Order Received!');
-                
+
                 // Refresh full list to be safe
                 fetchActiveOrders(hospitalId);
             };
@@ -57,12 +58,12 @@ function ActiveOrdersPage() {
                 subscribeToSocket(`hospital_${hospitalId}`, 'pharmacy_order_completed', handleOrderCompleted);
             });
 
-             return () => {
-                 import('@/lib/integrations/api/socket').then(({ unsubscribeFromSocket }) => {
-                      unsubscribeFromSocket(`hospital_${hospitalId}`, 'new_pharmacy_order', handleNewOrder);
-                      unsubscribeFromSocket(`hospital_${hospitalId}`, 'pharmacy_order_completed', handleOrderCompleted);
-                 });
-             };
+            return () => {
+                import('@/lib/integrations/api/socket').then(({ unsubscribeFromSocket }) => {
+                    unsubscribeFromSocket(`hospital_${hospitalId}`, 'new_pharmacy_order', handleNewOrder);
+                    unsubscribeFromSocket(`hospital_${hospitalId}`, 'pharmacy_order_completed', handleOrderCompleted);
+                });
+            };
         }
     }, [hospitalId]);
 
@@ -72,7 +73,7 @@ function ActiveOrdersPage() {
             const res = await PharmacyBillingService.getHospitalOrders(hospitalId);
             if (res.pharmacyOrders) {
                 // Filter for prescribed, processing and ready orders
-                setOrders(res.pharmacyOrders.filter((o: any) => 
+                setOrders(res.pharmacyOrders.filter((o: any) =>
                     (o.status === 'prescribed' || o.status === 'processing' || o.status === 'ready') && !o.isDeleted
                 ));
             }
@@ -84,8 +85,12 @@ function ActiveOrdersPage() {
         }
     };
 
-    const handleProcess = (id: string) => {
-        router.push(`/pharmacy/billing?orderId=${id}`);
+    const handleProcess = (id: string, admissionId?: string) => {
+        if (admissionId) {
+            router.push(`/pharmacy/ipd-billing?orderId=${id}&admissionId=${admissionId}`);
+        } else {
+            router.push(`/pharmacy/billing?orderId=${id}`);
+        }
     };
 
     return (
@@ -100,7 +105,7 @@ function ActiveOrdersPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button 
+                    <button
                         onClick={() => hospitalId && fetchActiveOrders(hospitalId)}
                         className="p-3 bg-white dark:bg-gray-800 text-gray-500 hover:text-teal-600 rounded-2xl border border-gray-100 dark:border-gray-700 transition-all hover:shadow-md active:scale-95"
                         title="Refresh List"
@@ -113,7 +118,7 @@ function ActiveOrdersPage() {
                     </div>
                 </div>
             </div>
-            
+
             <div className="bg-white dark:bg-gray-800 rounded-3xl md:rounded-4xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse min-w-[800px]">
@@ -142,10 +147,17 @@ function ActiveOrdersPage() {
                             ) : (
                                 orders.map((order) => (
                                     <tr key={order._id} className="border-b dark:border-gray-700/50 last:border-0 hover:bg-teal-50/30 dark:hover:bg-teal-900/10 group">
-                                         <td className="p-6">
-                                            <span className="px-3 py-1 bg-teal-50 dark:bg-teal-900/30 text-teal-600 rounded-lg font-bold text-xs uppercase">
-                                                {order.tokenNumber}
-                                            </span>
+                                        <td className="p-6">
+                                            <div className="flex flex-col gap-1">
+                                                <span className="px-3 py-1 bg-teal-50 dark:bg-teal-900/30 text-teal-600 rounded-lg font-bold text-xs uppercase w-fit">
+                                                    {order.tokenNumber}
+                                                </span>
+                                                {order.admission && (
+                                                    <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded text-[10px] font-bold uppercase w-fit">
+                                                        IPD Patient
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="p-6">
                                             <div className="font-bold text-gray-900 dark:text-white uppercase tracking-tight">{order.patient?.name || 'Unknown'}</div>
@@ -156,28 +168,27 @@ function ActiveOrdersPage() {
                                         <td className="p-6 text-gray-600 dark:text-gray-300 font-semibold uppercase text-xs">
                                             {(order.doctor as any)?.user?.name || order.doctor?.name || 'Dr. Staff'}
                                         </td>
-                                         <td className="p-6 text-center">
+                                        <td className="p-6 text-center">
                                             <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
                                                 {order.medicines?.length || 0} Items
                                             </span>
                                         </td>
                                         <td className="p-6 text-center">
-                                             <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
-                                                order.status === 'prescribed' 
-                                                ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/30'
-                                                : 'bg-teal-50 text-teal-600 border-teal-100 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800/30'
-                                             }`}>
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${order.status === 'prescribed'
+                                                    ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/30'
+                                                    : 'bg-teal-50 text-teal-600 border-teal-100 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800/30'
+                                                }`}>
                                                 {order.status}
                                             </span>
                                         </td>
                                         <td className="p-6 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <button
-                                                    onClick={() => handleProcess(order._id)}
-                                                    className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold uppercase tracking-widest dark:shadow-none active:scale-95 transition-all w-full md:w-auto justify-center"
+                                                    onClick={() => handleProcess(order._id, order.admission?._id || order.admission)}
+                                                    className={`inline-flex items-center gap-2 px-4 py-2 ${order.admission ? 'bg-blue-600 hover:bg-blue-700' : 'bg-teal-600 hover:bg-teal-700'} text-white rounded-xl text-xs font-bold uppercase tracking-widest dark:shadow-none active:scale-95 transition-all w-full md:w-auto justify-center`}
                                                 >
                                                     <FileText size={14} />
-                                                    Bill
+                                                    {order.admission ? 'IPD Bill' : 'Retail Bill'}
                                                 </button>
                                             </div>
                                         </td>

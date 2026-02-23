@@ -189,7 +189,7 @@ export default function PatientMonitoringPage() {
                                                         <span className={`text-[7px] sm:text-[8px] font-black px-1 py-0.5 rounded uppercase tracking-widest ${genderDisplay === 'Male' ? 'bg-blue-50 text-blue-600' : 'bg-rose-50 text-rose-600'}`}>
                                                             {ageDisplay} &bull; {genderDisplay}
                                                         </span>
-                                                        <span className="text-[7px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wide truncate max-w-[80px]">
+                                                        <span className="text-[7px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wide truncate max-w-[150px]">
                                                             ID: {mrnDisplay}
                                                         </span>
                                                     </div>
@@ -217,7 +217,7 @@ export default function PatientMonitoringPage() {
                                                 <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100 shrink-0">
                                                     <User size={10} />
                                                 </div>
-                                                <span className="text-[9px] sm:text-xs font-bold uppercase tracking-tight text-indigo-600 truncate max-w-[100px]">
+                                                <span className="text-[9px] sm:text-xs font-bold uppercase tracking-tight text-indigo-600 truncate max-w-[180px]">
                                                     {adm.primaryDoctor?.user?.name || adm.primaryDoctor?.name || 'Unassigned'}
                                                 </span>
                                             </div>
@@ -324,7 +324,7 @@ export default function PatientMonitoringPage() {
 
                 {/* PAGE HEADING */}
                 <div className="px-1 sm:px-0 mb-4">
-                    <h1 className="text-xs sm:text-xs lg:text-2xl font-black text-slate-800 uppercase tracking-tighter">
+                    <h1 className="text-xs sm:text-xs lg:text-xl font-black text-slate-800 uppercase tracking-tighter">
                         Patient Monitoring
                     </h1>
                 </div>
