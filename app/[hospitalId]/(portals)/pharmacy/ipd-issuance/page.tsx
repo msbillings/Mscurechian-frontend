@@ -14,6 +14,7 @@ import {
     UserCheck, ArrowLeft, Pencil, RotateCcw, Check, X, Clock
 } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { useTenantLink } from "@/hooks/useTenantLink";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -52,6 +53,7 @@ export default function IPDIssuancePage() {
     const params = useParams();
     const hospitalId = params?.hospitalId as string;
     const queryClient = useQueryClient();
+    const { getPath } = useTenantLink();
 
     // ── Patient list state ──────────────────────────────────────────────────
     const [patientSearch, setPatientSearch] = useState("");
@@ -320,7 +322,7 @@ export default function IPDIssuancePage() {
                                     >
                                         {/* Patient name + avatar */}
                                         <div className="flex items-center gap-3 mb-4">
-                                            <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
+                                            <div className="w-11 h-11 bg-linear-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
                                                 <User size={18} className="text-white" />
                                             </div>
                                             <div className="min-w-0">
@@ -368,7 +370,7 @@ export default function IPDIssuancePage() {
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            router.push(`/${hospitalId}/pharmacy/ipd-billing?admissionId=${adm.admissionId}`);
+                                            router.push(getPath(`/pharmacy/ipd-billing?admissionId=${adm.admissionId}`));
                                         }}
                                         title="Add to IPD Bill"
                                         className="absolute top-3 right-3 w-8 h-8 bg-teal-50 dark:bg-teal-900/20 text-teal-600 rounded-xl flex items-center justify-center hover:bg-teal-100 dark:hover:bg-teal-800/40 transition-colors shadow-sm border border-teal-100 dark:border-teal-800/30"
@@ -399,7 +401,7 @@ export default function IPDIssuancePage() {
 
                             {/* ── Patient Card ── */}
                             <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-                                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6">
+                                <div className="bg-linear-to-r from-blue-600 to-indigo-600 p-6">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-4">
                                             <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">

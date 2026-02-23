@@ -9,10 +9,12 @@ import { useAuthStore } from '@/stores/authStore';
 import { Loader2, ArrowLeft, Printer, CheckCircle } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import { toast } from 'react-hot-toast';
+import { useTenantLink } from '@/hooks/useTenantLink';
 const InvoicePreviewPage = () => {
     const params = useParams();
     const router = useRouter();
     const { user } = useAuthStore();
+    const { getPath } = useTenantLink();
     const [bill, setBill] = useState<PharmacyBill | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const componentRef = useRef<HTMLDivElement>(null);
@@ -68,7 +70,7 @@ const InvoicePreviewPage = () => {
                 <div className="text-center">
                     <p className="text-xl font-black text-gray-900 dark:text-white mb-4">Invoice Not Found</p>
                     <button
-                        onClick={() => window.location.href = '/pharmacy/dashboard'}
+                        onClick={() => router.push(getPath('/pharmacy/dashboard'))}
                         className="px-6 py-2 bg-gray-900 text-white rounded-xl text-sm font-bold uppercase tracking-wider"
                     >
                         Return to Dashboard
@@ -83,7 +85,7 @@ const InvoicePreviewPage = () => {
             {/* Top Navigation */}
             <div className="max-w-7xl mx-auto flex items-center justify-between mb-8">
                 <button
-                    onClick={() => window.location.href = '/pharmacy/dashboard'}
+                    onClick={() => router.push(getPath('/pharmacy/dashboard'))}
                     className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl font-black uppercase text-xs tracking-widest hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
                 >
                     <ArrowLeft size={16} /> Back to Dashboard
@@ -115,7 +117,7 @@ const InvoicePreviewPage = () => {
                             </button>
 
                             <button
-                                onClick={() => window.location.href = '/pharmacy/dashboard'}
+                                onClick={() => router.push(getPath('/pharmacy/dashboard'))}
                                 className="w-full flex items-center justify-between p-4 bg-white text-gray-700 border border-gray-300 rounded-xl font-bold hover:bg-gray-50 group"
                             >
                                 <span className="flex items-center gap-3">

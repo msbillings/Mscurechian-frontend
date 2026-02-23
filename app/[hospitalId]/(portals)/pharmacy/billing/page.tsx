@@ -10,10 +10,12 @@ import { BillItem, PharmacyBillPayload, PharmacyBill } from '@/lib/integrations/
 import { toast } from 'react-hot-toast';
 import PharmacyBillPrint, { ShopDetails } from '@/components/pharmacy/billing/PharmacyBillPrint';
 import { useAuthStore } from '@/stores/authStore';
+import { useTenantLink } from '@/hooks/useTenantLink';
 
 const BillingPage = () => {
     const router = useRouter();
     const { user } = useAuthStore();
+    const { getPath } = useTenantLink();
 
     // State
     const [patientName, setPatientName] = useState('');
@@ -363,7 +365,7 @@ const BillingPage = () => {
             const res = await PharmacyBillingService.createBill(payload);
             toast.success('Invoice generated successfully');
             clearDraft();
-            router.push(`/pharmacy/billing/preview/${res.bill._id}`);
+            router.push(getPath(`/pharmacy/billing/preview/${res.bill._id}`));
         } catch (error: any) {
             console.error(error);
             toast.error(error.message || 'Failed to generate invoice');

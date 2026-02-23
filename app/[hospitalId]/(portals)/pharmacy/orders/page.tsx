@@ -7,6 +7,7 @@ import { Pill, Activity, Clock, FileText, RefreshCcw } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAuthStore } from '@/stores/authStore';
 import { PharmacyTableSkeleton } from '@/components/ui/skeletons';
+import { useTenantLink } from '@/hooks/useTenantLink';
 
 interface PharmacyOrder {
     _id: string;
@@ -30,6 +31,7 @@ interface PharmacyOrder {
 function ActiveOrdersPage() {
     const router = useRouter();
     const { user } = useAuthStore();
+    const { getPath } = useTenantLink();
     const [orders, setOrders] = useState<PharmacyOrder[]>([]);
     const [loading, setLoading] = useState(true);
     const hospitalId = (user as any)?.hospital;
@@ -87,9 +89,9 @@ function ActiveOrdersPage() {
 
     const handleProcess = (id: string, admissionId?: string) => {
         if (admissionId) {
-            router.push(`/pharmacy/ipd-billing?orderId=${id}&admissionId=${admissionId}`);
+            router.push(getPath(`/pharmacy/ipd-billing?orderId=${id}&admissionId=${admissionId}`));
         } else {
-            router.push(`/pharmacy/billing?orderId=${id}`);
+            router.push(getPath(`/pharmacy/billing?orderId=${id}`));
         }
     };
 
