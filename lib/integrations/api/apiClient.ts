@@ -14,11 +14,32 @@ const CACHE_TTL = 10 * 1000; // 10 seconds (Hyper-dynamic)
  */
 const isValidHospitalId = (segment: string): boolean => {
   if (!segment) return false;
-  // MongoDB ObjectId: exactly 24 hex characters
+
+  // 1. Strictly validate MongoDB ObjectId (24 hex characters)
   if (/^[a-f0-9]{24}$/i.test(segment)) return true;
-  // Hospital slug: alphanumeric with hyphens
-  if (/^[a-z0-9][a-z0-9-]{2,58}[a-z0-9]$/i.test(segment)) return true;
-  return false;
+
+  // 2. Reserved system segments that are NOT hospital IDs
+  const reserved = [
+    "auth",
+    "pharmacy",
+    "pharma",
+    "lab",
+    "nurse",
+    "hr",
+    "super-admin",
+    "admin",
+    "dashboard",
+    "login",
+    "api",
+    "emergency",
+    "discharge",
+    "helpdesk",
+  ];
+  if (reserved.includes(segment.toLowerCase())) return false;
+
+  // 3. Hospital slug fallback: alphanumeric with hyphens, at least 3 chars
+  // We keep this but make it more secondary to reserved words
+  return /^[a-z0-9][a-z0-9-]{2,58}[a-z0-9]$/i.test(segment);
 };
 
 const getActiveHospitalId = (): string | null => {
