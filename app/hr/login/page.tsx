@@ -88,7 +88,7 @@ const HRLoginPage = () => {
             const role = user.role.toLowerCase();
 
             if (!allowedRoles.includes(role)) {
-                logout(); 
+                logout();
                 setServerMsg(`Unauthorized access – Your role (${user.role}) is not authorized for HR Management.`);
                 toast.error("Unauthorized access for HR Management", {
                     icon: '🚫',
@@ -107,7 +107,8 @@ const HRLoginPage = () => {
             });
 
             // Redirect to normal hr root, or tenant prefixed hr
-            const hospitalId = (user as any).hospitalId || (user as any).hospital;
+            const rawIdVal = (user as any).hospitalId || (user as any).hospital;
+            const hospitalId = (rawIdVal && typeof rawIdVal === 'object') ? (rawIdVal._id || rawIdVal.id) : rawIdVal;
             if (hospitalId) {
                 router.push(`/${hospitalId}/hr`);
             } else {
@@ -132,7 +133,7 @@ const HRLoginPage = () => {
 
                     <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push('/')}>
                         <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center p-2">
-                             <ShieldCheck size={24} className="text-white" />
+                            <ShieldCheck size={24} className="text-white" />
                         </div>
                         <span className="text-xl font-bold tracking-tighter text-slate-900">
                             MSCureChain
@@ -142,9 +143,9 @@ const HRLoginPage = () => {
                     <div className="space-y-6">
                         <div className="relative group">
                             <div className="absolute -inset-2 bg-slate-900/5 rounded-3xl blur-xl" />
-                             <div className="relative w-full aspect-square bg-white rounded-2xl border border-slate-200 shadow-sm flex items-center justify-center p-12 overflow-hidden">
+                            <div className="relative w-full aspect-square bg-white rounded-2xl border border-slate-200 shadow-sm flex items-center justify-center p-12 overflow-hidden">
                                 <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=800" alt="HR" className="w-full h-full object-cover rounded-xl" />
-                             </div>
+                            </div>
                         </div>
                         <div className="space-y-3">
                             <h2 className="text-3xl font-black tracking-tight leading-tight uppercase">

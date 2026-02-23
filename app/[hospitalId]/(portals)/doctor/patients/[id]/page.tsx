@@ -6,11 +6,13 @@ import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, FileText, Clo
 import Link from 'next/link';
 import { getDoctorPatientDetailsAction, getDoctorProfileAction, getAllAppointmentsAction, getDoctorInpatientsAction } from '@/lib/integrations/actions/doctor.actions';
 import { doctorService } from '@/lib/integrations/services/doctor.service';
+import { pharmacyService } from '@/lib/integrations/services/pharmacy.service';
+import { ipdService } from '@/lib/integrations/services/ipd.service';
 import { PrescriptionDocument } from '@/components/documents/PrescriptionDocument';
 import toast from 'react-hot-toast';
 import { useVitalsSocket } from '@/lib/hooks/useVitalsSocket';
 
-const MonitoringTimer = ({ lastRecorded, nextDue, status }: { lastRecorded?: string | Date; nextDue?: string | Date; status?: string }) => {
+const MonitoringTimer = ({ lastRecorded, nextDue, status }: { lastRecorded?: string | Date; nextDue?: string | Date; status?: string }): any => {
     const [timeLeft, setTimeLeft] = useState<string>("");
     const [isOverdue, setIsOverdue] = useState(false);
 
@@ -71,6 +73,8 @@ function PatientDetailsPage() {
     const router = useRouter();
     const [patient, setPatient] = useState<any>(null);
     const [appointments, setAppointments] = useState<any[]>([]);
+    const [issuances, setIssuances] = useState<any[]>([]);
+    const [billSummary, setBillSummary] = useState<any>(null); // NEW: Billing data
     const [isLoading, setIsLoading] = useState(true);
     const [currentDoctorId, setCurrentDoctorId] = useState<string | null>(null);
     const [doctorUserId, setDoctorUserId] = useState<string | null>(null);
@@ -79,6 +83,27 @@ function PatientDetailsPage() {
     const [selectedPrescription, setSelectedPrescription] = useState<any>(null);
     const [isPivoting, setIsPivoting] = useState(false);
     const [isRxModalOpen, setIsRxModalOpen] = useState(false);
+
+    // ✅ Summary of Issued Medicines
+    const currentMedications = React.useMemo(() => {
+        const medsMap = new Map();
+        issuances.forEach(issuance => {
+            issuance.items?.forEach((item: any) => {
+                const key = (item.productId?._id || item.productId || item.medicineName).toString();
+                if (!medsMap.has(key)) {
+                    medsMap.set(key, {
+                        name: item.medicineName,
+                        issued: 0,
+                        returned: 0
+                    });
+                }
+                const existing = medsMap.get(key);
+                existing.issued += item.quantity || 0;
+                existing.returned += item.returnedQty || 0;
+            });
+        });
+        return Array.from(medsMap.values());
+    }, [issuances]);
 
     // ✅ NEW: WebSocket for real-time vitals updates and high-priority alerts
     useVitalsSocket(patient?.user?._id || patient?._id, (newVitals) => {
@@ -159,24 +184,32 @@ function PatientDetailsPage() {
 
                 setPatient(patientData);
 
+                // ✅ NEW: Fetch Pharmacy Issuances & Bill Summary if there's an active admission
+                if (patientData.admission?.admissionId) {
+                    const admId = patientData.admission.admissionId;
+
+                    // Fetch issuances
+                    (pharmacyService as any).getIssuancesByAdmission(admId)
+                        .then((data: any) => setIssuances(data || []))
+                        .catch((err: any) => console.error("Issuance fetch failed", err));
+
+                    // Fetch bill summary
+                    (ipdService as any).getBillSummary(admId)
+                        .then((res: any) => setBillSummary(res.summary || res.data?.summary || null))
+                        .catch((err: any) => console.error("Bill summary fetch failed", err));
+                }
+
                 if (appointmentsRes.success && appointmentsRes.data) {
                     // Filter appointments for this patient
-                    // The patient ID in appointments (patientId or patient._id) should match the profile's user ID or the profile ID itself.
-                    // We check both for robustness.
                     const pUserId = patientData.user?._id || patientData.user?.id;
-                    const pProfileId = patientData._id || patientData.id; // The profile ID from the URL/response
+                    const pProfileId = patientData._id || patientData.id;
 
                     const filtered = appointmentsRes.data.filter((appt: any) => {
-                        // Check nested patient object or direct fields
                         const apptPId = appt.patient?._id || appt.patient?.id || appt.patientId || appt.patient;
-
-                        // Match against User ID (most likely) or Profile ID
                         return (pUserId && apptPId === pUserId) || (pProfileId && apptPId === pProfileId);
                     });
 
-                    // Sort by date descending
                     filtered.sort((a: any, b: any) => new Date(b.date || b.startTime).getTime() - new Date(a.date || a.startTime).getTime());
-
                     setAppointments(filtered);
                 }
             } else {
@@ -338,6 +371,68 @@ function PatientDetailsPage() {
                                         </span>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Financial Summary - NEW */}
+                    {patient.admission && billSummary && (
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Financial Overview</h3>
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-tighter">Gross Charges</span>
+                                    <span className="text-sm font-black text-gray-900">₹{(billSummary.bedCharges + billSummary.extraCharges).toLocaleString()}</span>
+                                </div>
+                                {billSummary.returnCredits > 0 && (
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-bold text-emerald-500 uppercase tracking-tighter">(-) Return Credits</span>
+                                        <span className="text-sm font-black text-emerald-600">- ₹{billSummary.returnCredits.toLocaleString()}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between items-center pt-2 border-t border-dashed border-gray-100">
+                                    <span className="text-xs font-black text-indigo-600 uppercase tracking-tighter">Current Bill</span>
+                                    <span className="text-base font-black text-indigo-700">₹{billSummary.finalAmount.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between items-center bg-blue-50/50 p-2.5 rounded-xl border border-blue-100/50">
+                                    <div>
+                                        <p className="text-[9px] font-black text-blue-400 uppercase tracking-[0.1em]">Total Due</p>
+                                        <p className="text-lg font-black text-blue-700 leading-tight">₹{billSummary.balanceOutstanding.toLocaleString()}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[9px] font-black text-blue-400 uppercase tracking-[0.1em]">Paid</p>
+                                        <p className="text-sm font-black text-blue-600">₹{(billSummary.advancePaid + billSummary.settlementPaid).toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Current Medication Monitoring */}
+                    {patient.admission && issuances.length > 0 && (
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Inpatient Pharmacy</h3>
+                                <span className="px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg uppercase">{issuances.length} Issuances</span>
+                            </div>
+                            <div className="space-y-3">
+                                {currentMedications.map((med: any, i: number) => (
+                                    <div key={i} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                        <div className="flex-1 min-w-0 mr-3">
+                                            <p className="text-[11px] font-black text-slate-800 uppercase truncate">{med.name}</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-[9px] font-bold text-slate-400 uppercase">Issued: {med.issued}</span>
+                                                {med.returned > 0 && (
+                                                    <span className="text-[9px] font-black text-rose-500 uppercase">Returned: {med.returned}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-xs font-black text-slate-900">{med.issued - med.returned}</span>
+                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">Balance</span>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     )}

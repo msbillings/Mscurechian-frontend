@@ -80,9 +80,9 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
             const response = await ipdService.administerMedication({
                 admissionId,
                 prescriptionId: prescId,
-                medicineId: med.name,
+                medicineId: med.productId || med.medicineId || med._id || med.name,
                 drugName: med.name,
-                dose: med.dosage,
+                dose: med.dosage || med.dose,
                 route: 'Oral',
                 timeSlot: slot,
                 status: 'Administered'
@@ -317,15 +317,16 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                                                         const key = `${m.name}-${m.dosage}`.toLowerCase();
                                                         const existing = medsMap.get(key);
 
-                                                        // Priority: Pharma Order > Standard Prescription
+                                                        // Priority: Pharma Order/Issuance > Standard Prescription
                                                         // This ensures we use the quantity/status from the actual pharmacy record if it exists
-                                                        if (!existing || p.type === 'pharma-order') {
+                                                        if (!existing || p.type === 'pharma-order' || p.type === 'pharma-issuance') {
                                                             medsMap.set(key, {
                                                                 ...m,
                                                                 prescId: p._id,
-                                                                isPharmaOrder: p.type === 'pharma-order',
-                                                                paymentStatus: p.paymentStatus,
-                                                                orderStatus: p.orderStatus
+                                                                isPharmaOrder: p.type === 'pharma-order' || p.type === 'pharma-issuance',
+                                                                sourceType: p.type,
+                                                                paymentStatus: p.paymentStatus || 'paid',
+                                                                orderStatus: p.orderStatus || 'completed'
                                                             });
                                                         }
                                                     });
@@ -343,6 +344,11 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                                                                     <h4 className="text-[10px] sm:text-xs font-black text-slate-800 uppercase tracking-tight truncate leading-none mb-1">{med.name}</h4>
                                                                     <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                                                                         <p className="text-[8px] sm:text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">{med.dosage} • {med.frequency}</p>
+                                                                        {med.sourceType === 'pharma-issuance' && (
+                                                                            <span className="px-1 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border border-indigo-100">
+                                                                                Extra
+                                                                            </span>
+                                                                        )}
                                                                         {calculateRemaining(med) !== null && (
                                                                             <span className={`px-1 py-0.5 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border ${calculateRemaining(med) === 0 ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
                                                                                 {calculateRemaining(med)} Left

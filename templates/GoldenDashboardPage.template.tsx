@@ -47,23 +47,23 @@ function YourDashboardPage() {
   // ============================================================================
   // STATE MANAGEMENT
   // ============================================================================
-  
+
   // Local UI state
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  
+
   // ✅ CORRECT: Use primitive selectors from Zustand (if needed)
   // const userId = useAuthStore(state => state.user?.id);
   // const userRole = useAuthStore(state => state.user?.role);
-  
+
   // ❌ WRONG: Don't do this
   // const { user } = useAuthStore();
 
   // ============================================================================
   // DATA FETCHING (React Query)
   // ============================================================================
-  
+
   // ✅ CORRECT: Single query with primitive keys
   const { data, isLoading, error, refetch } = useQuery<any>({
     // TODO: Update query key with your primitives
@@ -73,7 +73,7 @@ function YourDashboardPage() {
         // TODO: Replace with your actual API call
         // const response = await yourService.getData(currentPage, filterStatus, searchTerm);
         // return response;
-        
+
         // Example:
         return {
           data: [],
@@ -95,12 +95,12 @@ function YourDashboardPage() {
   // ============================================================================
   // DERIVED STATE (Memoized)
   // ============================================================================
-  
+
   // ✅ CORRECT: Use useMemo for expensive computations
   const filteredData = useMemo(() => {
-    if (!data?.data) return [];
-    
-    return data.data.filter((item: YourDataType) => {
+    const rawData = data?.data || [];
+
+    return rawData.filter((item: YourDataType) => {
       const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesFilter = filterStatus === 'all' || item.status === filterStatus;
       return matchesSearch && matchesFilter;
@@ -117,15 +117,15 @@ function YourDashboardPage() {
   // ============================================================================
   // EVENT HANDLERS
   // ============================================================================
-  
+
   const handleCreate = () => {
     // TODO: Implement create logic
     console.log('Create new item');
   };
-  
+
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure?')) return;
-    
+
     try {
       // TODO: Implement delete logic
       // await yourService.delete(id);
@@ -139,7 +139,7 @@ function YourDashboardPage() {
   // ============================================================================
   // RENDER
   // ============================================================================
-  
+
   // Loading state
   if (isLoading) {
     return (

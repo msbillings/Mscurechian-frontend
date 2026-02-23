@@ -178,17 +178,17 @@ export default function PatientClinicalHistoryPage() {
 
                     {activeTab === 'meds' && (
                         <div className="space-y-2 sm:space-y-4">
-                            {history.medications.map((m: any) => (
+                            {(history.meds || []).map((m: any) => (
                                 <div key={m._id} className="flex items-center gap-3 sm:gap-6 p-4 sm:p-6 bg-white border border-slate-100 rounded-2xl sm:rounded-3xl group hover:border-amber-200 transition-all shadow-sm">
                                     <div className="w-8 h-8 sm:w-12 sm:h-12 bg-amber-50 rounded-lg sm:rounded-2xl flex items-center justify-center text-amber-600 shrink-0">
                                         <Pill size={16} className="sm:size-6" />
                                     </div>
                                     <div className="grow min-w-0">
                                         <h3 className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-tight truncate">{m.drugName} - {m.dose}</h3>
-                                        <p className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate">{m.route} • {format(new Date(m.createdAt), 'HH:mm')}</p>
+                                        <p className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate">{m.route} • {format(new Date(m.timestamp || m.createdAt), 'HH:mm')}</p>
                                     </div>
                                     <div className="text-right shrink-0">
-                                        <span className="text-[7px] sm:text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 sm:px-3 py-1 rounded-full uppercase tracking-widest">Admin</span>
+                                        <span className="text-[7px] sm:text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 sm:px-3 py-1 rounded-full uppercase tracking-widest">Administered</span>
                                         <p className="text-[6px] sm:text-[8px] font-bold text-slate-300 uppercase tracking-widest mt-1">REF: {m._id.slice(-4)}</p>
                                     </div>
                                 </div>

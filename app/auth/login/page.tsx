@@ -114,15 +114,16 @@ const LoginPage = () => {
       await login(form.identifier, form.password);
 
       const { user, logout } = useAuthStore.getState();
-      
+
       // ✅ UNIVERSAL LOGIN ROLES ONLY
       const ALLOWED_ROLES = [
-        'admin', 'super-admin', 'doctor', 'hospital-admin', 
+        'admin', 'super-admin', 'doctor', 'hospital-admin',
         'helpdesk', 'staff', 'patient'
       ];
 
       const role = user?.role?.toLowerCase() || '';
-      const hospitalId = (user as any).hospitalId || (user as any).hospital;
+      const rawIdVal = (user as any).hospitalId || (user as any).hospital;
+      const hospitalId = (rawIdVal && typeof rawIdVal === 'object') ? (rawIdVal._id || rawIdVal.id) : rawIdVal;
 
       if (user && !ALLOWED_ROLES.includes(role)) {
         logout();
@@ -151,7 +152,7 @@ const LoginPage = () => {
 
         const portal = rolePathMap[role] || 'hospital-admin';
         finalPath = `/${hospitalId}/${portal}`;
-        
+
         // Pretty name for the feedback UI
         dashboardLabel = portal.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') + " Portal";
       } else {

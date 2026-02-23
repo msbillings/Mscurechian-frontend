@@ -44,6 +44,15 @@ function EmergencyLogin() {
             sessionStorage.setItem("user", JSON.stringify(response.user));
             sessionStorage.setItem('lastAuthCheck', Date.now().toString()); // ✅ SPEED FIX: Throttle next check
 
+            // ✅ MULTI-TENANCY: Store hospitalId in sessionStorage and cookie
+            const rawIdVal = (response.user as any).hospital || (response.user as any).hospitalId;
+            const hospitalIdStr = (rawIdVal && typeof rawIdVal === 'object') ? (rawIdVal._id || rawIdVal.id) : rawIdVal;
+            if (hospitalIdStr) {
+                const hStr = hospitalIdStr.toString();
+                sessionStorage.setItem("activeHospitalId", hStr);
+                document.cookie = `hospitalId=${hStr}; path=/; max-age=86400; SameSite=Lax`;
+            }
+
             // SYNC TO COOKIES: Enable Server Actions and SSR to access tokens
             document.cookie = `accessToken=${response.tokens.accessToken}; path=/; max-age=86400; SameSite=Lax`;
             document.cookie = `refreshToken=${response.tokens.refreshToken}; path=/; max-age=604800; SameSite=Lax`;

@@ -98,6 +98,16 @@ const NurseLoginPage = () => {
             sessionStorage.setItem("refreshToken", tokens.refreshToken);
             sessionStorage.setItem("user", JSON.stringify(user));
             sessionStorage.setItem("lastAuthCheck", Date.now().toString());
+
+            // ✅ MULTI-TENANCY: Store hospitalId in sessionStorage and cookie
+            const rawId = (user as any).hospital || (user as any).hospitalId;
+            const userHospitalIdStr = (rawId && typeof rawId === 'object') ? (rawId._id || rawId.id) : rawId;
+            if (userHospitalIdStr) {
+                const hospitalIdStr = userHospitalIdStr.toString();
+                sessionStorage.setItem("activeHospitalId", hospitalIdStr);
+                document.cookie = `hospitalId=${hospitalIdStr}; path=/; max-age=86400; SameSite=Lax`;
+            }
+
             document.cookie = `accessToken=${tokens.accessToken}; path=/; max-age=86400; SameSite=Lax`;
             document.cookie = `refreshToken=${tokens.refreshToken}; path=/; max-age=604800; SameSite=Lax`;
 
@@ -115,7 +125,8 @@ const NurseLoginPage = () => {
             });
 
             setIsNavigating(true);
-            const userHospitalId = (user as any).hospital || (user as any).hospitalId;
+            const rawIdVal = (user as any).hospital || (user as any).hospitalId;
+            const userHospitalId = (rawIdVal && typeof rawIdVal === 'object') ? (rawIdVal._id || rawIdVal.id) : rawIdVal;
             router.replace(`/${userHospitalId}/nurse`);
         } catch (err: any) {
             const errorMessage = err?.message || err?.response?.data?.message || 'Login failed. Please check your credentials.';

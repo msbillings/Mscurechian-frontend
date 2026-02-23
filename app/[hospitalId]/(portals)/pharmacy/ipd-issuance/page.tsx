@@ -1,17 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import { useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { ipdIssuanceService } from "@/lib/integrations/services/pharmacy.service";
 import { ProductService } from "@/lib/integrations/services/product.service";
 import { ipdService } from "@/lib/integrations/services/ipd.service";
 import { apiClient } from "@/lib/integrations/api";
 import {
-    Search, Plus, Trash2, User, BedDouble, CheckCircle2,
-    AlertTriangle, Package, Pill, ClipboardList,
-    UserCheck, ArrowLeft, Pencil, RotateCcw, Check, X, Clock
+    Search, User, BedDouble, CheckCircle2,
+    AlertTriangle, Pill, ClipboardList, IndianRupee, Wallet,
+    UserCheck, ArrowLeft, Pencil, RotateCcw, Check, X, Clock, Fingerprint, ArrowRight
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { useTenantLink } from "@/hooks/useTenantLink";
@@ -51,16 +50,20 @@ interface ProductResult {
 export default function IPDIssuancePage() {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const hospitalId = params?.hospitalId as string;
+    const urlAdmissionId = searchParams.get("admissionId");
     const queryClient = useQueryClient();
     const { getPath } = useTenantLink();
 
     // ── Patient list state ──────────────────────────────────────────────────
     const [patientSearch, setPatientSearch] = useState("");
-    const [selectedAdmission, setSelectedAdmission] = useState<IPDPatient | null>(null);
+    const [manualSelectionId, setManualSelectionId] = useState<string | null>(null);
 
     // ── Issue form state ────────────────────────────────────────────────────
     const [showIssueForm, setShowIssueForm] = useState(false);
+    const [overrideMismatch, setOverrideMismatch] = useState<{ missingItems: any[] } | null>(null);
+    const [overrideReason, setOverrideReason] = useState("");
     const [notes, setNotes] = useState("");
     const [selectedNurseId, setSelectedNurseId] = useState("");
     const [items, setItems] = useState<IssuanceItem[]>([
@@ -75,6 +78,13 @@ export default function IPDIssuancePage() {
         queryFn: () => ipdService.getActiveAdmissions(),
         refetchInterval: 30000,
     });
+
+    // Derive selected admission from URL or manual state
+    const selectedAdmission = useMemo(() => {
+        const id = urlAdmissionId || manualSelectionId;
+        if (!id || admissions.length === 0) return null;
+        return (admissions as any[]).find((a: any) => a.admissionId === id) || null;
+    }, [urlAdmissionId, manualSelectionId, admissions]);
 
     const filteredAdmissions = (admissions as IPDPatient[]).filter((a) => {
         if (!patientSearch.trim()) return true;
@@ -132,11 +142,22 @@ export default function IPDIssuancePage() {
     });
 
     const signoffMutation = useMutation({
-        mutationFn: ipdIssuanceService.signoffPharmacy,
-        onSuccess: () => {
+        mutationFn: (payload: { admissionId: string, forceOverride?: boolean, overrideReason?: string }) =>
+            ipdIssuanceService.signoffPharmacy(payload),
+        onSuccess: (res: any) => {
             queryClient.invalidateQueries({ queryKey: ["pharmacy", "ipd-issuance-summary", admId] });
-            toast.success("Pharmacy cleared!");
+            toast.success(res?.message || "Pharmacy cleared!");
+            setOverrideMismatch(null);
+            setOverrideReason("");
         },
+        onError: (err: any) => {
+            if (err?.mismatch && err?.data?.missingItems) {
+                setOverrideMismatch({ missingItems: err.data.missingItems });
+                toast.error(err.message || "Medicine mismatch detected!");
+            } else {
+                toast.error(err?.message || "Failed to sign-off");
+            }
+        }
     });
 
     const approveReturnMutation = useMutation({
@@ -171,13 +192,15 @@ export default function IPDIssuancePage() {
     };
 
     const handleSelectAdmission = (adm: IPDPatient) => {
-        setSelectedAdmission(adm);
+        router.push(getPath(`/pharmacy/ipd-issuance?admissionId=${adm.admissionId}`));
+        setManualSelectionId(adm.admissionId);
         setShowIssueForm(false);
         resetForm();
     };
 
     const handleBack = () => {
-        setSelectedAdmission(null);
+        router.push(getPath("/pharmacy/ipd-issuance"));
+        setManualSelectionId(null);
         setShowIssueForm(false);
         resetForm();
     };
@@ -230,7 +253,7 @@ export default function IPDIssuancePage() {
             }, 300);
         });
         return () => timers.forEach(t => t && clearTimeout(t));
-    }, [medSearches]);
+    }, [medSearches, items]);
 
     const handleIssue = () => {
         const filled = items.filter(i => i.productId && i.issuedQty > 0);
@@ -275,12 +298,12 @@ export default function IPDIssuancePage() {
             {/* ══ PATIENT LIST VIEW (no patient selected) ══════════════════════════════ */}
             {!selectedAdmission && (
                 <div className="space-y-5">
-                    {/* Search */}
-                    <div className="relative">
-                        <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    {/* Search - Reduced Width */}
+                    <div className="relative max-w-md group">
+                        <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                         <input
-                            className="w-full pl-10 pr-10 py-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
-                            placeholder="Filter by patient name or admission ID..."
+                            className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-[12px] font-bold outline-none focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-gray-400"
+                            placeholder="Search by Name, MRN or ID..."
                             value={patientSearch}
                             onChange={(e) => setPatientSearch(e.target.value)}
                         />
@@ -292,95 +315,104 @@ export default function IPDIssuancePage() {
                         )}
                     </div>
 
-                    {/* Count */}
-                    {!loadingAdmissions && (
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                            {filteredAdmissions.length} Active Admission{filteredAdmissions.length !== 1 ? "s" : ""}
-                        </p>
-                    )}
-
-                    {/* Patient Cards Grid */}
-                    {loadingAdmissions ? (
-                        <div className="flex items-center justify-center py-16 gap-2 text-gray-400 text-sm">
-                            <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-                            Loading admitted patients...
+                    {/* Table View */}
+                    <div className="bg-white dark:bg-[#111] rounded-[2rem] border border-gray-100 dark:border-gray-800 overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-800">
+                                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Patient / Reference</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Bed Info</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Primary Doctor</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Dept Status</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Clearance</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
+                                    {loadingAdmissions ? (
+                                        <tr>
+                                            <td colSpan={6} className="py-20 text-center">
+                                                <div className="flex flex-col items-center gap-3">
+                                                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Fetching Active Admissions...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : filteredAdmissions.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={6} className="py-20 text-center italic text-gray-400 font-bold uppercase tracking-widest text-[10px]">
+                                                No clinical records match your search
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        filteredAdmissions.map((adm) => (
+                                            <tr key={adm._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-all group cursor-pointer" onClick={() => handleSelectAdmission(adm)}>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/10 flex items-center justify-center text-blue-600 border border-blue-100 dark:border-blue-800/50 font-black text-xs">
+                                                            {adm.patient?.name?.[0]}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase tracking-tight">{adm.patient?.name}</p>
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                <Fingerprint size={10} className="text-gray-400" />
+                                                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">
+                                                                    MRN: {(adm.patient as any)?.mrn || 'N/A'}
+                                                                    <span className="mx-1.5 opacity-30">|</span>
+                                                                    ADM: {adm.admissionId}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
+                                                        <BedDouble size={10} className="text-blue-500" />
+                                                        <span className="text-[10px] font-black text-gray-600 dark:text-gray-400">{adm.bed?.bedId || '—'}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <p className="text-[10px] font-bold text-gray-500 uppercase">
+                                                        {adm.primaryDoctor?.user?.name || 'Not Assigned'}
+                                                    </p>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.05em]">
+                                                        {adm.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${adm.pharmacyClearanceStatus === "CLEARED"
+                                                        ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                                                        : adm.pharmacyClearanceStatus === "PENDING"
+                                                            ? "bg-rose-50 text-rose-600 border-rose-200 animate-pulse"
+                                                            : "bg-gray-50 text-gray-400 border-gray-200"
+                                                        }`}>
+                                                        {adm.pharmacyClearanceStatus === "CLEARED" ? "CLEARED" : adm.pharmacyClearanceStatus || "NOT REQUIRED"}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                router.push(getPath(`/pharmacy/ipd-billing?admissionId=${adm.admissionId}`));
+                                                            }}
+                                                            className="px-3 py-1.5 bg-teal-50 dark:bg-teal-900/20 text-teal-600 rounded-lg hover:bg-teal-600 hover:text-white transition-all border border-teal-100 dark:border-teal-800/30 text-[9px] font-black uppercase flex items-center gap-2"
+                                                        >
+                                                            <Pencil size={10} />
+                                                            Add Bill
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
-                    ) : filteredAdmissions.length === 0 ? (
-                        <div className="text-center py-16 text-gray-400">
-                            <BedDouble size={48} className="mx-auto mb-3 opacity-20" />
-                            <p className="text-sm font-medium">
-                                {patientSearch ? `No patients matching "${patientSearch}"` : "No active IPD admissions"}
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {filteredAdmissions.map((adm) => (
-                                <div key={adm._id} className="relative group">
-                                    <button
-                                        onClick={() => handleSelectAdmission(adm)}
-                                        className="w-full text-left bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md transition-all p-5"
-                                    >
-                                        {/* Patient name + avatar */}
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className="w-11 h-11 bg-linear-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
-                                                <User size={18} className="text-white" />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="font-bold text-gray-800 dark:text-white text-sm truncate">
-                                                    {adm.patient?.name || "Unknown"}
-                                                </p>
-                                                <p className="text-xs text-gray-400 font-mono mt-0.5 truncate">
-                                                    {adm.admissionId}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Info row */}
-                                        <div className="grid grid-cols-2 gap-2 mb-3">
-                                            <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl px-3 py-2">
-                                                <p className="text-xs text-gray-400 mb-0.5">Bed</p>
-                                                <p className="text-xs font-bold text-gray-700 dark:text-gray-200 flex items-center gap-1">
-                                                    <BedDouble size={10} className="text-blue-500" />
-                                                    {adm.bed?.bedId || "—"}
-                                                </p>
-                                            </div>
-                                            <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl px-3 py-2">
-                                                <p className="text-xs text-gray-400 mb-0.5">Status</p>
-                                                <p className="text-xs font-bold text-gray-700 dark:text-gray-200">{adm.status}</p>
-                                            </div>
-                                        </div>
-
-                                        {adm.primaryDoctor?.user?.name && (
-                                            <p className="text-xs text-gray-400 mb-3 truncate">
-                                                {adm.primaryDoctor.user.name.startsWith('Dr.') ? adm.primaryDoctor.user.name : `Dr. ${adm.primaryDoctor.user.name}`}
-                                            </p>
-                                        )}
-
-                                        {/* Pharmacy clearance */}
-                                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold inline-block ${getClearanceColor(adm.pharmacyClearanceStatus)}`}>
-                                            {adm.pharmacyClearanceStatus === "CLEARED"
-                                                ? "✓ Pharmacy Cleared"
-                                                : adm.pharmacyClearanceStatus === "PENDING"
-                                                    ? "⏳ Clearance Pending"
-                                                    : "Not Required"}
-                                        </span>
-                                    </button>
-
-                                    {/* Edit icon — navigates to IPD Billing with this patient pre-selected */}
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            router.push(getPath(`/pharmacy/ipd-billing?admissionId=${adm.admissionId}`));
-                                        }}
-                                        title="Add to IPD Bill"
-                                        className="absolute top-3 right-3 w-8 h-8 bg-teal-50 dark:bg-teal-900/20 text-teal-600 rounded-xl flex items-center justify-center hover:bg-teal-100 dark:hover:bg-teal-800/40 transition-colors shadow-sm border border-teal-100 dark:border-teal-800/30"
-                                    >
-                                        <Pencil size={13} />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    </div>
                 </div>
             )}
 
@@ -457,14 +489,78 @@ export default function IPDIssuancePage() {
 
                                 {(summary as any)?.pharmacyClearanceStatus === "PENDING" && (
                                     <div className="px-5 pb-5">
-                                        <button
-                                            onClick={() => signoffMutation.mutate(admId)}
-                                            disabled={signoffMutation.isPending}
-                                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-2xl text-sm font-bold uppercase tracking-wider transition-colors disabled:opacity-60"
-                                        >
-                                            <CheckCircle2 size={16} />
-                                            {signoffMutation.isPending ? "Processing..." : "Manual Sign-Off"}
-                                        </button>
+                                        {!overrideMismatch ? (
+                                            <button
+                                                onClick={() => signoffMutation.mutate({ admissionId: admId })}
+                                                disabled={signoffMutation.isPending}
+                                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-2xl text-sm font-bold uppercase tracking-wider transition-colors disabled:opacity-60 w-full justify-center"
+                                            >
+                                                <CheckCircle2 size={16} />
+                                                {signoffMutation.isPending ? "Verifying Stock..." : "Verify & Sign-Off"}
+                                            </button>
+                                        ) : (
+                                            <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-3xl p-5 mb-4">
+                                                <h4 className="text-red-700 dark:text-red-400 font-bold mb-3 flex items-center gap-2">
+                                                    <AlertTriangle size={18} />
+                                                    Discrepancy Detected
+                                                </h4>
+                                                <p className="text-red-600 dark:text-red-300 text-xs mb-4 leading-relaxed">
+                                                    The system found medicines that were issued but neither consumed nor physically returned. You cannot normally sign off until these are verified or a return request is submitted.
+                                                </p>
+
+                                                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-red-100 dark:border-red-900 overflow-hidden mb-4">
+                                                    <table className="w-full text-xs text-left">
+                                                        <thead className="bg-red-100/50 dark:bg-red-900/40 text-red-700 dark:text-red-400">
+                                                            <tr>
+                                                                <th className="px-4 py-2 font-bold">Missing Medicine</th>
+                                                                <th className="px-2 py-2 text-center font-bold">Issued</th>
+                                                                <th className="px-2 py-2 text-center font-bold">Consumed</th>
+                                                                <th className="px-2 py-2 text-center font-bold">Returned</th>
+                                                                <th className="px-2 py-2 text-center text-red-600 font-bold">Variance</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-red-100 dark:divide-red-900/50">
+                                                            {overrideMismatch.missingItems.map((m: any, i: number) => (
+                                                                <tr key={i} className="dark:text-gray-300 hover:bg-red-50/50 dark:hover:bg-red-900/20">
+                                                                    <td className="px-4 py-2.5 font-bold">{m.medicine}</td>
+                                                                    <td className="px-2 py-2.5 text-center text-blue-600 font-bold">{m.issued}</td>
+                                                                    <td className="px-2 py-2.5 text-center text-green-600 font-bold">{m.consumed}</td>
+                                                                    <td className="px-2 py-2.5 text-center text-orange-500 font-bold">{m.returned}</td>
+                                                                    <td className="px-2 py-2.5 text-center text-red-600 font-bold text-sm bg-red-100/30 dark:bg-red-900/30">{m.missing}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+
+                                                <label className="block text-xs font-bold text-red-800 dark:text-red-300 mb-1">Override Reason (Mandatory if forcing sign-off)</label>
+                                                <textarea
+                                                    value={overrideReason}
+                                                    onChange={e => setOverrideReason(e.target.value)}
+                                                    placeholder="Specify why you are clearing this physically missing stock..."
+                                                    className="w-full text-sm p-3 rounded-2xl border border-red-200 dark:border-red-800 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 mb-4 h-20"
+                                                />
+
+                                                <div className="flex gap-3">
+                                                    <button
+                                                        onClick={() => {
+                                                            setOverrideMismatch(null);
+                                                            setOverrideReason("");
+                                                        }}
+                                                        className="flex-1 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 py-3 rounded-2xl text-xs font-bold hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                    >
+                                                        Cancel & Check with Nurse
+                                                    </button>
+                                                    <button
+                                                        onClick={() => signoffMutation.mutate({ admissionId: admId, forceOverride: true, overrideReason })}
+                                                        disabled={signoffMutation.isPending || !overrideReason.trim()}
+                                                        className="flex-1 bg-red-600 text-white py-3 rounded-2xl text-xs font-bold hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                                                    >
+                                                        {signoffMutation.isPending ? "Forcing..." : "Force Sign-Off Anyway"}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -590,25 +686,51 @@ export default function IPDIssuancePage() {
                                                             <th className="px-5 py-2.5 text-left">Medicine</th>
                                                             <th className="px-4 py-2.5 text-center">Batch</th>
                                                             <th className="px-4 py-2.5 text-center">Issued</th>
-                                                            <th className="px-4 py-2.5 text-center">Returned</th>
-                                                            <th className="px-4 py-2.5 text-right">Amount</th>
+                                                            <th className="px-4 py-2.5 text-center text-orange-500">Returned</th>
+                                                            <th className="px-4 py-2.5 text-right">Unit Rate</th>
+                                                            <th className="px-4 py-2.5 text-right">Total</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {iss.items?.map((item: any, i: number) => (
-                                                            <tr key={i} className="border-t dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/20">
-                                                                <td className="px-5 py-3 font-semibold text-gray-700 dark:text-gray-300">{item.productName}</td>
-                                                                <td className="px-4 py-3 text-center text-gray-400 font-mono">{item.batchNo || "—"}</td>
-                                                                <td className="px-4 py-3 text-center font-bold text-blue-600">{item.issuedQty}</td>
-                                                                <td className="px-4 py-3 text-center font-bold text-orange-500">{item.returnedQty ?? 0}</td>
-                                                                <td className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-300">₹{item.totalAmount}</td>
-                                                            </tr>
-                                                        ))}
+                                                        {iss.items?.map((item: any, i: number) => {
+                                                            const returnedAmt = (item.returnedQty || 0) * (item.unitRate || item.totalAmount / item.issuedQty);
+                                                            return (
+                                                                <tr key={i} className="border-t dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/20">
+                                                                    <td className="px-5 py-3 font-semibold text-gray-700 dark:text-gray-300">{item.productName}</td>
+                                                                    <td className="px-4 py-3 text-center text-gray-400 font-mono">{item.batchNo || "—"}</td>
+                                                                    <td className="px-4 py-3 text-center font-bold text-blue-600">{item.issuedQty}</td>
+                                                                    <td className={`px-4 py-3 text-center font-bold ${item.returnedQty > 0 ? "text-orange-500 bg-orange-50/30" : "text-gray-300"}`}>
+                                                                        {item.returnedQty || 0}
+                                                                    </td>
+                                                                    <td className="px-4 py-3 text-right text-gray-500">₹{(item.unitRate || item.totalAmount / item.issuedQty).toFixed(2)}</td>
+                                                                    <td className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-300">
+                                                                        <div>₹{item.totalAmount.toFixed(2)}</div>
+                                                                        {item.returnedQty > 0 && (
+                                                                            <div className="text-[10px] text-orange-600">- ₹{returnedAmt.toFixed(2)}</div>
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
                                                     </tbody>
                                                     <tfoot>
-                                                        <tr className="border-t-2 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/20">
-                                                            <td colSpan={4} className="px-5 py-2.5 text-xs font-bold text-gray-500 uppercase">Total</td>
-                                                            <td className="px-4 py-2.5 text-right font-bold text-gray-800 dark:text-white">₹{iss.totalAmount}</td>
+                                                        <tr className="border-t-2 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/20">
+                                                            <td colSpan={5} className="px-5 py-2.5 text-xs font-bold text-gray-500 uppercase text-right">Issuance Subtotal</td>
+                                                            <td className="px-4 py-2.5 text-right font-bold text-gray-800 dark:text-white">₹{iss.totalAmount.toFixed(2)}</td>
+                                                        </tr>
+                                                        {iss.items?.some((it: any) => it.returnedQty > 0) && (
+                                                            <tr className="bg-orange-50/20 dark:bg-orange-900/10">
+                                                                <td colSpan={5} className="px-5 py-2.5 text-xs font-bold text-orange-600 uppercase text-right">(-) Total Return Credit</td>
+                                                                <td className="px-4 py-2.5 text-right font-bold text-orange-600">
+                                                                    - ₹{iss.items.reduce((sum: number, it: any) => sum + ((it.returnedQty || 0) * (it.unitRate || it.totalAmount / it.issuedQty)), 0).toFixed(2)}
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                        <tr className="bg-blue-50/30 dark:bg-blue-900/10 border-t border-blue-100 dark:border-blue-900">
+                                                            <td colSpan={5} className="px-5 py-3 text-xs font-black text-blue-700 dark:text-blue-400 uppercase text-right tracking-widest">Net Payable</td>
+                                                            <td className="px-4 py-3 text-right font-black text-blue-800 dark:text-blue-300 text-sm">
+                                                                ₹{(iss.totalAmount - iss.items.reduce((sum: number, it: any) => sum + ((it.returnedQty || 0) * (it.unitRate || it.totalAmount / it.issuedQty)), 0)).toFixed(2)}
+                                                            </td>
                                                         </tr>
                                                     </tfoot>
                                                 </table>
@@ -662,6 +784,79 @@ export default function IPDIssuancePage() {
                                             </button>
                                         </div>
                                     )}
+                                </div>
+                            )}
+
+                            {/* ── Financial Summary ── */}
+                            {summary && (
+                                <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-xl overflow-hidden animate-in fade-in slide-in-from-right-4 duration-500">
+                                    <div className="px-5 py-4 bg-gray-50 dark:bg-gray-900/40 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                                            Bill Preview
+                                        </p>
+                                        <Wallet size={14} className="text-blue-500" />
+                                    </div>
+
+                                    {/* Patient Info Section */}
+                                    <div className="px-5 py-4 bg-blue-50/30 dark:bg-blue-900/10 border-b border-gray-100 dark:border-gray-700">
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-1 h-1 rounded-full bg-blue-400"></div>
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Patient Details</p>
+                                            </div>
+                                            <div className="grid grid-cols-1 gap-y-2">
+                                                <div>
+                                                    <p className="text-sm font-black text-gray-800 dark:text-white leading-tight">{selectedAdmission.patient?.name}</p>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div>
+                                                        <p className="text-[8px] font-bold text-gray-400 uppercase">MRN Number</p>
+                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-300">{(selectedAdmission.patient as any)?.mrn || "N/A"}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[8px] font-bold text-gray-400 uppercase">Mobile</p>
+                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-300">{selectedAdmission.patient?.mobile || "N/A"}</p>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[8px] font-bold text-gray-400 uppercase">Admission#</p>
+                                                    <p className="text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400">{selectedAdmission.admissionId}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-5 space-y-4">
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-gray-500 font-medium flex items-center gap-2">
+                                                <div className="w-1 h-1 rounded-full bg-gray-300"></div>
+                                                Total Issued
+                                            </span>
+                                            <span className="font-bold text-gray-800 dark:text-white">₹{((summary as any).totalIssuedAmount ?? 0).toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-orange-500 font-medium flex items-center gap-2">
+                                                <div className="w-1 h-1 rounded-full bg-orange-400"></div>
+                                                Total Returned
+                                            </span>
+                                            <span className="font-bold text-orange-600">-₹{((summary as any).totalReturnedAmount ?? 0).toFixed(2)}</span>
+                                        </div>
+                                        <div className="pt-4 border-t border-dashed border-gray-200 dark:border-gray-700 flex justify-between items-end">
+                                            <div>
+                                                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                                                    <IndianRupee size={10} />
+                                                    Net Payable
+                                                </p>
+                                                <p className="text-[9px] text-gray-400 italic font-medium leading-none">Pharmacy Statement</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="text-2xl font-black text-blue-700 dark:text-blue-400 leading-none">
+                                                    ₹{((summary as any).netBillableAmount ?? 0).toFixed(2)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
     Pill,
     User,
+    Users,
     ShoppingCart,
     CreditCard,
     Calculator,
@@ -13,26 +14,42 @@ import {
     Plus,
     Trash2,
     Save,
-    ArrowLeft
+    ArrowLeft,
+    ChevronDown,
+    UserCheck,
+    X
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { PharmacyBillingService } from "@/lib/integrations/services/pharmacyBilling.service";
 import { ProductService } from "@/lib/integrations/services/product.service";
 import { hospitalAdminService } from "@/lib/integrations";
+import { apiClient } from "@/lib/integrations/api/apiClient";
 import { useAuthStore } from "@/stores/authStore";
 import { useTenantLink } from "@/hooks/useTenantLink";
+import { ipdService } from "@/lib/integrations/services/ipd.service";
+import { ipdIssuanceService } from "@/lib/integrations/services/pharmacy.service";
+import { ClipboardList } from "lucide-react";
 
 const IPDBillingPage = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
     const orderId = searchParams.get("orderId");
+    const admissionId = searchParams.get("admissionId");
     const { user } = useAuthStore();
     const { getPath } = useTenantLink();
 
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [order, setOrder] = useState<any>(null);
+    const [previousIssuances, setPreviousIssuances] = useState<any[]>([]);
     const [hospitalSettings, setHospitalSettings] = useState<any>(null);
+
+    // Nurse State
+    const [nurses, setNurses] = useState<any[]>([]);
+    const [loadingNurses, setLoadingNurses] = useState(false);
+    const [selectedNurse, setSelectedNurse] = useState<any>(null);
+    const [nurseSearch, setNurseSearch] = useState("");
+    const [showNurseDropdown, setShowNurseDropdown] = useState(false);
 
     // Cart State
     const [cart, setCart] = useState<any[]>([]);
@@ -49,13 +66,22 @@ const IPDBillingPage = () => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const [settingsRes, orderRes] = await Promise.all([
+                const p_admissionId = orderId ? null : admissionId; // if we have order we already process it, but if no order, get by admission
+
+                // Get both order logic and admission logic running conditionally
+                const [settingsRes, orderRes, admissionRes, issuancesRes] = await Promise.all([
                     hospitalAdminService.getHospitalMetadata({ skipCache: true }),
-                    orderId ? PharmacyBillingService.getPharmacyOrder(orderId) : Promise.resolve(null)
+                    orderId ? PharmacyBillingService.getPharmacyOrder(orderId) : Promise.resolve(null),
+                    p_admissionId ? ipdService.getAdmissionDetails(p_admissionId) : Promise.resolve(null),
+                    admissionId ? ipdIssuanceService.getIssuancesByAdmission(admissionId) : Promise.resolve([])
                 ]);
 
                 if (settingsRes.success) {
                     setHospitalSettings(settingsRes.data);
+                }
+
+                if (issuancesRes && Array.isArray(issuancesRes)) {
+                    setPreviousIssuances(issuancesRes);
                 }
 
                 if (orderRes) {
@@ -65,17 +91,91 @@ const IPDBillingPage = () => {
                     if (o.medicines) {
                         setPrescribedMedicines(o.medicines.map((m: any) => ({ ...m, processed: false })));
                     }
+                } else if (admissionRes) {
+                    // Create mock order so billing logic works seamlessly (map flattened discharge response)
+                    setOrder({
+                        _id: null,
+                        tokenNumber: "Direct IPD Billing",
+                        patient: {
+                            name: admissionRes.patientName || admissionRes.patient?.name, // Fallbacks just in case
+                            age: admissionRes.age,
+                            gender: admissionRes.gender,
+                        },
+                        admission: {
+                            _id: admissionRes.admissionId || admissionRes._id,
+                            admissionId: admissionRes.admissionId,
+                            wardType: admissionRes.roomType || admissionRes.wardType,
+                            bedDetails: {
+                                wardType: admissionRes.roomType || admissionRes.wardType,
+                                room: admissionRes.roomNo,
+                                bedId: admissionRes.bedNo,
+                                department: admissionRes.department
+                            }
+                        },
+                        doctor: {
+                            name: admissionRes.primaryDoctor || admissionRes.doctor?.name
+                        }
+                    });
                 }
             } catch (error) {
                 console.error("Failed to fetch billing data", error);
-                toast.error("Failed to load order details");
+                toast.error("Failed to load details");
             } finally {
                 setLoading(false);
             }
         };
 
         fetchData();
-    }, [orderId]);
+    }, [orderId, admissionId]);
+
+    // Fetch nurses for this hospital
+    useEffect(() => {
+        const fetchNurses = async () => {
+            try {
+                setLoadingNurses(true);
+                const res: any = await apiClient("/hospital-admin/nurses");
+                const list = res?.nurses || res?.users || res?.data || res || [];
+                const parsedNurses = Array.isArray(list) ? list : [];
+                setNurses(parsedNurses);
+
+                // Auto-select nurse from previous issuances if available
+                if (previousIssuances && previousIssuances.length > 0 && parsedNurses.length > 0 && !selectedNurse) {
+                    const lastNurseId = previousIssuances[0]?.receivedByNurse?._id || previousIssuances[0]?.receivedByNurse;
+                    if (lastNurseId) {
+                        const nurseMatch = parsedNurses.find((n: any) => n._id === lastNurseId);
+                        if (nurseMatch) {
+                            setSelectedNurse(nurseMatch);
+                        }
+                    }
+                }
+
+            } catch (err) {
+                console.error("Failed to fetch nurses:", err);
+            } finally {
+                setLoadingNurses(false);
+            }
+        };
+        fetchNurses();
+    }, [previousIssuances]);
+
+    // Close nurse dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (!target.closest(".nurse-dropdown-container")) {
+                setShowNurseDropdown(false);
+            }
+        };
+        if (showNurseDropdown) {
+            document.addEventListener("mousedown", handleClickOutside);
+            return () => document.removeEventListener("mousedown", handleClickOutside);
+        }
+    }, [showNurseDropdown]);
+
+    const filteredNurses = nurses.filter(n => {
+        const q = nurseSearch.toLowerCase();
+        return !q || n.name?.toLowerCase().includes(q) || n.email?.toLowerCase().includes(q);
+    });
 
     // Product search logic
     useEffect(() => {
@@ -106,7 +206,6 @@ const IPDBillingPage = () => {
         setPrice(product.mrp / unitsPerPack);
         setSearchResults([]);
     };
-
 
     const handleAddItem = () => {
         if (!selectedProduct) return toast.error("Select a product first");
@@ -144,6 +243,12 @@ const IPDBillingPage = () => {
         if (cart.length === 0) return toast.error("Cart is empty");
         if (!order?.admission) return toast.error("No admission linked to this order");
 
+        // Nurse is optional but recommended
+        if (!selectedNurse) {
+            const confirm = window.confirm("No nurse selected. The medicines won't appear in any nurse's return portal. Proceed anyway?");
+            if (!confirm) return;
+        }
+
         // Check if ward/room/department allows IPD billing
         const bedInfo = order?.admission?.bedDetails || {};
         const wardType = bedInfo.wardType || order?.admission?.wardType;
@@ -173,11 +278,18 @@ const IPDBillingPage = () => {
                     unitRate: item.unitRate,
                     totalAmount: item.total
                 })),
-                notes: `Billed from order ${order.tokenNumber}`
+                // ✅ Nurse assignment — drives the return portal filtering
+                receivedByNurse: selectedNurse?._id || null,
+                nurseNote: selectedNurse?.name || null,
+                notes: `Billed from order ${order.tokenNumber}${selectedNurse ? ` | Assigned to Nurse: ${selectedNurse.name}` : ""}`
             };
 
             await PharmacyBillingService.chargeIPDBill(payload);
-            toast.success("Medicines charged to IPD bill successfully!");
+            toast.success(
+                selectedNurse
+                    ? `Medicines charged to IPD & assigned to ${selectedNurse.name}'s return portal!`
+                    : "Medicines charged to IPD bill successfully!"
+            );
             router.push(getPath("/pharmacy/orders"));
         } catch (error: any) {
             console.error("Charge failed", error);
@@ -247,7 +359,7 @@ const IPDBillingPage = () => {
                         </div>
                     </div>
 
-                    {/* Prescribed Medicines List - OPD Style */}
+                    {/* Prescribed Medicines List */}
                     {prescribedMedicines.length > 0 && (
                         <div className="bg-primary-theme/5 rounded-4xl border border-primary-theme/10 p-8 shadow-sm">
                             <div className="flex items-center gap-3 mb-6">
@@ -266,16 +378,59 @@ const IPDBillingPage = () => {
                                         <button
                                             disabled={med.processed}
                                             onClick={() => {
-                                                setSearchTerm(med.name.split(' (')[0]); // Take the brand name part
+                                                setSearchTerm(med.name.split(' (')[0]);
                                                 setQuantity(Number(med.quantity) || 1);
-                                                // Pre-calculate unit price if we can, but selecting the product will do it
                                                 setProcessingMedIndex(i);
                                             }}
-
                                             className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${med.processed ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-primary-theme text-white hover:bg-primary-theme/90'}`}
                                         >
                                             {med.processed ? "Processed" : "Process"}
                                         </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Previous Issuances / Medicines List */}
+                    {previousIssuances.length > 0 && (
+                        <div className="bg-amber-50/50 dark:bg-amber-900/10 rounded-4xl border border-amber-100 dark:border-amber-900/30 p-8 shadow-sm">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-xl">
+                                    <ClipboardList size={18} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase">Previously Issued Medicines</h3>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Review prior medicine distributions</p>
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                {previousIssuances.map((iss, idx) => (
+                                    <div key={iss._id} className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-amber-100/50 dark:border-amber-900/30 shadow-sm">
+                                        <div className="flex justify-between items-center border-b border-slate-50 dark:border-slate-700 pb-3 mb-3">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                {new Date(iss.issuedAt).toLocaleString()}
+                                            </p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded">
+                                                    By: {iss.nurseNote || (iss.receivedByNurse?.name) || "Direct Issue"}
+                                                </p>
+                                                <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest bg-rose-50 dark:bg-rose-900/30 px-2 py-1 rounded">
+                                                    ₹{Number(iss.totalAmount || 0).toFixed(2)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col gap-2.5">
+                                            {iss.items.map((item: any, i: number) => (
+                                                <div key={i} className="flex justify-between items-center text-xs bg-slate-50/50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300 uppercase truncate pr-4">{item.productName}</span>
+                                                    <div className="flex items-center gap-4 shrink-0">
+                                                        <span className="font-black text-blue-600 dark:text-blue-400">{item.issuedQty} QTY</span>
+                                                        <span className="font-black text-slate-500 w-16 text-right">₹{Number(item.totalAmount || 0).toFixed(2)}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -316,7 +471,6 @@ const IPDBillingPage = () => {
                                                     <p className="text-xs font-black text-primary-theme">₹{p.mrp}</p>
                                                     <p className="text-[9px] font-bold text-teal-600">₹{Math.round(p.mrp / (p.unitsPerPack || 1)).toLocaleString()} / unit</p>
                                                 </div>
-
                                             </button>
                                         ))}
                                     </div>
@@ -338,7 +492,7 @@ const IPDBillingPage = () => {
                         </div>
                     </div>
 
-                    {/* Table */}
+                    {/* Cart Table */}
                     <div className="bg-white rounded-4xl border border-slate-100 shadow-sm overflow-hidden">
                         <table className="w-full">
                             <thead className="bg-slate-50 border-b border-slate-100">
@@ -357,7 +511,6 @@ const IPDBillingPage = () => {
                                         <td className="px-8 py-5 text-center text-xs font-black text-slate-700">{item.qty}</td>
                                         <td className="px-8 py-5 text-right text-xs font-black text-slate-700">₹{Math.round(item.unitRate || 0).toLocaleString()}</td>
                                         <td className="px-8 py-5 text-right text-xs font-black text-primary-theme">₹{Math.round(item.total || 0).toLocaleString()}</td>
-
                                         <td className="px-8 py-5 text-center">
                                             <button onClick={() => removeItem(i)} className="p-2 text-slate-300 hover:text-rose-500 transition-all">
                                                 <Trash2 size={16} />
@@ -380,21 +533,117 @@ const IPDBillingPage = () => {
                 {/* Summary Sidebar */}
                 <div className="space-y-6">
                     <div className="bg-white rounded-4xl border border-slate-100 p-8 shadow-sm space-y-8">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
                             <div className="p-3 bg-primary-theme/10 text-primary-theme rounded-2xl">
                                 <Calculator size={20} />
                             </div>
                             <h3 className="text-sm font-black text-slate-900 uppercase">Bill Summary</h3>
                         </div>
 
-                        <div className="space-y-4">
+                        {/* ✅ NURSE SELECTION (MOVED TO BILL SUMMARY) */}
+                        <div className="space-y-3">
+                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 mt-4">Assign Nurse</h4>
+                            <div className="relative nurse-dropdown-container">
+                                {/* Selected Nurse Badge */}
+                                {selectedNurse ? (
+                                    <div className="flex flex-col gap-2 bg-teal-50 border border-teal-200 rounded-2xl p-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-teal-600 text-white rounded-xl flex items-center justify-center font-black text-sm shrink-0">
+                                                {selectedNurse.name?.charAt(0)?.toUpperCase()}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-xs font-black text-teal-800 uppercase truncate">{selectedNurse.name}</p>
+                                                <p className="text-[9px] font-bold text-teal-500 uppercase tracking-widest truncate">{selectedNurse.email || "Nurse"}</p>
+                                            </div>
+                                            <button
+                                                onClick={() => { setSelectedNurse(null); setNurseSearch(""); }}
+                                                className="p-1.5 text-teal-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all shrink-0"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => setShowNurseDropdown(!showNurseDropdown)}
+                                        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-left hover:border-teal-300 hover:bg-teal-50/30 transition-all"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-slate-200 text-slate-400 rounded-xl flex items-center justify-center shrink-0">
+                                                <User size={14} />
+                                            </div>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">
+                                                {loadingNurses ? "Loading..." : "Select nurse..."}
+                                            </span>
+                                        </div>
+                                        <ChevronDown size={14} className={`text-slate-400 transition-transform ${showNurseDropdown ? "rotate-180" : ""}`} />
+                                    </button>
+                                )}
+
+                                {/* Nurse Dropdown */}
+                                {showNurseDropdown && !selectedNurse && (
+                                    <div className="absolute z-30 top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                        <div className="max-h-52 overflow-y-auto">
+                                            {nurses.length === 0 ? (
+                                                <div className="py-6 text-center">
+                                                    <Users size={20} className="mx-auto text-slate-200 mb-2" />
+                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                                        No nurses found
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                nurses.map((nurse) => (
+                                                    <button
+                                                        key={nurse._id}
+                                                        onClick={() => {
+                                                            setSelectedNurse(nurse);
+                                                            setShowNurseDropdown(false);
+                                                            toast.success(`Assigned to ${nurse.name}`);
+                                                        }}
+                                                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-teal-50 transition-colors border-b border-slate-50 last:border-none text-left"
+                                                    >
+                                                        <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-teal-600 text-white rounded-xl flex items-center justify-center font-black text-xs shrink-0">
+                                                            {nurse.name?.charAt(0)?.toUpperCase()}
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-[10px] font-black text-slate-800 uppercase truncate">{nurse.name}</p>
+                                                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest truncate">{nurse.email || "Nurse"}</p>
+                                                        </div>
+                                                    </button>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            {!selectedNurse && (
+                                <p className="text-[8px] font-bold text-amber-600 uppercase tracking-widest flex items-center gap-1 mt-1">
+                                    <AlertCircle size={10} />
+                                    Medicines won't appear in return portal if empty
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="space-y-4 pt-4 border-t border-slate-100">
+                            {previousIssuances.length > 0 && (
+                                <div className="flex justify-between items-center text-[10px] font-black text-rose-500 uppercase tracking-widest">
+                                    <span>Previously Billed</span>
+                                    <span className="text-rose-600">₹{previousIssuances.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0).toLocaleString()}</span>
+                                </div>
+                            )}
                             <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                <span>Total Payable</span>
+                                <span>Cart Items</span>
+                                <span className="text-slate-900">{cart.length}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                <span>Current Session Payable</span>
                                 <span className="text-slate-900">₹{Math.round(subtotal).toLocaleString()}</span>
                             </div>
                             <div className="pt-4 border-t border-slate-100">
-                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Final Amount</p>
-                                <p className="text-4xl font-black text-slate-900 tracking-tighter">₹{Math.round(subtotal).toLocaleString()}</p>
+                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Final Accumulative Amount</p>
+                                <p className="text-4xl font-black text-slate-900 tracking-tighter">
+                                    ₹{Math.round(subtotal + previousIssuances.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0)).toLocaleString()}
+                                </p>
                             </div>
                         </div>
 
@@ -408,13 +657,14 @@ const IPDBillingPage = () => {
                             ) : (
                                 <Save size={18} />
                             )}
-                            Charge to IPD Bill
+                            {selectedNurse ? `Charge & Assign to ${selectedNurse.name.split(' ')[0]}` : "Charge to IPD Bill"}
                         </button>
 
                         <div className="bg-amber-50 border border-amber-100 p-6 rounded-2xl flex items-start gap-4">
                             <AlertCircle className="text-amber-500 shrink-0" size={18} />
                             <p className="text-[9px] font-bold text-amber-700 uppercase leading-relaxed">
                                 Charging to IPD will add these items as "Pharmacy Charges" to the patient's admission statement. Stock will be adjusted immediately.
+                                {selectedNurse && ` Medicines will appear in ${selectedNurse.name}'s return portal.`}
                             </p>
                         </div>
                     </div>

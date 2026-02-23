@@ -38,6 +38,7 @@ const LabLoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [serverMsg, setServerMsg] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
     const validate = () => {
         const err: Record<string, string> = {};
@@ -100,6 +101,16 @@ const LabLoginPage = () => {
             sessionStorage.setItem("refreshToken", tokens.refreshToken);
             sessionStorage.setItem("user", JSON.stringify(user));
             sessionStorage.setItem("lastAuthCheck", Date.now().toString());
+
+            // ✅ MULTI-TENANCY: Store hospitalId in sessionStorage and cookie
+            const rawId = (user as any).hospital || (user as any).hospitalId;
+            const userHospitalIdStr = (rawId && typeof rawId === 'object') ? (rawId._id || rawId.id) : rawId;
+            if (userHospitalIdStr) {
+                const hospitalIdStr = userHospitalIdStr.toString();
+                sessionStorage.setItem("activeHospitalId", hospitalIdStr);
+                document.cookie = `hospitalId=${hospitalIdStr}; path=/; max-age=86400; SameSite=Lax`;
+            }
+
             document.cookie = `accessToken=${tokens.accessToken}; path=/; max-age=86400; SameSite=Lax`;
             document.cookie = `refreshToken=${tokens.refreshToken}; path=/; max-age=604800; SameSite=Lax`;
 
@@ -117,7 +128,13 @@ const LabLoginPage = () => {
             });
 
             // Redirect to dashboard (middleware will handle tenant prefixing)
-            router.push('/lab/dashboard');
+            const rawIdVal = (user as any).hospital || (user as any).hospitalId;
+            const userHospitalId = (rawIdVal && typeof rawIdVal === 'object') ? (rawIdVal._id || rawIdVal.id) : rawIdVal;
+            if (userHospitalId) {
+                router.replace(`/${userHospitalId}/lab/dashboard`);
+            } else {
+                router.replace('/lab/dashboard');
+            }
         } catch (err: any) {
             const errorMessage = err?.message || err?.response?.data?.message || 'Login failed. Please check your credentials.';
             setServerMsg(errorMessage);
@@ -139,7 +156,7 @@ const LabLoginPage = () => {
 
                     <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push('/')}>
                         <div className="w-10 h-10 bg-primary-theme/10 rounded-xl flex items-center justify-center p-2">
-                             <Beaker size={24} className="text-primary-theme" />
+                            <Beaker size={24} className="text-primary-theme" />
                         </div>
                         <span className="text-xl font-bold bg-linear-to-r from-primary-theme to-blue-400 bg-clip-text text-transparent">
                             MSCureChain
