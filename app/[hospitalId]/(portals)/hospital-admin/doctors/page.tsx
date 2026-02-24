@@ -245,7 +245,13 @@ function HospitalAdminDoctors() {
                     <div className="p-1.5 bg-slate-50 rounded-lg">
                       <Calendar size={12} className="text-slate-400" />
                     </div>
-                    <span className="text-xs font-bold text-slate-600">{doctor.experienceYears || '0'} Years Experience</span>
+                    <span className="text-xs font-bold text-slate-600">
+                      {doctor.experienceStart
+                        ? `${Math.max(0, new Date().getFullYear() - new Date(doctor.experienceStart).getFullYear())} Years Experience`
+                        : doctor.experienceYears
+                          ? `${doctor.experienceYears} Years Experience`
+                          : 'Experience N/A'}
+                    </span>
                   </div>
                 </div>
 

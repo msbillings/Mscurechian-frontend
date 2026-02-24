@@ -68,7 +68,7 @@ const LeaveRow = React.memo(({
    const isProcessing = processingId === leave._id;
    const statusConfig = STATUS_CONFIG[leave.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.pending;
    const StatusIcon = statusConfig.icon;
-   
+
    const isOwnLeave = leave.requester?._id === currentUserId || leave.requester === currentUserId;
 
    return (
@@ -136,7 +136,7 @@ const LeaveRow = React.memo(({
                   </button>
                </div>
             ) : isPending && isOwnLeave ? (
-                <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest italic">
+               <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest italic">
                   Self-Requested (Awaiting Admin Sync)
                </span>
             ) : (
@@ -295,18 +295,7 @@ export default function HospitalAdminLeaves() {
                </p>
             </div>
             <div className="flex items-center gap-4">
-               <button 
-                  onClick={() => setShowRequestModal(true)}
-                  className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
-               >
-                  <Plus size={16} /> Apply for My Leave
-               </button>
-               <button 
-                  onClick={() => queryClient.invalidateQueries({ queryKey: ['hospital-admin', 'leaves'] })} 
-                  className="p-3.5 bg-white text-gray-400 rounded-xl border border-gray-100 hover:text-indigo-600 shadow-sm transition-all"
-               >
-                  <Clock className="w-5 h-5" />
-               </button>
+
             </div>
          </div>
 
@@ -468,8 +457,8 @@ export default function HospitalAdminLeaves() {
                      <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Commencement Date</label>
-                           <input 
-                              type="date" 
+                           <input
+                              type="date"
                               required
                               value={selfRequestData.startDate}
                               onChange={e => setSelfRequestData(prev => ({ ...prev, startDate: e.target.value }))}
@@ -478,8 +467,8 @@ export default function HospitalAdminLeaves() {
                         </div>
                         <div className="space-y-2">
                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Termination Date</label>
-                           <input 
-                              type="date" 
+                           <input
+                              type="date"
                               required
                               value={selfRequestData.endDate}
                               onChange={e => setSelfRequestData(prev => ({ ...prev, endDate: e.target.value }))}
@@ -490,7 +479,7 @@ export default function HospitalAdminLeaves() {
 
                      <div className="space-y-2">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Classification</label>
-                        <select 
+                        <select
                            value={selfRequestData.leaveType}
                            onChange={e => setSelfRequestData(prev => ({ ...prev, leaveType: e.target.value }))}
                            className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
@@ -503,7 +492,7 @@ export default function HospitalAdminLeaves() {
 
                      <div className="space-y-2">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Operational Justification</label>
-                        <textarea 
+                        <textarea
                            required
                            value={selfRequestData.reason}
                            onChange={e => setSelfRequestData(prev => ({ ...prev, reason: e.target.value }))}
@@ -512,7 +501,7 @@ export default function HospitalAdminLeaves() {
                         />
                      </div>
 
-                     <button 
+                     <button
                         type="submit"
                         disabled={requestLeaveMutation.isPending}
                         className="w-full py-5 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 active:scale-[0.98] disabled:opacity-50"
