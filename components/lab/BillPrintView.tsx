@@ -177,15 +177,17 @@ const BillPrintView: React.FC<BillPrintViewProps> = ({ billData, invoiceId, date
                         <span className="font-bold">₹{billData.totalAmount.toFixed(2)}</span>
                     </div>
                     {billData.discount > 0 && (
-                        <div className="flex justify-between p-2 border-b border-black">
-                            <span className="font-bold text-black">Discount:</span>
-                            <span>- ₹{billData.discount.toFixed(2)}</span>
-                        </div>
+                        <>
+                            <div className="flex justify-between p-2 border-b border-black">
+                                <span className="font-bold text-black">Discount:</span>
+                                <span>- ₹{billData.discount.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between p-2 border-b border-black">
+                                <span className="font-bold text-black">Final Amount:</span>
+                                <span className="font-bold">₹{billData.finalAmount.toFixed(2)}</span>
+                            </div>
+                        </>
                     )}
-                    <div className="flex justify-between p-2 border-b border-black">
-                        <span className="font-bold text-black">Final Amount:</span>
-                        <span className="font-bold">₹{billData.finalAmount.toFixed(2)}</span>
-                    </div>
                     <div className="flex justify-between p-2 border-b border-black">
                         <span className="font-bold text-black">Paid Amount:</span>
                         <span className="font-bold">₹{billData.paidAmount.toFixed(2)}</span>

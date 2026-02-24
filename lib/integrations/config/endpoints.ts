@@ -95,6 +95,7 @@ export const PHARMACY_ENDPOINTS = {
     BASE: "/pharmacy/suppliers",
     BY_ID: (id: string) => `/pharmacy/suppliers/${id}`,
     PRODUCTS: (id: string) => `/pharmacy/suppliers/${id}/products`,
+    PURCHASES: "/pharmacy/suppliers/purchases",
   },
   BILLS: {
     BASE: "/pharmacy/invoices",

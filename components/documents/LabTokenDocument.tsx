@@ -126,8 +126,8 @@ export const LabTokenDocument: React.FC<LabTokenDocumentProps> = ({
                 </div>
                 <div className="space-y-1 pl-4">
                     <p className="text-[8px] font-black uppercase tracking-widest" style={{ color: colors.gray400 }}>Ordering Physician</p>
-                    <p className="text-base font-black leading-tight" style={{ color: colors.gray900 }}>Dr. {doctor.user?.name || doctor.name || 'Medical Officer'}</p>
-                    <p className="text-[9px] font-bold" style={{ color: colors.gray400 }}>{doctor.specialization || 'Clinical Services'}</p>
+                    <p className="text-base font-black leading-tight" style={{ color: colors.gray900 }}>Dr. {(doctor.user?.name || doctor.userName || doctor.name || 'N/A').replace(/^Dr\.?\s*/i, '').trim()}</p>
+                    <p className="text-[9px] font-bold" style={{ color: colors.gray400 }}>{doctor.designation || doctor.specialization || doctor.specialties?.[0] || 'Clinical Services'}</p>
                 </div>
             </div>
 
@@ -191,18 +191,10 @@ export const LabTokenDocument: React.FC<LabTokenDocumentProps> = ({
                     </div>
                 </div>
 
-                <div className="text-center w-48 mr-4">
-                    <div className="h-12 flex items-end justify-center mb-1">
-                        {doctor.signature ? (
-                            <img src={doctor.signature} alt="Signature" className="h-16 object-contain" crossOrigin="anonymous" />
-                        ) : (
-                            <span className="font-handwriting text-xl font-bold" style={{ fontFamily: '"Brush Script MT", cursive', color: colors.purple900 }}>Dr. {doctor.name}</span>
-                        )}
-                    </div>
-                    <div className="pt-2" style={{ borderTop: `1px solid ${colors.gray900}` }}>
-                        <p className="text-[9px] font-black uppercase tracking-widest leading-none" style={{ color: colors.gray900 }}>Medical Officer</p>
-                        <p className="text-[7px] font-bold mt-0.5 uppercase" style={{ color: colors.gray400 }}>AUTH ID: {(token._id || '').slice(-8).toUpperCase()}</p>
-                    </div>
+                <div className="text-right mr-4">
+                    <p className="text-[9px] font-black uppercase tracking-widest leading-none" style={{ color: colors.gray900 }}>Dr. {(doctor.user?.name || doctor.userName || doctor.name || 'N/A').replace(/^Dr\.?\s*/i, '').trim()}</p>
+                    <p className="text-[7px] font-bold mt-0.5 uppercase" style={{ color: colors.gray400 }}>{doctor.designation || doctor.specialization || doctor.specialties?.[0] || ''}</p>
+                    <p className="text-[7px] font-bold mt-0.5 uppercase" style={{ color: colors.gray400 }}>AUTH ID: {(token._id || '').slice(-8).toUpperCase()}</p>
                 </div>
             </div>
 

@@ -5,7 +5,6 @@ import {
     Search,
     Printer,
     Eye,
-    Trash2,
     ChevronLeft,
     ChevronRight,
     ArrowUpRight,
@@ -138,24 +137,7 @@ const TransactionsPage = () => {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        toast.promise(
-            new Promise(async (resolve, reject) => {
-                try {
-                    await PharmacyBillingService.deleteBill(id);
-                    fetchBills(currentPage);
-                    resolve('Invoice deleted successfully');
-                } catch (error) {
-                    reject(error);
-                }
-            }),
-            {
-                loading: 'Deleting invoice...',
-                success: 'Invoice deleted successfully',
-                error: 'Failed to delete invoice'
-            }
-        );
-    };
+
 
     const handleExportExcel = async () => {
         if (bills.length === 0) {
@@ -558,13 +540,7 @@ const TransactionsPage = () => {
                                                     >
                                                         <Eye size={16} />
                                                     </button>
-                                                    <button
-                                                        onClick={() => handleDelete(bill._id)}
-                                                        className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100"
-                                                        title="Delete Invoice"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
+
                                                     <button
                                                         onClick={() => onPrintClick(bill)}
                                                         className="p-2 bg-teal-50 text-teal-600 rounded-xl hover:bg-teal-100"

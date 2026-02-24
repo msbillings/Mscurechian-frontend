@@ -351,7 +351,6 @@ function EditDoctor() {
         name: formData.name.trim(),
         email: formData.email.trim(),
         mobile: formData.mobile,
-        password: formData.password,
         gender: formData.gender,
         dateOfBirth: formData.dateOfBirth || undefined,
         
@@ -390,6 +389,7 @@ function EditDoctor() {
         awards: formData.awards
       };
 
+      // Only include password if user explicitly entered one
       if (formData.password) {
         doctorData.password = formData.password;
       }
