@@ -12,7 +12,6 @@ import {
   Briefcase,
   Trophy,
   FileText,
-  GraduationCap,
   LineChart,
   Building2,
   Stethoscope,
@@ -28,6 +27,9 @@ import {
 import Navbar from "@/components/navbar/Navbar";
 import LogoutModal from "@/components/auth/LogoutModal";
 import { useTenantLink } from "@/hooks/useTenantLink";
+import { getSocket, joinSocketRoom } from "@/lib/integrations/api/socket";
+import { useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 const hrMenu = [
   {
@@ -50,20 +52,16 @@ const hrMenu = [
     group: "Development & Compliance",
     items: [
       { icon: <Trophy size={20} />, label: "Performance", path: "/hr/performance" },
-      { icon: <GraduationCap size={20} />, label: "Training", path: "/hr/training" },
       { icon: <FileText size={20} />, label: "Document Vault", path: "/hr/documents" },
     ]
   },
   {
     group: "Hospital Governance",
     items: [
-      { icon: <LineChart size={20} />, label: "Analytics", path: "/hr/hospital/analytics" },
       { icon: <Building2 size={20} />, label: "Departments", path: "/hr/hospital/departments" },
       { icon: <Stethoscope size={20} />, label: "Doctors", path: "/hr/hospital/doctors" },
       { icon: <Users size={20} />, label: "Nursing Registry", path: "/hr/hospital/nurses" },
       { icon: <Headphones size={20} />, label: "Helpdesk", path: "/hr/hospital/helpdesk" },
-      { icon: <Pill size={20} />, label: "Pharmacy Unit", path: "/hr/hospital/pharma" },
-      { icon: <FlaskConical size={20} />, label: "Diagnostic Labs", path: "/hr/hospital/labs" },
     ]
   },
   {
@@ -89,11 +87,54 @@ export default function HRLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isInitialized && !isAuthenticated) {
       router.push('/auth/login');
-    } else if (isInitialized && user && user.role !== 'hr' && user.role !== 'hospital-admin') {
-      // Allow hospital-admin to access HR too if needed, but primarily for HR
-      // If we want strict HR, use: user.role !== 'hr'
     }
-  }, [isAuthenticated, isInitialized, user, router]);
+  }, [isAuthenticated, isInitialized, router]);
+
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+
+    const initSocket = async () => {
+      const socket = await getSocket();
+      if (!socket) return;
+
+      const uId = user.id || (user as any)._id;
+      const hId = (user as any).hospital || (user as any).hospitalId;
+
+      joinSocketRoom({
+        userId: uId,
+        role: user.role || "hr",
+        hospitalId: hId,
+      });
+
+      socket.on("recruitment_review_update", (data: any) => {
+        toast(data.message || "Recruitment Request Updated", {
+          icon: data.status === 'approved' ? "✅" : "❌",
+          duration: 6000,
+        });
+
+        queryClient.invalidateQueries({ queryKey: ["hr", "recruitment"] });
+      });
+
+      socket.on("leave:status_change", (data: any) => {
+        toast(data.message || `Leave request ${data.leave.status}`, {
+          icon: data.leave.status === 'approved' ? "✅" : "❌",
+          duration: 6000,
+        });
+
+        queryClient.invalidateQueries({ queryKey: ["hr", "leaves"] });
+      });
+    };
+
+    initSocket();
+
+    return () => {
+      getSocket().then(socket => {
+        if (socket) socket.off("recruitment_review_update");
+      });
+    };
+  }, [isAuthenticated, user, queryClient]);
 
   const handleConfirmLogout = async () => {
     await logout();

@@ -63,6 +63,7 @@ const hospitalAdminMenu: MenuItem[] = [
       { label: "Attendance Logs", path: "/hospital-admin/attendance" },
       { label: "Internship Training", path: "/hospital-admin/training" },
       { label: "Payroll Management", path: "/hospital-admin/payroll" },
+      { label: "Recruitment Registry", path: "/hospital-admin/recruitment" },
       { label: "SOP & Policies", path: "/hospital-admin/sop" },
       { label: "HR Management", path: "/hospital-admin/management/hr" },
       {
@@ -206,6 +207,15 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
 
         queryClient.invalidateQueries({ queryKey: ["hospital-admin"] });
         queryClient.invalidateQueries({ queryKey: ["hospital-admin", "leaves"] });
+      });
+      
+      socket.on("new_recruitment_request", (data: any) => {
+        toast(data.message || "New Recruitment Request", {
+          icon: "👔",
+          duration: 6000,
+        });
+
+        queryClient.invalidateQueries({ queryKey: ["hospital-admin", "recruitment"] });
       });
 
       socket.on("new_incident", (data: any) => {

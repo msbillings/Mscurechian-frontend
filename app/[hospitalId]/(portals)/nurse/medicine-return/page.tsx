@@ -65,6 +65,21 @@ export default function NurseMedicineReturnPage() {
         refetchInterval: 5000,
     });
 
+    // Fetch existing return requests for this admission to prevent duplicates
+    const { data: existingReturns = [] } = useQuery<any[]>({
+        queryKey: ["pharmacy", "medicine-returns", admId],
+        queryFn: () => ipdIssuanceService.getReturnsByAdmission(admId),
+        enabled: !!admId,
+        refetchInterval: 5000,
+    });
+
+    // Check if there's already a pending (not yet approved/rejected) return request
+    const hasPendingReturn = useMemo(() => {
+        return (existingReturns || []).some(
+            (r: any) => r.status === 'PENDING' || r.status === 'RETURN_REQUESTED' || r.status === 'pending'
+        );
+    }, [existingReturns]);
+
     const { data: clinicalHistory } = useQuery<any>({
         queryKey: ["ipd", "clinical-history", admId],
         queryFn: () => ipdService.getClinicalHistory(admId),
@@ -172,17 +187,23 @@ export default function NurseMedicineReturnPage() {
     const [returnQtys, setReturnQtys] = useState<Record<string, number>>({});
     const [globalReturnReason, setGlobalReturnReason] = useState("");
     const [submitting, setSubmitting] = useState<boolean>(false);
+    // Track if a return was just submitted in this session to prevent re-click before data refreshes
+    const [returnJustSubmitted, setReturnJustSubmitted] = useState(false);
 
     const handleBack = () => {
         setSelectedAdmission(null);
         setIsReturnMode(false);
         setReturnQtys({});
         setGlobalReturnReason("");
+        setReturnJustSubmitted(false);
     };
 
     const handleReturnQtyChange = (key: string, val: number) => {
         setReturnQtys(prev => ({ ...prev, [key]: Math.max(0, val) }));
     };
+
+    // Determine if the nurse can initiate a new return
+    const canInitiateReturn = returnableItems.length > 0 && !isReturnMode && !returnJustSubmitted && !hasPendingReturn && !hasReturnRequests;
 
     const handleSubmitReturn = async () => {
         // Find which items have >=1 return qty selected
@@ -232,8 +253,11 @@ export default function NurseMedicineReturnPage() {
             setIsReturnMode(false);
             setReturnQtys({});
             setGlobalReturnReason("");
+            // Mark as just submitted so the button won't reappear before data refreshes
+            setReturnJustSubmitted(true);
 
             queryClient.invalidateQueries({ queryKey: ["pharmacy", "ipd-issuance", admId] });
+            queryClient.invalidateQueries({ queryKey: ["pharmacy", "medicine-returns", admId] });
         } catch (err: any) {
             toast.error(err?.message || "Failed to submit return request");
         } finally {
@@ -512,7 +536,13 @@ export default function NurseMedicineReturnPage() {
                                         </span>
                                     )}
 
-                                    {returnableItems.length > 0 && !isReturnMode && (
+                                    {(returnJustSubmitted || hasPendingReturn) && !hasReturnRequests && (
+                                        <span className="text-[10px] text-green-600 font-bold bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded-xl border border-green-200 flex items-center gap-1.5">
+                                            <CheckCircle2 size={12} /> Return Request Submitted — Awaiting Pharmacy
+                                        </span>
+                                    )}
+
+                                    {canInitiateReturn && (
                                         <button
                                             onClick={() => setIsReturnMode(true)}
                                             className="text-[10px] bg-orange-50 dark:bg-orange-900/20 border border-orange-200 text-orange-700 px-3 py-1.5 rounded-xl font-bold hover:bg-orange-100 flex items-center gap-1.5 transition-colors shadow-sm uppercase tracking-widest"

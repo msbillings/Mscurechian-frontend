@@ -791,10 +791,10 @@ export default function IPDIssuancePage() {
                             {summary && (
                                 <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-xl overflow-hidden animate-in fade-in slide-in-from-right-4 duration-500">
                                     <div className="px-5 py-4 bg-gray-50 dark:bg-gray-900/40 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block"></span>
                                             Bill Preview
-                                        </p>
+                                        </span>
                                         <Wallet size={14} className="text-blue-500" />
                                     </div>
 
@@ -830,14 +830,14 @@ export default function IPDIssuancePage() {
                                     <div className="p-5 space-y-4">
                                         <div className="flex justify-between items-center text-sm">
                                             <span className="text-gray-500 font-medium flex items-center gap-2">
-                                                <div className="w-1 h-1 rounded-full bg-gray-300"></div>
+                                                <span className="w-1 h-1 rounded-full bg-gray-300 inline-block"></span>
                                                 Total Issued
                                             </span>
                                             <span className="font-bold text-gray-800 dark:text-white">₹{((summary as any).totalIssuedAmount ?? 0).toFixed(2)}</span>
                                         </div>
                                         <div className="flex justify-between items-center text-sm">
                                             <span className="text-orange-500 font-medium flex items-center gap-2">
-                                                <div className="w-1 h-1 rounded-full bg-orange-400"></div>
+                                                <span className="w-1 h-1 rounded-full bg-orange-400 inline-block"></span>
                                                 Total Returned
                                             </span>
                                             <span className="font-bold text-orange-600">-₹{((summary as any).totalReturnedAmount ?? 0).toFixed(2)}</span>

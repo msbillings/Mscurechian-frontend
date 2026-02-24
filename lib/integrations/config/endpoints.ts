@@ -114,12 +114,15 @@ export const PHARMACY_ENDPOINTS = {
   // ─── IPD Medicine Reconciliation ──────────────────────────────────────────
   IPD_ISSUANCE: {
     BASE: "/pharmacy/ipd-issuance",
-    BY_ADMISSION: (admissionId: string) => `/pharmacy/ipd-issuance/${admissionId}`,
-    SUMMARY: (admissionId: string) => `/pharmacy/ipd-issuance/${admissionId}/summary`,
+    BY_ADMISSION: (admissionId: string) =>
+      `/pharmacy/ipd-issuance/${admissionId}`,
+    SUMMARY: (admissionId: string) =>
+      `/pharmacy/ipd-issuance/${admissionId}/summary`,
   },
   MEDICINE_RETURN: {
     BASE: "/pharmacy/medicine-return",
-    BY_ADMISSION: (admissionId: string) => `/pharmacy/medicine-return/${admissionId}`,
+    BY_ADMISSION: (admissionId: string) =>
+      `/pharmacy/medicine-return/${admissionId}`,
     APPROVE: (id: string) => `/pharmacy/medicine-return/${id}/approve`,
     REJECT: (id: string) => `/pharmacy/medicine-return/${id}/reject`,
   },
@@ -439,10 +442,20 @@ export const HR_ENDPOINTS = {
   },
   ATTENDANCE: "/hr/attendance",
   PAYROLL: "/hr/payroll",
-  RECRUITMENT: "/hr/recruitment",
+  RECRUITMENT: "/recruitment",
   PERFORMANCE: "/hr/performance",
+  PERFORMANCE_DASHBOARD: "/hr/dashboard/performance",
+  DOCTOR_PERFORMANCE_DASHBOARD: "/hr/dashboard/doctor-performance",
   DOCUMENTS: "/hr/documents",
   TRAINING: "/hr/training",
+};
+
+export const RECRUITMENT_ENDPOINTS = {
+  BASE: "/recruitment",
+  REQUEST: "/recruitment/request",
+  STATUS: (id: string) => `/recruitment/status/${id}`,
+  REVIEW: (id: string) => `/recruitment/review/${id}`,
+  DETAIL: (id: string) => `/recruitment/${id}`,
 };
 
 // Legacy support to avoid breaking existing code immediately

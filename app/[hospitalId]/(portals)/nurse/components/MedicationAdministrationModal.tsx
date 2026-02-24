@@ -358,6 +358,10 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                                                                             <span className={`px-1 py-0.5 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border ${med.paymentStatus === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
                                                                                 {med.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
                                                                             </span>
+                                                                        ) : med.status === 'return-pending' ? (
+                                                                            <span className="px-1 py-0.5 bg-orange-50 text-orange-600 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border border-orange-200 animate-pulse">
+                                                                                Return Pending
+                                                                            </span>
                                                                         ) : (
                                                                             <span className="px-1 py-0.5 bg-slate-50 text-slate-500 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border border-slate-200">
                                                                                 OPD Presc

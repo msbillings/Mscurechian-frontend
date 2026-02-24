@@ -8,6 +8,7 @@ export * from "./useStaffQueries";
 export * from "./usePrefetch";
 export * from "./useDoctorQueries";
 export * from "./useHRQueries";
+export * from "./useHospitalAdminQueries";
 export {
   useNotifications,
   useMarkAsRead,
