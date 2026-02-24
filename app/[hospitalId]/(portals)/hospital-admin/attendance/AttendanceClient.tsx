@@ -47,6 +47,25 @@ const ITEMS_PER_PAGE = 20;
 // ============================================================================
 // PERFORMANCE: Memoized Attendance Row
 // ============================================================================
+// ============================================================================
+// HELPERS: Safely resolve staff name / designation from any record shape.
+// Backend returns different shapes: getMonthlyReport → staff.user.name,
+// direct Attendance populate → user.name, virtual records → name directly.
+// ============================================================================
+const resolveStaffName = (record: any): string =>
+  record?.staff?.user?.name ||
+  record?.staff?.name ||
+  record?.user?.name ||
+  record?.name ||
+  'Unknown Staff';
+
+const resolveStaffDesignation = (record: any): string =>
+  record?.staff?.designation ||
+  record?.designation ||
+  record?.staff?.user?.role ||
+  record?.user?.role ||
+  'Staff Member';
+
 const AttendanceRow = React.memo(({
   record
 }: {
@@ -79,16 +98,19 @@ const AttendanceRow = React.memo(({
     );
   };
 
+  const staffName = resolveStaffName(record);
+  const staffDesignation = resolveStaffDesignation(record);
+
   return (
     <tr className="hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors">
       <td className="py-4 px-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center font-bold text-xs text-gray-400">
-            {record.staff?.user?.name?.charAt(0) || 'U'}
+            {staffName.charAt(0).toUpperCase()}
           </div>
           <div>
-            <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">{record.staff?.user?.name || 'Unknown'}</p>
-            <p className="text-[10px] text-gray-400 font-medium">{record.staff?.designation || 'Staff Member'}</p>
+            <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">{staffName}</p>
+            <p className="text-[10px] text-gray-400 font-medium">{staffDesignation}</p>
           </div>
         </div>
       </td>
@@ -157,7 +179,10 @@ const SummaryRow = React.memo(({
               {data.name || 'Unknown'}
             </p>
             <p className="text-[10px] font-medium text-gray-400">
-              {data.employeeId || 'ID-N/A'}
+              {/* Only show employeeId if it's a real value, not a backend placeholder */}
+              {data.employeeId && !['N/A', 'EMP-N/A', '-'].includes(data.employeeId)
+                ? data.employeeId
+                : data.designation || ''}
             </p>
           </div>
         </div>
@@ -207,13 +232,23 @@ const SummaryRow = React.memo(({
 SummaryRow.displayName = 'SummaryRow';
 
 
-// Helper to filter data by role
+// Helper to filter data by role — always excludes helpdesk
 const rowFilterData = (data: any[], roleFilter?: string) => {
-  if (!roleFilter) return data;
   return data.filter(item => {
-    // Check various possible locations of role
-    const role = item.staff?.user?.role || item.role || (item.user && item.user.role);
-    return role === roleFilter;
+    const role = (
+      item.staff?.user?.role ||
+      item.user?.role ||
+      item.role ||
+      ''
+    ).toLowerCase();
+
+    // Always exclude helpdesk from attendance views
+    if (role === 'helpdesk') return false;
+
+    // If a specific role is requested, filter to that role
+    if (roleFilter) return role === roleFilter.toLowerCase();
+
+    return true;
   });
 };
 
@@ -238,12 +273,11 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
 
   const fetchStaff = async () => {
     try {
-      // Fetch all types of staff for the filter
-      const [staffRes, drRes, nurseRes, helpRes] = await Promise.allSettled([
+      // Helpdesk is excluded from attendance — do not fetch them here
+      const [staffRes, drRes, nurseRes] = await Promise.allSettled([
         hospitalAdminService.getStaff(),
         hospitalAdminService.getDoctors(),
         hospitalAdminService.getNurses(),
-        hospitalAdminService.getHelpdesks()
       ]);
 
       const allStaff: any[] = [];
@@ -251,12 +285,13 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
       if (staffRes.status === 'fulfilled') allStaff.push(...(staffRes.value.staff || []));
       if (drRes.status === 'fulfilled') allStaff.push(...(drRes.value.doctors || []));
       if (nurseRes.status === 'fulfilled') allStaff.push(...(nurseRes.value.nurses || []));
-      if (helpRes.status === 'fulfilled') allStaff.push(...(helpRes.value.helpdesks || []));
 
-      // 🟢 Filter by role if provided, otherwise exclude admin
+      // Always exclude admin and helpdesk; filter by explicit roleFilter if provided
       const filtered = allStaff.filter((s: any) => {
-        if (roleFilter) return (s.user?.role || s.role) === roleFilter;
-        return (s.user?.role || s.role) !== 'hospital-admin';
+        const role = (s.user?.role || s.role || '').toLowerCase();
+        if (role === 'hospital-admin' || role === 'helpdesk') return false;
+        if (roleFilter) return role === roleFilter.toLowerCase();
+        return true;
       });
 
       // Deduplicate by user ID

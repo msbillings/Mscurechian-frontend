@@ -145,10 +145,17 @@ export default function AddTrainingModal({ isOpen, onClose, training }: AddTrain
         }));
     };
 
-    const filteredStaff = combinedList.filter((s: any) =>
-        s.name?.toLowerCase().includes(staffSearch.toLowerCase()) ||
-        (s.department?.toLowerCase() || s.role?.toLowerCase())?.includes(staffSearch.toLowerCase())
-    );
+    const filteredStaff = combinedList.filter((s: any) => {
+        const nameMatch = s.name?.toLowerCase().includes(staffSearch.toLowerCase());
+        // department can be an array or string — coerce safely
+        const dept = Array.isArray(s.department)
+            ? s.department.join(' ')
+            : (s.department || '');
+        const roleStr = s.role || '';
+        const deptMatch = dept.toLowerCase().includes(staffSearch.toLowerCase());
+        const roleMatch = roleStr.toLowerCase().includes(staffSearch.toLowerCase());
+        return nameMatch || deptMatch || roleMatch;
+    });
 
     if (!isOpen) return null;
 

@@ -1,12 +1,12 @@
 "use client";
 
-import React, {  useState, useEffect , useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter, useParams } from "next/navigation";
 import { hospitalAdminService } from "@/lib/integrations";
-import { 
-  UserPlus, 
-  Eye, 
-  EyeOff, 
+import {
+  UserPlus,
+  Eye,
+  EyeOff,
   Calendar,
   DollarSign,
   User,
@@ -22,7 +22,10 @@ import {
   Building,
   CreditCard,
   Globe,
-  Edit
+  Edit,
+  ArrowLeft,
+  Upload,
+  X as XIcon
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { PageHeader, Card, FormInput, Button } from "@/components/admin";
@@ -45,7 +48,7 @@ const GENDER_OPTIONS = [
 ];
 
 const DESIGNATION_OPTIONS = [
-  "Consultant", "Senior Consultant", "Surgeon", "Resident", 
+  "Consultant", "Senior Consultant", "Surgeon", "Resident",
   "Fellow", "Professor", "Other"
 ];
 
@@ -56,7 +59,7 @@ const DEPARTMENTS = [
 ];
 
 const DAYS_OF_WEEK = [
-  "Monday", "Tuesday", "Wednesday", "Thursday", 
+  "Monday", "Tuesday", "Wednesday", "Thursday",
   "Friday", "Saturday", "Sunday"
 ];
 
@@ -73,13 +76,13 @@ interface FormData {
   password: string;
   gender: string;
   dateOfBirth: string;
-  
+
   // Address
   street: string;
   city: string;
   state: string;
   pincode: string;
-  
+
   // Professional
   specialties: string[];
   qualifications: string[];
@@ -88,18 +91,18 @@ interface FormData {
   registrationYear: string;
   registrationExpiryDate: string;
   experienceStart: string;
-  
+
   // Department
   department: string;
   designation: string;
   employeeId: string;
-  
+
   // Scheduling
   consultationFee: string;
   consultationDuration: string;
   maxAppointmentsPerDay: string;
   room: string;
-  
+
   // Permissions
   permissions: {
     canAccessEMR: boolean;
@@ -109,7 +112,7 @@ interface FormData {
     canAdmitPatients: boolean;
     canPerformSurgery: boolean;
   };
-  
+
   // Additional
   bio: string;
   profilePic: string;
@@ -130,7 +133,11 @@ function EditDoctor() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
-  
+  const hospitalId = params.hospitalId as string;
+  const profilePicInputRef = useRef<HTMLInputElement>(null);
+  const [profilePicFile, setProfilePicFile] = useState<File | null>(null);
+  const [profilePicPreview, setProfilePicPreview] = useState<string>("");
+
   const [formData, setFormData] = useState<FormData>({
     name: "", email: "", mobile: "", password: "", gender: "",
     dateOfBirth: "",
@@ -219,6 +226,11 @@ function EditDoctor() {
         awards: doctor.awards || []
       });
 
+      // If doctor already has a profile picture, show it as preview
+      if (doctor.profilePic) {
+        setProfilePicPreview(doctor.profilePic);
+      }
+
       if (doctor.availability && doctor.availability.length > 0) {
         setAvailability(doctor.availability.map((slot: any) => ({
           days: slot.days || [],
@@ -230,15 +242,35 @@ function EditDoctor() {
       }
     } catch (error: any) {
       toast.error("Failed to fetch doctor details");
-      router.push("/hospital-admin/doctors");
+      router.push(`/${hospitalId}/hospital-admin/doctors`);
     } finally {
       setFetching(false);
     }
   };
 
+  const handleProfilePicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfilePicFile(file);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setProfilePicPreview(event.target?.result as string);
+        setFormData(prev => ({ ...prev, profilePic: event.target?.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeProfilePic = () => {
+    setProfilePicFile(null);
+    setProfilePicPreview("");
+    setFormData(prev => ({ ...prev, profilePic: "" }));
+    if (profilePicInputRef.current) profilePicInputRef.current.value = "";
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    
+
     // Validation for specific fields
     if (name === "mobile" && !/^\d{0,10}$/.test(value)) return;
     if ((name === "consultationFee" || name === "maxAppointmentsPerDay" || name === "consultationDuration") && !/^\d*$/.test(value)) return;
@@ -259,21 +291,21 @@ function EditDoctor() {
   };
 
   const addItem = (type: 'specialty' | 'qualification' | 'language' | 'award', value: string) => {
-    const tempValue = type === 'specialty' ? tempSpecialty : 
-                     type === 'qualification' ? tempQualification :
-                     type === 'language' ? tempLanguage : tempAward;
-    
-    const key: 'specialties' | 'qualifications' | 'languages' | 'awards' = 
-      type === 'specialty' ? 'specialties' : 
-      type === 'qualification' ? 'qualifications' :
-      type === 'language' ? 'languages' : 'awards';
-    
+    const tempValue = type === 'specialty' ? tempSpecialty :
+      type === 'qualification' ? tempQualification :
+        type === 'language' ? tempLanguage : tempAward;
+
+    const key: 'specialties' | 'qualifications' | 'languages' | 'awards' =
+      type === 'specialty' ? 'specialties' :
+        type === 'qualification' ? 'qualifications' :
+          type === 'language' ? 'languages' : 'awards';
+
     if (tempValue && !formData[key].includes(tempValue)) {
       setFormData(prev => ({
         ...prev,
         [key]: [...prev[key], tempValue]
       }));
-      
+
       if (type === 'specialty') setTempSpecialty("");
       else if (type === 'qualification') setTempQualification("");
       else if (type === 'language') setTempLanguage("");
@@ -289,9 +321,9 @@ function EditDoctor() {
   };
 
   const addAvailabilitySlot = () => {
-    setAvailability([...availability, { 
-      days: [], startTime: "09:00", breakStart: "13:00", 
-      breakEnd: "14:00", endTime: "17:00" 
+    setAvailability([...availability, {
+      days: [], startTime: "09:00", breakStart: "13:00",
+      breakEnd: "14:00", endTime: "17:00"
     }]);
   };
 
@@ -319,22 +351,22 @@ function EditDoctor() {
   const validateForm = (): boolean => {
     // Required fields
     if (!formData.name.trim()) return toast.error("Please enter doctor's name"), false;
-    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) 
+    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
       return toast.error("Please enter a valid email address"), false;
     if (formData.mobile.length !== 10) return toast.error("Mobile number must be exactly 10 digits"), false;
     if (!formData.password && !id) // Password only required on creation
       return toast.error("Password must be at least 6 characters"), false;
-    if (formData.password && formData.password.length < 6) 
+    if (formData.password && formData.password.length < 6)
       return toast.error("Password must be at least 6 characters"), false;
     if (!formData.gender) return toast.error("Please select gender"), false;
     if (formData.specialties.length === 0) return toast.error("Please add at least one specialty"), false;
-    
+
     // Medical Registration Number - Mandatory
-    if (!formData.medicalRegistrationNumber.trim()) 
+    if (!formData.medicalRegistrationNumber.trim())
       return toast.error("Medical Registration Number is mandatory"), false;
-    
+
     if (!formData.experienceStart) return toast.error("Please select experience start date"), false;
-    if (!formData.consultationFee || parseInt(formData.consultationFee) <= 0) 
+    if (!formData.consultationFee || parseInt(formData.consultationFee) <= 0)
       return toast.error("Please enter a valid consultation fee"), false;
 
     return true;
@@ -353,7 +385,7 @@ function EditDoctor() {
         mobile: formData.mobile,
         gender: formData.gender,
         dateOfBirth: formData.dateOfBirth || undefined,
-        
+
         address: formData.street || formData.city ? {
           street: formData.street,
           city: formData.city,
@@ -361,7 +393,7 @@ function EditDoctor() {
           pincode: formData.pincode,
           country: "India"
         } : undefined,
-        
+
         specialties: formData.specialties,
         qualifications: formData.qualifications,
         medicalRegistrationNumber: formData.medicalRegistrationNumber.trim(),
@@ -369,19 +401,19 @@ function EditDoctor() {
         registrationYear: formData.registrationYear ? parseInt(formData.registrationYear) : undefined,
         registrationExpiryDate: formData.registrationExpiryDate || undefined,
         experienceStart: formData.experienceStart,
-        
+
         department: formData.department || undefined,
         designation: formData.designation || "Consultant",
         employeeId: formData.employeeId || undefined,
-        
+
         consultationFee: parseInt(formData.consultationFee),
         consultationDuration: parseInt(formData.consultationDuration) || 15,
         maxAppointmentsPerDay: formData.maxAppointmentsPerDay ? parseInt(formData.maxAppointmentsPerDay) : undefined,
         availability: availability.filter(slot => slot.days.length > 0),
         room: formData.room || undefined,
-        
+
         permissions: formData.permissions,
-        
+
         bio: formData.bio.trim() || `Dr. ${formData.name} is a ${formData.designation} specializing in ${formData.specialties.join(', ')}.`,
         profilePic: formData.profilePic || undefined,
         signature: formData.signature || undefined,
@@ -399,7 +431,7 @@ function EditDoctor() {
       toast.success(`Doctor "${formData.name}" updated successfully!`, { duration: 4000 });
 
       setTimeout(() => {
-        router.push("/hospital-admin/doctors");
+        router.push(`/${hospitalId}/hospital-admin/doctors`);
       }, 1000);
     } catch (err: any) {
       toast.error(err.message || "Failed to update doctor", { duration: 5000 });
@@ -418,6 +450,18 @@ function EditDoctor() {
 
   return (
     <div className="max-w-7xl mx-auto pb-12">
+      {/* Back Button */}
+      <div className="mb-4">
+        <button
+          type="button"
+          onClick={() => router.push(`/${hospitalId}/hospital-admin/doctors`)}
+          className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 transition-colors"
+        >
+          <ArrowLeft size={18} />
+          Back to Doctors List
+        </button>
+      </div>
+
       <PageHeader
         icon={<Edit className="text-blue-500" />}
         title="Edit Doctor Profile"
@@ -430,7 +474,7 @@ function EditDoctor() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <FormInput label="Full Name" type="text" name="name" required
               value={formData.name} onChange={handleChange} placeholder="Dr. John Smith" />
-            
+
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-color)' }}>
                 Gender <span className="text-red-500">*</span>
@@ -471,7 +515,7 @@ function EditDoctor() {
               </button>
             </div>
           </div>
-          
+
           <div className="mt-6">
             <h4 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--text-color)' }}>
               <MapPin size={16} /> Address (Optional)
@@ -495,7 +539,7 @@ function EditDoctor() {
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <FormInput label="NMC Registration Number" type="text" name="medicalRegistrationNumber" required
-                  value={formData.medicalRegistrationNumber} onChange={handleChange} 
+                  value={formData.medicalRegistrationNumber} onChange={handleChange}
                   placeholder="NMC/State Council No." />
                 <FormInput label="Registration Council" type="text" name="registrationCouncil"
                   value={formData.registrationCouncil} onChange={handleChange} />
@@ -566,7 +610,7 @@ function EditDoctor() {
                   className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
                   style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }} />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium mb-2">Department</label>
                 <select name="department" value={formData.department} onChange={handleChange}
@@ -586,7 +630,7 @@ function EditDoctor() {
                 </select>
               </div>
 
-              <FormInput label="Employee ID (Optional)" type="text" name="employeeId" 
+              <FormInput label="Employee ID (Optional)" type="text" name="employeeId"
                 value={formData.employeeId} onChange={handleChange} placeholder="Hospital Employee ID" />
             </div>
           </div>
@@ -617,7 +661,7 @@ function EditDoctor() {
               <h4 className="text-sm font-semibold" style={{ color: 'var(--text-color)' }}>Weekly Schedule</h4>
               <Button type="button" variant="secondary" onClick={addAvailabilitySlot}>Add Schedule</Button>
             </div>
-            
+
             <div className="space-y-4">
               {availability.map((slot, index) => (
                 <div key={index} className="p-4 border rounded-xl" style={{ borderColor: 'var(--border-color)' }}>
@@ -628,16 +672,15 @@ function EditDoctor() {
                         className="text-red-500 hover:text-red-700 text-sm">Remove</button>
                     )}
                   </div>
-                  
+
                   <div className="grid grid-cols-7 gap-2 mb-3">
                     {DAYS_OF_WEEK.map(day => (
                       <button key={day} type="button"
                         onClick={() => toggleDay(index, day)}
-                        className={`px-2 py-2 rounded-lg text-xs font-medium ${
-                          slot.days.includes(day) 
-                            ? 'bg-blue-500 text-white' 
+                        className={`px-2 py-2 rounded-lg text-xs font-medium ${slot.days.includes(day)
+                            ? 'bg-blue-500 text-white'
                             : 'bg-gray-100 dark:bg-gray-800 text-gray-600'
-                        }`}>
+                          }`}>
                         {day.substring(0, 3)}
                       </button>
                     ))}
@@ -714,15 +757,50 @@ function EditDoctor() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="relative">
-                <label className="block text-sm font-medium mb-2">Profile Picture URL</label>
-                <input type="url" name="profilePic" value={formData.profilePic} onChange={handleChange}
-                  placeholder="https://example.com/photo.jpg"
-                  className="w-full px-4 py-3 pl-10 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }} />
-                <ImageIcon className="absolute left-3 top-10 text-gray-400" size={18} />
+              {/* Profile Picture Upload */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Profile Picture</label>
+                <div className="flex flex-col gap-3">
+                  {/* Preview */}
+                  {profilePicPreview ? (
+                    <div className="relative w-28 h-28 rounded-xl overflow-hidden border-2 border-blue-200 shadow-md">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={profilePicPreview} alt="Profile Preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={removeProfilePic}
+                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all"
+                      >
+                        <XIcon size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-28 h-28 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center bg-gray-50 dark:bg-gray-900 text-gray-400">
+                      <ImageIcon size={32} />
+                    </div>
+                  )}
+
+                  {/* Upload Button */}
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={profilePicInputRef}
+                      onChange={handleProfilePicChange}
+                      className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
+                    />
+                    <button
+                      type="button"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-sm font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all w-full justify-center"
+                    >
+                      <Upload size={16} />
+                      {profilePicFile ? profilePicFile.name : "Upload Photo"}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-gray-400">Accepts JPG, PNG, WEBP &bull; Max 5MB</p>
+                </div>
               </div>
-              
+
               <div className="relative">
                 <label className="block text-sm font-medium mb-2">Digital Signature URL</label>
                 <input type="url" name="signature" value={formData.signature} onChange={handleChange}
@@ -785,8 +863,11 @@ function EditDoctor() {
 
         {/* Action Buttons */}
         <div className="flex justify-end gap-4 pt-4">
-          <Button type="button" variant="secondary" onClick={() => router.push("/hospital-admin/doctors")}
-            disabled={loading} className="px-8">Cancel</Button>
+          <Button type="button" variant="secondary" onClick={() => router.push(`/${hospitalId}/hospital-admin/doctors`)}
+            disabled={loading} className="px-8"
+          >
+            <ArrowLeft size={16} className="mr-1" /> Back to Doctors List
+          </Button>
           <Button type="submit" variant="primary" loading={loading} icon={<Edit size={18} />}
             className="px-12 py-4 text-lg shadow-lg hover:shadow-xl">
             Update Doctor Profile

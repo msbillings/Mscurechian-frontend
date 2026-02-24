@@ -5,6 +5,15 @@ import { useQuery } from '@tanstack/react-query';
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+
+// ✅ CRITICAL: Dynamic import must be at MODULE level (outside component)
+// If placed inside the component, React recreates a new component type on every render,
+// causing the modal to unmount/remount on each 10-second data refetch.
+const ReminderConfigModal = dynamic(
+  () => import('./components/ReminderConfigModal'),
+  { ssr: false }
+);
+
 import {
   Users,
   Building2,
@@ -49,15 +58,11 @@ function HospitalAdminDashboard() {
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
 
-  const ReminderConfigModal = dynamic(
-    () => import('./components/ReminderConfigModal'),
-    { ssr: false }
-  );
 
   const getMetricDetails = (label: string) => {
     const totalStaff = stats.totalDoctors + stats.totalNurses + stats.totalStaff;
     const attendanceRate = totalStaff > 0 ? Math.round((stats.attendance?.present || 0) / totalStaff * 100) : 0;
-    
+
     const details: Record<string, { items: { label: string, value: string | number }[], insight: string }> = {
       "Active Doctors": {
         items: [
@@ -93,7 +98,7 @@ function HospitalAdminDashboard() {
           { label: "Admissions", value: stats.totalAdmissions || 0 },
           { label: "Available", value: `${100 - (stats.bedOccupancy || 0)}%` }
         ],
-        insight: stats.bedOccupancy >= 80 
+        insight: stats.bedOccupancy >= 80
           ? `High occupancy at ${stats.bedOccupancy}%. Consider capacity planning.`
           : `Occupancy at ${stats.bedOccupancy}%. Capacity is ${stats.bedOccupancy < 50 ? 'optimal' : 'moderate'}.`
       },
@@ -104,7 +109,7 @@ function HospitalAdminDashboard() {
           { label: "Lab Orders", value: stats.totalLabRequests || 0 },
           { label: "Pharmacy", value: stats.totalPharmaSales || 0 }
         ],
-        insight: stats.avgPatientWaitTime > 30 
+        insight: stats.avgPatientWaitTime > 30
           ? `Wait time of ${stats.avgPatientWaitTime}m is above target. Monitor queue.`
           : `Wait time of ${stats.avgPatientWaitTime}m is within acceptable range.`
       },
