@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Tag, DollarSign, Calendar as CalendarIcon, Loader2, Trash2, History } from 'lucide-react';
-import { ipdService, hospitalAdminService } from '@/lib/integrations';
+import { ipdService, hospitalAdminService, ipdIssuanceService } from '@/lib/integrations';
 import toast from 'react-hot-toast';
 
 interface AddClinicalChargeModalProps {
@@ -19,6 +19,7 @@ export default function AddClinicalChargeModal({ isOpen, onClose, admissionId, o
     const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
     const [isManagingCategories, setIsManagingCategories] = useState(false);
     const [newCategory, setNewCategory] = useState('');
+    const [loadingPharma, setLoadingPharma] = useState(false);
     const [formData, setFormData] = useState({
         category: 'Consultation',
         description: '',
@@ -34,6 +35,34 @@ export default function AddClinicalChargeModal({ isOpen, onClose, admissionId, o
             fetchRecentCharges();
         }
     }, [isOpen, admissionId]);
+
+    // ✅ AUTO-FETCH PHARMACY TOTALS
+    useEffect(() => {
+        if (formData.category === 'Pharmacy' && admissionId && isOpen) {
+            handleFetchPharmacyTotal();
+        }
+    }, [formData.category, admissionId, isOpen]);
+
+    const handleFetchPharmacyTotal = async () => {
+        try {
+            setLoadingPharma(true);
+            const summary = await ipdIssuanceService.getIssuanceSummary(admissionId);
+            if (summary) {
+                const amount = summary.netBillableAmount || 0;
+                setFormData(prev => ({
+                    ...prev,
+                    amount: amount.toString(),
+                    description: `Final Pharmacy Reconciliation [Issued: ₹${summary.totalIssuedAmount} - Returned: ₹${summary.totalReturnedAmount}]`
+                }));
+                toast.success(`Fetched pharmacy net total: ₹${amount}`);
+            }
+        } catch (error) {
+            console.error("Failed to fetch pharmacy summary", error);
+            toast.error("Could not fetch pharmacy billing totals");
+        } finally {
+            setLoadingPharma(false);
+        }
+    };
 
     const fetchCategories = async () => {
         try {
@@ -249,9 +278,15 @@ export default function AddClinicalChargeModal({ isOpen, onClose, admissionId, o
                                     type="number"
                                     value={formData.amount}
                                     onChange={(e) => handleAmountChange(e.target.value)}
-                                    placeholder="0.00"
-                                    className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold uppercase outline-none focus:border-teal-500 transition-all"
+                                    placeholder={loadingPharma ? "Fetching..." : "0.00"}
+                                    disabled={loadingPharma}
+                                    className={`w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold uppercase outline-none focus:border-teal-500 transition-all ${loadingPharma ? 'animate-pulse opacity-50' : ''}`}
                                 />
+                                {loadingPharma && (
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                        <Loader2 size={12} className="animate-spin text-teal-600" />
+                                    </div>
+                                )}
                             </div>
                         </div>
 

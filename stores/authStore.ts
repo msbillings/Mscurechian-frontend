@@ -142,11 +142,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       sessionStorage.setItem("lastAuthCheck", Date.now().toString()); // ✅ SPEED FIX: Throttle next check
 
       // ✅ MULTI-TENANCY: Store hospitalId in sessionStorage and cookie
-      // Cookie is needed by Next.js middleware (edge runtime, no sessionStorage)
-      const userHospitalId = (user as any).hospital || (user as any).hospitalId;
+      // Handle both string IDs and populated objects gracefully
+      const rawId = (user as any).hospital || (user as any).hospitalId;
+      const userHospitalId = (rawId && typeof rawId === 'object') ? (rawId._id || rawId.id) : rawId;
+
       if (userHospitalId) {
-        sessionStorage.setItem("activeHospitalId", userHospitalId.toString());
-        document.cookie = `hospitalId=${userHospitalId}; path=/; max-age=86400; SameSite=Lax`;
+        const hospitalIdStr = userHospitalId.toString();
+        sessionStorage.setItem("activeHospitalId", hospitalIdStr);
+        document.cookie = `hospitalId=${hospitalIdStr}; path=/; max-age=86400; SameSite=Lax`;
       }
 
       // ✅ SYNC TO COOKIES: Standardized longevity
@@ -259,7 +262,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             document.cookie = `refreshToken=${rfToken}; path=/; max-age=604800; SameSite=Lax`;
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // ✅ SPEED FIX: Throttle network calls for session validation

@@ -291,7 +291,7 @@ export function DischargeBillingProcess() {
                                 <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Live Statement Breakdown</h3>
                                 {!billSummary.isBillLocked && (
                                     <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-50 text-amber-600 rounded text-[8px] font-black uppercase border border-amber-100">
-                                        <AlertCircle size={10} /> Bill Not Locked 
+                                        <AlertCircle size={10} /> Bill Not Locked
                                     </div>
                                 )}
                             </div>
@@ -318,6 +318,19 @@ export function DischargeBillingProcess() {
                                     </div>
                                     <p className="text-xs font-black text-slate-900">₹{billSummary.extraCharges?.total?.toLocaleString() || '0'}</p>
                                 </div>
+
+                                {billSummary.financials?.returnCredits > 0 && (
+                                    <div className="flex justify-between items-center pb-2 border-b border-rose-100 text-rose-600 bg-rose-50/50 px-2 py-1.5 rounded-lg -mx-2">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-white text-rose-500 rounded-lg flex items-center justify-center border border-rose-100 shadow-sm"><ArrowLeft size={14} /></div>
+                                            <div>
+                                                <p className="text-[9px] font-black uppercase leading-none">Medicine Returns</p>
+                                                <p className="text-[7px] font-bold opacity-70 mt-1 uppercase tracking-tight">Pharmacy Credit</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-xs font-black">- ₹{billSummary.financials.returnCredits.toLocaleString()}</p>
+                                    </div>
+                                )}
 
                                 {billSummary.financials?.discount > 0 && (
                                     <div className="flex justify-between items-center pb-2 border-b border-slate-100 text-emerald-600">

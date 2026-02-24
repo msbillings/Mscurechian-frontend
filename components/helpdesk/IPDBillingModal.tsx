@@ -255,8 +255,22 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                 </div>
                                                 <p className="text-xs font-black text-slate-900">₹{Math.round(summary?.extraCharges?.total || 0).toLocaleString()}</p>
                                             </div>
+
+                                            {summary?.financials?.returnCredits > 0 && (
+                                                <div className="flex justify-between items-center pb-3 border-b border-slate-50 text-rose-600 bg-rose-50/30 px-2 py-1.5 rounded-lg -mx-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-7 h-7 bg-white text-rose-500 rounded-lg flex items-center justify-center shadow-sm border border-rose-100"><History size={14} /></div>
+                                                        <div>
+                                                            <p className="text-[9px] font-black uppercase leading-none">Medicine Returns</p>
+                                                            <p className="text-[7px] font-bold opacity-70 mt-0.5 uppercase tracking-widest italic">Subtracted Credit</p>
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-xs font-black">- ₹{Math.round(summary.financials.returnCredits).toLocaleString()}</p>
+                                                </div>
+                                            )}
+
                                             {summary?.financials?.discount > 0 && (
-                                                <div className="flex justify-between items-center pb-3 border-b border-slate-50 text-emerald-600">
+                                                <div className="flex justify-between items-center pb-3 border-b border-slate-50 text-emerald-600 px-2 py-1.5 rounded-lg -mx-1">
                                                     <div className="flex items-center gap-2">
                                                         <div className="w-7 h-7 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center shadow-sm"><Tag size={14} /></div>
                                                         <div>

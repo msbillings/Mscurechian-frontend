@@ -9,6 +9,8 @@ import Navbar from '@/components/navbar/Navbar';
 import LogoutModal from '@/components/auth/LogoutModal';
 import PharmacySupportFloatingBox from '@/components/pharmacy/PharmacySupportFloatingBox';
 import { useTenantLink } from '@/hooks/useTenantLink';
+import { useQuery } from '@tanstack/react-query';
+import { pharmacyService } from '@/lib/integrations/services/pharmacy.service';
 import {
     LayoutDashboard,
     Package,
@@ -24,7 +26,7 @@ import {
 const pharmacyMenu: SidebarItem[] = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/pharmacy/dashboard" },
     { icon: PlusCircle, label: "Create Invoice", href: "/pharmacy/billing" },
-    { icon : PlusCircle, label: "IPD Billing", href: "/pharmacy/ipd-billing" },
+    { icon: PlusCircle, label: "IPD Billing", href: "/pharmacy/ipd-billing" },
     { icon: Pill, label: "Active Orders", href: "/pharmacy/orders" },
     { icon: PlusCircle, label: "IPD Issuance", href: "/pharmacy/ipd-issuance" },
     { icon: RotateCcw, label: "Medicine Returns", href: "/pharmacy/medicine-return" },
@@ -51,6 +53,13 @@ const PharmacyLayout = ({ children }: { children: React.ReactNode }) => {
         role: "pharmacy",
         image: undefined,
     };
+
+    const { data: activeOrdersCountData } = useQuery<{ count: number }>({
+        queryKey: ['pharmacy', 'active-orders-count', user?.hospital],
+        queryFn: () => pharmacyService.getActiveOrdersCount(user?.hospital as string),
+        enabled: !!user?.hospital && isPharma && isAuthenticated && !isLoginPage,
+        refetchInterval: 10000,
+    });
 
     // Auth guard
     useEffect(() => {
@@ -112,12 +121,19 @@ const PharmacyLayout = ({ children }: { children: React.ReactNode }) => {
         return null;
     }
 
+    const dynamicMenu = pharmacyMenu.map(item => {
+        if (item.label === "Active Orders" && activeOrdersCountData?.count && activeOrdersCountData.count > 0) {
+            return { ...item, badge: activeOrdersCountData.count.toString() };
+        }
+        return item;
+    });
+
     return (
         <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
             <Sidebar
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
-                items={pharmacyMenu}
+                items={dynamicMenu}
                 onLogout={() => setIsLogoutModalOpen(true)}
                 activeColor="teal"
             />

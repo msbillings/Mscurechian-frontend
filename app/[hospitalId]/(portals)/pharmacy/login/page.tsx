@@ -86,7 +86,8 @@ function PharmacyLogin() {
                 }
             });
 
-            const userHospitalId = user.hospital || user.hospitalId;
+            const rawIdVal = (user as any).hospital || (user as any).hospitalId;
+            const userHospitalId = (rawIdVal && typeof rawIdVal === 'object') ? (rawIdVal._id || rawIdVal.id) : rawIdVal;
             router.push(`/${userHospitalId}/pharmacy/dashboard`);
 
         } catch (err: any) {

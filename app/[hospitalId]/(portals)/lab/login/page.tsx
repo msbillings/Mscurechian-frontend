@@ -112,7 +112,8 @@ const LabLoginPage = () => {
                 }
             });
 
-            const userHospitalId = user.hospital || user.hospitalId;
+            const rawIdVal = (user as any).hospital || (user as any).hospitalId;
+            const userHospitalId = (rawIdVal && typeof rawIdVal === 'object') ? (rawIdVal._id || rawIdVal.id) : rawIdVal;
             router.replace(`/${userHospitalId}/lab/dashboard`);
         } catch (err: any) {
             const errorMessage = err?.message || err?.response?.data?.message || 'Login failed. Please check your credentials.';

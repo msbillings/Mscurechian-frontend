@@ -177,7 +177,7 @@ export default function CreatePharma() {
         if (!confirm("Are you sure you want to delete this Pharma Staff?")) return;
         const toastId = toast.loading("Deleting...");
         try {
-            await adminService.deleteUserClient(id, 'pharma-owner');
+            await adminService.deleteUserClient(id);
             toast.success("Deleted successfully", { id: toastId });
             fetchStaff();
         } catch (error: any) {

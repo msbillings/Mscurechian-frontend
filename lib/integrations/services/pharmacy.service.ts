@@ -219,8 +219,23 @@ export const pharmacyService = {
   },
 
   /** GET /pharmacy/audit-logs */
-  getAuditLogs: async (): Promise<any[]> => {
-    const response: any = await apiClient(PHARMACY_ENDPOINTS.AUDITS);
+  getAuditLogs: async (
+    page?: number,
+    limit?: number,
+    action?: string,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<any> => {
+    const query = new URLSearchParams();
+    if (page) query.append("page", String(page));
+    if (limit) query.append("limit", String(limit));
+    if (action && action !== 'All Actions') query.append("action", action);
+    if (startDate) query.append("startDate", startDate);
+    if (endDate) query.append("endDate", endDate);
+    const qs = query.toString();
+    const response: any = await apiClient(
+      `${PHARMACY_ENDPOINTS.AUDITS}${qs ? `?${qs}` : ""}`,
+    );
     return response.data || response || [];
   },
 
@@ -475,7 +490,7 @@ export const pharmacyService = {
   uploadDocument: async (
     file: File,
     type?: string,
-  ): Promise<{ url: string }> => {
+  ): Promise<{ url: string; success?: boolean; publicId?: string }> => {
     const formData = new FormData();
     formData.append("document", file);
     if (type) formData.append("type", type);
@@ -536,6 +551,14 @@ export const ipdIssuanceService = {
       method: "POST",
       body: JSON.stringify(data),
     });
+  },
+
+  /** GET /pharmacy/ipd-issuance/nurse-patients/active — Gets list of admissions tied exclusively to the logged-in nurse */
+  getNurseActiveAdmissions: async (): Promise<any[]> => {
+    const response: any = await apiClient(
+      "/pharmacy/ipd-issuance/nurse-patients/active",
+    );
+    return response || [];
   },
 
   /** GET /pharmacy/ipd-issuance/:admissionId — All issuances for an admission */
@@ -616,9 +639,10 @@ export const ipdIssuanceService = {
   },
 
   /** POST /pharmacy/signoff/:admissionId — Pharmacist manually clears */
-  signoffPharmacy: async (admissionId: string): Promise<any> => {
+  signoffPharmacy: async ({ admissionId, forceOverride, overrideReason }: { admissionId: string, forceOverride?: boolean, overrideReason?: string }): Promise<any> => {
     return apiClient(PHARMACY_ENDPOINTS.PHARMACY_SIGNOFF(admissionId), {
       method: "POST",
+      body: JSON.stringify({ forceOverride, overrideReason })
     });
   },
 };
