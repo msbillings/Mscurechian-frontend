@@ -1,0 +1,336 @@
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { useRouter, useParams } from "next/navigation";
+import toast from "react-hot-toast";
+import { hospitalAdminService } from "@/lib/integrations";
+import { ConfirmModal } from "@/components/admin/Modal";
+import {
+  ArrowLeft,
+  Mail,
+  Phone,
+  MapPin,
+  Award,
+  Calendar,
+  Clock,
+  Building,
+  CreditCard,
+  Shield,
+  Globe,
+  Stethoscope,
+  Edit,
+  Trash2,
+  FileText,
+  User,
+  Briefcase,
+  Eye
+} from "lucide-react";
+import { PageHeader, Button } from "@/components/admin";
+
+function HRDoctorDetailPage() {
+  const router = useRouter();
+  const params = useParams();
+  const hospitalId = params.hospitalId as string;
+  const id = params.id as string;
+
+  const [doctor, setDoctor] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => { }
+  });
+
+  useEffect(() => {
+    if (id) {
+      fetchDoctor();
+    }
+  }, [id]);
+
+  const fetchDoctor = async () => {
+    try {
+      try {
+        const data = await hospitalAdminService.getDoctorById(id);
+        setDoctor(data.doctor);
+        return;
+      } catch (detailError: any) {
+        if (detailError.status === 404 ||
+          detailError.message?.includes('404') ||
+          detailError.message?.toLowerCase().includes('not found')) {
+          const data = await hospitalAdminService.getDoctors();
+          const doctorData = data.doctors?.find((doc: any) => doc._id === id);
+
+          if (!doctorData) {
+            throw new Error("Doctor not found");
+          }
+
+          setDoctor(doctorData);
+          return;
+        }
+        throw detailError;
+      }
+    } catch (error: any) {
+      console.error("Failed to fetch doctor:", error);
+      toast.error(error.message || "Failed to load doctor details");
+      router.push(`/${hospitalId}/hr/hospital/doctors`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Deactivate Doctor",
+      message: `Are you sure you want to deactivate Dr. ${doctor?.name}?`,
+      onConfirm: async () => {
+        setDeleteLoading(true);
+        try {
+          await hospitalAdminService.deleteDoctor(doctor?.doctorProfileId || id);
+          toast.success(`Dr. ${doctor?.name} has been deactivated`);
+          router.push(`/${hospitalId}/hr/hospital/doctors`);
+        } catch (error: any) {
+          console.error("Failed to deactivate doctor:", error);
+          toast.error(error.message || "Failed to deactivate doctor");
+          setDeleteLoading(false);
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="h-12 w-12 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-sm text-gray-500 font-medium">Accessing doctor registry...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!doctor) return null;
+
+  return (
+    <div className="max-w-6xl mx-auto pb-12 p-8">
+      <button
+        onClick={() => router.push(`/${hospitalId}/hr/hospital/doctors`)}
+        className="flex items-center gap-2 mb-6 text-gray-500 hover:text-blue-600 font-medium text-sm"
+      >
+        <ArrowLeft size={16} />
+        Back to Doctors
+      </button>
+
+      <PageHeader
+        icon={<Stethoscope className="text-blue-500" />}
+        title={doctor.name}
+        subtitle={doctor.doctorId || 'Doctor Profile'}
+      />
+
+      <div className="flex justify-start mb-6 -mt-4">
+        <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${doctor.status === 'inactive'
+          ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800'
+          : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800'
+          }`}>
+          {doctor.status === 'inactive' ? 'Inactive' : 'Active'}
+        </span>
+      </div>
+
+      <div className="flex gap-3 mb-8">
+        {doctor.status !== 'inactive' && (
+          <>
+            <Button
+              onClick={() => router.push(`/${hospitalId}/hr/hospital/doctors/edit/${id}`)}
+              icon={<Edit size={16} />}
+              variant="secondary"
+              className="!text-sm !py-2 !rounded-lg"
+            >
+              Edit Profile
+            </Button>
+            <Button
+              onClick={handleDelete}
+              loading={deleteLoading}
+              icon={<Trash2 size={16} />}
+              className="bg-red-600 hover:bg-red-700 text-white !text-sm !py-2 !rounded-lg border border-red-700 shadow-sm"
+            >
+              Deactivate
+            </Button>
+          </>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm text-center">
+            {doctor.profilePic ? (
+              <img
+                src={doctor.profilePic}
+                alt={doctor.name}
+                className="w-32 h-32 rounded-full object-cover mx-auto mb-4 border border-gray-200 dark:border-gray-600 shadow-sm p-1 bg-white"
+              />
+            ) : (
+              <div className="w-32 h-32 rounded-full bg-blue-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-200">
+                <Stethoscope className="text-white" size={48} />
+              </div>
+            )}
+            <h2 className="text-xl font-bold mb-1 text-gray-900 dark:text-white">{doctor.name}</h2>
+            <p className="text-blue-600 font-medium mb-2 text-sm">{doctor.designation || 'Consultant'}</p>
+            <p className="text-xs text-gray-500 border-t border-gray-100 pt-3 mt-3">{doctor.department || 'Clinical faculty'}</p>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Mail size={16} className="text-green-500" /> Contact Details
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 text-sm">
+                <div className="mt-0.5 p-1.5 bg-blue-50 rounded-md text-blue-500">
+                  <Mail size={14} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-gray-400">Email</p>
+                  <p className="text-gray-700 dark:text-gray-200 truncate">{doctor.email}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 text-sm">
+                <div className="mt-0.5 p-1.5 bg-green-50 rounded-md text-green-500">
+                  <Phone size={14} />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-400">Mobile</p>
+                  <p className="text-gray-700 dark:text-gray-200">{doctor.mobile}</p>
+                </div>
+              </div>
+              {doctor.address && (
+                <div className="flex items-start gap-3 text-sm">
+                  <div className="mt-0.5 p-1.5 bg-red-50 rounded-md text-red-500">
+                    <MapPin size={14} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-400">Location</p>
+                    <p className="text-gray-700 dark:text-gray-200 text-xs">
+                      {[doctor.address.city, doctor.address.state].filter(Boolean).join(', ')}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Briefcase size={16} className="text-blue-500" /> Professional Stats
+            </h3>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center text-sm border-b pb-2 border-gray-50">
+                <span className="text-gray-500 text-xs uppercase font-bold tracking-tighter">Fee</span>
+                <span className="font-bold text-green-600">₹{doctor.consultationFee || '0'}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm border-b pb-2 border-gray-50">
+                <span className="text-gray-500 text-xs uppercase font-bold tracking-tighter">Duration</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{doctor.consultationDuration || 15} min</span>
+              </div>
+              <div className="flex justify-between items-center text-sm pb-2">
+                <span className="text-gray-500 text-xs uppercase font-bold tracking-tighter">Experience</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{doctor.experienceYears || '0'} Years</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+              <Award size={16} className="text-purple-500" /> Academic & Clinical Focus
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Specialties</h4>
+                <div className="flex flex-wrap gap-2">
+                  {doctor.specialties?.map((spec: string, idx: number) => (
+                    <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase border border-blue-100">
+                      {spec}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Qualifications</h4>
+                <div className="flex flex-wrap gap-2">
+                  {doctor.qualifications?.map((qual: string, idx: number) => (
+                    <span key={idx} className="px-2 py-1 bg-purple-50 text-purple-600 rounded text-[10px] font-bold uppercase border border-purple-100">
+                      {qual}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+              <CreditCard size={16} className="text-yellow-500" /> Medical Registry Info
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Registration No</p>
+                <p className="font-bold text-gray-900 dark:text-white">{doctor.medicalRegistrationNumber || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Registration Council</p>
+                <p className="font-bold text-gray-900 dark:text-white">{doctor.registrationCouncil || 'N/A'}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Clock size={16} className="text-indigo-500" /> Faculty Schedule
+            </h3>
+            {doctor.availability?.length > 0 ? (
+              <div className="space-y-3">
+                {doctor.availability.map((slot: any, idx: number) => (
+                  <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {slot.days?.map((day: string) => (
+                        <span key={day} className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[10px] font-bold uppercase">{day}</span>
+                      ))}
+                    </div>
+                    <p className="text-xs font-bold text-gray-700">{slot.startTime} - {slot.endTime}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400 italic">No slots registered</p>
+            )}
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Globe size={16} className="text-blue-500" /> Communication
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {doctor.languages?.map((lang: string, idx: number) => (
+                <span key={idx} className="px-3 py-1 bg-gray-50 text-gray-600 rounded-lg text-xs font-bold border border-gray-100 uppercase">{lang}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+      />
+    </div>
+  );
+}
+
+export default React.memo(HRDoctorDetailPage);

@@ -105,6 +105,17 @@ export const useUpdateLeaveStatus = () => {
   });
 };
 
+export const useRequestLeave = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => hrService.requestLeave(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hr", "leaves"] });
+      queryClient.invalidateQueries({ queryKey: ["hr", "stats"] });
+    },
+  });
+};
+
 export const useHRRecruitment = (params?: {
   status?: string;
   page?: number;
@@ -117,7 +128,8 @@ export const useHRRecruitment = (params?: {
 };
 
 export const useHRPerformance = (params?: {
-  period?: string;
+  month?: number;
+  year?: number;
   page?: number;
   limit?: number;
 }) => {
@@ -127,8 +139,29 @@ export const useHRPerformance = (params?: {
   });
 };
 
+export const useHRPerformanceDashboard = (params?: {
+  month?: number;
+  year?: number;
+}) => {
+  return useQuery({
+    queryKey: ["hr", "performance-dashboard", params],
+    queryFn: () => hrService.getPerformanceDashboard(params),
+  });
+};
+
+export const useHRDoctorPerformanceDashboard = (params?: {
+  month?: number;
+  year?: number;
+}) => {
+  return useQuery({
+    queryKey: ["hr", "doctor-performance-dashboard", params],
+    queryFn: () => hrService.getDoctorPerformanceDashboard(params),
+  });
+};
+
 export const useHRDocuments = (params?: {
   category?: string;
+  search?: string;
   page?: number;
   limit?: number;
 }) => {
@@ -142,5 +175,39 @@ export const useHRTraining = (params?: { page?: number; limit?: number }) => {
   return useQuery({
     queryKey: ["hr", "training", params],
     queryFn: () => hrService.getTraining(params),
+  });
+};
+export const useSubmitPerformance = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => hrService.submitPerformance(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hr", "performance"] });
+    },
+  });
+};
+
+export const useUploadHRDocument = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { staffId: string; documentType: string; file: File }) =>
+      hrService.uploadDocument(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hr", "documents"] });
+    },
+  });
+};
+
+export const useDeleteHRDocument = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (params: {
+      profileId: string;
+      documentKey: string;
+      role: string;
+    }) => hrService.deleteDocument(params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hr", "documents"] });
+    },
   });
 };
