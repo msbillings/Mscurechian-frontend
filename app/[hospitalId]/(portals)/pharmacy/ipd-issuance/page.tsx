@@ -316,7 +316,7 @@ export default function IPDIssuancePage() {
                     </div>
 
                     {/* Table View */}
-                    <div className="bg-white dark:bg-[#111] rounded-[2rem] border border-gray-100 dark:border-gray-800 overflow-hidden">
+                    <div className="bg-white dark:bg-[#111] rounded-4xl border border-gray-100 dark:border-gray-800 overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
