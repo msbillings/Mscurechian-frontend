@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { doctorService } from '@/lib/integrations/services/doctor.service';
+import { apiClient } from '@/lib/integrations/api/apiClient';
+import { DOCTOR_ENDPOINTS } from '@/lib/integrations/config/endpoints';
 import { getAppointmentDetailsAction, getDoctorProfileAction } from '@/lib/integrations/actions/doctor.actions';
 
 function CreateLabTokenPage() {
@@ -42,6 +44,7 @@ function CreateLabTokenPage() {
 
   const [patientData, setPatientData] = useState<any>(null);
   const [doctorData, setDoctorData] = useState<any>(null);
+  const [doctorName, setDoctorName] = useState<string>('');
   const [tokenNumber, setTokenNumber] = useState<string>('');
 
   // Success State
@@ -78,9 +81,35 @@ function CreateLabTokenPage() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const res = await getDoctorProfileAction();
-      if (res.success && res.data) {
-        setDoctorData(res.data);
+      try {
+        // Skip client-side cache to always get fresh populated data
+        const profile: any = await apiClient(DOCTOR_ENDPOINTS.PROFILE, { skipCache: true });
+        if (profile) {
+          setDoctorData(profile);
+          // Try all possible name paths — backend returns DoctorProfile with user populated
+          const rawName =
+            profile?.user?.name ||            // DoctorProfile.user (populated User)
+            profile?.name ||                   // direct name field
+            '';
+          // Strip any existing "Dr." prefix to avoid "Dr. Dr. Name" duplication
+          const resolvedName = rawName.replace(/^Dr\.?\s*/i, '').trim();
+          console.log('[Lab Token] Doctor profile user:', profile?.user, 'name:', resolvedName);
+          setDoctorName(resolvedName);
+          return;
+        }
+      } catch (err) {
+        console.warn('Direct profile fetch failed, trying server action:', err);
+      }
+      // Fallback: server action
+      try {
+        const res = await getDoctorProfileAction();
+        if (res.success && res.data) {
+          setDoctorData(res.data);
+          const rawFallback = res.data?.user?.name || res.data?.name || '';
+          setDoctorName(rawFallback.replace(/^Dr\.?\s*/i, '').trim());
+        }
+      } catch (err) {
+        console.error('Failed to fetch doctor profile:', err);
       }
     };
     fetchProfile();
@@ -236,7 +265,7 @@ function CreateLabTokenPage() {
               <p style="margin: 4px 0;"><strong>Patient:</strong> ${patientData?.personal?.name || patientData?.name || 'N/A'}</p>
               <p style="margin: 4px 0;"><strong>Age/Gender:</strong> ${patientData?.age || patientData?.personal?.age || 'N/A'}Y / ${patientData?.gender || patientData?.personal?.gender || 'N/A'}</p>
               <p style="margin: 4px 0;"><strong>MRN:</strong> ${patientData?.mrn || patientData?.personal?.mrn || 'N/A'}</p>
-              <p style="margin: 4px 0;"><strong>Ordering Physician:</strong> Dr. ${doctorData?.user?.name || doctorData?.name || 'Medical Officer'}</p>
+              <p style="margin: 4px 0;"><strong>Ordering Physician:</strong> Dr. ${doctorName || doctorData?.user?.name || 'N/A'}</p>
             </div>
 
             <h3 style="color: #9333ea; font-size: 14px; margin-bottom: 12px;">CLINICAL INVESTIGATIONS</h3>
@@ -269,8 +298,8 @@ function CreateLabTokenPage() {
             </div>` : ''}
 
             <div style="text-align: right; margin-top: 40px;">
-              <p style="font-family: cursive; font-size: 18px; font-weight: bold; margin-bottom: 4px;">Dr. ${doctorData?.user?.name || doctorData?.name || 'Medical Officer'}</p>
-              <p style="border-top: 1px solid #000; display: inline-block; padding-top: 4px; font-size: 10px;">Medical Officer</p>
+              <p style="font-size: 12px; font-weight: bold; margin-bottom: 4px;">Dr. ${doctorName || doctorData?.user?.name || 'N/A'}</p>
+              <p style="font-size: 10px; color: #6b7280;">${doctorData?.designation || doctorData?.specialties?.[0] || ''}</p>
             </div>
 
             <div style="border-top: 1px solid #e5e7eb; margin-top: 40px; padding-top: 8px; text-align: center; font-size: 8px; color: #9ca3af;">

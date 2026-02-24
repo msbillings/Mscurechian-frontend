@@ -65,6 +65,7 @@ function LabBillingPage() {
         const mobile = searchParams.get('mobile');
         const age = searchParams.get('age');
         const gender = searchParams.get('gender');
+        const refDoctor = searchParams.get('refDoctor');
         const sampleIdParam = searchParams.get('sampleId');
 
         if (sampleIdParam) {
@@ -83,6 +84,7 @@ function LabBillingPage() {
                 mobile: mobile || prev.mobile,
                 age: age ? parseInt(age) : prev.age,
                 gender: (gender as any) || prev.gender,
+                refDoctor: refDoctor || prev.refDoctor,
             }));
         }
     }, [searchParams]);
@@ -371,6 +373,15 @@ function LabBillingPage() {
                                         </button>
                                     ))}
                                 </div>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-gray-500">Ref. Doctor</label>
+                                <input
+                                    placeholder="Referring doctor name"
+                                    className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-medium"
+                                    value={patient.refDoctor}
+                                    onChange={e => setPatient({ ...patient, refDoctor: e.target.value })}
+                                />
                             </div>
                         </div>
                     </div>

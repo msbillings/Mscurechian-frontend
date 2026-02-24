@@ -74,56 +74,138 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({ isOpen, onClose, on
 
             console.log('Extracted Text:', text);
 
-            // Parsing Logic
+            // ─── Smart OCR Parsing ───────────────────────────────────────────
             const extractedData: Partial<SupplierPayload> = {};
+            let remainingText = text;
 
-            // 1. Email Extraction
-            const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-            if (emailMatch) extractedData.email = emailMatch[0];
+            // Helper: remove a matched segment from remainingText
+            const consume = (match: string) => {
+                remainingText = remainingText.replace(match, ' ');
+            };
 
-            // 2. Phone Extraction (Enhanced for Indian context)
-            const phoneMatch = text.match(/(?:\+91|91)?[\s-]?([6-9]\d{4}[\s-]?\d{5}|\d{5}[\s-]?\d{5})/);
-            if (phoneMatch) {
-                // Clean phone number to just digits
-                extractedData.phone = phoneMatch[0].replace(/\D/g, '').slice(-10);
+            // 1. Email Extraction (broad pattern for OCR noise)
+            const emailMatch = text.match(/[a-zA-Z0-9._%+\-]+\s*@\s*[a-zA-Z0-9.\-]+\.\s*[a-zA-Z]{2,}/);
+            if (emailMatch) {
+                extractedData.email = emailMatch[0].replace(/\s/g, '');
+                consume(emailMatch[0]);
             }
 
-            // 3. GST Extraction (Standard India GST Format)
-            const gstMatch = text.match(/\d{2}[A-Z]{5}\d{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}/);
-            if (gstMatch) extractedData.gstNumber = gstMatch[0];
-
-            // 4. Name Extraction (Heuristic: Look for lines with Pvt Ltd, or first prominent line)
-            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 3);
-            const nameLine = lines.find(line =>
-                /Pvt|Ltd|Limited|Private|Enterprises|Solutions|Pharma|Agency|Distributors/i.test(line)
-            );
-
-            if (nameLine) {
-                // Clean common prefixes/suffixes if needed, or just take the line
-                extractedData.name = nameLine.replace(/[^\w\s\-\.\&]/g, '').trim();
-            } else if (!formData.name && lines.length > 0) {
-                // Fallback to first line if it looks like a name (no numbers, decent length)
-                if (!/\d/.test(lines[0])) extractedData.name = lines[0];
+            // 2. Phone Extraction (broad — handles OCR artifacts, labels, country codes)
+            //    Matches: +91 9876543210, Tel: 9876543210, Ph: 98765-43210, (© 9876543210, etc.
+            const phonePatterns = [
+                /(?:(?:Tel|Ph|Phone|Mob|Mobile|Contact|Call)\s*[:\-.]?\s*)?(?:\+?\s*91\s*[\s\-]?)?([6-9]\d{4}[\s\-]?\d{5})/i,
+                /(?:(?:Tel|Ph|Phone|Mob|Mobile|Contact|Call)\s*[:\-.]?\s*)?(?:\+?\s*91\s*[\s\-]?)?(\d{5}[\s\-]?\d{5})/i,
+                /[(\[©@]?\s*(\d{10})\s*[)\]]?/,
+            ];
+            for (const pattern of phonePatterns) {
+                const m = text.match(pattern);
+                if (m) {
+                    const digits = (m[1] || m[0]).replace(/\D/g, '').slice(-10);
+                    if (digits.length === 10 && /^[6-9]/.test(digits)) {
+                        extractedData.phone = digits;
+                        consume(m[0]);
+                        break;
+                    }
+                }
             }
 
-            // 5. Address Extraction (Basic: Lines containing city/state keywords or PIN codes)
-            const pinMatch = text.match(/\d{6}/);
-            if (pinMatch) {
-                // Find lines around the pin code
-                const pinIndex = text.indexOf(pinMatch[0]);
-                // Simplified: Take a chunk of text around the pin code
-                const start = Math.max(0, pinIndex - 50);
-                const end = Math.min(text.length, pinIndex + 50);
-                let rawAddress = text.substring(start, end).replace(/\n/g, ', ').trim();
-                extractedData.address = rawAddress.replace(/\s+/g, ' ');
+            // 3. GST Extraction (handles labels, spaces, OCR noise)
+            //    Standard: 22AAAAA0000A1Z5  |  Labeled: GSTIN: 12ABC3456P
+            const gstPatterns = [
+                /(?:GSTIN|GST\s*(?:No|Number|IN)?)\s*[:\-.]?\s*([A-Z0-9]{15})/i,
+                /\b(\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z])\b/,
+                /(?:GSTIN|GST\s*(?:No|Number|IN)?)\s*[:\-.]?\s*([A-Z0-9]{10,15})/i,
+            ];
+            for (const pattern of gstPatterns) {
+                const m = text.match(pattern);
+                if (m) {
+                    extractedData.gstNumber = (m[1] || m[0]).replace(/\s/g, '').toUpperCase();
+                    consume(m[0]);
+                    break;
+                }
             }
 
-            // Update form with found data (preserving existing if not found)
+            // 4. Name Extraction — prioritize lines with business keywords
+            const allLines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
+            const businessKeywords = /Pvt|Ltd|Limited|Private|Enterprises|Solutions|Pharma|Pharmaceuticals|Agency|Distributors|Traders|Industries|Corporation|Corp|Inc|Company|Co\b|Medical|Healthcare|Surgical|Wholesale|Retail/i;
+            
+            let nameCandidate = '';
+            // First pass: look for lines with strong business keywords
+            for (const line of allLines) {
+                if (businessKeywords.test(line)) {
+                    // Clean OCR noise from the name
+                    let cleaned = line
+                        .replace(/[^a-zA-Z0-9\s\-\.&'()]/g, '') // Remove non-name chars
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                    if (cleaned.length > 3) {
+                        nameCandidate = cleaned;
+                        consume(line);
+                        break;
+                    }
+                }
+            }
+            // Fallback: use first line if it looks like a name (no digits, not an email/phone)
+            if (!nameCandidate && allLines.length > 0) {
+                const first = allLines[0];
+                if (!/\d{5,}/.test(first) && !/@/.test(first) && first.length > 3 && first.length < 80) {
+                    nameCandidate = first.replace(/[^a-zA-Z0-9\s\-\.&'()]/g, '').trim();
+                    consume(first);
+                }
+            }
+            if (nameCandidate) extractedData.name = nameCandidate;
+
+            // 5. Address Extraction — analyze remaining lines
+            //    After removing email, phone, GST, and name, classify remaining lines
+            const remainingLines = remainingText.split('\n').map(l => l.trim()).filter(l => l.length > 2);
+            const addressKeywords = /road|street|st\b|lane|nagar|colony|sector|plot|block|floor|building|bldg|tower|complex|market|chowk|circle|main|cross|layout|phase|industrial|area|zone|city|town|village|district|taluk|mandal|pin|pincode|zip|mumbai|delhi|chennai|kolkata|bangalore|bengaluru|hyderabad|pune|ahmedabad|jaipur|lucknow|kanpur|nagpur|indore|bhopal|visakhapatnam|patna|vadodara|ghaziabad|ludhiana|agra|nashik|faridabad|meerut|rajkot|varanasi|srinagar|aurangabad|dhanbad|amritsar|allahabad|ranchi|howrah|coimbatore|jabalpur|gwalior|vijayawada|jodhpur|madurai|raipur|kota|chandigarh|gurgaon|noida|maharashtra|tamil\s*nadu|karnataka|telangana|andhra|uttar\s*pradesh|gujarat|rajasthan|madhya\s*pradesh|west\s*bengal|bihar|odisha|kerala|assam|jharkhand|chhattisgarh|punjab|haryana|india|\d{6}/i;
+            
+            const addressLines: string[] = [];
+            const noteLines: string[] = [];
+
+            for (const line of remainingLines) {
+                // Skip if line is just the already extracted phone/email/gst/name
+                const cleanLine = line.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+                if (cleanLine.length < 3) continue;
+                if (extractedData.name && cleanLine.toLowerCase() === extractedData.name.toLowerCase().replace(/[^a-zA-Z0-9\s]/g, '').trim()) continue;
+
+                if (addressKeywords.test(line) || /\d{6}/.test(line)) {
+                    addressLines.push(line);
+                } else {
+                    // Check if it contains a PIN code anywhere
+                    noteLines.push(line);
+                }
+            }
+
+            if (addressLines.length > 0) {
+                extractedData.address = addressLines
+                    .join(', ')
+                    .replace(/\s+/g, ' ')
+                    .replace(/,\s*,/g, ',')
+                    .trim();
+            }
+
+            if (noteLines.length > 0) {
+                // Put unclassified text into notes so nothing is lost
+                const notesText = noteLines
+                    .join(', ')
+                    .replace(/\s+/g, ' ')
+                    .replace(/,\s*,/g, ',')
+                    .trim();
+                if (notesText.length > 3) {
+                    extractedData.notes = notesText;
+                }
+            }
+
+            // Update form — only overwrite fields that were actually extracted
             setFormData(prev => ({
                 ...prev,
-                ...extractedData,
-                // Ensure we don't overwrite if we already have data and extraction failed, 
-                // but here we are overwriting to prioritize the scan result as requested.
+                ...(extractedData.name ? { name: extractedData.name } : {}),
+                ...(extractedData.phone ? { phone: extractedData.phone } : {}),
+                ...(extractedData.email ? { email: extractedData.email } : {}),
+                ...(extractedData.gstNumber ? { gstNumber: extractedData.gstNumber } : {}),
+                ...(extractedData.address ? { address: extractedData.address } : {}),
+                ...(extractedData.notes ? { notes: extractedData.notes } : {}),
             }));
 
             toast.success('Card scanned successfully!', { id: toastId });

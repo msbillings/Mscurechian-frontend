@@ -130,7 +130,8 @@ export default function SampleCollectionPage() {
             gender: sample.patientDetails.gender,
             tests: testNames,
             sampleId: sample._id,
-            displayId: sample.sampleId
+            displayId: sample.sampleId,
+            refDoctor: sample.patientDetails.refDoctor || ''
         }).toString();
         router.push(`/lab/billing?${queryParams}`);
     };
