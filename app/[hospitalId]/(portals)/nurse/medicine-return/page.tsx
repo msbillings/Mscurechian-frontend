@@ -342,7 +342,7 @@ export default function NurseMedicineReturnPage() {
                                     >
                                         <div className="px-6 flex items-start justify-between">
                                             <div className="flex items-center gap-4 mb-4">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
+                                                <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
                                                     <User size={20} className="text-white" />
                                                 </div>
                                                 <div className="min-w-0">
@@ -375,7 +375,7 @@ export default function NurseMedicineReturnPage() {
                                         </div>
 
                                         {/* Preview of Medicines List for this Nurse */}
-                                        <div className="mt-2 flex-grow bg-blue-50/50 dark:bg-gray-900/50 p-6 border-t border-gray-50 dark:border-gray-800 relative">
+                                        <div className="mt-2 grow bg-blue-50/50 dark:bg-gray-900/50 p-6 border-t border-gray-50 dark:border-gray-800 relative">
                                             <div className="flex items-center justify-between mb-3 text-[10px] uppercase tracking-widest font-black text-gray-400">
                                                 <span>Medicines Billed To You</span>
                                                 <span className="bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm">{totalMedicines} Items</span>
@@ -503,7 +503,7 @@ export default function NurseMedicineReturnPage() {
 
                     <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-3xl overflow-hidden shadow-sm">
                         {/* Selected Patient Header */}
-                        <div className="px-6 py-5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 border-b border-blue-100 dark:border-blue-800/30 flex items-center justify-between">
+                        <div className="px-6 py-5 bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 border-b border-blue-100 dark:border-blue-800/30 flex items-center justify-between">
                             <div>
                                 <h2 className="text-lg font-bold text-gray-900 dark:text-white">
                                     {selectedAdmission.patient?.name}
@@ -688,7 +688,7 @@ export default function NurseMedicineReturnPage() {
                                                 <button
                                                     onClick={handleSubmitReturn}
                                                     disabled={submitting}
-                                                    className="mt-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-md shadow-orange-500/20 w-auto"
+                                                    className="mt-4 bg-linear-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-md shadow-orange-500/20 w-auto"
                                                 >
                                                     {submitting ? (
                                                         <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing Returns...</>
