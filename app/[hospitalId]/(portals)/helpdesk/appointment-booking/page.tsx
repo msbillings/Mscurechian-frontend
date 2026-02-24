@@ -81,18 +81,21 @@ export default function AppointmentBooking() {
     const [roomSearch, setRoomSearch] = useState("");
     const [showRoomSelect, setShowRoomSelect] = useState(false);
     const [unitTypes, setUnitTypes] = useState<string[]>([]);
+    const [rooms, setRooms] = useState<any[]>([]);
 
     // Bed & Meta Fetching Effect - Trigger whenever registrationType switches to IPD
     useEffect(() => {
         if (registrationType === 'IPD') {
             const fetchIPDMeta = async () => {
                 try {
-                    const [bedsData, types] = await Promise.all([
+                    const [bedsData, types, roomsData] = await Promise.all([
                         ipdService.getBeds({ status: 'Vacant' }),
-                        ipdService.getUnitTypes().catch(() => [])
+                        ipdService.getUnitTypes().catch(() => []),
+                        ipdService.getRooms().catch(() => [])
                     ]);
                     setBeds(bedsData);
                     setUnitTypes(types);
+                    setRooms(roomsData);
                 } catch (e) {
                     console.error("Failed to fetch IPD meta", e);
                 }
@@ -1098,7 +1101,7 @@ export default function AppointmentBooking() {
                                     onClick={() => setShowRoomSelect(!showRoomSelect)}
                                 >
                                     <span className={admissionData.roomId ? 'text-slate-900' : 'text-slate-400'}>
-                                        {admissionData.roomId ? (profile?.hospital?.rooms?.find(r => r._id === admissionData.roomId)?.label || 'Select Room') : 'Select Room'}
+                                        {admissionData.roomId ? (rooms.find(r => r._id === admissionData.roomId)?.label || rooms.find(r => r._id === admissionData.roomId)?.roomId || 'Select Room') : 'Select Room'}
                                     </span>
                                     <ChevronRight size={14} className={`transition-transform duration-200 ${showRoomSelect ? 'rotate-90' : ''}`} />
                                 </div>
@@ -1137,9 +1140,9 @@ export default function AppointmentBooking() {
                                             >
                                                 Clear Selection
                                             </div>
-                                            {(profile?.hospital?.rooms || [])
-                                                .filter(r => !admissionData.roomType || String(r.type || '').toLowerCase() === String(admissionData.roomType || '').toLowerCase())
-                                                .filter(r => r.label.toLowerCase().includes(roomSearch.toLowerCase()))
+                                            {rooms
+                                                .filter(r => !admissionData.roomType || String(r.type || '').toUpperCase() === String(admissionData.roomType || '').toUpperCase())
+                                                .filter(r => (r.label || r.roomId || '').toLowerCase().includes(roomSearch.toLowerCase()))
                                                 .map(room => (
                                                     <div
                                                         key={room._id}
@@ -1151,7 +1154,7 @@ export default function AppointmentBooking() {
                                                         }}
                                                     >
                                                         <div>
-                                                            <p className="text-[10px] font-black uppercase tracking-tight">{room.label}</p>
+                                                            <p className="text-[10px] font-black uppercase tracking-tight">{room.label || room.roomId}</p>
                                                             <p className={`text-[8px] font-bold uppercase ${admissionData.roomId === room._id ? 'text-white/60' : 'text-slate-400'}`}>{room.type}</p>
                                                         </div>
                                                         {admissionData.roomId === room._id && <Check size={12} />}
@@ -1175,7 +1178,8 @@ export default function AppointmentBooking() {
                                         const bedType = String(b.type || '').toLowerCase();
                                         const filterType = String(admissionData.roomType || '').toLowerCase();
                                         const bedRoom = String(b.room || '').toLowerCase();
-                                        const selectedRoomLabel = String(profile?.hospital?.rooms?.find(r => r._id === admissionData.roomId)?.label || '').toLowerCase();
+                                        const selectedRoom = rooms.find(r => r._id === admissionData.roomId);
+                                        const selectedRoomLabel = String(selectedRoom?.label || selectedRoom?.roomId || '').toLowerCase();
 
                                         return (!filterType || bedType === filterType) &&
                                             (!admissionData.roomId || bedRoom === selectedRoomLabel);
