@@ -352,7 +352,10 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
                             <div className="space-y-1">
                                 {group.items.map((item) => {
                                     const tenantPath = getPath(item.path);
-                                    const isActive = pathname === item.path || pathname === tenantPath || pathname.includes(item.path);
+                                    const isDashboard = item.path === '/doctor';
+                                    const isActive = isDashboard
+                                        ? pathname === tenantPath
+                                        : pathname === tenantPath || pathname.startsWith(tenantPath + '/');
                                     const isInpatients = item.path === '/doctor/inpatients';
                                     const showCriticalAlert = isInpatients && inpatientStats.critical > 0;
                                     const showWarningAlert = isInpatients && inpatientStats.warning > 0 && !showCriticalAlert;

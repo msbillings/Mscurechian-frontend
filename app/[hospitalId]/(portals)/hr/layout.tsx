@@ -187,7 +187,10 @@ export default function HRLayout({ children }: { children: React.ReactNode }) {
               <div className="space-y-1">
                 {group.items.map((item) => {
                   const tenantPath = getPath(item.path);
-                  const isActive = pathname === tenantPath || pathname.startsWith(tenantPath + '/');
+                  const isDashboard = item.path === '/hr';
+                  const isActive = isDashboard
+                    ? pathname === tenantPath
+                    : pathname === tenantPath || pathname.startsWith(tenantPath + '/');
                   return (
                     <button
                       key={item.path}

@@ -12,9 +12,10 @@ import {
     RotateCcw,
     Filter,
     Stethoscope,
-    FileText
+    FileText,
+    Calendar
 } from 'lucide-react';
-import { ipdService, staffService } from '@/lib/integrations';
+import { ipdService, staffService, NurseService } from '@/lib/integrations';
 import toast from 'react-hot-toast';
 
 export default function DailyTasksPage() {
@@ -23,7 +24,9 @@ export default function DailyTasksPage() {
     const [filter, setFilter] = useState('All');
     const [currentPage, setCurrentPage] = useState(1);
     const [nurseDept, setNurseDept] = useState<string | string[] | null>(null);
-    const apiLimit = 10;
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [isHistorical, setIsHistorical] = useState(false);
+    const apiLimit = 20;
 
     const fetchTasks = async () => {
         try {
@@ -32,48 +35,18 @@ export default function DailyTasksPage() {
             const dept = profileData.staff.department || undefined;
             setNurseDept(dept || null);
 
-            const data = await ipdService.getActiveAdmissions(Array.isArray(dept) ? dept.join(',') : dept);
-            const activeAdmissions = data.filter((a: any) => a.status === 'Active');
-
-            const savedCompletions = localStorage.getItem('nurse_task_completions');
-            const completedTasks: Record<string, boolean> = savedCompletions ? JSON.parse(savedCompletions) : {};
-
-            const generatedTasks = activeAdmissions.flatMap((adm: any) => {
-                const hasVitals = adm.vitals && (adm.vitals.pulse || adm.vitals.bloodPressure || adm.vitals.spO2 || adm.vitals.temperature);
-                const hasClinicalNotes = adm.clinicalNotes && adm.clinicalNotes.trim().length > 0;
-
-                return [
-                    {
-                        id: `vitals-${adm._id}`,
-                        admissionId: adm.admissionId,
-                        patientId: adm.patient?._id,
-                        patient: adm.patient?.name,
-                        type: 'Vitals Check',
-                        icon: <Stethoscope size={16} />,
-                        note: 'Record vitals (BP, Pulse, Temp)',
-                        status: completedTasks[`vitals-${adm._id}`] ? 'Completed' : 'Pending',
-                        priority: adm.vitals?.status === 'Critical' ? 'High' : 'Medium',
-                        canComplete: hasVitals,
-                        admission: adm
-                    },
-                    {
-                        id: `note-${adm._id}`,
-                        admissionId: adm.admissionId,
-                        patientId: adm.patient?._id,
-                        patient: adm.patient?.name,
-                        type: 'Clinical Notes',
-                        icon: <FileText size={16} />,
-                        note: 'Update daily progress notes',
-                        status: completedTasks[`note-${adm._id}`] ? 'Completed' : 'Pending',
-                        priority: 'Low',
-                        canComplete: hasClinicalNotes,
-                        admission: adm
-                    }
-                ];
+            // Fetch from backend
+            const response = await NurseService.getTasks(1, 100, {
+                date: selectedDate
             });
-            setTasks(generatedTasks);
+
+            if (response.data) {
+                setTasks(response.data);
+                setIsHistorical(response.isHistorical || false);
+            }
         } catch (error) {
-            toast.error("Failed to load tasks");
+            console.error("Fetch tasks error:", error);
+            toast.error("Failed to load tasks from server");
         } finally {
             setLoading(false);
         }
@@ -81,37 +54,38 @@ export default function DailyTasksPage() {
 
     useEffect(() => {
         fetchTasks();
-    }, []);
+    }, [selectedDate]);
 
-    const toggleTaskCompletion = (taskId: string, e: React.MouseEvent) => {
+    const toggleTaskCompletion = async (taskId: string, currentStatus: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        const task = tasks.find(t => t.id === taskId);
-        if (!task) return;
 
-        if (!task.canComplete && task.status !== 'Completed') {
-            toast.error(task.type === 'Vitals Check' ? "Please enter vitals first" : "Please enter clinical notes first");
+        if (isHistorical) {
+            toast.error("Historical tasks cannot be modified");
             return;
         }
 
-        const updatedTasks = tasks.map(t =>
-            t.id === taskId ? { ...t, status: t.status === 'Completed' ? 'Pending' : 'Completed' } : t
-        );
-        setTasks(updatedTasks);
+        const newStatus = currentStatus === 'Completed' ? 'Pending' : 'Completed';
 
-        const savedCompletions = localStorage.getItem('nurse_task_completions');
-        const completedTasks: Record<string, boolean> = savedCompletions ? JSON.parse(savedCompletions) : {};
-        const updatedTask = updatedTasks.find(t => t.id === taskId);
-        if (updatedTask) {
-            completedTasks[taskId] = updatedTask.status === 'Completed';
-            localStorage.setItem('nurse_task_completions', JSON.stringify(completedTasks));
+        try {
+            // Update on backend
+            const res = await NurseService.updateTaskStatus(
+                taskId,
+                newStatus as any
+            );
+
+            if (res) {
+                setTasks(prev => prev.map(t => t._id === taskId ? { ...t, status: newStatus } : t));
+                toast.success(`Task marked as ${newStatus}`);
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Failed to update task");
         }
-        toast.success("Task updated");
     };
 
-    const clearCompletedTasks = () => {
-        localStorage.removeItem('nurse_task_completions');
-        fetchTasks();
-        toast.success("All tasks reset");
+    const handleDateChange = (days: number) => {
+        const date = new Date(selectedDate);
+        date.setDate(date.getDate() + days);
+        setSelectedDate(date.toISOString().split('T')[0]);
     };
 
     const filteredTasks = filter === 'All' ? tasks : tasks.filter(t => t.status === filter);
@@ -138,29 +112,45 @@ export default function DailyTasksPage() {
 
                 {/* HEADER */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm">
-                    <div>
-                        <h1 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight leading-none">Daily Tasks</h1>
-                        <p className="text-[10px] sm:text-sm text-slate-500 mt-1">Care for <span className="font-semibold text-emerald-600">{nurseDept || 'All Wards'}</span></p>
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                            <Calendar size={24} />
+                        </div>
+                        <div>
+                            <h1 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight leading-none">Nurse Dashboard</h1>
+                            <p className="text-[10px] sm:text-sm text-slate-500 mt-1">
+                                {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                {isHistorical && <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] uppercase font-bold">Historical View</span>}
+                            </p>
+                        </div>
                     </div>
+
                     <div className="flex items-center gap-2 sm:gap-3">
-                        <div className="px-3 sm:px-4 py-1.5 sm:py-2 bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl flex items-center gap-2 sm:gap-3">
+                        <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl overflow-hidden p-1 shadow-inner">
+                            <button onClick={() => handleDateChange(-1)} className="p-2 hover:bg-white hover:text-emerald-600 transition-all rounded-lg text-slate-400">
+                                <ChevronLeft size={18} />
+                            </button>
+                            <span className="px-3 text-xs font-bold text-slate-600 min-w-[100px] text-center">
+                                {isHistorical ? selectedDate : "Today"}
+                            </span>
+                            <button onClick={() => handleDateChange(1)} className="p-2 hover:bg-white hover:text-emerald-600 transition-all rounded-lg text-slate-400">
+                                <ChevronRight size={18} />
+                            </button>
+                        </div>
+
+                        <div className="px-3 sm:px-4 py-1.5 sm:py-2 bg-emerald-50/50 border border-emerald-100 rounded-lg sm:rounded-xl flex items-center gap-2 sm:gap-3 shadow-sm">
                             <div className="text-right">
-                                <p className="text-[7px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider leading-none mb-1">Progress</p>
-                                <p className="text-[10px] sm:text-sm font-bold text-slate-900 leading-none">{completedCount} / {tasks.length}</p>
+                                <p className="text-[7px] sm:text-xs text-emerald-600/60 font-bold uppercase tracking-wider leading-none mb-1">Shift Progress</p>
+                                <p className="text-[10px] sm:text-sm font-bold text-emerald-700 leading-none">{completedCount} / {tasks.length}</p>
                             </div>
                             <div className="w-8 h-8 sm:w-10 sm:h-10 relative flex items-center justify-center">
                                 <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                                    <path className="text-slate-200" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
+                                    <path className="text-emerald-100/50" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
                                     <path className="text-emerald-500 transition-all duration-1000 ease-out" strokeDasharray={`${progress}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
                                 </svg>
-                                <span className="absolute text-[8px] sm:text-[10px] font-bold text-emerald-600">{progress}%</span>
+                                <span className="absolute text-[8px] sm:text-[10px] font-black text-emerald-600">{progress}%</span>
                             </div>
                         </div>
-                        {completedCount > 0 && (
-                            <button onClick={clearCompletedTasks} className="p-2 sm:p-3 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-500 rounded-lg sm:rounded-xl transition-all shadow-sm" title="Reset All Tasks">
-                                <RotateCcw size={14} className="sm:size-[18px]" />
-                            </button>
-                        )}
                     </div>
                 </div>
 
@@ -210,17 +200,19 @@ export default function DailyTasksPage() {
                             <div className="grid grid-cols-1 gap-2 sm:gap-3">
                                 {paginatedTasks.map((task: any) => (
                                     <div
-                                        key={task.id}
-                                        onClick={(e) => toggleTaskCompletion(task.id, e)}
+                                        key={task._id}
+                                        onClick={(e) => toggleTaskCompletion(task._id, task.status, e)}
                                         className={`group relative p-3 sm:p-5 rounded-xl sm:rounded-2xl border transition-all cursor-pointer ${task.status === 'Completed'
-                                            ? 'bg-slate-50 border-slate-100'
-                                            : 'bg-white border-slate-200 hover:border-emerald-300 hover:shadow-md'
+                                            ? 'bg-slate-100/30 border-slate-100'
+                                            : isHistorical
+                                                ? 'bg-white border-slate-200 opacity-80'
+                                                : 'bg-white border-slate-200 hover:border-emerald-300 hover:shadow-md'
                                             }`}
                                     >
                                         <div className="flex items-center gap-3 sm:gap-4">
                                             {/* CHECKBOX */}
-                                            <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center shrink-0 transition-colors ${task.status === 'Completed' ? 'bg-emerald-500 text-white' :
-                                                task.canComplete ? 'border-2 border-slate-300 group-hover:border-emerald-400' : 'bg-slate-100 border-2 border-slate-100'
+                                            <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center shrink-0 transition-colors ${task.status === 'Completed' ? 'bg-emerald-500 text-white shadow-sm' :
+                                                !isHistorical ? 'border-2 border-slate-300 group-hover:border-emerald-400' : 'bg-slate-100 border-2 border-slate-100'
                                                 }`}>
                                                 {task.status === 'Completed' && <CheckCircle2 size={12} className="sm:size-[14px]" />}
                                             </div>
@@ -228,30 +220,31 @@ export default function DailyTasksPage() {
                                             {/* CONTENT */}
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center justify-between gap-2 mb-0.5 sm:mb-1">
-                                                    <h3 className={`text-xs sm:text-base font-bold truncate ${task.status === 'Completed' ? 'text-slate-400 line-through' : 'text-slate-900'}`}>
-                                                        {task.patient}
+                                                    <h3 className={`text-xs sm:text-[15px] font-bold truncate ${task.status === 'Completed' ? 'text-slate-400 line-through' : 'text-slate-900'}`}>
+                                                        {task.title}
                                                     </h3>
-                                                    {task.priority === 'High' && (
-                                                        <span className="px-1.5 py-0.5 bg-rose-50 text-rose-600 text-[8px] sm:text-[10px] font-bold uppercase tracking-wide rounded border border-rose-100">High</span>
-                                                    )}
+                                                    {task.priority === 'High' || task.priority === 'Critical' ? (
+                                                        <span className="px-1.5 py-0.5 bg-rose-50 text-rose-600 text-[8px] sm:text-[10px] font-bold uppercase tracking-wide rounded border border-rose-100">Urgent</span>
+                                                    ) : null}
                                                 </div>
                                                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-3 text-sm text-slate-500">
-                                                    <div className="flex items-center gap-1 text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 leading-none">
-                                                        R-{task.admission?.bed?.room || '?'} • B-{task.admission?.bed?.bedId || '-'}
-                                                    </div>
-                                                    <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] sm:text-[11px] ${task.status === 'Completed' ? 'bg-slate-100' : 'bg-slate-100 text-slate-700 font-bold uppercase tracking-tight'}`}>
+                                                    <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] sm:text-[11px] font-bold uppercase tracking-tight ${task.type === 'Medication' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' :
+                                                        task.type === 'Vitals' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                                                            'bg-slate-100 text-slate-700'
+                                                        }`}>
                                                         {task.type}
                                                     </span>
-                                                    <span className="truncate hidden sm:inline text-[11px]">• {task.note}</span>
+                                                    <span className="truncate hidden sm:inline text-[11px] font-medium text-slate-400">• {task.description}</span>
                                                 </div>
                                             </div>
 
-                                            {/* STATUS INDICATOR */}
-                                            {!task.canComplete && task.status !== 'Completed' && (
-                                                <div className="shrink-0 px-2 py-0.5 bg-amber-50 text-amber-600 text-[8px] sm:text-xs font-bold rounded-md border border-amber-100">
-                                                    Pending Entry
-                                                </div>
-                                            )}
+                                            {/* PATIENT INFO */}
+                                            <div className="text-right hidden sm:block">
+                                                <p className="text-[10px] font-bold text-slate-900 mb-0.5">{task.patient?.name}</p>
+                                                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">
+                                                    ADMISSION: {task.admission?.admissionId || 'N/A'}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}

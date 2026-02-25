@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { hrService } from "../services/hr.service";
+import { performanceService } from "../services/performance.service";
 
 export const useHRStats = () => {
   return useQuery({
@@ -41,8 +42,12 @@ export const useHRLeaves = (params?: {
 
 export const useHRAttendance = (params?: {
   date?: string;
+  startDate?: string;
+  endDate?: string;
   page?: number;
   limit?: number;
+  role?: string;
+  status?: string;
 }) => {
   return useQuery({
     queryKey: ["hr", "attendance", params],
@@ -208,6 +213,68 @@ export const useDeleteHRDocument = () => {
     }) => hrService.deleteDocument(params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["hr", "documents"] });
+    },
+  });
+};
+
+// ─── Enterprise Performance Analytics V2 ─────────────────────────────────────
+
+export const usePerformanceDashboardV2 = (params?: { month?: number; year?: number }) => {
+  return useQuery({
+    queryKey: ["performance", "dashboard", params],
+    queryFn: () => performanceService.getDashboard(params),
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
+export const usePerformanceDoctors = (params?: { month?: number; year?: number }) => {
+  return useQuery({
+    queryKey: ["performance", "doctors", params],
+    queryFn: () => performanceService.getDoctors(params),
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
+export const usePerformanceNurses = (params?: { month?: number; year?: number }) => {
+  return useQuery({
+    queryKey: ["performance", "nurses", params],
+    queryFn: () => performanceService.getNurses(params),
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
+export const usePerformanceStaff = (params?: { month?: number; year?: number }) => {
+  return useQuery({
+    queryKey: ["performance", "staff", params],
+    queryFn: () => performanceService.getStaff(params),
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
+export const useEmployeeTrends = (employeeId: string | null) => {
+  return useQuery({
+    queryKey: ["performance", "trends", employeeId],
+    queryFn: () => performanceService.getTrends(employeeId!),
+    enabled: !!employeeId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const usePerformanceWeights = () => {
+  return useQuery({
+    queryKey: ["performance", "weights"],
+    queryFn: () => performanceService.getWeights(),
+  });
+};
+
+export const useUpdatePerformanceWeights = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ role, data }: { role: string; data: any }) =>
+      performanceService.updateWeights(role, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["performance", "weights"] });
+      queryClient.invalidateQueries({ queryKey: ["performance", "dashboard"] });
     },
   });
 };

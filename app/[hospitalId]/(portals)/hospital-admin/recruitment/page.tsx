@@ -4,12 +4,12 @@ import React, { useState } from 'react';
 import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { hrService } from "@/lib/integrations/services/hr.service";
-import { 
-  Briefcase, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  Search, 
+import {
+  Briefcase,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Search,
   Users,
   Eye,
   CheckCircle2,
@@ -29,7 +29,7 @@ export default function AdminRecruitmentPage() {
   });
 
   const reviewMutation = useMutation({
-    mutationFn: ({ id, status, rejectionReason }: { id: string, status: string, rejectionReason?: string }) => 
+    mutationFn: ({ id, status, rejectionReason }: { id: string, status: string, rejectionReason?: string }) =>
       hrService.reviewRecruitmentRequest(id, { status, rejectionReason }),
     onSuccess: (res) => {
       toast.success(res.message || "Request updated successfully");
@@ -42,7 +42,7 @@ export default function AdminRecruitmentPage() {
 
   const recruitments = recruitmentsResponse?.data || [];
 
-  const filteredRecruitments = recruitments.filter((r: any) => 
+  const filteredRecruitments = recruitments.filter((r: any) =>
     r.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     r.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -67,40 +67,48 @@ export default function AdminRecruitmentPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Recruitment Registry</h1>
-          <p className="text-slate-500 text-sm">Review and approve recruitment notices from HR.</p>
+          <h1 className="text-xl font-black text-slate-900 tracking-tight">Recruitment Registry</h1>
+          <p className="text-slate-500 text-xs font-medium">Review and approve recruitment notices from HR.</p>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <div className="flex items-center gap-3 text-amber-600 mb-2">
-            <Clock size={20} />
-            <span className="text-xs font-bold uppercase tracking-wider">Pending Approval</span>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-6 px-6 py-2 bg-slate-50/50 rounded-xl border border-slate-100">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5 text-amber-600 mb-0.5">
+                <Clock size={12} />
+                <span className="text-[8px] font-black uppercase tracking-widest">Pending</span>
+              </div>
+              <p className="text-lg font-black text-slate-900 leading-none">
+                {recruitments.filter((r: any) => r.status === 'pending_approval').length}
+              </p>
+            </div>
+
+            <div className="w-px h-8 bg-slate-200" />
+
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5 text-emerald-600 mb-0.5">
+                <CheckCircle size={12} />
+                <span className="text-[8px] font-black uppercase tracking-widest">Active</span>
+              </div>
+              <p className="text-lg font-black text-slate-900 leading-none">
+                {recruitments.filter((r: any) => r.status === 'open').length}
+              </p>
+            </div>
+
+            <div className="w-px h-8 bg-slate-200" />
+
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5 text-indigo-600 mb-0.5">
+                <Users size={12} />
+                <span className="text-[8px] font-black uppercase tracking-widest">Total</span>
+              </div>
+              <p className="text-lg font-black text-slate-900 leading-none">
+                {recruitments.reduce((acc: number, r: any) => acc + (r.numberOfPositions || 0), 0)}
+              </p>
+            </div>
           </div>
-          <p className="text-3xl font-black text-slate-900">
-            {recruitments.filter((r: any) => r.status === 'pending_approval').length}
-          </p>
-        </div>
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <div className="flex items-center gap-3 text-emerald-600 mb-2">
-            <CheckCircle size={20} />
-            <span className="text-xs font-bold uppercase tracking-wider">Active Vacancies</span>
-          </div>
-          <p className="text-3xl font-black text-slate-900">
-            {recruitments.filter((r: any) => r.status === 'open').length}
-          </p>
-        </div>
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <div className="flex items-center gap-3 text-indigo-600 mb-2">
-            <Users size={20} />
-            <span className="text-xs font-bold uppercase tracking-wider">Total Positions</span>
-          </div>
-          <p className="text-3xl font-black text-slate-900">
-            {recruitments.reduce((acc: number, r: any) => acc + (r.numberOfPositions || 0), 0)}
-          </p>
         </div>
       </div>
 
@@ -143,21 +151,22 @@ export default function AdminRecruitmentPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm font-medium text-slate-700">{r.createdBy?.name}</div>
-                      <div className="text-[10px] text-slate-400">{new Date(r.createdAt).toLocaleDateString()}</div>
+                      <div className="text-[10px] text-slate-400 font-medium">
+                        {new Date(r.createdAt).toLocaleDateString()} • {new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                        r.status === 'pending_approval' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${r.status === 'pending_approval' ? 'bg-amber-50 text-amber-600 border-amber-100' :
                         r.status === 'open' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                        r.status === 'approved' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                        r.status === 'rejected' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                        'bg-slate-50 text-slate-600 border-slate-100'
-                      }`}>
+                          r.status === 'approved' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                            r.status === 'rejected' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                              'bg-slate-50 text-slate-600 border-slate-100'
+                        }`}>
                         {r.status.replace('_', ' ')}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right space-x-2">
-                       {r.status === 'pending_approval' ? (
+                      {r.status === 'pending_approval' ? (
                         <>
                           <button
                             onClick={() => handleReview(r._id, 'approved')}
@@ -174,9 +183,9 @@ export default function AdminRecruitmentPage() {
                             <XIcon size={18} />
                           </button>
                         </>
-                       ) : (
-                         <div className="text-[10px] font-bold text-slate-400 italic">No actions available</div>
-                       )}
+                      ) : (
+                        <div className="text-[10px] font-bold text-slate-400 italic">No actions available</div>
+                      )}
                     </td>
                   </tr>
                 ))

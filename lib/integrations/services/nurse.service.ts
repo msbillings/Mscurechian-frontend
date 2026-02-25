@@ -23,8 +23,8 @@ export interface NurseTask {
   patientName: string;
   taskType: string;
   description: string;
-  priority: "low" | "medium" | "high";
-  status: "pending" | "in-progress" | "completed";
+  priority: "Low" | "Medium" | "High" | "Critical";
+  status: "Pending" | "In Progress" | "Completed" | "Cancelled";
   dueTime?: string;
   assignedBy?: string;
   notes?: string;
@@ -44,6 +44,10 @@ export interface PaginatedResponse<T> {
   currentPage: number;
   totalPages: number;
   total: number;
+}
+
+export interface PaginatedTaskResponse<T> extends PaginatedResponse<T> {
+  isHistorical?: boolean;
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────
@@ -100,34 +104,37 @@ export const NurseService = {
 
   // ─── Tasks ───────────────────────────────────────────────────────────────────
 
-  /** GET /nurse/tasks?page=&limit=&status=&priority= */
+  /** GET /nurse/tasks?page=&limit=&status=&priority=&date= */
   getTasks: async (
     page = 1,
     limit = 20,
-    filters?: { status?: string; priority?: string },
-  ): Promise<PaginatedResponse<NurseTask>> => {
+    filters?: { status?: string; priority?: string; date?: string },
+  ): Promise<PaginatedTaskResponse<NurseTask>> => {
     const query = new URLSearchParams({
       page: String(page),
       limit: String(limit),
     });
     if (filters?.status) query.append("status", filters.status);
     if (filters?.priority) query.append("priority", filters.priority);
+    if (filters?.date) query.append("date", filters.date);
 
     const response: any = await apiClient(
       `${NURSE_ENDPOINTS.TASKS.BASE}?${query.toString()}`,
     );
     return {
+      success: response.success,
       data: response.data || response.tasks || [],
       currentPage: response.currentPage || page,
       totalPages: response.totalPages || 1,
       total: response.total || 0,
-    };
+      isHistorical: response.isHistorical,
+    } as any;
   },
 
   /** PUT /nurse/tasks/:id  – update task status */
   updateTaskStatus: async (
     id: string,
-    status: "pending" | "in-progress" | "completed",
+    status: "Pending" | "In Progress" | "Completed" | "Cancelled",
     notes?: string,
   ): Promise<{ message: string; task?: NurseTask }> => {
     return apiClient(NURSE_ENDPOINTS.TASKS.UPDATE_STATUS(id), {

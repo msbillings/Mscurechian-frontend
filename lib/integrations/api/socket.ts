@@ -1,11 +1,15 @@
 import { API_CONFIG } from '../config/api-config';
 
 let socket: any = null;
+let socketPromise: Promise<any> | null = null;
 let connectionAttempts = 0;
 const MAX_RETRIES = 10;
 
-export const getSocket = async (token?: string): Promise<any> => {
-  if (!socket) {
+export const getSocket = (token?: string): Promise<any> => {
+  if (socket) return Promise.resolve(socket);
+  if (socketPromise) return socketPromise;
+
+  socketPromise = (async () => {
     try {
       // @ts-ignore
       const { io } = await import('socket.io-client');
@@ -13,11 +17,11 @@ export const getSocket = async (token?: string): Promise<any> => {
 
       console.log('🔌 Initializing Socket.IO connection to:', baseUrl);
 
-      socket = io(baseUrl, {
+      const socketInstance = io(baseUrl, {
         auth: {
           token: token || (typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : null),
         },
-        transports: ['websocket', 'polling'], // Allow fallback to polling
+        transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 1000,
@@ -26,12 +30,12 @@ export const getSocket = async (token?: string): Promise<any> => {
         autoConnect: true,
       });
 
-      socket.on('connect', () => {
+      socketInstance.on('connect', () => {
         connectionAttempts = 0;
-        console.log('📡 ✅ Connected to WebSocket server (ID:', socket.id + ')');
+        console.log('📡 ✅ Connected to WebSocket server (ID:', socketInstance.id + ')');
       });
 
-      socket.on('connect_error', (err: any) => {
+      socketInstance.on('connect_error', (err: any) => {
         connectionAttempts++;
         console.warn(`📡 ⚠️ Connection attempt ${connectionAttempts} failed:`, err.message);
 
@@ -40,24 +44,28 @@ export const getSocket = async (token?: string): Promise<any> => {
         }
       });
 
-      socket.on('disconnect', (reason: string) => {
+      socketInstance.on('disconnect', (reason: string) => {
         console.log('📡 Disconnected from WebSocket server. Reason:', reason);
       });
 
-      socket.on('error', (err: any) => {
+      socketInstance.on('error', (err: any) => {
         console.error('📡 WebSocket error:', err);
       });
 
-      socket.on('reconnect', (attemptNumber: number) => {
+      socketInstance.on('reconnect', (attemptNumber: number) => {
         console.log(`📡 🔄 Reconnected after ${attemptNumber} attempts`);
       });
 
+      socket = socketInstance;
+      return socket;
     } catch (error) {
       console.error('📡 Failed to initialize Socket.IO:', error);
+      socketPromise = null;
       return null;
     }
-  }
-  return socket;
+  })();
+
+  return socketPromise;
 };
 
 export const disconnectSocket = () => {

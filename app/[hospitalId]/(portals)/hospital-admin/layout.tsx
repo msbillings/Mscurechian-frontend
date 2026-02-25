@@ -140,6 +140,7 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
   const { getPath } = useTenantLink(); // ✅ MULTI-TENANCY
 
   const hasInitialized = useRef(false);
+  const isInitializing = useRef(false);
 
   /** 🔐 Init auth once */
   useEffect(() => {
@@ -181,82 +182,90 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
     if (!isAuthenticated) return;
 
     const initSocket = async () => {
-      const socket = await getSocket();
-      if (!socket) return;
+      if (isInitializing.current) return;
+      isInitializing.current = true;
+      try {
+        const socket = await getSocket();
+        if (!socket) return;
 
-      const rawUser = useAuthStore.getState().user as any;
-      const uId = userId || rawUser?.id || rawUser?._id;
-      const hId = rawUser?.hospital || rawUser?.hospitalId;
+        const rawUser = useAuthStore.getState().user as any;
+        const uId = userId || rawUser?.id || rawUser?._id;
+        const hId = rawUser?.hospital || rawUser?.hospitalId;
 
-      joinSocketRoom({
-        userId: uId,
-        role: userRole || "hospital-admin",
-        hospitalId: hId,
-      });
-
-      socket.on("leave:new", (data: any) => {
-        const requester =
-          data.leave?.requester?.name ||
-          data.leave?.applicant?.name ||
-          "Staff Member";
-
-        toast(`New Leave Request From ${requester}`, {
-          icon: "📅",
-          duration: 6000,
+        joinSocketRoom({
+          userId: uId,
+          role: userRole || "hospital-admin",
+          hospitalId: hId,
         });
 
-        queryClient.invalidateQueries({ queryKey: ["hospital-admin"] });
-        queryClient.invalidateQueries({ queryKey: ["hospital-admin", "leaves"] });
-      });
-      
-      socket.on("new_recruitment_request", (data: any) => {
-        toast(data.message || "New Recruitment Request", {
-          icon: "👔",
-          duration: 6000,
-        });
+        socket.off("leave:new").on("leave:new", (data: any) => {
+          const requester =
+            data.leave?.requester?.name ||
+            data.leave?.applicant?.name ||
+            "Staff Member";
 
-        queryClient.invalidateQueries({ queryKey: ["hospital-admin", "recruitment"] });
-      });
-
-      socket.on("new_incident", (data: any) => {
-        toast(`Governance Alert: ${data.message}`, {
-          icon: "⚠️",
-          duration: 7000,
-        });
-
-        queryClient.invalidateQueries({ queryKey: ["admin-incidents"] });
-        queryClient.invalidateQueries({ queryKey: ["hospital-admin", "stats"] });
-      });
-
-      socket.on("incident_update", () => {
-        queryClient.invalidateQueries({ queryKey: ["admin-incidents"] });
-      });
-
-      socket.on("notification:new", (notif: any) => {
-        if (notif.type === "leave_request") {
-          queryClient.invalidateQueries({ queryKey: ["hospital-admin", "leaves"] });
-        }
-        if (notif.type === "discharge_audit") {
-          toast(`New Discharge Audit Notification: ${notif.message}`, {
-            icon: "📋",
-            duration: 5000,
+          toast(`New Leave Request From ${requester}`, {
+            icon: "📅",
+            duration: 6000,
           });
-          queryClient.invalidateQueries({ queryKey: ["hospital-admin", "discharge"] });
-        }
-      });
 
-      // 🚀 Performance Optimization: Prefetch critical section data
-      queryClient.prefetchQuery({
-        queryKey: ['hospital-admin', 'dashboard', 'today', '', '', 'all'],
-        queryFn: () => hospitalAdminService.getDashboard({ range: 'today' }),
-        staleTime: 5000,
-      });
+          queryClient.invalidateQueries({ queryKey: ["hospital-admin"] });
+          queryClient.invalidateQueries({ queryKey: ["hospital-admin", "leaves"] });
+        });
 
-      queryClient.prefetchQuery({
-        queryKey: ['hospital-admin', 'doctors-list'],
-        queryFn: () => hospitalAdminService.getDoctors(),
-        staleTime: 5 * 60 * 1000,
-      });
+        socket.off("new_recruitment_request").on("new_recruitment_request", (data: any) => {
+          toast(data.message || "New Recruitment Request", {
+            icon: "👔",
+            duration: 6000,
+          });
+
+          queryClient.invalidateQueries({ queryKey: ["hospital-admin", "recruitment"] });
+        });
+
+        socket.off("new_incident").on("new_incident", (data: any) => {
+          toast(`Governance Alert: ${data.message}`, {
+            icon: "⚠️",
+            duration: 7000,
+          });
+
+          queryClient.invalidateQueries({ queryKey: ["admin-incidents"] });
+          queryClient.invalidateQueries({ queryKey: ["hospital-admin", "stats"] });
+        });
+
+        socket.off("incident_update").on("incident_update", () => {
+          queryClient.invalidateQueries({ queryKey: ["admin-incidents"] });
+        });
+
+        socket.off("notification:new").on("notification:new", (notif: any) => {
+          if (notif.type === "leave_request") {
+            queryClient.invalidateQueries({ queryKey: ["hospital-admin", "leaves"] });
+          }
+          if (notif.type === "discharge_audit") {
+            toast(`New Discharge Audit Notification: ${notif.message}`, {
+              icon: "📋",
+              duration: 5000,
+            });
+            queryClient.invalidateQueries({ queryKey: ["hospital-admin", "discharge"] });
+          }
+        });
+
+        // 🚀 Performance Optimization: Prefetch critical section data
+        queryClient.prefetchQuery({
+          queryKey: ['hospital-admin', 'dashboard', 'today', '', '', 'all'],
+          queryFn: () => hospitalAdminService.getDashboard({ range: 'today' }),
+          staleTime: 5000,
+        });
+
+        queryClient.prefetchQuery({
+          queryKey: ['hospital-admin', 'doctors-list'],
+          queryFn: () => hospitalAdminService.getDoctors(),
+          staleTime: 5 * 60 * 1000,
+        });
+      } catch (err) {
+        console.error("Socket initialization error:", err);
+      } finally {
+        isInitializing.current = false;
+      }
     };
 
     initSocket();
@@ -265,6 +274,7 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
       getSocket().then(socket => {
         if (!socket) return;
         socket.off("leave:new");
+        socket.off("new_recruitment_request");
         socket.off("new_incident");
         socket.off("incident_update");
         socket.off("notification:new");

@@ -94,8 +94,10 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
                         const hasSubItems = item.subItems && item.subItems.length > 0;
                         const isExpanded = expandedMenus[item.label] || item.subItems?.some(s => currentPath === s.path);
                         const isActive = item.path
-                            ? currentPath === item.path
-                            : item.subItems?.some((s) => currentPath === s.path);
+                            ? (item.path.split('/').length <= 2
+                                ? currentPath.endsWith(item.path)
+                                : currentPath.endsWith(item.path) || currentPath.includes(item.path + '/'))
+                            : item.subItems?.some((s) => currentPath.endsWith(s.path));
                         const IconComponent = item.icon;
 
                         return (

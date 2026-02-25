@@ -130,7 +130,11 @@ function Sidebar({
                         <nav className="space-y-1 px-3">
                             {items.map((item) => {
                                 const tenantHref = getPath(item.href);
-                                const isActive = pathname === item.href || pathname === tenantHref || pathname.includes(item.href);
+                                // For dashboard roots, we want exact match only
+                                const isRoot = item.href.endsWith('/nurse') || item.href === '/admin' || item.href === '/staff';
+                                const isActive = isRoot
+                                    ? pathname === tenantHref
+                                    : pathname === tenantHref || pathname.startsWith(tenantHref + '/');
                                 return (
                                     <Link
                                         key={item.href}

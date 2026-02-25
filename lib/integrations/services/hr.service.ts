@@ -111,6 +111,8 @@ export const hrService = {
 
   getAttendance: (params?: {
     date?: string;
+    startDate?: string;
+    endDate?: string;
     role?: string;
     status?: string;
     page?: number;
@@ -118,6 +120,8 @@ export const hrService = {
   }) => {
     const url = new URL(HR_ENDPOINTS.ATTENDANCE, window.location.origin);
     if (params?.date) url.searchParams.set("date", params.date);
+    if (params?.startDate) url.searchParams.set("startDate", params.startDate);
+    if (params?.endDate) url.searchParams.set("endDate", params.endDate);
     if (params?.role) url.searchParams.set("role", params.role);
     if (params?.status) url.searchParams.set("status", params.status);
     if (params?.page) url.searchParams.set("page", params.page.toString());

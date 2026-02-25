@@ -451,6 +451,17 @@ export const HR_ENDPOINTS = {
   TRAINING: "/hr/training",
 };
 
+// ─── Enterprise Performance Analytics V2 ─────────────────────────────────────
+export const PERFORMANCE_V2_ENDPOINTS = {
+  DASHBOARD: "/performance/dashboard",
+  DOCTORS: "/performance/doctors",
+  NURSES: "/performance/nurses",
+  STAFF: "/performance/staff",
+  TRENDS: (employeeId: string) => `/performance/trends/${employeeId}`,
+  WEIGHTS: "/performance/weights",
+  UPDATE_WEIGHTS: (role: string) => `/performance/weights/${role}`,
+};
+
 export const RECRUITMENT_ENDPOINTS = {
   BASE: "/recruitment",
   REQUEST: "/recruitment/request",
