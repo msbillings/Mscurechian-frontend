@@ -30,6 +30,34 @@ export default function NurseMedicineReturnPage() {
     const [selectedAdmission, setSelectedAdmission] = useState<any | null>(null);
     const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
 
+    // Socket listeners for real-time updates
+    useState(() => {
+        if (typeof window !== 'undefined') {
+            const setupSocket = async () => {
+                try {
+                    const { subscribeToSocket } = await import('@/lib/integrations/api/socket');
+                    const handleRefresh = (data: any) => {
+                        console.log("📡 Socket Refresh Event:", data);
+                        queryClient.invalidateQueries({ queryKey: ["pharmacy", "ipd-issuance"] });
+                        queryClient.invalidateQueries({ queryKey: ["pharmacy", "medicine-returns"] });
+                        queryClient.invalidateQueries({ queryKey: ["ipd", "clinical-history"] });
+                        queryClient.invalidateQueries({ queryKey: ["ipd", "nurse-active-admissions"] });
+                    };
+
+                    subscribeToSocket('', 'medicine_return_requested', handleRefresh);
+                    subscribeToSocket('', 'medicine_return_approved', handleRefresh);
+                    subscribeToSocket('', 'medicine_return_rejected', handleRefresh);
+                    subscribeToSocket('', 'medication_administered', handleRefresh);
+                    subscribeToSocket('', 'medication_undo', handleRefresh);
+                } catch (e) {
+                    console.warn("Socket setup failed in Return Page:", e);
+                }
+            };
+            setupSocket();
+        }
+        return null;
+    });
+
     // Fetch active admissions
     const { data: admissions = [], isLoading: loadingAdmissions, refetch: refetchAdmissions } = useQuery<any[]>({
         queryKey: ["ipd", "nurse-active-admissions", user?.id],
@@ -89,28 +117,20 @@ export default function NurseMedicineReturnPage() {
 
     const enrichedIssuances = useMemo(() => {
         if (!issuances.length) return [];
+        const adminRecords = clinicalHistory?.meds || [];
 
-        // Use two maps for robust matching
-        const administeredById: Record<string, number> = {};
-        const administeredByName: Record<string, number> = {};
+        // Token matching helper parallel to backend logic
+        const getTokens = (str: string) => {
+            if (!str) return [];
+            return str
+                .toLowerCase()
+                .replace(/\([^)]*\)/g, " ")
+                .replace(/[^\w\s]/g, " ")
+                .split(/\s+/)
+                .filter((t: string) => t.length > 1);
+        };
 
-        if (clinicalHistory?.meds) {
-            clinicalHistory.meds.forEach((m: any) => {
-                const mid = (m.medicineId?._id || m.medicineId)?.toString();
-                const drugName = (m.drugName || "").toLowerCase().trim();
-
-                // If mid looks like an ObjectId (24 chars), use it as ID
-                if (mid && mid.length === 24 && /^[0-9a-fA-F]+$/.test(mid)) {
-                    administeredById[mid] = (administeredById[mid] || 0) + 1;
-                } else {
-                    // Otherwise, treat as name-based matching
-                    const finalName = (mid || drugName).toLowerCase().trim();
-                    if (finalName) {
-                        administeredByName[finalName] = (administeredByName[finalName] || 0) + 1;
-                    }
-                }
-            });
-        }
+        const consumedTracker = new Map<string, boolean>();
 
         return issuances.map((iss) => {
             const newItems = (iss.items ?? []).map((item: any, idx: number) => {
@@ -119,41 +139,37 @@ export default function NurseMedicineReturnPage() {
                 let leftQty = issued - returned;
                 let consumedCount = 0;
 
-                if (leftQty > 0) {
-                    const productId = (item.product?._id || item.product)?.toString();
-                    const productGeneric = item.product?.generic?.toLowerCase() || "";
-                    const productBrand = item.product?.brand?.toLowerCase() || "";
-                    const productNameLow = item.productName?.toLowerCase() || "";
+                const productId = (item.product?._id || item.product)?.toString();
+                const productName = item.productName || "";
+                const medTokens = getTokens(productName);
 
-                    // 1. Primary Match: medicineId (Exact match)
-                    if (productId && administeredById[productId] > 0) {
-                        const toDeduct = Math.min(administeredById[productId], leftQty);
-                        leftQty -= toDeduct;
-                        consumedCount += toDeduct;
-                        administeredById[productId] -= toDeduct;
+                adminRecords.forEach((rec: any) => {
+                    const recId = rec._id?.toString() || JSON.stringify(rec);
+                    if (consumedTracker.has(recId)) return;
+
+                    const recMedId = (rec.medicineId?._id || rec.medicineId)?.toString();
+
+                    let isMatch = false;
+                    // 1. Exact ID match
+                    if (productId && recMedId && productId === recMedId) {
+                        isMatch = true;
                     }
-
-                    // 2. Secondary Match: Name-based Fuzzy matching (if still left qty)
-                    if (leftQty > 0) {
-                        for (const drugName in administeredByName) {
-                            if (administeredByName[drugName] <= 0) continue;
-
-                            const drugBase = drugName.split(" ")[0];
-                            const isMatch =
-                                productNameLow.includes(drugBase) ||
-                                productGeneric.includes(drugBase) ||
-                                productBrand.includes(drugBase) ||
-                                drugName.includes(productNameLow.split(" ")[0]);
-
-                            if (isMatch) {
-                                const toDeduct = Math.min(administeredByName[drugName], leftQty);
-                                leftQty -= toDeduct;
-                                consumedCount += toDeduct;
-                                administeredByName[drugName] -= toDeduct;
-                            }
+                    // 2. Advanced Token Match
+                    else if (medTokens.length > 0) {
+                        const recTokens = getTokens(rec.drugName || "");
+                        const matches = medTokens.filter((mt: string) => recTokens.includes(mt)).length;
+                        // ≥ 80% tokens matched either way means it's the same med
+                        if (matches / medTokens.length >= 0.8 || (recTokens.length > 0 && matches / recTokens.length >= 0.8)) {
+                            isMatch = true;
                         }
                     }
-                }
+
+                    if (isMatch && leftQty > 0) {
+                        consumedCount++;
+                        leftQty--;
+                        consumedTracker.set(recId, true);
+                    }
+                });
 
                 return { ...item, _rawIdx: idx, _leftQty: leftQty, _consumedQty: consumedCount };
             });
@@ -220,35 +236,23 @@ export default function NurseMedicineReturnPage() {
             return;
         }
 
-        // We must submit them grouped by issuanceId because the backend endpoint expects issuanceId per request
-        const groupedByIssuance: Record<string, any[]> = {};
-        itemsToReturn.forEach((i: any) => {
-            if (!groupedByIssuance[i.issuanceId]) groupedByIssuance[i.issuanceId] = [];
-
-            groupedByIssuance[i.issuanceId].push({
-                productId: i.productId || i.product?._id || i.product,
-                productName: i.productName,
-                batchId: i.batchId || i.batch?._id || i.batch,
-                returnQty: i.returnQty
-            });
-        });
-
         setSubmitting(true);
         try {
-            // Because backend expects 1 issuanceId per submitReturn... run conditionally in parallel
-            const promises = Object.keys(groupedByIssuance).map(issId => {
-                return ipdIssuanceService.submitReturn({
-                    issuanceId: issId,
-                    items: groupedByIssuance[issId].map((i: any) => ({
-                        productId: i.productId,
-                        returnedQty: i.returnQty,
-                        reason: globalReturnReason || "Patient return",
-                    })),
-                    notes: globalReturnReason || "Submitted by nurse",
-                });
-            });
-            await Promise.all(promises);
+            // Because backend now accepts multiple issuances per return request, submit as a single payload
+            const payloadItems = itemsToReturn.map((i: any) => ({
+                issuanceId: i.issuanceId,
+                productId: i.productId || i.product?._id || i.product,
+                batchId: i.batchId || i.batch?._id || i.batch,
+                returnedQty: i.returnQty,
+                reason: globalReturnReason || "Patient return",
+            }));
 
+            await ipdIssuanceService.submitReturn({
+                admissionId: selectedAdmission.admissionId,
+                items: payloadItems,
+                notes: globalReturnReason || "Submitted by nurse",
+            });
+            "don"
             toast.success("Return requests submitted successfully!");
             setIsReturnMode(false);
             setReturnQtys({});
@@ -468,8 +472,8 @@ export default function NurseMedicineReturnPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${adm.pharmacyClearanceStatus === "CLEARED" ? "bg-green-100 text-green-700" :
-                                                        adm.pharmacyClearanceStatus === "PENDING" ? "bg-amber-100 text-amber-700" :
-                                                            "bg-gray-100 text-gray-500"
+                                                    adm.pharmacyClearanceStatus === "PENDING" ? "bg-amber-100 text-amber-700" :
+                                                        "bg-gray-100 text-gray-500"
                                                     }`}>
                                                     {adm.pharmacyClearanceStatus === "CLEARED" ? "Cleared" :
                                                         adm.pharmacyClearanceStatus === "PENDING" ? "Pending" :
@@ -653,24 +657,31 @@ export default function NurseMedicineReturnPage() {
                                             </h4>
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                                {returnableItems.map((item: any) => {
+                                                {allItems.filter((i: any) => ((i.issuedQty ?? i.qty ?? 0) - (i.returnedQty ?? 0)) > 0).map((item: any) => {
                                                     const max = item._leftQty;
                                                     const key = `${item.issuanceId}_${item._rawIdx}`;
+                                                    const isConsumed = max <= 0;
 
                                                     return (
-                                                        <div key={key} className="flex items-center gap-3 bg-white dark:bg-gray-800 p-3 rounded-xl border border-orange-100 dark:border-gray-700 shadow-sm">
+                                                        <div key={key} className={`flex items-center gap-3 bg-white dark:bg-gray-800 p-3 rounded-xl border ${isConsumed ? 'border-gray-200 dark:border-gray-700 opacity-60' : 'border-orange-100 dark:border-gray-600'} shadow-sm`}>
                                                             <div className="flex-1 min-w-0">
-                                                                <p className="text-xs font-bold text-gray-700 dark:text-gray-200 truncate">{item.productName}</p>
+                                                                <p className={`text-xs font-bold ${isConsumed ? 'text-gray-400' : 'text-gray-700 dark:text-gray-200'} truncate`}>{item.productName}</p>
                                                                 <p className="text-[10px] text-gray-400 mt-0.5" suppressHydrationWarning>{new Date(item.issuedAt).toLocaleTimeString()}</p>
                                                             </div>
                                                             <div className="flex items-center gap-2">
-                                                                <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">Max: {max}</span>
-                                                                <input
-                                                                    type="number" min={0} max={max}
-                                                                    value={returnQtys[key] ?? 0}
-                                                                    onChange={(e) => handleReturnQtyChange(key, Number(e.target.value))}
-                                                                    className="w-16 bg-white dark:bg-gray-900 border border-orange-200 dark:border-orange-800 rounded-lg px-2 py-1 text-sm font-bold text-center outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                                                                />
+                                                                {isConsumed ? (
+                                                                    <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded border border-gray-200">Fully Consumed</span>
+                                                                ) : (
+                                                                    <>
+                                                                        <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">Max: {max}</span>
+                                                                        <input
+                                                                            type="number" min={0} max={max}
+                                                                            value={returnQtys[key] ?? 0}
+                                                                            onChange={(e) => handleReturnQtyChange(key, Number(e.target.value))}
+                                                                            className="w-16 bg-white dark:bg-gray-900 border border-orange-200 dark:border-orange-800 rounded-lg px-2 py-1 text-sm font-bold text-center outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                                                                        />
+                                                                    </>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     )

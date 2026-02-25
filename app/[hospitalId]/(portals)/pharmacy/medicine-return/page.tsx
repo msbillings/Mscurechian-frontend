@@ -25,6 +25,30 @@ export default function PharmaMedicineReturnPage() {
         refetchInterval: 10000,
     });
 
+    // Real-time socket updates
+    useState(() => {
+        if (typeof window !== 'undefined') {
+            const setupSocket = async () => {
+                try {
+                    const { subscribeToSocket } = await import('@/lib/integrations/api/socket');
+                    const handleRefresh = () => {
+                        console.log("📡 Pharma Socket Refresh Event");
+                        queryClient.invalidateQueries({ queryKey: ["pharmacy", "medicine-returns"] });
+                        queryClient.invalidateQueries({ queryKey: ["pharmacy", "ipd-issuance"] });
+                    };
+
+                    subscribeToSocket('', 'medicine_return_requested', handleRefresh);
+                    subscribeToSocket('', 'medicine_return_approved', handleRefresh);
+                    subscribeToSocket('', 'medicine_return_rejected', handleRefresh);
+                } catch (e) {
+                    console.warn("Socket setup failed in Pharma Return Page:", e);
+                }
+            };
+            setupSocket();
+        }
+        return null;
+    });
+
     // Consolidate Returns by Admission
     const consolidatedReturns = useMemo(() => {
         const groups: Record<string, any> = {};

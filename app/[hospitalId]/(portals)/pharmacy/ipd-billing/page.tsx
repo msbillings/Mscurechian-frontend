@@ -61,6 +61,7 @@ const IPDBillingPage = () => {
     const [selectedProduct, setSelectedProduct] = useState<any>(null);
     const [quantity, setQuantity] = useState(1);
     const [price, setPrice] = useState(0);
+    const [frequency, setFrequency] = useState("1-1-1");
 
     useEffect(() => {
         const fetchData = async () => {
@@ -68,12 +69,23 @@ const IPDBillingPage = () => {
                 setLoading(true);
                 const p_admissionId = orderId ? null : admissionId; // if we have order we already process it, but if no order, get by admission
 
-                // Get both order logic and admission logic running conditionally
                 const [settingsRes, orderRes, admissionRes, issuancesRes] = await Promise.all([
-                    hospitalAdminService.getHospitalMetadata({ skipCache: true }),
-                    orderId ? PharmacyBillingService.getPharmacyOrder(orderId) : Promise.resolve(null),
-                    p_admissionId ? ipdService.getAdmissionDetails(p_admissionId) : Promise.resolve(null),
-                    admissionId ? ipdIssuanceService.getIssuancesByAdmission(admissionId) : Promise.resolve([])
+                    hospitalAdminService.getHospitalMetadata({ skipCache: true }).catch(err => {
+                        console.error('Failed to load settings', err);
+                        return { success: false, data: null };
+                    }),
+                    orderId ? PharmacyBillingService.getPharmacyOrder(orderId).catch(err => {
+                        console.error('Failed to load order', err);
+                        return null;
+                    }) : Promise.resolve(null),
+                    p_admissionId ? ipdService.getAdmissionDetails(p_admissionId).catch(err => {
+                        console.error('Failed to load admission details', err);
+                        return null;
+                    }) : Promise.resolve(null),
+                    admissionId ? ipdIssuanceService.getIssuancesByAdmission(admissionId).catch(err => {
+                        console.error('Failed to load previous issuances', err);
+                        return [];
+                    }) : Promise.resolve([])
                 ]);
 
                 if (settingsRes.success) {
@@ -216,6 +228,7 @@ const IPDBillingPage = () => {
             productName: `${selectedProduct.brandName} ${selectedProduct.strength}`,
             qty: quantity,
             unitRate: price,
+            frequency: frequency,
             total: quantity * price
         };
 
@@ -233,6 +246,7 @@ const IPDBillingPage = () => {
         setSearchTerm("");
         setQuantity(1);
         setPrice(0);
+        setFrequency("1-1-1");
     };
 
     const removeItem = (index: number) => {
@@ -276,6 +290,7 @@ const IPDBillingPage = () => {
                     productName: item.productName,
                     issuedQty: item.qty,
                     unitRate: item.unitRate,
+                    frequency: item.frequency,
                     totalAmount: item.total
                 })),
                 // ✅ Nurse assignment — drives the return portal filtering
@@ -380,6 +395,7 @@ const IPDBillingPage = () => {
                                             onClick={() => {
                                                 setSearchTerm(med.name.split(' (')[0]);
                                                 setQuantity(Number(med.quantity) || 1);
+                                                if (med.frequency) setFrequency(med.frequency);
                                                 setProcessingMedIndex(i);
                                             }}
                                             className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${med.processed ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-primary-theme text-white hover:bg-primary-theme/90'}`}
@@ -446,7 +462,7 @@ const IPDBillingPage = () => {
                             <h3 className="text-sm font-black text-slate-900 uppercase">Add Medicine</h3>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                             <div className="md:col-span-2 relative">
                                 <input
                                     type="text"
@@ -483,6 +499,13 @@ const IPDBillingPage = () => {
                                 onChange={(e) => setQuantity(Number(e.target.value))}
                                 className="px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-primary-theme"
                             />
+                            <input
+                                type="text"
+                                placeholder="Frequency (e.g. 1-1-1)"
+                                value={frequency}
+                                onChange={(e) => setFrequency(e.target.value)}
+                                className="px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-primary-theme"
+                            />
                             <button
                                 onClick={handleAddItem}
                                 className="px-5 py-4 bg-slate-900 text-white rounded-2xl text-xs font-black uppercase hover:bg-slate-800 transition-all"
@@ -498,6 +521,7 @@ const IPDBillingPage = () => {
                             <thead className="bg-slate-50 border-b border-slate-100">
                                 <tr>
                                     <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Item Name</th>
+                                    <th className="px-8 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Freq</th>
                                     <th className="px-8 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Qty</th>
                                     <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Rate</th>
                                     <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Total</th>
@@ -508,6 +532,7 @@ const IPDBillingPage = () => {
                                 {cart.map((item, i) => (
                                     <tr key={i} className="hover:bg-slate-50/50">
                                         <td className="px-8 py-5 text-xs font-black text-slate-700 uppercase">{item.productName}</td>
+                                        <td className="px-8 py-5 text-center text-xs font-black text-primary-theme leading-none">{item.frequency || "1-1-1"}</td>
                                         <td className="px-8 py-5 text-center text-xs font-black text-slate-700">{item.qty}</td>
                                         <td className="px-8 py-5 text-right text-xs font-black text-slate-700">₹{Math.round(item.unitRate || 0).toLocaleString()}</td>
                                         <td className="px-8 py-5 text-right text-xs font-black text-primary-theme">₹{Math.round(item.total || 0).toLocaleString()}</td>
