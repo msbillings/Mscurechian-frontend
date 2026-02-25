@@ -150,6 +150,26 @@ const HospitalDetailsPage = () => {
     );
   }
 
+  if (!hospital) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center border border-rose-100 mb-2">
+          <Building2 size={32} className="text-rose-400" />
+        </div>
+        <h3 className="text-lg font-black text-slate-900 tracking-tight">Institutional Link Offline</h3>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center max-w-[280px]">
+          Unable to establish secure connection with facility parameters. Please verify network status.
+        </p>
+        <button
+          onClick={fetchHospitalData}
+          className="mt-4 px-6 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all flex items-center gap-2"
+        >
+          <RefreshCw size={14} /> Retry Handshake
+        </button>
+      </div>
+    );
+  }
+
   const isEdit = mode === 'edit';
 
   return (
@@ -420,7 +440,7 @@ const HospitalDetailsPage = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
                 <div className="space-y-1">
-                  <p className="text-5xl sm:text-6xl font-black">{hospital.numberOfBeds || 0}</p>
+                  <p className="text-5xl sm:text-6xl font-black">{hospital?.numberOfBeds || 0}</p>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Inpatient Bed Matrix</p>
                 </div>
 
@@ -438,7 +458,7 @@ const HospitalDetailsPage = () => {
                   <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-[9px] font-bold text-emerald-400/80 uppercase tracking-wider">
-                      {hospital.availableBeds || 0} Nodes Available
+                      {hospital?.availableBeds || 0} Nodes Available
                     </span>
                   </div>
                 </div>
@@ -460,21 +480,21 @@ const HospitalDetailsPage = () => {
                 <Layers size={14} className="text-purple-500" />
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Room Nodes</span>
               </div>
-              <p className="text-2xl font-black text-slate-900">{hospital.roomCount || 0}</p>
+              <p className="text-2xl font-black text-slate-900">{hospital?.roomCount || 0}</p>
             </div>
             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
               <div className="flex items-center gap-2 mb-3">
                 <Shield size={14} className="text-amber-500" />
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Divisions</span>
               </div>
-              <p className="text-2xl font-black text-slate-900">{hospital.departmentCount || 0}</p>
+              <p className="text-2xl font-black text-slate-900">{hospital?.departmentCount || 0}</p>
             </div>
             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
               <div className="flex items-center gap-2 mb-3">
                 <Stethoscope size={14} className="text-emerald-500" />
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Medical Staff</span>
               </div>
-              <p className="text-2xl font-black text-slate-900">{hospital.medicalStaffCount || hospital.numberOfDoctors || 0}</p>
+              <p className="text-2xl font-black text-slate-900">{hospital?.medicalStaffCount || hospital?.numberOfDoctors || 0}</p>
             </div>
           </div>
 
@@ -488,13 +508,13 @@ const HospitalDetailsPage = () => {
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold text-emerald-100 uppercase tracking-wider">Auth Status</span>
                 <span className="text-[10px] font-black bg-white/20 px-2 py-0.5 rounded uppercase backdrop-blur-md">
-                  {hospital.status || 'Active'}
+                  {hospital?.status || 'Active'}
                 </span>
               </div>
               <div className="h-px bg-white/10" />
               <div>
                 <span className="text-[10px] font-bold text-emerald-100 uppercase tracking-wider block mb-1">Registration Identifier</span>
-                <span className="text-[10px] font-black font-mono tracking-tighter break-all opacity-80">{hospital._id}</span>
+                <span className="text-[10px] font-black font-mono tracking-tighter break-all opacity-80">{hospital?._id}</span>
               </div>
             </div>
 
