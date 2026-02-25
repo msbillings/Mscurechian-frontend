@@ -8,7 +8,6 @@ import type {
   Helpdesk,
   Pharma,
   Labs,
-  AuditLog,
   SupportTicket,
   CreateAdminRequest,
   CreateDoctorRequest,
@@ -43,9 +42,6 @@ export const adminService = {
     const qs = query.toString();
     return apiClient<any>(`${ADMIN_ENDPOINTS.ANALYTICS}${qs ? `?${qs}` : ""}`);
   },
-
-  /** GET /super-admin/audits */
-  getAuditsClient: () => apiClient<AuditLog[]>(ADMIN_ENDPOINTS.AUDITS),
 
   // ─── Profile ─────────────────────────────────────────────────────────────────
 

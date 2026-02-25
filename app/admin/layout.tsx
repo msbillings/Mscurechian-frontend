@@ -6,10 +6,8 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from '@/stores/authStore';
 import { Settings, LogOut, X, User, ChevronDown, ChevronRight } from "lucide-react";
 import LogoutModal from "@/components/auth/LogoutModal";
-import { ThemeToggle } from '@/components/ThemeToggle';
 import NotificationCenter from "@/components/navbar/NotificationCenter";
 import AdminSupportFloatingBox from "@/components/admin/AdminSupportFloatingBox";
-import HospitalSwitcher from "@/components/admin/HospitalSwitcher";
 
 interface MenuItem {
     icon: string;
@@ -48,7 +46,6 @@ const adminMenu: MenuItem[] = [
     },
 
     { icon: "/assets/doctor.png", label: "Hospital Admins", path: "/admin/hospital-admins" },
-    { icon: "/assets/reports.png", label: "Audit Logs", path: "/admin/audits" },
     { icon: "/assets/help.png", label: "Support & Feedback", path: "/admin/support" },
 ];
 
@@ -322,9 +319,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                         />
                     </div>
                     <div className="flex items-center gap-3">
-                        <HospitalSwitcher />
                         <NotificationCenter />
-                        <ThemeToggle />
                         <div className="h-6 w-px" style={{ backgroundColor: 'var(--border-color)' }}></div>
                         <div className="relative">
                             <button

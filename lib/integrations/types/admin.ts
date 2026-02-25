@@ -179,19 +179,6 @@ export interface Labs {
   createdAt: string;
 }
 
-export interface AuditLog {
-  _id: string;
-  action: string;
-  user: {
-    name: string;
-    email: string;
-    role: string;
-  };
-  details: string;
-  timestamp: string;
-  createdAt: string;
-}
-
 export interface SupportTicket {
   _id: string;
   name: string;

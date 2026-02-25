@@ -188,7 +188,8 @@ function TrendChart({ trends }: { trends: any[] }) {
   const maxScore = Math.max(...scores, 5);
   const minScore = 0;
   const range = maxScore - minScore || 1;
-  const W = 340, H = 90;
+  const W = 340, H = 90, LABEL_H = 18; // extra space below for month labels
+  const TOTAL_H = H + LABEL_H;
   const step = (W - 40) / (trends.length - 1 || 1);
   const points = trends.map((t, i) => ({
     x: 20 + i * step,
@@ -199,7 +200,7 @@ function TrendChart({ trends }: { trends: any[] }) {
 
   return (
     <div className="perf-trend-chart-wrap">
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
+      <svg width="100%" viewBox={`0 0 ${W} ${TOTAL_H}`} preserveAspectRatio="xMidYMid meet">
         <defs>
           <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#6366f1" stopOpacity="0.4" />
@@ -211,7 +212,8 @@ function TrendChart({ trends }: { trends: any[] }) {
         {points.map((p, i) => (
           <g key={i}>
             <circle cx={p.x} cy={p.y} r={4} fill="#6366f1" />
-            <text x={p.x} y={H + 2} textAnchor="middle" fontSize="8" fill="#94a3b8">
+            {/* label sits BELOW the chart area, inside the extended viewBox */}
+            <text x={p.x} y={H + 12} textAnchor="middle" fontSize="8" fill="#94a3b8">
               {trends[i]?.label?.split(" ")?.[0] ?? ""}
             </text>
           </g>
@@ -315,9 +317,6 @@ function EmployeePanel({
         )}
         {emp.role === "staff" && (
           <>
-            <KpiItem label="Total Tickets" value={rm.totalTickets ?? 0} />
-            <KpiItem label="Resolved" value={rm.resolvedTickets ?? 0} />
-            <KpiItem label="Resolution Rate" value={`${rm.resolutionRate ?? 0}%`} />
             <KpiItem label="Daily Throughput" value={rm.dailyThroughput ?? 0} />
           </>
         )}

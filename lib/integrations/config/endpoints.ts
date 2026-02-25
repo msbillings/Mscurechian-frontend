@@ -39,7 +39,6 @@ export const USER_ENDPOINTS = {
 export const ADMIN_ENDPOINTS = {
   DASHBOARD: "/super-admin/stats",
   ANALYTICS: "/super-admin/analytics",
-  AUDITS: "/super-admin/audits",
   BROADCAST: "/super-admin/broadcast",
   PROFILE: "/super-admin/profile",
 
@@ -510,7 +509,6 @@ export const endpoints = {
     assignDoctor: ADMIN_ENDPOINTS.ASSIGN_DOCTOR,
     assignHelpdesk: ADMIN_ENDPOINTS.ASSIGN_HELPDESK,
     broadcast: ADMIN_ENDPOINTS.BROADCAST,
-    audits: ADMIN_ENDPOINTS.AUDITS,
     hospitalDetails: ADMIN_ENDPOINTS.HOSPITAL_DETAILS,
     hospitalDoctors: ADMIN_ENDPOINTS.HOSPITAL_DOCTORS,
     supportRequests: ADMIN_ENDPOINTS.SUPPORT_REQUESTS,

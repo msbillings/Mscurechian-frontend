@@ -384,26 +384,32 @@ const IPDBillingPage = () => {
                                 <h3 className="text-sm font-black text-slate-900 uppercase">Prescribed Medicines</h3>
                             </div>
                             <div className="space-y-3">
-                                {prescribedMedicines.map((med, i) => (
-                                    <div key={i} className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                                        <div>
-                                            <p className="text-xs font-black text-slate-700 uppercase">{med.name}</p>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{med.dosage} • qty: {med.quantity}</p>
+                                {prescribedMedicines.map((med, i) => {
+                                    const prescribedFreq = med.freq || med.frequency || "1-1-1";
+                                    return (
+                                        <div key={i} className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                                            <div>
+                                                <p className="text-xs font-black text-slate-700 uppercase">{med.name}</p>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                    {med.dosage} • Freq: <span className="text-primary-theme">{prescribedFreq}</span> • qty: {med.quantity}
+                                                </p>
+                                            </div>
+                                            <button
+                                                disabled={med.processed}
+                                                onClick={() => {
+                                                    setSearchTerm(med.name.split(' (')[0]);
+                                                    setQuantity(Number(med.quantity) || 1);
+                                                    // Fix: PharmacyOrder.medicines stores field as `freq` not `frequency`
+                                                    setFrequency(med.freq || med.frequency || "1-1-1");
+                                                    setProcessingMedIndex(i);
+                                                }}
+                                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${med.processed ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-primary-theme text-white hover:bg-primary-theme/90'}`}
+                                            >
+                                                {med.processed ? "Processed" : "Process"}
+                                            </button>
                                         </div>
-                                        <button
-                                            disabled={med.processed}
-                                            onClick={() => {
-                                                setSearchTerm(med.name.split(' (')[0]);
-                                                setQuantity(Number(med.quantity) || 1);
-                                                if (med.frequency) setFrequency(med.frequency);
-                                                setProcessingMedIndex(i);
-                                            }}
-                                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${med.processed ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-primary-theme text-white hover:bg-primary-theme/90'}`}
-                                        >
-                                            {med.processed ? "Processed" : "Process"}
-                                        </button>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
