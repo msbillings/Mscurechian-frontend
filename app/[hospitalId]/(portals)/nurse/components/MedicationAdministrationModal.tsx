@@ -41,6 +41,34 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
     useEffect(() => {
         if (isOpen && admissionId) {
             fetchData();
+
+            // Real-time updates via Socket.IO
+            const handleSocketUpdate = (data: any) => {
+                if (data.admissionId === admissionId) {
+                    console.log('📡 [Nurse Portal] Real-time med update received:', data);
+                    fetchData(true); // Silent refresh
+                }
+            };
+
+            const initSocket = async () => {
+                try {
+                    const { subscribeToSocket, unsubscribeFromSocket } = await import('@/lib/integrations/api/socket');
+                    subscribeToSocket('', 'medication_administered', handleSocketUpdate);
+                    subscribeToSocket('', 'medication_undo', handleSocketUpdate);
+
+                    return () => {
+                        unsubscribeFromSocket('', 'medication_administered', handleSocketUpdate);
+                        unsubscribeFromSocket('', 'medication_undo', handleSocketUpdate);
+                    };
+                } catch (e) {
+                    console.warn('Socket subscription failed:', e);
+                }
+            };
+
+            const cleanupPromise = initSocket();
+            return () => {
+                cleanupPromise.then(cleanup => cleanup?.());
+            };
         }
     }, [isOpen, admissionId]);
 
@@ -183,8 +211,17 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
 
     const calculateRemaining = (med: any) => {
         const total = parseInt(med.quantity) || 0;
-        if (total === 0) return null;
-        const used = allHistory.filter(h => h.drugName === med.name).length;
+
+        // If not pharma tracked, let it behave like an infinite OPD prescription
+        if (!med.isPharmaTracked && !med.isPharmaOrder && total === 0) return null;
+
+        const used = (med.consumedCount !== undefined)
+            ? med.consumedCount
+            : allHistory.filter(h =>
+                h.drugName?.toLowerCase() === med.name?.toLowerCase() ||
+                h.medicineId === (med.productId || med.medicineId)
+            ).length;
+
         return Math.max(0, total - used);
     };
 
@@ -333,86 +370,97 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                                                 });
                                                 const consolidated = Array.from(medsMap.values());
 
-                                                return consolidated.map((med, idx) => (
-                                                    <div key={idx} className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-sm p-3 sm:p-4 hover:shadow-md transition-all">
-                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-                                                            <div className="flex items-center gap-2 sm:gap-4">
-                                                                <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-2xl bg-blue-50/50 flex items-center justify-center shrink-0">
-                                                                    <Pill className="text-blue-400" size={16} />
-                                                                </div>
-                                                                <div className="min-w-0">
-                                                                    <h4 className="text-[10px] sm:text-xs font-black text-slate-800 uppercase tracking-tight truncate leading-none mb-1">{med.name}</h4>
-                                                                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                                                                        <p className="text-[8px] sm:text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">{med.dosage} • {med.frequency}</p>
-                                                                        {med.sourceType === 'pharma-issuance' && (
-                                                                            <span className="px-1 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border border-indigo-100">
-                                                                                Extra
-                                                                            </span>
-                                                                        )}
-                                                                        {calculateRemaining(med) !== null && (
-                                                                            <span className={`px-1 py-0.5 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border ${calculateRemaining(med) === 0 ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                                                                                {calculateRemaining(med)} Left
-                                                                            </span>
-                                                                        )}
-                                                                        {med.isPharmaOrder ? (
-                                                                            <span className={`px-1 py-0.5 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border ${med.paymentStatus === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
-                                                                                {med.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
-                                                                            </span>
-                                                                        ) : med.status === 'return-pending' ? (
-                                                                            <span className="px-1 py-0.5 bg-orange-50 text-orange-600 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border border-orange-200 animate-pulse">
-                                                                                Return Pending
-                                                                            </span>
-                                                                        ) : (
-                                                                            <span className="px-1 py-0.5 bg-slate-50 text-slate-500 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border border-slate-200">
-                                                                                OPD Presc
-                                                                            </span>
-                                                                        )}
+                                                return consolidated.map((med, idx) => {
+                                                    const remaining = calculateRemaining(med);
+                                                    const isFullyReturnedOrConsumed = (med.isPharmaTracked || med.isPharmaOrder) && remaining === 0;
+
+                                                    // Don't show fully consumed/returned medicines at all per user request
+                                                    if (isFullyReturnedOrConsumed) {
+                                                        return null;
+                                                    }
+
+                                                    return (
+                                                        <div key={idx} className={`bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-sm p-3 sm:p-4 transition-all ${isFullyReturnedOrConsumed ? 'opacity-60' : 'hover:shadow-md'}`}>
+                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                                                                <div className="flex items-center gap-2 sm:gap-4">
+                                                                    <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-2xl bg-blue-50/50 flex items-center justify-center shrink-0">
+                                                                        <Pill className="text-blue-400" size={16} />
+                                                                    </div>
+                                                                    <div className="min-w-0">
+                                                                        <h4 className="text-[10px] sm:text-xs font-black text-slate-800 uppercase tracking-tight truncate leading-none mb-1">{med.name}</h4>
+                                                                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                                                            <p className="text-[8px] sm:text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">{med.dosage} • {med.frequency}</p>
+                                                                            {med.sourceType === 'pharma-issuance' && (
+                                                                                <span className="px-1 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border border-indigo-100">
+                                                                                    Extra
+                                                                                </span>
+                                                                            )}
+                                                                            {calculateRemaining(med) !== null && (
+                                                                                <span className={`px-1 py-0.5 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border ${calculateRemaining(med) === 0 ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                                                                                    {calculateRemaining(med)} Left
+                                                                                </span>
+                                                                            )}
+                                                                            {med.isPharmaOrder ? (
+                                                                                <span className={`px-1 py-0.5 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border ${med.paymentStatus === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                                                                                    {med.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
+                                                                                </span>
+                                                                            ) : med.status === 'return-pending' ? (
+                                                                                <span className="px-1 py-0.5 bg-orange-50 text-orange-600 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border border-orange-200 animate-pulse">
+                                                                                    Return Pending
+                                                                                </span>
+                                                                            ) : (
+                                                                                <span className="px-1 py-0.5 bg-slate-50 text-slate-500 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border border-slate-200">
+                                                                                    OPD Presc
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                            </div>
 
-                                                            <div className="flex items-center gap-2">
-                                                                {TIME_SLOTS.map((slot) => {
-                                                                    const slots = getFrequencySlots(med.frequency);
-                                                                    const isRequired = slots[slot];
-                                                                    const record = getAdministrationData(med.prescId, med.name, slot);
-                                                                    const isSubmitting = submitting === `${med.prescId}-${med.name}-${slot}` || (record && submitting === record._id);
+                                                                <div className="flex items-center gap-2">
+                                                                    {TIME_SLOTS.map((slot) => {
+                                                                        const slots = getFrequencySlots(med.frequency);
+                                                                        const isRequired = slots[slot];
+                                                                        const record = getAdministrationData(med.prescId, med.name, slot);
+                                                                        const isSubmitting = submitting === `${med.prescId}-${med.name}-${slot}` || (record && submitting === record._id);
 
-                                                                    if (!isRequired) return null;
+                                                                        if (!isRequired) return null;
 
-                                                                    return (
-                                                                        <div key={slot} className="relative group">
-                                                                            <button
-                                                                                disabled={!!record || !!submitting}
-                                                                                onClick={() => handleAdminister(med.prescId, med, slot)}
-                                                                                className={`
+                                                                        return (
+                                                                            <div key={slot} className="relative group">
+                                                                                <button
+                                                                                    disabled={!!record || !!submitting || remaining === 0}
+                                                                                    onClick={() => handleAdminister(med.prescId, med, slot)}
+                                                                                    className={`
                                                                                     px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all border
                                                                                     flex items-center gap-1.5
                                                                                     ${record
-                                                                                        ? 'bg-green-50 text-green-600 border-green-100 cursor-default'
-                                                                                        : 'hover:bg-slate-900 hover:text-white border-slate-100 bg-slate-50 text-slate-500'
-                                                                                    }
+                                                                                            ? 'bg-green-50 text-green-600 border-green-100 cursor-default'
+                                                                                            : 'hover:bg-slate-900 hover:text-white border-slate-100 bg-slate-50 text-slate-500'
+                                                                                        }
                                                                                     ${isSubmitting ? 'animate-pulse opacity-50' : ''}
+                                                                                    ${!record && remaining === 0 ? 'opacity-50 cursor-not-allowed hidden' : ''}
                                                                                 `}
-                                                                            >
-                                                                                {record ? <CheckCircle2 size={10} /> : <div className="w-1.5 h-1.5 rounded-full bg-current opacity-20"></div>}
-                                                                                {slot}
-                                                                            </button>
-                                                                            {record && (
-                                                                                <button
-                                                                                    onClick={() => handleUndo(record._id, med.name)}
-                                                                                    className="absolute -top-2 -right-2 w-5 h-5 bg-white border border-slate-200 text-slate-400 rounded-full flex items-center justify-center hover:bg-rose-50 hover:text-rose-600 transition-all shadow-sm opacity-0 group-hover:opacity-100"
                                                                                 >
-                                                                                    <X size={10} />
+                                                                                    {record ? <CheckCircle2 size={10} /> : <div className="w-1.5 h-1.5 rounded-full bg-current opacity-20"></div>}
+                                                                                    {slot}
                                                                                 </button>
-                                                                            )}
-                                                                        </div>
-                                                                    );
-                                                                })}
+                                                                                {record && (
+                                                                                    <button
+                                                                                        onClick={() => handleUndo(record._id, med.name)}
+                                                                                        className="absolute -top-2 -right-2 w-5 h-5 bg-white border border-slate-200 text-slate-400 rounded-full flex items-center justify-center hover:bg-rose-50 hover:text-rose-600 transition-all shadow-sm opacity-0 group-hover:opacity-100"
+                                                                                    >
+                                                                                        <X size={10} />
+                                                                                    </button>
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                ));
+                                                    );
+                                                });
                                             })()}
                                         </>
                                     )}

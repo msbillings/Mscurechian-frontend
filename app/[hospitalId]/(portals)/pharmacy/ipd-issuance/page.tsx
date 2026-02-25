@@ -402,7 +402,7 @@ export default function IPDIssuancePage() {
                                                             className="px-3 py-1.5 bg-teal-50 dark:bg-teal-900/20 text-teal-600 rounded-lg hover:bg-teal-600 hover:text-white transition-all border border-teal-100 dark:border-teal-800/30 text-[9px] font-black uppercase flex items-center gap-2"
                                                         >
                                                             <Pencil size={10} />
-                                                            Add Bill
+                                                            Edit Bill
                                                         </button>
                                                     </div>
                                                 </td>

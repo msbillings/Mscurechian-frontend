@@ -587,11 +587,13 @@ export const ipdIssuanceService = {
     return response.data || {};
   },
 
-  /** POST /pharmacy/medicine-return — Nurse submits return request */
+  /** POST /pharmacy/medicine-return — Nurse/Pharmacist submits return request */
   submitReturn: async (data: {
-    issuanceId: string;
+    admissionId: string;
     items: Array<{
+      issuanceId: string;
       productId: string;
+      batchId?: string;
       returnedQty: number;
       reason?: string;
     }>;
