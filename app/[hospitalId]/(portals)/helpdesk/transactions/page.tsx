@@ -413,17 +413,10 @@ export default function TransactionsPage() {
                                         return null; // Don't render this transaction
                                     }
 
-                                    // 🔧 FIX: Console log when doctor names are IDs (ObjectIds)
-                                    const doctorName = appointmentData.primaryDoctor || appointmentData.suggestedDoctorName;
-                                    if (doctorName && doctorName.length === 24 && /^[a-f0-9]{24}$/i.test(doctorName)) {
-                                        console.error('⚠️ DOCTOR ID INSTEAD OF NAME:', {
-                                            transactionId: tx._id || tx.id,
-                                            type: rawType,
-                                            doctorId: doctorName,
-                                            patientName: patientName,
-                                            referenceId: tx.referenceId
-                                        });
-                                    }
+                                    // 🔧 FIX: Sanitize doctor name — never show raw ObjectId
+                                    const rawDoctorName = appointmentData.primaryDoctor || appointmentData.suggestedDoctorName;
+                                    const isObjectId = rawDoctorName && rawDoctorName.length === 24 && /^[a-f0-9]{24}$/i.test(rawDoctorName);
+                                    const resolvedDoctorName = isObjectId ? null : rawDoctorName;
 
                                     // 🔍 DEBUG LOGGING - Track transaction data structure
                                     if (isDischargeTransaction) {
@@ -476,9 +469,9 @@ export default function TransactionsPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="space-y-1">
-                                                    {appointmentData.primaryDoctor || appointmentData.suggestedDoctorName ? (
+                                                    {resolvedDoctorName ? (
                                                         <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest">
-                                                            {appointmentData.primaryDoctor || appointmentData.suggestedDoctorName}
+                                                            {resolvedDoctorName}
                                                         </p>
                                                     ) : (
                                                         <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">N/A</p>
