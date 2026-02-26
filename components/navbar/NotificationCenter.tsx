@@ -59,8 +59,8 @@ function NotificationCenter({ showAuditHistory = true }: NotificationCenterProps
               try {
                 let soundFile = '/assets/nurse.mp3';
 
-                // If it's a critical/emergency type, use emergency.mp3
-                if (['emergency_alert', 'critical_vitals', 'abnormal_vitals'].includes(newNotif.type)) {
+                // Use emergency sound for critical alerts and hospital-wide announcements
+                if (['emergency_alert', 'critical_vitals', 'abnormal_vitals', 'hospital_announcement'].includes(newNotif.type)) {
                   soundFile = '/assets/emergency.mp3';
                 }
 
