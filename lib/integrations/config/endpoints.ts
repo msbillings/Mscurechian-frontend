@@ -416,7 +416,7 @@ export const SOP_ENDPOINTS = {
   BASE: "/sop",
   UPDATE: (id: string) => `/sop/${id}`,
   ARCHIVE: (id: string) => `/sop/${id}/archive`,
-  HISTORY: (name: string) => `/sop/history/${name}`,
+  HISTORY: (name: string) => `/sop/history/${encodeURIComponent(name)}`,
   DOWNLOAD: (id: string) => `/sop/download/${id}`,
   ACKNOWLEDGE: (id: string) => `/sop/${id}/acknowledge`,
   REPORT: (id: string) => `/sop/${id}/report`,

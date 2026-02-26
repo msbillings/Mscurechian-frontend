@@ -190,7 +190,7 @@ function ActiveOrdersPage() {
                                                     className={`inline-flex items-center gap-2 px-4 py-2 ${order.admission ? 'bg-blue-600 hover:bg-blue-700' : 'bg-teal-600 hover:bg-teal-700'} text-white rounded-xl text-xs font-bold uppercase tracking-widest dark:shadow-none active:scale-95 transition-all w-full md:w-auto justify-center`}
                                                 >
                                                     <FileText size={14} />
-                                                    {order.admission ? 'IPD Bill' : 'Retail Bill'}
+                                                    {order.admission ? 'IPD Bill' : 'OPD Bill'}
                                                 </button>
                                             </div>
                                         </td>
