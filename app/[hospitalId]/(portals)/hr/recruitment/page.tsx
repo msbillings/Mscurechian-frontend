@@ -349,8 +349,11 @@ export default function RecruitmentPage() {
                     type="number"
                     min="1"
                     className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 font-semibold text-slate-900 transition-all"
-                    value={formData.numberOfPositions}
-                    onChange={(e) => setFormData({ ...formData, numberOfPositions: parseInt(e.target.value) })}
+                    value={formData.numberOfPositions || ''}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      setFormData({ ...formData, numberOfPositions: isNaN(val) ? 0 : val });
+                    }}
                   />
                 </div>
               </div>

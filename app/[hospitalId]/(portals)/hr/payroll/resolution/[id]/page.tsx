@@ -15,7 +15,7 @@ import { toast } from "react-hot-toast";
 import { generatePayslipHtml } from "@/lib/print-utils";
 
 export default function PayrollResolutionPage() {
-  const { id } = useParams();
+  const { hospitalId, id } = useParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [payroll, setPayroll] = useState<any>(null);
@@ -92,7 +92,7 @@ export default function PayrollResolutionPage() {
             <h1 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Payroll Resolution Protocol</h1>
          </div>
          <div className="flex gap-3">
-            <button onClick={() => router.push(`/hr/payroll/resolution/${id}/edit`)} className="px-6 py-2.5 bg-gray-50 text-gray-700 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-gray-100 font-bold">
+            <button onClick={() => router.push(`/${hospitalId}/hr/payroll/resolution/${id}/edit`)} className="px-6 py-2.5 bg-gray-50 text-gray-700 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-gray-100 font-bold">
                <Edit3 size={14} className="inline mr-2" /> Modify Entry
             </button>
             <button onClick={handlePrint} className="px-8 py-2.5 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 active:scale-95 transition-all font-bold">

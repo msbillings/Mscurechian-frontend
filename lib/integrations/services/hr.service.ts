@@ -207,11 +207,11 @@ export const hrService = {
     return apiClient<any>(url.pathname + url.search);
   },
 
-  getPerformanceDashboard: (params?: {
-    month?: number;
-    year?: number;
-  }) => {
-    const url = new URL(HR_ENDPOINTS.PERFORMANCE_DASHBOARD, window.location.origin);
+  getPerformanceDashboard: (params?: { month?: number; year?: number }) => {
+    const url = new URL(
+      HR_ENDPOINTS.PERFORMANCE_DASHBOARD,
+      window.location.origin,
+    );
     if (params?.month !== undefined)
       url.searchParams.set("month", params.month.toString());
     if (params?.year !== undefined)
@@ -223,7 +223,10 @@ export const hrService = {
     month?: number;
     year?: number;
   }) => {
-    const url = new URL(HR_ENDPOINTS.DOCTOR_PERFORMANCE_DASHBOARD, window.location.origin);
+    const url = new URL(
+      HR_ENDPOINTS.DOCTOR_PERFORMANCE_DASHBOARD,
+      window.location.origin,
+    );
     if (params?.month !== undefined)
       url.searchParams.set("month", params.month.toString());
     if (params?.year !== undefined)
@@ -320,8 +323,20 @@ export const hrService = {
       body: JSON.stringify(data),
     }),
 
-  getStaffById: (id: string) =>
-    apiClient<any>(`/hr/staff/${id}`, { skipCache: true }),
+  getStaffById: async (id: string) => {
+    const res = await apiClient<any>(`/hr/staff/${id}`, { skipCache: true });
+    const userData = res.data || res;
+    const profile = userData.profile || {};
+
+    // Flatten for UI compatibility (matches hospitalAdminService pattern)
+    return {
+      staff: {
+        ...profile,
+        ...userData,
+        _id: userData._id || userData.id,
+      },
+    };
+  },
 
   /**
    * Centralized Salary Distribution Utility

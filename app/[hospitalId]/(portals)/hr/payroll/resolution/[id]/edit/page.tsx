@@ -14,7 +14,7 @@ import { hrService } from "@/lib/integrations/services/hr.service";
 import { toast } from "react-hot-toast";
 
 export default function PayrollEditPage() {
-  const { id } = useParams();
+  const { hospitalId, id } = useParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -211,7 +211,7 @@ export default function PayrollEditPage() {
       };
       await hrService.updatePayroll(id as string, updatePayload);
       toast.success("Payroll Registry Synchronized");
-      router.push(`payroll/resolution/${id}`);
+      router.push(`/${hospitalId}/hr/payroll/resolution/${id}`);
     } catch (e) {
        toast.error("Synchronization failed");
     } finally {

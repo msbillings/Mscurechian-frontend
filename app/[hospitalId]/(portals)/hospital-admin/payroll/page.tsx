@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
     DollarSign,
     Download,
@@ -43,6 +43,7 @@ const STATUS_CONFIG = {
 };
 
 export default function PayrollPage() {
+    const { hospitalId } = useParams();
     const router = useRouter();
     const [payrolls, setPayrolls] = useState<any[]>([]);
     const [hospital, setHospital] = useState<any>(null);
@@ -517,7 +518,7 @@ export default function PayrollPage() {
                                                             <Edit size={16} />
                                                         </button>
                                                         <button
-                                                            onClick={() => router.push(`/hospital-admin/payroll/resolution/${p._id}`)}
+                                                            onClick={() => router.push(`/${hospitalId}/hospital-admin/payroll/resolution/${p._id}`)}
                                                             title="View Proper Print Model"
                                                             className="p-2 text-slate-400 hover:text-slate-900 transition-all font-black hover:bg-slate-100 rounded-lg"
                                                         >
