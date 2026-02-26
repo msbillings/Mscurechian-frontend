@@ -38,7 +38,7 @@ function HospitalAdminDepartmentMasterPage() {
                 throw error;
             }
         },
-        staleTime: 5 * 60 * 1000, // 5 minutes
+        staleTime: 30 * 1000, // Reduced to 30 seconds for better consistency
         gcTime: 15 * 60 * 1000,
         retry: 1,
     });
@@ -125,7 +125,7 @@ function HospitalAdminDepartmentMasterPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 {/* Left: Input Console */}
                 <div className="lg:col-span-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-[0.5rem] shadow-sm dark:shadow-none border border-gray-100 dark:border-gray-700 overflow-hidden sticky top-24">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm dark:shadow-none border border-gray-100 dark:border-gray-700 overflow-hidden sticky top-24">
 
                         <div className="p-8">
                             <div className="flex items-center gap-4 mb-10">
@@ -189,7 +189,7 @@ function HospitalAdminDepartmentMasterPage() {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="flex-[2] py-4 bg-primary-theme text-white rounded-2xl font-black uppercase  text-[10px] dark:shadow-none active:scale-95 disabled:opacity-50"
+                                        className="flex-2 py-4 bg-primary-theme text-white rounded-2xl font-black uppercase  text-[10px] dark:shadow-none active:scale-95 disabled:opacity-50"
                                     >
                                         {loading ? 'Processing...' : editingId ? 'Update Node' : 'Initialize Node'}
                                     </button>
@@ -202,7 +202,7 @@ function HospitalAdminDepartmentMasterPage() {
                 {/* Right: Registry Terminal - Converted to Table */}
                 <div className="lg:col-span-8 space-y-8">
                     {/* Search Control */}
-                    <div className="bg-white dark:bg-gray-800 p-8 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col md:flex-row justify-between items-center gap-8">
+                    <div className="bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col md:flex-row justify-between items-center gap-8">
                         <div className="flex items-center gap-4">
                             <div className="p-3 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-2xl">
                                 <Database size={24} />
@@ -224,7 +224,7 @@ function HospitalAdminDepartmentMasterPage() {
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-gray-800 rounded-[0.5rem] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>

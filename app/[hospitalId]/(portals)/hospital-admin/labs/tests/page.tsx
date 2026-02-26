@@ -39,7 +39,7 @@ function HospitalAdminTestListPage() {
                 throw error;
             }
         },
-        staleTime: 5 * 60 * 1000, // 5 minutes
+        staleTime: 30 * 1000, // Reduced to 30 seconds for better consistency in multi-tenant environment
         gcTime: 15 * 60 * 1000,
         retry: 1,
     });

@@ -2,6 +2,7 @@
 
 import React, {  useState, useEffect , useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Save, Plus, X, Database, FlaskConical, Network, Calculator, Activity, ChevronLeft } from 'lucide-react';
 import { LabTestService } from '@/lib/integrations/services/labTest.service';
 import { DepartmentService } from '@/lib/integrations/services/department.service';
@@ -9,6 +10,7 @@ import { Department } from '@/lib/integrations/types/department';
 import { toast } from 'react-hot-toast';
 
 function HospitalAdminManageTestPage() {
+    const queryClient = useQueryClient();
     const router = useRouter();
     const searchParams = useSearchParams();
     const testId = searchParams.get('id');
@@ -179,6 +181,11 @@ function HospitalAdminManageTestPage() {
                 await LabTestService.addTest(payload);
                 toast.success("New protocol node initialized");
             }
+            
+            // Invalidate queries to ensure lists are updated immediately
+            queryClient.invalidateQueries({ queryKey: ['hospital-admin-lab-tests'] });
+            queryClient.invalidateQueries({ queryKey: ['hospital-admin-lab-departments'] });
+            
             router.push('/hospital-admin/labs/tests');
         } catch (error: any) {
             toast.error(error.message || "Protocol save failed");
@@ -347,7 +354,7 @@ function HospitalAdminManageTestPage() {
                                         <option value="">-- Select Material --</option>
                                         {metaOptions.sampleTypes.map((type: string) => <option key={type} value={type}>{type}</option>)}
                                     </select>
-                                    <button type="button" onClick={() => setShowSampleModal(true)} className="p-4 bg-primary-theme text-white rounded-[1rem] active:scale-95"><Plus size={20} /></button>
+                                    <button type="button" onClick={() => setShowSampleModal(true)} className="p-4 bg-primary-theme text-white rounded-2xl active:scale-95"><Plus size={20} /></button>
                                 </div>
                             </div>
 
@@ -625,7 +632,7 @@ function HospitalAdminManageTestPage() {
 
             {/* MODALS */}
             {(showTestModal || showDeptModal || showMethodModal || showSampleModal || showTatModal) && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-gray-900/80 backdrop-blur-md">
+                <div className="fixed inset-0 z-100 flex items-center justify-center p-6 bg-gray-900/80 backdrop-blur-md">
                     <div className="bg-white dark:bg-gray-800 rounded-[3rem] shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100 dark:border-gray-700">
                         <div className="p-8 border-b border-gray-50 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
                             <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-[0.2em] italic">
