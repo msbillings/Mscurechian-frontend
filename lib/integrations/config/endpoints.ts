@@ -295,6 +295,7 @@ export const PATIENT_ENDPOINTS = {
   LAB_RECORDS: "/patients/lab-records",
   HELPDESK_PRESCRIPTIONS: "/patients/helpdesk-prescriptions",
   DASHBOARD_DATA: "/patients/dashboard-data",
+  HOSPITALS: "/patients/hospitals",
 };
 
 export const SUPPORT_ENDPOINTS = {

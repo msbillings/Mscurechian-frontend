@@ -224,8 +224,8 @@ export default function FeedbacksPage() {
                                 {/* Content Block */}
                                 <div className="pl-[52px]"> {/* Align with text name start: 40px avatar + 12px gap */}
 
-                                    {/* Rating */}
-                                    <div className="flex items-center gap-2 mb-2">
+                                    {/* Rating & Categories */}
+                                    <div className="flex flex-wrap items-center gap-2 mb-2">
                                         <div className="flex gap-0.5">
                                             {[...Array(5)].map((_, i) => (
                                                 <Star
@@ -235,9 +235,17 @@ export default function FeedbacksPage() {
                                                 />
                                             ))}
                                         </div>
-                                        <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
-                                            {fb.category}
-                                        </span>
+                                        <div className="flex flex-wrap gap-1.5 ml-2">
+                                            {Array.isArray(fb.category) ? fb.category.map((cat: string) => (
+                                                <span key={cat} className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                                                    {cat}
+                                                </span>
+                                            )) : (
+                                                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                                                    {fb.category}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
 
                                     {/* Comment */}

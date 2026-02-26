@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Star, MessageSquare, Send, CheckCircle2, ChevronRight, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Star, MessageSquare, Send, CheckCircle2, ChevronRight, X, Building2, Check } from 'lucide-react';
 import { feedbackService } from '@/lib/integrations/services/feedback.service';
+import { apiClient } from '@/lib/integrations/api';
+import { PATIENT_ENDPOINTS } from '@/lib/integrations/config';
 import toast from 'react-hot-toast';
 
 export default function FeedbackForm() {
@@ -10,10 +12,13 @@ export default function FeedbackForm() {
     const [step, setStep] = useState(1);
     const [rating, setRating] = useState(0);
     const [hoverRating, setHoverRating] = useState(0);
-    const [category, setCategory] = useState({ label: '', icon: '' });
+    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+    const [selectedHospitals, setSelectedHospitals] = useState<string[]>([]);
+    const [hospitals, setHospitals] = useState<any[]>([]);
     const [comment, setComment] = useState('');
     const [isConfirmed, setIsConfirmed] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoadingHospitals, setIsLoadingHospitals] = useState(false);
 
     const categories = [
         { label: 'Clinical Care', icon: '🩺' },
@@ -26,6 +31,38 @@ export default function FeedbackForm() {
 
     const [isSuccess, setIsSuccess] = useState(false);
 
+    useEffect(() => {
+        if (isOpen && hospitals.length === 0) {
+            fetchHospitals();
+        }
+    }, [isOpen]);
+
+    const fetchHospitals = async () => {
+        setIsLoadingHospitals(true);
+        try {
+            const response = await apiClient<{ success: boolean; data: any[] }>(PATIENT_ENDPOINTS.HOSPITALS);
+            // Handle the response structure from the API
+            const hospitalData = response.data || [];
+            setHospitals(hospitalData || []);
+        } catch (error) {
+            console.error("Failed to fetch hospitals:", error);
+        } finally {
+            setIsLoadingHospitals(false);
+        }
+    };
+
+    const toggleCategory = (label: string) => {
+        setSelectedCategories(prev =>
+            prev.includes(label) ? prev.filter(c => c !== label) : [...prev, label]
+        );
+    };
+
+    const toggleHospital = (id: string) => {
+        setSelectedHospitals(prev =>
+            prev.includes(id) ? prev.filter(h => h !== id) : [...prev, id]
+        );
+    };
+
     const handleSubmit = async () => {
         if (!isConfirmed) {
             toast.error("Please confirm you are ready to submit.");
@@ -36,10 +73,11 @@ export default function FeedbackForm() {
         try {
             await feedbackService.createFeedback({
                 rating,
-                category: category.label,
+                category: selectedCategories as any, // backend now handles string[]
                 comment,
-                isAnonymous: false
-            });
+                isAnonymous: false,
+                hospitalIds: selectedHospitals as any // added field handled by backend
+            } as any);
             setIsSuccess(true);
             setTimeout(() => {
                 setIsOpen(false);
@@ -55,7 +93,8 @@ export default function FeedbackForm() {
     const resetForm = () => {
         setStep(1);
         setRating(0);
-        setCategory({ label: '', icon: '' });
+        setSelectedCategories([]);
+        setSelectedHospitals([]);
         setComment('');
         setIsConfirmed(false);
         setIsSubmitting(false);
@@ -144,7 +183,7 @@ export default function FeedbackForm() {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[95vh] animate-in zoom-in-95 duration-200">
 
                 {/* Header with Title & Stepper */}
                 <div className="p-6 bg-white border-b border-gray-100">
@@ -161,53 +200,34 @@ export default function FeedbackForm() {
                         </button>
                     </div>
 
-                    {/* Clean Stepper */}
-                    <div className="flex items-center justify-between px-2 w-full max-w-sm mx-auto">
-
-                        {/* Step 1: Rate */}
-                        <div className="flex flex-col items-center gap-1 relative z-10 w-16">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 border-[3px] ${step > 1 ? 'bg-green-500 border-green-500 text-white' :
-                                step === 1 ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-400'
-                                }`}>
-                                {step > 1 ? <CheckCircle2 size={20} /> : '1'}
-                            </div>
-                            <span className={`text-[10px] font-bold uppercase tracking-wider ${step >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>RATE</span>
-                        </div>
-
-                        {/* Line 1-2 */}
-                        <div className="flex-1 h-1 mx-2 rounded-full overflow-hidden bg-gray-100">
-                            <div className={`h-full transition-all duration-500 ease-out ${step >= 2 ? 'bg-green-500 w-full' : 'w-0'}`} />
-                        </div>
-
-                        {/* Step 2: Topic */}
-                        <div className="flex flex-col items-center gap-1 relative z-10 w-16">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 border-[3px] ${step > 2 ? 'bg-green-500 border-green-500 text-white' :
-                                step === 2 ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-400'
-                                }`}>
-                                {step > 2 ? <CheckCircle2 size={20} /> : '2'}
-                            </div>
-                            <span className={`text-[10px] font-bold uppercase tracking-wider ${step >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>TOPIC</span>
-                        </div>
-
-                        {/* Line 2-3 */}
-                        <div className="flex-1 h-1 mx-2 rounded-full overflow-hidden bg-gray-100">
-                            <div className={`h-full transition-all duration-500 ease-out ${step >= 3 ? 'bg-green-500 w-full' : 'w-0'}`} />
-                        </div>
-
-                        {/* Step 3: Submit */}
-                        <div className="flex flex-col items-center gap-1 relative z-10 w-16">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 border-[3px] ${step > 3 ? 'bg-green-500 border-green-500 text-white' :
-                                step === 3 ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-400'
-                                }`}>
-                                {step > 3 ? <CheckCircle2 size={20} /> : '3'}
-                            </div>
-                            <span className={`text-[10px] font-bold uppercase tracking-wider ${step >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>SUBMIT</span>
-                        </div>
-
+                    {/* Better Stepper for 4 steps */}
+                    <div className="flex items-center justify-between px-2 w-full mx-auto">
+                        {[
+                            { step: 1, label: 'RATE' },
+                            { step: 2, label: 'TOPIC' },
+                            { step: 3, label: 'HOSPITAL' },
+                            { step: 4, label: 'SUBMIT' }
+                        ].map((s, idx) => (
+                            <React.Fragment key={s.step}>
+                                <div className="flex flex-col items-center gap-1 relative z-10 w-16">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold transition-all duration-300 border-2 ${step > s.step ? 'bg-green-500 border-green-500 text-white' :
+                                        step === s.step ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-400'
+                                        }`}>
+                                        {step > s.step ? <CheckCircle2 size={16} /> : s.step}
+                                    </div>
+                                    <span className={`text-[8px] font-bold uppercase tracking-wider ${step >= s.step ? 'text-blue-600' : 'text-gray-400'}`}>{s.label}</span>
+                                </div>
+                                {idx < 3 && (
+                                    <div className="flex-1 h-0.5 mx-1 rounded-full overflow-hidden bg-gray-100">
+                                        <div className={`h-full transition-all duration-500 ease-out ${step > s.step ? 'bg-green-500 w-full' : 'w-0'}`} />
+                                    </div>
+                                )}
+                            </React.Fragment>
+                        ))}
                     </div>
                 </div>
 
-                <div className="p-6 overflow-y-auto custom-scrollbar min-h-[300px]">
+                <div className="p-6 overflow-y-auto custom-scrollbar flex-1 min-h-[350px]">
 
                     {/* Step 1: Rating */}
                     {step === 1 && (
@@ -242,20 +262,25 @@ export default function FeedbackForm() {
                         </div>
                     )}
 
-                    {/* Step 2: Category */}
+                    {/* Step 2: Category (Multiple Selection) */}
                     {step === 2 && (
                         <div className="space-y-4 animate-in slide-in-from-right-8 duration-300 fade-in">
-                            <p className="text-lg font-medium text-gray-700 text-center mb-4">What is this about?</p>
+                            <p className="text-lg font-medium text-gray-700 text-center mb-4">What is this about? (Select multiple)</p>
                             <div className="grid grid-cols-2 gap-3">
                                 {categories.map((cat) => (
                                     <button
                                         key={cat.label}
-                                        onClick={() => { setCategory(cat); setTimeout(() => setStep(3), 200); }}
-                                        className={`p-4 rounded-xl border text-left transition-all duration-200 hover:shadow-md ${category.label === cat.label
+                                        onClick={() => toggleCategory(cat.label)}
+                                        className={`p-4 rounded-xl border text-left transition-all duration-200 group relative ${selectedCategories.includes(cat.label)
                                             ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-500'
                                             : 'border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:bg-gray-50'
                                             }`}
                                     >
+                                        {selectedCategories.includes(cat.label) && (
+                                            <div className="absolute top-2 right-2 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-white text-[10px] animate-in zoom-in duration-200">
+                                                <Check size={12} strokeWidth={3} />
+                                            </div>
+                                        )}
                                         <span className="text-2xl mb-2 block filter grayscale-[0.2]">{cat.icon}</span>
                                         <span className="font-semibold text-sm">{cat.label}</span>
                                     </button>
@@ -264,8 +289,54 @@ export default function FeedbackForm() {
                         </div>
                     )}
 
-                    {/* Step 3: Details & Confirm */}
+                    {/* Step 3: Hospital Selection */}
                     {step === 3 && (
+                        <div className="space-y-4 animate-in slide-in-from-right-8 duration-300 fade-in">
+                            <div className="text-center mb-4">
+                                <p className="text-lg font-medium text-gray-700">Which hospital did you visit?</p>
+                                <p className="text-xs text-gray-500">Admins of selected hospitals will see this feedback</p>
+                            </div>
+
+                            {isLoadingHospitals ? (
+                                <div className="flex flex-col items-center justify-center py-10 gap-3">
+                                    <div className="w-10 h-10 border-4 border-blue-600/30 border-t-blue-600 rounded-full animate-spin"></div>
+                                    <p className="text-sm font-medium text-gray-500">Loading Hospitals...</p>
+                                </div>
+                            ) : (
+                                <div className="grid gap-2 max-h-[300px] overflow-y-auto px-1 custom-scrollbar">
+                                    {hospitals.map((hosp) => (
+                                        <button
+                                            key={hosp._id}
+                                            onClick={() => toggleHospital(hosp._id)}
+                                            className={`flex items-center gap-4 p-3 rounded-xl border transition-all duration-200 text-left ${selectedHospitals.includes(hosp._id)
+                                                ? 'border-blue-500 bg-blue-50 shadow-sm ring-1 ring-blue-500'
+                                                : 'border-gray-200 bg-white hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${selectedHospitals.includes(hosp._id) ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                                                <Building2 size={20} />
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className={`font-bold text-sm ${selectedHospitals.includes(hosp._id) ? 'text-blue-700' : 'text-slate-800'}`}>{hosp.name}</p>
+                                                <p className="text-[10px] text-slate-500">{hosp.address}</p>
+                                            </div>
+                                            <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-colors ${selectedHospitals.includes(hosp._id) ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300 bg-white'}`}>
+                                                {selectedHospitals.includes(hosp._id) && <Check size={14} strokeWidth={3} />}
+                                            </div>
+                                        </button>
+                                    ))}
+                                    {hospitals.length === 0 && (
+                                        <div className="text-center py-10 text-gray-400">
+                                            No hospitals found.
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Step 4: Details & Confirm */}
+                    {step === 4 && (
                         <div className="space-y-6 animate-in slide-in-from-right-8 duration-300 fade-in">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Additional Comments (Optional)</label>
@@ -311,7 +382,27 @@ export default function FeedbackForm() {
                         <div></div>
                     )}
 
+                    {step === 2 && (
+                        <button
+                            onClick={() => setStep(3)}
+                            disabled={selectedCategories.length === 0}
+                            className="px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-sm transform transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 text-sm"
+                        >
+                            Next <ChevronRight size={16} />
+                        </button>
+                    )}
+
                     {step === 3 && (
+                        <button
+                            onClick={() => setStep(4)}
+                            disabled={selectedHospitals.length === 0}
+                            className="px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-sm transform transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 text-sm"
+                        >
+                            Next <ChevronRight size={16} />
+                        </button>
+                    )}
+
+                    {step === 4 && (
                         <button
                             onClick={handleSubmit}
                             disabled={!isConfirmed || isSubmitting}
@@ -326,3 +417,4 @@ export default function FeedbackForm() {
         </div>
     );
 }
+
