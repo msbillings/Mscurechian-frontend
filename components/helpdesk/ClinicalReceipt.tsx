@@ -5,6 +5,7 @@ import { generateClinicalReceiptHtml } from "@/lib/print-utils";
 interface ReceiptProps {
   hospital: {
     name: string;
+    logo?: string;
     address?: string;
     contact?: string;
     email?: string;

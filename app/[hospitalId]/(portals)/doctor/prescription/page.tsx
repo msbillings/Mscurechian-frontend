@@ -31,12 +31,18 @@ import medicineData from '@/medicine.json';
 
 // --- Types ---
 interface Medicine {
+    productId?: string;
     name: string;
+    form: string;
     dosage: string;
     freq: string;
     duration: string;
     quantity: string;
     price: number;
+    unitsPerPack?: number;
+    availableUnits?: number;
+    pricePerUnit?: number;
+    error?: string;
 }
 
 interface PrescriptionForm {
@@ -93,6 +99,13 @@ function CreatePrescriptionPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [isSendingLab, setIsSendingLab] = useState(false);
+
+    // UI states
+    const [sentToPharma, setSentToPharma] = useState(false);
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [showClearConfirm, setShowClearConfirm] = useState(false);
+    const [showNoPharmaWarn, setShowNoPharmaWarn] = useState(false);
+    const [showPharmaConfirm, setShowPharmaConfirm] = useState(false);
 
     // Suggestion State
     const [activeMedIndex, setActiveMedIndex] = useState<number | null>(null);
@@ -213,11 +226,21 @@ function CreatePrescriptionPage() {
         // Construct a nice name from the pharma data
         const fullName = `${med.brand} (${med.generic}) ${med.strength}`;
 
+        const unitsPerPack = med.unitsPerPack || 1;
+        const availableUnits = (med.stock || 0) * unitsPerPack;
+        const pricePerUnit = (med.mrp || 0) / unitsPerPack;
+
         newMeds[index] = {
             ...newMeds[index],
+            productId: med._id,
             name: fullName,
-            dosage: med.form || '', // Default dosage form
-            price: med.mrp || 0
+            form: med.form || '',
+            dosage: med.strength || '',
+            price: med.mrp || 0,
+            unitsPerPack,
+            availableUnits,
+            pricePerUnit,
+            error: ''
         };
 
         setFormData(prev => ({ ...prev, medicines: newMeds }));
@@ -353,28 +376,45 @@ function CreatePrescriptionPage() {
     const addMedicine = () => {
         setFormData(prev => ({
             ...prev,
-            medicines: [...prev.medicines, { name: '', dosage: '', freq: '', duration: '', quantity: '', price: 0 }]
+            medicines: [...prev.medicines, { name: '', form: '', dosage: '', freq: '', duration: '', quantity: '', price: 0 }]
         }));
     };
 
     const updateMedicine = (index: number, field: string, value: string | number) => {
         const newMeds = [...formData.medicines];
+        const med = newMeds[index] as Medicine;
         (newMeds[index] as any)[field] = value;
+
+        // Real-time validation for quantity
+        if (field === 'quantity') {
+            const qty = parseInt(String(value)) || 0;
+            if (med.availableUnits !== undefined && qty > med.availableUnits) {
+                med.error = `Only ${med.availableUnits} available`;
+            } else {
+                med.error = '';
+            }
+        }
+
         setFormData(prev => ({ ...prev, medicines: newMeds }));
 
         if (field === 'name') {
             handleMedicineSearch(value as string, index);
         }
 
-        if (field === 'price') {
+        if (field === 'price' || field === 'quantity') {
             calculateBilling(newMeds);
         }
     };
 
     const calculateBilling = (meds = formData.medicines) => {
-        const subtotal = meds.reduce((sum, med) => sum + (Number(med.price) || 0), 0);
-        const tax = subtotal * 0.18; // 18% GST
-        const total = subtotal + tax;
+        const subtotal = meds.reduce((sum, med) => {
+            if (med.pricePerUnit && med.quantity) {
+                return sum + (med.pricePerUnit * (parseInt(med.quantity) || 0));
+            }
+            return sum + (Number(med.price) || 0);
+        }, 0);
+        const tax = 0; // Tax removed
+        const total = subtotal;
         setFormData(prev => ({ ...prev, subtotal, tax, total }));
     };
 
@@ -407,22 +447,73 @@ function CreatePrescriptionPage() {
         }));
     };
 
-    const handleSubmit = async () => {
+    const handleClearForm = () => {
+        setShowClearConfirm(true);
+    };
+
+    const confirmClearForm = () => {
+        setFormData(INITIAL_FORM);
+        setSentToPharma(false);
+        setIsSubmitted(false);
+        setGeneratedHtml(null);
+        setShowClearConfirm(false);
+        toast.success("Form cleared");
+    };
+
+    const handleSendToPharma = async () => {
         if (!appointmentId && !patientId) return toast.error("Appointment ID or Patient ID is required");
         if (!formData.patientName) return toast.error("Patient Name is required");
         if (!formData.diagnosis) return toast.error("Diagnosis is required");
         if (formData.medicines.length === 0) return toast.error("At least one medicine is required");
 
+        const hasErrors = formData.medicines.some(m => m.error);
+        if (hasErrors) return toast.error("Please resolve stock errors before sending to pharmacy");
+
+        setIsSending(true);
+        await executeSubmit(true, false);
+        setIsSending(false);
+        setSentToPharma(true);
+    };
+
+    const handleSaveAndPrint = async () => {
+        if (isSubmitted) {
+            handlePrintDocument('prescription');
+            return;
+        }
+
+        if (!appointmentId && !patientId) return toast.error("Appointment ID or Patient ID is required");
+        if (!formData.patientName) return toast.error("Patient Name is required");
+        if (!formData.diagnosis) return toast.error("Diagnosis is required");
+        if (formData.medicines.length === 0) return toast.error("At least one medicine is required");
+
+        const hasErrors = formData.medicines.some(m => m.error);
+        if (hasErrors) return toast.error("Please resolve stock errors before submitting");
+
+        if (!sentToPharma && formData.medicines.length > 0) {
+            setShowNoPharmaWarn(true);
+            return;
+        }
+
+        executeSubmit(false, true);
+    };
+
+    const confirmSaveWithoutPharma = () => {
+        setShowNoPharmaWarn(false);
+        executeSubmit(false, true);
+    };
+
+    const executeSubmit = async (sendToPharmaFlag: boolean, showSuccessModal: boolean) => {
         try {
             setIsSaving(true);
+            setShowPharmaConfirm(false);
 
-            // Save prescription
             await doctorService.createPrescription({
                 appointmentId,
                 patientId, // Pass patientId for direct prescriptions
                 diagnosis: formData.diagnosis,
                 symptoms: formData.symptoms.split(',').map(s => s.trim()),
                 medicines: formData.medicines.map(m => ({
+                    drug: (m as any).productId,
                     name: m.name,
                     dosage: m.dosage,
                     frequency: m.freq,
@@ -437,7 +528,8 @@ function CreatePrescriptionPage() {
                 avoid: formData.avoid,
                 aiGenerated: mode === 'AI',
                 age: formData.age,
-                gender: formData.gender
+                gender: formData.gender,
+                sendToPharma: sendToPharmaFlag
             });
 
             // Re-use current styled generation logic
@@ -449,35 +541,23 @@ function CreatePrescriptionPage() {
                 prescription: prescriptionHtml,
                 billing: billingHtml
             });
-            setShowSuccess(true);
-            toast.success("Prescription Created Successfully!");
+
+            setIsSubmitted(true);
+
+            if (showSuccessModal) {
+                setShowSuccess(true);
+            }
+
+            if (sendToPharmaFlag) {
+                toast.success("Prescription Saved & Sent to Pharmacy Successfully!");
+            } else {
+                toast.success("Prescription Saved Successfully!");
+            }
 
         } catch (error: any) {
             toast.error(error.message || "Failed to save prescription");
         } finally {
             setIsSaving(false);
-        }
-    };
-
-
-    const handleSendToPharmacy = async () => {
-        if (!appointmentId && !patientId) return toast.error("Appointment ID or Patient ID is required");
-        if (formData.medicines.length === 0) return toast.error("At least one medicine is required");
-
-        try {
-            setIsSending(true);
-            await doctorService.createPharmacyToken({
-                appointmentId,
-                patientId, // Pass patientId
-                medicines: formData.medicines,
-                priority: 'routine',
-                notes: formData.followUp
-            });
-            toast.success("Sent to Pharmacy Successfully!");
-        } catch (error: any) {
-            toast.error(error.message || "Failed to send to pharmacy");
-        } finally {
-            setIsSending(false);
         }
     };
 
@@ -959,17 +1039,18 @@ function CreatePrescriptionPage() {
                     <div className="space-y-3">
                         {/* Column Headers */}
                         <div className="grid-cols-12 gap-3 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden md:grid">
-                            <div className="col-span-4">Medicine (Search)</div>
+                            <div className="col-span-3">Medicine (Search)</div>
+                            <div className="col-span-2">Form</div>
                             <div className="col-span-2">Dosage</div>
                             <div className="col-span-2">Freq</div>
-                            <div className="col-span-2">Days</div>
+                            <div className="col-span-1">Days</div>
                             <div className="col-span-2">Qty</div>
                         </div>
 
                         {formData.medicines.map((med, idx) => (
                             <div key={idx} className="relative group bg-slate-50 hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 rounded-xl p-3">
                                 <div className="grid grid-cols-12 gap-3 items-start">
-                                    <div className="col-span-12 md:col-span-4 relative">
+                                    <div className="col-span-12 md:col-span-3 relative">
                                         <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
                                             <Search size={14} />
                                         </div>
@@ -1015,6 +1096,18 @@ function CreatePrescriptionPage() {
                                             </div>
                                         )}
                                     </div>
+                                    {/* Form Type Badge */}
+                                    <div className="col-span-6 md:col-span-2 flex items-center">
+                                        {med.form ? (
+                                            <span className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wide bg-violet-50 text-violet-700 border border-violet-100 w-full justify-center">
+                                                {med.form}
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center px-3 py-2 rounded-lg text-[10px] font-bold text-slate-300 border border-dashed border-slate-200 w-full justify-center">
+                                                —
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="col-span-6 md:col-span-2">
                                         <input
                                             value={med.dosage}
@@ -1039,16 +1132,31 @@ function CreatePrescriptionPage() {
                                             className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-teal-500"
                                         />
                                     </div>
-                                    <div className="col-span-6 md:col-span-2 flex items-center gap-2">
-                                        <input
-                                            value={med.quantity}
-                                            onChange={(e) => updateMedicine(idx, 'quantity', e.target.value)}
-                                            placeholder="Qty"
-                                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-teal-500"
-                                        />
-                                        <button onClick={() => removeMedicine(idx)} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg">
-                                            <Trash2 size={16} />
-                                        </button>
+                                    <div className="col-span-6 md:col-span-2 flex flex-col gap-1">
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                value={med.quantity}
+                                                onChange={(e) => updateMedicine(idx, 'quantity', e.target.value)}
+                                                placeholder="Qty"
+                                                className={`w-full px-3 py-2 bg-white border ${med.error ? 'border-rose-500 focus:ring-rose-500/10' : 'border-slate-200 focus:border-teal-500'} rounded-lg text-sm font-bold focus:outline-none focus:ring-2`}
+                                            />
+                                            <button onClick={() => removeMedicine(idx)} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                        {med.availableUnits !== undefined && (
+                                            <div className="flex justify-between items-center px-1">
+                                                <span className="text-[9px] font-bold text-slate-400">Stock: {med.availableUnits}</span>
+                                                {med.pricePerUnit && (
+                                                    <span className="text-[9px] font-bold text-teal-600">₹{(med.pricePerUnit * (parseInt(med.quantity) || 0)).toFixed(2)}</span>
+                                                )}
+                                            </div>
+                                        )}
+                                        {med.error && (
+                                            <div className="text-[9px] font-bold text-rose-500 px-1 animate-pulse">
+                                                {med.error}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -1168,27 +1276,27 @@ function CreatePrescriptionPage() {
                 </div>
 
                 {/* Footer Actions */}
-                <div className=" bottom-4 z-40 flex justify-center gap-4">
+                <div className="fixed bottom-0 left-0 lg:left-64 right-0 z-40 flex justify-center gap-4 p-4 bg-white/90 backdrop-blur-lg border-t border-slate-200">
                     <button
-                        onClick={() => setFormData(INITIAL_FORM)}
-                        className="px-6 py-3 bg-white text-slate-600  rounded-xl font-bold uppercase text-xs tracking-wider border border-slate-200 hover:bg-slate-50"
+                        onClick={handleClearForm}
+                        className="px-6 py-3 bg-white text-slate-600 shadow-lg shadow-slate-200 rounded-xl font-bold uppercase text-xs tracking-wider border border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
                     >
                         Clear Form
                     </button>
                     <button
-                        onClick={handleSendToPharmacy}
-                        disabled={isSending || formData.medicines.length === 0}
-                        className="px-6 py-3 bg-primary-theme text-white rounded-xl font-bold uppercase text-xs tracking-wider hover:bg-primary-theme/80 active:scale-95 flex items-center gap-2"
+                        onClick={handleSendToPharma}
+                        disabled={isSaving || isSending || sentToPharma}
+                        className={`px-8 py-3 rounded-xl font-bold uppercase text-xs tracking-wider transition-all active:scale-95 flex items-center gap-2 ${sentToPharma ? 'bg-emerald-100 text-emerald-700 shadow-none' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700'}`}
                     >
-                        {isSending ? <Loader2 className="animate-spin" size={16} /> : <Pill size={16} />}
-                        Send to Pharmacy
+                        {isSending ? <Loader2 className="animate-spin" size={16} /> : (sentToPharma ? <CheckCircle2 size={16} /> : <Pill size={16} />)}
+                        {sentToPharma ? 'Sent to Pharma' : 'Send to Pharma'}
                     </button>
                     <button
-                        onClick={handleSubmit}
-                        disabled={isSaving}
-                        className="px-10 py-3 bg-teal-600 text-white  rounded-xl font-bold uppercase text-xs tracking-wider hover:bg-teal-700 active:scale-95 flex items-center gap-2"
+                        onClick={handleSaveAndPrint}
+                        disabled={isSaving || isSending}
+                        className="px-8 py-3 bg-teal-600 text-white shadow-lg shadow-teal-600/20 rounded-xl font-bold uppercase text-xs tracking-wider hover:bg-teal-700 active:scale-95 flex items-center gap-2 transition-all"
                     >
-                        {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Printer size={16} />}
+                        {isSaving && !isSending ? <Loader2 className="animate-spin" size={16} /> : <Printer size={16} />}
                         Save & Print
                     </button>
                 </div>
@@ -1210,18 +1318,83 @@ function CreatePrescriptionPage() {
                         <div className="flex justify-center pt-4">
                             <button
                                 onClick={() => handlePrintDocument('prescription')}
-                                className="flex flex-col items-center justify-center gap-3 p-6 rounded-2xl bg-teal-50 border-2 border-teal-100 text-teal-700 hover:bg-teal-100 hover:border-teal-200 group w-48"
+                                className="flex flex-col items-center justify-center gap-3 p-6 rounded-2xl bg-teal-50 border-2 border-teal-100 text-teal-700 hover:bg-teal-100 hover:border-teal-200 group w-48 transition-all active:scale-95"
                             >
-                                <Printer size={32} className="group-hover:scale-110" />
+                                <Printer size={32} className="group-hover:scale-110 transition-transform" />
                                 <span className="font-bold text-sm">Print Prescription</span>
                             </button>
                         </div>
                         <button
                             onClick={() => { setShowSuccess(false); router.back(); }}
-                            className="text-slate-400 hover:text-slate-600 text-xs font-bold uppercase tracking-widest mt-4"
+                            className="text-slate-400 hover:text-slate-600 text-xs font-bold uppercase tracking-widest mt-4 transition-colors"
                         >
                             Close & Return
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Clear Confirmation Modal */}
+            {showClearConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center space-y-6 animate-in fade-in zoom-in duration-200">
+                        <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                            <Eraser size={32} />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Clear Prescription?</h3>
+                            <p className="text-sm text-slate-500 font-medium mt-2">
+                                Are you sure you want to clear all entered data? This action cannot be undone.
+                            </p>
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                onClick={() => setShowClearConfirm(false)}
+                                className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold uppercase text-xs tracking-wider hover:bg-slate-200 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmClearForm}
+                                className="flex-1 py-3 bg-rose-600 text-white rounded-xl font-bold uppercase text-xs tracking-wider shadow-lg shadow-rose-600/20 hover:bg-rose-700 active:scale-95 transition-all"
+                            >
+                                Clear All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* No Pharma Warning Modal */}
+            {showNoPharmaWarn && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center space-y-6 animate-in fade-in zoom-in duration-200">
+                        <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                            <AlertCircle size={32} />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Pharmacy Not Notified</h3>
+                            <p className="text-sm text-slate-500 font-medium mt-2">
+                                You have <span className="text-teal-600 font-bold">{formData.medicines.length} medications</span> in this prescription, but you haven't sent them to the pharmacy yet.
+                            </p>
+                            <p className="text-xs text-slate-400 font-medium mt-2">
+                                Are you sure you want to save and print without notifying the pharmacy?
+                            </p>
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                onClick={() => setShowNoPharmaWarn(false)}
+                                className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold uppercase text-xs tracking-wider hover:bg-slate-200 transition-colors"
+                            >
+                                Go Back
+                            </button>
+                            <button
+                                onClick={confirmSaveWithoutPharma}
+                                className="flex-1 py-3 bg-amber-500 text-white rounded-xl font-bold uppercase text-xs tracking-wider shadow-lg shadow-amber-500/20 hover:bg-amber-600 active:scale-95 transition-all"
+                            >
+                                Yes, Proceed
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

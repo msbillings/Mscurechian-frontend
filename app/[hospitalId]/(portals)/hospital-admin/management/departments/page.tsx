@@ -20,6 +20,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { ipdService } from '@/lib/integrations/services/ipd.service';
 import { ConfirmModal } from '@/components/admin/Modal';
+import GenericBulkImportModal from '@/components/admin/GenericBulkImportModal';
 
 const DepartmentsManagement = () => {
     const [departments, setDepartments] = useState<any[]>([]);
@@ -116,23 +117,8 @@ const DepartmentsManagement = () => {
         }
     };
 
-    const handleImport = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!importFile) return;
-        try {
-            setImporting(true);
-            const formData = new FormData();
-            formData.append('file', importFile);
-            const res = await ipdService.importAssets('departments', formData);
-            toast.success(res.message);
-            setShowImportModal(false);
-            setImportFile(null);
-            fetchDepartments();
-        } catch (error: any) {
-            toast.error(error.message || "Import failed");
-        } finally {
-            setImporting(false);
-        }
+    const handleImportSuccess = () => {
+        fetchDepartments();
     };
 
     const filtered = departments.filter(d =>
@@ -386,55 +372,46 @@ const DepartmentsManagement = () => {
                 </div>
             )}
 
-            {/* Import Modal */}
-            {showImportModal && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6 z-[100] animate-in fade-in duration-300">
-                    <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                        <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-white text-gary-900">
-                            <div>
-                                <h2 className="text-xl font-black uppercase tracking-tight">Bulk Synchronization</h2>
-                                <p className="text-[10px] font-bold text-gary-900 uppercase tracking-widest mt-1">Import Departments via CSV</p>
-                            </div>
-                            <button onClick={() => setShowImportModal(false)} className="w-10 h-10 bg-gary-900 text-gray-900 rounded-xl flex items-center justify-center hover:bg-white/20 transition-all">
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <form onSubmit={handleImport} className="p-8 space-y-6">
-                            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex gap-4">
-                                <AlertCircle size={20} className="text-blue-600 shrink-0" />
-                                <div className="text-[10px] text-blue-700 font-bold uppercase leading-relaxed">
-                                    CSV must include: <span className="text-blue-900">name, code</span> headers.
-                                </div>
-                            </div>
-                            <div
-                                className={`h-48 border-2 border-dashed ${importFile ? 'border-teal-500 bg-teal-50/30' : 'border-slate-200 bg-slate-50'} rounded-2xl flex flex-col items-center justify-center gap-4 transition-all relative overflow-hidden`}
-                            >
-                                <input
-                                    type="file"
-                                    accept=".csv"
-                                    onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                                    className="absolute inset-0 opacity-0 cursor-pointer"
-                                />
-                                <div className={`w-12 h-12 ${importFile ? 'bg-teal-600 text-white' : 'bg-white text-slate-400'} rounded-xl flex items-center justify-center shadow-sm`}>
-                                    {importFile ? <CheckCircle2 size={24} /> : <FileText size={24} />}
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-xs font-black text-slate-900 uppercase tracking-tight">
-                                        {importFile ? importFile.name : "Select Asset File"}
-                                    </p>
-                                    <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">Click or Drag CSV here</p>
-                                </div>
-                            </div>
-                            <button
-                                disabled={!importFile || importing}
-                                className="w-full py-4 bg-primary-theme text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary-theme/80 transition-all disabled:opacity-50"
-                            >
-                                {importing ? "Syncing..." : "Launch Import"}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            )}
+            {/* Bulk Import Modal */}
+            <GenericBulkImportModal
+                isOpen={showImportModal}
+                onClose={() => setShowImportModal(false)}
+                config={{
+                    title: "Department Inventory",
+                    entityName: "Department",
+                    templateColumns: ["name", "code"],
+                    sampleRows: [
+                        ["Cardiology", "CARD"],
+                        ["Neurology", "NEUR"],
+                        ["Orthopedics", "ORTH"],
+                        ["Pediatrics", "PEDI"],
+                        ["Emergency", "ER"],
+                        ["ICU", "ICU"],
+                        ["General Medicine", "GEN"],
+                        ["Oncology", "ONCO"]
+                    ],
+                    onImport: async (data: any[]) => {
+                        const existingNames = new Set(departments.map(d => d.name.toLowerCase()));
+                        const uniqueData = data.filter(row => !existingNames.has(row.name?.toLowerCase()));
+
+                        if (uniqueData.length === 0) {
+                            return {
+                                addedCount: 0,
+                                errorCount: 0,
+                                errors: [{ message: "All records already exist. Skipping import." }]
+                            };
+                        }
+
+                        const res = await ipdService.importIPDAssetsJSON('departments', uniqueData);
+                        return {
+                            addedCount: res.addedCount || 0,
+                            errorCount: res.errorCount || 0,
+                            errors: res.errors
+                        };
+                    }
+                }}
+                onSuccess={handleImportSuccess}
+            />
 
             <ConfirmModal
                 isOpen={confirmModal.isOpen}

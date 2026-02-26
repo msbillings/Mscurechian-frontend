@@ -46,6 +46,13 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
 
     const [submitting, setSubmitting] = useState(false);
 
+    // Auto-fill advance amount with balance due when opening form
+    useEffect(() => {
+        if (showAdvanceForm && summary?.financials?.balance > 0) {
+            setAdvanceData(prev => ({ ...prev, amount: Math.round(summary.financials.balance) }));
+        }
+    }, [showAdvanceForm, summary]);
+
     useEffect(() => {
         if (isOpen && admissionId) {
             fetchSummary();
@@ -297,38 +304,36 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
 
                                     {/* Actions */}
                                     <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-100">
-                                        {!summary?.isBillLocked && (
+                                        {!summary?.isBillLocked && summary?.status !== 'Discharge Initiated' && (
+                                            <button
+                                                onClick={() => { setShowChargeForm(true); setActiveTab('charges'); }}
+                                                className="px-4 py-3 bg-slate-900 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center gap-1.5 shadow-lg h-fit"
+                                            >
+                                                <Plus size={14} /> Add Charge
+                                            </button>
+                                        )}
+                                        {!hidePaymentActions && (
                                             <>
                                                 <button
-                                                    onClick={() => { setShowChargeForm(true); setActiveTab('charges'); }}
-                                                    className="px-4 py-3 bg-slate-900 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center gap-1.5 shadow-lg h-fit"
+                                                    onClick={() => { setShowAdvanceForm(true); setActiveTab('advances'); }}
+                                                    className="px-4 py-3 bg-teal-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all flex items-center gap-1.5 shadow-lg h-fit"
                                                 >
-                                                    <Plus size={14} /> Add Charge
+                                                    <Wallet size={14} /> Record Payment
                                                 </button>
-                                                {!hidePaymentActions && (
-                                                    <>
-                                                        <button
-                                                            onClick={() => { setShowAdvanceForm(true); setActiveTab('advances'); }}
-                                                            className="px-4 py-3 bg-teal-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all flex items-center gap-1.5 shadow-lg h-fit"
-                                                        >
-                                                            <Wallet size={14} /> Record Payment
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setShowDiscountForm(true)}
-                                                            className="px-4 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-1.5 shadow-sm h-fit"
-                                                        >
-                                                            <Tag size={14} /> Apply Discount
-                                                        </button>
-                                                        <div className="flex-1 min-w-[100px]" />
-                                                        <button
-                                                            onClick={handleLockBill}
-                                                            disabled={submitting}
-                                                            className="px-4 py-3 bg-rose-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all flex items-center gap-1.5 shadow-xl shadow-rose-200 h-fit ml-auto"
-                                                        >
-                                                            <Lock size={14} /> Finalize & Lock
-                                                        </button>
-                                                    </>
-                                                )}
+                                                <button
+                                                    onClick={() => setShowDiscountForm(true)}
+                                                    className="px-4 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-1.5 shadow-sm h-fit"
+                                                >
+                                                    <Tag size={14} /> Apply Discount
+                                                </button>
+                                                <div className="flex-1 min-w-[100px]" />
+                                                <button
+                                                    onClick={handleLockBill}
+                                                    disabled={submitting}
+                                                    className="px-4 py-3 bg-rose-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all flex items-center gap-1.5 shadow-xl shadow-rose-200 h-fit ml-auto"
+                                                >
+                                                    <Lock size={14} /> Finalize & Lock
+                                                </button>
                                             </>
                                         )}
                                     </div>
@@ -340,7 +345,7 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                 <div className="space-y-6">
                                     <div className="flex justify-between items-center">
                                         <h3 className="text-xs font-black uppercase tracking-tight text-slate-700">Detailed Charges</h3>
-                                        {!summary?.isBillLocked && !showChargeForm && (
+                                        {!summary?.isBillLocked && !showChargeForm && summary?.status !== 'Discharge Initiated' && (
                                             <button
                                                 onClick={() => setShowChargeForm(true)}
                                                 className="px-4 py-2 bg-teal-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest flex items-center gap-2"
@@ -602,48 +607,50 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
             </div>
 
             {/* Sub-modals */}
-            {showDiscountForm && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4 animate-in fade-in duration-300">
-                    <div className="bg-white w-full max-w-sm rounded-[32px] shadow-2xl p-8 space-y-6">
-                        <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Financial Adjustment</h3>
-                            <button onClick={() => setShowDiscountForm(false)} className="p-2 hover:bg-slate-50 rounded-xl transition-all">
-                                <X size={20} className="text-slate-400" />
-                            </button>
+            {
+                showDiscountForm && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4 animate-in fade-in duration-300">
+                        <div className="bg-white w-full max-w-sm rounded-[32px] shadow-2xl p-8 space-y-6">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Financial Adjustment</h3>
+                                <button onClick={() => setShowDiscountForm(false)} className="p-2 hover:bg-slate-50 rounded-xl transition-all">
+                                    <X size={20} className="text-slate-400" />
+                                </button>
+                            </div>
+                            <form onSubmit={handleApplyDiscount} className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Discount Amount (₹)</label>
+                                    <input
+                                        required
+                                        type="number"
+                                        value={discountData.amount}
+                                        onChange={(e) => setDiscountData(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black focus:border-emerald-500 outline-none transition-all"
+                                        placeholder="0.00"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Adjustment Reason</label>
+                                    <textarea
+                                        required
+                                        rows={3}
+                                        value={discountData.reason}
+                                        onChange={(e) => setDiscountData(prev => ({ ...prev, reason: e.target.value }))}
+                                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold focus:border-emerald-500 outline-none transition-all resize-none"
+                                        placeholder="E.G. Hospital Policy, Special Approval, etc."
+                                    />
+                                </div>
+                                <button
+                                    disabled={submitting}
+                                    className="w-full py-4 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 disabled:opacity-50"
+                                >
+                                    {submitting ? "Applying..." : "Confirm Adjustment"}
+                                </button>
+                            </form>
                         </div>
-                        <form onSubmit={handleApplyDiscount} className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Discount Amount (₹)</label>
-                                <input
-                                    required
-                                    type="number"
-                                    value={discountData.amount}
-                                    onChange={(e) => setDiscountData(prev => ({ ...prev, amount: Number(e.target.value) }))}
-                                    className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black focus:border-emerald-500 outline-none transition-all"
-                                    placeholder="0.00"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Adjustment Reason</label>
-                                <textarea
-                                    required
-                                    rows={3}
-                                    value={discountData.reason}
-                                    onChange={(e) => setDiscountData(prev => ({ ...prev, reason: e.target.value }))}
-                                    className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold focus:border-emerald-500 outline-none transition-all resize-none"
-                                    placeholder="E.G. Hospital Policy, Special Approval, etc."
-                                />
-                            </div>
-                            <button
-                                disabled={submitting}
-                                className="w-full py-4 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 disabled:opacity-50"
-                            >
-                                {submitting ? "Applying..." : "Confirm Adjustment"}
-                            </button>
-                        </form>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };

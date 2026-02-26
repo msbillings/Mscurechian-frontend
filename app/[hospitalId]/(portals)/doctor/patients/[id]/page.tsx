@@ -321,8 +321,16 @@ function PatientDetailsPage() {
                         <span className="flex items-center gap-1.5"><User size={14} /> {patient.age || 'N/A'} Years, {patient.gender || 'Unknown'}</span>
                         <span className="flex items-center gap-1.5"><Activity size={14} /> {patient.bloodGroup || 'Blood Group N/A'}</span>
                         <span className="flex items-center gap-1.5 text-gray-400">|</span>
-                        <span className="flex items-center gap-1.5"><Phone size={14} /> {pUser.mobile || patient.mobile || 'N/A'}</span>
-                        <span className="flex items-center gap-1.5"><Mail size={14} /> {pUser.email || patient.email || 'N/A'}</span>
+                        <span className="flex items-center gap-1.5"><Phone size={14} /> {patient?.personal?.mobile || pUser.mobile || patient.mobile || 'N/A'}</span>
+                        <span className="flex items-center gap-1.5">
+                            <Mail size={14} />
+                            {patient?.personal?.email && patient.personal.email !== 'N/A'
+                                ? patient.personal.email
+                                : patient?.personal?.emergencyContactEmail && patient.personal.emergencyContactEmail !== 'N/A'
+                                    ? patient.personal.emergencyContactEmail
+                                    : pUser.email || patient.email || 'N/A'
+                            }
+                        </span>
                     </div>
                 </div>
                 <div className="flex gap-3">

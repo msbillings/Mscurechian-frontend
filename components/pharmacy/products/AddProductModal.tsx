@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
-    X, 
+import {
+    X,
     Save,
     Calendar,
     Box,
@@ -25,12 +25,14 @@ interface AddProductModalProps {
 const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onSubmit, initialData }) => {
     const defaultFormData: PharmacyProductPayload = {
         sku: '',
+        name: '',
         genericName: '',
         brandName: '',
         strength: '',
         form: 'TABLET',
         schedule: 'OTC',
         mrp: 0,
+        unitCost: 0,
         gst: 12,
         currentStock: 0,
         minStockLevel: 10,
@@ -49,12 +51,14 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onSu
         if (initialData) {
             setFormData({
                 sku: initialData.sku || '',
+                name: initialData.name || '',
                 genericName: initialData.genericName || '',
                 brandName: initialData.brandName || '',
                 strength: initialData.strength || '',
                 form: initialData.form || 'Tablet',
                 schedule: initialData.schedule || 'OTC - Over the Counter',
                 mrp: initialData.mrp || 0,
+                unitCost: initialData.unitCost || 0,
                 gst: initialData.gst || 12,
                 currentStock: initialData.currentStock || 0,
                 minStockLevel: initialData.minStockLevel || 10,
@@ -95,12 +99,12 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onSu
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Basic Validations
         if (!formData.genericName.trim() || !formData.brandName.trim()) {
             return toast.error('Medicine name and brand are required');
         }
-        
+
         if (formData.mrp <= 0) return toast.error('MRP must be greater than zero');
         if ((formData.currentStock ?? 0) < 0) return toast.error('Stock cannot be negative');
         if ((formData.minStockLevel ?? 0) < 0) return toast.error('Min stock level cannot be negative');
@@ -122,7 +126,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onSu
     return (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-            
+
             <div className="relative bg-white dark:bg-gray-900 w-full max-w-xl rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-800 flex flex-col max-h-[85vh]">
                 {/* Fixed Header */}
                 <div className="px-6 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between">
@@ -146,6 +150,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onSu
                             <input name="brandName" value={formData.brandName} onChange={handleChange} required placeholder="Crocin" className={inputClasses} />
                         </div>
                         <div>
+                            <label className={labelClasses}>Display Name (Optional)</label>
+                            <input name="name" value={formData.name || ''} onChange={handleChange} placeholder="e.g. Crocin 500mg TABLET" className={inputClasses} />
+                        </div>
+                        <div>
                             <label className={labelClasses}>SKU Code</label>
                             <input name="sku" value={formData.sku} onChange={handleChange} required placeholder="SKU-123" className={inputClasses} />
                         </div>
@@ -160,13 +168,26 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onSu
                                 <option value="CAPSULE">Capsule</option>
                                 <option value="SYRUP">Syrup</option>
                                 <option value="INJECTION">Injection</option>
+                                <option value="DROPS">Drops</option>
+                                <option value="OINTMENT">Ointment</option>
+                                <option value="LOTION">Lotion</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className={labelClasses}>Schedule</label>
+                            <select name="schedule" value={formData.schedule} onChange={handleChange} className={inputClasses}>
+                                <option value="OTC">OTC - Over the Counter</option>
+                                <option value="H">Schedule H</option>
+                                <option value="H1">Schedule H1</option>
+                                <option value="X">Schedule X</option>
+                                <option value="G">Schedule G</option>
                             </select>
                         </div>
                     </div>
 
                     {/* Commercials */}
                     <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-xl space-y-4 border border-gray-100 dark:border-gray-800">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div>
                                 <label className={labelClasses}>Price (MRP)</label>
                                 <div className="relative">
@@ -175,24 +196,49 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onSu
                                 </div>
                             </div>
                             <div>
+                                <label className={labelClasses}>Unit Cost</label>
+                                <div className="relative">
+                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                    <input type="number" name="unitCost" value={formData.unitCost || 0} onChange={handleChange} step="0.01" className={`${inputClasses} pl-9`} />
+                                </div>
+                            </div>
+                            <div>
                                 <label className={labelClasses}>GST %</label>
                                 <select name="gst" value={formData.gst} onChange={handleChange} className={inputClasses}>
                                     {[0, 5, 12, 18, 28].map(v => <option key={v} value={v}>{v}%</option>)}
                                 </select>
+                            </div>
+                            <div>
+                                <label className={labelClasses}>HSN Code</label>
+                                <input name="hsnCode" value={formData.hsnCode || ''} onChange={handleChange} placeholder="e.g. 3004" className={inputClasses} />
                             </div>
                         </div>
                     </div>
 
                     {/* Stock & Supplier */}
                     <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             <div>
-                                <label className={labelClasses}>Current Stock</label>
-                                <input type="number" name="currentStock" value={formData.currentStock} onChange={handleChange} className={inputClasses} />
+                                <label className={labelClasses}>Current Stock (Packs)</label>
+                                <input type="number" name="currentStock" value={formData.currentStock} onChange={handleChange} step="0.01" className={inputClasses} />
                             </div>
                             <div>
                                 <label className={labelClasses}>Min Alert Level</label>
                                 <input type="number" name="minStockLevel" value={formData.minStockLevel} onChange={handleChange} className={inputClasses} />
+                            </div>
+                            <div>
+                                <label className={labelClasses}>Units per Pack</label>
+                                <input type="number" name="unitsPerPack" value={formData.unitsPerPack || 1} onChange={handleChange} min="1" className={inputClasses} />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className={labelClasses}>Batch Number</label>
+                                <input name="batchNumber" value={formData.batchNumber || ''} onChange={handleChange} placeholder="e.g. BT-001" className={inputClasses} />
+                            </div>
+                            <div>
+                                <label className={labelClasses}>Expiry Date</label>
+                                <input type="date" name="expiryDate" value={formData.expiryDate} onChange={handleChange} className={inputClasses} />
                             </div>
                         </div>
                         <div>
@@ -202,10 +248,6 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onSu
                                 {suppliers.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
                             </select>
                         </div>
-                        <div>
-                            <label className={labelClasses}>Expiry Date</label>
-                            <input type="date" name="expiryDate" value={formData.expiryDate} onChange={handleChange} className={inputClasses} />
-                        </div>
                     </div>
                 </form>
 
@@ -214,9 +256,9 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onSu
                     <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-semibold text-gray-500 hover:text-gray-700">
                         Cancel
                     </button>
-                    <button 
+                    <button
                         onClick={(e) => handleSubmit(e as any)}
-                        disabled={loading} 
+                        disabled={loading}
                         className="px-6 py-2 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700 shadow-sm flex items-center gap-2 disabled:opacity-50"
                     >
                         {loading ? 'Saving...' : (

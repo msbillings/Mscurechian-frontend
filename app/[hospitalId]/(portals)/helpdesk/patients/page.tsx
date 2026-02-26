@@ -15,10 +15,11 @@ import {
 } from "lucide-react";
 import { helpdeskService, useHelpdeskPatients } from "@/lib/integrations";
 import toast from "react-hot-toast";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import ClinicalReceipt from "@/components/helpdesk/ClinicalReceipt";
 import AppointmentHistoryModal from "@/components/helpdesk/AppointmentHistoryModal";
+import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
     const [debounced, setDebounced] = useState(value);
@@ -39,6 +40,7 @@ export default function PatientsPage() {
     // Receipt State
     const [showReceipt, setShowReceipt] = useState(false);
     const [receiptData, setReceiptData] = useState<any>(null);
+    const [hospitalInfo, setHospitalInfo] = useState<any>(null);
 
     // History Modal State
     const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -77,6 +79,21 @@ export default function PatientsPage() {
             }
         };
         fetchDoctors();
+    }, []);
+
+    // Fetch hospital branding info
+    useEffect(() => {
+        const fetchBranding = async () => {
+            try {
+                const res = await hospitalAdminService.getHospital();
+                if (res?.hospital) {
+                    setHospitalInfo(res.hospital);
+                }
+            } catch (err) {
+                console.error("Failed to fetch hospital branding", err);
+            }
+        };
+        fetchBranding();
     }, []);
 
     const debouncedSearch = useDebouncedValue(searchTerm, 300);
@@ -210,10 +227,11 @@ export default function PatientsPage() {
             // Construct Receipt Data using the SELECTED appointment
             const data = {
                 hospital: {
-                    name: appt.hospitalInfo?.name || appt.hospital?.name || "CureChain Hospital",
-                    address: appt.hospitalInfo?.address || appt.hospital?.address || "",
-                    contact: appt.hospitalInfo?.phone || appt.hospital?.phone || "",
-                    email: appt.hospitalInfo?.email || appt.hospital?.email || ""
+                    name: hospitalInfo?.name || appt.hospitalInfo?.name || appt.hospital?.name || "CureChain Hospital",
+                    address: hospitalInfo?.address || appt.hospitalInfo?.address || appt.hospital?.address || "",
+                    contact: hospitalInfo?.phone || appt.hospitalInfo?.phone || appt.hospital?.phone || "",
+                    email: hospitalInfo?.email || appt.hospitalInfo?.email || appt.hospital?.email || "",
+                    logo: hospitalInfo?.logo
                 },
                 patient: {
                     name: patient.name || patient.user?.name,
@@ -398,7 +416,7 @@ export default function PatientsPage() {
                                             const isIPD = patient.isIPD;
 
                                             return (
-                                                <tr key={patientId} className="group hover:bg-slate-50 transition-colors">
+                                                <tr key={`${patientId}-${idx}`} className="group hover:bg-slate-50 transition-colors">
                                                     <td className="px-6 py-4">
                                                         <div className="flex flex-col gap-1.5">
                                                             <span className="text-sm font-bold text-slate-900 uppercase tracking-tight">#{patient.profile?.mrn || patient.mrn || `P${idx + 1}`}</span>

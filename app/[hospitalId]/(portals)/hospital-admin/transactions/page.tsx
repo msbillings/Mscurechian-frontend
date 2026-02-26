@@ -24,7 +24,7 @@ import {
 
 function TransactionContent() {
   const searchParams = useSearchParams();
-  const initialType = searchParams.get('type')?.toLowerCase() || "all";
+  const initialType = searchParams.get('type')?.toLowerCase() || "opd"; // Default to OPD as per request
 
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
@@ -385,32 +385,47 @@ function TransactionContent() {
             />
           </div>
 
-          <select
-            value={typeFilter}
-            onChange={(e) => {
-              setTypeFilter(e.target.value);
-              if (e.target.value !== 'ipd') {
+          {/* CATEGORY TOGGLE (OPD / IPD) - SIDE BY SIDE UI */}
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-inner">
+            <button
+              onClick={() => {
+                setTypeFilter('opd');
                 setIpdPaymentType('all');
-              }
-            }}
-            className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-500/10 cursor-pointer appearance-none min-w-[140px]"
-          >
-            <option value="all">Global Streams</option>
-            <option value="ipd">IPD Payments</option>
-            <option value="opd">OPD Consultation</option>
-          </select>
-
-          {/* IPD Payment Type Filter - Show only when IPD is selected */}
-          {typeFilter === 'ipd' && (
-            <select
-              value={ipdPaymentType}
-              onChange={(e) => setIpdPaymentType(e.target.value as 'all' | 'advance' | 'discharge')}
-              className="px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-500/10 cursor-pointer appearance-none min-w-[160px]"
+              }}
+              className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${typeFilter === 'opd' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
             >
-              <option value="all">All IPD Payments</option>
-              <option value="advance">Advance Only</option>
-              <option value="discharge">Discharge Only</option>
-            </select>
+              OPD Payments
+            </button>
+            <button
+              onClick={() => setTypeFilter('ipd')}
+              className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${typeFilter === 'ipd' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
+            >
+              IPD Payments
+            </button>
+          </div>
+
+          {/* IPD Payment Type Filter - Side by Side UI */}
+          {typeFilter === 'ipd' && (
+            <div className="flex bg-rose-50 p-1 rounded-xl border border-rose-100 shadow-inner animate-in slide-in-from-left-2 duration-300">
+              <button
+                onClick={() => setIpdPaymentType('all')}
+                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${ipdPaymentType === 'all' ? 'bg-white text-rose-600 shadow-sm' : 'text-rose-300 hover:text-rose-400'}`}
+              >
+                All IPD
+              </button>
+              <button
+                onClick={() => setIpdPaymentType('advance')}
+                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${ipdPaymentType === 'advance' ? 'bg-white text-rose-600 shadow-sm' : 'text-rose-300 hover:text-rose-400'}`}
+              >
+                IPD Advance
+              </button>
+              <button
+                onClick={() => setIpdPaymentType('discharge')}
+                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${ipdPaymentType === 'discharge' ? 'bg-white text-rose-600 shadow-sm' : 'text-rose-300 hover:text-rose-400'}`}
+              >
+                Discharge Only
+              </button>
+            </div>
           )}
 
           <button
@@ -478,6 +493,7 @@ function TransactionContent() {
                   'ipd': 'IPD',
                   'ipd_advance': 'IPD',
                   'ipd_refund': 'IPD',
+                  'ipd_bill_payment': 'IPD',
                   'ipd_final_settlement': 'IPD',
                   'discharge': 'Discharge'
                 };
@@ -510,11 +526,8 @@ function TransactionContent() {
                   ? (ipdPaymentType === 'discharge' ? (appointmentData.totalBillAmount || tx.amount) : null)
                   : tx.amount;
 
-                // 🔧 FIX: Filter out incomplete discharge records (GOVIND TANAKALA case)
-                // Skip transactions that are discharge type but have no discharge data
-                if (isDischargeTransaction && !appointmentData.totalBillAmount && ipdPaymentType === 'discharge') {
-                  return null; // Don't render this transaction
-                }
+                // 🔧 FIX: Removed strict filter that was hiding discharge transactions
+                // Let all transactions flow through and be rendered based on their available data
 
                 // 🔧 FIX: Console log when doctor names are IDs (ObjectIds)
                 const doctorName = appointmentData.primaryDoctor || appointmentData.suggestedDoctorName;
@@ -606,9 +619,22 @@ function TransactionContent() {
                       </span>
                     </td>
                     <td className="px-8 py-4">
-                      <span className="text-sm font-thin text-slate-900 ">
-                        {displayAmount !== null ? `₹${Math.round(Number(displayAmount)).toLocaleString()}` : '-'}
-                      </span>
+                      {isDischargeTransaction && (ipdPaymentType === 'discharge' || ipdPaymentType === 'all') ? (
+                        <div className="flex flex-row items-center gap-2 justify-start">
+                          <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-slate-100 rounded text-[10px] font-bold whitespace-nowrap">
+                            <span className="text-slate-500 uppercase">Adv:</span>
+                            <span className="text-blue-700">₹{Math.round(appointmentData.advanceAmount || 0).toLocaleString()}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 px-2 py-1 bg-rose-50 border border-rose-100 rounded text-[10px] font-bold whitespace-nowrap">
+                            <span className="text-rose-600 uppercase">Due:</span>
+                            <span className="text-rose-700">₹{Math.round(appointmentData.dueAmount || 0).toLocaleString()}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-sm font-thin text-slate-900 ">
+                          {displayAmount !== null ? `₹${Math.round(displayAmount).toLocaleString()}` : '-'}
+                        </span>
+                      )}
                     </td>
                     <td className="px-8 py-4">
                       <div className="flex flex-col">

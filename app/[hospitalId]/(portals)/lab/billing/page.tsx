@@ -78,12 +78,20 @@ function LabBillingPage() {
         }
 
         if (name || mobile) {
+            let normalizedGender = gender;
+            if (gender) {
+                const g = gender.toLowerCase();
+                if (g === 'male') normalizedGender = 'Male';
+                else if (g === 'female') normalizedGender = 'Female';
+                else if (g === 'other') normalizedGender = 'Other';
+            }
+
             setPatient(prev => ({
                 ...prev,
                 name: name || prev.name,
                 mobile: mobile || prev.mobile,
                 age: age ? parseInt(age) : prev.age,
-                gender: (gender as any) || prev.gender,
+                gender: (normalizedGender as any) || prev.gender,
                 refDoctor: refDoctor || prev.refDoctor,
             }));
         }
@@ -252,7 +260,7 @@ function LabBillingPage() {
             }
 
             if (shouldPrint) setTimeout(() => handlePrint(), 500);
-            
+
             // Refresh data everywhere
             window.dispatchEvent(new Event('refresh-lab-data'));
         } catch (err: any) {
@@ -275,10 +283,10 @@ function LabBillingPage() {
             invalidateCachePattern('/lab/orders');
             invalidateCachePattern('/lab/invoices');
             invalidateCachePattern('/lab/dashboard-stats');
-            
+
             // Global refresh notification
             window.dispatchEvent(new Event('refresh-lab-data'));
-            
+
             router.push('/lab/billing/transactions');
         } catch (error) {
             console.error(error);

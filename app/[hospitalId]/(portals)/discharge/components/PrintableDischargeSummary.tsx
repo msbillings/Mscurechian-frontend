@@ -246,33 +246,19 @@ export const PrintableDischargeSummary = React.forwardRef<HTMLDivElement, { data
                             </div>
 
                             {/* Row 7 */}
-                            <div className="flex border-b border-r border-gray-100 p-1.5 bg-slate-50/30">
-                                <span className="font-bold w-36 shrink-0 text-gray-600 italic">Bed Charges</span>
-                                <span className="font-medium">: ₹{data.bedChargesTotal?.toLocaleString() || '0.00'}</span>
+                            <div className="flex border-b border-r border-gray-100 p-1.5 bg-slate-50/30 text-blue-700">
+                                <span className="font-bold w-36 shrink-0 italic text-black">Advance Amount</span>
+                                <span className="font-bold">: ₹{data.advanceAmount?.toLocaleString() || '0.00'}</span>
                             </div>
-                            <div className="flex border-b border-gray-100 p-1.5 pl-3 bg-slate-50/30">
-                                <span className="font-bold w-36 shrink-0 text-gray-600 italic">Extra Charges</span>
-                                <span className="font-medium">: ₹{data.extraChargesTotal?.toLocaleString() || '0.00'}</span>
+                            <div className="flex border-b border-gray-100 p-1.5 pl-3 bg-slate-50/30 text-rose-700">
+                                <span className="font-bold w-36 shrink-0 italic text-black">Due Amount</span>
+                                <span className="font-bold">: ₹{data.finalPayment?.toLocaleString() || '0.00'}</span>
                             </div>
 
                             {/* Row 8 */}
-                            <div className="flex border-b border-r border-gray-100 p-1.5 bg-slate-50/30 text-emerald-700">
-                                <span className="font-bold w-36 shrink-0 italic">Discount Saved</span>
-                                <span className="font-bold">: ₹{data.discountAmount?.toLocaleString() || '0.00'}</span>
-                            </div>
-                            <div className="flex border-b border-gray-100 p-1.5 pl-3 bg-slate-50/30 text-blue-700">
-                                <span className="font-bold w-36 shrink-0 italic">Advance Paid</span>
-                                <span className="font-bold">: ₹{data.advanceAmount?.toLocaleString() || '0.00'}</span>
-                            </div>
-
-                            {/* Row 9 */}
-                            <div className="flex border-r border-gray-100 p-1.5 bg-slate-100/50">
-                                <span className="font-bold w-36 shrink-0 text-black text-xs uppercase tracking-tighter">Total Bill (Net)</span>
+                            <div className="flex p-1.5 bg-slate-100/50 col-span-2">
+                                <span className="font-bold w-36 shrink-0 text-black text-xs uppercase tracking-tighter">Total Bill Amount</span>
                                 <span className="font-black text-xs">: ₹{data.totalBillAmount?.toLocaleString() || '0.00'}</span>
-                            </div>
-                            <div className="flex p-1.5 pl-3 bg-slate-100/50">
-                                <span className="font-bold w-36 shrink-0 text-black text-xs uppercase tracking-tighter">Final Due Settled</span>
-                                <span className="font-black text-xs">: ₹{data.finalPayment?.toLocaleString() || '0.00'}</span>
                             </div>
                         </div>
                     </div>
