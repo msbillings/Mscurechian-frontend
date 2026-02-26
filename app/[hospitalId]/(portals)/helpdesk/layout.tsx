@@ -41,7 +41,7 @@ const helpdeskMenu = [
     { icon: <Truck size={18} />, label: "Files & Receipts", path: "/helpdesk/transits" },
     { icon: <AlertCircle size={18} />, label: "Emergency Cases", path: "/helpdesk/emergency-accept" },
     { icon: <ClipboardList size={18} />, label: "Discharge Queue", path: "/helpdesk/discharge" },
-   
+    { icon: <Bell size={18} />, label: "Hospital Announcements", path: "/helpdesk/announcements" },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
