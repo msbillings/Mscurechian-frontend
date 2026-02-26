@@ -60,7 +60,6 @@ import type {
   Doctor,
   Patient,
   Helpdesk,
-  AuditLog,
   SupportTicket,
 } from "../types";
 
@@ -88,9 +87,6 @@ export async function getHelpdesksAction() {
   return apiServer<Helpdesk[]>(endpoints.admin.helpdesks);
 }
 
-export async function getAuditsAction() {
-  return apiServer<AuditLog[]>(endpoints.admin.audits);
-}
 
 export async function getSupportRequestsAction() {
   return apiServer<SupportTicket[]>(endpoints.admin.supportRequests);
