@@ -56,7 +56,7 @@ const StaffCard = React.memo(({
               {member.name?.charAt(0) || '?'}
             </div>
             <div className="min-w-0">
-              <h3 className="text-lg font-black text-slate-900 truncate leading-tight">
+              <h3 className="text-lg font-black text-slate-900 leading-tight wrap-break-word">
                 {member.name}
               </h3>
               <div className="flex items-center gap-2 mt-1.5">
@@ -185,6 +185,7 @@ function HospitalAdminStaff() {
   };
 
   const filteredStaff = useMemo(() => {
+    if (!Array.isArray(staff)) return [];
     return staff.filter((member) => {
       const matchesSearch =
         !debouncedSearch ||
@@ -200,6 +201,7 @@ function HospitalAdminStaff() {
   }, [staff, debouncedSearch, filterDepartment]);
 
   const departments = useMemo(() => {
+    if (!Array.isArray(staff)) return [];
     return Array.from(
       new Set(staff.map((member) => member.department).filter(Boolean))
     ).sort();
