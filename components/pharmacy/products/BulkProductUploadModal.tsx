@@ -24,6 +24,7 @@ const BulkProductUploadModal: React.FC<BulkProductUploadModalProps> = ({ isOpen,
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
     const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(false);
+    const [visibleRows, setVisibleRows] = useState(10);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     React.useEffect(() => {
@@ -60,6 +61,7 @@ const BulkProductUploadModal: React.FC<BulkProductUploadModalProps> = ({ isOpen,
         setFile(selectedFile);
         setIsParsing(true);
         setUploadResults(null);
+        setVisibleRows(10);
 
         try {
             const data = await parseFile(selectedFile);
@@ -472,29 +474,68 @@ const BulkProductUploadModal: React.FC<BulkProductUploadModalProps> = ({ isOpen,
                                                 <th className="px-4 py-3 font-bold text-gray-500">Generic Name</th>
                                                 <th className="px-4 py-3 font-bold text-gray-500">Stock</th>
                                                 <th className="px-4 py-3 font-bold text-gray-500">MRP</th>
+                                                <th className="px-4 py-3 font-bold text-gray-500">Expiry Date</th>
                                                 <th className="px-4 py-3 font-bold text-gray-500">Assigned Supplier</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y dark:divide-gray-800">
-                                            {previewData.slice(0, 10).map((p, i) => (
-                                                <tr key={i} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                                                    <td className="px-4 py-3 font-bold text-gray-700 dark:text-gray-300">{p.sku}</td>
-                                                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{p.brandName}</td>
-                                                    <td className="px-4 py-3 text-gray-500">{p.genericName}</td>
-                                                    <td className="px-4 py-3 font-bold text-teal-600">{p.currentStock}</td>
-                                                    <td className="px-4 py-3 font-bold text-indigo-600">₹{p.mrp}</td>
-                                                    <td className="px-4 py-3">
-                                                        <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-tight">
-                                                            {suppliers.find(s => s._id === selectedSupplierId)?.name || 'N/A'}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                            {previewData.slice(0, visibleRows).map((p, i) => {
+                                                const expiry = p.expiryDate ? new Date(p.expiryDate) : null;
+                                                const expiryLabel = expiry && !isNaN(expiry.getTime())
+                                                    ? expiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                                                    : null;
+                                                return (
+                                                    <tr key={i} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
+                                                        <td className="px-4 py-3 font-bold text-gray-700 dark:text-gray-300">{p.sku}</td>
+                                                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{p.brandName}</td>
+                                                        <td className="px-4 py-3 text-gray-500">{p.genericName}</td>
+                                                        <td className="px-4 py-3 font-bold text-teal-600">{p.currentStock}</td>
+                                                        <td className="px-4 py-3 font-bold text-indigo-600">₹{p.mrp}</td>
+                                                        <td className="px-4 py-3">
+                                                            {expiryLabel ? (
+                                                                <span className="px-2.5 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-bold">
+                                                                    {expiryLabel}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="px-2.5 py-1 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-lg text-[10px] font-black uppercase tracking-wide">
+                                                                    Missing
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-tight">
+                                                                {suppliers.find(s => s._id === selectedSupplierId)?.name || 'N/A'}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
-                                    {previewData.length > 10 && (
-                                        <div className="p-4 text-center text-xs font-bold text-gray-400 bg-gray-50/30 dark:bg-gray-800/30">
-                                            + {previewData.length - 10} more records
+                                    {previewData.length > visibleRows && (
+                                        <div className="p-3 text-center border-t dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 flex items-center justify-center gap-3">
+                                            <button
+                                                onClick={() => setVisibleRows(v => Math.min(v + 10, previewData.length))}
+                                                className="px-5 py-2 text-xs font-black text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-xl transition-colors flex items-center gap-2"
+                                            >
+                                                Show More
+                                                <span className="bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full font-black">
+                                                    +{Math.min(10, previewData.length - visibleRows)}
+                                                </span>
+                                            </button>
+                                            <span className="text-[10px] font-bold text-gray-400">
+                                                {visibleRows} of {previewData.length} records
+                                            </span>
+                                        </div>
+                                    )}
+                                    {visibleRows > 10 && visibleRows >= previewData.length && (
+                                        <div className="p-3 text-center border-t dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
+                                            <button
+                                                onClick={() => setVisibleRows(10)}
+                                                className="px-5 py-2 text-xs font-black text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                                            >
+                                                Show Less
+                                            </button>
                                         </div>
                                     )}
                                 </div>
