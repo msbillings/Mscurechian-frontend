@@ -201,6 +201,7 @@ export const hospitalAdminService = {
   },
 
   createDoctor: async (data: CreateDoctorRequest) => {
+    let res;
     // Ensure doctor is created for the hospital admin's hospital
     try {
       const hospitalResponse = await apiClient<{ hospital: Hospital }>(
@@ -208,80 +209,109 @@ export const hospitalAdminService = {
       );
       const hospitalId = hospitalResponse.hospital._id;
 
-      return apiClient<Doctor>(HOSPITAL_ADMIN_ENDPOINTS.CREATE_DOCTOR, {
+      res = await apiClient<Doctor>(HOSPITAL_ADMIN_ENDPOINTS.CREATE_DOCTOR, {
         method: "POST",
         body: JSON.stringify({ ...data, hospitalId }),
       });
     } catch (error) {
       // Fallback: try without hospitalId if we can't get the hospital
-      return apiClient<Doctor>(HOSPITAL_ADMIN_ENDPOINTS.CREATE_DOCTOR, {
+      res = await apiClient<Doctor>(HOSPITAL_ADMIN_ENDPOINTS.CREATE_DOCTOR, {
         method: "POST",
         body: JSON.stringify(data),
       });
     }
+    invalidateCachePattern(HOSPITAL_ADMIN_ENDPOINTS.DOCTORS);
+    return res;
   },
 
-  updateDoctor: (id: string, data: Partial<CreateDoctorRequest>) =>
-    apiClient<Doctor>(HOSPITAL_ADMIN_ENDPOINTS.UPDATE_DOCTOR(id), {
-      method: "PUT",
-      body: JSON.stringify(data),
-    }),
+  updateDoctor: async (id: string, data: Partial<CreateDoctorRequest>) => {
+    const res = await apiClient<Doctor>(
+      HOSPITAL_ADMIN_ENDPOINTS.UPDATE_DOCTOR(id),
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      },
+    );
+    invalidateCachePattern(HOSPITAL_ADMIN_ENDPOINTS.DOCTORS);
+    return res;
+  },
 
   // Deactivate doctor (soft delete - sets status to inactive)
   deactivateDoctor: async (id: string) => {
-    return apiClient<{ doctor: Doctor }>(
+    const res = await apiClient<{ doctor: Doctor }>(
       HOSPITAL_ADMIN_ENDPOINTS.UPDATE_DOCTOR(id),
       {
         method: "PUT",
         body: JSON.stringify({ status: "inactive" }),
       },
     );
+    invalidateCachePattern(HOSPITAL_ADMIN_ENDPOINTS.DOCTORS);
+    return res;
   },
 
   // Activate doctor (sets status to active)
   activateDoctor: async (id: string) => {
-    return apiClient<{ doctor: Doctor }>(
+    const res = await apiClient<{ doctor: Doctor }>(
       HOSPITAL_ADMIN_ENDPOINTS.UPDATE_DOCTOR(id),
       {
         method: "PUT",
         body: JSON.stringify({ status: "active" }),
       },
     );
+    invalidateCachePattern(HOSPITAL_ADMIN_ENDPOINTS.DOCTORS);
+    return res;
   },
 
   // Permanent delete (removes doctor from hospital)
   deleteDoctor: async (id: string) => {
-    return apiClient<{ success: boolean; message: string }>(
+    const res = await apiClient<{ success: boolean; message: string }>(
       HOSPITAL_ADMIN_ENDPOINTS.DELETE_DOCTOR(id),
       {
         method: "DELETE",
       },
     );
+    invalidateCachePattern(HOSPITAL_ADMIN_ENDPOINTS.DOCTORS);
+    return res;
   },
 
   // Helpdesk
   getHelpdesks: () =>
     apiClient<{ helpdesks: Helpdesk[] }>(HOSPITAL_ADMIN_ENDPOINTS.HELPDESKS),
 
-  createHelpdesk: (data: CreateHospitalHelpdeskRequest) =>
-    apiClient<Helpdesk>(HOSPITAL_ADMIN_ENDPOINTS.CREATE_HELPDESK, {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+  createHelpdesk: async (data: CreateHospitalHelpdeskRequest) => {
+    const res = await apiClient<Helpdesk>(
+      HOSPITAL_ADMIN_ENDPOINTS.CREATE_HELPDESK,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      },
+    );
+    invalidateCachePattern(HOSPITAL_ADMIN_ENDPOINTS.HELPDESKS);
+    return res;
+  },
 
-  updateHelpdesk: (id: string, data: any) =>
-    apiClient<Helpdesk>(HOSPITAL_ADMIN_ENDPOINTS.HELPDESK_DETAIL(id), {
-      method: "PUT",
-      body: JSON.stringify(data),
-    }),
+  updateHelpdesk: async (id: string, data: any) => {
+    const res = await apiClient<Helpdesk>(
+      HOSPITAL_ADMIN_ENDPOINTS.HELPDESK_DETAIL(id),
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      },
+    );
+    invalidateCachePattern(HOSPITAL_ADMIN_ENDPOINTS.HELPDESKS);
+    return res;
+  },
 
-  deleteHelpdesk: (id: string) =>
-    apiClient<{ message: string }>(
+  deleteHelpdesk: async (id: string) => {
+    const res = await apiClient<{ message: string }>(
       HOSPITAL_ADMIN_ENDPOINTS.HELPDESK_DETAIL(id),
       {
         method: "DELETE",
       },
-    ),
+    );
+    invalidateCachePattern(HOSPITAL_ADMIN_ENDPOINTS.HELPDESKS);
+    return res;
+  },
 
   sendHelpdeskCredentials: (data: {
     helpdeskId: string;
@@ -309,34 +339,52 @@ export const hospitalAdminService = {
   // HR Management
   getHR: () => apiClient<{ hrs: any[] }>(HOSPITAL_ADMIN_ENDPOINTS.HR),
 
-  createHR: (data: any) =>
-    apiClient<any>(HOSPITAL_ADMIN_ENDPOINTS.CREATE_HR, {
+  createHR: async (data: any) => {
+    const res = await apiClient<any>(HOSPITAL_ADMIN_ENDPOINTS.CREATE_HR, {
       method: "POST",
       body: JSON.stringify(data),
-    }),
+    });
+    invalidateCachePattern(HOSPITAL_ADMIN_ENDPOINTS.HR);
+    return res;
+  },
 
-  updateHR: (id: string, data: any) =>
-    apiClient<any>(HOSPITAL_ADMIN_ENDPOINTS.UPDATE_HR(id), {
+  updateHR: async (id: string, data: any) => {
+    const res = await apiClient<any>(HOSPITAL_ADMIN_ENDPOINTS.UPDATE_HR(id), {
       method: "PUT",
       body: JSON.stringify(data),
-    }),
+    });
+    invalidateCachePattern(HOSPITAL_ADMIN_ENDPOINTS.HR);
+    return res;
+  },
 
-  deleteHR: (id: string) =>
-    apiClient<{ message: string }>(HOSPITAL_ADMIN_ENDPOINTS.DELETE_HR(id), {
-      method: "DELETE",
-    }),
+  deleteHR: async (id: string) => {
+    const res = await apiClient<{ message: string }>(
+      HOSPITAL_ADMIN_ENDPOINTS.DELETE_HR(id),
+      {
+        method: "DELETE",
+      },
+    );
+    invalidateCachePattern(HOSPITAL_ADMIN_ENDPOINTS.HR);
+    return res;
+  },
 
-  deactivateHR: (id: string) =>
-    apiClient<any>(HOSPITAL_ADMIN_ENDPOINTS.UPDATE_HR(id), {
+  deactivateHR: async (id: string) => {
+    const res = await apiClient<any>(HOSPITAL_ADMIN_ENDPOINTS.UPDATE_HR(id), {
       method: "PUT",
       body: JSON.stringify({ status: "inactive" }),
-    }),
+    });
+    invalidateCachePattern(HOSPITAL_ADMIN_ENDPOINTS.HR);
+    return res;
+  },
 
-  activateHR: (id: string) =>
-    apiClient<any>(HOSPITAL_ADMIN_ENDPOINTS.UPDATE_HR(id), {
+  activateHR: async (id: string) => {
+    const res = await apiClient<any>(HOSPITAL_ADMIN_ENDPOINTS.UPDATE_HR(id), {
       method: "PUT",
       body: JSON.stringify({ status: "active" }),
-    }),
+    });
+    invalidateCachePattern(HOSPITAL_ADMIN_ENDPOINTS.HR);
+    return res;
+  },
 
   getHRById: async (id: string) => {
     return hospitalAdminService.getStaffById(id);

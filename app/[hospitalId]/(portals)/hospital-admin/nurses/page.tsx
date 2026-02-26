@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { useQuery } from "@tanstack/react-query";
 import { hospitalAdminService } from "@/lib/integrations";
 import { ConfirmModal } from '@/components/admin/Modal';
 import {
@@ -24,39 +25,33 @@ import { PageHeader } from "@/components/admin";
 
 export default function HospitalAdminNurses() {
     const router = useRouter();
-    const [nurses, setNurses] = useState<any[]>([]);
-    const [unitTypes, setUnitTypes] = useState<string[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filterDepartment, setFilterDepartment] = useState("");
+    const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+
     const [confirmModal, setConfirmModal] = useState<{
         isOpen: boolean;
         title: string;
         message: string;
         onConfirm: () => void;
     }>({ isOpen: false, title: "", message: "", onConfirm: () => { } });
-    const [searchTerm, setSearchTerm] = useState("");
-    const [filterDepartment, setFilterDepartment] = useState("");
-    const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchInitialData();
-    }, []);
-
-    const fetchInitialData = async () => {
-        try {
-            setLoading(true);
-            const [nursesData, typesData] = await Promise.all([
+    const { data: nursesData, isLoading: loading, refetch } = useQuery({
+        queryKey: ['hospital-admin-nurses'],
+        queryFn: async () => {
+            const [nursesResp, typesData] = await Promise.all([
                 hospitalAdminService.getNurses(),
                 import('@/lib/integrations/services/ipd.service').then(m => m.ipdService.getUnitTypes().catch(() => []))
             ]);
-            setNurses(nursesData.nurses || []);
-            setUnitTypes(typesData);
-        } catch (error: any) {
-            console.error("Failed to fetch data:", error);
-            toast.error(error.message || "Failed to load registry");
-        } finally {
-            setLoading(false);
+            return {
+                nurses: nursesResp.nurses || [],
+                unitTypes: typesData || []
+            };
         }
-    };
+    });
+
+    const nurses = nursesData?.nurses || [];
+    const unitTypes = nursesData?.unitTypes || [];
 
     const handleRetract = async (id: string, name: string) => {
         setConfirmModal({
@@ -68,7 +63,7 @@ export default function HospitalAdminNurses() {
                     setDeleteLoading(id);
                     await hospitalAdminService.updateStaff(id, { status: 'inactive' });
                     toast.success("Nursing credentials retracted");
-                    fetchInitialData();
+                    refetch();
                 } catch (error: any) {
                     console.error("Failed to retract nurse:", error);
                     toast.error(error.message || "Failed to update status");

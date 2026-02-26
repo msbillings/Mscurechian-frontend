@@ -242,9 +242,6 @@ const rowFilterData = (data: any[], roleFilter?: string) => {
       ''
     ).toLowerCase();
 
-    // Always exclude helpdesk from attendance views
-    if (role === 'helpdesk') return false;
-
     // If a specific role is requested, filter to that role
     if (roleFilter) return role === roleFilter.toLowerCase();
 
@@ -273,11 +270,11 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
 
   const fetchStaff = async () => {
     try {
-      // Helpdesk is excluded from attendance — do not fetch them here
-      const [staffRes, drRes, nurseRes] = await Promise.allSettled([
+      const [staffRes, drRes, nurseRes, helpRes] = await Promise.allSettled([
         hospitalAdminService.getStaff(),
         hospitalAdminService.getDoctors(),
         hospitalAdminService.getNurses(),
+        hospitalAdminService.getHelpdesks(),
       ]);
 
       const allStaff: any[] = [];
@@ -285,11 +282,15 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
       if (staffRes.status === 'fulfilled') allStaff.push(...(staffRes.value.staff || []));
       if (drRes.status === 'fulfilled') allStaff.push(...(drRes.value.doctors || []));
       if (nurseRes.status === 'fulfilled') allStaff.push(...(nurseRes.value.nurses || []));
+      if (helpRes.status === 'fulfilled') {
+          // Map helpdesk users to expected shape if needed, though they already have _id/name typically
+          allStaff.push(...(helpRes.value.helpdesks || []));
+      }
 
-      // Always exclude admin and helpdesk; filter by explicit roleFilter if provided
+      // Always exclude admin; filter by explicit roleFilter if provided
       const filtered = allStaff.filter((s: any) => {
         const role = (s.user?.role || s.role || '').toLowerCase();
-        if (role === 'hospital-admin' || role === 'helpdesk') return false;
+        if (role === 'hospital-admin') return false;
         if (roleFilter) return role === roleFilter.toLowerCase();
         return true;
       });

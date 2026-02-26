@@ -57,12 +57,28 @@ export default function HelpdeskManagement() {
   const [selectedHelpdesk, setSelectedHelpdesk] = useState<Helpdesk | null>(null);
   const [createdCreds, setCreatedCreds] = useState<Credentials | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState("basic");
   const [formData, setFormData] = useState({
     staffId: "",
     name: "",
     email: "",
     mobile: "",
     password: "",
+    gender: "",
+    dateOfBirth: "",
+    department: "",
+    designation: "Helpdesk",
+    employeeId: "",
+    employmentType: "full-time",
+    experienceYears: "",
+    joiningDate: new Date().toISOString().split('T')[0],
+    shift: "",
+    startTime: "09:00",
+    endTime: "17:00",
+    weeklyOff: ["Saturday", "Sunday"] as string[],
+    baseSalary: "0",
+    panNumber: "",
+    aadharNumber: "",
     notes: ""
   });
   const [loading, setLoading] = useState(false);
@@ -87,6 +103,33 @@ export default function HelpdeskManagement() {
     }
   });
 
+  const { data: shifts = [] } = useQuery({
+    queryKey: ['hospital-shifts'],
+    queryFn: () => hospitalAdminService.getShifts()
+  });
+
+  const { data: departments = [] } = useQuery({
+    queryKey: ['hospital-departments'],
+    queryFn: async () => {
+      const res = await hospitalAdminService.getHospitalMetadata();
+      return res.data.unitTypes || [];
+    }
+  });
+
+  // Input handlers with restrictions
+  const handleChange = (field: string, value: string) => {
+    // Input-level restrictions
+    if (field === 'mobile' && !/^\d{0,10}$/.test(value)) return;
+    if (field === 'aadharNumber' && !/^\d{0,12}$/.test(value)) return;
+    if (field === 'panNumber' && value.length > 10) return;
+    if (field === 'experienceYears' && !/^\d{0,2}$/.test(value)) return;
+    if (field === 'baseSalary' && (!/^\d*$/.test(value) || value.length > 10)) return;
+    if (field === 'name' && value.length > 100) return;
+    if (field === 'employeeId' && value.length > 20) return;
+    
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   // Handlers
   const handleEditClick = (helpdesk: Helpdesk) => {
     setSelectedHelpdesk(helpdesk);
@@ -96,6 +139,21 @@ export default function HelpdeskManagement() {
       email: helpdesk.email || "",
       mobile: helpdesk.mobile || "",
       password: "",
+      gender: "",
+      dateOfBirth: "",
+      department: "",
+      designation: "Helpdesk",
+      employeeId: "",
+      employmentType: "full-time",
+      experienceYears: "",
+      joiningDate: new Date().toISOString().split('T')[0],
+      shift: "",
+      startTime: "09:00",
+      endTime: "17:00",
+      weeklyOff: ["Saturday", "Sunday"],
+      baseSalary: "0",
+      panNumber: "",
+      aadharNumber: "",
       notes: helpdesk.additionalNotes || ""
     });
     setIsEditModalOpen(true);
@@ -114,28 +172,63 @@ export default function HelpdeskManagement() {
 
   const onAddHelpdesk = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.staffId) return toast.error("Select a staff member");
+    
+    // Comprehensive Validations
+    const nameTrimmed = formData.name.trim();
+    const emailTrimmed = formData.email.trim();
+    
+    if (!nameTrimmed) return toast.error("Full Name is required");
+    if (!/^[a-zA-Z\s.'-]+$/.test(nameTrimmed)) return toast.error("Name can only contain letters, spaces, dots, and hyphens");
+    
+    if (!formData.mobile) return toast.error("Mobile number is required");
+    if (formData.mobile.length !== 10) return toast.error("Mobile number must be exactly 10 digits");
+    
+    if (emailTrimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed))
+      return toast.error("Please enter a valid email address");
+      
+    if (!formData.password) return toast.error("Account password is required");
+    if (formData.password.length < 6) return toast.error("Password must be at least 6 characters long");
+    
+    if (!formData.department) return toast.error("Department is required");
+    if (!formData.designation.trim()) return toast.error("Designation is required");
+    
+    if (formData.aadharNumber && formData.aadharNumber.length !== 12) 
+      return toast.error("Aadhar number must be exactly 12 digits");
+      
+    if (formData.panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber.toUpperCase()))
+      return toast.error("Please enter a valid PAN number (e.g., ABCDE1234F)");
+
     if (formData.notes.length > 500) return toast.error("Notes cannot exceed 500 characters");
 
     try {
       setLoading(true);
-      const loginId = `HUB-${Math.floor(1000 + Math.random() * 9000)}`;
-      const password = Math.random().toString(36).slice(-8).toUpperCase();
+      const loginId = formData.employeeId || `HUB-${Math.floor(1000 + Math.random() * 9000)}`;
 
       const resp: any = await hospitalAdminService.createHelpdesk({
-        staffId: formData.staffId,
+        ...formData,
         loginId,
-        password,
-        additionalNotes: formData.notes
+        additionalNotes: formData.notes,
+        workingHours: {
+          start: formData.startTime,
+          end: formData.endTime
+        }
       });
 
       // Close add modal and show credentials modal
       setIsAddModalOpen(false);
-      setFormData({ staffId: "", name: "", email: "", mobile: "", password: "", notes: "" });
+      setFormData({ 
+        staffId: "", name: "", email: "", mobile: "", password: "", notes: "",
+        gender: "", dateOfBirth: "", department: "", designation: "Helpdesk",
+        employeeId: "", employmentType: "full-time", experienceYears: "",
+        joiningDate: new Date().toISOString().split('T')[0],
+        shift: "", startTime: "09:00", endTime: "17:00", weeklyOff: ["Saturday", "Sunday"],
+        baseSalary: "0", panNumber: "", aadharNumber: ""
+      });
       queryClient.invalidateQueries({ queryKey: ['helpdesks'] });
+      queryClient.invalidateQueries({ queryKey: ['hospital-admin', 'dashboard'] });
 
-      const helpdeskName = resp?.helpdesk?.name || "Helpdesk Staff";
-      setCreatedCreds({ name: helpdeskName, loginId, password });
+      const helpdeskName = resp?.helpdesk?.name || formData.name;
+      setCreatedCreds({ name: helpdeskName, loginId, password: formData.password });
       setShowPassword(false);
       setIsCredModalOpen(true);
     } catch (err: any) {
@@ -145,15 +238,60 @@ export default function HelpdeskManagement() {
     }
   };
 
+  const handleStaffSelect = (staffId: string) => {
+    const selected = staff.find((s: any) => s._id === staffId);
+    if (selected) {
+      setFormData({
+        ...formData,
+        staffId,
+        name: selected.name || "",
+        email: selected.email || selected.user?.email || "",
+        mobile: selected.mobile || selected.user?.mobile || "",
+        gender: selected.gender || selected.user?.gender || "",
+        dateOfBirth: selected.dateOfBirth || selected.user?.dateOfBirth || "",
+        department: selected.department || "",
+        designation: selected.designation || "Helpdesk",
+        employeeId: selected.employeeId || "",
+        baseSalary: selected.baseSalary ? selected.baseSalary.toString() : "0",
+      });
+    } else {
+      setFormData({ 
+        ...formData, staffId: "", name: "", email: "", mobile: "", 
+        gender: "", dateOfBirth: "", department: "", designation: "Helpdesk",
+        employeeId: "", baseSalary: "0" 
+      });
+    }
+  };
+
+  const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+  const toggleWeeklyOff = (day: string) => {
+    setFormData(prev => ({
+      ...prev,
+      weeklyOff: prev.weeklyOff.includes(day)
+        ? prev.weeklyOff.filter(d => d !== day)
+        : [...prev.weeklyOff, day]
+    }));
+  };
+
   const onUpdateHelpdesk = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedHelpdesk) return;
 
-    if (!formData.name.trim()) return toast.error("Name is required");
-    if (!/^[a-zA-Z\s.'-]+$/.test(formData.name.trim())) return toast.error("Name can only contain letters, spaces, dots, and hyphens");
-    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-      return toast.error("Please enter a valid email address");
+    const nameTrimmed = formData.name.trim();
+    const emailTrimmed = formData.email.trim();
+
+    if (!nameTrimmed) return toast.error("Name is required");
+    if (!/^[a-zA-Z\s.'-]+$/.test(nameTrimmed)) return toast.error("Name can only contain letters, spaces, dots, and hyphens");
+    
+    if (!formData.mobile) return toast.error("Mobile number is required");
     if (formData.mobile.length !== 10) return toast.error("Mobile number must be exactly 10 digits");
+    
+    if (emailTrimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed))
+      return toast.error("Please enter a valid email address");
+
+    if (formData.password && formData.password.length < 6) 
+      return toast.error("New password must be at least 6 characters long");
 
     try {
       setLoading(true);
@@ -169,6 +307,7 @@ export default function HelpdeskManagement() {
       toast.success("Details updated");
       setIsEditModalOpen(false);
       queryClient.invalidateQueries({ queryKey: ['helpdesks'] });
+      queryClient.invalidateQueries({ queryKey: ['hospital-admin', 'dashboard'] });
     } catch (err: any) {
       toast.error(err.message || "Update failed");
     } finally {
@@ -227,7 +366,17 @@ export default function HelpdeskManagement() {
           <p className="text-sm text-slate-500">Manage support hub personnel and credentials</p>
         </div>
         <button
-          onClick={() => { setFormData({ staffId: "", name: "", email: "", mobile: "", password: "", notes: "" }); setIsAddModalOpen(true); }}
+          onClick={() => { 
+            setFormData({ 
+              staffId: "", name: "", email: "", mobile: "", password: "", notes: "",
+              gender: "", dateOfBirth: "", department: "", designation: "Helpdesk",
+              employeeId: "", employmentType: "full-time", experienceYears: "",
+              joiningDate: new Date().toISOString().split('T')[0],
+              shift: "", startTime: "09:00", endTime: "17:00", weeklyOff: ["Saturday", "Sunday"],
+              baseSalary: "0", panNumber: "", aadharNumber: ""
+            }); 
+            setIsAddModalOpen(true); 
+          }}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm"
         >
           <Plus size={18} />
@@ -332,35 +481,182 @@ export default function HelpdeskManagement() {
       </div>
 
       {/* ─── Add Modal ─────────────────────────────────────────────────────── */}
-      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Add Hub Staff" maxWidth="max-w-md">
-        <form onSubmit={onAddHelpdesk} className="space-y-4 pt-2">
-          <FormSelect
-            label="Select Personnel Profile"
-            value={formData.staffId}
-            onChange={(e) => setFormData({ ...formData, staffId: e.target.value })}
-            options={[
-              { label: "Choose an existing staff member", value: "" },
-              ...staff.map((s: any) => ({ label: `${s.name} (${s.mobile || 'No Mobile'})`, value: s._id }))
-            ]}
-            required
-          />
-          <FormTextarea
-            label="Access Notes (optional)"
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            placeholder="Instructions or specific access details..."
-            rows={3}
-            maxLength={500}
-          />
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">Cancel</button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium shadow-sm hover:bg-blue-700 transition-all disabled:opacity-60"
-            >
-              {loading ? "Creating..." : "Initialize Hub Account"}
-            </button>
+      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Initialize Hub Account" maxWidth="max-w-2xl">
+        <form onSubmit={onAddHelpdesk} className="space-y-6 pt-2">
+          {/* Modal Tabs */}
+          <div className="flex border-b border-slate-100 gap-6 px-1">
+            {["basic", "employment", "schedule", "financial"].map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`pb-3 text-xs font-bold uppercase tracking-widest transition-all ${
+                  activeTab === tab ? "text-blue-600 border-b-2 border-blue-600" : "text-slate-400 hover:text-slate-600"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          <div className="min-h-[300px]">
+            {activeTab === "basic" && (
+              <div className="space-y-4 animate-in fade-in duration-300">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormInput label="Full Name" value={formData.name} onChange={(e) => handleChange('name', e.target.value)} required />
+                  <FormSelect 
+                    label="Gender" 
+                    value={formData.gender} 
+                    onChange={(e) => handleChange('gender', e.target.value)}
+                    options={[{label: "Select", value: ""}, {label: "Male", value: "male"}, {label: "Female", value: "female"}, {label: "Other", value: "other"}]}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormInput label="Mobile Number" value={formData.mobile} onChange={(e) => handleChange('mobile', e.target.value)} required placeholder="10-digit mobile" />
+                  <FormInput label="Email Address" type="email" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} placeholder="email@example.com" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormInput label="Date of Birth" type="date" value={formData.dateOfBirth} onChange={(e) => handleChange('dateOfBirth', e.target.value)} />
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-700">Account Password</label>
+                    <div className="relative">
+                      <input 
+                        type={showPassword ? "text" : "password"} 
+                        value={formData.password}
+                        onChange={(e) => handleChange('password', e.target.value)}
+                        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/10"
+                        placeholder="Min. 6 characters"
+                        required
+                      />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500">
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "employment" && (
+              <div className="space-y-4 animate-in fade-in duration-300">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormSelect
+                    label="Department"
+                    value={formData.department}
+                    onChange={(e) => handleChange('department', e.target.value)}
+                    options={[
+                      { label: "Select Department", value: "" },
+                      ...departments.map((d: string) => ({ label: d, value: d }))
+                    ]}
+                    required
+                  />
+                  <FormInput label="Designation" value={formData.designation} onChange={(e) => handleChange('designation', e.target.value)} required />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormInput label="Employee ID (Internal)" value={formData.employeeId} onChange={(e) => handleChange('employeeId', e.target.value)} placeholder="e.g. HELP-001" />
+                  <FormInput label="Joining Date" type="date" value={formData.joiningDate} onChange={(e) => handleChange('joiningDate', e.target.value)} />
+                </div>
+                <FormSelect
+                  label="Contract Type"
+                  value={formData.employmentType}
+                  onChange={(e) => handleChange('employmentType', e.target.value)}
+                  options={[{ label: "Full Time", value: "full-time" }, { label: "Part Time", value: "part-time" }, { label: "Contract", value: "contract" }]}
+                />
+              </div>
+            )}
+
+            {activeTab === "schedule" && (
+              <div className="space-y-6 animate-in fade-in duration-300">
+                <div className="space-y-4">
+                  <FormSelect
+                    label="Assigned Shift"
+                    value={formData.shift}
+                    onChange={(e) => {
+                      const selectedShift = (shifts as any[]).find(s => s._id === e.target.value);
+                      setFormData({ 
+                        ...formData, 
+                        shift: e.target.value,
+                        startTime: selectedShift?.startTime || "09:00",
+                        endTime: selectedShift?.endTime || "17:00"
+                      });
+                    }}
+                    options={[
+                      { label: "Select Work Shift", value: "" },
+                      ...(shifts as any[]).map(s => ({ label: `${s.name} (${s.startTime} - ${s.endTime})`, value: s._id }))
+                    ]}
+                    required
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Shift Start</p>
+                      <p className="text-sm font-bold text-slate-700">{formData.startTime}</p>
+                    </div>
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Shift End</p>
+                      <p className="text-sm font-bold text-slate-700">{formData.endTime}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Weekly Off Days</label>
+                  <div className="flex flex-wrap gap-2">
+                    {DAYS_OF_WEEK.map(day => (
+                      <button 
+                        key={day} 
+                        type="button"
+                        onClick={() => toggleWeeklyOff(day)}
+                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border transition-all ${
+                          formData.weeklyOff.includes(day)
+                            ? "bg-blue-600 border-blue-600 text-white"
+                            : "bg-white border-slate-200 text-slate-500 hover:border-blue-300"
+                        }`}
+                      >
+                        {day.substring(0, 3)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "financial" && (
+              <div className="space-y-4 animate-in fade-in duration-300">
+                <FormInput
+                  label="Monthly Base Salary"
+                  type="text"
+                  value={formData.baseSalary}
+                  onChange={(e) => handleChange('baseSalary', e.target.value)}
+                  placeholder="0"
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormInput label="PAN Number" value={formData.panNumber} onChange={(e) => handleChange('panNumber', e.target.value.toUpperCase())} placeholder="ABCDE1234F" />
+                  <FormInput label="Aadhar Number" value={formData.aadharNumber} onChange={(e) => handleChange('aadharNumber', e.target.value)} placeholder="12-digit number" />
+                </div>
+                <FormTextarea
+                  label="Access/Internal Notes"
+                  value={formData.notes}
+                  onChange={(e) => handleChange('notes', e.target.value)}
+                  placeholder="Additional instructions..."
+                  rows={3}
+                  maxLength={500}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+            <p className="text-[10px] text-slate-400 max-w-[300px]">Registration will create a secure login and initial staff profile record.</p>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">Cancel</button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-60"
+              >
+                {loading ? "Initializing..." : "Register Hub Account"}
+              </button>
+            </div>
           </div>
         </form>
       </Modal>
@@ -375,7 +671,7 @@ export default function HelpdeskManagement() {
         <div className="pt-2 space-y-5">
           {/* Success banner */}
           <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
-            <ShieldCheck size={22} className="text-emerald-500 flex-shrink-0" />
+              <ShieldCheck size={22} className="text-emerald-500 shrink-0" />
             <div>
               <p className="text-sm font-semibold text-emerald-700">Account ready!</p>
               <p className="text-xs text-emerald-600">Save these credentials — the password won't be shown again.</p>
@@ -384,7 +680,7 @@ export default function HelpdeskManagement() {
 
           {/* Staff name */}
           <div className="flex items-center gap-3 px-1">
-            <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm flex-shrink-0">
+            <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm shrink-0">
               {(createdCreds?.name || "H").charAt(0).toUpperCase()}
             </div>
             <div>
@@ -460,7 +756,7 @@ export default function HelpdeskManagement() {
           <FormInput
             label="Display Name"
             value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            onChange={(e) => handleChange('name', e.target.value)}
             required
           />
           <div className="grid grid-cols-2 gap-4">
@@ -468,28 +764,25 @@ export default function HelpdeskManagement() {
               label="Email"
               type="email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) => handleChange('email', e.target.value)}
             />
             <FormInput
               label="Mobile"
               value={formData.mobile}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (/^\d{0,10}$/.test(val)) setFormData({ ...formData, mobile: val });
-              }}
+              onChange={(e) => handleChange('mobile', e.target.value)}
             />
           </div>
           <FormInput
             label="Update Password (Optional)"
             type="password"
-            placeholder="Leave blank to keep current"
+            placeholder="Min. 6 characters"
             value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            onChange={(e) => handleChange('password', e.target.value)}
           />
           <FormTextarea
             label="Internal Notes"
             value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            onChange={(e) => handleChange('notes', e.target.value)}
             rows={2}
             maxLength={500}
           />

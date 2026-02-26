@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { hospitalAdminService } from "@/lib/integrations";
 import {
   Edit,
@@ -96,6 +97,7 @@ const DAYS_OF_WEEK = [
 
 function CreateNurse() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [shifts, setShifts] = useState<any[]>([]);
   const [unitTypes, setUnitTypes] = useState<string[]>([]);
@@ -350,6 +352,8 @@ function CreateNurse() {
       };
 
       await hospitalAdminService.createStaff(nurseData);
+      queryClient.invalidateQueries({ queryKey: ['hospital-admin-nurses'] });
+      queryClient.invalidateQueries({ queryKey: ['hospital-admin', 'dashboard'] });
 
       toast.success(`Nurse "${formData.name}" added to registry successfully!`, { duration: 4000 });
 

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { hospitalAdminService } from "@/lib/integrations";
 import {
   User,
@@ -18,6 +19,7 @@ import { Card, FormInput } from "@/components/admin";
 
 function CreateHR() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -47,6 +49,8 @@ function CreateHR() {
     setLoading(true);
     try {
       await hospitalAdminService.createHR(formData);
+      queryClient.invalidateQueries({ queryKey: ['hospital-admin-hrs'] });
+      queryClient.invalidateQueries({ queryKey: ['hospital-admin', 'dashboard'] });
       toast.success("HR Manager created successfully");
       router.push("../hr");
     } catch (error: any) {

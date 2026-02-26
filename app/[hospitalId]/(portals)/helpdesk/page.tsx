@@ -13,10 +13,19 @@ import {
   Plus,
   RefreshCw,
   CheckCircle2,
+  LogIn,
+  LogOut,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
-import { useHelpdeskDashboard, useHelpdeskDoctors, useUpdateAppointmentStatus } from "@/lib/integrations/hooks";
+import { 
+  useHelpdeskDashboard, 
+  useHelpdeskDoctors, 
+  useUpdateAppointmentStatus, 
+  useCheckIn, 
+  useCheckOut, 
+  useTodayStatus 
+} from "@/lib/integrations/hooks";
 import { HelpdeskDashboardSkeleton } from "@/components/ui/skeletons";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -29,6 +38,30 @@ function HelpdeskDashboard() {
   const { data: dashboardData, isLoading: dashboardLoading, refetch: refetchDashboard, isPlaceholderData: isDashboardPlaceholder } = useHelpdeskDashboard();
   const { data: doctorsData, isLoading: doctorsLoading, isPlaceholderData: isDoctorsPlaceholder } = useHelpdeskDoctors();
   const updateStatusMutation = useUpdateAppointmentStatus();
+
+  // ✅ Attendance Hooks for Shift Management
+  const { data: attendanceResponse, isLoading: attendanceLoading, refetch: refetchAttendance } = useTodayStatus();
+  const todayAttendance = attendanceResponse?.attendance;
+  const checkInMutation = useCheckIn();
+  const checkOutMutation = useCheckOut();
+
+  const handleCheckIn = useCallback(async () => {
+    try {
+      await checkInMutation.mutateAsync(undefined);
+      toast.success("Clocked in successfully!");
+    } catch (err: any) {
+      toast.error(err.message || "Clock-in failed");
+    }
+  }, [checkInMutation]);
+
+  const handleCheckOut = useCallback(async () => {
+    try {
+      await checkOutMutation.mutateAsync(undefined);
+      toast.success("Clocked out successfully!");
+    } catch (err: any) {
+      toast.error(err.message || "Clock-out failed");
+    }
+  }, [checkOutMutation]);
 
   // ✅ Memoized computed values to prevent unnecessary recalculations
   const allDoctors = useMemo(() => {
@@ -280,6 +313,50 @@ function HelpdeskDashboard() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* ATTENDANCE CONTROLS */}
+          <div className="flex items-center gap-2 mr-2 bg-slate-50 p-1 rounded-xl border border-slate-200 shadow-inner">
+            {!todayAttendance?.checkIn ? (
+              <button
+                onClick={handleCheckIn}
+                disabled={checkInMutation.isPending || attendanceLoading}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-md active:scale-95 disabled:opacity-50 transition-all border border-emerald-500/20"
+              >
+                {checkInMutation.isPending ? (
+                  <RefreshCw size={14} className="animate-spin" />
+                ) : (
+                  <LogIn size={14} strokeWidth={3} />
+                )}
+                Clock In
+              </button>
+            ) : !todayAttendance?.checkOut ? (
+              <div className="flex items-center gap-2">
+                <div className="px-3 py-2 bg-white border border-slate-200 rounded-lg flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                  <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest tabular-nums">
+                    {todayAttendance?.checkIn?.time ? new Date(todayAttendance.checkIn.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                  </span>
+                </div>
+                <button
+                  onClick={handleCheckOut}
+                  disabled={checkOutMutation.isPending || attendanceLoading}
+                  className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 shadow-md active:scale-95 disabled:opacity-50 transition-all border border-rose-500/20"
+                >
+                  {checkOutMutation.isPending ? (
+                    <RefreshCw size={14} className="animate-spin" />
+                  ) : (
+                    <LogOut size={14} strokeWidth={3} />
+                  )}
+                  Clock Out
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-4 py-2 bg-slate-200 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-300/50">
+                <CheckCircle2 size={14} strokeWidth={3} />
+                Shift Ended
+              </div>
+            )}
+          </div>
+
           {/* Global Search/Filter Indicator */}
           {selectedDoctorId && (
             <button

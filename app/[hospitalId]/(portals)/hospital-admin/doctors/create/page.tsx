@@ -2,6 +2,7 @@
 
 import React, {  useState , useMemo } from 'react';
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { hospitalAdminService } from "@/lib/integrations";
 import {
   UserPlus,
@@ -130,6 +131,7 @@ interface AvailabilitySlot {
 
 function CreateDoctor() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   
   const [formData, setFormData] = useState<FormData>({
     name: "", email: "", mobile: "", password: "", gender: "",
@@ -358,6 +360,9 @@ function CreateDoctor() {
     };
 
       await hospitalAdminService.createDoctor(doctorData);
+      queryClient.invalidateQueries({ queryKey: ['hospital-admin-doctors'] });
+      queryClient.invalidateQueries({ queryKey: ['hospital-admin', 'dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['hospital-admin', 'doctors-list'] });
 
       toast.success(`Doctor "${formData.name}" created successfully!`, { duration: 4000 });
 

@@ -37,7 +37,7 @@ function HospitalAdminHRManagement() {
         return [];
       }
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
   });
 
   const handleDeactivate = async (id: string, name: string) => {

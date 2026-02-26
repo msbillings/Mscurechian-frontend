@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { hospitalAdminService } from "@/lib/integrations";
 import {
   Edit,
@@ -97,6 +98,7 @@ const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
 function CreateStaff() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [shifts, setShifts] = useState<any[]>([]);
   const [loadingShifts, setLoadingShifts] = useState(true);
@@ -350,6 +352,8 @@ function CreateStaff() {
       };
 
       await hospitalAdminService.createStaff(staffData);
+      queryClient.invalidateQueries({ queryKey: ['hospital-admin-staff'] });
+      queryClient.invalidateQueries({ queryKey: ['hospital-admin', 'dashboard'] });
 
       toast.success(`Staff member "${formData.name}" created successfully!`, { duration: 4000 });
 

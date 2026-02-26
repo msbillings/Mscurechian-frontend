@@ -245,13 +245,13 @@ export interface CreateDoctorRequest extends CreateAdminRequest {
   // Department & Affiliation
   department?: string;
   designation?:
-  | "Consultant"
-  | "Senior Consultant"
-  | "Surgeon"
-  | "Resident"
-  | "Fellow"
-  | "Professor"
-  | "Other";
+    | "Consultant"
+    | "Senior Consultant"
+    | "Surgeon"
+    | "Resident"
+    | "Fellow"
+    | "Professor"
+    | "Other";
   employeeId?: string;
 
   // Scheduling & Availability
@@ -317,10 +317,22 @@ export interface CreateHelpdeskRequest extends CreateAdminRequest {
 }
 
 export interface CreateHospitalHelpdeskRequest {
-  staffId: string;
+  staffId?: string;
   loginId: string;
   password: string;
+  name?: string;
+  email?: string;
+  mobile?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  department?: string;
+  designation?: string;
+  employeeId?: string;
+  employmentType?: string;
+  joiningDate?: string;
+  baseSalary?: string | number;
   additionalNotes?: string;
+  [key: string]: any;
 }
 
 export interface CreatePharmaRequest extends CreateAdminRequest {

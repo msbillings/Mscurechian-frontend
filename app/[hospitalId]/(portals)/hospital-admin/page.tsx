@@ -169,7 +169,7 @@ function HospitalAdminDashboard() {
       const resp = await hospitalAdminService.getDoctors();
       return resp;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
   });
 
   // Main dashboard data

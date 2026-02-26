@@ -162,7 +162,7 @@ function HospitalAdminStaff() {
         throw error;
       }
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
     gcTime: 15 * 60 * 1000,
   });
 

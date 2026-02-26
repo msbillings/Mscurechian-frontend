@@ -42,7 +42,7 @@ function HospitalAdminDoctors() {
         throw error;
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    staleTime: 0,
     gcTime: 15 * 60 * 1000,
     retry: 1,
   });
