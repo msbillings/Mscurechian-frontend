@@ -53,7 +53,7 @@ const BulkProductUploadModal: React.FC<BulkProductUploadModalProps> = ({ isOpen,
             if (fileInputRef.current) fileInputRef.current.value = '';
             return;
         }
-        
+
         const selectedFile = e.target.files?.[0];
         if (!selectedFile) return;
 
@@ -142,6 +142,9 @@ const BulkProductUploadModal: React.FC<BulkProductUploadModalProps> = ({ isOpen,
         worksheet.eachRow((row, rowNumber) => {
             if (rowNumber === 1) return; // Skip header
 
+            // Columns: SKU, Brand, Generic, Name, Form, Strength, Schedule,
+            //          MRP, UnitCost, GST%, HsnCode, BatchNumber, ExpiryDate,
+            //          Stock, MinStock, UnitsPerPack, Supplier(ignored)
             const sku = row.getCell(1).text?.trim();
             const brandName = row.getCell(2).text?.trim();
             const genericName = row.getCell(3).text?.trim();
@@ -149,25 +152,28 @@ const BulkProductUploadModal: React.FC<BulkProductUploadModalProps> = ({ isOpen,
             if (!sku || !brandName || !genericName) return;
 
             products.push({
-                sku: sku,
-                brandName: brandName,
-                genericName: genericName,
-                strength: row.getCell(4).text?.trim() || '',
+                sku,
+                brandName,
+                genericName,
+                name: row.getCell(4).text?.trim() || undefined,
                 form: normalizeForm(row.getCell(5).text?.trim()),
-                schedule: normalizeSchedule(row.getCell(6).text?.trim()),
-                mrp: Number(row.getCell(7).value) || 0,
-                currentStock: Number(row.getCell(8).value) || 0,
-                minStockLevel: Number(row.getCell(9).value) || 10,
+                strength: row.getCell(6).text?.trim() || '',
+                schedule: normalizeSchedule(row.getCell(7).text?.trim()),
+                mrp: Number(row.getCell(8).value) || 0,
+                unitCost: row.getCell(9).value ? Number(row.getCell(9).value) : undefined,
+                gst: Number(row.getCell(10).value) || 0,
+                hsnCode: row.getCell(11).text?.trim() || undefined,
+                batchNumber: row.getCell(12).text?.trim() || undefined,
+                expiryDate: parseDate(row.getCell(13).value),
+                currentStock: Number(row.getCell(14).value) || 0,
+                minStockLevel: Number(row.getCell(15).value) || 10,
+                unitsPerPack: Number(row.getCell(16).value) || 1,
                 supplier: selectedSupplierId,
-                expiryDate: parseDate(row.getCell(10).value),
-                gst: Number(row.getCell(11).value) || 12,
-                unitsPerPack: Number(row.getCell(12).value) || 1,
             });
         });
 
         return products;
     };
-
     const parseCSV = async (file: File): Promise<PharmacyProductPayload[]> => {
         const text = await file.text();
         const lines = text.split('\n');
@@ -177,24 +183,31 @@ const BulkProductUploadModal: React.FC<BulkProductUploadModalProps> = ({ isOpen,
             const line = lines[i].trim();
             if (!line) continue;
 
-            // Handle quoted CSV values better
+            // Handle quoted CSV values
             const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.trim().replace(/^"|"$/g, ''));
             if (cols.length < 3) continue;
 
+            // Columns: sku, brand, generic, name, form, strength, schedule,
+            //          mrp, unitCost, gstPercent, hsnCode, batchNumber, expiryDate,
+            //          stock, minStock, unitsPerPack, supplier(ignored)
             products.push({
                 sku: cols[0],
                 brandName: cols[1],
                 genericName: cols[2],
-                strength: cols[3] || '',
+                name: cols[3] || undefined,
                 form: normalizeForm(cols[4]),
-                schedule: normalizeSchedule(cols[5]),
-                mrp: Number(cols[6]) || 0,
-                currentStock: Number(cols[7]) || 0,
-                minStockLevel: Number(cols[8]) || 10,
+                strength: cols[5] || '',
+                schedule: normalizeSchedule(cols[6]),
+                mrp: Number(cols[7]) || 0,
+                unitCost: cols[8] ? Number(cols[8]) : undefined,
+                gst: Number(cols[9]) || 0,
+                hsnCode: cols[10] || undefined,
+                batchNumber: cols[11] || undefined,
+                expiryDate: parseDate(cols[12]),
+                currentStock: Number(cols[13]) || 0,
+                minStockLevel: Number(cols[14]) || 10,
+                unitsPerPack: Number(cols[15]) || 1,
                 supplier: selectedSupplierId,
-                expiryDate: parseDate(cols[9]),
-                gst: Number(cols[10]) || 12,
-                unitsPerPack: Number(cols[11]) || 1,
             });
         }
         return products;
@@ -230,19 +243,46 @@ const BulkProductUploadModal: React.FC<BulkProductUploadModalProps> = ({ isOpen,
             { header: 'SKU*', key: 'sku', width: 15 },
             { header: 'Brand Name*', key: 'brandName', width: 25 },
             { header: 'Generic Name*', key: 'genericName', width: 25 },
-            { header: 'Strength', key: 'strength', width: 15 },
+            { header: 'Name (Display)', key: 'name', width: 25 },
             { header: 'Form', key: 'form', width: 15 },
-            { header: 'Schedule', key: 'schedule', width: 20 },
-            { header: 'MRP', key: 'mrp', width: 10 },
+            { header: 'Strength', key: 'strength', width: 15 },
+            { header: 'Schedule', key: 'schedule', width: 15 },
+            { header: 'MRP*', key: 'mrp', width: 12 },
+            { header: 'Unit Cost', key: 'unitCost', width: 12 },
+            { header: 'GST %', key: 'gstPercent', width: 10 },
+            { header: 'HSN Code', key: 'hsnCode', width: 15 },
+            { header: 'Batch Number', key: 'batchNumber', width: 18 },
+            { header: 'Expiry Date (YYYY-MM-DD)', key: 'expiryDate', width: 22 },
             { header: 'Current Stock', key: 'stock', width: 15 },
-            { header: 'Min Stock', key: 'min', width: 12 },
-            { header: 'Expiry (YYYY-MM-DD)', key: 'expiry', width: 20 },
-            { header: 'GST%', key: 'gst', width: 8 },
-            { header: 'Units/Pack', key: 'units', width: 12 },
+            { header: 'Min Stock', key: 'minStock', width: 12 },
+            { header: 'Units/Pack', key: 'unitsPerPack', width: 12 },
+            { header: 'Supplier (info only)', key: 'supplier', width: 20 },
         ];
 
-        // Add example row (removed supplier column)
-        worksheet.addRow(['PAR500', 'Crocin', 'Paracetamol', '500mg', 'Tablet', 'OTC', 20, 100, 10, '2026-12-31', 12, 10]);
+        // Style header row
+        const headerRow = worksheet.getRow(1);
+        headerRow.eachCell((cell) => {
+            cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '1E293B' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = {
+                top: { style: 'medium' },
+                left: { style: 'thin' },
+                bottom: { style: 'medium' },
+                right: { style: 'thin' }
+            };
+        });
+        headerRow.height = 22;
+
+        // Add example row
+        worksheet.addRow([
+            'PAR500', 'Crocin', 'Paracetamol', 'Crocin 500mg Tablet',
+            'Tablet', '500mg', 'OTC',
+            20, 15, 12,
+            '3004', 'BATCH001', '2026-12-31',
+            100, 10, 10,
+            'Use supplier dropdown in app'
+        ]);
 
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -280,7 +320,7 @@ const BulkProductUploadModal: React.FC<BulkProductUploadModalProps> = ({ isOpen,
                                 <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Assign Supplier</h3>
                             </div>
                             <div className="relative">
-                                <select 
+                                <select
                                     value={selectedSupplierId}
                                     onChange={(e) => setSelectedSupplierId(e.target.value)}
                                     className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl px-5 py-4 text-sm font-bold text-gray-900 dark:text-white appearance-none focus:border-indigo-500 outline-none transition-all cursor-pointer"
@@ -339,6 +379,59 @@ const BulkProductUploadModal: React.FC<BulkProductUploadModalProps> = ({ isOpen,
                                 </div>
                             </div>
 
+                            {/* Template Column Reference */}
+                            <div className="bg-white dark:bg-gray-800/60 rounded-3xl border border-gray-100 dark:border-gray-700 p-5 space-y-4">
+                                <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Template Columns (17 fields)</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {[
+                                        { label: 'SKU', req: true },
+                                        { label: 'Brand Name', req: true },
+                                        { label: 'Generic Name', req: true },
+                                        { label: 'Name (Display)' },
+                                        { label: 'Form' },
+                                        { label: 'Strength' },
+                                        { label: 'Schedule' },
+                                    ].map(f => (
+                                        <span key={f.label} className={`px-3 py-1 rounded-lg text-xs font-bold ${f.req ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                                            {f.label}{f.req && <span className="text-red-500 ml-0.5">*</span>}
+                                        </span>
+                                    ))}
+
+                                    {/* MRP — highlighted as Selling Price */}
+                                    <span className="px-3 py-1 rounded-lg text-xs font-black bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 flex items-center gap-1">
+                                        MRP<span className="text-red-500">*</span>
+                                        <span className="text-[9px] font-bold bg-green-700 text-white px-1.5 py-0.5 rounded-md ml-1 uppercase tracking-wide">Selling Price</span>
+                                    </span>
+
+                                    {/* Unit Cost — highlighted as Purchase Price */}
+                                    <span className="px-3 py-1 rounded-lg text-xs font-black bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 flex items-center gap-1">
+                                        Unit Cost
+                                        <span className="text-[9px] font-bold bg-orange-600 text-white px-1.5 py-0.5 rounded-md ml-1 uppercase tracking-wide">Purchase Price</span>
+                                    </span>
+
+                                    {[
+                                        'GST %',
+                                        'HSN Code',
+                                        'Batch Number',
+                                        'Expiry Date',
+                                        'Current Stock',
+                                        'Min Stock',
+                                        'Units/Pack',
+                                        'Supplier (info only)',
+                                    ].map(f => (
+                                        <span key={f} className="px-3 py-1 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                            {f}
+                                        </span>
+                                    ))}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-4 text-[10px] font-bold text-gray-400 pt-1">
+                                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-indigo-200 inline-block"></span> Required</span>
+                                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-green-200 inline-block"></span> MRP = Selling Price</span>
+                                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-orange-200 inline-block"></span> Unit Cost = Purchase Price</span>
+                                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-gray-200 inline-block"></span> Optional</span>
+                                </div>
+                            </div>
+
                             <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-2xl border border-amber-100 dark:border-amber-800/30 flex gap-4">
                                 <AlertCircle className="w-6 h-6 text-amber-600 shrink-0" />
                                 <div className="text-xs text-amber-800 dark:text-amber-400 font-bold space-y-1">
@@ -377,26 +470,26 @@ const BulkProductUploadModal: React.FC<BulkProductUploadModalProps> = ({ isOpen,
                                                 <th className="px-4 py-3 font-bold text-gray-500">SKU</th>
                                                 <th className="px-4 py-3 font-bold text-gray-500">Brand Name</th>
                                                 <th className="px-4 py-3 font-bold text-gray-500">Generic Name</th>
-                                                 <th className="px-4 py-3 font-bold text-gray-500">Stock</th>
-                                                 <th className="px-4 py-3 font-bold text-gray-500">MRP</th>
-                                                 <th className="px-4 py-3 font-bold text-gray-500">Assigned Supplier</th>
-                                             </tr>
-                                         </thead>
+                                                <th className="px-4 py-3 font-bold text-gray-500">Stock</th>
+                                                <th className="px-4 py-3 font-bold text-gray-500">MRP</th>
+                                                <th className="px-4 py-3 font-bold text-gray-500">Assigned Supplier</th>
+                                            </tr>
+                                        </thead>
                                         <tbody className="divide-y dark:divide-gray-800">
                                             {previewData.slice(0, 10).map((p, i) => (
                                                 <tr key={i} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                                                     <td className="px-4 py-3 font-bold text-gray-700 dark:text-gray-300">{p.sku}</td>
                                                     <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{p.brandName}</td>
                                                     <td className="px-4 py-3 text-gray-500">{p.genericName}</td>
-                                                     <td className="px-4 py-3 font-bold text-teal-600">{p.currentStock}</td>
-                                                     <td className="px-4 py-3 font-bold text-indigo-600">₹{p.mrp}</td>
-                                                     <td className="px-4 py-3">
+                                                    <td className="px-4 py-3 font-bold text-teal-600">{p.currentStock}</td>
+                                                    <td className="px-4 py-3 font-bold text-indigo-600">₹{p.mrp}</td>
+                                                    <td className="px-4 py-3">
                                                         <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-tight">
                                                             {suppliers.find(s => s._id === selectedSupplierId)?.name || 'N/A'}
                                                         </span>
-                                                     </td>
-                                                 </tr>
-                                             ))}
+                                                    </td>
+                                                </tr>
+                                            ))}
                                         </tbody>
                                     </table>
                                     {previewData.length > 10 && (
