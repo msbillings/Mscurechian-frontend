@@ -1,6 +1,7 @@
-
 import React from 'react';
 import { Beaker, Clock, QrCode } from 'lucide-react';
+import MainHeader from '../printers/MainHeader';
+import MainFooter from '../printers/MainFooter';
 
 interface Test {
     name: string;
@@ -68,41 +69,22 @@ export const LabTokenDocument: React.FC<LabTokenDocumentProps> = ({
                 color: colors.gray900
             }}>
 
-            {/* Header Section */}
-            <div className="flex justify-between items-start mb-6 pb-4" style={{ borderBottom: `4px solid ${colors.purple600}` }}>
-                <div className="flex gap-4">
-                    <div className="w-14 h-14 rounded-xl flex items-center justify-center shadow-lg"
-                        style={{ backgroundColor: colors.purple600, color: colors.white }}>
-                        <Beaker size={28} />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-black uppercase tracking-widest leading-none" style={{ color: colors.purple600 }}>LAB REQUISITION</h1>
-                        <p className="text-[8px] font-black uppercase tracking-[0.2em] mt-1 mb-3" style={{ color: colors.gray400 }}>Laboratory Services Division</p>
-                        <div className="space-y-1">
-                            <h2 className="font-black text-lg leading-none" style={{ color: colors.gray800 }}>{hospital.name}</h2>
-                            <p className="text-[9px] font-bold text-gray-500">{hospital.address}</p>
-                            <p className="text-[9px] font-bold text-gray-500">Phone: {hospital.phone}</p>
-                            <p className="text-[10px] font-bold italic" style={{ color: colors.gray400 }}>Department of Pathology & Radiodiagnosis</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="text-right">
-                    <div className="p-3 rounded-xl mb-3 border-2 shadow-md inline-block"
-                        style={{ backgroundColor: colors.gray900, color: colors.white, borderColor: colors.gray800 }}>
-                        <p className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-0.5" style={{ color: colors.white }}>Investigation Token</p>
-                        <p className="text-2xl font-black tracking-tighter font-mono" style={{ color: colors.white }}>{token.tokenNumber}</p>
-                    </div>
-                    <div className="space-y-0.5">
-                        <p className="text-[10px] font-black" style={{ color: colors.gray800 }}>DATE: <span className="font-medium">{new Date(token.createdAt || new Date()).toLocaleDateString('en-GB')}</span></p>
-                        <span className="inline-block px-3 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest"
-                            style={{
-                                backgroundColor: token.priority === 'stat' ? colors.red600 :
-                                    token.priority === 'urgent' ? colors.orange500 :
-                                        colors.blue600,
-                                color: colors.white
-                            }}>
-                            {token.priority || 'Routine'}
-                        </span>
+            {/* Universal Header */}
+            <MainHeader
+                initialDetails={{
+                    name: hospital.name,
+                    address: hospital.address || '',
+                    phone: hospital.phone || '',
+                    email: hospital.email || '',
+                    logo: hospital.logo
+                }}
+            />
+
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-xl font-black uppercase tracking-widest leading-none text-blue-800">LAB REQUISITION</h1>
+                <div className="flex items-center gap-3">
+                    <div className="p-2 px-4 rounded-lg bg-slate-900 text-white font-mono font-black text-lg">
+                        #{token.tokenNumber}
                     </div>
                 </div>
             </div>
@@ -126,8 +108,8 @@ export const LabTokenDocument: React.FC<LabTokenDocumentProps> = ({
                 </div>
                 <div className="space-y-1 pl-4">
                     <p className="text-[8px] font-black uppercase tracking-widest" style={{ color: colors.gray400 }}>Ordering Physician</p>
-                    <p className="text-base font-black leading-tight" style={{ color: colors.gray900 }}>Dr. {(doctor.user?.name || doctor.userName || doctor.name || 'N/A').replace(/^Dr\.?\s*/i, '').trim()}</p>
-                    <p className="text-[9px] font-bold" style={{ color: colors.gray400 }}>{doctor.designation || doctor.specialization || doctor.specialties?.[0] || 'Clinical Services'}</p>
+                    <p className="text-base font-black leading-tight" style={{ color: colors.gray900 }}>Dr. {doctor.user?.name || doctor.name || 'Medical Officer'}</p>
+                    <p className="text-[9px] font-bold" style={{ color: colors.gray400 }}>{doctor.specialization || 'Clinical Services'}</p>
                 </div>
             </div>
 
@@ -176,26 +158,16 @@ export const LabTokenDocument: React.FC<LabTokenDocumentProps> = ({
                 </div>
             )}
 
-            {/* Footer Area */}
-            <div className="mt-auto pt-8 flex justify-between items-end" style={{ borderTop: `1px solid ${colors.gray100}` }}>
-                <div className="flex gap-4 items-center">
-                    <div className="w-16 h-16 p-1 rounded-xl flex items-center justify-center opacity-30"
-                        style={{ backgroundColor: colors.gray50, border: `1px solid ${colors.gray100}` }}>
-                        <QrCode size={48} style={{ color: colors.gray900 }} />
-                    </div>
-                    <div className="space-y-0.5">
-                        <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: colors.gray800 }}>Document Integrity</p>
-                        <p className="text-[7px] font-bold max-w-[150px] leading-tight" style={{ color: colors.gray300 }}>
-                            Secured via MsCureChain Digital Trust Platform. Verified lab requisition.
-                        </p>
-                    </div>
-                </div>
-
-                <div className="text-right mr-4">
-                    <p className="text-[9px] font-black uppercase tracking-widest leading-none" style={{ color: colors.gray900 }}>Dr. {(doctor.user?.name || doctor.userName || doctor.name || 'N/A').replace(/^Dr\.?\s*/i, '').trim()}</p>
-                    <p className="text-[7px] font-bold mt-0.5 uppercase" style={{ color: colors.gray400 }}>{doctor.designation || doctor.specialization || doctor.specialties?.[0] || ''}</p>
-                    <p className="text-[7px] font-bold mt-0.5 uppercase" style={{ color: colors.gray400 }}>AUTH ID: {(token._id || '').slice(-8).toUpperCase()}</p>
-                </div>
+            {/* Universal Footer */}
+            <div className="mt-auto">
+                <MainFooter
+                    initialDetails={{
+                        name: hospital.name,
+                        address: hospital.address || '',
+                        phone: hospital.phone || '',
+                        email: hospital.email || ''
+                    }}
+                />
             </div>
 
             {/* Diagonal Watermark */}

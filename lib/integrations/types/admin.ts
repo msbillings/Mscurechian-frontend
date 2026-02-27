@@ -48,6 +48,7 @@ export interface Hospital {
   unitTypes?: string[];
   createdAt: string;
   updatedAt: string;
+  logo?: string;
 }
 
 export interface Doctor {

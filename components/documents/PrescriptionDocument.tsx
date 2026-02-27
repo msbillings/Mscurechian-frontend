@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 // Common interfaces
@@ -86,125 +85,201 @@ export const PrescriptionDocument: React.FC<PrescriptionDocumentProps> = ({
         <div className="relative font-sans print-prescription-document"
             style={{
                 width: '210mm',
-                height: '296mm',
+                minHeight: '297mm',
                 margin: '0 auto',
-                padding: '12mm 15mm 12mm 25mm',
+                padding: '10mm 15mm',
                 boxSizing: 'border-box',
                 backgroundColor: 'white',
-                overflow: 'hidden',
-                color: '#000'
+                color: '#000',
+                display: 'flex',
+                flexDirection: 'column'
             }}>
 
-            {/* Header */}
-            <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-                <h1 style={{ fontSize: '22px', fontWeight: '900', margin: '0', letterSpacing: '0.05em' }}>{hospital.name.toUpperCase()}</h1>
-                <p style={{ fontSize: '10px', margin: '2px 0', color: '#333' }}>{hospital.address}</p>
+            <style>
+                {`
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+                
+                @media print {
+                    @page { size: A4; margin: 0; }
+                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                }
+
+                .print-prescription-document {
+                    font-family: 'Inter', 'Segoe UI', Roboto, sans-serif !important;
+                }
+                `}
+            </style>
+
+            {/* --- MainHeader Replacement --- */}
+            <div style={{ width: '100%', backgroundColor: '#ffffff', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: '15px 0' }}>
+                    <div style={{ flex: '0 0 fit-content', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', paddingRight: '10px' }}>
+                        {hospital?.logo ? <img src={hospital.logo} style={{ maxWidth: '200px', maxHeight: '140px', objectFit: 'contain' }} alt="Hospital Logo" /> : <div style={{ width: '120px', height: '120px', border: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '10px', fontWeight: 'bold' }}>LOGO</div>}
+                    </div>
+                    <div style={{ width: '1px', height: '100px', backgroundColor: '#e2e8f0', margin: '0 20px 0 15px' }}></div>
+                    <div style={{ flex: '1', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                        <h1 style={{ margin: '0', fontWeight: '800', color: '#1e40af', fontSize: '28px', lineHeight: '1.2' }}>{hospital?.name || 'KADAPA MULTI-SPECIALITY'}</h1>
+                        <div style={{ backgroundColor: '#22c55e', color: '#ffffff', padding: '4px 12px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '700', marginTop: '2px' }}>
+                            <span>📞</span>
+                            <span>{hospital?.phone || '+91 8562 245555'}</span>
+                        </div>
+                        <div style={{ color: '#1d4ed8', fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>✉️</span>
+                            <span>{hospital?.email || 'hospital@example.com'}</span>
+                        </div>
+                        <p style={{ margin: '0', fontSize: '10px', color: '#64748b', fontWeight: '700', lineHeight: '1.4', textTransform: 'uppercase' }}>{hospital?.address || 'RIMS ROAD, PUTLAMPALLI, KADAPA, AP'}</p>
+                    </div>
+                </div>
+                <div style={{ width: '100%', height: '4px', backgroundColor: '#22c55e', borderRadius: '2px' }}></div>
             </div>
 
-            <div style={{ textAlign: 'right', marginBottom: '5px' }}>
-                <p style={{ fontSize: '9px', fontWeight: 'bold', margin: '0', textTransform: 'uppercase' }}>Consultant Physician</p>
-            </div>
-
-            <hr style={{ border: '0', borderTop: '1px solid #000', margin: '5px 0' }} />
-
-            {/* Info Row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1.5fr 1fr', gap: '10px', fontSize: '11px', padding: '10px 0' }}>
-                <div>
-                    <p style={{ margin: '0' }}><span style={{ fontWeight: 'bold' }}>NAME:</span> {patientName?.toUpperCase()}</p>
+            <div style={{ flex: '1' }}>
+                {/* Info Row */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', marginBottom: '20px', paddingBottom: '12px', borderBottom: '1px solid #eee' }}>
+                    <div>
+                        <span style={{ display: 'block', fontSize: '8px', fontWeight: '700', textTransform: 'uppercase', color: '#777', marginBottom: '2px', letterSpacing: '0.5px' }}>Patient Name</span>
+                        <span style={{ fontSize: '11px', fontWeight: '600' }}>{patientName?.toUpperCase()}</span>
+                    </div>
+                    <div>
+                        <span style={{ display: 'block', fontSize: '8px', fontWeight: '700', textTransform: 'uppercase', color: '#777', marginBottom: '2px', letterSpacing: '0.5px' }}>Age / Gender</span>
+                        <span style={{ fontSize: '11px', fontWeight: '600' }}>{patientAge} Y / {patientGender?.toUpperCase()}</span>
+                    </div>
+                    <div>
+                        <span style={{ display: 'block', fontSize: '8px', fontWeight: '700', textTransform: 'uppercase', color: '#777', marginBottom: '2px', letterSpacing: '0.5px' }}>MRN Number</span>
+                        <span style={{ fontSize: '11px', fontWeight: '600' }}>{patientMrn}</span>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                        <span style={{ display: 'block', fontSize: '8px', fontWeight: '700', textTransform: 'uppercase', color: '#777', marginBottom: '2px', letterSpacing: '0.5px' }}>Date</span>
+                        <span style={{ fontSize: '11px', fontWeight: '600' }}>{displayDate}</span>
+                    </div>
                 </div>
-                <div>
-                    <p style={{ margin: '0' }}><span style={{ fontWeight: 'bold' }}>AGE / GENDER:</span> {patientAge} Y / {patientGender?.toUpperCase()}</p>
-                </div>
-                <div>
-                    <p style={{ margin: '0' }}><span style={{ fontWeight: 'bold' }}>ID:</span> {patientMrn}</p>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                    <p style={{ margin: '0' }}><span style={{ fontWeight: 'bold' }}>DATE:</span> {displayDate}</p>
-                </div>
-            </div>
 
-            <hr style={{ border: '0', borderTop: '1px solid #000', margin: '5px 0' }} />
+                {/* Diagnosis */}
+                <div style={{ marginBottom: '15px' }}>
+                    <span style={{ fontSize: '9px', fontWeight: '700', textTransform: 'uppercase', color: '#777', letterSpacing: '0.5px' }}>Provisional Diagnosis:</span>
+                    <span style={{ fontSize: '11px', fontWeight: '700', marginLeft: '5px', color: '#000' }}>{rx.diagnosis || 'General Consultation'}</span>
+                </div>
 
-            {/* Diagnosis */}
-            <div style={{ margin: '20px 0', fontSize: '12px' }}>
-                <p style={{ margin: '0' }}><span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Diagnosis:</span> {rx.diagnosis || 'General Consultation'}</p>
-            </div>
-
-            {/* Medicines Table */}
-            <div style={{ marginTop: '25px' }}>
-                <h3 style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '10px' }}>Medications</h3>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
-                    <thead>
-                        <tr style={{ borderBottom: '1.5px solid #000' }}>
-                            <th style={{ textAlign: 'left', padding: '8px 0', width: '40%' }}>MEDICINE</th>
-                            <th style={{ textAlign: 'left', padding: '8px 0' }}>DOSAGE</th>
-                            <th style={{ textAlign: 'left', padding: '8px 0' }}>FREQUENCY</th>
-                            <th style={{ textAlign: 'left', padding: '8px 0' }}>DAYS</th>
-                            <th style={{ textAlign: 'right', padding: '8px 0' }}>QTY</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {rx.medicines?.map((med: Medicine, idx: number) => (
-                            <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
-                                <td style={{ padding: '8px 0', fontWeight: 'bold' }}>{med.name}</td>
-                                <td style={{ padding: '8px 0' }}>{med.dosage}</td>
-                                <td style={{ padding: '8px 0' }}>{med.frequency}</td>
-                                <td style={{ padding: '8px 0' }}>{med.duration}</td>
-                                <td style={{ padding: '8px 0', textAlign: 'right' }}>{calculateQty(med.frequency, med.duration)}</td>
+                {/* Medicines Table */}
+                <div style={{ marginTop: '10px' }}>
+                    <h3 style={{ fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', color: '#000', borderBottom: '1px solid #000', paddingBottom: '4px', marginBottom: '8px', letterSpacing: '0.5px' }}>Prescribed Medications</h3>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '25px' }}>
+                        <thead>
+                            <tr style={{ borderBottom: '1px solid #eee' }}>
+                                <th style={{ textAlign: 'left', fontSize: '8px', fontWeight: '700', textTransform: 'uppercase', color: '#777', padding: '0 0 6px 0', width: '45%' }}>MEDICINE</th>
+                                <th style={{ textAlign: 'left', fontSize: '8px', fontWeight: '700', textTransform: 'uppercase', color: '#777', padding: '0 0 6px 0', width: '15%' }}>DOSAGE</th>
+                                <th style={{ textAlign: 'left', fontSize: '8px', fontWeight: '700', textTransform: 'uppercase', color: '#777', padding: '0 0 6px 0', width: '20%' }}>FREQUENCY</th>
+                                <th style={{ textAlign: 'left', fontSize: '8px', fontWeight: '700', textTransform: 'uppercase', color: '#777', padding: '0 0 6px 0', width: '10%' }}>DAYS</th>
+                                <th style={{ textAlign: 'right', fontSize: '8px', fontWeight: '700', textTransform: 'uppercase', color: '#777', padding: '0 0 6px 0', width: '10%' }}>QTY</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody>
+                            {rx.medicines?.map((med: Medicine, idx: number) => (
+                                <tr key={idx} style={{ borderBottom: '1px solid #f9f9f9' }}>
+                                    <td style={{ padding: '8px 0', verticalAlign: 'top' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: '700' }}>{med.name}</div>
+                                    </td>
+                                    <td style={{ padding: '8px 0', verticalAlign: 'top', fontSize: '10px', color: '#444' }}>{med.dosage}</td>
+                                    <td style={{ padding: '8px 0', verticalAlign: 'top', fontSize: '10px', color: '#444' }}>{med.frequency}</td>
+                                    <td style={{ padding: '8px 0', verticalAlign: 'top', fontSize: '10px', color: '#444' }}>{med.duration}</td>
+                                    <td style={{ padding: '8px 0', textAlign: 'right', verticalAlign: 'top', fontSize: '10px', color: '#444' }}>{calculateQty(med.frequency, med.duration)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
 
-            {/* Advice Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginTop: '30px', fontSize: '10px' }}>
-                <div>
-                    <h3 style={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', borderBottom: '1px solid #eee', paddingBottom: '4px', marginBottom: '8px' }}>Advice & Diet</h3>
-                    <div style={{ paddingLeft: '5px' }}>
-                        {rx.advice && <p style={{ margin: '4px 0' }}>• {rx.advice}</p>}
-                        {rx.dietAdvice?.map((item: string, idx: number) => (
-                            <p key={idx} style={{ margin: '4px 0' }}>• {item}</p>
-                        ))}
+                {/* Advice Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '20px' }}>
+                    {(rx.advice || rx.dietAdvice?.length > 0) && (
+                        <div>
+                            <h3 style={{ fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', color: '#000', borderBottom: '1px solid #000', paddingBottom: '4px', marginBottom: '8px', letterSpacing: '0.5px' }}>Dietary & Lifestyle Advice</h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {rx.advice && <div style={{ fontSize: '10px', color: '#000', fontWeight: '600', paddingLeft: '10px', position: 'relative' }}>• {rx.advice}</div>}
+                                {rx.dietAdvice?.map((item: string, idx: number) => (
+                                    <div key={idx} style={{ fontSize: '10px', color: '#000', fontWeight: '600', paddingLeft: '10px', position: 'relative' }}>• {item}</div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {rx.suggestedTests?.length > 0 && (
+                        <div>
+                            <h3 style={{ fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', color: '#000', borderBottom: '1px solid #000', paddingBottom: '4px', marginBottom: '8px', letterSpacing: '0.5px' }}>Suggested Investigations</h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {rx.suggestedTests?.map((item: string, idx: number) => (
+                                    <div key={idx} style={{ fontSize: '10px', color: '#000', fontWeight: '600', paddingLeft: '10px', position: 'relative' }}>• {item}</div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {rx.avoid?.length > 0 && (
+                    <div style={{ marginBottom: '20px' }}>
+                        <h3 style={{ fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', color: '#dc2626', borderBottom: '1px solid #dc2626', paddingBottom: '4px', marginBottom: '8px', letterSpacing: '0.5px' }}>Contraindications / Things to Avoid</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                            {rx.avoid?.map((item: string, idx: number) => (
+                                <div key={idx} style={{ fontSize: '10px', color: '#dc2626', fontWeight: '600', paddingLeft: '10px', position: 'relative' }}>• {item}</div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Follow-up */}
+                <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#f8fafc', borderRadius: '8px', fontSize: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e2e8f0' }}>
+                    <div><span style={{ fontWeight: '700', textTransform: 'uppercase', fontSize: '8px', color: '#64748b', marginRight: '4px' }}>Special Instructions:</span> {rx.instructions || 'N/A'}</div>
+                    {rx.followUpDate ? (
+                        <div>
+                            <span style={{ fontWeight: '700', textTransform: 'uppercase', fontSize: '8px', color: '#64748b', marginRight: '4px' }}>Next Review On:</span>
+                            <span style={{ fontWeight: '700', color: '#1e40af' }}>{new Date(rx.followUpDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                        </div>
+                    ) : null}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+                    <div style={{ textAlign: 'center', width: '150px' }}>
+                        <div style={{ height: '35px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                            {doctor.signature ? (
+                                <img src={doctor.signature} alt="Signature" style={{ height: '35px', objectFit: 'contain' }} />
+                            ) : (
+                                <div style={{ height: '20px' }} />
+                            )}
+                        </div>
+                        <div style={{ borderTop: '1px solid #000', paddingTop: '4px' }}>
+                            <div style={{ fontSize: '8px', fontWeight: '700', textTransform: 'uppercase' }}>{formattedDocName}</div>
+                            <div style={{ fontSize: '7px', color: '#64748b', fontWeight: '700', marginTop: '2px' }}>AUTHORISED SIGNATORY</div>
+                        </div>
                     </div>
                 </div>
-                <div>
-                    <h3 style={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', borderBottom: '1px solid #eee', paddingBottom: '4px', marginBottom: '8px' }}>Tests & Restrictions</h3>
-                    <div style={{ paddingLeft: '5px' }}>
-                        {rx.suggestedTests?.map((item: string, idx: number) => (
-                            <p key={idx} style={{ margin: '4px 0' }}>• Test: {item}</p>
-                        ))}
-                        {rx.avoid?.map((item: string, idx: number) => (
-                            <p key={idx} style={{ margin: '4px 0', color: '#dc2626' }}>• Avoid: {item}</p>
-                        ))}
-                    </div>
-                </div>
             </div>
 
-            {/* Follow-up */}
-            <div style={{ marginTop: '40px', padding: '10px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #f3f4f6', fontSize: '11px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <p style={{ margin: '0' }}><span style={{ fontWeight: 'bold', textTransform: 'uppercase', color: '#4b5563' }}>Follow Up Date:</span> <span style={{ fontWeight: '900', color: '#d946ef', marginLeft: '5px' }}>{rx.followUpDate ? new Date(rx.followUpDate).toLocaleDateString() : 'N/A'}</span></p>
-                {rx.followUpDate && <p style={{ margin: '0', fontSize: '10px', color: '#6b7280', fontStyle: 'italic' }}>Please bring this prescription for your follow-up visit.</p>}
-            </div>
-
-            {/* Footer */}
-            <div style={{ position: 'absolute', bottom: '30px', left: '25mm', right: '15mm', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', fontSize: '9px' }}>
-                <div style={{ color: '#666' }}>
-                    <p style={{ margin: '0' }}>Generated by MsCureChain Systems</p>
-                    <p style={{ margin: '0' }}>Validity 30 days</p>
+            {/* --- MainFooter Replacement --- */}
+            <div style={{ width: '100%', marginTop: '30px' }}>
+                <div style={{ display: 'flex', height: '35px', marginBottom: '12px', position: 'relative' }}>
+                    <div style={{ flex: '1', background: '#22c55e', color: '#ffffff', display: 'flex', alignItems: 'center', padding: '0 35px', fontWeight: '900', fontSize: '14px', clipPath: 'polygon(0 0, 100% 0, 92% 100%, 0 100%)', zIndex: 2 }}>
+                        <span style={{ marginRight: '8px' }}>📞</span>
+                        {hospital?.phone || '+91 8562 245555'}
+                    </div>
+                    <div style={{ flex: '1', background: '#3b82f6', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '14px', clipPath: 'polygon(8% 0, 100% 0, 100% 100%, 0 100%)', marginLeft: '-35px', zIndex: 1, paddingLeft: '35px' }}>
+                        <span style={{ marginRight: '8px' }}>✉️</span>
+                        {hospital?.email || 'hospital@example.com'}
+                    </div>
                 </div>
-                <div style={{ textAlign: 'center', width: '200px' }}>
-                    <div style={{ height: '50px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                        {doctor.signature ? (
-                            <img src={doctor.signature} alt="Signature" style={{ height: '40px', objectFit: 'contain' }} />
-                        ) : (
-                            <div style={{ height: '20px' }} />
-                        )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: '8px' }}>
+                    <div style={{ flex: '1.5', fontSize: '9px', color: '#000000', fontWeight: '700', lineHeight: '1.4' }}>
+                        <ul style={{ listStyle: 'none', padding: '0', margin: '0' }}>
+                            <li>• All results should be co-related clinically</li>
+                            <li>• If results are alarming or unexpected, contact the Helpdesk immediately</li>
+                            <li>• Not valid for medico-legal purposes</li>
+                            <li>• The test with an asterisk(*) are not accredited by NABL</li>
+                        </ul>
                     </div>
-                    <div style={{ borderTop: '1px solid #000', paddingTop: '5px' }}>
-                        <p style={{ fontWeight: 'bold', textTransform: 'uppercase', margin: '0' }}>Authorized Signature</p>
-                        <p style={{ fontSize: '9px', margin: '2px 0' }}>{formattedDocName}</p>
+                    <div style={{ flex: '1.2', textAlign: 'right', fontSize: '9px', fontWeight: '800', color: '#000000', textTransform: 'uppercase', lineHeight: '1.3' }}>
+                        {hospital?.address || 'RIMS ROAD, PUTLAMPALLI, KADAPA, AP'}
                     </div>
+                </div>
+                <div style={{ textAlign: 'center', fontSize: '9px', color: '#000000', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid #f1f5f9', fontWeight: '600' }}>
+                    This is a computer generated document and does not require a physical signature.
                 </div>
             </div>
 

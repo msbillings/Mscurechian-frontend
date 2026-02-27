@@ -1,4 +1,6 @@
 import React from 'react';
+import MainHeader from '../printers/MainHeader';
+import MainFooter from '../printers/MainFooter';
 
 interface Medicine {
     name: string;
@@ -40,12 +42,18 @@ function BillingDocument({
             boxSizing: 'border-box',
             position: 'relative'
         }}>
-            {/* Header */}
-            <div style={{ textAlign: 'center', borderBottom: '2px solid #3b82f6', paddingBottom: '10px', marginBottom: '20px' }}>
-                <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0' }}>BILLING RECEIPT</h1>
-                <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937', margin: '8px 0' }}>{hospitalName}</h2>
-                <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0' }}>{hospitalAddress}</p>
-                <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0' }}>Phone: {hospitalPhone}</p>
+            {/* Universal Header */}
+            <MainHeader
+                initialDetails={{
+                    name: hospitalName,
+                    address: hospitalAddress,
+                    phone: hospitalPhone,
+                    email: '' // Not provided in original props
+                }}
+            />
+
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                <h1 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '15px 0' }}>BILLING RECEIPT</h1>
             </div>
 
             {/* Patient Info */}
@@ -88,21 +96,15 @@ function BillingDocument({
                 </div>
             </div>
 
-            {/* Footer */}
-            <div style={{
-                position: 'absolute',
-                bottom: '20px',
-                left: '25mm',
-                right: '20px',
-                borderTop: '1px solid #e5e7eb',
-                paddingTop: '12px',
-                fontSize: '10px',
-                color: '#9ca3af',
-                textAlign: 'center'
-            }}>
-                <p style={{ margin: 0 }}>Thank you for choosing {hospitalName.replace('Government General Hospital', '').trim()} • This is a computer-generated document</p>
-                <p style={{ margin: '4px 0 0 0' }}>Generated on: {new Date().toLocaleDateString()}</p>
-            </div>
+            {/* Universal Footer */}
+            <MainFooter
+                initialDetails={{
+                    name: hospitalName,
+                    address: hospitalAddress,
+                    phone: hospitalPhone,
+                    email: ''
+                }}
+            />
         </div>
     );
 }

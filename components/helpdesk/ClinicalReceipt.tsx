@@ -1,14 +1,18 @@
 import React, { useEffect, useRef } from "react";
 import { X, Printer } from "lucide-react";
 import { generateClinicalReceiptHtml } from "@/lib/print-utils";
+import { renderToStaticMarkup } from "react-dom/server";
+import MainHeader from "../printers/MainHeader";
+import MainFooter from "../printers/MainFooter";
+import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
 
 interface ReceiptProps {
   hospital: {
     name: string;
-    logo?: string;
     address?: string;
     contact?: string;
     email?: string;
+    logo?: string;
   };
   patient: {
     name: string;
@@ -52,11 +56,36 @@ interface ReceiptProps {
   onClose: () => void;
 }
 
-function ClinicalReceipt({ hospital, patient, appointment, payment, onClose }: ReceiptProps) {
+function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment, onClose }: ReceiptProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [hospital, setHospital] = React.useState(propHospital);
+  const [dataLoaded, setDataLoaded] = React.useState(false);
 
   useEffect(() => {
-    if (iframeRef.current) {
+    const fetchAdminDetails = async () => {
+      try {
+        const response = await hospitalAdminService.getHospital();
+        if (response?.hospital) {
+          const h = response.hospital;
+          setHospital({
+            name: h.name || propHospital.name,
+            address: h.address || propHospital.address,
+            contact: h.phone || propHospital.contact,
+            email: h.email || propHospital.email,
+            logo: h.logo || propHospital.logo
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch admin hospital details for receipt", error);
+      } finally {
+        setDataLoaded(true);
+      }
+    };
+    fetchAdminDetails();
+  }, [propHospital]);
+
+  useEffect(() => {
+    if (dataLoaded && iframeRef.current) {
       const doc = iframeRef.current.contentDocument;
       if (doc) {
         // Map props to match generateClinicalReceiptHtml expectations
@@ -81,11 +110,33 @@ function ClinicalReceipt({ hospital, patient, appointment, payment, onClose }: R
           returnUrl: '#'
         });
 
-        // Sanitize for preview
+        // 1. Render React Components to Static HTML
+        const headerMarkup = renderToStaticMarkup(
+          <MainHeader initialDetails={{
+            name: hospital.name,
+            address: hospital.address || "",
+            phone: hospital.contact || "",
+            email: hospital.email || "",
+            logo: hospital.logo
+          }} />
+        );
+
+        const footerMarkup = renderToStaticMarkup(
+          <MainFooter initialDetails={{
+            name: hospital.name,
+            address: hospital.address || "",
+            phone: hospital.contact || "",
+            email: hospital.email || "",
+          }} />
+        );
+
+        // 2. Sanitize and Inject Components into the generated HTML
         const sanitizedHtml = rawHtml
           .replace('onload="window.print();"', '')
           .replace(/<div class="no-print">[\s\S]*?<\/div>/, '')
-          .replace(/<script>[\s\S]*?window\.onafterprint[\s\S]*?<\/script>/, '');
+          .replace(/<script>[\s\S]*?window\.onafterprint[\s\S]*?<\/script>/, '')
+          .replace(/<div class="hospital-header">[\s\S]*?<\/div>/, `<div class="hospital-header">${headerMarkup}</div>`)
+          .replace(/<div class="footer">[\s\S]*?<\/div>/, `<div class="footer" style="border:none; padding:0; margin:0;">${footerMarkup}</div>`);
 
         doc.open();
         doc.write(sanitizedHtml);
