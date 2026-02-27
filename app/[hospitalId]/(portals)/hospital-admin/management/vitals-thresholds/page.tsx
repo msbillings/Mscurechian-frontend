@@ -12,6 +12,7 @@ import { toast } from 'react-hot-toast';
 import { ipdService } from '@/lib/integrations/services/ipd.service';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 import { useAuthStore } from '@/stores/authStore';
+import GenericBulkImportModal from '@/components/admin/GenericBulkImportModal';
 const VITALS_METADATA = [
     {
         name: 'Heart Rate',
@@ -226,27 +227,8 @@ export default function VitalsThresholdsPage() {
         }
     }, [selectedTemplate]);
 
-    const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-            setLoading(true);
-            const res = await ipdService.importVitalsThresholds(formData);
-            if (res.success) {
-                toast.success(res.message);
-                setIsImporting(false);
-                fetchTemplates();
-            }
-        } catch (error: any) {
-            toast.error(error.message || "Import failed");
-        } finally {
-            setLoading(false);
-            if (e.target) e.target.value = '';
-        }
+    const handleImportSuccess = () => {
+        fetchTemplates();
     };
 
     const downloadSampleCSV = () => {
@@ -261,6 +243,7 @@ export default function VitalsThresholdsPage() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
+        a.style.display = 'none';
         a.download = 'vitals_protocol_sample.csv';
         document.body.appendChild(a);
         a.click();
@@ -736,86 +719,93 @@ export default function VitalsThresholdsPage() {
                 </div>
             )}
             {/* Bulk Import Modal */}
-            {isImporting && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-12">
-                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsImporting(false)} />
-                    <div className="relative bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
-                        <div className="p-8">
-                            <div className="flex justify-between items-start mb-6">
-                                <div>
-                                    <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-4">
-                                        <Import size={24} />
-                                    </div>
-                                    <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Bulk Import</h2>
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Deploy Institutional Guidelines</p>
-                                </div>
-                                <button onClick={() => setIsImporting(false)} className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 transition-colors">
-                                    <XCircle size={20} />
-                                </button>
-                            </div>
+            <GenericBulkImportModal
+                isOpen={isImporting}
+                onClose={() => setIsImporting(false)}
+                config={{
+                    title: "Clinical Protocols",
+                    entityName: "Protocol Row",
+                    templateColumns: [
+                        "roomType", "vitalName", "unit", "min", "lowCritical", "lowWarning",
+                        "targetRange", "highWarning", "highCritical", "max", "escalationMinutes"
+                    ],
+                    sampleRows: [
+                        ["ICU", "heartRate", "bpm", "30", "40", "50", "60-100", "110", "130", "220", "60"],
+                        ["ICU", "spO2", "%", "0", "85", "90", "95-100", "100", "100", "100", "60"],
+                        ["ICU", "systolicBP", "mmHg", "50", "70", "80", "90-140", "150", "170", "250", "60"],
+                        ["ICU", "diastolicBP", "mmHg", "30", "40", "50", "60-90", "100", "110", "150", "60"],
+                        ["ICU", "temperature", "°F", "90", "95", "97", "98-99", "101", "103", "110", "60"],
+                        ["ICU", "respiratoryRate", "breaths/min", "5", "8", "10", "12-20", "24", "30", "50", "60"],
+                        ["General Ward", "heartRate", "bpm", "40", "50", "55", "60-100", "105", "120", "200", "480"],
+                        ["General Ward", "spO2", "%", "0", "88", "92", "95-100", "100", "100", "100", "480"],
+                        ["General Ward", "systolicBP", "mmHg", "60", "80", "90", "100-140", "150", "160", "220", "480"],
+                        ["General Ward", "diastolicBP", "mmHg", "40", "50", "60", "70-90", "100", "110", "140", "480"],
+                        ["General Ward", "temperature", "°F", "94", "96", "97", "98-99", "100", "102", "108", "480"],
+                        ["General Ward", "respiratoryRate", "breaths/min", "8", "10", "12", "14-18", "20", "24", "40", "480"],
+                        ["Emergency", "heartRate", "bpm", "30", "45", "55", "60-100", "115", "140", "230", "60"],
+                        ["Emergency", "spO2", "%", "0", "80", "88", "94-100", "100", "100", "100", "60"]
+                    ],
+                    onImport: async (data) => {
+                        const validationErrors: any[] = [];
+                        const processedData = data.map((row, idx) => {
+                            const val = (k: string) => {
+                                const v = row[k];
+                                if (v === undefined || v === null || v === "") return 0;
+                                return Number(String(v).split("-")[0]);
+                            };
 
-                            <div className="space-y-6">
-                                <div className="bg-slate-50 p-4 rounded-[1.5rem] border border-slate-100">
-                                    <h3 className="text-[8px] font-black uppercase text-slate-400 tracking-[0.2em] mb-3 flex items-center gap-2">
-                                        <Info size={14} className="text-indigo-500" />
-                                        CSV Structure Requirements
-                                    </h3>
-                                    <div className="flex flex-wrap items-center gap-2 p-5 bg-white rounded-2xl border border-slate-200/60 shadow-inner">
-                                        {[
-                                            'roomType', 'vitalName', 'unit', 'min',
-                                            'lowCritical', 'lowWarning', 'targetRange',
-                                            'highWarning', 'highCritical', 'max', 'escalationMinutes'
-                                        ].map((col, idx, arr) => (
-                                            <div key={col} className="flex items-center">
-                                                <span className="text-[10px] font-black text-indigo-600 uppercase tracking-tight">{col}</span>
-                                                {idx < arr.length - 1 && <span className="mx-2 text-slate-300 font-bold">/</span>}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+                            const [targetMin, targetMax] = (row.targetRange || "").split("-").map((s: string) => s.trim());
 
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        onClick={downloadSampleCSV}
-                                        className="flex-1 py-3.5 bg-white border-2 border-slate-100 text-slate-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:border-indigo-200 hover:text-indigo-600 transition-all flex items-center justify-center gap-2 shadow-sm"
-                                    >
-                                        <Copy size={14} />
-                                        Sample Template
-                                    </button>
+                            const pMin = val('min');
+                            const lCrit = val('lowCritical');
+                            const lWarn = val('lowWarning');
+                            const tMin = Number(targetMin || row.targetMin || 0);
+                            const tMax = Number(targetMax || row.targetMax || 0);
+                            const uWarn = val('highWarning');
+                            const uCrit = val('highCritical');
+                            const pMax = val('max');
 
-                                    <div className="flex-1">
-                                        <input
-                                            id="modal-csv-upload"
-                                            type="file"
-                                            className="hidden"
-                                            accept=".csv"
-                                            onChange={handleImport}
-                                        />
-                                        <button
-                                            onClick={() => document.getElementById('modal-csv-upload')?.click()}
-                                            disabled={loading}
-                                            className="w-full py-3.5 bg-indigo-600 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
-                                        >
-                                            <Zap size={14} />
-                                            {loading ? '...' : 'Upload CSV'}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                            if (pMin > lCrit || lCrit > lWarn || lWarn > tMin || tMin >= tMax || tMax > uWarn || uWarn > uCrit || uCrit > pMax) {
+                                validationErrors.push({
+                                    message: `Record #${idx + 1}: [${row.vitalName}] in [${row.roomType}]. Boundary check failed. Ensure: Min(${pMin}) ≤ LowCrit(${lCrit}) ≤ LowWarn(${lWarn}) ≤ T-Min(${tMin}) < T-Max(${tMax}) ≤ HighWarn(${uWarn}) ≤ HighCrit(${uCrit}) ≤ Max(${pMax}).`
+                                });
+                            }
 
-                        <div className="bg-slate-50 p-6 border-t border-slate-100 flex items-center gap-3">
-                            <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center text-amber-500 shrink-0">
-                                <AlertCircle size={16} />
-                            </div>
-                            <p className="text-[9px] font-bold text-slate-500 uppercase leading-relaxed tracking-wider">
-                                <span className="text-slate-900 block mb-0.5">Safety Protocol:</span>
-                                Overwrites existing ward protocols.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
+                            return {
+                                roomType: row.roomType,
+                                vitalName: row.vitalName,
+                                unit: row.unit,
+                                physicalMin: pMin,
+                                lowerCritical: lCrit,
+                                lowerWarning: lWarn,
+                                targetMin: tMin,
+                                targetMax: tMax,
+                                upperWarning: uWarn,
+                                upperCritical: uCrit,
+                                physicalMax: pMax,
+                                escalationCriticalMinutes: row.escalationMinutes,
+                                escalationWarningMinutes: row.escalationMinutes
+                            };
+                        });
+
+                        if (validationErrors.length > 0) {
+                            return {
+                                addedCount: 0,
+                                errorCount: validationErrors.length,
+                                errors: validationErrors
+                            };
+                        }
+
+                        const res = await ipdService.importVitalsThresholdsJSON(processedData);
+                        return {
+                            addedCount: res.addedCount || 0,
+                            errorCount: res.errorCount || 0,
+                            errors: res.errors
+                        };
+                    }
+                }}
+                onSuccess={handleImportSuccess}
+            />
             {/* Clone Template Modal */}
             {isCloning && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">

@@ -23,6 +23,8 @@ interface PharmacyOrder {
     };
     medicines: any[];
     status: string;
+    patientAge?: string;
+    patientGender?: string;
     createdAt: string;
     isDeleted?: boolean;
     admission?: string | any;
@@ -164,7 +166,7 @@ function ActiveOrdersPage() {
                                         <td className="p-6">
                                             <div className="font-bold text-gray-900 dark:text-white uppercase tracking-tight">{order.patient?.name || 'Unknown'}</div>
                                             <div className="text-xs text-gray-400 uppercase font-semibold tracking-wider mt-0.5">
-                                                {order.patient?.age || '-'}Y • {order.patient?.gender || '-'}
+                                                {order.patientAge || order.patient?.age || '-'}Y • {order.patientGender || order.patient?.gender || '-'}
                                             </div>
                                         </td>
                                         <td className="p-6 text-gray-600 dark:text-gray-300 font-semibold uppercase text-xs">
@@ -177,8 +179,8 @@ function ActiveOrdersPage() {
                                         </td>
                                         <td className="p-6 text-center">
                                             <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${order.status === 'prescribed'
-                                                    ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/30'
-                                                    : 'bg-teal-50 text-teal-600 border-teal-100 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800/30'
+                                                ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/30'
+                                                : 'bg-teal-50 text-teal-600 border-teal-100 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800/30'
                                                 }`}>
                                                 {order.status}
                                             </span>

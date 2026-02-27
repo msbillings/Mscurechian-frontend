@@ -22,6 +22,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { ipdService } from '@/lib/integrations/services/ipd.service';
 import { ConfirmModal } from '@/components/admin/Modal';
+import GenericBulkImportModal from '@/components/admin/GenericBulkImportModal';
 
 const RoomsManagement = () => {
     const [rooms, setRooms] = useState<any[]>([]);
@@ -277,23 +278,8 @@ const RoomsManagement = () => {
         }
     };
 
-    const handleImport = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!importFile) return;
-        try {
-            setImporting(true);
-            const formData = new FormData();
-            formData.append('file', importFile);
-            const res = await ipdService.importAssets('rooms', formData);
-            toast.success(res.message);
-            setShowImportModal(false);
-            setImportFile(null);
-            fetchInitialData();
-        } catch (error: any) {
-            toast.error(error.message || "Import failed");
-        } finally {
-            setImporting(false);
-        }
+    const handleImportSuccess = () => {
+        fetchInitialData();
     };
 
     const filtered = rooms.filter(r => {
@@ -819,55 +805,48 @@ const RoomsManagement = () => {
                 </div>
             )}
 
-            {/* Import Modal */}
-            {showImportModal && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6 z-[100] animate-in fade-in duration-300">
-                    <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                        <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-blue-600 text-white">
-                            <div>
-                                <h2 className="text-xl font-black uppercase tracking-tight">Rapid Deployment</h2>
-                                <p className="text-[10px] font-bold text-blue-100 uppercase tracking-widest mt-1">Import Room Inventory</p>
-                            </div>
-                            <button onClick={() => setShowImportModal(false)} className="w-10 h-10 bg-white/10 text-white rounded-xl flex items-center justify-center hover:bg-white/20 transition-all">
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <form onSubmit={handleImport} className="p-8 space-y-6">
-                            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex gap-4">
-                                <AlertCircle size={20} className="text-blue-600 shrink-0" />
-                                <div className="text-[10px] text-blue-700 font-bold uppercase leading-relaxed">
-                                    CSV must include: <span className="text-blue-900">label, type</span>
-                                </div>
-                            </div>
-                            <div
-                                className={`h-48 border-2 border-dashed ${importFile ? 'border-blue-500 bg-blue-50/30' : 'border-slate-200 bg-slate-50'} rounded-2xl flex flex-col items-center justify-center gap-4 transition-all relative overflow-hidden`}
-                            >
-                                <input
-                                    type="file"
-                                    accept=".csv"
-                                    onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                                    className="absolute inset-0 opacity-0 cursor-pointer"
-                                />
-                                <div className={`w-12 h-12 ${importFile ? 'bg-blue-600 text-white' : 'bg-white text-slate-400'} rounded-xl flex items-center justify-center shadow-sm`}>
-                                    {importFile ? <CheckCircle2 size={24} /> : <FileText size={24} />}
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-xs font-black text-slate-900 uppercase tracking-tight">
-                                        {importFile ? importFile.name : "Select Asset File"}
-                                    </p>
-                                    <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">Click or Drag CSV here</p>
-                                </div>
-                            </div>
-                            <button
-                                disabled={!importFile || importing}
-                                className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all disabled:opacity-50 shadow-lg shadow-blue-200"
-                            >
-                                {importing ? "Processing..." : "Commence Import"}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            )}
+
+
+            {/* Bulk Import Modal */}
+            <GenericBulkImportModal
+                isOpen={showImportModal}
+                onClose={() => setShowImportModal(false)}
+                config={{
+                    title: "Room Inventory",
+                    entityName: "Room",
+                    templateColumns: ["label", "type"],
+                    sampleRows: [
+                        ["ICU-A", "ICU"],
+                        ["ICU-B", "ICU"],
+                        ["G-201", "GENERAL"],
+                        ["G-202", "GENERAL"],
+                        ["P-301", "PRIVATE"],
+                        ["P-302", "PRIVATE"],
+                        ["D-401", "DELUXE"],
+                        ["D-402", "DELUXE"]
+                    ],
+                    onImport: async (data: any[]) => {
+                        const existingLabels = new Set(rooms.map(r => r.label.toLowerCase()));
+                        const uniqueData = data.filter(row => !existingLabels.has(row.label?.toLowerCase()));
+
+                        if (uniqueData.length === 0) {
+                            return {
+                                addedCount: 0,
+                                errorCount: 0,
+                                errors: [{ message: "All records already exist. Skipping import." }]
+                            };
+                        }
+
+                        const res = await ipdService.importIPDAssetsJSON('rooms', uniqueData);
+                        return {
+                            addedCount: res.addedCount || 0,
+                            errorCount: res.errorCount || 0,
+                            errors: res.errors
+                        };
+                    }
+                }}
+                onSuccess={handleImportSuccess}
+            />
 
             <ConfirmModal
                 isOpen={confirmModal.isOpen}

@@ -7,7 +7,8 @@ import { ArrowLeft, Save, FileCheck, Receipt } from 'lucide-react';
 import { dischargeService } from '@/lib/integrations/services/discharge.service';
 import { ipdService } from '@/lib/integrations/services/ipd.service';
 import toast from 'react-hot-toast';
-import { Tag, AlertCircle, Info, Lock } from 'lucide-react';
+import { Tag, AlertCircle, Info, Lock, Wallet, Plus, X } from 'lucide-react';
+import ClinicalReceipt from '@/components/helpdesk/ClinicalReceipt';
 
 export function DischargeBillingProcess() {
     const router = useRouter();
@@ -28,6 +29,15 @@ export function DischargeBillingProcess() {
         extraChargesTotal: 0,
         discountAmount: 0
     });
+
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [paymentData, setPaymentData] = useState({
+        amount: 0,
+        mode: 'UPI',
+        reference: ''
+    });
+    const [receiptData, setReceiptData] = useState<any>(null);
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
     useEffect(() => {
         if (admissionId) {
@@ -144,6 +154,55 @@ export function DischargeBillingProcess() {
         }
     };
 
+    const handleRecordPayment = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!admissionId || !recordData) return;
+
+        try {
+            setIsProcessingPayment(true);
+            const response = await ipdService.addAdvancePayment({
+                admissionId,
+                amount: paymentData.amount,
+                mode: paymentData.mode,
+                transactionType: 'Settlement',
+                reference: paymentData.reference
+            });
+
+            toast.success("Payment recorded successfully");
+
+            // Set receipt data and refresh
+            setReceiptData({
+                hospital: recordData.hospital || {},
+                patient: {
+                    name: recordData.patientName,
+                    mrn: recordData.mrn,
+                    phone: recordData.phone
+                },
+                appointment: {
+                    type: 'IPD Final Settlement',
+                    doctor: recordData.primaryDoctor || 'N/A'
+                },
+                payment: {
+                    receiptNo: response._id || `REC-${Date.now()}`,
+                    date: new Date().toISOString(),
+                    amount: Math.round(paymentData.amount),
+                    advanceAmount: Math.round(billingData.advanceAmount),
+                    totalBillAmount: Math.round(billingData.totalBillAmount),
+                    mode: paymentData.mode,
+                    reference: paymentData.reference,
+                    status: 'PAID' // Required for receipt generator
+                }
+            });
+
+            setShowPaymentModal(false);
+            fetchAdmissionDetails(admissionId);
+        } catch (error: any) {
+            toast.error(error.message || "Failed to record payment");
+        } finally {
+            setIsProcessingPayment(false);
+        }
+    };
+
     if (loading && !recordData) {
         return <div className="p-8 text-center text-slate-500">Loading patient details...</div>;
     }
@@ -174,7 +233,9 @@ export function DischargeBillingProcess() {
                     <div className="p-1.5 bg-blue-100 text-blue-600 rounded-lg">
                         <FileCheck size={18} />
                     </div>
-                    <h3 className="font-bold text-slate-800 text-sm">Clinical Summary (Prepared by Nurse)</h3>
+                    <h3 className="font-bold text-slate-800 text-sm">
+                        Clinical Summary {recordData.preparedBy?.name ? `(Prepared by ${recordData.preparedBy.name})` : (recordData.createdBy?.name ? `(Finalized by ${recordData.createdBy.name})` : '(Prepared by Nurse)')}
+                    </h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                     <div>
@@ -227,31 +288,48 @@ export function DischargeBillingProcess() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                         <FormInput
-                            label="Advance Paid"
+                            label="Total Advance Paid"
                             name="advanceAmount"
                             type="number"
-                            value={billingData.advanceAmount}
+                            value={Math.round(billingData.advanceAmount)}
                             onChange={handleChange}
                             placeholder="0.00"
-                            className="bg-slate-50 border-slate-200 font-bold opacity-70"
+                            className="bg-slate-50 border-slate-200 font-bold text-emerald-700"
                             readOnly
                         />
-                        <FormInput
-                            label="Final Payment (Due)"
-                            name="finalPayment"
-                            type="number"
-                            value={billingData.finalPayment}
-                            onChange={handleChange}
-                            placeholder="0.00"
-                            className="bg-slate-50 border-slate-200 font-bold opacity-70"
-                            readOnly
-                            required
-                        />
+                        <div className="relative">
+                            <FormInput
+                                label="Current Balance Due"
+                                name="finalPayment"
+                                type="number"
+                                value={Math.round(billingData.finalPayment)}
+                                onChange={handleChange}
+                                placeholder="0.00"
+                                className={`bg-slate-50 border-slate-200 font-bold ${Math.round(billingData.finalPayment) > 0 ? 'text-rose-600' : 'text-slate-900'}`}
+                                readOnly
+                                required
+                            />
+                            {Math.round(billingData.finalPayment) > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setPaymentData(prev => ({ ...prev, amount: Math.round(billingData.finalPayment) }));
+                                        setShowPaymentModal(true);
+                                    }}
+                                    className="absolute right-2 top-[30px] px-3 py-1.5 bg-rose-600 text-white text-[10px] font-bold uppercase rounded-lg hover:bg-rose-700 transition flex items-center gap-1.5 shadow-md"
+                                >
+                                    <Wallet size={12} /> Record Payment
+                                </button>
+                            )}
+                            {Math.round(billingData.finalPayment) === 0 && Math.round(billingData.totalBillAmount) > 0 && (
+                                <span className="absolute right-3 top-[34px] text-[10px] font-black uppercase text-emerald-600 bg-emerald-100 px-2 py-1 rounded">Paid</span>
+                            )}
+                        </div>
                         <FormInput
                             label="Total Bill Amount"
                             name="totalBillAmount"
                             type="number"
-                            value={billingData.totalBillAmount}
+                            value={Math.round(billingData.totalBillAmount)}
                             onChange={handleChange}
                             placeholder="0.00"
                             className="bg-slate-50 border-slate-200 text-teal-600 font-bold text-lg opacity-70"
@@ -347,7 +425,7 @@ export function DischargeBillingProcess() {
 
                                 <div className="flex justify-between items-center pt-2 text-teal-600">
                                     <p className="text-[10px] font-black uppercase tracking-widest">Net Payable</p>
-                                    <p className="text-sm font-black underline decoration-2 underline-offset-4">₹{billSummary.financials?.finalAmount?.toLocaleString() || '0'}</p>
+                                    <p className="text-sm font-black underline decoration-2 underline-offset-4">₹{Math.round(billSummary.financials?.finalAmount || 0).toLocaleString()}</p>
                                 </div>
                             </div>
                         </div>
@@ -363,10 +441,23 @@ export function DischargeBillingProcess() {
                             </div>
                         )}
                         <div className="flex-1 hidden md:block" />
+
+                        {Math.round(billingData.finalPayment) > 0 && (
+                            <div className="flex items-center gap-2 px-4 py-2 bg-rose-50 border border-rose-100 rounded-xl">
+                                <AlertCircle size={14} className="text-rose-500" />
+                                <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">
+                                    Outstanding Balance: ₹{Math.round(billingData.finalPayment).toLocaleString()} — Please record payment first
+                                </span>
+                            </div>
+                        )}
+
                         <Button
                             type="submit"
-                            disabled={loading}
-                            className="bg-blue-600 text-white hover:bg-blue-700 rounded-xl px-6 py-2.5 font-bold shadow-lg shadow-blue-200 flex items-center gap-2 text-sm"
+                            disabled={loading || Math.round(billingData.finalPayment) > 0}
+                            className={`rounded-xl px-6 py-2.5 font-bold shadow-lg flex items-center gap-2 text-sm transition-all ${Math.round(billingData.finalPayment) > 0
+                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'
+                                }`}
                         >
                             <Save size={16} />
                             {loading ? 'Finalizing...' : 'Finalize & Generate Invoice'}
@@ -374,6 +465,80 @@ export function DischargeBillingProcess() {
                     </div>
                 </Card>
             </form>
+
+            {/* Payment Modal */}
+            {showPaymentModal && (
+                <div className="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[24px] shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center p-4 bg-slate-50 border-b border-slate-100">
+                            <h3 className="font-black text-slate-800 uppercase tracking-tight text-sm flex items-center gap-2">
+                                <Wallet size={16} className="text-rose-500" /> Record Settlement
+                            </h3>
+                            <button onClick={() => setShowPaymentModal(false)} className="text-slate-400 hover:text-slate-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleRecordPayment} className="p-5 space-y-4">
+                            <div>
+                                <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Payment Amount</label>
+                                <input
+                                    type="number"
+                                    value={paymentData.amount}
+                                    onChange={(e) => setPaymentData(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                                    className="w-full text-lg font-black bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-rose-500"
+                                    required
+                                    max={billingData.finalPayment}
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Payment Mode</label>
+                                    <select
+                                        value={paymentData.mode}
+                                        onChange={(e) => setPaymentData(prev => ({ ...prev, mode: e.target.value }))}
+                                        className="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-3 py-3 outline-none focus:border-rose-500"
+                                    >
+                                        <option value="UPI">UPI</option>
+                                        <option value="Cash">Cash</option>
+                                        <option value="Card">Card</option>
+                                        <option value="Bank TXN">Bank TXN</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Reference ID</label>
+                                    <input
+                                        type="text"
+                                        value={paymentData.reference}
+                                        onChange={(e) => setPaymentData(prev => ({ ...prev, reference: e.target.value }))}
+                                        placeholder="Optional"
+                                        className="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 outline-none focus:border-rose-500"
+                                    />
+                                </div>
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={isProcessingPayment}
+                                className="w-full py-3.5 bg-rose-600 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
+                            >
+                                {isProcessingPayment ? "Processing..." : <><Plus size={16} /> Confirm Payment</>}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Invisible Clinical Receipt for Auto-Print */}
+            {receiptData && (
+                <div className="hidden">
+                    <ClinicalReceipt
+                        hospital={receiptData.hospital}
+                        patient={receiptData.patient}
+                        appointment={receiptData.appointment}
+                        payment={receiptData.payment}
+                        onClose={() => setReceiptData(null)}
+                    />
+                </div>
+            )}
         </div>
     );
 }

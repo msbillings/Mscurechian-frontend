@@ -141,8 +141,8 @@ function PatientsPage() {
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                            {patients.length > 0 ? (
-                              patients.map((patient) => (
-                                 <tr key={patient.id} className="hover:bg-blue-50/50 group">
+                              patients.map((patient, idx) => (
+                                 <tr key={`${patient.id}-${idx}`} className="hover:bg-blue-50/50 group">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                        <div className="flex items-center gap-3">
                                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${patient.patientType === 'IPD'

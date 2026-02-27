@@ -445,6 +445,18 @@ export const ipdService = {
       body: formData,
     }),
 
+  importIPDAssetsJSON: (type: string, data: any[]) =>
+    apiClient<any>(`${IPD_ENDPOINTS.BEDS}/import-json/${type}`, {
+      method: "POST",
+      body: JSON.stringify({ data }),
+    }),
+
+  importVitalsThresholdsJSON: (data: any[]) =>
+    apiClient<any>(`${IPD_ENDPOINTS.THRESHOLDS.BASE}/import-json`, {
+      method: "POST",
+      body: JSON.stringify({ data }),
+    }),
+
   // ==================== IPD Billing ====================
 
   getBillSummary: (admissionId: string) =>
@@ -472,7 +484,7 @@ export const ipdService = {
     amount: number;
     mode: string;
     reference?: string;
-    transactionType: "Advance" | "Refund";
+    transactionType: "Advance" | "Refund" | "Settlement";
     date?: string | Date;
   }) =>
     apiClient<any>(IPD_ENDPOINTS.BILLING.ADVANCE, {

@@ -65,6 +65,7 @@ const ProductTable: React.FC<ProductTableProps> = ({ products, onEdit, onDelete,
                         <th className="px-6 py-4 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight text-center">Expiry</th>
                         <th className="px-6 py-4 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight text-center">MRP</th>
                         <th className="px-6 py-4 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight text-center">Stock</th>
+                        <th className="px-6 py-4 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight text-center">Pieces</th>
                         <th className="px-6 py-4 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight text-center">Status</th>
                         <th className="px-6 py-4 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight text-center">Actions</th>
                     </tr>
@@ -102,7 +103,13 @@ const ProductTable: React.FC<ProductTableProps> = ({ products, onEdit, onDelete,
                             </td>
                             <td className="px-6 py-5 text-center border-r border-gray-100 dark:border-gray-800">
                                 <div className="text-base font-medium text-gray-700 dark:text-gray-300">
-                                    {product.currentStock}
+                                    {Math.round(product.currentStock * 100) / 100}
+                                </div>
+                                <div className="text-xs text-gray-400 mt-1">{product.unitsPerPack || 1} / Pack</div>
+                            </td>
+                            <td className="px-6 py-5 text-center border-r border-gray-100 dark:border-gray-800">
+                                <div className="text-base font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded inline-block">
+                                    {Math.round((product.unitsPerPack || 1) * product.currentStock).toLocaleString()}
                                 </div>
                             </td>
                             <td className="px-6 py-5 text-center border-r border-gray-100 dark:border-gray-800">

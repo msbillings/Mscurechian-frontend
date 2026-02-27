@@ -622,10 +622,16 @@ export const generateClinicalReceiptHtml = (data: any) => {
           margin: 0 auto;
         }
         .hospital-header {
-          text-align: center;
-          margin-bottom: 14px;
-          border-bottom: 1px solid #000;
-          padding-bottom: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 20px;
+          margin-bottom: 20px;
+          border-bottom: 1.5px solid #000;
+          padding-bottom: 12px;
+        }
+        .hospital-details {
+          text-align: left;
         }
         .hospital-name {
           font-size: 25px;
@@ -790,9 +796,12 @@ export const generateClinicalReceiptHtml = (data: any) => {
       <div class="receipt-container">
         <!-- Hospital Header -->
         <div class="hospital-header">
-          <h1 class="hospital-name">${hospital.name}</h1>
-          <p class="hospital-info">${hospital.address || "Central Healthcare District"}</p>
-          <p class="hospital-info">Phone: ${hospital.contact} | Email: ${hospital.email}</p>
+          ${hospital.logo ? `<img src="${hospital.logo}" alt="Logo" style="max-height: 85px; width: auto; object-fit: contain;" />` : ''}
+          <div class="hospital-details">
+            <h1 class="hospital-name">${hospital.name}</h1>
+            <p class="hospital-info">${hospital.address || ""}</p>
+            <p class="hospital-info">${hospital.contact ? `Phone: ${hospital.contact}` : ''} ${hospital.email ? ` | Email: ${hospital.email}` : ''}</p>
+          </div>
         </div>
 
         <!-- Bill Title Row -->
@@ -930,19 +939,34 @@ export const generateClinicalReceiptHtml = (data: any) => {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>${data.registrationType === 'IPD' ? 'IPD Admission Fee' : 'Consultation Fee (OPD)'}</td>
-                <td style="text-align: right;">${payment.amount.toFixed(2)}</td>
-              </tr>
-              <tr class="total-row">
-                <td>TOTAL AMOUNT</td>
-                <td style="text-align: right;">₹ ${payment.amount.toFixed(2)}</td>
-              </tr>
+              ${(data.registrationType === 'IPD' && appointment.type?.includes('Settlement')) ? `
+                <tr>
+                  <td style="font-weight: bold; color: #475569;">Advance Amount</td>
+                  <td style="text-align: right; font-weight: bold;">₹ ${Math.round(payment.advanceAmount || 0).toLocaleString()}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: bold; color: #e11d48;">Due Amount</td>
+                  <td style="text-align: right; font-weight: bold;">₹ ${Math.round(payment.amount).toLocaleString()}</td>
+                </tr>
+                <tr class="total-row">
+                  <td>TOTAL BILL AMOUNT</td>
+                  <td style="text-align: right;">₹ ${Math.round(payment.totalBillAmount || (payment.amount + (payment.advanceAmount || 0))).toLocaleString()}</td>
+                </tr>
+              ` : `
+                <tr>
+                  <td>${data.registrationType === 'IPD' ? 'IPD Admission Fee' : 'Consultation Fee (OPD)'}</td>
+                  <td style="text-align: right;">₹ ${Math.round(payment.amount).toLocaleString()}</td>
+                </tr>
+                <tr class="total-row">
+                  <td>TOTAL AMOUNT</td>
+                  <td style="text-align: right;">₹ ${Math.round(payment.amount).toLocaleString()}</td>
+                </tr>
+              `}
             </tbody>
           </table>
           <div class="payment-footer">
-            <div>Payment Method: ${payment.method}</div>
-            <div class="${payment.status.toUpperCase() === 'PAID' ? 'status-paid' : ''}">Payment Status: ${payment.status}</div>
+            <div>Payment Method: ${payment.method || 'N/A'}</div>
+            <div class="${payment?.status?.toUpperCase() === 'PAID' ? 'status-paid' : ''}">Payment Status: ${payment?.status || 'Unknown'}</div>
           </div>
         </div>
 
@@ -1026,14 +1050,16 @@ export const generatePrescriptionHtml = (data: any) => {
                     /* Header */
                     .header {
                         display: flex;
-                        justify-content: space-between;
-                        align-items: flex-start;
+                        align-items: center;
+                        gap: 20px;
                         padding-bottom: 20px;
                         margin-bottom: 20px;
                         border-bottom: 2px solid #000;
                     }
+                    .brand { flex: 1; display: flex; align-items: center; gap: 15px; }
+                    .brand-text { text-align: left; }
                     .brand h1 { margin: 0; font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-                    .brand p { margin: 4px 0 0; font-size: 9px; color: #555; }
+                    .brand p { margin: 2px 0 0; font-size: 9px; color: #555; }
                     
                     .doctor { text-align: right; }
                     .doctor h2 { margin: 0; font-size: 14px; font-weight: 700; }
@@ -1130,9 +1156,12 @@ export const generatePrescriptionHtml = (data: any) => {
                 <div class="container">
                     <div class="header">
                         <div class="brand">
-                            <h1>${hospital.name || "CureChain Medical Center"}</h1>
-                            <p>${hospital.address || "Medical District, City Center"}</p>
-                            <p>${hospital.contact || ""} ${hospital.email ? `• ${hospital.email}` : ""}</p>
+                            ${hospital.logo ? `<img src="${hospital.logo}" style="max-height: 70px; width: auto; object-fit: contain;" />` : ''}
+                            <div class="brand-text">
+                                <h1>${hospital.name || "CureChain Medical Center"}</h1>
+                                <p>${hospital.address || ""}</p>
+                                <p>${hospital.contact || hospital.phone || ""} ${hospital.email ? `• ${hospital.email}` : ""}</p>
+                            </div>
                         </div>
                         <div class="doctor">
                             <h2>${formatDoctorName(doctor.name)}</h2>
