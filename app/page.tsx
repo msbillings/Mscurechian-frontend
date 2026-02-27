@@ -41,6 +41,8 @@ import FloatingAudioPlayer from "@/components/home/FloatingAudioPlayer";
 import { motion, AnimatePresence } from "framer-motion";
 import DeploymentSecurity from "@/components/home/DeploymentSecurity";
 import TermsSection from "@/components/home/TermsSection";
+import LandingBlogs from "@/components/home/LandingBlogs";
+import LandingTestimonials from "@/components/home/LandingTestimonials";
 
 
 export default function Home() {
@@ -678,6 +680,17 @@ export default function Home() {
                         </div>
                     </div>
                 </section>
+
+                {/* Latest Blogs */}
+                <ScrollReveal>
+                    <LandingBlogs />
+                </ScrollReveal>
+
+                {/* What People Say (Testimonials) */}
+                <ScrollReveal>
+                    <LandingTestimonials />
+                </ScrollReveal>
+
                 <TermsSection
                     onAccept={handleTermsAccept}
                     hasAgreed={hasAgreed}

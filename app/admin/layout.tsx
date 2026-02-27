@@ -46,6 +46,15 @@ const adminMenu: MenuItem[] = [
     },
 
     { icon: "/assets/doctor.png", label: "Hospital Admins", path: "/admin/hospital-admins" },
+    {
+        icon: "/assets/reports.png",
+        label: "CMS Management",
+        path: "#cms",
+        children: [
+            { icon: "/assets/reports.png", label: "Manage Blogs", path: "/admin/cms/blogs" },
+            { icon: "/assets/help.png", label: "Manage Testimonials", path: "/admin/cms/testimonials" },
+        ]
+    },
     { icon: "/assets/help.png", label: "Support & Feedback", path: "/admin/support" },
 ];
 

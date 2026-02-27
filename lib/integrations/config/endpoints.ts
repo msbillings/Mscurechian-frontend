@@ -81,6 +81,16 @@ export const ADMIN_ENDPOINTS = {
   HOSPITAL_DETAILS: (id: string) => `/hospital/hospitals/${id}/details`,
   HOSPITAL_DOCTORS: (id: string) => `/hospital/hospitals/${id}/doctors`,
   SUPPORT_REQUESTS: "/support",
+
+  // CMS Management
+  BLOGS: {
+    BASE: "/admin/blogs",
+    BY_ID: (id: string) => `/admin/blogs/${id}`,
+  },
+  TESTIMONIALS: {
+    BASE: "/admin/testimonials",
+    BY_ID: (id: string) => `/admin/testimonials/${id}`,
+  },
 };
 
 export const PHARMACY_ENDPOINTS = {
@@ -468,6 +478,11 @@ export const RECRUITMENT_ENDPOINTS = {
   STATUS: (id: string) => `/recruitment/status/${id}`,
   REVIEW: (id: string) => `/recruitment/review/${id}`,
   DETAIL: (id: string) => `/recruitment/${id}`,
+};
+
+export const PUBLIC_ENDPOINTS = {
+  BLOGS: "/public/blogs",
+  TESTIMONIALS: "/public/testimonials",
 };
 
 // Legacy support to avoid breaking existing code immediately

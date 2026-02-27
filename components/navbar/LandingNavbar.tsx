@@ -85,6 +85,7 @@ function LandingNavbar({ variant = 'home', title, onProtectedClick }: LandingNav
     const navLinks = [
         { name: 'Features', href: '/features' },
         { name: 'Portals', href: '/portals' },
+        { name: 'Blogs', href: '/blogs' },
         { name: 'Solutions', href: '/solutions' },
         { name: 'Pricing', href: '/pricing' },
         { name: 'About', href: '/about' }

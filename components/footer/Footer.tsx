@@ -172,9 +172,9 @@ const Footer = () => {
                             <a href="#" className="text-sm hover:text-blue-400 transition-colors duration-200" style={{ color: 'var(--secondary-color)' }}>
                                 Privacy Policy
                             </a>
-                            <a href="#" className="text-sm hover:text-blue-400 transition-colors duration-200" style={{ color: 'var(--secondary-color)' }}>
+                            <Link href="/terms" className="text-sm hover:text-blue-400 transition-colors duration-200" style={{ color: 'var(--secondary-color)' }}>
                                 Terms of Service
-                            </a>
+                            </Link>
                             <a href="#" className="text-sm hover:text-blue-400 transition-colors duration-200" style={{ color: 'var(--secondary-color)' }}>
                                 Cookie Policy
                             </a>
