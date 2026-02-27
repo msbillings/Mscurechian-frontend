@@ -250,7 +250,7 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
                     </button>
 
                     {isHospitalDropdownOpen && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-900 border border-slate-100 dark:border-white/10 rounded-3xl shadow-2xl p-2 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-900 border border-slate-100 dark:border-white/10 rounded-3xl shadow-2xl p-2 z-100 animate-in fade-in slide-in-from-top-2 duration-200">
                             <div className="max-h-64 overflow-y-auto no-scrollbar space-y-1">
                                 <button
                                     onClick={() => {
@@ -356,7 +356,9 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
                     />
                 )}
                 {activeTab === 'discharge' && (
-                    <DischargeRecordsSection />
+                    <DischargeRecordsSection
+                        records={dashboardData?.dischargeRecords?.data || []}
+                    />
                 )}
             </div>
 

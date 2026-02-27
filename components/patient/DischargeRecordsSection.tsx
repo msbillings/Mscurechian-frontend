@@ -2,10 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { FileCheck, Calendar, User, MapPin, Loader2, Eye, ChevronRight } from 'lucide-react';
-import { dischargeService } from '@/lib/integrations/services/discharge.service';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import toast from 'react-hot-toast';
 
 interface DischargeRecord {
     _id: string;
@@ -21,68 +19,17 @@ interface DischargeRecord {
     hospitalAddress?: string;
 }
 
-export default function DischargeRecordsSection() {
+interface DischargeRecordsSectionProps {
+    records: DischargeRecord[];
+}
+
+export default function DischargeRecordsSection({ records = [] }: DischargeRecordsSectionProps) {
     const router = useRouter();
-    const [records, setRecords] = useState<DischargeRecord[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        fetchDischargeRecords();
-    }, []);
-
-    const fetchDischargeRecords = async () => {
-        try {
-            setLoading(true);
-            setError(null);
-            const response = await dischargeService.getPatientDischargeRecords();
-
-            if (response.success && response.data) {
-                setRecords(response.data);
-            } else {
-                setError('Failed to load discharge records');
-            }
-        } catch (err) {
-            console.error('Error fetching discharge records:', err);
-            setError('An error occurred while loading your discharge records');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleViewRecord = (record: DischargeRecord) => {
         const identifier = record.documentId || record.admissionId || record._id;
         router.push(`/patient/discharge/${identifier}`);
     };
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center py-12">
-                <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="w-8 h-8 animate-spin text-red-600" />
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Loading Discharge Records...</p>
-                </div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="text-center py-12">
-                <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <FileCheck className="w-6 h-6 text-red-600" />
-                </div>
-                <p className="text-sm font-bold text-gray-900 dark:text-white mb-1">Failed to Load</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{error}</p>
-                <button
-                    onClick={fetchDischargeRecords}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-red-700"
-                >
-                    Try Again
-                </button>
-            </div>
-        );
-    }
 
     if (records.length === 0) {
         return (
