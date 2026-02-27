@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
   experimental: {
     reactCompiler: true,
     optimizePackageImports: ["lucide-react", "recharts"], // Only import what's used
+    // ✅ Increase Server Actions body size limit (for profile uploads, etc.)
+    serverActions: {
+      bodySizeLimit: "5mb",
+    },
   },
 
   // ✅ Production optimizations

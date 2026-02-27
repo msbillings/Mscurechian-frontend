@@ -103,6 +103,9 @@ interface FormData {
   maxAppointmentsPerDay: string;
   room: string;
 
+  // Payroll
+  baseSalary: string;
+
   // Permissions
   permissions: {
     canAccessEMR: boolean;
@@ -151,6 +154,7 @@ function EditDoctor() {
     department: "", designation: "Consultant", employeeId: "",
     consultationFee: "", consultationDuration: "15",
     maxAppointmentsPerDay: "20", room: "",
+    baseSalary: "",
     permissions: {
       canAccessEMR: true,
       canAccessBilling: false,
@@ -211,6 +215,7 @@ function EditDoctor() {
         consultationDuration: doctor.consultationDuration?.toString() || "15",
         maxAppointmentsPerDay: doctor.maxAppointmentsPerDay?.toString() || "20",
         room: doctor.room || "",
+        baseSalary: doctor.baseSalary != null ? String(doctor.baseSalary) : "",
         permissions: {
           canAccessEMR: doctor.permissions?.canAccessEMR ?? true,
           canAccessBilling: doctor.permissions?.canAccessBilling ?? false,
@@ -273,7 +278,7 @@ function EditDoctor() {
 
     // Validation for specific fields
     if (name === "mobile" && !/^\d{0,10}$/.test(value)) return;
-    if ((name === "consultationFee" || name === "maxAppointmentsPerDay" || name === "consultationDuration") && !/^\d*$/.test(value)) return;
+    if ((name === "consultationFee" || name === "maxAppointmentsPerDay" || name === "consultationDuration" || name === "baseSalary") && !/^\d*$/.test(value)) return;
     if (name === "pincode" && !/^\d{0,6}$/.test(value)) return;
     if (name === "registrationYear" && !/^\d{0,4}$/.test(value)) return;
 
@@ -368,6 +373,8 @@ function EditDoctor() {
     if (!formData.experienceStart) return toast.error("Please select experience start date"), false;
     if (!formData.consultationFee || parseInt(formData.consultationFee) <= 0)
       return toast.error("Please enter a valid consultation fee"), false;
+    if (!formData.baseSalary || parseInt(formData.baseSalary) <= 0)
+      return toast.error("Please enter a valid base salary for the doctor"), false;
 
     return true;
   };
@@ -412,7 +419,7 @@ function EditDoctor() {
         availability: availability.filter(slot => slot.days.length > 0),
         room: formData.room || undefined,
 
-        permissions: formData.permissions,
+        baseSalary: formData.baseSalary ? parseInt(formData.baseSalary) : undefined,
 
         bio: formData.bio.trim() || `Dr. ${formData.name} is a ${formData.designation} specializing in ${formData.specialties.join(', ')}.`,
         profilePic: formData.profilePic || undefined,
@@ -636,8 +643,8 @@ function EditDoctor() {
           </div>
         </Card>
 
-        {/* 4. Scheduling & Availability */}
-        <Card title="Scheduling & Availability" icon={<Clock className="text-orange-500" />} padding="p-6">
+        {/* 4. Scheduling, Payroll & Availability */}
+        <Card title="Scheduling & Payroll" icon={<Clock className="text-orange-500" />} padding="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="relative">
               <label className="block text-sm font-medium mb-2">Consultation Fee (₹) <span className="text-red-500">*</span></label>
@@ -654,6 +661,25 @@ function EditDoctor() {
               value={formData.maxAppointmentsPerDay} onChange={handleChange} placeholder="20" />
             <FormInput label="Room/Chamber" type="text" name="room"
               value={formData.room} onChange={handleChange} placeholder="Room 101" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="relative">
+              <label className="block text-sm font-medium mb-2">Base Salary (₹) <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                name="baseSalary"
+                value={formData.baseSalary}
+                onChange={handleChange}
+                placeholder="100000"
+                className="w-full px-4 py-3 pl-10 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }}
+              />
+              <DollarSign className="absolute left-3 top-10 text-gray-400" size={18} />
+              <p className="text-[10px] text-gray-400 mt-1">
+                Used for payroll calculations and salary slips.
+              </p>
+            </div>
           </div>
 
           <div>
@@ -721,31 +747,7 @@ function EditDoctor() {
             </div>
           </div>
         </Card>
-
-        {/* 5. System Access & Permissions */}
-        <Card title="System Access & Permissions" icon={<Shield className="text-red-500" />} padding="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              { name: 'canAccessEMR', label: 'Access EMR' },
-              { name: 'canAccessBilling', label: 'Access Billing' },
-              { name: 'canAccessLabReports', label: 'Access Lab Reports' },
-              { name: 'canPrescribe', label: 'Prescribe Medicines' },
-              { name: 'canAdmitPatients', label: 'Admit Patients' },
-              { name: 'canPerformSurgery', label: 'Perform Surgery' }
-            ].map(perm => (
-              <label key={perm.name} className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
-                style={{ borderColor: 'var(--border-color)' }}>
-                <input type="checkbox" name={perm.name}
-                  checked={formData.permissions[perm.name as keyof typeof formData.permissions]}
-                  onChange={(e) => handlePermissionChange(perm.name, e.target.checked)}
-                  className="w-5 h-5 accent-blue-600 rounded" />
-                <span className="text-sm font-medium">{perm.label}</span>
-              </label>
-            ))}
-          </div>
-        </Card>
-
-        {/* 6. Additional Information */}
+        {/* 5. Additional Information */}
         <Card title="Additional Information" icon={<FileText className="text-indigo-500" />} padding="p-6">
           <div className="space-y-4">
             <div>

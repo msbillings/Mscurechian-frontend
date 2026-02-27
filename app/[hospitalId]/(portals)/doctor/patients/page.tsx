@@ -170,13 +170,18 @@ function PatientsPage() {
                                        </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                       {patient.patientType === 'IPD' ? (
+                                       {(
+                                          patient.patientType === 'IPD' ||
+                                          // Fallback: some APIs may expose a boolean isIPD/isIpd flag
+                                          (patient as any).isIPD === true ||
+                                          (patient as any).isIpd === true
+                                       ) ? (
                                           <span className="px-3 py-1 bg-rose-50 text-rose-700 text-[10px] font-black uppercase tracking-widest rounded-full border border-rose-200 flex items-center gap-1 w-fit shadow-xs">
-                                             <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> IPD Node
+                                             <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> IPD
                                           </span>
                                        ) : (
                                           <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest rounded-full border border-emerald-200 flex items-center gap-1 w-fit shadow-xs">
-                                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> OPD Active
+                                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> OPD
                                           </span>
                                        )}
                                     </td>

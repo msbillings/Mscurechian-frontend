@@ -281,9 +281,18 @@ export default function EditDoctorProfilePage() {
             } else {
                 toast.error(res.error || 'Failed to update profile');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error('An unexpected error occurred');
+            const message =
+                (error && typeof error === 'object' && 'message' in error)
+                    ? (error as any).message as string
+                    : String(error ?? '');
+
+            if (message.includes('Body exceeded 1 MB limit')) {
+                toast.error('Uploaded files are too large. Maximum total size is 5 MB.');
+            } else {
+                toast.error('An unexpected error occurred while saving your profile.');
+            }
         } finally {
             setIsSaving(false);
         }
@@ -302,6 +311,7 @@ export default function EditDoctorProfilePage() {
         { id: 'professional', label: 'Professional Info', icon: <Briefcase size={18} /> },
         { id: 'practice', label: 'Practice & clinical', icon: <Building size={18} /> },
         { id: 'bank', label: 'Bank & Payroll', icon: <Landmark size={18} /> },
+        { id: 'documents', label: 'My Documents', icon: <FileText size={18} /> },
     ];
 
     return (
@@ -577,6 +587,87 @@ export default function EditDoctorProfilePage() {
                                                 <span className="text-[10px] text-gray-500 font-medium max-w-[150px] truncate">
                                                     {files['internshipCertificate'].name}
                                                 </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'documents' && (
+                        <div className="space-y-8 animate-in fade-in duration-300">
+                            <div className="bg-white dark:bg-[#111] p-8 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-3">
+                                    <FileText className="text-indigo-500" size={24} /> Previously Submitted Documents
+                                </h3>
+                                <p className="text-sm text-gray-500 mb-8">Review all the documents and certificates you have previously submitted. To replace any of these, upload a new file in the Professional or Practice tabs.</p>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Degree Certificate */}
+                                    <div className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center gap-4 transition-all hover:border-indigo-200">
+                                        <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center text-indigo-500">
+                                            <Award size={32} />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-sm text-gray-900 dark:text-white">Degree Certificate</h4>
+                                            {formData.degreeCertificate ? (
+                                                <a href={formData.degreeCertificate} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
+                                                    <CheckCircle2 size={16} /> View Document
+                                                </a>
+                                            ) : (
+                                                <p className="mt-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Not Submitted</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Doctorate Certificate */}
+                                    <div className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center gap-4 transition-all hover:border-indigo-200">
+                                        <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center text-indigo-500">
+                                            <Award size={32} />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-sm text-gray-900 dark:text-white">Doctorate Certificate</h4>
+                                            {formData.doctorateCertificate ? (
+                                                <a href={formData.doctorateCertificate} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
+                                                    <CheckCircle2 size={16} /> View Document
+                                                </a>
+                                            ) : (
+                                                <p className="mt-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Not Submitted</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Internship Completion */}
+                                    <div className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center gap-4 transition-all hover:border-indigo-200">
+                                        <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center text-indigo-500">
+                                            <Award size={32} />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-sm text-gray-900 dark:text-white">Internship Completion</h4>
+                                            {formData.internshipCertificate ? (
+                                                <a href={formData.internshipCertificate} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
+                                                    <CheckCircle2 size={16} /> View Document
+                                                </a>
+                                            ) : (
+                                                <p className="mt-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Not Submitted</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Registration Certificate */}
+                                    <div className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center gap-4 transition-all hover:border-emerald-200">
+                                        <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center text-emerald-500">
+                                            <ShieldCheck size={32} />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-sm text-gray-900 dark:text-white">Registration Certificate</h4>
+                                            {formData.registrationCertificate ? (
+                                                <a href={formData.registrationCertificate} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
+                                                    <CheckCircle2 size={16} /> View Document
+                                                </a>
+                                            ) : (
+                                                <p className="mt-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Not Submitted</p>
                                             )}
                                         </div>
                                     </div>
