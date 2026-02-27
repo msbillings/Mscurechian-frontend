@@ -163,7 +163,7 @@ export default function PayrollResolutionPage() {
                    </div>
                    <div>
                       <p className="font-bold text-gray-400 uppercase text-[9px] mb-1">Total Paid units</p>
-                      <p className="font-black text-emerald-700">{(payroll?.presentDays || 0) + (payroll?.leaveDays || 0)} Units</p>
+                      <p className="font-black text-emerald-700">{(payroll?.presentDays || 0) + (payroll?.leaveDays || 0) + (payroll?.weeklyOffDays || 0)} Units</p>
                    </div>
                 </div>
              </div>

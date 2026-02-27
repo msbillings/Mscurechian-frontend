@@ -661,10 +661,10 @@ export const hospitalAdminService = {
     return apiClient<{ payrolls: any[]; pagination: any; hospital?: any }>(url);
   },
 
-  generatePayroll: (fromDate: string, toDate: string) =>
+  generatePayroll: (fromDate: string, toDate: string, userId?: string) =>
     apiClient<any>("/hospital/payroll/generate", {
       method: "POST",
-      body: JSON.stringify({ fromDate, toDate }),
+      body: JSON.stringify({ fromDate, toDate, userId }),
     }),
 
   updatePayrollStatus: (
@@ -684,6 +684,49 @@ export const hospitalAdminService = {
       body: JSON.stringify(data),
     }),
 
+  deletePayroll: (id: string) =>
+    apiClient<any>(`/hospital/payroll/${id}`, {
+      method: "DELETE",
+    }),
+
+  getEmployeePayrollStats: (
+    userId: string,
+    startDate: string,
+    endDate: string,
+  ) => {
+    const params = new URLSearchParams({ userId, startDate, endDate });
+    return apiClient<{
+      employee: any;
+      period: { startDate: string; endDate: string };
+      attendance: {
+        totalDays: number;
+        workingDays: number;
+        weeklyOffDays: number;
+        presentDays: number;
+        paidLeaveDays: number;
+        absentDays: number;
+        attendanceRecords: any[];
+      };
+      salary: {
+        monthlySalary: number;
+        dayRate: number;
+        earnedDays: number;
+        netPayable: number;
+      };
+      existingPayroll: any | null;
+    }>(`/hospital/payroll/employee-stats?${params.toString()}`);
+  },
+
+  generatePayrollForEmployee: (
+    userId: string,
+    fromDate: string,
+    toDate: string,
+  ) =>
+    apiClient<any>("/hospital/payroll/generate", {
+      method: "POST",
+      body: JSON.stringify({ fromDate, toDate, userId }),
+    }),
+
   /**
    * Centralized Salary Distribution Utility
    * Matches Institutional 50/20/30 Model
@@ -698,10 +741,10 @@ export const hospitalAdminService = {
     const medical = Math.floor(gross * 0.05);
     const special = Math.max(0, gross - basic - hra - transport - medical);
 
-    // Statutory Deductions (Indian Standard)
-    const pf = options.hasPf ? Math.floor(basic * 0.12) : 0;
-    const esi = options.hasEsi && gross < 21000 ? Math.ceil(gross * 0.0075) : 0;
-    const pt = gross > 15000 ? 200 : 0;
+    // Statutory Deductions (REMOVED as per active institutional policy)
+    const pf = 0;
+    const esi = 0;
+    const pt = 0;
 
     const totalDeductions = pf + esi + pt;
     const net = gross - totalDeductions;

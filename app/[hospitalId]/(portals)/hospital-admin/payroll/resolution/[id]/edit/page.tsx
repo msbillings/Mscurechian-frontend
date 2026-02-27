@@ -74,21 +74,15 @@ export default function PayrollEditPage() {
     const monthDays = Number(data.monthDays) || 30;
     const present = Number(data.presentDays) || 0;
     const leaves = Number(data.leaveDays) || 0;
+    const weeklyOff = Number(data.weeklyOffDays) || 0;
 
     // FETCH BASE SALARY (Resilient Check - check multiple possible field names)
     const baseSalary = Number(staffRef?.baseSalary) || Number(staffRef?.salary) || Number(staffRef?.ctc) || 0;
-    console.log("Base salary found:", baseSalary, "from fields:", Object.keys(staffRef || {}));
+    if (baseSalary === 0 || isNaN(baseSalary)) return data;
 
-    // 1. Calculate Ratio (Prorated)
-    // If baseSalary is 0, we can't prorate, so we return current data
-    if (baseSalary === 0 || isNaN(baseSalary)) {
-      console.warn("Base salary is invalid, cannot calculate. Returning current data.", { baseSalary, staffRef });
-      return data;
-    }
-
-    const ratio = Math.min(1, (present + leaves) / monthDays);
+    // 1. Calculate Ratio (Include Weekly Offs as paid)
+    const ratio = Math.min(1, (present + leaves + weeklyOff) / monthDays);
     const proratedGross = Math.max(0, Math.round(baseSalary * (isNaN(ratio) ? 0 : ratio)));
-    console.log("Proration calculation:", { present, leaves, monthDays, ratio, proratedGross, baseSalary });
 
     // 2. Distribute into Earnings (50/20/5/5/20 Institutional Model)
     const basic = Math.round(proratedGross * 0.5);
@@ -97,21 +91,13 @@ export default function PayrollEditPage() {
     const medicalAllowance = Math.round(proratedGross * 0.05); 
     const special = Math.max(0, proratedGross - basic - hra - transportAllowance - medicalAllowance);
 
-    // 3. Deductions (Statutory based on prorated values)
-    const hasPf = !!(staffRef?.pfNumber && staffRef?.pfNumber !== 'N/A' && staffRef?.pfNumber !== '');
-    const hasEsi = !!(staffRef?.esiNumber && staffRef?.esiNumber !== 'N/A' && staffRef?.esiNumber !== '');
-
-    const pf = hasPf ? Math.round(basic * 0.12) : 0;
-    const esi = (hasEsi && proratedGross < 21000) ? Math.ceil(proratedGross * 0.0075) : 0;
-    const pt = (proratedGross > 15000) ? 200 : 0;
+    // 3. Deductions (REMOVED statutory taxes)
+    const pf = 0;
+    const esi = 0;
+    const pt = 0;
 
     const totalDeducts = pf + esi + pt + (Number(data.tds) || 0) + (Number(data.salaryAdvance) || 0);
     const net = Math.max(0, proratedGross - totalDeducts);
-
-    console.log("Final salary breakdown:", {
-      basic, hra, special, transportAllowance, medicalAllowance,
-      pf, esi, pt, totalDeducts, net, proratedGross
-    });
 
     return {
       ...data,
@@ -187,16 +173,12 @@ export default function PayrollEditPage() {
       leaveDays: 0,
       absentDays: 0
     };
-    console.log("Updated data before calculation:", updated);
 
     const calculated = syncWithAttendance(updated, { ...staff, baseSalary });
-    console.log("All Present Calculation result:", calculated);
-
-    // Update state
-    setFormData(calculated);
 
     // Auto-save after calculation
     try {
+      setSaving(true);
       const updatePayload = {
         ...calculated,
         netSalary: calculated.netSalary,
@@ -216,12 +198,16 @@ export default function PayrollEditPage() {
           tds: calculated.tds || 0
         }
       };
-      console.log("Saving payload:", updatePayload);
       await hospitalAdminService.updatePayroll(id as string, updatePayload);
       toast.success("Full Month Resolve Applied - Salary Calculated & Saved");
+      
+      // Redirect to registry after auto-save on All Present
+      router.push(`/${hospitalId}/hospital-admin/payroll`);
     } catch (e) {
       console.error("Auto-save failed:", e);
       toast.error("Auto-save failed. Please click Sync Registry manually.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -249,7 +235,7 @@ export default function PayrollEditPage() {
       };
       await hospitalAdminService.updatePayroll(id as string, updatePayload);
       toast.success("Payroll Registry Synchronized");
-      router.push(`/${hospitalId}/hospital-admin/payroll/resolution/${id}`);
+      router.push(`/${hospitalId}/hospital-admin/payroll`);
     } catch (e) {
        toast.error("Synchronization failed");
     } finally {
@@ -280,8 +266,8 @@ export default function PayrollEditPage() {
             </div>
          </div>
          <div className="flex items-center gap-3">
-            <button onClick={setAllPresent} className="px-6 py-2.5 bg-emerald-50 text-emerald-600 font-bold text-[10px] uppercase tracking-widest rounded-lg hover:bg-emerald-100 transition-all border border-emerald-100 shadow-xs active:scale-95">
-               <UserCheck size={16} className="inline mr-2" /> Mark All Present
+            <button onClick={setAllPresent} disabled={saving} className="px-6 py-2.5 bg-emerald-50 text-emerald-600 font-bold text-[10px] uppercase tracking-widest rounded-lg hover:bg-emerald-100 transition-all border border-emerald-100 shadow-xs active:scale-95 disabled:opacity-50">
+               <UserCheck size={16} className="inline mr-2" /> {saving ? 'Processing...' : 'Mark All Present'}
             </button>
             <button onClick={handleSave} disabled={saving} className="px-8 py-2.5 bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-bold text-[10px] uppercase tracking-widest rounded-lg hover:bg-black dark:hover:bg-gray-100 transition-all shadow-lg active:scale-95">
               {saving ? 'Syncing...' : <><Save size={16} className="inline mr-2" /> Sync Registry</>}
