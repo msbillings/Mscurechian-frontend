@@ -56,7 +56,7 @@ function TransitsPage() {
 
 
     const handlePrint = (transit: any, type: 'prescription' | 'lab') => {
-        const hospital = transit.hospital || { name: "CureChain Medical Center", address: "Medical District", contact: "N/A" };
+        const hospital = transit.hospital || { name: "CureChain Medical Center", address: "Medical District", contact: "N/A", logo: "" };
 
         if (type === 'prescription' && transit.prescription) {
             const data = {

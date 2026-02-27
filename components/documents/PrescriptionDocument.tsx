@@ -1,4 +1,6 @@
 import React from 'react';
+import MainHeader from '@/components/printers/MainHeader';
+import MainFooter from '@/components/printers/MainFooter';
 
 // Common interfaces
 interface Medicine {
@@ -68,7 +70,8 @@ export const PrescriptionDocument: React.FC<PrescriptionDocumentProps> = ({
         rx.appointment?.hospital ||
         {
             name: 'KADAPA MULTI-SPECIALITY',
-            address: 'Kadapa, Andhra Pradesh, India'
+            address: 'Kadapa, Andhra Pradesh, India',
+            logo: ''
         };
 
     const patientAge = patient.user?.age || patient.age || rx.appointment?.patientDetails?.age || rx.age || 'N/A';
@@ -85,14 +88,15 @@ export const PrescriptionDocument: React.FC<PrescriptionDocumentProps> = ({
         <div className="relative font-sans print-prescription-document"
             style={{
                 width: '210mm',
-                minHeight: '297mm',
+                height: '296mm',
                 margin: '0 auto',
-                padding: '10mm 15mm',
+                padding: '10mm 15mm 10mm 20mm',
                 boxSizing: 'border-box',
                 backgroundColor: 'white',
                 color: '#000',
                 display: 'flex',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                overflow: 'hidden'
             }}>
 
             <style>
@@ -110,28 +114,13 @@ export const PrescriptionDocument: React.FC<PrescriptionDocumentProps> = ({
                 `}
             </style>
 
-            {/* --- MainHeader Replacement --- */}
-            <div style={{ width: '100%', backgroundColor: '#ffffff', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: '15px 0' }}>
-                    <div style={{ flex: '0 0 fit-content', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', paddingRight: '10px' }}>
-                        {hospital?.logo ? <img src={hospital.logo} style={{ maxWidth: '200px', maxHeight: '140px', objectFit: 'contain' }} alt="Hospital Logo" /> : <div style={{ width: '120px', height: '120px', border: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '10px', fontWeight: 'bold' }}>LOGO</div>}
-                    </div>
-                    <div style={{ width: '1px', height: '100px', backgroundColor: '#e2e8f0', margin: '0 20px 0 15px' }}></div>
-                    <div style={{ flex: '1', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
-                        <h1 style={{ margin: '0', fontWeight: '800', color: '#1e40af', fontSize: '28px', lineHeight: '1.2' }}>{hospital?.name || 'KADAPA MULTI-SPECIALITY'}</h1>
-                        <div style={{ backgroundColor: '#22c55e', color: '#ffffff', padding: '4px 12px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '700', marginTop: '2px' }}>
-                            <span>📞</span>
-                            <span>{hospital?.phone || '+91 8562 245555'}</span>
-                        </div>
-                        <div style={{ color: '#1d4ed8', fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span>✉️</span>
-                            <span>{hospital?.email || 'hospital@example.com'}</span>
-                        </div>
-                        <p style={{ margin: '0', fontSize: '10px', color: '#64748b', fontWeight: '700', lineHeight: '1.4', textTransform: 'uppercase' }}>{hospital?.address || 'RIMS ROAD, PUTLAMPALLI, KADAPA, AP'}</p>
-                    </div>
-                </div>
-                <div style={{ width: '100%', height: '4px', backgroundColor: '#22c55e', borderRadius: '2px' }}></div>
-            </div>
+            <MainHeader initialDetails={{
+                name: hospital?.name,
+                address: hospital?.address,
+                phone: hospital?.phone,
+                email: hospital?.email,
+                logo: hospital?.logo
+            }} />
 
             <div style={{ flex: '1' }}>
                 {/* Info Row */}
@@ -253,35 +242,12 @@ export const PrescriptionDocument: React.FC<PrescriptionDocumentProps> = ({
                 </div>
             </div>
 
-            {/* --- MainFooter Replacement --- */}
-            <div style={{ width: '100%', marginTop: '30px' }}>
-                <div style={{ display: 'flex', height: '35px', marginBottom: '12px', position: 'relative' }}>
-                    <div style={{ flex: '1', background: '#22c55e', color: '#ffffff', display: 'flex', alignItems: 'center', padding: '0 35px', fontWeight: '900', fontSize: '14px', clipPath: 'polygon(0 0, 100% 0, 92% 100%, 0 100%)', zIndex: 2 }}>
-                        <span style={{ marginRight: '8px' }}>📞</span>
-                        {hospital?.phone || '+91 8562 245555'}
-                    </div>
-                    <div style={{ flex: '1', background: '#3b82f6', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '14px', clipPath: 'polygon(8% 0, 100% 0, 100% 100%, 0 100%)', marginLeft: '-35px', zIndex: 1, paddingLeft: '35px' }}>
-                        <span style={{ marginRight: '8px' }}>✉️</span>
-                        {hospital?.email || 'hospital@example.com'}
-                    </div>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: '8px' }}>
-                    <div style={{ flex: '1.5', fontSize: '9px', color: '#000000', fontWeight: '700', lineHeight: '1.4' }}>
-                        <ul style={{ listStyle: 'none', padding: '0', margin: '0' }}>
-                            <li>• All results should be co-related clinically</li>
-                            <li>• If results are alarming or unexpected, contact the Helpdesk immediately</li>
-                            <li>• Not valid for medico-legal purposes</li>
-                            <li>• The test with an asterisk(*) are not accredited by NABL</li>
-                        </ul>
-                    </div>
-                    <div style={{ flex: '1.2', textAlign: 'right', fontSize: '9px', fontWeight: '800', color: '#000000', textTransform: 'uppercase', lineHeight: '1.3' }}>
-                        {hospital?.address || 'RIMS ROAD, PUTLAMPALLI, KADAPA, AP'}
-                    </div>
-                </div>
-                <div style={{ textAlign: 'center', fontSize: '9px', color: '#000000', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid #f1f5f9', fontWeight: '600' }}>
-                    This is a computer generated document and does not require a physical signature.
-                </div>
-            </div>
+            <MainFooter initialDetails={{
+                name: hospital?.name,
+                address: hospital?.address,
+                phone: hospital?.phone,
+                email: hospital?.email
+            }} />
 
         </div>
     );

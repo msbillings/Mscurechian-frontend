@@ -1,6 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, use } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { renderToStaticMarkup } from 'react-dom/server';
+import MainHeader from '@/components/printers/MainHeader';
+import MainFooter from '@/components/printers/MainFooter';
 import {
     Printer,
     Sparkles,
@@ -90,7 +94,9 @@ const INITIAL_FORM: PrescriptionForm = {
     total: 0
 };
 
-function CreatePrescriptionPage() {
+function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: string }> }) {
+    const resolvedParams = use(params);
+    const hospitalId = resolvedParams.hospitalId;
     const router = useRouter();
     const searchParams = useSearchParams();
     const appointmentId = searchParams.get('appointmentId');
@@ -115,15 +121,24 @@ function CreatePrescriptionPage() {
     const [searching, setSearching] = useState(false);
     const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Success State
-    const [showSuccess, setShowSuccess] = useState(false);
-    const [generatedHtml, setGeneratedHtml] = useState<{ prescription: string, billing: string } | null>(null);
-    const [hospitalData, setHospitalData] = useState<any>(null);
-    const [hospitalBranding, setHospitalBranding] = useState<any>(null);
+    // --- Hospital Data ---
+    const { data: hospitalDataRaw } = useQuery({
+        queryKey: ['hospitalDetails', hospitalId],
+        queryFn: () => hospitalAdminService.getHospital(),
+        enabled: !!hospitalId
+    });
+    const hospitalBranding = hospitalDataRaw?.hospital;
 
     // Draft State
     const [showPharmaConfirm, setShowPharmaConfirm] = useState(false);
     const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+
+    // Success State
+    const [showSuccess, setShowSuccess] = useState(false);
+    const [generatedHtml, setGeneratedHtml] = useState<{ prescription: string, billing: string } | null>(null);
+    // const [hospitalData, setHospitalData] = useState<any>(null); // Removed, replaced by useQuery
+    // const [hospitalBranding, setHospitalBranding] = useState<any>(null); // Removed, replaced by useQuery
+
 
     // -- Fetch Appointment Details if ID present --
     useEffect(() => {
@@ -220,28 +235,15 @@ function CreatePrescriptionPage() {
                     doctorName: doc.user?.name || doc.name || prev.doctorName,
                     doctorSignature: doc.signature
                 }));
-                if (doc.hospital) {
-                    setHospitalData(doc.hospital);
-                }
+                // if (doc.hospital) { // Removed, replaced by useQuery
+                //     setHospitalData(doc.hospital);
+                // }
             }
         };
         fetchDoctorProfile();
     }, []);
 
-    // -- Fetch Hospital Branding --
-    useEffect(() => {
-        const fetchBranding = async () => {
-            try {
-                const res = await hospitalAdminService.getHospital();
-                if (res?.hospital) {
-                    setHospitalBranding(res.hospital);
-                }
-            } catch (err) {
-                console.error("Failed to fetch branding", err);
-            }
-        };
-        fetchBranding();
-    }, []);
+    // -- Fetch Hospital Branding handled by useQuery --
 
     // -- Medicine Search Logic --
     const handleMedicineSearch = (query: string, index: number) => {
@@ -497,6 +499,319 @@ function CreatePrescriptionPage() {
         }));
     };
 
+
+    const generatePrescriptionHTML = () => {
+        const initialHospitalDetails = {
+            name: hospitalBranding?.name || 'KADAPA MULTI-SPECIALITY',
+            address: hospitalBranding?.address || 'RIMS ROAD, PUTLAMPALLI, KADAPA, AP',
+            phone: hospitalBranding?.phone || '+91 8562 245555',
+            email: hospitalBranding?.email || 'hospital@example.com',
+            logo: hospitalBranding?.logo
+        };
+
+        const headerHtml = renderToStaticMarkup(<MainHeader initialDetails={initialHospitalDetails} />);
+        const footerHtml = renderToStaticMarkup(<MainFooter initialDetails={initialHospitalDetails} />);
+
+        return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Prescription - ${formData.patientName}</title>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+                    
+                    @media print {
+                        @page { size: A4; margin: 0; }
+                        body { print-color-adjust: exact; -webkit-print-color-adjust: exact; margin: 0; padding: 0; }
+                    }
+                    body { 
+                        font-family: 'Inter', Arial, sans-serif; 
+                        background: white; 
+                        margin: 0;
+                        padding: 0;
+                    }
+                    .container {
+                        width: 210mm;
+                        height: 296mm;
+                        margin: 0 auto;
+                        padding: 10mm 15mm 10mm 25mm;
+                        box-sizing: border-box;
+                        display: flex;
+                        flex-direction: column;
+                        background: white;
+                        overflow: hidden;
+                    }
+                    .content { flex: 1; }
+                    .header-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; }
+                    .title { color: #1e40af; margin: 0; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; }
+                    .doctor-info { text-align: right; }
+                    .doctor-name { font-size: 14px; font-weight: 800; color: #1e293b; margin: 0; }
+                    .doctor-spec { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin: 2px 0 0; }
+
+                    .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #eef2f6; }
+                    .info-item { display: flex; flex-direction: column; gap: 2px; }
+                    .info-label { font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+                    .info-value { font-size: 12px; font-weight: 700; color: #1e293b; }
+
+                    .section-title { font-size: 10px; font-weight: 900; color: #1e40af; text-transform: uppercase; border-left: 4px solid #1e40af; padding-left: 10px; margin: 20px 0 10px 0; letter-spacing: 1px; }
+                    
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                    th { text-align: left; font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; padding: 12px 10px; border-bottom: 2px solid #f1f5f9; }
+                    td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+                    .med-name { font-weight: 800; color: #1e293b; font-size: 13px; }
+                    
+                    .advice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 10px; }
+                    .advice-list { list-style: none; padding: 0; margin: 0; }
+                    .advice-list li { margin-bottom: 8px; padding-left: 15px; position: relative; font-size: 11px; font-weight: 600; color: #334155; }
+                    .advice-list li:before { content: "→"; position: absolute; left: 0; color: #1e40af; font-weight: 900; }
+
+                    .follow-up-box { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin-top: 30px; border-radius: 0 12px 12px 0; display: flex; justify-content: space-between; align-items: center; }
+                    .follow-up-label { font-size: 9px; font-weight: 800; color: #b45309; text-transform: uppercase; }
+                    .follow-up-date { font-weight: 900; color: #d97706; font-size: 14px; }
+
+                    .signature-area { margin-top: 40px; text-align: right; }
+                    .sig-img { height: 45px; margin-bottom: 5px; }
+                    .sig-line { border-top: 1.5px solid #1e293b; width: 180px; margin-left: auto; padding-top: 5px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    ${headerHtml}
+                    <div class="content">
+                        <div class="header-row">
+                            <h1 class="title">Rx Prescription</h1>
+                            <div class="doctor-info">
+                                <p class="doctor-name">Dr. ${formData.doctorName}</p>
+                                <p class="doctor-spec">Medical Practitioner</p>
+                            </div>
+                        </div>
+
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">Patient Name</span>
+                                <span class="info-value">${formData.patientName}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Age / Gender</span>
+                                <span class="info-value">${formData.age} Y / ${formData.gender}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">MRN / ID</span>
+                                <span class="info-value">${formData.mrn || 'N/A'}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Date</span>
+                                <span class="info-value">${formData.date}</span>
+                            </div>
+                        </div>
+
+                        ${formData.diagnosis ? `
+                        <div style="margin-bottom: 20px; background: #eff6ff; padding: 10px 15px; border-radius: 8px;">
+                            <span class="info-label">Diagnosis / Impressions:</span>
+                            <div style="font-size: 13px; font-weight: 700; color: #1e40af; margin-top: 2px;">${formData.diagnosis}</div>
+                        </div>
+                        ` : ''}
+
+                        <div class="section-title">Medications & Dosage</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 45%">Medicine</th>
+                                    <th>Dosage</th>
+                                    <th>Frequency</th>
+                                    <th>Duration</th>
+                                    <th style="text-align: right;">Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${formData.medicines.map(med => `
+                                <tr>
+                                    <td class="med-name">${med.name}</td>
+                                    <td style="font-weight: 600;">${med.dosage}</td>
+                                    <td style="font-weight: 600; color: #475569;">${med.freq}</td>
+                                    <td style="font-weight: 600;">${med.duration}</td>
+                                    <td style="font-weight: 800; text-align: right;">${med.quantity}</td>
+                                </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+
+                        <div class="advice-grid">
+                            ${formData.dietAdvice.length > 0 ? `
+                            <div>
+                                <div class="section-title" style="margin-top: 0;">Clinical Advice</div>
+                                <ul class="advice-list">
+                                    ${formData.dietAdvice.filter(i => i.trim()).map(d => `<li>${d}</li>`).join('')}
+                                </ul>
+                            </div>
+                            ` : ''}
+                            
+                            ${formData.suggestedTests.length > 0 ? `
+                            <div>
+                                <div class="section-title" style="margin-top: 0;">Requested Tests</div>
+                                <ul class="advice-list">
+                                    ${formData.suggestedTests.filter(i => i.trim()).map(t => `<li>${t}</li>`).join('')}
+                                </ul>
+                            </div>
+                            ` : ''}
+                        </div>
+
+                        ${formData.followUp || formData.followUpDate ? `
+                        <div class="follow-up-box">
+                            <div>
+                                <span class="follow-up-label">Follow-up Instructions:</span>
+                                <div style="font-weight: 700; color: #92400e; margin-top: 4px;">${formData.followUp || 'Follow Standard Protocol'}</div>
+                            </div>
+                            ${formData.followUpDate ? `
+                            <div style="text-align: right;">
+                                <span class="follow-up-label">Scheduled Date:</span>
+                                <div class="follow-up-date">${new Date(formData.followUpDate).toLocaleDateString('en-GB')}</div>
+                            </div>
+                            ` : ''}
+                        </div>
+                        ` : ''}
+
+                        <div class="signature-area">
+                            ${formData.doctorSignature ? `<img src="${formData.doctorSignature}" class="sig-img" />` : '<div style="height: 50px;"></div>'}
+                            <div class="sig-line">Authorized Digital Signature</div>
+                        </div>
+                    </div>
+                    ${footerHtml}
+                </div>
+            </body>
+            </html>
+        `;
+    };
+
+    const generateBillingHTML = () => {
+        const initialHospitalDetails = {
+            name: hospitalBranding?.name || 'KADAPA MULTI-SPECIALITY',
+            address: hospitalBranding?.address || 'RIMS ROAD, PUTLAMPALLI, KADAPA, AP',
+            phone: hospitalBranding?.phone || '+91 8562 245555',
+            email: hospitalBranding?.email || 'hospital@example.com',
+            logo: hospitalBranding?.logo
+        };
+
+        const headerHtml = renderToStaticMarkup(<MainHeader initialDetails={initialHospitalDetails} />);
+        const footerHtml = renderToStaticMarkup(<MainFooter initialDetails={initialHospitalDetails} />);
+
+        return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Pharmacy Bill Estimate</title>
+                <meta charset="UTF-8">
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+                    @media print {
+                        @page { size: A4; margin: 0; }
+                        body { margin: 0; padding: 0; }
+                    }
+                    body { 
+                        font-family: 'Inter', Arial, sans-serif; 
+                        background: white; 
+                        margin: 0;
+                        padding: 0;
+                    }
+                    .container {
+                        width: 210mm;
+                        height: 296mm;
+                        margin: 0 auto;
+                        padding: 10mm 15mm 10mm 25mm;
+                        box-sizing: border-box;
+                        display: flex;
+                        flex-direction: column;
+                        background: white;
+                        overflow: hidden;
+                    }
+                    .content { flex: 1; }
+                    .title { color: #1e40af; margin: 20px 0; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; }
+                    
+                    .bill-info { display: flex; justify-content: space-between; margin-bottom: 25px; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #eef2f6; }
+                    .info-group { display: flex; flex-direction: column; gap: 4px; }
+                    .info-label { font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
+                    .info-value { font-size: 13px; font-weight: 700; color: #1e293b; }
+
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                    th { text-align: left; font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; padding: 12px 10px; border-bottom: 2.5px solid #f1f5f9; }
+                    td { padding: 15px 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+                    .med-name { font-weight: 800; color: #1e293b; }
+                    .amount { font-weight: 800; text-align: right; font-family: monospace; }
+
+                    .summary-box { margin-left: auto; width: 280px; margin-top: 30px; background: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #eef2f6; }
+                    .summary-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
+                    .summary-total { border-top: 2px solid #eef2f6; margin-top: 15px; padding-top: 15px; color: #16a34a; font-size: 20px; font-weight: 900; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    ${headerHtml}
+                    <div class="content">
+                        <h1 class="title">Pharmacy Bill Estimate</h1>
+                        
+                        <div class="bill-info">
+                            <div class="info-group">
+                                <span class="info-label">Patient Details</span>
+                                <span class="info-value">${formData.patientName}</span>
+                                <span style="font-size: 11px; color: #64748b;">MRN: ${formData.mrn || 'N/A'}</span>
+                            </div>
+                            <div class="info-group" style="text-align: right;">
+                                <span class="info-label">Doctor</span>
+                                <span class="info-value">DR. ${formData.doctorName}</span>
+                                <span style="font-size: 11px; color: #64748b;">Date: ${new Date().toLocaleDateString('en-GB')}</span>
+                            </div>
+                        </div>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Item Description</th>
+                                    <th>Qty</th>
+                                    <th style="text-align: right;">Unit Price</th>
+                                    <th style="text-align: right;">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${formData.medicines.map(med => `
+                                <tr>
+                                    <td>
+                                        <div class="med-name">${med.name}</div>
+                                        <div style="font-size: 10px; color: #64748b;">${med.form}</div>
+                                    </td>
+                                    <td style="font-weight: 700;">${med.quantity}</td>
+                                    <td class="amount">₹${((med as any).pricePerUnit || med.price || 0).toFixed(2)}</td>
+                                    <td class="amount">₹${((parseFloat(med.quantity) || 0) * ((med as any).pricePerUnit || med.price || 0)).toFixed(2)}</td>
+                                </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+
+                        <div class="summary-box">
+                            <div class="summary-row">
+                                <span style="color: #64748b; font-weight: 600;">Gross Amount</span>
+                                <span style="font-weight: 700;">₹${formData.subtotal.toFixed(2)}</span>
+                            </div>
+                            <div class="summary-row">
+                                <span style="color: #64748b; font-weight: 600;">Tax (0%)</span>
+                                <span style="font-weight: 700;">₹0.00</span>
+                            </div>
+                            <div class="summary-row summary-total">
+                                <span>Total Payable</span>
+                                <span>₹${formData.total.toFixed(2)}</span>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 50px; text-align: center; border: 1px dashed #e2e8f0; padding: 15px; border-radius: 12px;">
+                            <p style="font-size: 12px; color: #64748b; font-weight: 600; margin: 0;">This is an estimated bill generated by the clinical system. Actual prices may vary at the pharmacy counter.</p>
+                        </div>
+                    </div>
+                    ${footerHtml}
+                </div>
+            </body>
+            </html>
+        `;
+    };
+
     const handleClearForm = () => {
         setShowClearConfirm(true);
     };
@@ -615,287 +930,6 @@ function CreatePrescriptionPage() {
         } finally {
             setIsSaving(false);
         }
-    };
-
-
-
-
-    const generatePrescriptionHTML = () => {
-        return `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Prescription - ${formData.patientName}</title>
-                <style>
-                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-                    
-                    @media print {
-                        @page { size: A4; margin: 0; }
-                        body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-                    }
-
-                    body { 
-                        font-family: 'Inter', sans-serif; 
-                        margin: 0;
-                        padding: 0;
-                        background: white;
-                        font-size: 11px;
-                        line-height: 1.4;
-                        color: #111;
-                    }
-
-                    .container {
-                        width: 210mm;
-                        min-height: 297mm;
-                        margin: 0 auto;
-                        padding: 15mm 20mm;
-                        position: relative;
-                        box-sizing: border-box;
-                    }
-
-                    /* Header */
-                    .header {
-                        display: flex;
-                        align-items: center;
-                        gap: 20px;
-                        padding-bottom: 20px;
-                        margin-bottom: 20px;
-                        border-bottom: 2px solid #000;
-                    }
-                    .brand { flex: 1; display: flex; align-items: center; gap: 15px; }
-                    .brand-text { text-align: left; }
-                    .brand h1 { margin: 0; font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-                    .brand p { margin: 2px 0 0; font-size: 9px; color: #555; }
-                    
-                    .doctor { text-align: right; }
-                    .doctor h2 { margin: 0; font-size: 14px; font-weight: 700; }
-                    .doctor p { margin: 2px 0 0; font-size: 9px; font-weight: 600; text-transform: uppercase; color: #555; }
-
-                    /* Patient Grid - Clean, No Box */
-                    .patient-info {
-                        display: grid;
-                        grid-template-columns: repeat(4, 1fr);
-                        gap: 15px;
-                        margin-bottom: 25px;
-                        padding-bottom: 15px;
-                        border-bottom: 1px solid #eee;
-                    }
-                    .info-label { display: block; font-size: 8px; font-weight: 700; text-transform: uppercase; color: #777; margin-bottom: 3px; letter-spacing: 0.5px; }
-                    .info-val { font-size: 12px; font-weight: 600; }
-
-                    /* Diagnosis */
-                    .diagnosis-box { margin-bottom: 20px; }
-                    .diagnosis-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #777; letter-spacing: 0.5px; }
-                    .diagnosis-val { font-size: 12px; font-weight: 600; margin-left: 6px; }
-
-                    /* Med List/Table */
-                    .section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #000; border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 10px; letter-spacing: 0.5px; }
-                    
-                    table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-                    th { text-align: left; font-size: 9px; font-weight: 700; text-transform: uppercase; color: #777; padding: 0 0 8px 0; border-bottom: 1px solid #eee; }
-                    td { padding: 10px 0; border-bottom: 1px solid #f9f9f9; vertical-align: top; }
-                    
-                    .med-name { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
-                    .med-meta { font-size: 10px; color: #555; }
-                    
-                    /* Advice Grid */
-                    .advice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
-                    .advice-list { list-style: none; padding: 0; margin: 0; }
-                    .advice-list li { margin-bottom: 6px; padding-left: 10px; position: relative; font-size: 11px; }
-                    .advice-list li:before { content: "•"; position: absolute; left: 0; color: #aaa; }
-
-                    /* Follow up */
-                    .follow-up { margin-top: 30px; padding-top: 15px; border-top: 1px dashed #eee; font-size: 11px; display: flex; justify-content: space-between; }
-                    .follow-up strong { font-weight: 700; text-transform: uppercase; font-size: 9px; color: #777; margin-right: 5px; }
-                    .follow-up-date { font-weight: 700; color: #d946ef; }
-
-                    /* Footer */
-                    .footer { position: absolute; bottom: 15mm; left: 20mm; right: 20mm; display: flex; justify-content: space-between; align-items: flex-end; }
-                    .footer-l span { display: block; font-size: 8px; color: #999; line-height: 1.5; }
-                    
-                    .sig-block { text-align: center; }
-                    .sig-img { height: 40px; display: block; margin: 0 auto 5px; }
-                    .sig-line { border-top: 1px solid #ccc; padding-top: 5px; font-size: 9px; font-weight: 600; text-transform: uppercase; min-width: 120px; }
-
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <div class="header">
-                        <div class="brand">
-                            ${hospitalBranding?.logo ? `<img src="${hospitalBranding.logo}" style="max-height: 70px; width: auto; object-fit: contain;" />` : ''}
-                            <div class="brand-text">
-                                <h1>${hospitalBranding?.name || hospitalData?.name || 'Kadapa Multi-Speciality'}</h1>
-                                <p>${hospitalBranding?.address || hospitalData?.address || 'RIMS Road, Putlampalli, Kadapa, AP'} • ${hospitalBranding?.phone || hospitalBranding?.contact || hospitalData?.phone || '+91 8562 245555'}</p>
-                            </div>
-                        </div>
-                        <div class="doctor">
-                            <h2>${formData.doctorName}</h2>
-                            <p>Consultant Physician</p>
-                        </div>
-                    </div>
-
-                    <div class="patient-info">
-                        <div>
-                            <span class="info-label">Name</span>
-                            <span class="info-val">${formData.patientName}</span>
-                        </div>
-                        <div>
-                            <span class="info-label">Age / Gender</span>
-                            <span class="info-val">${formData.age} Y / ${formData.gender}</span>
-                        </div>
-                        <div>
-                            <span class="info-label">ID</span>
-                            <span class="info-val">${formData.mrn || '-'}</span>
-                        </div>
-                        <div>
-                            <span class="info-label">Date</span>
-                            <span class="info-val">${formData.date}</span>
-                        </div>
-                    </div>
-
-                    ${formData.diagnosis ? `
-                    <div class="diagnosis-box">
-                        <span class="diagnosis-label">Diagnosis:</span>
-                        <span class="diagnosis-val">${formData.diagnosis}</span>
-                    </div>
-                    ` : ''}
-
-                    <div class="section-label">Medications</div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th style="width: 40%">Medicine</th>
-                                <th style="width: 20%">Dosage</th>
-                                <th style="width: 20%">Frequency</th>
-                                <th style="width: 10%">Days</th>
-                                <th style="width: 10%">Qty</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${formData.medicines.map(med => `
-                            <tr>
-                                <td>
-                                    <div class="med-name">${med.name}</div>
-                                </td>
-                                <td class="med-meta">${med.dosage}</td>
-                                <td class="med-meta">${med.freq}</td>
-                                <td class="med-meta">${med.duration}</td>
-                                <td class="med-meta">${med.quantity}</td>
-                            </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-
-                    <div class="advice-grid">
-                        ${formData.dietAdvice.length > 0 ? `
-                        <div>
-                            <div class="section-label" style="border-bottom: 1px solid #eee; margin-top: 10px;">General Advice</div>
-                            <ul class="advice-list">
-                                ${formData.dietAdvice.filter(i => i.trim()).map(d => `<li>${d}</li>`).join('')}
-                            </ul>
-                        </div>
-                        ` : ''}
-                        
-                        ${formData.suggestedTests.length > 0 ? `
-                        <div>
-                            <div class="section-label" style="border-bottom: 1px solid #eee; margin-top: 10px;">Suggested Tests</div>
-                            <ul class="advice-list">
-                                ${formData.suggestedTests.filter(i => i.trim()).map(t => `<li>${t}</li>`).join('')}
-                            </ul>
-                        </div>
-                        ` : ''}
-
-                        ${formData.avoid.length > 0 ? `
-                        <div>
-                            <div class="section-label" style="border-bottom: 1px solid #eee; margin-top: 10px;">Things to Avoid</div>
-                            <ul class="advice-list" style="color: #dc2626;">
-                                ${formData.avoid.filter(i => i.trim()).map(a => `<li>${a}</li>`).join('')}
-                            </ul>
-                        </div>
-                        ` : ''}
-                    </div>
-
-                    ${formData.followUp || formData.followUpDate ? `
-                    <div class="follow-up">
-                        <div><strong>Instructions:</strong> ${formData.followUp || 'N/A'}</div>
-                        ${formData.followUpDate ? `<div><strong>Follow Up Date:</strong> <span class="follow-up-date">${new Date(formData.followUpDate).toLocaleDateString()}</span></div>` : ''}
-                    </div>
-                    ` : ''}
-
-                    <div class="footer">
-                        <div class="footer-l">
-                            <span>Generated by MsCurechain Systems</span>
-                            <span>Valid for 30 days</span>
-                        </div>
-                        <div class="sig-block">
-                            ${formData.doctorSignature ? `<img src="${formData.doctorSignature}" class="sig-img" />` : '<div style="height: 40px;"></div>'}
-                            <div class="sig-line">Authorized Signature</div>
-                        </div>
-                    </div>
-                </div>
-            </body>
-            </html>
-        `;
-    };
-
-    const generateBillingHTML = () => {
-        return `
-            <html>
-                <head>
-                    <title>Pharmacy Bill Estimate</title>
-                    <style>
-                        body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 40px; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                        th { text-align: left; padding: 12px; background: #f8fafc; font-size: 12px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #e2e8f0; }
-                        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #334155; }
-                        .total-row td { font-weight: 700; color: #0f172a; font-size: 16px; border-top: 2px solid #e2e8f0; }
-                        h1 { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
-                        p { font-size: 12px; color: #64748b; margin: 0 0 20px; }
-                    </style>
-                </head>
-                <body>
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
-                        <div>
-                            ${hospitalBranding?.logo ? `<img src="${hospitalBranding.logo}" style="max-height: 50px; margin-bottom: 5px;" />` : ''}
-                            <h2 style="margin: 0; font-size: 16px; text-transform: uppercase;">${hospitalBranding?.name || hospitalData?.name || 'Kadapa Multi-Speciality'}</h2>
-                        </div>
-                        <div style="text-align: right;">
-                            <h1 style="margin: 0; color: #0f172a;">ESTIMATED BILL</h1>
-                            <p style="margin: 5px 0 0;">Patient: ${formData.patientName} | MRN: ${formData.mrn || 'N/A'}</p>
-                        </div>
-                    </div>
-                    
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Dosage</th>
-                                <th>Qty</th>
-                                <th>Days</th>
-                                <th style="text-align: right;">Price</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${formData.medicines.map(med => `
-                                <tr>
-                                    <td>${med.name}</td>
-                                    <td>${med.dosage}</td>
-                                    <td>${med.quantity}</td>
-                                    <td>${med.duration}</td>
-                                    <td style="text-align: right;">₹${(Number(med.price) || 0).toFixed(2)}</td>
-                                </tr>
-                            `).join('')}
-                            <tr class="total-row">
-                                <td colspan="4">Total Amount</td>
-                                <td style="text-align: right;">₹${formData.total.toFixed(2)}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <p style="margin-top: 40px; font-size: 10px; text-align: center;">This is an estimated bill based on inventory prices. Actual prices may vary at pharmacy counter.</p>
-                </body>
-            </html>
-        `;
     };
 
     const handlePrintDocument = (type: 'prescription' | 'billing') => {

@@ -51,15 +51,18 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
             width: '100%',
             backgroundColor: '#ffffff',
             fontFamily: "'Segoe UI', Roboto, Arial, sans-serif",
-            marginBottom: '15px',
+            marginBottom: '10px',
             printColorAdjust: 'exact',
             WebkitPrintColorAdjust: 'exact',
+            
+            padding: '10px',
+            boxSizing: 'border-box'
         }}>
             <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-start',
-                padding: '20px 0',
+                padding: '10px 0',
             }}>
                 {/* Logo Section */}
                 <div style={{
@@ -67,23 +70,28 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'flex-start',
-                    paddingRight: '10px',
+                    paddingRight: '15px',
                 }}>
                     {details.logo ? (
                         <img
                             src={details.logo}
                             alt="Hospital Logo"
-                            style={{ maxWidth: '200px', maxHeight: '140px', objectFit: 'contain' }}
+                            style={{ 
+                                maxWidth: '160px', 
+                                maxHeight: '110px', 
+                                objectFit: 'contain',
+                                border: '1px solid #000' // Matching the boxed logo look if applicable
+                            }}
                         />
                     ) : (
                         <div style={{
-                            width: '120px',
-                            height: '120px',
-                            border: '1px dashed #cbd5e1',
+                            width: '100px',
+                            height: '100px',
+                            border: '1px solid #000',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: '#94a3b8',
+                            color: '#000',
                             fontSize: '12px',
                             fontWeight: 'bold'
                         }}>LOGO</div>
@@ -93,9 +101,8 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                 {/* Vertical Divider */}
                 <div style={{
                     width: '1px',
-                    height: '100px',
+                    height: '80px',
                     backgroundColor: '#e2e8f0',
-                    marginLeft: '15px',
                     marginRight: '20px'
                 }}></div>
 
@@ -105,63 +112,56 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'flex-start',
-                    gap: '4px',
+                    gap: '6px',
                 }}>
                     <h1 style={{
                         margin: 0,
-                        fontWeight: 'bold',
+                        fontWeight: '800',
                         color: '#1e40af', // Deep Blue
-                        lineHeight: '1.2',
+                        lineHeight: '1.1',
                         textAlign: 'left',
-                        fontSize: '28px'
+                        fontSize: '30px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
                     }}>
                         {details.name}
                     </h1>
 
-                    {/* Phone Pill */}
-                    <div style={{
-                        display: 'flex',
-                        backgroundColor: '#22c55e', // Vibrant Green
-                        color: '#ffffff',
-                        padding: '4px 12px',
-                        borderRadius: '4px',
-                        alignItems: 'center',
-                        gap: '6px',
-                        width: 'fit-content',
-                        fontSize: '12px',
-                        fontWeight: 'bold',
-                        marginTop: '2px'
-                    }}>
-                        <Phone size={14} fill="white" strokeWidth={0} />
-                        <span>{details.phone}</span>
-                    </div>
-
-                    {/* Email */}
+                    {/* Email Row */}
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px',
-                        color: '#1d4ed8',
-                        fontSize: '12px',
-                        fontWeight: '600'
+                        gap: '8px',
+                        color: '#1e40af',
+                        fontSize: '14px',
+                        fontWeight: '700'
                     }}>
-                        <Mail size={14} fill="#1d4ed8" color="#ffffff" strokeWidth={1} />
+                        <div style={{
+                            width: '12px',
+                            height: '12px',
+                            backgroundColor: '#1e40af',
+                            borderRadius: '1px'
+                        }}></div>
                         <span>{details.email}</span>
                     </div>
 
-                    {/* Address */}
-                    <p style={{
-                        margin: 0,
-                        fontSize: '10px',
-                        color: '#64748b',
+                    {/* Address & Phone Row */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        fontSize: '14px',
+                        color: '#334155',
                         fontWeight: '700',
-                        maxWidth: '100%',
-                        lineHeight: '1.4',
-                        textAlign: 'left',
-                        textTransform: 'uppercase'
+                        marginTop: '2px'
                     }}>
-                        {details.address}
-                    </p>
+                        <span style={{ color: '#64748b' }}>{details.address}</span>
+                        <div style={{ width: '1px', height: '14px', backgroundColor: '#cbd5e1' }}></div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Phone size={16} fill="#22c55e" color="#22c55e" strokeWidth={0} />
+                            <span style={{ color: '#22c55e' }}>{details.phone}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -170,7 +170,7 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                 width: '100%',
                 height: '4px',
                 backgroundColor: '#22c55e',
-                borderRadius: '2px'
+                marginTop: '10px'
             }}></div>
         </div>
     );

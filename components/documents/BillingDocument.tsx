@@ -36,11 +36,14 @@ function BillingDocument({
         <div className="print-block" style={{
             background: 'white',
             width: '210mm',
-            minHeight: '296mm',
+            height: '296mm',
             margin: '0 auto',
-            padding: '12mm 15mm 12mm 25mm',
+            padding: '10mm 15mm 10mm 25mm',
             boxSizing: 'border-box',
-            position: 'relative'
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
         }}>
             {/* Universal Header */}
             <MainHeader
@@ -97,14 +100,16 @@ function BillingDocument({
             </div>
 
             {/* Universal Footer */}
-            <MainFooter
-                initialDetails={{
-                    name: hospitalName,
-                    address: hospitalAddress,
-                    phone: hospitalPhone,
-                    email: ''
-                }}
-            />
+            <div style={{ marginTop: 'auto' }}>
+                <MainFooter
+                    initialDetails={{
+                        name: hospitalName,
+                        address: hospitalAddress,
+                        phone: hospitalPhone,
+                        email: ''
+                    }}
+                />
+            </div>
         </div>
     );
 }

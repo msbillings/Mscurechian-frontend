@@ -53,7 +53,8 @@ export const LabTokenDocument: React.FC<LabTokenDocumentProps> = ({
     const patient = propPatient || token.patient || {};
     const doctor = propDoctor || token.doctor || {};
     const hospital = propHospital || token.hospital || {
-        name: 'Our Medical Center'
+        name: 'Our Medical Center',
+        logo: ''
     };
 
     return (
@@ -66,7 +67,9 @@ export const LabTokenDocument: React.FC<LabTokenDocumentProps> = ({
                 boxSizing: 'border-box',
                 backgroundColor: colors.white,
                 overflow: 'hidden',
-                color: colors.gray900
+                color: colors.gray900,
+                display: 'flex',
+                flexDirection: 'column'
             }}>
 
             {/* Universal Header */}

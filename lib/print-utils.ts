@@ -1,48 +1,109 @@
-
 export const generatePayslipHtml = (data: any) => {
   const { payroll, hospital } = data;
   const staff = data.staff || payroll?.user || {};
   const rx = payroll || {};
   const u = staff;
-  const h = hospital || { name: 'Institutional Healthcare', address: 'Hospital Complex', phone: '91-0000000000', email: 'admin@hospital.com' };
+  const h = hospital || {
+    name: "Institutional Healthcare",
+    address: "Hospital Complex",
+    phone: "91-0000000000",
+    email: "admin@hospital.com",
+    logo: "",
+  };
   const b = rx.breakdown || {};
   const c = rx.ctc || {};
 
-  const totalGross = (b.basic || 0) + (b.hra || 0) + (b.transportAllowance || 0) + (b.medicalAllowance || 0) + (b.specialAllowance || 0) + (b.bonus || 0) + (b.salaryArrears || 0);
-  const totalDeducts = (b.pf || 0) + (b.esi || 0) + (b.professionalTax || 0) + (b.tds || 0) + (b.salaryAdvance || 0);
-  const netSalary = rx.netSalary || (totalGross - totalDeducts);
+  const totalGross =
+    (b.basic || 0) +
+    (b.hra || 0) +
+    (b.transportAllowance || 0) +
+    (b.medicalAllowance || 0) +
+    (b.specialAllowance || 0) +
+    (b.bonus || 0) +
+    (b.salaryArrears || 0);
+  const totalDeducts =
+    (b.pf || 0) +
+    (b.esi || 0) +
+    (b.professionalTax || 0) +
+    (b.tds || 0) +
+    (b.salaryAdvance || 0);
+  const netSalary = rx.netSalary || totalGross - totalDeducts;
 
-  const monthName = rx.startDate ? new Date(rx.startDate).toLocaleString('default', { month: 'short', year: 'numeric' }) : 'Pay Period';
-  const fullPeriod = rx.startDate && rx.endDate ?
-    `(From ${new Date(rx.startDate).toLocaleDateString('en-GB')} To ${new Date(rx.endDate).toLocaleDateString('en-GB')})` :
-    '';
+  const monthName = rx.startDate
+    ? new Date(rx.startDate).toLocaleString("default", {
+        month: "short",
+        year: "numeric",
+      })
+    : "Pay Period";
+  const fullPeriod =
+    rx.startDate && rx.endDate
+      ? `(From ${new Date(rx.startDate).toLocaleDateString("en-GB")} To ${new Date(rx.endDate).toLocaleDateString("en-GB")})`
+      : "";
 
   // Number to words function
   const numberToWords = (num: number): string => {
     if (num === 0) return "Zero Only";
-    const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
-    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    const a = [
+      "",
+      "One ",
+      "Two ",
+      "Three ",
+      "Four ",
+      "Five ",
+      "Six ",
+      "Seven ",
+      "Eight ",
+      "Nine ",
+      "Ten ",
+      "Eleven ",
+      "Twelve ",
+      "Thirteen ",
+      "Fourteen ",
+      "Fifteen ",
+      "Sixteen ",
+      "Seventeen ",
+      "Eighteen ",
+      "Nineteen ",
+    ];
+    const b = [
+      "",
+      "",
+      "Twenty",
+      "Thirty",
+      "Forty",
+      "Fifty",
+      "Sixty",
+      "Seventy",
+      "Eighty",
+      "Ninety",
+    ];
 
     const inWords = (n: any): string => {
       if (n < 20) return a[n];
-      if (n < 100) return b[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + a[n % 10] : '');
-      if (n < 1000) return a[Math.floor(n / 100)] + 'Hundred ' + (n % 100 !== 0 ? 'and ' + inWords(n % 100) : '');
-      return '';
+      if (n < 100)
+        return b[Math.floor(n / 10)] + (n % 10 !== 0 ? " " + a[n % 10] : "");
+      if (n < 1000)
+        return (
+          a[Math.floor(n / 100)] +
+          "Hundred " +
+          (n % 100 !== 0 ? "and " + inWords(n % 100) : "")
+        );
+      return "";
     };
 
     const convert = (n: number) => {
-      let str = '';
+      let str = "";
       const crores = Math.floor(n / 10000000);
       n %= 10000000;
-      if (crores > 0) str += inWords(crores) + 'Crore ';
+      if (crores > 0) str += inWords(crores) + "Crore ";
 
       const lakhs = Math.floor(n / 100000);
       n %= 100000;
-      if (lakhs > 0) str += inWords(lakhs) + 'Lakh ';
+      if (lakhs > 0) str += inWords(lakhs) + "Lakh ";
 
       const thousands = Math.floor(n / 1000);
       n %= 1000;
-      if (thousands > 0) str += inWords(thousands) + 'Thousand ';
+      if (thousands > 0) str += inWords(thousands) + "Thousand ";
 
       if (n > 0) str += inWords(n);
       return str.trim();
@@ -55,7 +116,7 @@ export const generatePayslipHtml = (data: any) => {
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Pay Slip - ${u.name || 'Employee'}</title>
+      <title>Pay Slip - ${u.name || "Employee"}</title>
       <meta charset="UTF-8">
       <style>
         @media print {
@@ -221,9 +282,9 @@ export const generatePayslipHtml = (data: any) => {
       <div class="container">
         <!-- Header -->
         <div class="header">
-          <h1 class="hospital-name">${h?.name || 'Institutional Healthcare'}</h1>
-          <p class="hospital-info">${h?.address || 'Hospital Complex'}</p>
-          <p class="hospital-info">Phone: ${h?.phone || '91-0000000000'} | Email: ${h?.email || 'admin@hospital.com'}</p>
+          <h1 class="hospital-name">${h?.name || "Institutional Healthcare"}</h1>
+          <p class="hospital-info">${h?.address || "Hospital Complex"}</p>
+          <p class="hospital-info">Phone: ${h?.phone || "91-0000000000"} | Email: ${h?.email || "admin@hospital.com"}</p>
           <div class="pay-slip-title">Pay Slip For the Month of ${monthName}</div>
           <div class="pay-period">${fullPeriod}</div>
         </div>
@@ -236,139 +297,139 @@ export const generatePayslipHtml = (data: any) => {
                 <div class="info-row">
                   <span class="info-label">Employee Name</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.name || 'N/A'}</span>
+                  <span class="info-value">${u.name || "N/A"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Father's Name</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.fatherName || rx.fatherName || 'N/A'}</span>
+                  <span class="info-value">${u.fatherName || rx.fatherName || "N/A"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">PAN</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.panNumber || rx.panNumber || 'N/A'}</span>
+                  <span class="info-value">${u.panNumber || rx.panNumber || "N/A"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">PF A/c No</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.pfNumber || rx.pfNumber || 'N.A.'}</span>
+                  <span class="info-value">${u.pfNumber || rx.pfNumber || "N.A."}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Branch</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.workLocation || rx.workLocation || 'HYDERABAD'}</span>
+                  <span class="info-value">${u.workLocation || rx.workLocation || "HYDERABAD"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Designation</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.designation || 'N/A'}</span>
+                  <span class="info-value">${u.designation || "N/A"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Scale</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.scale || 'N/A'}</span>
+                  <span class="info-value">${u.scale || "N/A"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Pay Mode</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${rx.paymentMethod?.replace('_', ' ').toUpperCase() || 'TRANSFER'}</span>
+                  <span class="info-value">${rx.paymentMethod?.replace("_", " ").toUpperCase() || "TRANSFER"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Resignation Date</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.resignationDate || 'N/A'}</span>
+                  <span class="info-value">${u.resignationDate || "N/A"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Address (Perm.)</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.permanentAddress || (u.address?.street ? u.address.street + ', ' + u.address.city : 'N/A')}</span>
+                  <span class="info-value">${u.permanentAddress || (u.address?.street ? u.address.street + ", " + u.address.city : "N/A")}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Work Location</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.workLocation || rx.workLocation || 'N/A'}</span>
+                  <span class="info-value">${u.workLocation || rx.workLocation || "N/A"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">E-Mail</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.email || 'N/A'}</span>
+                  <span class="info-value">${u.email || "N/A"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Address (Corres.)</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.currentAddress || u.permanentAddress || 'N/A'}</span>
+                  <span class="info-value">${u.currentAddress || u.permanentAddress || "N/A"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Mobile</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.mobile || 'N/A'}</span>
+                  <span class="info-value">${u.mobile || "N/A"}</span>
                 </div>
               </div>
               <div>
                 <div class="info-row">
                   <span class="info-label">Employee Code</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.employeeId || 'N/A'}</span>
+                  <span class="info-value">${u.employeeId || "N/A"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">DOJ</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${(u.joiningDate || rx.joiningDate) ? new Date(u.joiningDate || rx.joiningDate).toLocaleDateString('en-GB') : 'N/A'}</span>
+                  <span class="info-value">${u.joiningDate || rx.joiningDate ? new Date(u.joiningDate || rx.joiningDate).toLocaleDateString("en-GB") : "N/A"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Bank A/c No.</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.bankDetails?.accountNumber || rx.bankAccount || 'N/A'}</span>
+                  <span class="info-value">${u.bankDetails?.accountNumber || rx.bankAccount || "N/A"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">ESI A/c No</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.esiNumber || rx.esiNumber || 'N.A.'}</span>
+                  <span class="info-value">${u.esiNumber || rx.esiNumber || "N.A."}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Department</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.department || rx.department || 'N/A'}</span>
+                  <span class="info-value">${u.department || rx.department || "N/A"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Category</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.category || 'UNIVERSAL'}</span>
+                  <span class="info-value">${u.category || "UNIVERSAL"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Bank Name</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.bankDetails?.bankName || 'N/A'}</span>
+                  <span class="info-value">${u.bankDetails?.bankName || "N/A"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Gender</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.gender || rx.gender || 'N/A'}</span>
+                  <span class="info-value">${u.gender || rx.gender || "N/A"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Confirmation Date</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.confirmationDate || 'N/A'}</span>
+                  <span class="info-value">${u.confirmationDate || "N/A"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Shift</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.shift || 'DAY SHIFT'}</span>
+                  <span class="info-value">${u.shift || "DAY SHIFT"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">DOB</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${(u.dob || rx.dob) ? new Date(u.dob || rx.dob).toLocaleDateString('en-GB') : 'N/A'}</span>
+                  <span class="info-value">${u.dob || rx.dob ? new Date(u.dob || rx.dob).toLocaleDateString("en-GB") : "N/A"}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">UAN</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.uanNumber || rx.uanNumber || 'N.A.'}</span>
+                  <span class="info-value">${u.uanNumber || rx.uanNumber || "N.A."}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Aadhar No.</span>
                   <span class="info-separator">:</span>
-                  <span class="info-value">${u.aadharNumber || rx.aadharNumber || 'N/A'}</span>
+                  <span class="info-value">${u.aadharNumber || rx.aadharNumber || "N/A"}</span>
                 </div>
               </div>
             </div>
@@ -538,7 +599,7 @@ export const generatePayslipHtml = (data: any) => {
               </tr>
               <tr>
                 <td>EMPLOYER'S PROVIDENT FUND</td>
-                <td style="text-align: right; font-weight: bold;">${c.providentFund ? c.providentFund.toLocaleString() : 'Nil'}</td>
+                <td style="text-align: right; font-weight: bold;">${c.providentFund ? c.providentFund.toLocaleString() : "Nil"}</td>
               </tr>
               <tr>
                 <td style="padding-left: 24px; font-style: italic; opacity: 0.6;">- - &gt; PENSION FUND</td>
@@ -550,7 +611,7 @@ export const generatePayslipHtml = (data: any) => {
               </tr>
               <tr>
                 <td>EMPLOYER'S STATE INSURANCE</td>
-                <td style="text-align: right; font-weight: bold;">${c.employerEsi ? c.employerEsi.toLocaleString() : 'Nil'}</td>
+                <td style="text-align: right; font-weight: bold;">${c.employerEsi ? c.employerEsi.toLocaleString() : "Nil"}</td>
               </tr>
               <tr style="border-top: 1px solid #000; border-bottom: 1px solid #000; font-weight: bold; text-transform: uppercase; text-align: right;">
                 <td>Total :</td>
@@ -784,31 +845,31 @@ export const generateClinicalReceiptHtml = (data: any) => {
       <script>
         window.onafterprint = function() {
           setTimeout(() => {
-            window.location.replace('${data.returnUrl || '/helpdesk'}');
+            window.location.replace('${data.returnUrl || "/helpdesk"}');
           }, 500);
         };
       </script>
       <div class="no-print" style="position: sticky; top: 0; background: white; padding: 10px; z-index: 1000; border-bottom: 2px solid #0f172a;">
-         <button onclick="window.location.replace('${data.returnUrl || '/helpdesk'}')" class="return-btn" style="width: 100%; max-width: 400px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em;">
+         <button onclick="window.location.replace('${data.returnUrl || "/helpdesk"}')" class="return-btn" style="width: 100%; max-width: 400px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em;">
             ← BACK TO HOSPITAL DASHBOARD
          </button>
       </div>
       <div class="receipt-container">
         <!-- Hospital Header -->
         <div class="hospital-header">
-          ${hospital.logo ? `<img src="${hospital.logo}" alt="Logo" style="max-height: 85px; width: auto; object-fit: contain;" />` : ''}
+          ${hospital.logo ? `<img src="${hospital.logo}" alt="Logo" style="max-height: 85px; width: auto; object-fit: contain;" />` : ""}
           <div class="hospital-details">
             <h1 class="hospital-name">${hospital.name}</h1>
             <p class="hospital-info">${hospital.address || ""}</p>
-            <p class="hospital-info">${hospital.contact ? `Phone: ${hospital.contact}` : ''} ${hospital.email ? ` | Email: ${hospital.email}` : ''}</p>
+            <p class="hospital-info">${hospital.contact ? `Phone: ${hospital.contact}` : ""} ${hospital.email ? ` | Email: ${hospital.email}` : ""}</p>
           </div>
         </div>
 
         <!-- Bill Title Row -->
         <div class="bill-title-row">
           <div>
-            <div class="bill-title">${data.registrationType === 'IPD' ? 'IPD Admission Receipt' : 'Patient Registration Bill'}</div>
-            <div class="bill-subtitle">${data.registrationType === 'IPD' ? 'Hospital Admission Document' : 'Appointment Receipt'}</div>
+            <div class="bill-title">${data.registrationType === "IPD" ? "IPD Admission Receipt" : "Patient Registration Bill"}</div>
+            <div class="bill-subtitle">${data.registrationType === "IPD" ? "Hospital Admission Document" : "Appointment Receipt"}</div>
           </div>
           <div class="bill-meta">
             <div><strong>Date:</strong> ${appointment.date}</div>
@@ -824,13 +885,13 @@ export const generateClinicalReceiptHtml = (data: any) => {
               <td class="label">MRN:</td>
               <td class="value">${patient.mrn}</td>
               <td class="label">Blood Group:</td>
-              <td class="value">${patient.bloodGroup || '-'}</td>
+              <td class="value">${patient.bloodGroup || "-"}</td>
             </tr>
             <tr>
               <td class="label">Name:</td>
               <td class="value">${patient.name}</td>
               <td class="label">DOB:</td>
-              <td class="value">${patient.dob ? patient.dob.split('T')[0] : '-'}</td>
+              <td class="value">${patient.dob ? patient.dob.split("T")[0] : "-"}</td>
             </tr>
             <tr>
               <td class="label">Age/Gender:</td>
@@ -840,13 +901,13 @@ export const generateClinicalReceiptHtml = (data: any) => {
             </tr>
             <tr>
               <td class="label">Email:</td>
-              <td class="value">${patient.email || '-'}</td>
+              <td class="value">${patient.email || "-"}</td>
               <td class="label">Alt. Contact:</td>
-              <td class="value">${patient.emergencyContact || '-'}</td>
+              <td class="value">${patient.emergencyContact || "-"}</td>
             </tr>
             <tr>
               <td class="label">Address:</td>
-              <td colspan="3" class="value">${patient.address || '-'}</td>
+              <td colspan="3" class="value">${patient.address || "-"}</td>
             </tr>
           </table>
         </div>
@@ -857,21 +918,21 @@ export const generateClinicalReceiptHtml = (data: any) => {
           <table class="data-grid">
             <tr>
               <td class="label">Consulting Doctor:</td>
-              <td class="value">${appointment.doctorName?.toLowerCase().startsWith('dr') ? appointment.doctorName : `Dr. ${appointment.doctorName || 'Assigned Physician'}`}</td>
+              <td class="value">${appointment.doctorName?.toLowerCase().startsWith("dr") ? appointment.doctorName : `Dr. ${appointment.doctorName || "Assigned Physician"}`}</td>
               <td class="label">Appointment Date:</td>
               <td class="value">${appointment.date}</td>
             </tr>
             <tr>
               <td class="label">Qualification:</td>
-              <td class="value">${appointment.qualification || 'MBBS, DM'}</td>
+              <td class="value">${appointment.qualification || "MBBS, DM"}</td>
               <td class="label">Appointment Time:</td>
-              <td class="value">${appointment.time || 'IN QUEUE'}</td>
+              <td class="value">${appointment.time || "IN QUEUE"}</td>
             </tr>
             <tr>
               <td class="label">Specialization:</td>
-              <td class="value">${appointment.specialization || 'General Doctor'}</td>
+              <td class="value">${appointment.specialization || "General Doctor"}</td>
               <td class="label">Visit Type:</td>
-              <td class="value">${appointment.type || 'Consultation'}</td>
+              <td class="value">${appointment.type || "Consultation"}</td>
             </tr>
           </table>
         </div>
@@ -890,43 +951,72 @@ export const generateClinicalReceiptHtml = (data: any) => {
               <th>Glucose</th>
             </tr>
             <tr>
-              <td>${patient.vitals?.height ? patient.vitals.height + ' cm' : '-'}</td>
-              <td>${patient.vitals?.weight ? patient.vitals.weight + ' kg' : '-'}</td>
-              <td>${patient.vitals?.temperature ? patient.vitals.temperature + ' °F' : '-'}</td>
-              <td>${patient.vitals?.bloodPressure || patient.vitals?.bp || '-'}</td>
-              <td>${patient.vitals?.pulse ? patient.vitals.pulse + ' bpm' : '-'}</td>
-              <td>${patient.vitals?.spO2 || patient.vitals?.spo2 ? (patient.vitals?.spO2 || patient.vitals?.spo2) + '%' : '-'}</td>
-              <td>${patient.vitals?.glucose || patient.vitals?.sugar ? (patient.vitals?.glucose || patient.vitals?.sugar) + ' mg/dL' : '-'}</td>
+              <td>${patient.vitals?.height ? patient.vitals.height + " cm" : "-"}</td>
+              <td>${patient.vitals?.weight ? patient.vitals.weight + " kg" : "-"}</td>
+              <td>${patient.vitals?.temperature ? patient.vitals.temperature + " °F" : "-"}</td>
+              <td>${patient.vitals?.bloodPressure || patient.vitals?.bp || "-"}</td>
+              <td>${patient.vitals?.pulse ? patient.vitals.pulse + " bpm" : "-"}</td>
+              <td>${patient.vitals?.spO2 || patient.vitals?.spo2 ? (patient.vitals?.spO2 || patient.vitals?.spo2) + "%" : "-"}</td>
+              <td>${patient.vitals?.glucose || patient.vitals?.sugar ? (patient.vitals?.glucose || patient.vitals?.sugar) + " mg/dL" : "-"}</td>
             </tr>
           </table>
         </div>
 
         <!-- Allergies & History -->
-        ${((patient.allergies && patient.allergies.length > 0 && patient.allergies !== 'None' && patient.allergies !== 'NONE') || (patient.medicalHistory && patient.medicalHistory !== 'None' && patient.medicalHistory !== 'NONE' && patient.medicalHistory !== 'CLEAR')) ? `
+        ${
+          (patient.allergies &&
+            patient.allergies.length > 0 &&
+            patient.allergies !== "None" &&
+            patient.allergies !== "NONE") ||
+          (patient.medicalHistory &&
+            patient.medicalHistory !== "None" &&
+            patient.medicalHistory !== "NONE" &&
+            patient.medicalHistory !== "CLEAR")
+            ? `
         <div class="section">
           <div class="section-header">Medical History & Allergies</div>
           <table class="data-grid">
-            ${(patient.allergies && patient.allergies.length > 0 && patient.allergies !== 'None' && patient.allergies !== 'NONE') ? `
+            ${
+              patient.allergies &&
+              patient.allergies.length > 0 &&
+              patient.allergies !== "None" &&
+              patient.allergies !== "NONE"
+                ? `
             <tr>
               <td class="label" style="color: #e11d48;">Allergies:</td>
-              <td colspan="3" class="value" style="color: #e11d48;">${Array.isArray(patient.allergies) ? patient.allergies.join(', ') : patient.allergies}</td>
-            </tr>` : ''}
-            ${(patient.medicalHistory && patient.medicalHistory !== 'None' && patient.medicalHistory !== 'NONE' && patient.medicalHistory !== 'CLEAR') ? `
+              <td colspan="3" class="value" style="color: #e11d48;">${Array.isArray(patient.allergies) ? patient.allergies.join(", ") : patient.allergies}</td>
+            </tr>`
+                : ""
+            }
+            ${
+              patient.medicalHistory &&
+              patient.medicalHistory !== "None" &&
+              patient.medicalHistory !== "NONE" &&
+              patient.medicalHistory !== "CLEAR"
+                ? `
             <tr>
               <td class="label">Hist/Issues:</td>
               <td colspan="3" class="value">${patient.medicalHistory}</td>
-            </tr>` : ''}
+            </tr>`
+                : ""
+            }
           </table>
-        </div>` : ''}
+        </div>`
+            : ""
+        }
 
         <!-- Symptoms -->
-        ${appointment.notes ? `
+        ${
+          appointment.notes
+            ? `
         <div class="section">
           <div class="section-header">Current Symptoms</div>
           <div class="symptoms-box">
             ${appointment.notes}
           </div>
-        </div>` : ''}
+        </div>`
+            : ""
+        }
 
         <!-- Payment Summary -->
         <div class="section">
@@ -939,7 +1029,10 @@ export const generateClinicalReceiptHtml = (data: any) => {
               </tr>
             </thead>
             <tbody>
-              ${(data.registrationType === 'IPD' && appointment.type?.includes('Settlement')) ? `
+              ${
+                data.registrationType === "IPD" &&
+                appointment.type?.includes("Settlement")
+                  ? `
                 <tr>
                   <td style="font-weight: bold; color: #475569;">Advance Amount</td>
                   <td style="text-align: right; font-weight: bold;">₹ ${Math.round(payment.advanceAmount || 0).toLocaleString()}</td>
@@ -950,23 +1043,25 @@ export const generateClinicalReceiptHtml = (data: any) => {
                 </tr>
                 <tr class="total-row">
                   <td>TOTAL BILL AMOUNT</td>
-                  <td style="text-align: right;">₹ ${Math.round(payment.totalBillAmount || (payment.amount + (payment.advanceAmount || 0))).toLocaleString()}</td>
+                  <td style="text-align: right;">₹ ${Math.round(payment.totalBillAmount || payment.amount + (payment.advanceAmount || 0)).toLocaleString()}</td>
                 </tr>
-              ` : `
+              `
+                  : `
                 <tr>
-                  <td>${data.registrationType === 'IPD' ? 'IPD Admission Fee' : 'Consultation Fee (OPD)'}</td>
+                  <td>${data.registrationType === "IPD" ? "IPD Admission Fee" : "Consultation Fee (OPD)"}</td>
                   <td style="text-align: right;">₹ ${Math.round(payment.amount).toLocaleString()}</td>
                 </tr>
                 <tr class="total-row">
                   <td>TOTAL AMOUNT</td>
                   <td style="text-align: right;">₹ ${Math.round(payment.amount).toLocaleString()}</td>
                 </tr>
-              `}
+              `
+              }
             </tbody>
           </table>
           <div class="payment-footer">
-            <div>Payment Method: ${payment.method || 'N/A'}</div>
-            <div class="${payment?.status?.toUpperCase() === 'PAID' ? 'status-paid' : ''}">Payment Status: ${payment?.status || 'Unknown'}</div>
+            <div>Payment Method: ${payment.method || "N/A"}</div>
+            <div class="${payment?.status?.toUpperCase() === "PAID" ? "status-paid" : ""}">Payment Status: ${payment?.status || "Unknown"}</div>
           </div>
         </div>
 
@@ -988,9 +1083,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
   `;
 };
 
-
 // --- NEW HELPERS FOR REPRINTING (MATCHING DOCTOR TEMPLATES) ---
-
 
 export const generatePrescriptionHtml = (data: any) => {
   const { hospital, patient, doctor, prescription } = data;
@@ -999,21 +1092,26 @@ export const generatePrescriptionHtml = (data: any) => {
 
   // Helper to avoid double Dr. prefix
   const formatDoctorName = (name: string) => {
-    if (!name) return 'Unknown Doctor';
-    return name.toLowerCase().startsWith('dr') ? name : `Dr. ${name}`;
+    if (!name) return "Unknown Doctor";
+    return name.toLowerCase().startsWith("dr") ? name : `Dr. ${name}`;
   };
 
   const getHonorific = (gender: string, age?: number) => {
-    if (!gender) return '';
+    if (!gender) return "";
     const g = gender.toLowerCase();
-    if (g === 'male') return (age && age < 13) ? 'Master.' : 'Mr.';
-    if (g === 'female') return (age && age < 13) ? 'Miss.' : 'Ms.';
-    return '';
+    if (g === "male") return age && age < 13 ? "Master." : "Mr.";
+    if (g === "female") return age && age < 13 ? "Miss." : "Ms.";
+    return "";
   };
 
-  const patientName = `${getHonorific(patient.gender, patient.age)} ${patient.name}`.trim();
-  const ageDisplay = (patient.age && patient.age !== '-') ? `${patient.age} Y` : 'N/A';
-  const genderDisplay = (patient.gender && patient.gender !== '-') ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1) : 'N/A';
+  const patientName =
+    `${getHonorific(patient.gender, patient.age)} ${patient.name}`.trim();
+  const ageDisplay =
+    patient.age && patient.age !== "-" ? `${patient.age} Y` : "N/A";
+  const genderDisplay =
+    patient.gender && patient.gender !== "-"
+      ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1)
+      : "N/A";
 
   return `
             <!DOCTYPE html>
@@ -1144,19 +1242,19 @@ export const generatePrescriptionHtml = (data: any) => {
                 <script>
                     window.onafterprint = function() {
                         setTimeout(() => {
-                            window.location.replace('${data.returnUrl || '/helpdesk'}');
+                            window.location.replace('${data.returnUrl || "/helpdesk"}');
                         }, 500);
                     };
                 </script>
                 <div class="no-print">
-                    <button onclick="window.location.replace('${data.returnUrl || '/helpdesk'}')" class="return-btn">
+                    <button onclick="window.location.replace('${data.returnUrl || "/helpdesk"}')" class="return-btn">
                         ← BACK TO HOSPITAL DASHBOARD
                     </button>
                 </div>
                 <div class="container">
                     <div class="header">
                         <div class="brand">
-                            ${hospital.logo ? `<img src="${hospital.logo}" style="max-height: 70px; width: auto; object-fit: contain;" />` : ''}
+                            ${hospital.logo ? `<img src="${hospital.logo}" style="max-height: 70px; width: auto; object-fit: contain;" />` : ""}
                             <div class="brand-text">
                                 <h1>${hospital.name || "CureChain Medical Center"}</h1>
                                 <p>${hospital.address || ""}</p>
@@ -1180,20 +1278,24 @@ export const generatePrescriptionHtml = (data: any) => {
                         </div>
                         <div>
                             <span class="info-label">ID</span>
-                            <span class="info-val">${patient.mrn || '-'}</span>
+                            <span class="info-val">${patient.mrn || "-"}</span>
                         </div>
                         <div>
                             <span class="info-label">Date</span>
-                            <span class="info-val">${new Date(prescription.createdAt).toLocaleDateString('en-GB')}</span>
+                            <span class="info-val">${new Date(prescription.createdAt).toLocaleDateString("en-GB")}</span>
                         </div>
                     </div>
 
-                    ${prescription.diagnosis ? `
+                    ${
+                      prescription.diagnosis
+                        ? `
                     <div class="diagnosis-box">
                         <span class="diagnosis-label">Diagnosis:</span>
                         <span class="diagnosis-val">${prescription.diagnosis}</span>
                     </div>
-                    ` : ''}
+                    `
+                        : ""
+                    }
 
                     <div class="section-label">Medications</div>
                     <table>
@@ -1207,36 +1309,51 @@ export const generatePrescriptionHtml = (data: any) => {
                             </tr>
                         </thead>
                         <tbody>
-                            ${medicines.map((med: any) => `
+                            ${medicines
+                              .map(
+                                (med: any) => `
                             <tr>
                                 <td>
                                     <div class="med-name">${med.name}</div>
                                 </td>
-                                <td class="med-meta">${med.dosage || '-'}</td>
-                                <td class="med-meta">${med.freq || med.frequency || '-'}</td>
-                                <td class="med-meta">${med.duration || '-'}</td>
-                                <td class="med-meta">${med.quantity || '-'}</td>
+                                <td class="med-meta">${med.dosage || "-"}</td>
+                                <td class="med-meta">${med.freq || med.frequency || "-"}</td>
+                                <td class="med-meta">${med.duration || "-"}</td>
+                                <td class="med-meta">${med.quantity || "-"}</td>
                             </tr>
-                            `).join('')}
+                            `,
+                              )
+                              .join("")}
                         </tbody>
                     </table>
 
                     <div class="advice-grid">
-                        ${dietAdvice.length > 0 ? `
+                        ${
+                          dietAdvice.length > 0
+                            ? `
                         <div>
                             <div class="section-label" style="border-bottom: 1px solid #eee; margin-top: 10px;">Advice</div>
                             <ul class="advice-list">
-                                ${dietAdvice.filter((i: string) => i.trim()).map((d: string) => `<li>${d}</li>`).join('')}
+                                ${dietAdvice
+                                  .filter((i: string) => i.trim())
+                                  .map((d: string) => `<li>${d}</li>`)
+                                  .join("")}
                             </ul>
                         </div>
-                        ` : ''}
+                        `
+                            : ""
+                        }
                     </div>
 
-                    ${prescription.advice ? `
+                    ${
+                      prescription.advice
+                        ? `
                     <div class="follow-up">
                         <strong>Advice / Follow Up:</strong> ${prescription.advice}
                     </div>
-                    ` : ''}
+                    `
+                        : ""
+                    }
 
                     <div class="footer">
                         <div class="footer-l">
@@ -1257,25 +1374,30 @@ export const generatePrescriptionHtml = (data: any) => {
 export const generateLabTokenHtml = (data: any) => {
   const { hospital, patient, doctor, labToken } = data;
   const tests = labToken.tests || [];
-  const priority = labToken.priority || 'routine';
+  const priority = labToken.priority || "routine";
   const notes = labToken.notes;
 
   const formatDoctorName = (name: string) => {
-    if (!name) return 'Unknown Doctor';
-    return name.toLowerCase().startsWith('dr') ? name : `Dr. ${name}`;
+    if (!name) return "Unknown Doctor";
+    return name.toLowerCase().startsWith("dr") ? name : `Dr. ${name}`;
   };
 
   const getHonorific = (gender: string, age?: number) => {
-    if (!gender) return '';
+    if (!gender) return "";
     const g = gender.toLowerCase();
-    if (g === 'male') return (age && age < 13) ? 'Master.' : 'Mr.';
-    if (g === 'female') return (age && age < 13) ? 'Miss.' : 'Ms.';
-    return '';
+    if (g === "male") return age && age < 13 ? "Master." : "Mr.";
+    if (g === "female") return age && age < 13 ? "Miss." : "Ms.";
+    return "";
   };
 
-  const patientName = `${getHonorific(patient.gender, patient.age)} ${patient.name}`.trim();
-  const ageDisplay = (patient.age && patient.age !== '-') ? `${patient.age} Y` : 'N/A';
-  const genderDisplay = (patient.gender && patient.gender !== '-') ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1) : 'N/A';
+  const patientName =
+    `${getHonorific(patient.gender, patient.age)} ${patient.name}`.trim();
+  const ageDisplay =
+    patient.age && patient.age !== "-" ? `${patient.age} Y` : "N/A";
+  const genderDisplay =
+    patient.gender && patient.gender !== "-"
+      ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1)
+      : "N/A";
 
   return `
           <!DOCTYPE html>
@@ -1332,31 +1454,31 @@ export const generateLabTokenHtml = (data: any) => {
             <script>
                 window.onafterprint = function() {
                     setTimeout(() => {
-                        window.location.replace('${data.returnUrl || '/helpdesk'}');
+                        window.location.replace('${data.returnUrl || "/helpdesk"}');
                     }, 500);
                 };
             </script>
             <div class="no-print">
-                <button onclick="window.location.replace('${data.returnUrl || '/helpdesk'}')" class="return-btn">
+                <button onclick="window.location.replace('${data.returnUrl || "/helpdesk"}')" class="return-btn">
                     ← BACK TO HOSPITAL DASHBOARD
                 </button>
             </div>
             <div class="header">
               <h1 style="color: #9333ea; margin: 0; font-size: 24px;">LAB REQUISITION</h1>
-              <h2 style="margin: 8px 0; font-size: 18px;">${hospital.name || 'CureChain Medical Center'}</h2>
+              <h2 style="margin: 8px 0; font-size: 18px;">${hospital.name || "CureChain Medical Center"}</h2>
               <p style="margin: 4px 0; font-size: 12px; color: #6b7280;">Department of Pathology & Radiodiagnosis</p>
               <div class="token-badge" style="margin-top: 12px;">
                 <p style="margin: 0; font-size: 10px; opacity: 0.7;">TOKEN</p>
                 <p style="margin: 0; font-size: 24px; font-weight: bold;">${labToken.tokenNumber}</p>
               </div>
-              <p style="margin-top: 8px; font-size: 12px;"><strong>Date:</strong> ${new Date(labToken.createdAt).toLocaleDateString('en-GB')}</p>
+              <p style="margin-top: 8px; font-size: 12px;"><strong>Date:</strong> ${new Date(labToken.createdAt).toLocaleDateString("en-GB")}</p>
               <span class="priority priority-${priority}">${priority}</span>
             </div>
             
             <div style="background: #f9fafb; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
               <p style="margin: 4px 0;"><strong>Patient:</strong> ${patientName}</p>
               <p style="margin: 4px 0;"><strong>Age/Gender:</strong> ${ageDisplay} / ${genderDisplay}</p>
-              <p style="margin: 4px 0;"><strong>MRN:</strong> ${patient.mrn || 'N/A'}</p>
+              <p style="margin: 4px 0;"><strong>MRN:</strong> ${patient.mrn || "N/A"}</p>
               <p style="margin: 4px 0;"><strong>Ordering Physician:</strong> ${formatDoctorName(doctor.name)}</p>
             </div>
 
@@ -1372,22 +1494,31 @@ export const generateLabTokenHtml = (data: any) => {
                 </tr>
               </thead>
               <tbody>
-                ${tests.filter((t: any) => t.name.trim()).map((test: any, idx: number) => `
+                ${tests
+                  .filter((t: any) => t.name.trim())
+                  .map(
+                    (test: any, idx: number) => `
                   <tr>
                     <td>${idx + 1}</td>
                     <td style="font-weight: bold;">${test.name}</td>
                     <td>${test.category}</td>
-                    <td style="font-style: italic; color: #6b7280;">${test.instructions || 'Standard'}</td>
+                    <td style="font-style: italic; color: #6b7280;">${test.instructions || "Standard"}</td>
                     <td style="text-align: right; font-weight: 600;">₹${(parseFloat(String(test.price || test.testPrice || test.amount || test.test?.price || test.testId?.price || 0)) || 0).toFixed(2)}</td>
                   </tr>
-                `).join('')}
+                `,
+                  )
+                  .join("")}
               </tbody>
             </table>
 
-            ${notes ? `<div style="background: #fef3c7; padding: 12px; border-left: 4px solid #f59e0b; margin: 16px 0;">
+            ${
+              notes
+                ? `<div style="background: #fef3c7; padding: 12px; border-left: 4px solid #f59e0b; margin: 16px 0;">
               <p style="margin: 0; font-weight: bold; font-size: 12px;">Physician Remarks:</p>
               <p style="margin: 4px 0 0 0; font-style: italic;">${notes}</p>
-            </div>` : ''}
+            </div>`
+                : ""
+            }
 
             <div style="text-align: right; margin-top: 50px;">
               <div style="width: 200px; border-bottom: 1.5px solid #000; margin-left: auto; margin-bottom: 6px;"></div>
@@ -1404,7 +1535,9 @@ export const generateLabTokenHtml = (data: any) => {
 
 export const generateQualityReportHtml = (data: any) => {
   const { metrics, trends, month, year, hospital } = data;
-  const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date(year, month - 1));
+  const monthName = new Intl.DateTimeFormat("en-US", { month: "long" }).format(
+    new Date(year, month - 1),
+  );
   const indicators = metrics?.indicators || {};
   const gaps = metrics?.dataGaps || {};
 
@@ -1462,14 +1595,14 @@ export const generateQualityReportHtml = (data: any) => {
     </script>
     <body onload="window.print();">
       <div class="header">
-        <h1 class="title">${hospital?.name || 'CureChain Hospital'}</h1>
+        <h1 class="title">${hospital?.name || "CureChain Hospital"}</h1>
         <div class="subtitle">NABH Quality Indicator Audit Report</div>
       </div>
 
       <div class="meta-grid">
         <div class="meta-item">
           <label>Hospital Unit</label>
-          <value>${hospital?.name || 'CureChain Hospital'}</value>
+          <value>${hospital?.name || "CureChain Hospital"}</value>
         </div>
         <div class="meta-item">
           <label>Report Period</label>
@@ -1477,11 +1610,11 @@ export const generateQualityReportHtml = (data: any) => {
         </div>
         <div class="meta-item">
           <label>Governance Status</label>
-          <value>${metrics?.status === 'locked' ? 'FINALIZED & VERIFIED' : 'OPEN FOR REVIEW'}</value>
+          <value>${metrics?.status === "locked" ? "FINALIZED & VERIFIED" : "OPEN FOR REVIEW"}</value>
         </div>
         <div class="meta-item">
           <label>Verified By</label>
-          <value>${metrics?.lockedBy?.name || 'Pending'}</value>
+          <value>${metrics?.lockedBy?.name || "Pending"}</value>
         </div>
       </div>
 
@@ -1492,7 +1625,7 @@ export const generateQualityReportHtml = (data: any) => {
         </div>
         <div style="text-align: right;">
           <div class="score-label">Total Data Gaps</div>
-          <div class="score-val" style="color: ${(gaps.missingDiagnoses || 0) + (gaps.untrackedInfections || 0) + (gaps.emptyArrivalTimes || 0) > 0 ? '#ef4444' : '#16a34a'};">
+          <div class="score-val" style="color: ${(gaps.missingDiagnoses || 0) + (gaps.untrackedInfections || 0) + (gaps.emptyArrivalTimes || 0) > 0 ? "#ef4444" : "#16a34a"};">
             ${(gaps.missingDiagnoses || 0) + (gaps.untrackedInfections || 0) + (gaps.emptyArrivalTimes || 0)}
           </div>
         </div>
@@ -1513,37 +1646,37 @@ export const generateQualityReportHtml = (data: any) => {
             <td><strong>OPD Waiting Time</strong><br><span style="color:#64748b; font-size:8px">Registration to Consultation</span></td>
             <td>&lt; 30 min</td>
             <td style="font-weight:700">${indicators.opdWaitingTime || 0} min</td>
-            <td><span class="status-text ${indicators.opdWaitingTime < 30 ? 'success' : 'danger'}">${indicators.opdWaitingTime < 30 ? 'COMPLIANT' : 'NON-COMPLIANT'}</span></td>
+            <td><span class="status-text ${indicators.opdWaitingTime < 30 ? "success" : "danger"}">${indicators.opdWaitingTime < 30 ? "COMPLIANT" : "NON-COMPLIANT"}</span></td>
           </tr>
           <tr>
             <td><strong>Bed Occupancy Rate</strong><br><span style="color:#64748b; font-size:8px">Utilized vs Available Beds</span></td>
             <td>80-90%</td>
             <td style="font-weight:700">${indicators.bedOccupancyRate || 0}%</td>
-            <td><span class="status-text ${indicators.bedOccupancyRate > 80 ? 'success' : 'danger'}">${indicators.bedOccupancyRate > 80 ? 'OPTIMAL' : 'LOW'}</span></td>
+            <td><span class="status-text ${indicators.bedOccupancyRate > 80 ? "success" : "danger"}">${indicators.bedOccupancyRate > 80 ? "OPTIMAL" : "LOW"}</span></td>
           </tr>
           <tr>
             <td><strong>Avg Length of Stay (ALOS)</strong><br><span style="color:#64748b; font-size:8px">Admission to Discharge</span></td>
             <td>&lt; 5 days</td>
             <td style="font-weight:700">${indicators.alos || 0} days</td>
-            <td><span class="status-text ${indicators.alos < 5 ? 'success' : 'danger'}">${indicators.alos < 5 ? 'COMPLIANT' : 'NON-COMPLIANT'}</span></td>
+            <td><span class="status-text ${indicators.alos < 5 ? "success" : "danger"}">${indicators.alos < 5 ? "COMPLIANT" : "NON-COMPLIANT"}</span></td>
           </tr>
           <tr>
             <td><strong>Billing TAT</strong><br><span style="color:#64748b; font-size:8px">Discharge Advice to Settlement</span></td>
             <td>&lt; 180 min</td>
             <td style="font-weight:700">${indicators.billingTat || 0} min</td>
-            <td><span class="status-text ${indicators.billingTat < 180 ? 'success' : 'danger'}">${indicators.billingTat < 180 ? 'COMPLIANT' : 'NON-COMPLIANT'}</span></td>
+            <td><span class="status-text ${indicators.billingTat < 180 ? "success" : "danger"}">${indicators.billingTat < 180 ? "COMPLIANT" : "NON-COMPLIANT"}</span></td>
           </tr>
           <tr>
             <td><strong>Infection Rate</strong><br><span style="color:#64748b; font-size:8px">HCAI per 1000 Patient Days</span></td>
             <td>&lt; 1.0‰</td>
             <td style="font-weight:700">${indicators.infectionRate || 0}‰</td>
-            <td><span class="status-text ${indicators.infectionRate < 1 ? 'success' : 'danger'}">${indicators.infectionRate < 1 ? 'COMPLIANT' : 'NON-COMPLIANT'}</span></td>
+            <td><span class="status-text ${indicators.infectionRate < 1 ? "success" : "danger"}">${indicators.infectionRate < 1 ? "COMPLIANT" : "NON-COMPLIANT"}</span></td>
           </tr>
           <tr>
             <td><strong>Readmission Rate</strong><br><span style="color:#64748b; font-size:8px">Same Diagnosis within 30 days</span></td>
             <td>&lt; 5%</td>
             <td style="font-weight:700">${indicators.readmissionRate || 0}%</td>
-            <td><span class="status-text ${indicators.readmissionRate < 5 ? 'success' : 'danger'}">${indicators.readmissionRate < 5 ? 'COMPLIANT' : 'NON-COMPLIANT'}</span></td>
+            <td><span class="status-text ${indicators.readmissionRate < 5 ? "success" : "danger"}">${indicators.readmissionRate < 5 ? "COMPLIANT" : "NON-COMPLIANT"}</span></td>
           </tr>
         </tbody>
       </table>
@@ -1561,17 +1694,17 @@ export const generateQualityReportHtml = (data: any) => {
           <tr>
             <td>Missing Discharge Diagnoses</td>
             <td>${gaps.missingDiagnoses || 0}</td>
-            <td><span class="status-text ${gaps.missingDiagnoses > 0 ? 'danger' : 'success'}">${gaps.missingDiagnoses > 0 ? 'HIGH' : 'NONE'}</span></td>
+            <td><span class="status-text ${gaps.missingDiagnoses > 0 ? "danger" : "success"}">${gaps.missingDiagnoses > 0 ? "HIGH" : "NONE"}</span></td>
           </tr>
           <tr>
             <td>Untracked Surgical Infections</td>
             <td>${gaps.untrackedInfections || 0}</td>
-            <td><span class="status-text ${gaps.untrackedInfections > 0 ? 'danger' : 'success'}">${gaps.untrackedInfections > 0 ? 'CRITICAL' : 'NONE'}</span></td>
+            <td><span class="status-text ${gaps.untrackedInfections > 0 ? "danger" : "success"}">${gaps.untrackedInfections > 0 ? "CRITICAL" : "NONE"}</span></td>
           </tr>
           <tr>
             <td>Empty OPD Arrival Timestamps</td>
             <td>${gaps.emptyArrivalTimes || 0}</td>
-            <td><span class="status-text ${gaps.emptyArrivalTimes > 0 ? 'warning' : 'success'}">${gaps.emptyArrivalTimes > 0 ? 'LOW' : 'NONE'}</span></td>
+            <td><span class="status-text ${gaps.emptyArrivalTimes > 0 ? "warning" : "success"}">${gaps.emptyArrivalTimes > 0 ? "LOW" : "NONE"}</span></td>
           </tr>
         </tbody>
       </table>

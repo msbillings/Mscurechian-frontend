@@ -194,6 +194,9 @@ export const doctorService = {
       method: "DELETE",
     }),
 
-  getPausedAppointments: () =>
-    apiClient<{ appointments: any[] }>("/doctor/appointments/paused"),
+  searchPatients: (query: string) => {
+    return apiClient<any>(
+      `/helpdesk/patients/search?search=${encodeURIComponent(query)}`,
+    );
+  },
 };

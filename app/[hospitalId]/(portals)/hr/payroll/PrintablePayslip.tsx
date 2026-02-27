@@ -45,7 +45,7 @@ interface PrintablePayslipProps {
 
 export const PrintablePayslip = React.forwardRef<HTMLDivElement, PrintablePayslipProps>(({ payroll, hospital }, ref) => {
   const rx = payroll || {};
-  const h = hospital || { name: 'Institutional Healthcare', address: 'Hospital Complex', phone: '91-0000000000', email: 'admin@hospital.com' };
+  const h = hospital || { name: 'Institutional Healthcare', address: 'Hospital Complex', phone: '91-0000000000', email: 'admin@hospital.com', logo: '' };
   const u = rx.user || {};
   const b = rx.breakdown || {};
   const c = rx.ctc || {};

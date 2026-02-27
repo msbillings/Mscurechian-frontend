@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Plus,
@@ -16,11 +16,26 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { doctorService } from '@/lib/integrations/services/doctor.service';
+import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 import { apiClient } from '@/lib/integrations/api/apiClient';
 import { DOCTOR_ENDPOINTS } from '@/lib/integrations/config/endpoints';
 import { getAppointmentDetailsAction, getDoctorProfileAction } from '@/lib/integrations/actions/doctor.actions';
+import { useQuery } from '@tanstack/react-query';
+import { renderToStaticMarkup } from 'react-dom/server';
+import MainHeader from '@/components/printers/MainHeader';
+import MainFooter from '@/components/printers/MainFooter';
 
-function CreateLabTokenPage() {
+function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }> }) {
+  const resolvedParams = use(params);
+  const hospitalIdFromParams = resolvedParams.hospitalId;
+  
+  // --- Hospital Data ---
+  const { data: hospitalDataRaw } = useQuery({
+    queryKey: ['hospitalDetails'],
+    queryFn: () => hospitalAdminService.getHospital(),
+  });
+  const hospitalData = hospitalDataRaw?.hospital;
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const appointmentId = searchParams.get('appointmentId');
@@ -222,88 +237,138 @@ function CreateLabTokenPage() {
         // Calculate billing
         calculateBilling();
 
+        // Helper to get hospital details for printing
+        const initialHospitalDetails = {
+          name: hospitalData?.name || doctorData?.hospital?.name || 'KADAPA MULTI-SPECIALITY',
+          address: hospitalData?.address || doctorData?.hospital?.address || 'RIMS ROAD, PUTLAMPALLI, KADAPA, AP',
+          phone: hospitalData?.phone || doctorData?.hospital?.phone || '+91 8562 245555',
+          email: hospitalData?.email || doctorData?.hospital?.email || 'hospital@example.com',
+          logo: hospitalData?.logo || doctorData?.hospital?.logo
+        };
+
+        const headerHtml = renderToStaticMarkup(<MainHeader initialDetails={initialHospitalDetails} />);
+        const footerHtml = renderToStaticMarkup(<MainFooter initialDetails={initialHospitalDetails} />);
+
         // Generate Lab Token HTML
         const labTokenHtml = `
           <!DOCTYPE html>
           <html>
           <head>
-            <title>Lab Token</title>
+            <title>Lab Token - ${genTokenNumber}</title>
             <meta charset="UTF-8">
             <style>
+              @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
               @media print {
                 @page { size: A4; margin: 0; }
-                body { margin: 0; padding: 12mm 15mm 12mm 25mm; }
+                body { margin: 0; padding: 0; }
               }
-              body { font-family: Arial, sans-serif; background: white; }
-              .header { text-align: center; border-bottom: 4px solid #9333ea; padding-bottom: 10px; margin-bottom: 20px; }
-              .token-badge { background: #1f2937; color: white; padding: 8px 16px; border-radius: 8px; display: inline-block; }
-              table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-              th, td { border: 1px solid #e5e7eb; padding: 10px; text-align: left; }
-              th { background: #f9fafb; font-weight: bold; }
-              .priority { padding: 4px 12px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
-              .priority-stat { background: #dc2626; color: white; }
-              .priority-urgent { background: #f97316; color: white; }
-              .priority-routine { background: #2563eb; color: white; }
+              body { 
+                font-family: 'Inter', Arial, sans-serif; 
+                background: white; 
+                margin: 0;
+                padding: 0;
+              }
+              .container {
+                width: 210mm;
+                height: 296mm;
+                margin: 0 auto;
+                padding: 10mm 15mm 10mm 25mm;
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
+                background: white;
+                overflow: hidden;
+              }
+              .content { flex: 1; }
+              .title-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
+              .title { color: #1e40af; margin: 0; font-size: 22px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
+              .token-id { background: #1f2937; color: white; padding: 6px 14px; border-radius: 8px; font-family: monospace; font-weight: 900; font-size: 16px; }
+              .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #eef2f6; }
+              .info-item { display: flex; flex-direction: column; gap: 2px; }
+              .info-label { font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+              .info-value { font-size: 13px; font-weight: 700; color: #1e293b; }
+              table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+              th { text-align: left; font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; padding: 10px; border-bottom: 2px solid #f1f5f9; }
+              td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+              .test-name { font-weight: 700; color: #1e293b; }
+              .priority-badge { font-size: 9px; font-weight: 900; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
+              .priority-stat { background: #fee2e2; color: #dc2626; }
+              .priority-urgent { background: #ffedd5; color: #f97316; }
+              .priority-routine { background: #dbeafe; color: #2563eb; }
+              .remarks-box { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 12px; margin-top: 20px; border-radius: 0 8px 8px 0; }
+              .remarks-title { font-size: 9px; font-weight: 800; color: #b45309; text-transform: uppercase; margin-bottom: 4px; }
+              .remarks-text { font-size: 11px; font-style: italic; color: #92400e; margin: 0; }
+              .signature-section { margin-top: 30px; text-align: right; }
+              .signature-name { font-size: 13px; font-weight: 800; color: #1e293b; margin: 0; }
+              .signature-desc { font-size: 10px; color: #64748b; margin: 0; }
             </style>
           </head>
           <body>
-            <div class="header">
-              <h1 style="color: #9333ea; margin: 0; font-size: 24px;">LAB REQUISITION</h1>
-              <h2 style="margin: 8px 0; font-size: 18px;">${doctorData?.hospital?.name || 'RIMS Government General Hospital Kadapa'}</h2>
-              <p style="margin: 2px 0; font-size: 10px; color: #6b7280;">${doctorData?.hospital?.address || 'RIMS Road, Putlampalli, Kadapa, Andhra Pradesh'}</p>
-              <p style="margin: 2px 0; font-size: 10px; color: #6b7280;">Phone: ${doctorData?.hospital?.phone || '08562-245555'}</p>
-              <p style="margin: 4px 0; font-size: 12px; color: #9333ea; font-weight: bold;">Department of Pathology & Radiodiagnosis</p>
-              <div class="token-badge" style="margin-top: 12px;">
-                <p style="margin: 0; font-size: 10px; opacity: 0.7;">TOKEN</p>
-                <p style="margin: 0; font-size: 24px; font-weight: bold;">${genTokenNumber}</p>
+            <div class="container">
+              ${headerHtml}
+              <div class="content">
+                <div class="title-row">
+                  <h1 class="title">Lab Requisition</h1>
+                  <div class="token-id">${genTokenNumber}</div>
+                </div>
+                
+                <div class="info-grid">
+                  <div class="info-item">
+                    <span class="info-label">Patient Name</span>
+                    <span class="info-value">${patientData?.personal?.name || patientData?.name || 'N/A'}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">MRN Number</span>
+                    <span class="info-value">${patientData?.mrn || patientData?.personal?.mrn || 'N/A'}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Age / Gender</span>
+                    <span class="info-value">${patientData?.age || patientData?.personal?.age || 'N/A'}Y / ${patientData?.gender || patientData?.personal?.gender || 'N/A'}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Date & Priority</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span class="info-value">${new Date().toLocaleDateString('en-GB')}</span>
+                      <span class="priority-badge priority-${priority}">${priority}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <h3 style="font-size: 10px; font-weight: 800; color: #1e40af; text-transform: uppercase; margin: 20px 0 10px 0;">Requested Investigations</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="width: 40px;">#</th>
+                      <th>Investigation Description</th>
+                      <th>Category</th>
+                      <th>Clinic Instructions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${tests.filter(t => t.name.trim()).map((test, idx) => `
+                      <tr>
+                        <td style="color: #94a3b8; font-weight: 600;">${idx + 1}</td>
+                        <td class="test-name">${test.name}</td>
+                        <td style="color: #64748b;">${test.category}</td>
+                        <td style="font-style: italic; color: #94a3b8; font-size: 11px;">${test.instructions || 'Standard Protocol'}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+
+                ${notes ? `
+                  <div class="remarks-box">
+                    <div class="remarks-title">Clinical Remarks / Notes</div>
+                    <p class="remarks-text">${notes}</p>
+                  </div>
+                ` : ''}
+
+                <div class="signature-section">
+                   <p class="signature-name">Dr. ${doctorName || doctorData?.user?.name || 'N/A'}</p>
+                   <p class="signature-desc">${doctorData?.designation || doctorData?.specialties?.[0] || 'Medical Officer'}</p>
+                </div>
               </div>
-              <p style="margin-top: 8px; font-size: 12px;"><strong>Date:</strong> ${new Date().toLocaleDateString('en-GB')}</p>
-              <span class="priority priority-${priority}">${priority}</span>
-            </div>
-            
-            <div style="background: #f9fafb; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
-              <p style="margin: 4px 0;"><strong>Patient:</strong> ${patientData?.personal?.name || patientData?.name || 'N/A'}</p>
-              <p style="margin: 4px 0;"><strong>Age/Gender:</strong> ${patientData?.age || patientData?.personal?.age || 'N/A'}Y / ${patientData?.gender || patientData?.personal?.gender || 'N/A'}</p>
-              <p style="margin: 4px 0;"><strong>MRN:</strong> ${patientData?.mrn || patientData?.personal?.mrn || 'N/A'}</p>
-              <p style="margin: 4px 0;"><strong>Ordering Physician:</strong> Dr. ${doctorName || doctorData?.user?.name || 'N/A'}</p>
-            </div>
-
-            <h3 style="color: #9333ea; font-size: 14px; margin-bottom: 12px;">CLINICAL INVESTIGATIONS</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Test Name</th>
-                  <th>Category</th>
-                  <th>Instructions</th>
-                  <th style="text-align: right;">Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${tests.filter(t => t.name.trim()).map((test, idx) => `
-                  <tr>
-                    <td>${idx + 1}</td>
-                    <td style="font-weight: bold;">${test.name}</td>
-                    <td>${test.category}</td>
-                    <td style="font-style: italic; color: #6b7280;">${test.instructions || 'Standard'}</td>
-                    <td style="text-align: right; font-weight: 600;">₹${(parseFloat(String(test.price)) || 0).toFixed(2)}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-
-            ${notes ? `<div style="background: #fef3c7; padding: 12px; border-left: 4px solid #f59e0b; margin: 16px 0;">
-              <p style="margin: 0; font-weight: bold; font-size: 12px;">Physician Remarks:</p>
-              <p style="margin: 4px 0 0 0; font-style: italic;">${notes}</p>
-            </div>` : ''}
-
-            <div style="text-align: right; margin-top: 40px;">
-              <p style="font-size: 12px; font-weight: bold; margin-bottom: 4px;">Dr. ${doctorName || doctorData?.user?.name || 'N/A'}</p>
-              <p style="font-size: 10px; color: #6b7280;">${doctorData?.designation || doctorData?.specialties?.[0] || ''}</p>
-            </div>
-
-            <div style="border-top: 1px solid #e5e7eb; margin-top: 40px; padding-top: 8px; text-align: center; font-size: 8px; color: #9ca3af;">
-              <p style="margin: 0;">Generated by MsCureChain • ${new Date().toLocaleString()}</p>
+              ${footerHtml}
             </div>
           </body>
           </html>
@@ -314,69 +379,101 @@ function CreateLabTokenPage() {
           <!DOCTYPE html>
           <html>
           <head>
-            <title>Lab Billing Receipt</title>
+            <title>Lab Billing - ${genTokenNumber}</title>
             <meta charset="UTF-8">
             <style>
+              @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
               @media print {
                 @page { size: A4; margin: 0; }
-                body { margin: 0; padding: 12mm 15mm; }
+                body { margin: 0; padding: 0; }
               }
-              body { font-family: Arial, sans-serif; background: white; }
-              .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 10px; margin-bottom: 20px; }
-              table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-              th, td { border: 1px solid #e5e7eb; padding: 10px; }
-              th { background: #f3f4f6; font-weight: bold; text-align: left; }
-              .summary { background: #f9fafb; padding: 16px; border-radius: 8px; max-width: 300px; margin-left: auto; }
+              body { 
+                font-family: 'Inter', Arial, sans-serif; 
+                background: white; 
+                margin: 0;
+                padding: 0;
+              }
+              .container {
+                width: 210mm;
+                height: 296mm;
+                margin: 0 auto;
+                padding: 10mm 15mm 10mm 25mm;
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
+                background: white;
+                overflow: hidden;
+              }
+              .content { flex: 1; }
+              .title { color: #1e40af; margin: 0 0 20px 0; font-size: 22px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; text-align: center; }
+              .info-row { display: flex; justify-content: space-between; margin-bottom: 25px; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #eef2f6; }
+              .info-column { display: flex; flex-direction: column; gap: 4px; }
+              .info-label { font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
+              .info-value { font-size: 13px; font-weight: 700; color: #1e293b; }
+              table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+              th { text-align: left; font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; padding: 12px; border-bottom: 2.5px solid #f1f5f9; }
+              td { padding: 15px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+              .test-name { font-weight: 700; color: #1e293b; }
+              .amount { font-weight: 700; text-align: right; }
+              .summary-box { margin-left: auto; width: 250px; margin-top: 30px; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #eef2f6; }
+              .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+              .summary-total { border-top: 2px solid #eef2f6; margin-top: 10px; padding-top: 10px; color: #16a34a; font-size: 18px; font-weight: 900; }
             </style>
           </head>
           <body>
-            <div class="header">
-              <h1 style="color: #2563eb; margin: 0; font-size: 24px;">LAB BILLING RECEIPT</h1>
-              <h2 style="margin: 8px 0; font-size: 18px;">${doctorData?.hospital?.name || 'RIMS Government General Hospital Kadapa'}</h2>
-              <p style="margin: 2px 0; font-size: 10px; color: #6b7280;">${doctorData?.hospital?.address || 'RIMS Road, Putlampalli, Kadapa, Andhra Pradesh'}</p>
-              <p style="margin: 2px 0; font-size: 10px; color: #6b7280;">Phone: ${doctorData?.hospital?.phone || '08562-245555'}</p>
-            </div>
-            
-            <div style="background: #f0f9ff; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
-              <p style="margin: 4px 0;"><strong>Patient:</strong> ${patientData?.personal?.name || patientData?.name || 'N/A'}</p>
-              <p style="margin: 4px 0;"><strong>MRN:</strong> ${patientData?.mrn || patientData?.personal?.mrn || 'N/A'}</p>
-              <p style="margin: 4px 0;"><strong>Date:</strong> ${new Date().toLocaleDateString('en-GB')}</p>
-              <p style="margin: 4px 0;"><strong>Token:</strong> ${genTokenNumber}</p>
-            </div>
+            <div class="container">
+              ${headerHtml}
+              <div class="content">
+                <h1 class="title">Billing Receipt</h1>
+                
+                <div class="info-row">
+                  <div class="info-column">
+                    <span class="info-label">Patient Details</span>
+                    <span class="info-value">${patientData?.personal?.name || patientData?.name || 'N/A'}</span>
+                    <span style="font-size: 11px; color: #64748b;">MRN: ${patientData?.mrn || 'N/A'}</span>
+                  </div>
+                  <div class="info-column" style="text-align: right;">
+                    <span class="info-label">Bill Information</span>
+                    <span class="info-value">TOKEN: ${genTokenNumber}</span>
+                    <span style="font-size: 11px; color: #64748b;">Date: ${new Date().toLocaleDateString('en-GB')}</span>
+                  </div>
+                </div>
 
-            <table>
-              <thead>
-                <tr>
-                  <th>Test Name</th>
-                  <th>Category</th>
-                  <th style="text-align: right;">Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${tests.filter(t => t.name.trim()).map(test => `
-                  <tr>
-                    <td style="font-weight: 600;">${test.name}</td>
-                    <td>${test.category}</td>
-                    <td style="text-align: right; font-weight: 600;">₹${(parseFloat(String(test.price)) || 0).toFixed(2)}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Investigation Item</th>
+                      <th>Category</th>
+                      <th style="text-align: right;">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${tests.filter(t => t.name.trim()).map(test => `
+                      <tr>
+                        <td class="test-name">${test.name}</td>
+                        <td style="color: #64748b;">${test.category}</td>
+                        <td class="amount">₹${(parseFloat(String(test.price)) || 0).toFixed(2)}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
 
-            <div class="summary">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                <span><strong>Subtotal:</strong></span>
-                <span style="font-weight: 600;">₹${subtotal.toFixed(2)}</span>
+                <div class="summary-box">
+                  <div class="summary-row">
+                    <span style="color: #64748b;">Subtotal</span>
+                    <span style="font-weight: 700;">₹${subtotal.toFixed(2)}</span>
+                  </div>
+                  <div class="summary-row summary-total">
+                    <span>Total Paid</span>
+                    <span>₹${total.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div style="margin-top: 40px; text-align: center;">
+                  <p style="font-size: 11px; color: #94a3b8; font-weight: 600;">This is a computer generated receipt and does not require a physical signature.</p>
+                </div>
               </div>
-              <div style="display: flex; justify-content: space-between; border-top: 2px solid #d1d5db; padding-top: 12px; margin-top: 12px; font-size: 16px;">
-                <span style="font-weight: bold;">Total Amount:</span>
-                <span style="font-weight: bold; color: #16a34a;">₹${total.toFixed(2)}</span>
-              </div>
-            </div>
-
-            <div style="border-top: 1px solid #e5e7eb; margin-top: 40px; padding-top: 12px; text-align: center; font-size: 10px; color: #9ca3af;">
-              <p style="margin: 0;">Thank you for choosing ${doctorData?.hospital?.name || 'RIMS Hospital'}</p>
-              <p style="margin: 4px 0 0 0;">Generated on: ${new Date().toLocaleString()}</p>
+              ${footerHtml}
             </div>
           </body>
           </html>
@@ -605,7 +702,7 @@ function CreateLabTokenPage() {
             <button
               onClick={handleSubmit}
               disabled={isSaving}
-              className="flex-[2] px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl shadow-lg shadow-purple-200 dark:shadow-none flex items-center justify-center gap-2 disabled:opacity-50"
+              className="flex-2 px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl shadow-lg shadow-purple-200 dark:shadow-none flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isSaving ? (
                 <>
