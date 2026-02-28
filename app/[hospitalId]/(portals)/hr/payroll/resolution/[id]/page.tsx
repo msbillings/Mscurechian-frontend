@@ -29,21 +29,14 @@ export default function PayrollResolutionPage() {
   const fetchFullAudit = async () => {
     try {
       setLoading(true);
-      const res = await hrService.getPayrollList();
-      const record = res.payrolls.find((p: any) => p._id === id);
+      const record = await hrService.getPayrollById(id as string);
       if (record) {
         setPayroll(record);
-        if (res.hospital) setHospital(res.hospital);
-        
-        try {
-          const sRes = await hrService.getStaffById(record.userId || record.user?._id);
-          setStaff(sRes.staff || sRes || {});
-        } catch (e) {
-          console.error("Staff fetch failed");
-        }
+        if (record.hospital) setHospital(record.hospital);
+        setStaff(record.user || {});
       }
     } catch (e) {
-      toast.error("Audit fetch failed");
+      toast.error("Audit protocol fetch failed");
     } finally {
       setLoading(false);
     }
@@ -92,10 +85,10 @@ export default function PayrollResolutionPage() {
             <h1 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Payroll Resolution Protocol</h1>
          </div>
          <div className="flex gap-3">
-            <button onClick={() => router.push(`/${hospitalId}/hr/payroll/resolution/${id}/edit`)} className="px-6 py-2.5 bg-gray-50 text-gray-700 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-gray-100 font-bold">
+            <button onClick={() => router.push(`/${hospitalId}/hr/payroll/resolution/${id}/edit`)} className="px-6 py-2.5 bg-gray-50 text-gray-700 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-gray-100">
                <Edit3 size={14} className="inline mr-2" /> Modify Entry
             </button>
-            <button onClick={handlePrint} className="px-8 py-2.5 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 active:scale-95 transition-all font-bold">
+            <button onClick={handlePrint} className="px-8 py-2.5 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 active:scale-95 transition-all">
                <Printer size={14} className="inline mr-2" /> Execute Print
             </button>
          </div>

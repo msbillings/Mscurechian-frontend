@@ -26,7 +26,8 @@ import {
     Stethoscope,
     RefreshCw,
     Building2,
-    Activity
+    Activity,
+    Camera,
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { staffService } from '@/lib/integrations/services/staff.service';
@@ -44,10 +45,60 @@ export default function NurseProfilePage() {
     const queryClient = useQueryClient();
 
     // Edit Modal State
-    const [editSection, setEditSection] = useState<string | null>(null); // 'personal', 'qualifications', 'financial', 'documents'
+    const [editSection, setEditSection] = useState<string | null>(null);
     const [editingData, setEditingData] = useState<any>(null);
     const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+
+    // Document Viewer State
+    const [docViewer, setDocViewer] = useState<{ url: string; label: string } | null>(null);
+
+    // Profile Picture Upload State
+    const [uploadingPic, setUploadingPic] = useState(false);
+
+    const handleProfilePicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+        if (!allowedTypes.includes(file.type)) {
+            toast.error('Please upload a JPG, PNG, or WEBP image');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('Image must be smaller than 5MB');
+            return;
+        }
+
+        try {
+            setUploadingPic(true);
+            // Step 1: Upload to Cloudinary via existing endpoint
+            const uploadRes = await staffService.uploadDocument(file, `profile_${Date.now()}`);
+            if (!uploadRes.success || !uploadRes.url) throw new Error('Upload failed');
+
+            // Step 2: Save image URL to user profile (backend /auth/me reads 'image' field)
+            await staffService.updateProfile({ image: uploadRes.url });
+
+            // Step 3: Update preview in edit modal
+            setEditingData((prev: any) => ({ ...prev, previewImage: uploadRes.url }));
+
+            // Step 4: Update local profile state so avatar shows immediately
+            if (profile) {
+                setProfile({
+                    ...profile,
+                    user: { ...profile.user, image: uploadRes.url } as any,
+                });
+            }
+
+            toast.success('Profile picture updated!');
+            queryClient.invalidateQueries({ queryKey: ['staff-profile', 'my'] });
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to upload profile picture');
+        } finally {
+            setUploadingPic(false);
+            e.target.value = '';
+        }
+    };
 
     const { data: profileRes, isLoading: loadingProfile } = useQuery({
         queryKey: ['staff-profile', 'my'],
@@ -74,9 +125,12 @@ export default function NurseProfilePage() {
             data.designation = profile.designation;
         } else if (section === 'financial') {
             data.bankDetails = { ...profile.bankDetails };
-            data.panNumber = profile.panNumber;
-            data.pfNumber = profile.pfNumber;
+            data.panNumber = profile.panNumber || '';
+            data.pfNumber = profile.pfNumber || '';
             data.baseSalary = profile.baseSalary || '';
+            data.aadharNumber = (profile as any).aadharNumber || '';
+            data.esiNumber = (profile as any).esiNumber || '';
+            data.uanNumber = (profile as any).uanNumber || '';
         } else if (section === 'qualifications') {
             data.qualifications = [...(profile.qualificationDetails?.qualifications || [])];
             data.licenseValidityDate = profile.qualificationDetails?.licenseValidityDate || '';
@@ -243,9 +297,14 @@ export default function NurseProfilePage() {
 
                     <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-8 text-center sm:text-left">
                         <div className="shrink-0">
+                            {/* Static Avatar — upload is done via Edit Personal */}
                             <div className="w-20 h-20 sm:w-32 sm:h-32 rounded-2xl sm:rounded-[24px] bg-slate-100 border-2 sm:border-4 border-white shadow-lg overflow-hidden flex items-center justify-center text-slate-300">
-                                {(profile.user as any).image ? (
-                                    <img src={(profile.user as any).image} alt="Profile" className="w-full h-full object-cover" />
+                                {((profile.user as any).image || (profile.user as any).avatar) ? (
+                                    <img
+                                        src={(profile.user as any).image || (profile.user as any).avatar}
+                                        alt="Profile"
+                                        className="w-full h-full object-cover"
+                                    />
                                 ) : <User size={32} className="sm:size-[48px]" />}
                             </div>
                         </div>
@@ -350,16 +409,19 @@ export default function NurseProfilePage() {
                             label="Degree / Certificate"
                             doc={profile.documents?.degreeCertificate}
                             onUpload={(e: any) => handleFileUpload(e, 'degreeCertificate')}
+                            onView={(url: string) => setDocViewer({ url, label: 'Degree / Certificate' })}
                         />
                         <DocUploadCard
                             label="Nursing Council Reg."
                             doc={profile.documents?.nursingCouncilRegistration}
                             onUpload={(e: any) => handleFileUpload(e, 'nursingCouncilRegistration')}
+                            onView={(url: string) => setDocViewer({ url, label: 'Nursing Council Reg.' })}
                         />
                         <DocUploadCard
                             label="Internship Completion"
                             doc={profile.documents?.internshipCertificate}
                             onUpload={(e: any) => handleFileUpload(e, 'internshipCertificate')}
+                            onView={(url: string) => setDocViewer({ url, label: 'Internship Completion' })}
                         />
                     </div>
                 </div>
@@ -391,6 +453,82 @@ export default function NurseProfilePage() {
 
             </div>
 
+            {/* DOCUMENT VIEWER MODAL */}
+            {docViewer && (
+                <div className="fixed inset-0 z-[200] flex flex-col bg-slate-900/90 backdrop-blur-md">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-6 py-4 bg-white/5 border-b border-white/10 shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
+                                <FileText size={18} className="text-white" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-white/50 uppercase tracking-widest">Document Preview</p>
+                                <p className="text-sm font-black text-white">{docViewer.label}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <a
+                                href={docViewer.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2"
+                            >
+                                <UploadCloud size={13} /> Open in Tab
+                            </a>
+                            <button
+                                onClick={() => setDocViewer(null)}
+                                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Viewer Body */}
+                    <div className="flex-1 overflow-auto p-2 sm:p-6 flex items-start justify-center">
+                        {(() => {
+                            const url = docViewer.url;
+                            // Detect image: Cloudinary image resource OR image file extension
+                            const isImage =
+                                url.match(/\.(jpg|jpeg|png|gif|webp)(\?|$)/i) ||
+                                (url.includes('cloudinary.com') && url.includes('/image/upload/'));
+
+                            if (isImage) {
+                                return (
+                                    <div className="max-w-4xl w-full">
+                                        <img
+                                            src={url}
+                                            alt={docViewer.label}
+                                            className="w-full rounded-2xl shadow-2xl border border-white/10 object-contain"
+                                        />
+                                    </div>
+                                );
+                            }
+
+                            // For PDFs and all other files — use Google Docs Viewer
+                            // This bypasses browser download behavior entirely
+                            const googleViewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+
+                            return (
+                                <div className="w-full max-w-5xl flex flex-col gap-3" style={{ height: 'calc(100vh - 160px)' }}>
+                                    <iframe
+                                        src={googleViewerUrl}
+                                        className="w-full flex-1 rounded-2xl border border-white/10 shadow-2xl bg-white"
+                                        title={docViewer.label}
+                                        style={{ height: 'calc(100vh - 200px)' }}
+                                        allow="fullscreen"
+                                    />
+                                    <p className="text-center text-white/30 text-[10px] font-bold uppercase tracking-widest">
+                                        If the document doesn&apos;t load, click &quot;Open in Tab&quot; above
+                                    </p>
+                                </div>
+                            );
+                        })()}
+                    </div>
+                </div>
+            )}
+
             {/* EDIT MODALS */}
             {editSection && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-md bg-slate-900/40">
@@ -403,10 +541,45 @@ export default function NurseProfilePage() {
 
                         <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
                             {editSection === 'personal' && (
-                                <>
-                                    <Input label="Full Name" value={editingData.name} onChange={(e: any) => handleFieldChange('name', e.target.value)} error={errors['name']} />
-                                    <Input label="Mobile Number" value={editingData.mobile} onChange={(e: any) => handleFieldChange('mobile', e.target.value)} error={errors['mobile']} />
-                                </>
+                                <div className="space-y-6">
+                                    {/* Profile Picture Upload */}
+                                    <div className="space-y-3">
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block">Profile Picture</label>
+                                        <div className="flex items-center gap-4">
+                                            {/* Current / Preview Avatar */}
+                                            <div className="w-16 h-16 rounded-2xl bg-slate-100 border-2 border-slate-200 overflow-hidden flex items-center justify-center text-slate-300 shrink-0">
+                                                {editingData.previewImage || (profile.user as any).image || (profile.user as any).avatar ? (
+                                                    <img
+                                                        src={editingData.previewImage || (profile.user as any).image || (profile.user as any).avatar}
+                                                        alt="Preview"
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : <User size={24} className="text-slate-300" />}
+                                            </div>
+                                            <div className="flex-1">
+                                                <label className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-800 transition-colors">
+                                                    {uploadingPic ? (
+                                                        <><Loader2 size={14} className="animate-spin" /> Uploading...</>
+                                                    ) : (
+                                                        <><Camera size={14} /> {((profile.user as any).image || (profile.user as any).avatar) ? 'Change Photo' : 'Upload Photo'}</>
+                                                    )}
+                                                    <input
+                                                        type="file"
+                                                        className="hidden"
+                                                        accept="image/jpeg,image/png,image/webp"
+                                                        disabled={uploadingPic}
+                                                        onChange={handleProfilePicUpload}
+                                                    />
+                                                </label>
+                                                <p className="text-[10px] text-slate-400 mt-1.5 text-center">JPG, PNG or WEBP · max 5MB</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t border-slate-100" />
+                                    <Input label="Full Name" value={editingData.name} onChange={(e: any) => setEditingData({ ...editingData, name: e.target.value })} />
+                                    <Input label="Mobile Number" value={editingData.mobile} onChange={(e: any) => setEditingData({ ...editingData, mobile: e.target.value })} />
+                                </div>
                             )}
 
                             {editSection === 'qualifications' && (
@@ -514,41 +687,41 @@ function SectionCard({ title, icon, children, onEdit }: any) {
     );
 }
 
-function DocUploadCard({ label, doc, onUpload }: any) {
+function DocUploadCard({ label, doc, onUpload, onView }: any) {
     const hasDoc = !!doc?.url;
 
     // Extract filename from URL or publicId
     const getFileName = () => {
         if (!hasDoc) return null;
         if (doc.publicId) {
-            // Extract filename from publicId (e.g., "documents/degreeCertificate_123456")
             const parts = doc.publicId.split('/');
             return parts[parts.length - 1];
         }
         if (doc.url) {
-            // Extract filename from URL
             const urlParts = doc.url.split('/');
-            return urlParts[urlParts.length - 1].split('?')[0]; // Remove query params
+            return urlParts[urlParts.length - 1].split('?')[0];
         }
         return null;
     };
 
-    // Transform Cloudinary URL to display PDF inline instead of downloading
+    // Build an inline-viewable URL for Cloudinary
     const getViewUrl = () => {
         if (!hasDoc || !doc.url) return '';
-
-        // For Cloudinary URLs, add fl_attachment:false to force inline display
         if (doc.url.includes('cloudinary.com')) {
-            // Replace 'upload/' with 'upload/fl_attachment:false/' to force inline viewing
-            return doc.url.replace('/upload/', '/upload/fl_attachment:false/');
+            // Force inline rendering — strip fl_attachment if present, then add fl_attachment:false
+            return doc.url
+                .replace('/upload/fl_attachment/', '/upload/')
+                .replace('/upload/', '/upload/fl_attachment:false/');
         }
-
-        // For non-Cloudinary URLs, return as-is
         return doc.url;
     };
 
     const fileName = getFileName();
     const viewUrl = getViewUrl();
+
+    const handleView = () => {
+        if (onView && viewUrl) onView(viewUrl);
+    };
 
     return (
         <div className="p-6 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center text-center hover:border-blue-300 transition-colors relative group">
@@ -568,7 +741,7 @@ function DocUploadCard({ label, doc, onUpload }: any) {
             <div className="flex gap-2 w-full">
                 {hasDoc && (
                     <button
-                        onClick={() => window.open(viewUrl, '_blank')}
+                        onClick={handleView}
                         className="flex-1 py-2 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1"
                     >
                         <FileText size={12} /> View

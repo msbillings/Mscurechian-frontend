@@ -23,19 +23,25 @@ export const PayrollEditModal: React.FC<PayrollEditModalProps> = ({ payroll, onC
     notes: payroll.notes || ""
   });
 
+  const monthDays = payroll.monthDays || 30;
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => {
         const newData = { ...prev, [name]: name === 'notes' ? value : Number(value) };
         
+        // Auto-calculate net salary if salary components change
         if (['baseSalary', 'totalAllowances', 'totalDeductions', 'absentDays'].includes(name)) {
-            const dayRate = newData.baseSalary / 30;
+            const dayRate = newData.baseSalary / monthDays;
             const penalty = newData.absentDays * dayRate;
             newData.netSalary = Math.max(0, Math.round((newData.baseSalary - penalty) + newData.totalAllowances - newData.totalDeductions));
         }
 
+        // Auto-calculate attendance days if presence changes
         if (['presentDays', 'leaveDays'].includes(name)) {
-            newData.attendanceDays = newData.presentDays + newData.leaveDays;
+            // Include weeklyOffDays from original record if not editable
+            const weeklyOffDays = (payroll.weeklyOffDays || 0);
+            newData.attendanceDays = newData.presentDays + newData.leaveDays + weeklyOffDays;
         }
 
         return newData;
@@ -45,11 +51,10 @@ export const PayrollEditModal: React.FC<PayrollEditModalProps> = ({ payroll, onC
   const handleFullPresent = () => {
     setFormData(prev => ({
         ...prev,
-        presentDays: 30,
+        presentDays: monthDays - (payroll.weeklyOffDays || 0) - (payroll.leaveDays || 0),
         absentDays: 0,
-        leaveDays: 0,
-        attendanceDays: 30,
-        netSalary: prev.baseSalary + prev.totalAllowances - prev.totalDeductions
+        attendanceDays: monthDays,
+        netSalary: Math.round(prev.baseSalary + prev.totalAllowances - prev.totalDeductions)
     }));
     toast.success("Reset to full presence");
   };

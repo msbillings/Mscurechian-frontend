@@ -293,19 +293,28 @@ export const hrService = {
   },
 
   // Payroll Management (mirrors hospital admin payroll)
-  getPayrollList: (startDate?: string, endDate?: string) => {
+  getPayroll: (
+    startDate?: string,
+    endDate?: string,
+    page: number = 1,
+    limit: number = 20,
+  ) => {
     let url = "/hr/payroll";
     const params = new URLSearchParams();
     if (startDate) params.append("startDate", startDate);
     if (endDate) params.append("endDate", endDate);
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
     if (params.toString()) url += `?${params.toString()}`;
     return apiClient<{ payrolls: any[]; pagination: any; hospital?: any }>(url);
   },
 
-  generatePayroll: (fromDate: string, toDate: string) =>
+  getPayrollById: (id: string) => apiClient<any>(`/hr/payroll/${id}`),
+
+  generatePayroll: (fromDate: string, toDate: string, userId?: string) =>
     apiClient<any>("/hr/payroll/generate", {
       method: "POST",
-      body: JSON.stringify({ fromDate, toDate }),
+      body: JSON.stringify({ fromDate, toDate, userId }),
     }),
 
   updatePayrollStatus: (
@@ -324,6 +333,52 @@ export const hrService = {
       method: "PUT",
       body: JSON.stringify(data),
     }),
+
+  deletePayroll: (id: string) =>
+    apiClient<any>(`/hr/payroll/${id}`, {
+      method: "DELETE",
+    }),
+
+  getEmployeePayrollStats: (
+    userId: string,
+    startDate: string,
+    endDate: string,
+  ) => {
+    const params = new URLSearchParams({ userId, startDate, endDate });
+    return apiClient<{
+      employee: any;
+      period: { startDate: string; endDate: string };
+      attendance: {
+        totalDays: number;
+        workingDays: number;
+        weeklyOffDays: number;
+        presentDays: number;
+        paidLeaveDays: number;
+        absentDays: number;
+        attendanceRecords: any[];
+      };
+      salary: {
+        monthlySalary: number;
+        dayRate: number;
+        earnedDays: number;
+        netPayable: number;
+      };
+      existingPayroll: any | null;
+    }>(`/hr/payroll/employee-stats?${params.toString()}`);
+  },
+
+  getDoctors: async () => {
+    const res = await apiClient<any>("/hr/staff?role=doctor");
+    return { doctors: res.data || [] };
+  },
+  getStaff: async () => {
+    const res = await apiClient<any>("/hr/staff?role=staff");
+    return { staff: res.data || [] };
+  },
+  getNurses: async () => {
+    const res = await apiClient<any>("/hr/staff?role=nurse");
+    return { nurses: res.data || [] };
+  },
 
   getStaffById: async (id: string) => {
     const res = await apiClient<any>(`/hr/staff/${id}`, { skipCache: true });
@@ -354,9 +409,10 @@ export const hrService = {
     const medical = Math.floor(gross * 0.05);
     const special = Math.max(0, gross - basic - hra - transport - medical);
 
-    const pf = options.hasPf ? Math.floor(basic * 0.12) : 0;
-    const esi = options.hasEsi && gross < 21000 ? Math.ceil(gross * 0.0075) : 0;
-    const pt = gross > 15000 ? 200 : 0;
+    // Statutory Deductions (REMOVED as per active institutional policy)
+    const pf = 0;
+    const esi = 0;
+    const pt = 0;
 
     const totalDeductions = pf + esi + pt;
     const net = gross - totalDeductions;

@@ -106,29 +106,29 @@ function AnalyticsPage() {
 
             if (data.appointmentTrend) {
                setChartData(data.appointmentTrend.map((d: any) => ({
-                  name: new Date(d.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
-                  count: d.appointments
+                   name: d.date ? new Date(d.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : "---",
+                   count: d.appointments || 0
                })));
             }
 
             // Real-time calculation for accuracy
             setStats((prev: any) => ({
                ...prev,
-               prescriptions: data.performanceMetrics.totalPrescriptions || 0,
-               labTokens: data.performanceMetrics.totalLabTokens || 0,
-               avgWaitTime: data.performanceMetrics.avgConsultationTime || "15m",
-               satisfaction: data.performanceMetrics.patientSatisfaction !== undefined ? data.performanceMetrics.patientSatisfaction.toFixed(1) : "---",
+               prescriptions: data.performanceMetrics?.totalPrescriptions || 0,
+               labTokens: data.performanceMetrics?.totalLabTokens || 0,
+               avgWaitTime: data.performanceMetrics?.avgConsultationTime || "15m",
+               satisfaction: data.performanceMetrics?.patientSatisfaction != null ? data.performanceMetrics.patientSatisfaction.toFixed(1) : "---",
             }));
 
             setDistribution({
-               opd: data.patientDistribution.opd || 0,
-               ipd: data.patientDistribution.ipd || 0,
-               male: data.genderDistribution.male || 0,
-               female: data.genderDistribution.female || 0,
-               other: data.genderDistribution.other || 0,
-               junior: data.ageDistribution.junior || 0,
-               adult: data.ageDistribution.adult || 0,
-               senior: data.ageDistribution.senior || 0
+               opd: data.patientDistribution?.opd || 0,
+               ipd: data.patientDistribution?.ipd || 0,
+               male: data.genderDistribution?.male || 0,
+               female: data.genderDistribution?.female || 0,
+               other: data.genderDistribution?.other || 0,
+               junior: data.ageDistribution?.junior || 0,
+               adult: data.ageDistribution?.adult || 0,
+               senior: data.ageDistribution?.senior || 0
             });
 
             setDiagnosisStats(data.diagnosisStats || []);
@@ -409,7 +409,7 @@ function AnalyticsPage() {
                { label: "Patient Satisfaction", value: `${stats.satisfaction}/5.0`, icon: Target, color: "rose", sub: "Patient Feedback" },
                { label: "Avg. Consult Time", value: stats.avgWaitTime, icon: Clock, color: "indigo", sub: "Time Efficiency" }
             ].map((stat, i) => (
-               <div key={i} className="relative group overflow-hidden bg-white dark:bg-card p-8 rounded-[0.5rem] border border-border-theme hover:border-primary-theme transition-all duration-500 shadow-sm">
+               <div key={i} className="relative group overflow-hidden bg-white dark:bg-card p-8 rounded-lg border border-border-theme hover:border-primary-theme transition-all duration-500 shadow-sm">
                   <div className="relative z-10">
                      <div className="flex items-center justify-between mb-6">
                         <div className={`p-3 rounded-2xl bg-${stat.color}-500/10 text-${stat.color}-500`}>

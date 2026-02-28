@@ -73,6 +73,7 @@ export const PrintablePayslip = React.forwardRef<HTMLDivElement, PrintablePaysli
 
       {/* 1. Header (Centered) */}
       <div className="text-center mb-1 flex flex-col items-center">
+        {/* Hospital Logo */}
         <div className="mb-0.5 flex flex-col items-center">
            {h.logo ? (
              <img src={h.logo} alt="Hospital Logo" className="h-12 w-auto mb-1 object-contain" />
@@ -159,6 +160,7 @@ export const PrintablePayslip = React.forwardRef<HTMLDivElement, PrintablePaysli
                </tr>
             </thead>
             <tbody>
+               {/* Data Rows - Standard Model */}
                {[
                  { el: 'BASIC SALARY', ev: b.basic, dl: 'PF', dv: b.pf },
                  { el: 'HRA', ev: b.hra, dl: 'ESI', dv: b.esi },
@@ -175,12 +177,14 @@ export const PrintablePayslip = React.forwardRef<HTMLDivElement, PrintablePaysli
                     <td className="p-0 px-0.5 text-right">{row.dv !== null ? (row.dv || 0).toLocaleString(undefined, {minimumFractionDigits:2}) : ''}</td>
                  </tr>
                ))}
+               {/* Totals Row */}
                <tr className="border-t border-black font-black uppercase">
                   <td className="border-r border-black p-0 px-0.5">Total Earnings</td>
                   <td className="border-r border-black p-0 px-0.5 text-right">{totalGross.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
                   <td className="border-r border-black p-0 px-0.5">Total Deductions</td>
                   <td className="p-0 px-0.5 text-right">{totalDeducts.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
                </tr>
+               {/* Net Pay Row */}
                <tr className="border-t border-black font-black">
                   <td className="p-0 px-0.5" colSpan={4}>
                      <div className="flex">
@@ -189,6 +193,7 @@ export const PrintablePayslip = React.forwardRef<HTMLDivElement, PrintablePaysli
                      </div>
                   </td>
                </tr>
+               {/* In Words Row */}
                <tr className="border-t border-black font-bold">
                   <td className="p-0 px-0.5" colSpan={4}>
                      <div className="flex">
@@ -201,9 +206,9 @@ export const PrintablePayslip = React.forwardRef<HTMLDivElement, PrintablePaysli
          </table>
       </div>
 
-      {/* 5. CTC Section */}
+      {/* 5. CTC Section (Exact Model) */}
       <div className="border-x border-b border-black">
-         <div className="border-b border-black p-0 font-black uppercase text-[10px]">Employer&apos;s Contribution (CTC)</div>
+         <div className="border-b border-black p-0 font-black uppercase text-[10px]">Employer's Contribution (CTC)</div>
          <table className="w-full border-collapse">
             <tbody>
                <tr>
@@ -211,7 +216,7 @@ export const PrintablePayslip = React.forwardRef<HTMLDivElement, PrintablePaysli
                   <td className="p-0 px-0.5 text-right w-[14%] font-bold">{totalGross.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
                </tr>
                <tr>
-                  <td className="border-r border-black p-0 px-0.5">EMPLOYER&apos;S PROVIDENT FUND</td>
+                  <td className="border-r border-black p-0 px-0.5">EMPLOYER'S PROVIDENT FUND</td>
                   <td className="p-0 px-0.5 text-right font-bold">{c.providentFund ? c.providentFund.toLocaleString() : 'Nil'}</td>
                </tr>
                <tr>
@@ -223,7 +228,7 @@ export const PrintablePayslip = React.forwardRef<HTMLDivElement, PrintablePaysli
                   <td className="p-0 px-0.5 text-right text-[7.2px] font-bold">Nil</td>
                </tr>
                <tr>
-                  <td className="border-r border-black p-0 px-0.5">EMPLOYER&apos;S STATE INSURANCE</td>
+                  <td className="border-r border-black p-0 px-0.5">EMPLOYER'S STATE INSURANCE</td>
                   <td className="p-0 px-0.5 text-right font-bold">{c.employerEsi ? c.employerEsi.toLocaleString() : 'Nil'}</td>
                </tr>
                <tr className="border-y border-black font-black uppercase text-right">
