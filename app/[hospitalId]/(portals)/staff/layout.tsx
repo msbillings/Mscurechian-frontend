@@ -275,7 +275,7 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
     const staffUser = {
         name: user?.name || "Staff Member",
         role: user?.role || "Staff",
-        image: (user as any)?.image || ""
+        image: (user as any)?.image ? `${(user as any).image}${(user as any).image.includes('?') ? '&' : '?'}t=${Date.now()}` : ""
     };
 
     return (

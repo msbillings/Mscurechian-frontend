@@ -181,7 +181,16 @@ export default function HospitalAdminNurses() {
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Department</p>
-                                            <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{nurse.department || 'General Facility'}</p>
+                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                {(Array.isArray(nurse.department)
+                                                    ? nurse.department
+                                                    : String(nurse.department || 'General Facility').split(',').map((d: string) => d.trim()).filter(Boolean)
+                                                ).map((dept: string, i: number) => (
+                                                    <span key={i} className="inline-block px-2 py-0.5 text-[10px] font-bold bg-emerald-50 text-emerald-700 rounded-md border border-emerald-100 uppercase tracking-wide">
+                                                        {dept}
+                                                    </span>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

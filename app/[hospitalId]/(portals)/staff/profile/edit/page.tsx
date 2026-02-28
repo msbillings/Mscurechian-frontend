@@ -6,40 +6,131 @@ import {
     User, Mail, Phone, Briefcase, Award,
     CreditCard, Building, Landmark, Wallet,
     Save, ArrowLeft, Image as ImageIcon, Plus, X,
-    Calendar, Clock, FileText, Upload, CheckCircle2, Eye
+    Calendar, Clock, FileText, Upload, CheckCircle2, Eye,
+    Shield
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getStaffProfileAction, updateStaffProfileAction } from '@/lib/integrations/actions/staff.actions';
+import { useAuthStore } from '@/stores/authStore';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- SHARED COMPONENTS ---
 const DocumentViewerModal = ({ isOpen, onClose, url, title }: any) => {
     if (!isOpen) return null;
+
+    // Build an inline-viewable URL for Cloudinary if needed
+    const getViewUrl = (originalUrl: string) => {
+        if (!originalUrl) return '';
+        if (originalUrl.includes('cloudinary.com')) {
+            return originalUrl
+                .replace('/upload/fl_attachment/', '/upload/')
+                .replace('/upload/', '/upload/fl_attachment:false/');
+        }
+        return originalUrl;
+    };
+
+    const viewUrl = getViewUrl(url);
+
     return (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-[#0a0a0a] w-full h-full sm:h-[90vh] sm:max-w-4xl sm:rounded-[2rem] overflow-hidden flex flex-col relative shadow-2xl">
-                <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-white/50 dark:bg-black/50 backdrop-blur-md sticky top-0 z-10">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-600">
-                            <FileText size={20} />
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-0 sm:p-6 bg-[#020617]/40 backdrop-blur-xl animate-in fade-in duration-300">
+            <div className="bg-white dark:bg-[#0a0a09] w-full h-full sm:h-[92vh] sm:max-w-5xl sm:rounded-[3rem] overflow-hidden flex flex-col relative shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)] border border-white/10">
+                <div className="p-6 sm:p-8 border-b border-gray-100 dark:border-gray-800/50 flex items-center justify-between bg-white/80 dark:bg-black/80 backdrop-blur-md sticky top-0 z-10">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-100 dark:border-indigo-500/20">
+                            <FileText size={24} />
                         </div>
-                        <h3 className="font-black text-xs sm:text-sm text-gray-900 dark:text-white uppercase tracking-widest truncate max-w-[200px] sm:max-w-md">{title}</h3>
+                        <div>
+                            <h3 className="font-black text-xs sm:text-sm text-gray-900 dark:text-white uppercase tracking-[0.2em] truncate max-w-[200px] sm:max-w-md">{title}</h3>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Institutional Document Vault</p>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="p-2 sm:p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-400 active:scale-90 transition-all">
+                    <button
+                        onClick={onClose}
+                        className="p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-2xl text-gray-400 active:scale-95 transition-all shadow-sm border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
+                    >
                         <X size={20} />
                     </button>
                 </div>
-                <div className="flex-1 overflow-auto bg-gray-50 dark:bg-[#050505] flex items-center justify-center">
-                    {url?.toLowerCase().includes('.pdf') || url?.toLowerCase().includes('raw') || url?.toLowerCase().includes('pdf') ? (
-                        <iframe src={`${url}#toolbar=0`} className="w-full h-full border-none" title={title} />
+                <div className="flex-1 overflow-auto bg-gray-50/50 dark:bg-[#050505] flex items-center justify-center p-4">
+                    {viewUrl?.toLowerCase().includes('.pdf') || viewUrl?.toLowerCase().includes('raw') || viewUrl?.toLowerCase().includes('pdf') ? (
+                        <div className="w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-gray-200/50 dark:border-gray-800/50">
+                            <iframe
+                                src={`https://docs.google.com/viewer?url=${encodeURIComponent(viewUrl)}&embedded=true`}
+                                className="w-full h-full border-none"
+                                title={title}
+                            />
+                        </div>
                     ) : (
-                        <img src={url} alt={title} className="max-w-full h-auto shadow-lg" />
+                        <div className="relative group p-4">
+                            <img src={viewUrl} alt={title} className="max-w-full h-auto shadow-2xl rounded-2xl border border-white/20" />
+                            <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-black/10 pointer-events-none" />
+                        </div>
                     )}
                 </div>
-                <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-black/50 text-center">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Institutional Secure Document Viewer</p>
+                <div className="p-4 border-t border-gray-100 dark:border-gray-800/50 bg-white/50 dark:bg-black/50 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                        <CheckCircle2 size={12} className="text-indigo-500" />
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Institutional Secure Document Viewer</p>
+                    </div>
                 </div>
             </div>
+        </div>
+    );
+};
+
+const DocUploadCard = ({ label, doc, onUpload, onView, isUploading }: any) => {
+    const hasDoc = !!doc?.url;
+
+    const fileName = doc?.name || (doc?.url ? doc.url.split('/').pop()?.split('?')[0] : null);
+    const fileSize = doc?.size ? (doc.size / 1024 / 1024).toFixed(2) + 'MB' : null;
+
+    return (
+        <div className={`p-6 rounded-[2rem] border-2 border-dashed transition-all relative group flex flex-col items-center text-center ${hasDoc
+                ? 'border-emerald-200/50 bg-emerald-50/10 dark:bg-emerald-500/5'
+                : 'border-gray-100 dark:border-gray-800 hover:border-indigo-300 dark:hover:border-indigo-500/50'
+            }`}>
+            <div className={`w-14 h-14 rounded-2xl mb-4 flex items-center justify-center shadow-sm border transition-all ${hasDoc
+                    ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 border-emerald-100 dark:border-emerald-500/20'
+                    : 'bg-gray-50 dark:bg-gray-800/50 text-gray-300 border-gray-100 dark:border-gray-800'
+                }`}>
+                {isUploading ? (
+                    <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                ) : hasDoc ? (
+                    <CheckCircle2 size={28} />
+                ) : (
+                    <FileText size={28} />
+                )}
+            </div>
+
+            <h4 className="text-[11px] font-black text-gray-900 dark:text-white uppercase tracking-widest mb-1">{label}</h4>
+
+            {hasDoc ? (
+                <div className="space-y-2 w-full">
+                    <p className="text-[9px] text-gray-500 font-bold truncate px-4" title={fileName}>
+                        {fileName} {fileSize && `• ${fileSize}`}
+                    </p>
+                    <div className="flex gap-2 justify-center pt-2">
+                        <button
+                            onClick={() => onView(doc.url, label)}
+                            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-gray-700 dark:text-gray-300"
+                        >
+                            <Eye size={14} /> View
+                        </button>
+                        <label className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-all text-indigo-600 cursor-pointer">
+                            <Upload size={14} /> Replace
+                            <input type="file" className="hidden" accept=".pdf,image/*,.doc,.docx" onChange={(e) => onUpload(e)} />
+                        </label>
+                    </div>
+                </div>
+            ) : (
+                <div className="space-y-4 w-full">
+                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">PDF, JPG, PNG or DOCX • Max 5MB</p>
+                    <label className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer shadow-xl shadow-gray-200 dark:shadow-none">
+                        <Upload size={14} /> Upload Now
+                        <input type="file" className="hidden" accept=".pdf,image/*,.doc,.docx" onChange={(e) => onUpload(e)} />
+                    </label>
+                </div>
+            )}
         </div>
     );
 };
@@ -48,6 +139,7 @@ export default function EditStaffProfilePage() {
     const router = useRouter();
     const params = useParams();
     const hospitalId = params?.hospitalId as string;
+    const { user, setUser, checkAuth } = useAuthStore();
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('personal');
@@ -132,17 +224,23 @@ export default function EditStaffProfilePage() {
                         deptString = matches ? [...new Set(matches)].join(', ') : dept;
                     }
 
+                    const safeToDateString = (date: any) => {
+                        if (!date) return '';
+                        const d = new Date(date);
+                        return (!isNaN(d.getTime())) ? d.toISOString().split('T')[0] : '';
+                    };
+
                     setFormData({
                         name: s.user?.name || '',
                         email: s.user?.email || '',
                         mobile: s.user?.mobile || '',
                         profilePic: (s.user as any)?.image || (s.user as any)?.profilePic || '',
                         gender: (s.user as any)?.gender || '',
-                        dateOfBirth: (s.user as any)?.dateOfBirth ? new Date((s.user as any).dateOfBirth).toISOString().split('T')[0] : '',
+                        dateOfBirth: safeToDateString((s.user as any)?.dateOfBirth),
                         designation: s.designation || '',
                         department: deptString,
                         employeeId: s.employeeId || '',
-                        joiningDate: s.joiningDate ? new Date(s.joiningDate).toISOString().split('T')[0] : '',
+                        joiningDate: safeToDateString(s.joiningDate),
                         experienceYears: s.experienceYears || '',
                         workingHours: {
                             start: s.workingHours?.start || '',
@@ -161,13 +259,14 @@ export default function EditStaffProfilePage() {
                         esiNumber: s.esiNumber || '',
                         uanNumber: s.uanNumber || '',
                         registrationNumber: s.qualificationDetails?.registrationNumber || '',
-                        licenseValidityDate: s.qualificationDetails?.licenseValidityDate ? new Date(s.qualificationDetails.licenseValidityDate).toISOString().split('T')[0] : '',
+                        licenseValidityDate: safeToDateString(s.qualificationDetails?.licenseValidityDate),
                         qualifications: s.qualificationDetails?.qualifications || [],
                         documents: s.documents || {}
                     });
                 }
-            } catch (error) {
-                toast.error('Failed to load profile');
+            } catch (error: any) {
+                console.error("LoadProfile Error:", error);
+                toast.error(error.message || 'Failed to load profile');
             } finally {
                 setLoading(false);
             }
@@ -365,9 +464,13 @@ export default function EditStaffProfilePage() {
 
             // Add all non-object fields
             Object.keys(formData).forEach(key => {
-                // VERY IMPORTANT: Do NOT send the binary preview string or the old URL as a text field for profilePic
-                // Multer expects profilePic to be a FILE, and sending it as both text and file causes "Unexpected field"
-                if (typeof formData[key] !== 'object' && key !== 'profilePic' && key !== 'profilepic' && key !== 'documents') {
+                // VERY IMPORTANT:
+                // 1. Do NOT send profilePic as text if it's currently a preview string or old URL
+                // 2. Do NOT send documents here as they are now handled via immediate upload
+                if (
+                    typeof formData[key] !== 'object' &&
+                    !['profilePic', 'profilepic', 'documents', 'degreeCertificate', 'medicalCouncilRegistration', 'nursingCouncilRegistration', 'doctorateCertificate', 'internshipCertificate'].includes(key)
+                ) {
                     formDataToSubmit.append(key, formData[key]);
                 }
             });
@@ -410,6 +513,19 @@ export default function EditStaffProfilePage() {
             const res = await updateStaffProfileAction(formDataToSubmit);
             if (res.success) {
                 toast.success('Profile updated successfully');
+
+                // ✅ MANUAL SYNC: Update the auth store with the new image URL (if it changed)
+                // We add a timestamp to bust browser/CDN cache
+                if (res.data && res.data.staff && setUser && user) {
+                    const newImage = res.data.staff.profilePic;
+                    if (newImage) {
+                        const cacheBustedImage = `${newImage}${newImage.includes('?') ? '&' : '?'}t=${Date.now()}`;
+                        setUser({ ...user, image: cacheBustedImage });
+                    }
+                }
+
+                // Force-refresh auth store as a backup
+                await checkAuth(true);
                 router.push(`/${hospitalId}/staff/profile`);
             } else {
                 toast.error(res.error || 'Failed to update profile');
@@ -687,63 +803,56 @@ export default function EditStaffProfilePage() {
 
                             <div className="pt-8 border-t border-gray-50 dark:border-gray-800">
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                                    <Upload className="text-indigo-500" /> Document Uploads
+                                    <Shield className="text-indigo-500" /> Institutional Credentials
                                 </h3>
-                                <div className="space-y-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {[
-                                        { id: 'degreeCertificate', label: 'Degree Certificate', key: 'degreeCertificate' },
-                                        { id: 'medicalCouncilRegistration', label: 'Medical Council Registration', key: 'medicalCouncilRegistration' },
-                                        { id: 'nursingCouncilRegistration', label: 'Nursing Council Registration', key: 'nursingCouncilRegistration' },
-                                        { id: 'doctorateCertificate', label: 'Doctorate Certificate', key: 'doctorateCertificate' },
-                                        { id: 'internshipCertificate', label: 'Internship Certificate', key: 'internshipCertificate' }
-                                    ].map((doc: any) => (
-                                        <div key={doc.id} className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 gap-4">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-500 shrink-0">
-                                                    <FileText size={20} className="sm:size-6" />
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <div className="flex items-center gap-2">
-                                                        <h4 className="font-bold text-xs sm:text-sm text-gray-900 dark:text-white truncate">{doc.label}</h4>
-                                                        {formData.documents?.[doc.key]?.url && (
-                                                            <span className="px-1.5 py-0.5 bg-green-50 dark:bg-green-900/20 text-green-600 text-[8px] font-black uppercase rounded-md border border-green-100">Uploaded</span>
-                                                        )}
-                                                    </div>
-                                                    {formData.documents?.[doc.key]?.name ? (
-                                                        <p className="text-[9px] sm:text-[10px] text-gray-400 font-bold break-all mt-0.5">
-                                                            {formData.documents[doc.key].name}
-                                                            {formData.documents[doc.key].size && ` (${(formData.documents[doc.key].size / 1024 / 1024).toFixed(2)}MB)`}
-                                                        </p>
-                                                    ) : (
-                                                        <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium">PDF, JPG, PNG or DOCX • Max 5MB</p>
-                                                    )}
-                                                </div>
-                                            </div>
+                                        { id: 'degreeCertificate', label: 'Degree Certificate' },
+                                        { id: 'medicalCouncilRegistration', label: 'Medical Council Registration' },
+                                        { id: 'nursingCouncilRegistration', label: 'Nursing Council Registration' },
+                                        { id: 'doctorateCertificate', label: 'Doctorate Certificate' },
+                                        { id: 'internshipCertificate', label: 'Internship Certificate' }
+                                    ].map((docType) => (
+                                        <DocUploadCard
+                                            key={docType.id}
+                                            label={docType.label}
+                                            doc={formData.documents?.[docType.id]}
+                                            isUploading={files[`uploading_${docType.id}`]}
+                                            onView={(url: string, title: string) => setViewer({ isOpen: true, url, title })}
+                                            onUpload={async (e: React.ChangeEvent<HTMLInputElement>) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
 
-                                            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                                                {formData.documents?.[doc.key]?.url && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setViewer({ isOpen: true, url: formData.documents[doc.key].url, title: doc.label })}
-                                                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-all border border-indigo-100 text-[10px] font-black uppercase tracking-widest"
-                                                    >
-                                                        <Eye size={14} /> View
-                                                    </button>
-                                                )}
-                                                <label className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all overflow-hidden">
-                                                    <Upload size={14} className="shrink-0" />
-                                                    <span className="truncate max-w-[120px] sm:max-w-[200px]">
-                                                        {files[doc.id] ? (
-                                                            <>
-                                                                {files[doc.id].name}
-                                                                <span className="ml-1 opacity-60">({(files[doc.id].size / 1024 / 1024).toFixed(2)}MB)</span>
-                                                            </>
-                                                        ) : 'Upload New'}
-                                                    </span>
-                                                    <input type="file" name={doc.id} onChange={handleFileChange} className="hidden" accept=".pdf,image/*,.doc,.docx" />
-                                                </label>
-                                            </div>
-                                        </div>
+                                                // Validate
+                                                if (file.size > 5 * 1024 * 1024) return toast.error("File exceeds 5MB");
+
+                                                try {
+                                                    setFiles(prev => ({ ...prev, [`uploading_${docType.id}`]: true as any }));
+                                                    const res = await updateStaffProfileAction({ [docType.id]: file });
+                                                    if (res.success) {
+                                                        toast.success(`${docType.label} updated`);
+                                                        // Update local state
+                                                        setFormData((prev: any) => ({
+                                                            ...prev,
+                                                            documents: {
+                                                                ...prev.documents,
+                                                                [docType.id]: res.data?.staff?.documents?.[docType.id]
+                                                            }
+                                                        }));
+                                                    } else {
+                                                        toast.error(res.error || "Upload failed");
+                                                    }
+                                                } catch (err) {
+                                                    toast.error("An error occurred");
+                                                } finally {
+                                                    setFiles(prev => {
+                                                        const n = { ...prev };
+                                                        delete n[`uploading_${docType.id}`];
+                                                        return n;
+                                                    });
+                                                }
+                                            }}
+                                        />
                                     ))}
                                 </div>
                             </div>

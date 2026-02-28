@@ -515,7 +515,7 @@ function HelpdeskDashboard() {
                   <div className="hidden sm:grid grid-cols-12 gap-3 px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-50">
                     <div className="col-span-1 border-r border-slate-100">#</div>
                     <div className="col-span-3">Patient Details</div>
-                    <div className="col-span-1 text-center whitespace-nowrap">{activeTab === 'history' ? 'Time' : 'Booked Time'}</div>
+                    <div className="col-span-1 text-center whitespace-nowrap">Time</div>
                     <div className="col-span-1 text-center">Type</div>
                     <div className="col-span-3">Assigned Doctor</div>
                     <div className="col-span-3 text-right pr-2">Status</div>

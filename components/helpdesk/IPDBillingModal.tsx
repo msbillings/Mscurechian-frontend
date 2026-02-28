@@ -345,14 +345,14 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                 <div className="space-y-6">
                                     <div className="flex justify-between items-center">
                                         <h3 className="text-xs font-black uppercase tracking-tight text-slate-700">Detailed Charges</h3>
-                                        {!summary?.isBillLocked && !showChargeForm && summary?.status !== 'Discharge Initiated' && (
+                                        {/* {!summary?.isBillLocked && !showChargeForm && summary?.status !== 'Discharge Initiated' && (
                                             <button
                                                 onClick={() => setShowChargeForm(true)}
                                                 className="px-4 py-2 bg-teal-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest flex items-center gap-2"
                                             >
                                                 <Plus size={14} /> New Charge
                                             </button>
-                                        )}
+                                        )} */}
                                     </div>
 
                                     {showChargeForm && (
@@ -468,14 +468,14 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                 <div className="space-y-6">
                                     <div className="flex justify-between items-center">
                                         <h3 className="text-xs font-black uppercase tracking-tight text-slate-700">Payment History</h3>
-                                        {!summary?.isBillLocked && !showAdvanceForm && (
+                                        {/* {!summary?.isBillLocked && !showAdvanceForm && (
                                             <button
                                                 onClick={() => setShowAdvanceForm(true)}
                                                 className="px-4 py-2 bg-teal-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest flex items-center gap-2"
                                             >
                                                 <Plus size={14} /> Record Payment
                                             </button>
-                                        )}
+                                        )} */}
                                     </div>
 
                                     {showAdvanceForm && (
