@@ -83,43 +83,51 @@ export const AttendanceButton: React.FC<AttendanceButtonProps> = ({ userRole, cl
   // Compact Mode (for headers)
   if (compact) {
     return (
-      <div className={`flex items-center gap-2 ${className}`}>
+      <div className={`flex items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-200 shadow-inner ${className}`}>
         {loading && !todayAttendance ? (
           <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/10 rounded-lg animate-pulse">
             <div className="w-3 h-3 border-2 border-primary-theme border-t-transparent rounded-full animate-spin" />
             <span className="text-[10px] font-bold text-muted uppercase">Syncing...</span>
           </div>
-        ) : hasCheckedIn && !hasCheckedOut ? (
+        ) : !hasCheckedIn ? (
+          <button
+            onClick={handleCheckIn}
+            disabled={checking}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-md active:scale-95 disabled:opacity-50 transition-all border border-emerald-500/20"
+          >
+            {checking ? (
+              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <LogIn size={14} strokeWidth={3} />
+            )}
+            Clock In
+          </button>
+        ) : !hasCheckedOut ? (
           <div className="flex items-center gap-2">
-            <div className="px-3 py-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">
-                Active: {new Date(todayAttendance?.checkIn?.time!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            <div className="px-3 py-2 bg-white border border-slate-200 rounded-lg flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+              <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest tabular-nums">
+                {todayAttendance?.checkIn?.time ? new Date(todayAttendance.checkIn.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
               </span>
             </div>
             <button
               onClick={handleCheckOut}
               disabled={checking}
-              className="px-4 py-1.5 bg-slate-900 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-2 transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 shadow-md active:scale-95 disabled:opacity-50 transition-all border border-rose-500/20"
             >
-              {checking ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <LogOut size={12} />}
+              {checking ? (
+                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <LogOut size={14} strokeWidth={3} />
+              )}
               Clock Out
             </button>
           </div>
-        ) : hasCheckedIn && hasCheckedOut ? (
-          <div className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg flex items-center gap-2 shadow-sm">
-            <CheckCircle2 size={12} />
-            <span className="text-[10px] font-black uppercase tracking-widest">Shift Done</span>
-          </div>
         ) : (
-          <button
-            onClick={handleCheckIn}
-            disabled={checking}
-            className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-blue-200 disabled:opacity-50"
-          >
-            {checking ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <LogIn size={12} />}
-            Clock In
-          </button>
+          <div className="flex items-center gap-2 px-4 py-2 bg-slate-200 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-300/50">
+            <CheckCircle2 size={14} strokeWidth={3} />
+            Shift Ended
+          </div>
         )}
       </div>
     );

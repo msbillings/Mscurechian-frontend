@@ -17,7 +17,8 @@ export interface StaffProfile {
   hospital: {
     _id: string;
     name: string;
-    code: string;
+    hospitalId: string;
+    address?: string;
   };
   designation: string;
   department?: string | string[];

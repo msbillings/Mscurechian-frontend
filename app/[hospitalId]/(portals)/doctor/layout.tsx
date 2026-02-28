@@ -262,7 +262,7 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
     const doctorUser = {
         name: user?.name || 'Doctor',
         role: 'doctor',
-        image: (user as any)?.image || '',
+        image: (user as any)?.image || (user as any)?.avatar || (user as any)?.profilePic || '',
     };
 
     const inpatientStats = {

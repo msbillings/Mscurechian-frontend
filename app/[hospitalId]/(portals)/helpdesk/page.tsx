@@ -18,13 +18,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
-import { 
-  useHelpdeskDashboard, 
-  useHelpdeskDoctors, 
-  useUpdateAppointmentStatus, 
-  useCheckIn, 
-  useCheckOut, 
-  useTodayStatus 
+import {
+  useHelpdeskDashboard,
+  useHelpdeskDoctors,
+  useUpdateAppointmentStatus,
+  useCheckIn,
+  useCheckOut,
+  useTodayStatus
 } from "@/lib/integrations/hooks";
 import { HelpdeskDashboardSkeleton } from "@/components/ui/skeletons";
 import { useAuthStore } from "@/stores/authStore";
@@ -515,7 +515,7 @@ function HelpdeskDashboard() {
                   <div className="hidden sm:grid grid-cols-12 gap-3 px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-50">
                     <div className="col-span-1 border-r border-slate-100">#</div>
                     <div className="col-span-3">Patient Details</div>
-                    <div className="col-span-1 text-center">Wait</div>
+                    <div className="col-span-1 text-center whitespace-nowrap">{activeTab === 'history' ? 'Time' : 'Booked Time'}</div>
                     <div className="col-span-1 text-center">Type</div>
                     <div className="col-span-3">Assigned Doctor</div>
                     <div className="col-span-3 text-right pr-2">Status</div>
@@ -544,16 +544,9 @@ function HelpdeskDashboard() {
                         </div>
 
                         <div className="col-span-1 flex justify-center">
-                          {['booked', 'pending', 'confirmed', 'in-progress', 'scheduled'].includes(apt.status?.toLowerCase()) ? (
-                            <span className="text-[9px] font-black uppercase tracking-tight text-slate-400">
-                              {/* Use pre-calculated cumulative wait time */}
-                              {waitTimes[(apt as any)._id || (apt as any).id] || '0m'}
-                            </span>
-                          ) : (
-                            <span className="text-[9px] font-black uppercase tracking-tight text-slate-400">
-                              {apt.time || "N/A"}
-                            </span>
-                          )}
+                          <span className="text-[9px] font-black uppercase tracking-tight text-slate-400">
+                            {apt.time || "N/A"}
+                          </span>
                         </div>
 
                         <div className="col-span-1 flex justify-center">

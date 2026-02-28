@@ -1281,7 +1281,7 @@ function CreatePrescriptionPage() {
                                             className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-teal-500"
                                         />
                                     </div>
-                                    <div className="col-span-6 md:col-span-2">
+                                    <div className="col-span-6 md:col-span-1">
                                         <input
                                             value={med.duration}
                                             onChange={(e) => updateMedicine(idx, 'duration', e.target.value)}
@@ -1289,28 +1289,31 @@ function CreatePrescriptionPage() {
                                             className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-teal-500"
                                         />
                                     </div>
-                                    <div className="col-span-6 md:col-span-2 flex flex-col gap-1">
+                                    <div className="col-span-6 md:col-span-2">
                                         <div className="flex items-center gap-2">
-                                            <input
-                                                value={med.quantity}
-                                                onChange={(e) => updateMedicine(idx, 'quantity', e.target.value)}
-                                                placeholder="Qty"
-                                                className={`w-full px-3 py-2 bg-white border ${med.error ? 'border-rose-500 focus:ring-rose-500/10' : 'border-slate-200 focus:border-teal-500'} rounded-lg text-sm font-bold focus:outline-none focus:ring-2`}
-                                            />
-                                            <button onClick={() => removeMedicine(idx)} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg">
+                                            <div className="flex-1">
+                                                <input
+                                                    value={med.quantity}
+                                                    onChange={(e) => updateMedicine(idx, 'quantity', e.target.value)}
+                                                    placeholder="Qty"
+                                                    className={`w-full px-3 py-2 bg-white border ${med.error ? 'border-rose-500 focus:ring-rose-500/10' : 'border-slate-200 focus:border-teal-500'} rounded-lg text-sm font-bold focus:outline-none focus:ring-2`}
+                                                />
+                                            </div>
+                                            <button onClick={() => removeMedicine(idx)} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg shrink-0">
                                                 <Trash2 size={16} />
                                             </button>
                                         </div>
+                                        {/* Stock info moved to a smaller line below if needed, or kept compact */}
                                         {med.availableUnits !== undefined && (
-                                            <div className="flex justify-between items-center px-1">
-                                                <span className="text-[9px] font-bold text-slate-400">Stock: {med.availableUnits}</span>
+                                            <div className="mt-1 flex justify-between items-center px-1">
+                                                <span className="text-[8px] font-bold text-slate-400">Stock: {med.availableUnits}</span>
                                                 {med.pricePerUnit && (
-                                                    <span className="text-[9px] font-bold text-teal-600">₹{(med.pricePerUnit * (parseInt(med.quantity) || 0)).toFixed(2)}</span>
+                                                    <span className="text-[8px] font-bold text-teal-600">₹{(med.pricePerUnit * (parseInt(med.quantity) || 0)).toFixed(2)}</span>
                                                 )}
                                             </div>
                                         )}
                                         {med.error && (
-                                            <div className="text-[9px] font-bold text-rose-500 px-1 animate-pulse">
+                                            <div className="text-[8px] font-bold text-rose-500 px-1 animate-pulse">
                                                 {med.error}
                                             </div>
                                         )}

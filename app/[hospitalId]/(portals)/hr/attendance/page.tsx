@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
    Clock,
    Calendar,
@@ -45,6 +45,15 @@ export default function AttendancePage() {
    const [filterRole, setFilterRole] = useState('all');
    const [filterStatus, setFilterStatus] = useState('all');
    const [searchTerm, setSearchTerm] = useState('');
+   const [debouncedSearch, setDebouncedSearch] = useState('');
+
+   // Add debounce effect
+   useEffect(() => {
+      const handler = setTimeout(() => {
+         setDebouncedSearch(searchTerm);
+      }, 500);
+      return () => clearTimeout(handler);
+   }, [searchTerm]);
 
    const { data: attendanceResponse, isLoading, refetch, isRefetching } = useHRAttendance({
       startDate,
@@ -52,7 +61,8 @@ export default function AttendancePage() {
       page,
       limit: ITEMS_PER_PAGE,
       role: filterRole,
-      status: filterStatus
+      status: filterStatus,
+      search: debouncedSearch
    });
 
    const logs = attendanceResponse?.data || [];
@@ -61,7 +71,6 @@ export default function AttendancePage() {
 
    const handleExport = async () => {
       try {
-         toast.success("Preparing high-fidelity attendance registry export...");
          const workbook = new ExcelJS.Workbook();
          const worksheet = workbook.addWorksheet(`Attendance Directory`);
 

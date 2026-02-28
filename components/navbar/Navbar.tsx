@@ -62,7 +62,7 @@ function Navbar({
     const user = propUser || (authUser ? {
         name: authUser.name,
         role: authUser.role,
-        image: (authUser as any).image || ""
+        image: (authUser as any).image || (authUser as any).avatar || (authUser as any).profilePic || ""
     } : undefined);
 
     useEffect(() => {
@@ -95,7 +95,7 @@ function Navbar({
                     <Menu className="w-6 h-6 text-gray-600 dark:text-gray-300" />
                 </button>
 
-                
+
             </div>
 
             {/* Center Section: Managed Actions */}

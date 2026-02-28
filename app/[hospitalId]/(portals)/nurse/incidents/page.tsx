@@ -26,7 +26,7 @@ export default function NurseIncidentPage() {
     }), [incidents]);
 
     return (
-        <div className="p-4 md:p-8 space-y-6 md:space-y-10 max-w-7xl mx-auto pb-20">
+        <div className="p-2 sm:p-4 md:p-8 space-y-4 md:space-y-10 max-w-7xl mx-auto pb-20">
             {/* Header Area */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 sm:gap-6 pt-2">
                 <div className="w-full sm:w-auto">
@@ -43,13 +43,13 @@ export default function NurseIncidentPage() {
                     <button
                         onClick={() => setIsReporting(!isReporting)}
                         className={`
-                            w-full sm:w-auto px-4 sm:px-8 py-2.5 sm:py-4 rounded-xl sm:rounded-[1rem] font-black uppercase tracking-widest text-[8px] sm:text-[10px] transition-all flex items-center justify-center gap-2
+                            w-full sm:w-auto px-4 sm:px-8 py-2 md:py-4 rounded-lg sm:rounded-[1rem] font-black uppercase tracking-widest text-[8px] sm:text-[10px] transition-all flex items-center justify-center gap-2
                             ${isReporting
                                 ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-gray-300'
                                 : 'bg-primary-theme hover:bg-primary-theme/90 text-white shadow-lg shadow-primary-theme/20'}
                         `}
                     >
-                        {isReporting ? <><X size={14} className="sm:size-[16px]" /> Cancel</> : <><Plus size={14} className="sm:size-[16px]" /> Report Incident</>}
+                        {isReporting ? <><X size={12} className="sm:size-[16px]" /> Cancel</> : <><Plus size={12} className="sm:size-[16px]" /> Report Incident</>}
                     </button>
                 </div>
             </div>

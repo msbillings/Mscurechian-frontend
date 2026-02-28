@@ -41,8 +41,19 @@ const HRLoginPage = () => {
     const validate = () => {
         const err: Record<string, string> = {};
 
-        if (!form.identifier || !form.identifier.trim()) {
+        const identifierStr = form.identifier ? form.identifier.trim() : "";
+
+        if (!identifierStr) {
             err.identifier = "Enter your credential.";
+        } else if (/^\d+$/.test(identifierStr)) {
+            if (identifierStr.length !== 10) {
+                err.identifier = "Mobile number must be exactly 10 digits.";
+            }
+        } else {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(identifierStr)) {
+                err.identifier = "Please enter a valid email address.";
+            }
         }
 
         if (!form.password || form.password.length < 6) {
@@ -54,7 +65,15 @@ const HRLoginPage = () => {
     };
 
     const handleIdentifierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
+        let value = e.target.value;
+
+        // If the current input is composed entirely of digits and exceeds 10 characters,
+        // prevent further input. This keeps mobile numbers strictly to 10 digits without
+        // breaking email addresses that may contain numbers.
+        if (/^\d*$/.test(value) && value.length > 10) {
+            return;
+        }
+
         if (errors.identifier) setErrors({ ...errors, identifier: '' });
         if (serverMsg) setServerMsg('');
 

@@ -23,7 +23,7 @@ export const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 md:p-10">
+                <div className="fixed inset-0 z-[150] flex items-center justify-center p-0.5 sm:p-10">
                     {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -38,10 +38,10 @@ export const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="relative w-full max-w-6xl h-full bg-white dark:bg-gray-900 rounded-[1rem] shadow-2xl flex flex-col overflow-hidden border border-white/10"
+                        className="relative w-full max-w-6xl h-[95vh] sm:h-full bg-white dark:bg-gray-900 rounded-[1rem] shadow-2xl flex flex-col overflow-hidden border border-white/10"
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700">
                             <div className="flex items-center gap-4">
                                 <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl">
                                     <FileText size={20} />
@@ -56,19 +56,19 @@ export const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 sm:gap-3">
                                 <button
                                     onClick={onDownload}
-                                    className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
+                                    className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg sm:rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
                                 >
                                     <Download size={14} />
-                                    Download
+                                    <span className="hidden sm:inline">Download</span>
                                 </button>
                                 <button
                                     onClick={onClose}
-                                    className="p-2 bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-red-500 hover:text-white rounded-xl transition-all active:scale-95"
+                                    className="p-2 bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-red-500 hover:text-white rounded-lg sm:rounded-xl transition-all active:scale-95"
                                 >
-                                    <X size={20} />
+                                    <X size={16} className="sm:size-5" />
                                 </button>
                             </div>
                         </div>
@@ -90,14 +90,14 @@ export const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
                         </div>
 
                         {/* Footer / Meta */}
-                        <div className="px-6 py-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-                                &copy; {new Date().getFullYear()} CureChain Compliance Matrix
+                        <div className="px-4 sm:px-6 py-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                            <p className="text-[8px] sm:text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                                Protocol Matrix Registry
                             </p>
                             <div className="flex items-center gap-4">
-                                <span className="flex items-center gap-1.5 text-[9px] font-black text-emerald-500 uppercase tracking-widest">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    Secure View
+                                <span className="flex items-center gap-1.5 text-[8px] sm:text-[9px] font-black text-emerald-500 uppercase tracking-widest">
+                                    <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                                    Validated
                                 </span>
                             </div>
                         </div>

@@ -47,6 +47,7 @@ export default function NurseProfilePage() {
     const [editSection, setEditSection] = useState<string | null>(null); // 'personal', 'qualifications', 'financial', 'documents'
     const [editingData, setEditingData] = useState<any>(null);
     const [saving, setSaving] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const { data: profileRes, isLoading: loadingProfile } = useQuery({
         queryKey: ['staff-profile', 'my'],
@@ -75,14 +76,78 @@ export default function NurseProfilePage() {
             data.bankDetails = { ...profile.bankDetails };
             data.panNumber = profile.panNumber;
             data.pfNumber = profile.pfNumber;
+            data.baseSalary = profile.baseSalary || '';
         } else if (section === 'qualifications') {
             data.qualifications = [...(profile.qualificationDetails?.qualifications || [])];
             data.licenseValidityDate = profile.qualificationDetails?.licenseValidityDate || '';
         }
         setEditingData(data);
+        setErrors({});
+    };
+
+    const handleFieldChange = (field: string, value: string) => {
+        // REAL-TIME VALIDATION & CONSTRAINTS
+        let fieldError = "";
+
+        if (field === 'bankDetails.accountName' || field === 'name') {
+            if (!/^[A-Za-z ]{3,}$/.test(value) && value.length > 0) fieldError = "Only alphabets & spaces, min 3 chars";
+        }
+        if (field === 'bankDetails.bankName') {
+            if (!/^[A-Za-z ]+$/.test(value) && value.length > 0) fieldError = "Only alphabets & spaces";
+        }
+        if (field === 'mobile' || field === 'bankDetails.accountNumber' || field === 'aadharNumber' || field === 'experienceYears') {
+            if (value && !/^\d*$/.test(value)) return; // Only digits
+        }
+
+        if (field === 'bankDetails.accountNumber') {
+            if (!/^[0-9]{9,18}$/.test(value) && value.length > 0) fieldError = "9-18 digits only";
+        }
+        if (field === 'bankDetails.ifscCode') {
+            value = value.toUpperCase();
+            if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(value) && value.length > 0) fieldError = "Invalid IFSC Code (e.g., SBIN0012345)";
+        }
+        if (field === 'panNumber') {
+            value = value.toUpperCase();
+            if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value) && value.length > 0) fieldError = "Invalid PAN format";
+        }
+        if (field === 'aadharNumber') {
+            if (!/^[0-9]{12}$/.test(value) && value.length > 0) fieldError = "Exactly 12 digits";
+        }
+        if (field === 'pfNumber') {
+            if (value.length > 0 && value.length < 5) fieldError = "Minimum 5 characters";
+        }
+        if (field === 'esiNumber') {
+            if (!/^[0-9]{10,17}$/.test(value) && value.length > 0) fieldError = "10 to 17 digits only";
+        }
+        if (field === 'uanNumber') {
+            if (!/^[0-9]{12}$/.test(value) && value.length > 0) fieldError = "Exactly 12 digits";
+        }
+
+        // MAX LENGTHS
+        if (field === 'mobile' && value.length > 10) return;
+        if (field === 'aadharNumber' && value.length > 12) return;
+        if (field === 'panNumber' && value.length > 10) return;
+        if (field === 'bankDetails.ifscCode' && value.length > 11) return;
+
+        setErrors(prev => ({ ...prev, [field]: fieldError }));
+
+        if (field.includes('.')) {
+            const [parent, child] = field.split('.');
+            setEditingData((prev: any) => ({
+                ...prev,
+                [parent]: { ...prev[parent], [child]: value }
+            }));
+        } else {
+            setEditingData((prev: any) => ({ ...prev, [field]: value }));
+        }
     };
 
     const handleSave = async () => {
+        if (Object.values(errors).some(err => err)) {
+            toast.error('Please fix validation errors');
+            return;
+        }
+
         try {
             setSaving(true);
             const updatePayload = { ...editingData };
@@ -339,8 +404,8 @@ export default function NurseProfilePage() {
                         <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
                             {editSection === 'personal' && (
                                 <>
-                                    <Input label="Full Name" value={editingData.name} onChange={(e: any) => setEditingData({ ...editingData, name: e.target.value })} />
-                                    <Input label="Mobile Number" value={editingData.mobile} onChange={(e: any) => setEditingData({ ...editingData, mobile: e.target.value })} />
+                                    <Input label="Full Name" value={editingData.name} onChange={(e: any) => handleFieldChange('name', e.target.value)} error={errors['name']} />
+                                    <Input label="Mobile Number" value={editingData.mobile} onChange={(e: any) => handleFieldChange('mobile', e.target.value)} error={errors['mobile']} />
                                 </>
                             )}
 
@@ -392,10 +457,24 @@ export default function NurseProfilePage() {
 
                             {editSection === 'financial' && (
                                 <>
-                                    <Input label="Bank Name" value={editingData.bankDetails?.bankName} onChange={(e: any) => setEditingData({ ...editingData, bankDetails: { ...editingData.bankDetails, bankName: e.target.value } })} />
-                                    <Input label="Account Number" value={editingData.bankDetails?.accountNumber} onChange={(e: any) => setEditingData({ ...editingData, bankDetails: { ...editingData.bankDetails, accountNumber: e.target.value } })} />
-                                    <Input label="IFSC Code" value={editingData.bankDetails?.ifscCode} onChange={(e: any) => setEditingData({ ...editingData, bankDetails: { ...editingData.bankDetails, ifscCode: e.target.value } })} />
-                                    <Input label="PAN Number" value={editingData.panNumber} onChange={(e: any) => setEditingData({ ...editingData, panNumber: e.target.value })} />
+                                    <Input label="Base Salary (Per Month)" value={editingData.baseSalary} readOnly={true} />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <Input label="Bank Name" value={editingData.bankDetails?.bankName} onChange={(e: any) => handleFieldChange('bankDetails.bankName', e.target.value)} error={errors['bankDetails.bankName']} />
+                                        <Input label="Account Holder Name" value={editingData.bankDetails?.accountName} onChange={(e: any) => handleFieldChange('bankDetails.accountName', e.target.value)} error={errors['bankDetails.accountName']} />
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <Input label="Account Number" value={editingData.bankDetails?.accountNumber} onChange={(e: any) => handleFieldChange('bankDetails.accountNumber', e.target.value)} error={errors['bankDetails.accountNumber']} />
+                                        <Input label="IFSC Code" value={editingData.bankDetails?.ifscCode} onChange={(e: any) => handleFieldChange('bankDetails.ifscCode', e.target.value)} error={errors['bankDetails.ifscCode']} />
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <Input label="PAN Number" value={editingData.panNumber} onChange={(e: any) => handleFieldChange('panNumber', e.target.value)} error={errors['panNumber']} />
+                                        <Input label="Aadhar Number" value={editingData.aadharNumber} onChange={(e: any) => handleFieldChange('aadharNumber', e.target.value)} error={errors['aadharNumber']} />
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <Input label="PF Number" value={editingData.pfNumber} onChange={(e: any) => handleFieldChange('pfNumber', e.target.value)} error={errors['pfNumber']} />
+                                        <Input label="ESI Number" value={editingData.esiNumber} onChange={(e: any) => handleFieldChange('esiNumber', e.target.value)} error={errors['esiNumber']} />
+                                        <Input label="UAN Number" value={editingData.uanNumber} onChange={(e: any) => handleFieldChange('uanNumber', e.target.value)} error={errors['uanNumber']} />
+                                    </div>
                                 </>
                             )}
                         </div>
@@ -541,15 +620,20 @@ function SecureItem({ label, value }: any) {
     );
 }
 
-function Input({ label, value, onChange }: any) {
+function Input({ label, value, onChange, error, readOnly }: any) {
     return (
         <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex justify-between">
+                {label}
+                {readOnly && <span className="text-slate-400 lowercase">(view only)</span>}
+            </label>
             <input
                 value={value}
                 onChange={onChange}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-slate-400 transition-all placeholder:text-slate-300"
+                readOnly={readOnly}
+                className={`w-full px-4 py-3 bg-slate-50 border ${error ? 'border-rose-500' : 'border-slate-200'} rounded-xl text-sm font-bold outline-none transition-all placeholder:text-slate-300 ${readOnly ? 'cursor-not-allowed opacity-70 bg-slate-100' : 'focus:border-slate-400'}`}
             />
+            {error && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{error}</p>}
         </div>
     );
 }

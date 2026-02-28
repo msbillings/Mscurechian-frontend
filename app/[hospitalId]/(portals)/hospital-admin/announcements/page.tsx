@@ -45,7 +45,7 @@ function AnnouncementManagement() {
   const queryClient = useQueryClient();
 
   // ✅ CRITICAL FIX: Use React Query instead of useState + useEffect
-  const { data: announcements = [], isLoading: loading, error } = useQuery<Announcement[]>({
+  const { data: announcements = [], isLoading: loading, error, refetch } = useQuery<Announcement[]>({
     queryKey: ['hospital-admin-announcements'],
     queryFn: async () => {
       const apiStartTime = performance.now();
@@ -76,6 +76,16 @@ function AnnouncementManagement() {
     expiryDate: ''
   });
 
+  const [search, setSearch] = useState('');
+
+  // Filter nodes based on search
+  const filteredAnnouncements = useMemo(() => {
+    return announcements.filter(ann =>
+      ann.title.toLowerCase().includes(search.toLowerCase()) ||
+      ann.content.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [announcements, search]);
+
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -83,8 +93,8 @@ function AnnouncementManagement() {
   // Pagination Logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = announcements.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(announcements.length / itemsPerPage);
+  const currentItems = filteredAnnouncements.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredAnnouncements.length / itemsPerPage);
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -103,7 +113,9 @@ function AnnouncementManagement() {
         priority: 'medium',
         expiryDate: ''
       });
-      queryClient.invalidateQueries({ queryKey: ['hospital-admin-announcements'] });
+      // Force immediate refresh of the registry
+      await queryClient.invalidateQueries({ queryKey: ['hospital-admin-announcements'] });
+      await refetch(); // Use refetch() to ensure the list updates immediately
     } catch (error) {
       toast.error('Failed to broadcast notice');
     }
@@ -120,7 +132,8 @@ function AnnouncementManagement() {
     try {
       await hospitalAdminService.deleteAnnouncement(deleteConfirmationId);
       toast.success('Notice retracted');
-      queryClient.invalidateQueries({ queryKey: ['hospital-admin-announcements'] });
+      await queryClient.invalidateQueries({ queryKey: ['hospital-admin-announcements'] });
+      await refetch(); // Use refetch() to ensure the list updates immediately
       setDeleteConfirmationId(null);
     } catch (error) {
       toast.error('Failed to delete notice');
@@ -142,35 +155,37 @@ function AnnouncementManagement() {
 
   return (
     <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
-      {/* Simple Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Institutional Notice Board</h1>
-          <p className="text-sm text-slate-500 font-medium mt-1 italic tracking-tight">Hospital-wide Global Broadcasts & Personnel Awareness</p>
-        </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-6 py-2.5 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all "
-        >
-          <Plus size={14} strokeWidth={3} /> New Broadcast
-        </button>
-      </div>
-
-      {/* Simple Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[
-          { label: "Active Sector", value: announcements.filter(a => a.isActive).length, icon: Megaphone, color: "text-blue-600", bg: "bg-blue-50" },
-          { label: "Critical Priority", value: announcements.filter(a => a.priority === 'high').length, icon: AlertTriangle, color: "text-rose-600", bg: "bg-rose-50" },
-          { label: "Aggregate Sent", value: announcements.length, icon: Send, color: "text-emerald-600", bg: "bg-emerald-50" }
-        ].map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
-            <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} w-fit mb-4`}>
-              <stat.icon size={20} strokeWidth={3} />
-            </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-            <h3 className="text-2xl font-black text-slate-900 leading-none italic">{stat.value}</h3>
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-200">
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Institutional Notice Board</h1>
+            <p className="text-xs text-slate-500 font-medium italic tracking-tight">Hospital-wide Global Broadcasts & Personnel Awareness</p>
           </div>
-        ))}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-theme text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all w-fit self-center mt-1"
+          >
+            <Plus size={12} strokeWidth={3} /> New Broadcast
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          {[
+            { label: "Active Sector", value: announcements.filter(a => a.isActive).length, icon: Megaphone, color: "text-blue-600", bg: "bg-blue-50" },
+            { label: "Critical Priority", value: announcements.filter(a => a.priority === 'high').length, icon: AlertTriangle, color: "text-rose-600", bg: "bg-rose-50" },
+            { label: "Aggregate Sent", value: announcements.length, icon: Send, color: "text-emerald-600", bg: "bg-emerald-50" }
+          ].map((stat, i) => (
+            <div key={i} className="bg-white px-3 py-2 rounded-xl border border-slate-100 shadow-sm flex items-center gap-3 min-w-[140px]">
+              <div className={`p-1.5 rounded-lg ${stat.bg} ${stat.color}`}>
+                <stat.icon size={14} strokeWidth={3} />
+              </div>
+              <div>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">{stat.label}</p>
+                <h3 className="text-sm font-black text-slate-900 italic mt-0.5">{stat.value}</h3>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Clean Content Registry */}
@@ -181,6 +196,8 @@ function AnnouncementManagement() {
             <input
               type="text"
               placeholder="Filter announcements by nomenclature or entity..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-11 pr-4 py-2 bg-slate-100/50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500/10 outline-none transition-all"
             />
           </div>
@@ -319,10 +336,10 @@ function AnnouncementManagement() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
           <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
-            <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+            <div className="p-5 border-b border-slate-50 flex items-center justify-between">
               <div>
-                <h3 className="text-2xl font-black text-slate-900 italic leading-none">Initiate Broadcast</h3>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Configure institutional notice for dissemination</p>
+                <h3 className="text-xl font-black text-slate-900 italic leading-none">Initiate Broadcast</h3>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Configure institutional notice for dissemination</p>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -332,49 +349,81 @@ function AnnouncementManagement() {
               </button>
             </div>
 
-            <form onSubmit={handleCreate} className="p-8 space-y-6">
-              <div className="space-y-4">
+            <form onSubmit={handleCreate} className="p-6 space-y-4">
+              <div className="space-y-3">
                 <div>
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">Notice Headline</label>
                   <input
                     required
                     type="text"
+                    maxLength={80}
                     value={newAnnouncement.title}
                     onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
                     placeholder="e.g. SYSTEM_MAINTENANCE_ID_094"
                     className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                   />
+                  <div className="flex justify-end mt-1 px-1">
+                    <span className="text-[9px] font-bold text-slate-400">{newAnnouncement.title.length}/80</span>
+                  </div>
                 </div>
 
                 <div>
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">Broadcast Details</label>
                   <textarea
                     required
-                    rows={4}
+                    rows={3}
+                    maxLength={400}
                     value={newAnnouncement.content}
                     onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })}
                     placeholder="Provide concise operational information..."
                     className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 outline-none resize-none transition-all"
                   ></textarea>
+                  <div className="flex justify-end mt-1 px-1">
+                    <span className="text-[9px] font-bold text-slate-400">{newAnnouncement.content.length}/400</span>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">Target Sector</label>
-                    <select
-                      multiple
-                      className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-500/20 outline-none transition-all h-[120px]"
-                      value={newAnnouncement.targetRoles}
-                      onChange={(e) => {
-                        const values = Array.from(e.target.selectedOptions, option => option.value);
-                        setNewAnnouncement({ ...newAnnouncement, targetRoles: values });
-                      }}
-                    >
-                      <option value="all">Global Personnel</option>
-                      <option value="doctor">Medical Consultants</option>
-                      <option value="staff">Institutional Staff</option>
-                      <option value="helpdesk">Reception Hub</option>
-                    </select>
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                      {[
+                        { id: 'all', label: 'Global Personnel' },
+                        { id: 'doctor', label: 'Medical Consultants (Doctors)' },
+                        { id: 'nurse', label: 'Nurses' },
+                        { id: 'staff', label: 'Institutional Staff' },
+                        { id: 'helpdesk', label: 'Reception Hub' }
+                      ].map((role) => (
+                        <label key={role.id} className="flex items-center gap-3 group cursor-pointer">
+                          <div className="relative flex items-center justify-center">
+                            <input
+                              type="checkbox"
+                              className="peer appearance-none w-5 h-5 bg-white border-2 border-slate-200 rounded-lg checked:bg-slate-900 checked:border-slate-900 transition-all cursor-pointer"
+                              checked={newAnnouncement.targetRoles.includes(role.id)}
+                              onChange={(e) => {
+                                let roles = [...newAnnouncement.targetRoles];
+                                if (e.target.checked) {
+                                  // If 'all' is being checked, unique selection
+                                  if (role.id === 'all') {
+                                    roles = ['all'];
+                                  } else {
+                                    // Remove 'all' if another specific role is checked
+                                    roles = roles.filter(r => r !== 'all');
+                                    roles.push(role.id);
+                                  }
+                                } else {
+                                  roles = roles.filter(r => r !== role.id);
+                                  // Default back to all if nothing selected? Let's leave it empty for now.
+                                }
+                                setNewAnnouncement({ ...newAnnouncement, targetRoles: roles });
+                              }}
+                            />
+                            <CheckCircle2 size={12} strokeWidth={4} className="absolute text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
+                          </div>
+                          <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest group-hover:text-slate-900 transition-colors">{role.label}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                   <div className="space-y-4">
                     <div>
@@ -402,17 +451,17 @@ function AnnouncementManagement() {
                 </div>
               </div>
 
-              <div className="flex gap-4 pt-4">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-3 bg-slate-50 text-slate-400 border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all"
+                  className="flex-1 py-2.5 bg-slate-50 text-slate-400 border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all"
                 >
                   Discard Draft
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-sm"
+                  className="flex-1 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-sm"
                 >
                   Confirm Broadcast
                 </button>

@@ -63,6 +63,12 @@ export interface DoctorProfile {
     breakStart?: string;
     breakEnd?: string;
   }[];
+  hospital?: {
+    _id: string;
+    name: string;
+    hospitalId: string;
+    address?: string;
+  };
 }
 
 export interface PaginationData {
