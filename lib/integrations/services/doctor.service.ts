@@ -179,6 +179,9 @@ export const doctorService = {
     }),
 
   // Pause/Resume Consultation
+  getPausedAppointments: () =>
+    apiClient<any>(`/doctor/appointments/paused`),
+
   pauseConsultation: (appointmentId: string) =>
     apiClient<any>(`/doctor/appointments/${appointmentId}/pause`, {
       method: "POST",

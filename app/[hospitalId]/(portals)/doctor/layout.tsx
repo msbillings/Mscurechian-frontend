@@ -108,8 +108,10 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
         if (isInitialized) {
             if (!isAuthenticated) {
                 router.push('/auth/login');
-            } else if (!['doctor', 'hospital-admin', 'super-admin', 'helpdesk', 'nurse'].includes(user?.role || '')) {
+            } else if (!['doctor', 'hospital-admin', 'super-admin', 'nurse'].includes(user?.role || '')) {
+                // Helpdesk has its own portal — redirect away from doctor portal
                 const routeMap: Record<string, string> = {
+                    'helpdesk': '/helpdesk',
                     'staff': '/staff',
                     'lab': '/lab/dashboard',
                     'patient': '/patient/dashboard'
@@ -229,7 +231,7 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
     // ✅ CONDITIONAL RETURNS MUST BE AFTER ALL HOOKS
 
     // Authorization Guard
-    if (isInitialized && isAuthenticated && user?.role && !['doctor', 'hospital-admin', 'super-admin', 'helpdesk', 'nurse'].includes(user.role)) {
+    if (isInitialized && isAuthenticated && user?.role && !['doctor', 'hospital-admin', 'super-admin', 'nurse'].includes(user.role)) {
         return null;
     }
 
@@ -255,7 +257,7 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
     }
 
     // Role safeguard final check
-    if (!isAuthenticated || !['doctor', 'hospital-admin', 'super-admin', 'helpdesk', 'nurse'].includes(user?.role || '')) return null;
+    if (!isAuthenticated || !['doctor', 'hospital-admin', 'super-admin', 'nurse'].includes(user?.role || '')) return null;
 
     const doctorUser = {
         name: user?.name || 'Doctor',
