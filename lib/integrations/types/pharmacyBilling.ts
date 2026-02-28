@@ -13,6 +13,10 @@ export interface BillItem {
   gst?: number; // Alias for gstPct
   amount: number;
   total?: number; // Alias for amount
+  batch?: string;
+  expiry?: string;
+  discountPct?: number;
+  discount?: number;
 }
 
 export interface PaymentSummary {
@@ -25,6 +29,7 @@ export interface PaymentSummary {
   balanceDue: number;
   paymentMode: "Cash" | "UPI" | "Card" | "Mixed" | "Credit";
   status: "Paid" | "Partial" | "Due";
+  transactionId?: string;
   paymentDetails?: {
     cash: number;
     card: number;
@@ -35,6 +40,7 @@ export interface PaymentSummary {
 export interface PharmacyBillPayload {
   patientName: string;
   customerPhone: string;
+  doctorName?: string;
   items: BillItem[];
   paymentSummary: PaymentSummary;
   orderId?: string;

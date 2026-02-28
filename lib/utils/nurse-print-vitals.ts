@@ -145,38 +145,150 @@ export const generateNurseHourlyRecordHtml = (data: any) => {
                     border-radius: 8px;
                     margin-top: 5px;
                 }
-                .diet-text { font-style: italic; font-weight: 600; color: #166534; font-size: 10px; }
-
-                .lab-grid {
-                    display: grid;
-                    grid-template-columns: 1fr;
-                    gap: 8px;
+                /* --- Standardized Header Styles (Matching MainHeader.tsx) --- */
+                .standard-header {
+                    width: 100%;
+                    background-color: #ffffff;
+                    margin-bottom: 20px;
+                    padding: 0;
+                    box-sizing: border-box;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
                 }
-                @media (min-width: 600px) {
-                    .lab-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+                .header-flex {
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-start;
+                    padding: 10px 0;
                 }
-                .lab-item {
-                    padding: 8px;
-                    border-radius: 8px;
+                .logo-section {
+                    flex: 0 0 auto;
+                    padding-right: 15px;
+                }
+                .logo-img {
+                    max-width: 160px;
+                    max-height: 110px;
+                    object-fit: contain;
+                }
+                .logo-placeholder {
+                    width: 80px;
+                    height: 80px;
                     border: 1px solid #e2e8f0;
                     display: flex;
-                    justify-content: space-between;
                     align-items: center;
+                    justify-content: center;
+                    color: #e2e8f0;
+                    font-size: 10px;
                 }
-
-                .footer {
-                    margin-top: 30px;
-                    border-top: 1px solid #e2e8f0;
-                    padding-top: 10px;
+                .header-divider {
+                    width: 1px;
+                    height: 80px;
+                    background-color: #e2e8f0;
+                    margin: 0 20px;
+                }
+                .header-details {
+                    flex: 1;
                     display: flex;
                     flex-direction: column;
-                    gap: 5px;
-                    font-size: 8px;
-                    color: #94a3b8;
-                    font-weight: 600;
+                    gap: 4px;
                 }
-                @media (min-width: 480px) {
-                    .footer { flex-direction: row; justify-content: space-between; }
+                .hospital-name {
+                    margin: 0;
+                    font-weight: 800;
+                    color: #1e40af;
+                    line-height: 1.1;
+                    font-size: 24px;
+                    text-transform: uppercase;
+                }
+                .header-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    font-size: 11px;
+                    color: #334155;
+                    font-weight: 700;
+                }
+                .header-email { color: #1e40af; }
+                .header-phone { color: #22c55e; }
+                .header-bottom-line {
+                    width: 100%;
+                    height: 4px;
+                    background-color: #22c55e;
+                    margin-top: 5px;
+                }
+
+                /* --- Standardized Footer Styles (Matching MainFooter.tsx) --- */
+                .standard-footer {
+                    width: 100%;
+                    margin-top: 30px;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+                .footer-slants {
+                    display: flex;
+                    height: 35px;
+                    margin-bottom: 12px;
+                    position: relative;
+                }
+                .slant-phone {
+                    flex: 1;
+                    background: #22c55e;
+                    color: #ffffff;
+                    display: flex;
+                    align-items: center;
+                    padding: 0 30px;
+                    font-weight: 800;
+                    font-size: 12px;
+                    clip-path: polygon(0 0, 100% 0, 90% 100%, 0 100%);
+                    z-index: 2;
+                }
+                .slant-email {
+                    flex: 1;
+                    background: #3b82f6;
+                    color: #ffffff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 800;
+                    font-size: 12px;
+                    clip-path: polygon(10% 0, 100% 0, 100% 100%, 0 100%);
+                    margin-left: -30px;
+                    z-index: 1;
+                    padding-left: 30px;
+                }
+                .footer-info {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    margin-top: 10px;
+                    gap: 15px;
+                }
+                .footer-disclaimers {
+                    flex: 1.5;
+                    list-style: none;
+                    font-size: 9px;
+                    color: #000000;
+                    font-weight: 700;
+                    line-height: 1.4;
+                }
+                .footer-address {
+                    flex: 1.2;
+                    text-align: right;
+                    font-size: 9px;
+                    font-weight: 800;
+                    color: #000000;
+                    text-transform: uppercase;
+                    line-height: 1.3;
+                    max-width: 250px;
+                }
+                .footer-bottom-note {
+                    text-align: center;
+                    font-size: 9px;
+                    color: #000000;
+                    margin-top: 15px;
+                    padding-top: 10px;
+                    border-top: 1px solid #f1f5f9;
+                    font-weight: 500;
                 }
 
                 .no-break { break-inside: avoid; }
@@ -186,7 +298,7 @@ export const generateNurseHourlyRecordHtml = (data: any) => {
                     .main-record { 
                         max-width: none !important; 
                         margin: 0 !important; 
-                        padding: 15mm !important; 
+                        padding: 10mm !important; 
                         box-shadow: none !important;
                     }
                     .table-container { overflow: visible !important; }
@@ -197,11 +309,45 @@ export const generateNurseHourlyRecordHtml = (data: any) => {
         <body>
 
             <div class="main-record">
-                <div class="header">
-                    <h1>${hospital?.name || "CureChain Medical Center"}</h1>
-                    <p>${hospital?.address || "Quality Healthcare Services"}</p>
-                    <p>PH: ${hospital?.phone || hospital?.contact || "N/A"} | ${hospital?.email || "N/A"}</p>
-                    <p style="margin-top: 8px; font-weight: 800; color: #1e293b; font-size: 10px;">HOURLY MONITORING & CLINICAL LOG</p>
+                <!-- Standardized Header -->
+                <div class="standard-header">
+                    <div class="header-flex">
+                        <div class="logo-section">
+                            ${hospital?.logo ? `
+                                <img src="${hospital.logo}" alt="Logo" class="logo-img" />
+                            ` : `
+                                <div class="logo-placeholder">LOGO</div>
+                            `}
+                        </div>
+                        <div class="header-divider"></div>
+                        <div class="header-details">
+                            <h1 class="hospital-name">${hospital?.name || "CureChain Hospital"}</h1>
+                            
+                            ${hospital?.email ? `
+                                <div class="header-row header-email">
+                                    <div style="width: 8px; height: 8px; background-color: #1e40af; border-radius: 1px;"></div>
+                                    <span>${hospital.email}</span>
+                                </div>
+                            ` : ''}
+
+                            <div class="header-row">
+                                <span style="color: #64748b;">${hospital?.address || "Medical District, Healthcare City"}</span>
+                                ${hospital?.phone || hospital?.contact ? `
+                                    <div style="width: 1px; height: 10px; background-color: #cbd5e1;"></div>
+                                    <div class="header-phone">
+                                        <span>📞 ${hospital.phone || hospital.contact}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="header-bottom-line"></div>
+                </div>
+
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <p style="font-weight: 800; color: #1e293b; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">
+                        HOURLY MONITORING & CLINICAL LOG
+                    </p>
                 </div>
 
             <div class="patient-info-grid">
@@ -411,9 +557,42 @@ export const generateNurseHourlyRecordHtml = (data: any) => {
                 </div>
             </div>
 
-            <div class="footer">
-                <span>System Report • ${format(new Date(), 'dd MMM yyyy HH:mm')}</span>
-                <span>${hospital?.name || "CureChain HMS"}</span>
+            <!-- Standardized Footer -->
+            <div class="standard-footer">
+                <div class="footer-slants">
+                    ${hospital?.phone || hospital?.contact ? `
+                        <div class="slant-phone">
+                            <span style="margin-right: 8px;">📞</span>
+                            ${hospital.phone || hospital.contact}
+                        </div>
+                    ` : ''}
+
+                    ${hospital?.email ? `
+                        <div class="slant-email">
+                            <span style="margin-right: 8px;">✉️</span>
+                            ${hospital.email}
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="footer-info">
+                    <div class="footer-disclaimers">
+                        <ul style="margin: 0; padding: 0; list-style: none;">
+                            <li>• All results should be co-related clinically</li>
+                            <li>• If results are alarming or unexpected, contact the Helpdesk immediately</li>
+                            <li>• Not valid for medico-legal purposes</li>
+                            <li>• The test with an asterisk(*) are not accredited by NABL</li>
+                        </ul>
+                    </div>
+
+                    <div class="footer-address">
+                        ${hospital?.address || "Medical District, Healthcare City"}
+                    </div>
+                </div>
+
+                <div class="footer-bottom-note">
+                    This is a computer generated document and does not require a physical signature.
+                </div>
             </div>
 
             </div>

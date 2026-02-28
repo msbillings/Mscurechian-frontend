@@ -42,22 +42,22 @@ const BillPrintView: React.FC<BillPrintViewProps> = ({ billData, invoiceId, date
     }, []);
 
     return (
-        <div className="p-12 bg-white text-black font-sans max-w-[210mm] mx-auto min-h-[297mm] flex flex-col" id="printable-bill">
-            <div className="grow">
+        <div className="p-6 bg-white text-black font-sans max-w-[210mm] mx-auto flex flex-col justify-between" id="printable-bill">
+            <div className="w-full">
                 {/* Header Component - Replaces static header */}
                 <HeaderPrint />
 
-                <div className="flex justify-center mb-6 relative">
+                <div className="flex justify-center mb-3 relative">
                     <h2 className="text-base font-bold border-b-2 border-black pb-1 uppercase absolute top-[-10px] bg-white px-2">INVOICE</h2>
                     <div className="w-full border-t border-black mt-3"></div>
                 </div>
 
 
                 {/* Info Grid */}
-                <div className="grid grid-cols-2 gap-0 border border-black mb-6">
+                <div className="grid grid-cols-2 gap-0 border border-black mb-3">
 
                     {/* Invoice Info */}
-                    <div className="border-r border-black p-4">
+                    <div className="border-r border-black p-3">
                         <h3 className="font-bold text-xs uppercase mb-3 text-black">INVOICE INFORMATION</h3>
                         <div className="grid grid-cols-[100px_1fr] gap-y-1 text-xs">
                             <span className="font-semibold text-black">Invoice ID:</span>
@@ -75,7 +75,7 @@ const BillPrintView: React.FC<BillPrintViewProps> = ({ billData, invoiceId, date
                     </div>
 
                     {/* Patient Info */}
-                    <div className="p-4">
+                    <div className="p-3">
                         <h3 className="font-bold text-xs uppercase mb-3 text-black">PATIENT INFORMATION</h3>
                         <div className="grid grid-cols-[100px_1fr] gap-y-1 text-xs">
                             <span className="font-semibold text-black">Name:</span>
@@ -112,18 +112,18 @@ const BillPrintView: React.FC<BillPrintViewProps> = ({ billData, invoiceId, date
                 <table className="w-full border-collapse border border-black mb-2 text-xs">
                     <thead>
                         <tr className="bg-gray-200 text-black">
-                            <th className="border border-black p-2 text-left w-16">S.No</th>
-                            <th className="border border-black p-2 text-left">Test / Service</th>
-                            <th className="border border-black p-2 text-right w-24">Price (₹)</th>
+                            <th className="border border-black p-1.5 text-left w-16">S.No</th>
+                            <th className="border border-black p-1.5 text-left">Test / Service</th>
+                            <th className="border border-black p-1.5 text-right w-24">Price (₹)</th>
                         </tr>
                     </thead>
                     <tbody>
                         {billData.items && billData.items.length > 0 ? (
                             billData.items.map((item, index) => (
                                 <tr key={index}>
-                                    <td className="border border-black p-2 text-center">{index + 1}</td>
-                                    <td className="border border-black p-2 font-medium">{item.testName}</td>
-                                    <td className="border border-black p-2 text-right font-bold">₹{item.price?.toFixed(2) || '0.00'}</td>
+                                    <td className="border border-black p-1.5 text-center">{index + 1}</td>
+                                    <td className="border border-black p-1.5 font-medium">{item.testName}</td>
+                                    <td className="border border-black p-1.5 text-right font-bold">₹{item.price?.toFixed(2) || '0.00'}</td>
                                 </tr>
                             ))
                         ) : (
@@ -137,7 +137,7 @@ const BillPrintView: React.FC<BillPrintViewProps> = ({ billData, invoiceId, date
                 </table>
 
                 {/* Totals Section - Two Column Layout */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-2 gap-4 mb-3">
                     {/* Left: Payment Summary */}
                     <div className="border border-black text-xs">
                         <div className="flex justify-between p-2 border-b border-black">
@@ -199,14 +199,24 @@ const BillPrintView: React.FC<BillPrintViewProps> = ({ billData, invoiceId, date
             #printable-bill, #printable-bill * {
                 visibility: visible;
             }
-            #printable-bill {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
+            @page {
+                size: A4;
                 margin: 0;
-                padding: 20px;
-                border: none; /* Remove border for print if browser adds margins */
+            }
+            #printable-bill {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                height: 296mm !important;
+                margin: 0 !important;
+                padding: 15mm !important; /* Standard print padding */
+                border: none !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: space-between !important;
+                box-sizing: border-box !important;
+                background-color: white !important;
             }
              /* Small fix to hide Next.js dev overlays if present */
             nextjs-portal, #__next-build-watcher {

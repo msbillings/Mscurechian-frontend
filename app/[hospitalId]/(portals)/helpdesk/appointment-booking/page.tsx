@@ -33,6 +33,10 @@ import { helpdeskService, ipdService } from "@/lib/integrations";
 import type { HelpdeskDoctor, HelpdeskProfile, Bed } from "@/lib/integrations/types";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import { renderToStaticMarkup } from 'react-dom/server';
+import MainHeader from '@/components/printers/MainHeader';
+import MainFooter from '@/components/printers/MainFooter';
+import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 import { generateClinicalReceiptHtml } from "@/lib/print-utils";
 
 export default function AppointmentBooking() {
@@ -455,12 +459,49 @@ export default function AppointmentBooking() {
                 } catch (e) { }
             }
 
+            // 1. Fetch Hospital Branding
+            let latestHospital: any = profile?.hospital;
+            try {
+                const hRes = await hospitalAdminService.getHospital();
+                if (hRes?.hospital) {
+                    latestHospital = {
+                        ...profile?.hospital,
+                        ...hRes.hospital
+                    };
+                }
+            } catch (e) { }
+
+            // 2. Render Header/Footer
+            const headerHtml = renderToStaticMarkup(
+                <MainHeader
+                    initialDetails={{
+                        name: latestHospital?.name || "Hospital Name",
+                        address: latestHospital?.address || "",
+                        phone: latestHospital?.phone || latestHospital?.mobile || "",
+                        email: latestHospital?.email || "",
+                        logo: latestHospital?.logo
+                    }}
+                />
+            );
+
+            const footerHtml = renderToStaticMarkup(
+                <MainFooter
+                    initialDetails={{
+                        name: latestHospital?.name || "Hospital Name",
+                        address: latestHospital?.address || "",
+                        phone: latestHospital?.phone || latestHospital?.mobile || "",
+                        email: latestHospital?.email || "",
+                    }}
+                />
+            );
+
             const receiptData = {
                 hospital: {
-                    name: profile?.hospital?.name || "CureChain Medical Center",
-                    address: profile?.hospital?.address || "Main Medical Node",
-                    contact: profile?.hospital?.mobile || profile?.mobile || "System Support",
-                    email: profile?.hospital?.email || profile?.email || "healthcare@curechain.io"
+                    name: latestHospital?.name || "CureChain Medical Center",
+                    address: latestHospital?.address || "Main Medical Node",
+                    contact: latestHospital?.mobile || latestHospital?.phone || "System Support",
+                    email: latestHospital?.email || "healthcare@curechain.io",
+                    logo: latestHospital?.logo
                 },
                 patient: {
                     name: selectedPatient.name,
@@ -503,6 +544,8 @@ export default function AppointmentBooking() {
                     status: (paymentStatus === 'unpaid' ? 'pending' : paymentStatus).toUpperCase()
                 },
                 registrationType: registrationType,
+                headerHtml: headerHtml,
+                footerHtml: footerHtml,
                 returnUrl: '/helpdesk'
             };
 

@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
+import MainHeader from '@/components/printers/MainHeader';
+import MainFooter from '@/components/printers/MainFooter';
 
 export const PrintableDischargeSummary = React.forwardRef<HTMLDivElement, { data: any, consultants: string[] }>(({ data, consultants }, ref) => {
     const [hospitalInfo, setHospitalInfo] = useState<any>(null);
@@ -95,11 +97,10 @@ export const PrintableDischargeSummary = React.forwardRef<HTMLDivElement, { data
 
 
                     {/* 1. Header Section */}
-                    <div className="flex justify-between items-start border-b-[1.5px] border-black pb-4 mb-4 relative z-10">
-                        <div className="space-y-1">
-                            <h1 className="text-[16px] font-black uppercase tracking-tight">{hospitalInfo?.name || data.hospitalName || ''}</h1>
-                            {(() => {
-                                // Construct standard address from granular fields
+                    <MainHeader
+                        initialDetails={{
+                            name: hospitalInfo?.name || data.hospitalName || 'Hospital Name',
+                            address: (() => {
                                 const parts = [
                                     hospitalInfo?.street,
                                     hospitalInfo?.landmark,
@@ -107,73 +108,16 @@ export const PrintableDischargeSummary = React.forwardRef<HTMLDivElement, { data
                                     hospitalInfo?.city,
                                     hospitalInfo?.state
                                 ].filter(Boolean);
-
-                                // If granular fields exist, use them. Deduplicate to prevent redundancy.
                                 const uniqueParts = Array.from(new Set(parts));
-
-                                const displayAddress = uniqueParts.length > 0
+                                return uniqueParts.length > 0
                                     ? uniqueParts.join(', ')
                                     : (hospitalInfo?.address || data.hospitalAddress || '');
-
-                                return (
-                                    <>
-                                        <p className="text-[10px] uppercase">{displayAddress}</p>
-                                        <p className="text-[10px]">{hospitalInfo?.pincode ? `PIN: ${hospitalInfo.pincode}` : (data.pincode || '')}</p>
-                                    </>
-                                );
-                            })()}
-                            <p className="text-[10px]">Phone: {hospitalInfo?.phone || data.hospitalPhone || ''}</p>
-                        </div>
-                        <div className="w-28 h-28 flex items-center justify-center border border-black/5 rounded-xl overflow-hidden bg-gray-50/50 p-1">
-                            {(() => {
-                                let logoUrl = hospitalInfo?.logo || data.hospitalLogo;
-
-                                // Defensive check: ignore junk values
-                                if (!logoUrl || logoUrl === 'undefined' || logoUrl === 'null' || (typeof logoUrl === 'object' && Object.keys(logoUrl).length === 0) || (typeof logoUrl === 'string' && logoUrl.includes('example.com/logo.png'))) {
-                                    logoUrl = '';
-                                }
-
-                                const baseUrl = 'http://localhost:5002';
-
-                                // Resolve relative paths
-                                const finalUrl = logoUrl && !logoUrl.startsWith('http') && !logoUrl.startsWith('data:')
-                                    ? `${baseUrl}${logoUrl.startsWith('/') ? '' : '/'}${logoUrl}`
-                                    : logoUrl;
-
-                                // Log diagnostic info to browser console
-                                if (typeof window !== 'undefined' && finalUrl) {
-                                    console.log('[Logo Diagnosis] Final URL:', finalUrl);
-                                }
-
-                                return finalUrl ? (
-                                    <img
-                                        src={finalUrl}
-                                        alt="Hospital Logo"
-                                        className="max-w-full max-h-full object-contain"
-                                        crossOrigin="anonymous"
-                                        onError={(e) => {
-                                            if (typeof window !== 'undefined') console.error('[Logo Diagnosis] Failed to load:', finalUrl);
-                                            (e.target as any).onerror = null;
-                                            (e.target as any).style.display = 'none';
-                                            (e.target as any).parentNode.innerHTML = `
-                                                <div class="w-full h-full bg-[#0e639c] flex flex-col items-center justify-center text-white rounded-lg p-2 text-center">
-                                                    <span class="font-black text-xl leading-none">KMSH</span>
-                                                    <div class="w-6 h-[1px] bg-white/30 my-1"></div>
-                                                    <span class="text-[6px] uppercase tracking-widest font-medium opacity-70">Medical Center</span>
-                                                </div>
-                                            `;
-                                        }}
-                                    />
-                                ) : (
-                                    <div className="w-full h-full bg-[#0e639c] flex flex-col items-center justify-center text-white rounded-lg p-2 text-center">
-                                        <span className="font-black text-xl leading-none">KMSH</span>
-                                        <div className="w-6 h-[1px] bg-white/30 my-1"></div>
-                                        <span className="text-[6px] uppercase tracking-widest font-medium opacity-70">Medical Center</span>
-                                    </div>
-                                );
-                            })()}
-                        </div>
-                    </div>
+                            })(),
+                            phone: hospitalInfo?.phone || data.hospitalPhone || '',
+                            email: hospitalInfo?.email || data.hospitalEmail || '',
+                            logo: hospitalInfo?.logo || data.hospitalLogo
+                        }}
+                    />
 
                     {/* Title */}
                     <div className="text-center mb-6 relative z-10">
@@ -302,23 +246,15 @@ export const PrintableDischargeSummary = React.forwardRef<HTMLDivElement, { data
 
                     {/* 4. Footer */}
                     <div className="mt-auto relative z-10">
-                        {/* Disclaimer Line */}
-                        <div className="border-t border-gray-200 mb-2 mt-8"></div>
-                        <div className="text-center text-[9px] mb-4">
-                            <p>Regd. Office: {hospitalInfo?.name || data.hospitalName}, {
-                                Array.from(new Set([
-                                    hospitalInfo?.street,
-                                    hospitalInfo?.area,
-                                    hospitalInfo?.city,
-                                    hospitalInfo?.state,
-                                    hospitalInfo?.pincode
-                                ].filter(Boolean))).join(', ') || (hospitalInfo?.address || data.hospitalAddress)
-                            }</p>
-                            <p>Tel: {hospitalInfo?.phone || data.hospitalPhone}</p>
-                        </div>
-
-
-                        <div className="text-center text-[10px] font-bold">
+                        <MainFooter
+                            initialDetails={{
+                                name: hospitalInfo?.name || data.hospitalName || 'Hospital Name',
+                                address: hospitalInfo?.address || data.hospitalAddress || '',
+                                phone: hospitalInfo?.phone || data.hospitalPhone || '',
+                                email: hospitalInfo?.email || data.hospitalEmail || '',
+                            }}
+                        />
+                        <div className="text-center text-[10px] font-bold mt-4">
                             KEEP THE REPORTS CAREFULLY AND BRING THEM ALONG DURING YOUR NEXT VISIT TO OUR HOSPITAL
                         </div>
                     </div>

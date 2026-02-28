@@ -101,101 +101,349 @@ export default function NurseHourlyRecordClient() {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Hourly Monitoring');
 
-        // Header Styling
+        // Column Config
+        worksheet.columns = [
+            { key: 'A', width: 20 },
+            { key: 'B', width: 25 },
+            { key: 'C', width: 15 },
+            { key: 'D', width: 20 },
+            { key: 'E', width: 25 },
+            { key: 'F', width: 15 },
+            { key: 'G', width: 15 },
+            { key: 'H', width: 15 },
+            { key: 'I', width: 15 },
+            { key: 'J', width: 15 },
+            { key: 'K', width: 15 },
+        ];
+
+        // 1. Report Headers
         worksheet.mergeCells('A1:K1');
-        const headerCell = worksheet.getCell('A1');
-        headerCell.value = 'MS CURECHAIN HOSPITAL - PATIENT HOURLY MONITORING RECORD';
-        headerCell.font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
-        headerCell.alignment = { horizontal: 'center' };
-        headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B82F6' } };
+        const mainTitle = worksheet.getCell('A1');
+        mainTitle.value = 'PATIENT HOURLY MONITORING SUMMARY REPORT';
+        mainTitle.font = { bold: true, size: 16, color: { argb: 'FF002060' } };
+        mainTitle.alignment = { horizontal: 'center', vertical: 'middle' };
+        worksheet.getRow(1).height = 30;
 
-        // Patient Info
-        worksheet.addRow(['Patient Name:', admission.patientName, '', 'Admission ID:', admission.admissionId]);
-        const docName = admission.doctorName?.startsWith('Dr.') ? admission.doctorName : `Dr. ${admission.doctorName}`;
-        worksheet.addRow(['Doctor:', docName, '', 'Admission Date:', format(new Date(admission.admissionDate), 'dd MMM yyyy HH:mm')]);
-        worksheet.addRow(['Diet Plan:', admission.diet || 'Regular Diet']);
+        worksheet.mergeCells('A2:K2');
+        const subTitle = worksheet.getCell('A2');
+        subTitle.value = 'Clinical Observation Registry';
+        subTitle.font = { bold: true, size: 12, color: { argb: 'FF000000' } };
+        subTitle.alignment = { horizontal: 'center', vertical: 'middle' };
+        worksheet.getRow(2).height = 20;
+
+        worksheet.mergeCells('A3:K3');
+        const generatedCell = worksheet.getCell('A3');
+        generatedCell.value = `Report Generated: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`;
+        generatedCell.font = { italic: true, size: 10, color: { argb: 'FF555555' } };
+        generatedCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        worksheet.getRow(3).height = 18;
+
+        // Gap row
         worksheet.addRow([]);
+        worksheet.getRow(4).height = 10;
 
-        // Lab Investigations
-        if (labOrders && labOrders.length > 0) {
-            worksheet.addRow(['LAB INVESTIGATIONS']).font = { bold: true };
-            worksheet.addRow(['Date', 'Test Name', 'Status', 'Result', 'Unit']);
-            labOrders.forEach((order: any) => {
-                const date = format(new Date(order.createdAt), 'dd MMM HH:mm');
-                order.tests?.forEach((test: any) => {
-                    const testName = test.testName || test.test?.testName || 'Test';
+        // 2. Metadata Grid (Rows 5-8)
+        const labelStyle = {
+            font: { bold: true, size: 10, color: { argb: 'FF002060' } },
+            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } },
+            border: {
+                top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+            }
+        };
+        const valueStyle = {
+            font: { bold: true, size: 10 },
+            border: {
+                top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+            }
+        };
 
-                    // Add subtests if they exist
-                    if (test.subTests && test.subTests.length > 0) {
-                        test.subTests.forEach((st: any) => {
-                            if (st.result !== undefined && st.result !== null && st.result !== '') {
-                                worksheet.addRow([date, `${testName} - ${st.name}`, order.status, st.result, st.unit || '-']);
-                            }
-                        });
-                    } else if (test.resultValue) {
-                        worksheet.addRow([date, testName, order.status, test.resultValue, test.unit || '-']);
-                    } else {
-                        worksheet.addRow([date, testName, order.status, 'Pending', '-']);
-                    }
-                });
+        const metadata = [
+            { l1: 'Patient Name', v1: admission.patientName, l2: 'Admission ID', v2: admission.admissionId },
+            { l1: 'Department', v1: admission.wardName || 'ICU-D', l2: 'Status', v2: admission.status },
+            { l1: 'Adm Date', v1: format(new Date(admission.admissionDate), 'dd MMM yyyy, HH:mm'), l2: 'Length of Stay', v2: `${Math.max(0, differenceInCalendarDays(new Date(), new Date(admission.admissionDate)))} Days` },
+            { l1: 'Primary Dr.', v1: admission.doctorName, l2: 'Ward Details', v2: `${admission.wardName} / ${admission.roomName || 'N/A'}` }
+        ];
+
+        metadata.forEach((row, i) => {
+            const rowNum = 5 + i;
+            worksheet.getRow(rowNum).height = 22;
+            worksheet.getCell(`A${rowNum}`).value = row.l1;
+            worksheet.getCell(`B${rowNum}`).value = row.v1;
+            worksheet.getCell(`D${rowNum}`).value = row.l2;
+            worksheet.getCell(`E${rowNum}`).value = row.v2;
+
+            // Apply Styles
+            ['A', 'D'].forEach(col => {
+                const cell = worksheet.getCell(`${col}${rowNum}`);
+                cell.font = labelStyle.font as any;
+                cell.fill = labelStyle.fill as any;
+                cell.border = labelStyle.border as any;
             });
-            worksheet.addRow([]);
-        }
+            ['B', 'E'].forEach(col => {
+                const cell = worksheet.getCell(`${col}${rowNum}`);
+                cell.font = valueStyle.font as any;
+                cell.border = valueStyle.border as any;
+            });
+        });
 
-        // Vitals Table
-        worksheet.addRow(['HOURLY VITALS']).font = { bold: true };
-        worksheet.addRow(['Date', 'Day', 'Time', 'Heart Rate', 'Blood Pressure', 'SpO2 (%)', 'Temp (°F)', 'Resp. Rate', 'Glucose', 'Nurse', 'Status']);
+        // Gap before tables
+        worksheet.addRow([]);
+        worksheet.getRow(9).height = 15;
 
-        const vitalRows = vitals.map((v: any) => [
-            format(new Date(v.timestamp), 'dd MMM yyyy'),
-            format(new Date(v.timestamp), 'EEEE'),
-            format(new Date(v.timestamp), 'HH:mm'),
-            v.heartRate,
-            `${v.systolicBP}/${v.diastolicBP}`,
-            v.spO2,
-            v.temperature,
-            v.respiratoryRate,
-            v.glucose ? `${v.glucose} (${v.glucoseType})` : '-',
-            v.recordedBy?.name,
-            v.status
-        ]);
-        worksheet.addRows(vitalRows);
+        // 3. Hourly Vitals Log
+        const vitalsHeaderRowNum = worksheet.lastRow ? worksheet.lastRow.number + 1 : 10;
+        worksheet.mergeCells(`A${vitalsHeaderRowNum}:K${vitalsHeaderRowNum}`);
+        const vitalsHeaderTitle = worksheet.getCell(`A${vitalsHeaderRowNum}`);
+        vitalsHeaderTitle.value = 'HOURLY VITALS LOG';
+        vitalsHeaderTitle.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        vitalsHeaderTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF002060' } };
+        vitalsHeaderTitle.alignment = { vertical: 'middle' };
+        worksheet.getRow(vitalsHeaderRowNum).height = 25;
+
+        // ADDED SPACE BETWEEN TITLE AND HEADER
         worksheet.addRow([]);
 
-        // Medications Table
-        worksheet.addRow(['MEDICATION ADMINISTRATION LOG']).font = { bold: true };
-        worksheet.addRow(['Drug Name', 'Dose', 'Route', 'Time Given', 'Nurse', 'Time Slot', 'Status']);
+        const vitalsColumns = ['S.No', 'Date', 'Day', 'Time', 'Heart Rate', 'BP', 'SpO2', 'Temp (F)', 'Resp', 'Nurse', 'Status'];
+        const vitalsHeaderRow = worksheet.getRow(vitalsHeaderRowNum + 2);
+        vitalsHeaderRow.values = vitalsColumns;
+        vitalsHeaderRow.height = 20;
+        vitalsHeaderRow.eachCell(cell => {
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF002060' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                right: { style: 'thin', color: { argb: 'FFFFFFFF' } }
+            };
+        });
 
-        const medRows = meds.map((m: any) => [
-            m.drugName,
-            m.dose,
-            m.route,
-            format(new Date(m.timestamp), 'dd/MM HH:mm'),
-            m.administeredBy?.name,
-            m.timeSlot,
-            m.status
-        ]);
-        worksheet.addRows(medRows);
+        vitals.map((v: any, idx: number) => {
+            const row = worksheet.addRow([
+                idx + 1,
+                format(new Date(v.timestamp), 'dd/MM/yyyy'),
+                format(new Date(v.timestamp), 'EEEE'),
+                format(new Date(v.timestamp), 'HH:mm'),
+                v.heartRate,
+                `${v.systolicBP}/${v.diastolicBP}`,
+                `${v.spO2}%`,
+                v.temperature,
+                v.respiratoryRate || '--',
+                v.recordedBy?.name,
+                v.status
+            ]);
+            row.height = 18;
+            row.eachCell(cell => {
+                cell.font = { size: 10 };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                };
+            });
+        });
+
+        // 4. Medication Log
+        worksheet.addRow([]); // Gap row
+        const mStartRow = (worksheet.lastRow?.number || 12) + 1;
+        worksheet.mergeCells(`A${mStartRow}:I${mStartRow}`);
+        const medsHeaderTitle = worksheet.getCell(`A${mStartRow}`);
+        medsHeaderTitle.value = 'MEDICATION ADMINISTRATION LOG';
+        medsHeaderTitle.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        medsHeaderTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF002060' } };
+        medsHeaderTitle.alignment = { vertical: 'middle' };
+        worksheet.getRow(mStartRow).height = 25;
+
+        // ADDED SPACE BETWEEN TITLE AND HEADER
         worksheet.addRow([]);
 
-        // Diet Table
-        worksheet.addRow(['DIETARY INTAKE LOG']).font = { bold: true };
-        worksheet.addRow(['Items', 'Category', 'Time', 'Date', 'Nurse', 'Notes']);
+        const medsColumns = ['S.No', 'Drug Name', 'Route', 'Date', 'Time', 'Slot', 'Admin Nurse', 'Status'];
+        const medsHeaderRow = worksheet.getRow(mStartRow + 2);
+        medsHeaderRow.values = medsColumns;
+        medsHeaderRow.height = 20;
+        medsHeaderRow.eachCell(cell => {
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF002060' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                right: { style: 'thin', color: { argb: 'FFFFFFFF' } }
+            };
+        });
 
-        const dietRows = (diet || []).map((d: any) => [
-            d.items?.map((i: any) => `${i.name || i}${i.quantity ? ` (${i.quantity})` : ''}`).join(', '),
-            d.category,
-            d.recordedTime,
-            format(new Date(d.timestamp), 'dd MMM yyyy (EEEE)'),
-            d.recordedBy?.name,
-            d.notes || '-'
-        ]);
-        worksheet.addRows(dietRows);
+        meds.map((m: any, idx: number) => {
+            const rawDrugName = m.drugName || '';
+
+            const row = worksheet.addRow([
+                idx + 1,
+                rawDrugName,
+                m.route || '-',
+                format(new Date(m.timestamp), 'dd/MM/yyyy'),
+                format(new Date(m.timestamp), 'HH:mm'),
+                m.timeSlot,
+                m.administeredBy?.name,
+                m.status
+            ]);
+            row.height = 18;
+            row.eachCell(cell => {
+                cell.font = { size: 10 };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                };
+            });
+        });
+
+        // 5. Dietary Intake Log
+        worksheet.addRow([]); // Gap row
+        const dStartRow = (worksheet.lastRow?.number || 20) + 1;
+        worksheet.mergeCells(`A${dStartRow}:F${dStartRow}`);
+        const dietHeaderTitle = worksheet.getCell(`A${dStartRow}`);
+        dietHeaderTitle.value = 'DIETARY INTAKE LOG';
+        dietHeaderTitle.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        dietHeaderTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF002060' } };
+        dietHeaderTitle.alignment = { vertical: 'middle' };
+        worksheet.getRow(dStartRow).height = 25;
+
+        // ADDED SPACE BETWEEN TITLE AND HEADER
+        worksheet.addRow([]);
+
+        const dietColumns = ['S.No', 'Items', 'Category', 'Time', 'Date', 'Nurse'];
+        const dietHeaderRow = worksheet.getRow(dStartRow + 2);
+        dietHeaderRow.values = dietColumns;
+        dietHeaderRow.height = 20;
+        dietHeaderRow.eachCell(cell => {
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF002060' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                right: { style: 'thin', color: { argb: 'FFFFFFFF' } }
+            };
+        });
+
+        diet.map((d: any, idx: number) => {
+            const row = worksheet.addRow([
+                idx + 1,
+                d.items?.map((i: any) => `${i.name || i}${i.quantity ? ` (${i.quantity})` : ''}`).join(', '),
+                d.category,
+                d.recordedTime,
+                format(new Date(d.timestamp), 'dd/MM/yyyy'),
+                d.recordedBy?.name
+            ]);
+            row.height = 18;
+            row.eachCell(cell => {
+                cell.font = { size: 10 };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                };
+            });
+        });
+
+        // 6. Lab Registry
+        worksheet.addRow([]); // Gap row
+        const lStartRow = (worksheet.lastRow?.number || 30) + 1;
+        worksheet.mergeCells(`A${lStartRow}:F${lStartRow}`);
+        const labHeaderTitle = worksheet.getCell(`A${lStartRow}`);
+        labHeaderTitle.value = 'LAB INVESTIGATIONS REGISTRY';
+        labHeaderTitle.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        labHeaderTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF002060' } };
+        labHeaderTitle.alignment = { vertical: 'middle' };
+        worksheet.getRow(lStartRow).height = 25;
+
+        // ADDED SPACE BETWEEN TITLE AND HEADER
+        worksheet.addRow([]);
+
+        const labColumns = ['S.No', 'Date', 'Test Name', 'Status', 'Result', 'Unit'];
+        const labHeaderRow = worksheet.getRow(lStartRow + 2);
+        labHeaderRow.values = labColumns;
+        labHeaderRow.height = 20;
+        labHeaderRow.eachCell(cell => {
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF002060' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                right: { style: 'thin', color: { argb: 'FFFFFFFF' } }
+            };
+        });
+
+        labOrders.forEach((order: any, idx: number) => {
+            order.tests?.forEach((test: any) => {
+                // FIXED DATA FETCHING: Added subTests handling
+                if (test.subTests && test.subTests.length > 0) {
+                    test.subTests.forEach((st: any) => {
+                        const row = worksheet.addRow([
+                            idx + 1,
+                            format(new Date(order.createdAt), 'dd/MM HH:mm'),
+                            `${test.testName || test.test?.testName} - ${st.name}`,
+                            order.status,
+                            st.result || 'Pending',
+                            st.unit || '-'
+                        ]);
+                        row.height = 18;
+                        row.eachCell(cell => {
+                            cell.font = { size: 10 };
+                            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                            cell.border = {
+                                top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                                left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                                bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                                right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                            };
+                        });
+                    });
+                } else {
+                    const row = worksheet.addRow([
+                        idx + 1,
+                        format(new Date(order.createdAt), 'dd/MM HH:mm'),
+                        test.testName || test.test?.testName,
+                        order.status,
+                        test.resultValue || 'Pending',
+                        test.unit || '-'
+                    ]);
+                    row.height = 18;
+                    row.eachCell(cell => {
+                        cell.font = { size: 10 };
+                        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                        cell.border = {
+                            top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                            left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                            bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                            right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                        };
+                    });
+                }
+            });
+        });
 
         const buffer = await workbook.xlsx.writeBuffer();
         saveAs(new Blob([buffer]), `Hourly_Record_${admission.patientName}_${format(new Date(), 'ddMMyy')}.xlsx`);
         toast.success('Excel Report Exported');
     };
+
 
     const handleDownload = () => {
         if (!selectedAdmissionId) {
@@ -591,34 +839,38 @@ export default function NurseHourlyRecordClient() {
                                 <table className="w-full text-left">
                                     <thead className="bg-slate-50 border-b border-slate-100">
                                         <tr>
-                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Drug & Dose</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Drug Name</th>
                                             <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Time & Slot</th>
                                             <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Nurse</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50">
                                         {hourlyData.data.meds.length > 0 ? (
-                                            [...hourlyData.data.meds].map((m: any, idx: number) => (
-                                                <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex flex-col">
-                                                            <span className="text-xs font-black text-slate-800">{m.drugName}</span>
-                                                            <span className="text-[10px] font-bold text-slate-500">{m.dose} • {m.route}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex flex-col">
-                                                            <span className="text-xs font-black text-slate-700">{format(new Date(m.timestamp), 'HH:mm')}</span>
-                                                            <span className={`text-[9px] font-black uppercase tracking-widest ${m.timeSlot === 'Morning' ? 'text-amber-500' :
-                                                                m.timeSlot === 'Afternoon' ? 'text-blue-500' : 'text-indigo-600'
-                                                                }`}>{m.timeSlot}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <span className="text-xs font-bold text-slate-600">{m.administeredBy?.name}</span>
-                                                    </td>
-                                                </tr>
-                                            ))
+                                            [...hourlyData.data.meds].map((m: any, idx: number) => {
+                                                const rawDrugName = m.drugName || '';
+
+                                                return (
+                                                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-xs font-black text-slate-800">{rawDrugName}</span>
+                                                                <span className="text-[10px] font-bold text-slate-500">{m.route || '-'}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-xs font-black text-slate-700">{format(new Date(m.timestamp), 'HH:mm')}</span>
+                                                                <span className={`text-[9px] font-black uppercase tracking-widest ${m.timeSlot === 'Morning' ? 'text-amber-500' :
+                                                                    m.timeSlot === 'Afternoon' ? 'text-blue-500' : 'text-indigo-600'
+                                                                    }`}>{m.timeSlot}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <span className="text-xs font-bold text-slate-600">{m.administeredBy?.name}</span>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
                                         ) : (
                                             <tr>
                                                 <td colSpan={3} className="px-6 py-8 text-center text-xs font-bold text-slate-400 uppercase">No Medications Administered</td>

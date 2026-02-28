@@ -98,20 +98,8 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
           } : undefined
         };
 
-        const rawHtml = generateClinicalReceiptHtml({
-          hospital,
-          patient: mappedPatient,
-          appointment: {
-            ...appointment,
-            notes: patient.symptoms // Map symptoms to appointment notes as existing receipts do
-          },
-          payment,
-          registrationType: appointment.type === 'IPD' ? 'IPD' : 'OPD',
-          returnUrl: '#'
-        });
-
         // 1. Render React Components to Static HTML
-        const headerMarkup = renderToStaticMarkup(
+        const headerHtml = renderToStaticMarkup(
           <MainHeader initialDetails={{
             name: hospital.name,
             address: hospital.address || "",
@@ -121,7 +109,7 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
           }} />
         );
 
-        const footerMarkup = renderToStaticMarkup(
+        const footerHtml = renderToStaticMarkup(
           <MainFooter initialDetails={{
             name: hospital.name,
             address: hospital.address || "",
@@ -130,13 +118,25 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
           }} />
         );
 
-        // 2. Sanitize and Inject Components into the generated HTML
+        const rawHtml = generateClinicalReceiptHtml({
+          hospital,
+          patient: mappedPatient,
+          appointment: {
+            ...appointment,
+            notes: patient.symptoms // Map symptoms to appointment notes as existing receipts do
+          },
+          payment,
+          registrationType: appointment.type === 'IPD' ? 'IPD' : 'OPD',
+          headerHtml,
+          footerHtml,
+          returnUrl: '#'
+        });
+
+        // 2. Sanitize for iframe preview
         const sanitizedHtml = rawHtml
           .replace('onload="window.print();"', '')
           .replace(/<div class="no-print">[\s\S]*?<\/div>/, '')
-          .replace(/<script>[\s\S]*?window\.onafterprint[\s\S]*?<\/script>/, '')
-          .replace(/<div class="hospital-header">[\s\S]*?<\/div>/, `<div class="hospital-header">${headerMarkup}</div>`)
-          .replace(/<div class="footer">[\s\S]*?<\/div>/, `<div class="footer" style="border:none; padding:0; margin:0;">${footerMarkup}</div>`);
+          .replace(/<script>[\s\S]*?window\.onafterprint[\s\S]*?<\/script>/, '');
 
         doc.open();
         doc.write(sanitizedHtml);
@@ -182,8 +182,8 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
         <div className="flex-1 bg-slate-100/50 p-8 overflow-hidden flex justify-center items-start overflow-y-auto custom-scrollbar">
           <iframe
             ref={iframeRef}
-            className="bg-white shadow-2xl w-[210mm] min-h-[297mm] border border-slate-200 shrink-0 transform origin-top scale-[0.6] md:scale-90 transition-transform lg:scale-100"
-            style={{ height: '297mm' }}
+            className="bg-white shadow-2xl w-[210mm] border border-slate-200 shrink-0 transform origin-top scale-[0.6] md:scale-90 transition-transform lg:scale-100 mb-20"
+            style={{ minHeight: '600mm', height: 'auto' }}
             title="Receipt Preview"
           />
         </div>

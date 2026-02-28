@@ -21,74 +21,76 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails }) => {
     });
 
     useEffect(() => {
-        // Only fetch if initialDetails wasn't provided (e.g., standard UI use)
-        if (initialDetails) return;
-
         const fetchHospital = async () => {
             try {
                 const response = await hospitalAdminService.getHospital();
                 if (response?.hospital) {
                     const h = response.hospital;
-                    setDetails({
-                        name: h.name || 'Hospital Name',
-                        address: h.address || 'Hospital Address',
-                        phone: h.phone || 'Phone Number',
-                        email: h.email || 'Email Address',
-                    });
+                    setDetails(prev => ({
+                        name: (prev.name === 'Hospital Name' || !prev.name) ? (h.name || prev.name) : prev.name,
+                        address: (prev.address === 'Hospital Address' || !prev.address) ? (h.address || prev.address) : prev.address,
+                        phone: (prev.phone === 'Phone Number' || !prev.phone || prev.phone === 'N/A') ? (h.phone || prev.phone) : prev.phone,
+                        email: (prev.email === 'Email Address' || !prev.email || prev.email === 'N/A') ? (h.email || prev.email) : prev.email,
+                    }));
                 }
             } catch (error) {
                 console.error('Error fetching hospital details for footer:', error);
             }
         };
         fetchHospital();
-    }, [initialDetails]);
+    }, []);
 
     return (
         <div style={{
             width: '100%',
             fontFamily: "'Segoe UI', Roboto, Arial, sans-serif",
-            marginTop: '20px',
+            marginTop: '10px',
             printColorAdjust: 'exact',
             WebkitPrintColorAdjust: 'exact',
         }}>
             {/* ── Contact Slanted Bars ── */}
-            <div style={{ display: 'flex', height: '40px', marginBottom: '15px', position: 'relative' }}>
-                {/* Green Bar (Phone) */}
-                <div style={{
-                    flex: 1,
-                    background: '#22c55e', // Vibrant Green
-                    color: '#ffffff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '0 40px',
-                    fontWeight: 900,
-                    fontSize: '16px',
-                    clipPath: 'polygon(0 0, 100% 0, 90% 100%, 0 100%)',
-                    zIndex: 2
-                }}>
-                    <span style={{ marginRight: '10px' }}>📞</span>
-                    {details.phone}
-                </div>
+            {((details.phone && details.phone !== 'N/A' && details.phone !== 'Phone Number') ||
+                (details.email && details.email !== 'N/A' && details.email !== 'Email Address')) && (
+                    <div style={{ display: 'flex', height: '40px', marginBottom: '15px', position: 'relative' }}>
+                        {details.phone && details.phone !== 'N/A' && details.phone !== 'Phone Number' && (
+                            <div style={{
+                                flex: 1,
+                                background: '#22c55e',
+                                color: '#ffffff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '0 40px',
+                                fontWeight: 900,
+                                fontSize: '16px',
+                                clipPath: 'polygon(0 0, 100% 0, 90% 100%, 0 100%)',
+                                zIndex: 2
+                            }}>
+                                <span style={{ marginRight: '10px' }}>📞</span>
+                                {details.phone}
+                            </div>
+                        )}
 
-                {/* Blue Bar (Email) */}
-                <div style={{
-                    flex: 1,
-                    background: '#3b82f6', // Vibrant Blue
-                    color: '#ffffff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 900,
-                    fontSize: '16px',
-                    clipPath: 'polygon(10% 0, 100% 0, 100% 100%, 0 100%)',
-                    marginLeft: '-40px',
-                    zIndex: 1,
-                    paddingLeft: '40px'
-                }}>
-                    <span style={{ marginRight: '10px' }}>✉️</span>
-                    {details.email}
-                </div>
-            </div>
+                        {details.email && details.email !== 'N/A' && details.email !== 'Email Address' && (
+                            <div style={{
+                                flex: 1,
+                                background: '#3b82f6',
+                                color: '#ffffff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 900,
+                                fontSize: '16px',
+                                clipPath: 'polygon(10% 0, 100% 0, 100% 100%, 0 100%)',
+                                marginLeft: details.phone ? '-40px' : '0',
+                                zIndex: 1,
+                                paddingLeft: details.phone ? '40px' : '0'
+                            }}>
+                                <span style={{ marginRight: '10px' }}>✉️</span>
+                                {details.email}
+                            </div>
+                        )}
+                    </div>
+                )}
 
             {/* ── Info Wrapper with Border ── */}
             <div style={{

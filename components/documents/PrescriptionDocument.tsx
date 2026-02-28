@@ -1,6 +1,6 @@
 import React from 'react';
-import MainHeader from '@/components/printers/MainHeader';
-import MainFooter from '@/components/printers/MainFooter';
+import MainHeader from '../printers/MainHeader';
+import MainFooter from '../printers/MainFooter';
 
 // Common interfaces
 interface Medicine {
@@ -114,13 +114,16 @@ export const PrescriptionDocument: React.FC<PrescriptionDocumentProps> = ({
                 `}
             </style>
 
-            <MainHeader initialDetails={{
-                name: hospital?.name,
-                address: hospital?.address,
-                phone: hospital?.phone,
-                email: hospital?.email,
-                logo: hospital?.logo
-            }} />
+            {/* --- MainHeader --- */}
+            <MainHeader
+                initialDetails={{
+                    name: hospital.name,
+                    address: hospital.address || "",
+                    phone: hospital.phone || hospital.contact || "",
+                    email: hospital.email || "",
+                    logo: hospital.logo
+                }}
+            />
 
             <div style={{ flex: '1' }}>
                 {/* Info Row */}
@@ -242,12 +245,15 @@ export const PrescriptionDocument: React.FC<PrescriptionDocumentProps> = ({
                 </div>
             </div>
 
-            <MainFooter initialDetails={{
-                name: hospital?.name,
-                address: hospital?.address,
-                phone: hospital?.phone,
-                email: hospital?.email
-            }} />
+            {/* --- MainFooter --- */}
+            <MainFooter
+                initialDetails={{
+                    name: hospital.name,
+                    address: hospital.address || "",
+                    phone: hospital.phone || hospital.contact || "",
+                    email: hospital.email || "",
+                }}
+            />
 
         </div>
     );
