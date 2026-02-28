@@ -23,28 +23,25 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
     });
 
     useEffect(() => {
-        // Only fetch if initialDetails wasn't provided (e.g., standard UI use)
-        if (initialDetails) return;
-
         const fetchHospital = async () => {
             try {
                 const response = await hospitalAdminService.getHospital();
                 if (response?.hospital) {
                     const h = response.hospital;
-                    setDetails({
-                        name: h.name || 'Hospital Name',
-                        address: h.address || 'Hospital Address',
-                        phone: h.phone || 'Phone Number',
-                        email: h.email || 'Email Address',
-                        logo: h.logo
-                    });
+                    setDetails(prev => ({
+                        name: (prev.name === 'Hospital Name' || !prev.name) ? (h.name || prev.name) : prev.name,
+                        address: (prev.address === 'Hospital Address' || !prev.address) ? (h.address || prev.address) : prev.address,
+                        phone: (prev.phone === 'Phone Number' || !prev.phone || prev.phone === 'N/A') ? (h.phone || prev.phone) : prev.phone,
+                        email: (prev.email === 'Email Address' || !prev.email || prev.email === 'N/A') ? (h.email || prev.email) : prev.email,
+                        logo: !prev.logo ? (h.logo || prev.logo) : prev.logo
+                    }));
                 }
             } catch (error) {
                 console.error('Error fetching hospital details for header:', error);
             }
         };
         fetchHospital();
-    }, [initialDetails]);
+    }, []);
 
     return (
         <div style={{
@@ -54,7 +51,7 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
             marginBottom: '10px',
             printColorAdjust: 'exact',
             WebkitPrintColorAdjust: 'exact',
-            
+
             padding: '10px',
             boxSizing: 'border-box'
         }}>
@@ -76,11 +73,11 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                         <img
                             src={details.logo}
                             alt="Hospital Logo"
-                            style={{ 
-                                maxWidth: '160px', 
-                                maxHeight: '110px', 
+                            style={{
+                                maxWidth: '160px',
+                                maxHeight: '110px',
                                 objectFit: 'contain',
-                                border: '1px solid #000' // Matching the boxed logo look if applicable
+                                // removed border for clean look
                             }}
                         />
                     ) : (
@@ -91,10 +88,10 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: '#000',
+                            color: '#e2e8f0',
                             fontSize: '12px',
                             fontWeight: 'bold'
-                        }}>LOGO</div>
+                        }}></div>
                     )}
                 </div>
 
@@ -128,22 +125,24 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                     </h1>
 
                     {/* Email Row */}
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        color: '#1e40af',
-                        fontSize: '14px',
-                        fontWeight: '700'
-                    }}>
+                    {details.email && details.email !== 'N/A' && details.email !== 'Email Address' && (
                         <div style={{
-                            width: '12px',
-                            height: '12px',
-                            backgroundColor: '#1e40af',
-                            borderRadius: '1px'
-                        }}></div>
-                        <span>{details.email}</span>
-                    </div>
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            color: '#1e40af',
+                            fontSize: '14px',
+                            fontWeight: '700'
+                        }}>
+                            <div style={{
+                                width: '12px',
+                                height: '12px',
+                                backgroundColor: '#1e40af',
+                                borderRadius: '1px'
+                            }}></div>
+                            <span>{details.email}</span>
+                        </div>
+                    )}
 
                     {/* Address & Phone Row */}
                     <div style={{
@@ -155,12 +154,18 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                         fontWeight: '700',
                         marginTop: '2px'
                     }}>
-                        <span style={{ color: '#64748b' }}>{details.address}</span>
-                        <div style={{ width: '1px', height: '14px', backgroundColor: '#cbd5e1' }}></div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Phone size={16} fill="#22c55e" color="#22c55e" strokeWidth={0} />
-                            <span style={{ color: '#22c55e' }}>{details.phone}</span>
-                        </div>
+                        {details.address && details.address !== 'N/A' && details.address !== 'Hospital Address' && (
+                            <span style={{ color: '#64748b' }}>{details.address}</span>
+                        )}
+                        {details.address && details.phone && details.phone !== 'N/A' && (
+                            <div style={{ width: '1px', height: '14px', backgroundColor: '#cbd5e1' }}></div>
+                        )}
+                        {details.phone && details.phone !== 'N/A' && details.phone !== 'Phone Number' && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Phone size={16} fill="#22c55e" color="#22c55e" strokeWidth={0} />
+                                <span style={{ color: '#22c55e' }}>{details.phone}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

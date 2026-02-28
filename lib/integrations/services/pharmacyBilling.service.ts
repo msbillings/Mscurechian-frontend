@@ -14,6 +14,7 @@ const mapInvoiceToBill = (b: any): PharmacyBill => ({
   updatedAt: b.updatedAt,
   patientName: b.patientName,
   customerPhone: b.customerPhone || "-",
+  doctorName: b.doctorName || "-",
   items: (b.items || []).map((item: any) => ({
     productId: item.drug,
     itemName: item.productName,
@@ -22,6 +23,11 @@ const mapInvoiceToBill = (b: any): PharmacyBill => ({
     gst: item.gstPct,
     total: item.amount,
     hsn: item.hsnCode || item.hsn,
+    batch: item.batchNo || item.batchNum || (item.batch?.batchNo || item.batch),
+    expiry: item.expiryDate || item.expDate || item.expiry || (item.batch?.expiry || undefined),
+    mrp: item.mrp || item.unitRate,
+    discountPct: item.discountPct,
+    discount: item.discountAmount || item.discount,
   })),
   paymentSummary: {
     subtotal: b.subTotal,
@@ -31,6 +37,7 @@ const mapInvoiceToBill = (b: any): PharmacyBill => ({
     grandTotal: b.netPayable,
     paidAmount: b.paid,
     balanceDue: b.balance,
+    transactionId: b.transactionId || b.paymentId,
     paymentMode: (b.mode === "MIXED"
       ? "Mixed"
       : b.mode === "UPI"

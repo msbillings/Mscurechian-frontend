@@ -53,7 +53,8 @@ const TransactionsPage = () => {
         phone: (user as any)?.mobile || (user as any)?.phone || '-',
         email: (user as any)?.email || '-',
         gstin: (user as any)?.gstin || '-',
-        dlNo: (user as any)?.licenseNo,
+        dlNo: (user as any)?.licenseNo || (user as any)?.dlNo || 'KA-123456',
+        fssai: (user as any)?.fssai || '12345678901234',
         logo: (user as any)?.image || (user as any)?.logo
     };
 
@@ -99,7 +100,7 @@ const TransactionsPage = () => {
         setBillToPrint(bill);
         setTimeout(() => {
             handlePrint();
-        }, 500);
+        }, 1000);
     };
 
     const handleDownloadPDF = async () => {
@@ -586,8 +587,8 @@ const TransactionsPage = () => {
                 </div>
             )}
 
-            {/* Hidden Print Component */}
-            <div style={{ display: 'none' }}>
+            {/* Hidden Print Component - Optimized for react-to-print */}
+            <div style={{ position: 'fixed', top: '-10000px', left: '-10000px', opacity: 0, pointerEvents: 'none', zIndex: -100 }}>
                 <div ref={printRef}>
                     {billToPrint && (
                         <PharmacyBillPrint

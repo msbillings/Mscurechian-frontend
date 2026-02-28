@@ -37,7 +37,7 @@ import PortalGrid from "@/components/home/PortalGrid";
 import Footer from "@/components/footer/Footer";
 import LandingNavbar from "@/components/navbar/LandingNavbar";
 import ScrollReveal from "@/components/animations/ScrollReveal";
-import FloatingAudioPlayer from "@/components/home/FloatingAudioPlayer";
+
 import { motion, AnimatePresence } from "framer-motion";
 import DeploymentSecurity from "@/components/home/DeploymentSecurity";
 import TermsSection from "@/components/home/TermsSection";
@@ -147,13 +147,7 @@ export default function Home() {
                 {/* Hidden Audio Element */}
                 <audio ref={audioRef} src="/assets/voiceMS.mp3" preload="auto" autoPlay aria-hidden="true" />
 
-                <FloatingAudioPlayer
-                    isPlaying={isPlaying}
-                    togglePlay={togglePlay}
-                    progress={progress}
-                    onClose={() => setShowFloatingPlayer(false)}
-                    visible={showFloatingPlayer}
-                />
+                
 
                 {/* Hero Section */}
                 <section

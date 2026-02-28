@@ -1,4 +1,8 @@
 import { format } from 'date-fns';
+import { renderToString } from 'react-dom/server';
+import MainHeader from '../../components/printers/MainHeader';
+import MainFooter from '../../components/printers/MainFooter';
+import React from 'react';
 
 export const generatePatientHourlyRecordHtml = (data: any) => {
     const { admission, vitals, meds, diet, labOrders, hospital } = data;
@@ -7,6 +11,10 @@ export const generatePatientHourlyRecordHtml = (data: any) => {
     const sortedVitals = [...vitals].sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
     const sortedMeds = [...meds].sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
     const sortedDiet = [...(diet || [])].sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    // Pre-render Header and Footer to strings so they can be injected into the static HTML template
+    const headerHtml = renderToString(React.createElement(MainHeader, { initialDetails: hospital }));
+    const footerHtml = renderToString(React.createElement(MainFooter, { initialDetails: hospital }));
 
     return `
         <!DOCTYPE html>
@@ -30,9 +38,16 @@ export const generatePatientHourlyRecordHtml = (data: any) => {
                     background-color: white;
                     max-width: 850px;
                     margin: 0 auto;
-                    padding: 25px 35px;
+                    padding: 0; 
                     box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
                     min-height: 297mm;
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .content-area-padding {
+                    padding: 25px 35px;
+                    flex: 1;
                 }
                 
                 @page {
@@ -40,62 +55,106 @@ export const generatePatientHourlyRecordHtml = (data: any) => {
                     margin: 0;
                 }
 
-                .header {
+                /* Report Title matching Excel */
+                .report-title-container {
                     text-align: center;
-                    border-bottom: 2px solid #3b82f6;
-                    padding-bottom: 8px;
-                    margin-bottom: 15px;
+                    margin-bottom: 20px;
                 }
-                .header h1 { 
-                    font-size: 16px; 
-                    font-weight: 800; 
-                    color: #1d4ed8; 
+                .report-main-title {
+                    font-size: 16px;
+                    font-weight: 800;
+                    color: #002060; /* Dark Blue from Excel */
                     text-transform: uppercase;
-                    letter-spacing: 0.5px;
                 }
-                .header p { font-size: 9px; color: #64748b; font-weight: 600; margin-top: 2px; }
+                .report-sub-title {
+                    font-size: 12px;
+                    font-weight: 800;
+                    color: #000000;
+                    margin-top: 4px;
+                }
+                .report-generated {
+                    font-size: 10px;
+                    font-style: italic;
+                    color: #555555;
+                    margin-top: 2px;
+                }
 
                 .patient-info-grid {
                     display: grid;
-                    grid-template-columns: repeat(3, 1fr);
-                    gap: 15px;
+                    grid-template-columns: repeat(2, 1fr); /* Matching Excel 2-column layout */
+                    gap: 0;
                     margin-bottom: 20px;
-                    background-color: #f8fafc;
-                    padding: 15px;
-                    border-radius: 8px;
-                    border: 1px solid #e2e8f0;
+                    border: 1px solid #cbd5e1;
                 }
 
-                .info-item { display: flex; flex-direction: column; gap: 2px; }
-                .info-label { font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
-                .info-value { font-size: 11px; font-weight: 600; color: #1e293b; }
+                .info-row {
+                    display: contents;
+                }
+
+                .info-cell {
+                    display: flex;
+                }
+
+                .info-label {
+                    width: 35%;
+                    background-color: #f8fafc;
+                    padding: 6px 8px;
+                    font-size: 10px;
+                    font-weight: 800;
+                    color: #002060;
+                    border-right: 1px solid #cbd5e1;
+                    border-bottom: 1px solid #cbd5e1;
+                }
+                .info-value { 
+                    width: 65%;
+                    padding: 6px 8px;
+                    font-size: 10px; 
+                    font-weight: 800; 
+                    color: #1e293b;
+                    border-right: 1px solid #cbd5e1;
+                    border-bottom: 1px solid #cbd5e1;
+                }
+                
+                /* Remove right border for the last cell in a row to avoid double borders */
+                .info-cell:nth-child(even) .info-value { border-right: none; }
 
                 .section { margin-bottom: 25px; }
-                .section-header { 
-                    background-color: #f1f5f9; 
-                    padding: 6px 12px; 
-                    border-radius: 6px; 
-                    margin-bottom: 10px;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    border-left: 4px solid #3b82f6;
-                }
-                .section-header h2 { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; }
 
-                table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-                th { 
-                    background-color: #f8fafc; 
-                    color: #64748b; 
-                    font-size: 9px; 
+                /* EXCEL STYLED HEADERS */
+                .section-header-title { 
+                    background-color: #002060; /* Deep Blue from Excel */
+                    color: #ffffff;
+                    padding: 8px 12px; 
+                    font-size: 11px; 
                     font-weight: 800; 
                     text-transform: uppercase; 
-                    padding: 8px; 
-                    text-align: left; 
-                    border-bottom: 1px solid #e2e8f0;
+                    margin-bottom: 0px; /* Attach tightly to tables */
                 }
-                td { padding: 8px; font-size: 10px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+
+                table { width: 100%; border-collapse: collapse; margin-top: 0; }
+                th { 
+                    background-color: #002060; 
+                    color: #ffffff; 
+                    font-size: 10px; 
+                    font-weight: 800; 
+                    text-transform: uppercase; 
+                    padding: 6px 8px; 
+                    text-align: center; 
+                    border: 1px solid #ffffff;
+                }
+                td { 
+                    padding: 6px 8px; 
+                    font-size: 10px; 
+                    border: 1px solid #cbd5e1; 
+                    color: #334155; 
+                    text-align: center;
+                }
                 
+                /* Override table headers immediately following a section header title */
+                .section-header-title + table th {
+                    border-top: 1px solid white; /* Separate title from headers slightly */
+                }
+
                 .status-badge {
                     padding: 2px 8px;
                     border-radius: 12px;
@@ -103,81 +162,21 @@ export const generatePatientHourlyRecordHtml = (data: any) => {
                     font-weight: 800;
                     text-transform: uppercase;
                 }
-                .status-stable { background-color: #ecfdf5; color: #059669; }
-                .status-warning { background-color: #fffbeb; color: #d97706; }
-                .status-critical { background-color: #fef2f2; color: #dc2626; }
+                .status-stable { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0;}
+                .status-warning { background-color: #fffbeb; color: #d97706; border: 1px solid #fde68a;}
+                .status-critical { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca;}
 
                 .diet-card {
                     padding: 12px;
-                    background-color: #f0fdf4;
-                    border: 1px solid #dcfce7;
-                    border-radius: 8px;
-                    margin-top: 5px;
+                    border: 1px solid #cbd5e1;
+                    margin-top: 0px;
                 }
-                .diet-text { font-style: italic; font-weight: 600; color: #166534; font-size: 11px; }
-
-                .lab-grid {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 10px;
-                }
-                .lab-item {
-                    padding: 10px;
-                    border-radius: 8px;
-                    border: 1px solid #e2e8f0;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-
-                .footer {
-                    margin-top: 40px;
-                    border-top: 1px solid #e2e8f0;
-                    padding-top: 10px;
-                    display: flex;
-                    justify-content: space-between;
-                    font-size: 9px;
-                    color: #94a3b8;
-                    font-weight: 600;
-                }
+                .diet-text { font-style: italic; font-weight: 600; color: #1e293b; font-size: 10px; }
 
                 .no-break { break-inside: avoid; }
                 
-                .btn-print {
-                    position: fixed;
-                    bottom: 20px;
-                    right: 20px;
-                    background-color: #3b82f6;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 50px;
-                    font-weight: 800;
-                    cursor: pointer;
-                    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-                    text-transform: uppercase;
-                    font-size: 10px;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                }
-                
-                .btn-back {
-                    position: fixed;
-                    bottom: 20px;
-                    left: 20px;
-                    background-color: #64748b;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 50px;
-                    font-weight: 800;
-                    cursor: pointer;
-                    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-                    text-transform: uppercase;
-                    font-size: 10px;
-                    text-decoration: none;
-                }
+                /* Hide header/footer inject buttons inside print if any accidentally render */
+                .print-hidden { display: none !important; }
 
                 @media print {
                     .btn-print, .btn-back { display: none !important; }
@@ -185,239 +184,253 @@ export const generatePatientHourlyRecordHtml = (data: any) => {
                     .main-record { 
                         max-width: none !important; 
                         margin: 0 !important; 
-                        padding: 15mm !important; 
                         box-shadow: none !important;
+                    }
+                    /* Ensure background colors print */
+                    * {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
                     }
                 }
             </style>
         </head>
         <body>
-
             <div class="main-record">
-                <div class="header">
-                    <h1>${hospital?.name || "CureChain Medical Center"}</h1>
-                    <p>${hospital?.address || "Quality Healthcare Services"}</p>
-                    <p>Phone: ${hospital?.phone || hospital?.contact || "N/A"} | Email: ${hospital?.email || "N/A"}</p>
-                    <p style="margin-top: 8px; font-weight: 800; color: #1e293b; font-size: 10px;">PATIENT HOURLY MONITORING & CLINICAL LOG</p>
+                <!-- Injected React MainHeader -->
+                <div class="header-injection-zone">
+                    ${headerHtml}
                 </div>
 
-            <div class="patient-info-grid">
-                <div class="info-item">
-                    <span class="info-label">Patient Name</span>
-                    <span class="info-value">${admission.patientName}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Admission ID</span>
-                    <span class="info-value">${admission.admissionId}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Admission Date</span>
-                    <span class="info-value">${format(new Date(admission.admissionDate), 'dd MMM yyyy, HH:mm')}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Primary Physician</span>
-                    <span class="info-value">${admission.doctorName?.startsWith('Dr.') ? admission.doctorName : `Dr. ${admission.doctorName}`}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Location</span>
-                    <span class="info-value">
-                        ${admission.wardName ? `
-                            ${admission.wardName}
-                            ${admission.roomName ? ` - ${admission.roomName}` : ''}
-                            ${admission.bedName ? ` - ${admission.bedName}` : ''}
-                        ` : 'Clinical Transit'}
-                    </span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Current Status</span>
-                    <span class="info-value" style="color: #059669;">${admission.status}</span>
-                </div>
-            </div>
+                <div class="content-area-padding">
+                    <div class="report-title-container">
+                        <div class="report-main-title">PATIENT HOURLY MONITORING SUMMARY REPORT</div>
+                        <div class="report-sub-title">Clinical Observation Registry</div>
+                        <div class="report-generated">Report Generated: ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
+                    </div>
 
-            <div class="section no-break">
-                <div class="section-header">
-                    <h2>Prescribed Diet Plan</h2>
-                </div>
-                <div class="diet-card">
-                    <p class="diet-text">"${admission.diet || 'Standard hospital nutrition prescribed.'}"</p>
-                </div>
-            </div>
+                    <div class="patient-info-grid">
+                        <div class="info-row">
+                            <div class="info-cell">
+                                <div class="info-label">Patient Name</div>
+                                <div class="info-value">${admission.patientName}</div>
+                            </div>
+                            <div class="info-cell">
+                                <div class="info-label">Admission ID</div>
+                                <div class="info-value">${admission.admissionId}</div>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-cell">
+                                <div class="info-label">Department</div>
+                                <div class="info-value">${admission.wardName || 'ICU-D'}</div>
+                            </div>
+                            <div class="info-cell">
+                                <div class="info-label">Status</div>
+                                <div class="info-value">${admission.status}</div>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-cell">
+                                <div class="info-label">Adm Date</div>
+                                <div class="info-value">${format(new Date(admission.admissionDate), 'dd MMM yyyy, HH:mm')}</div>
+                            </div>
+                            <div class="info-cell">
+                                <div class="info-label">Length of Stay</div>
+                                <div class="info-value">${Math.max(0, Math.floor((new Date().getTime() - new Date(admission.admissionDate).getTime()) / (1000 * 3600 * 24)))} Days</div>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-cell">
+                                <div class="info-label">Primary Dr.</div>
+                                <div class="info-value">${admission.doctorName?.startsWith('Dr.') ? admission.doctorName : `Dr. ${admission.doctorName}`}</div>
+                            </div>
+                            <div class="info-cell">
+                                <div class="info-label" style="border-bottom: none;">Ward Details</div>
+                                <div class="info-value" style="border-bottom: none;">${admission.wardName ? `${admission.wardName} / ${admission.roomName || 'N/A'}` : 'Clinical Transit'}</div>
+                            </div>
+                        </div>
+                    </div>
 
-            <div class="section">
-                <div class="section-header">
-                    <h2>Hourly Vitals Observation Log</h2>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Date / Time</th>
-                            <th>HR</th>
-                            <th>BP</th>
-                            <th>SpO2</th>
-                            <th>Temp</th>
-                            <th>Resp</th>
-                            <th>Glucose</th>
-                            <th>Nurse</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${sortedVitals.length > 0 ? sortedVitals.map((v: any) => `
-                            <tr>
-                                <td>
-                                    <strong>${format(new Date(v.timestamp), 'HH:mm')}</strong><br/>
-                                    <span style="font-size: 8px; color: #94a3b8;">${format(new Date(v.timestamp), 'dd MMM')}</span>
-                                </td>
-                                <td>${v.heartRate} bpm</td>
-                                <td>${v.systolicBP}/${v.diastolicBP}</td>
-                                <td>${v.spO2}%</td>
-                                <td>${v.temperature}°F</td>
-                                <td>${v.respiratoryRate || '--'}</td>
-                                <td>${v.glucose || '--'} ${v.glucoseType || ''}</td>
-                                <td>${v.recordedBy?.name}</td>
-                                <td>
-                                    <span class="status-badge status-${v.status?.toLowerCase() || 'stable'}">
-                                        ${v.status || 'Stable'}
-                                    </span>
-                                </td>
-                            </tr>
-                        `).join('') : '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #94a3b8;">No vital signs recorded yet.</td></tr>'}
-                    </tbody>
-                </table>
-            </div>
+                    <div class="section no-break">
+                        <div class="section-header-title" style="margin-bottom: 5px;">Prescribed Diet Plan</div>
+                        <div class="diet-card">
+                            <p class="diet-text">"${admission.diet || 'Standard hospital nutrition prescribed.'}"</p>
+                        </div>
+                    </div>
 
-            <div class="section no-break">
-                <div class="section-header">
-                    <h2>Medication Administration Log</h2>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Drug Name</th>
-                            <th>Dose & Route</th>
-                            <th>Time Given</th>
-                            <th>Time Slot</th>
-                            <th>Authorized Nurse</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${sortedMeds.length > 0 ? sortedMeds.map((m: any) => `
-                            <tr>
-                                <td><strong>${m.drugName}</strong></td>
-                                <td>${m.dose} • ${m.route}</td>
-                                <td>${format(new Date(m.timestamp), 'dd/MM HH:mm')}</td>
-                                <td>${m.timeSlot}</td>
-                                <td>${m.administeredBy?.name}</td>
-                            </tr>
-                        `).join('') : '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #94a3b8;">No medications administered during this period.</td></tr>'}
-                    </tbody>
-                </table>
-            </div>
+                    <div class="section no-break">
+                        <div class="section-header-title">HOURLY VITALS LOG</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>S.No</th>
+                                    <th>Date</th>
+                                    <th>Day</th>
+                                    <th>Time</th>
+                                    <th>Heart Rate</th>
+                                    <th>BP</th>
+                                    <th>SpO2</th>
+                                    <th>Temp (F)</th>
+                                    <th>Resp</th>
+                                    <th>Nurse</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${(vitals || []).length > 0 ? (vitals || []).map((v: any, idx: number) => `
+                                    <tr>
+                                        <td>${idx + 1}</td>
+                                        <td>${format(new Date(v.timestamp), 'dd/MM/yyyy')}</td>
+                                        <td>${format(new Date(v.timestamp), 'EEEE')}</td>
+                                        <td><strong>${format(new Date(v.timestamp), 'HH:mm')}</strong></td>
+                                        <td>${v.heartRate} bpm</td>
+                                        <td>${v.systolicBP}/${v.diastolicBP}</td>
+                                        <td>${v.spO2}%</td>
+                                        <td>${v.temperature}°F</td>
+                                        <td>${v.respiratoryRate || '--'}</td>
+                                        <td>${v.recordedBy?.name}</td>
+                                        <td>
+                                            <span class="status-badge status-${v.status?.toLowerCase() || 'stable'}">
+                                                ${v.status || 'Stable'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="11" style="text-align: center; padding: 20px; color: #94a3b8;">No vital signs recorded yet.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
 
-            <div class="section no-break">
-                <div class="section-header">
-                    <h2>Dietary Intake Log</h2>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Items Consumed</th>
-                            <th>Category/Slot</th>
-                            <th>Time Recorded</th>
-                            <th>Recorded By</th>
-                            <th>Notes</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${sortedDiet.length > 0 ? sortedDiet.map((d: any) => `
-                            <tr>
-                                    <td>
-                                        <div style="display: flex; flex-direction: column; gap: 2px;">
-                                            <strong style="font-size: 10px;">
+                    <div class="section no-break">
+                        <div class="section-header-title">MEDICATION ADMINISTRATION LOG</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>S.No</th>
+                                    <th>Drug Name</th>
+                                    <th>Route</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Slot</th>
+                                    <th>Admin Nurse</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${(meds || []).length > 0 ? (meds || []).map((m: any, idx: number) => `
+                                    <tr>
+                                        <td>${idx + 1}</td>
+                                        <td><strong>${m.drugName}</strong></td>
+                                        <td>${m.route || '-'}</td>
+                                        <td>${format(new Date(m.timestamp), 'dd/MM/yyyy')}</td>
+                                        <td><strong>${format(new Date(m.timestamp), 'HH:mm')}</strong></td>
+                                        <td>${m.timeSlot}</td>
+                                        <td>${m.administeredBy?.name}</td>
+                                        <td>${m.status}</td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #94a3b8;">No medications administered during this period.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="section no-break">
+                        <div class="section-header-title">DIETARY INTAKE LOG</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>S.No</th>
+                                    <th>Items</th>
+                                    <th>Category</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Nurse</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${(diet || []).length > 0 ? (diet || []).map((d: any, idx: number) => `
+                                    <tr>
+                                        <td>${idx + 1}</td>
+                                        <td style="text-align: left;">
+                                            <strong>
                                                 ${d.items?.map((item: any) => `${item.name || item} ${item.quantity ? `(${item.quantity})` : ''}`).join(', ')}
                                             </strong>
-                                            ${d.items?.some((i: any) => i.calories) ? `
-                                            <span style="font-size: 7px; color: #b45309; font-weight: 800; text-transform: uppercase;">
-                                                Total: ${d.items.reduce((sum: number, i: any) => sum + (Number(i.calories) || 0), 0)} Kcal
-                                            </span>` : ''}
-                                        </div>
-                                    </td>
-                                <td><span class="status-badge" style="background-color: #ffedd5; color: #ea580c;">${d.category}</span></td>
-                                <td>
-                                    ${d.recordedTime}<br/>
-                                    <small style="color: #64748b; font-size: 9px; font-weight: 600;">${format(new Date(d.timestamp), 'dd MMM (EEE)')}</small>
-                                </td>
-                                <td>${d.recordedBy?.name}</td>
-                                <td>${d.notes || '-'}</td>
-                            </tr>
-                        `).join('') : '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #94a3b8;">No dietary intake recorded.</td></tr>'}
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="section">
-                <div class="section-header">
-                    <h2>Diagnostics & Investigations Detail</h2>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 15px;">
-                    ${labOrders.length > 0 ? labOrders.map((order: any) => `
-                        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px;">
-                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 10px;">
-                                <div>
-                                    <h3 style="font-size: 11px; font-weight: 800; color: #1e293b; margin-bottom: 4px; text-transform: uppercase;">
-                                        ${order.tests?.map((t: any) => t.testName || t.test?.testName || 'Investigation').join(', ')}
-                                    </h3>
-                                    <p style="font-size: 9px; color: #64748b; font-weight: 600;">By ${admission.doctorName?.startsWith('Dr.') ? admission.doctorName : `Dr. ${admission.doctorName}`}</p>
-                                </div>
-                                <div style="text-align: right;">
-                                    <span class="status-badge" style="background-color: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;">${order.status}</span>
-                                    <p style="font-size: 8px; color: #94a3b8; font-weight: 600; margin-top: 4px;">${format(new Date(order.createdAt), 'dd MMM yyyy, HH:mm')}</p>
-                                </div>
-                            </div>
-                            
-                            <table style="margin-top: 0; background: transparent;">
-                                <thead>
-                                    <tr>
-                                        <th style="font-size: 8px; border: none; background: transparent; padding: 4px 0;">Test Component</th>
-                                        <th style="font-size: 8px; border: none; background: transparent; padding: 4px 0; text-align: right;">Result</th>
+                                        </td>
+                                        <td>${d.category}</td>
+                                        <td>${format(new Date(d.timestamp), 'dd/MM/yyyy')}</td>
+                                        <td><strong>${d.recordedTime}</strong></td>
+                                        <td>${d.recordedBy?.name}</td>
+                                        <td style="text-align: left;">${d.notes || '-'}</td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    ${order.tests?.map((test: any) => {
-        if (test.subTests && test.subTests.length > 0) {
-            return test.subTests.map((st: any) => `
-                                                <tr>
-                                                    <td style="border: none; padding: 4px 0; font-size: 10px; color: #64748b;">${st.name}</td>
-                                                    <td style="border: none; padding: 4px 0; text-align: right; font-weight: 800; color: #1e293b;">${st.result} <span style="font-size: 8px; color: #94a3b8; font-weight: 400;">${st.unit || ''}</span></td>
-                                                </tr>
-                                            `).join('');
-        } else if (test.resultValue) {
-            return `
-                                                <tr>
-                                                    <td style="border: none; padding: 4px 0; font-size: 10px; color: #64748b;">${test.testName || test.test?.testName}</td>
-                                                    <td style="border: none; padding: 4px 0; text-align: right; font-weight: 800; color: #1e293b;">${test.resultValue} <span style="font-size: 8px; color: #94a3b8; font-weight: 400;">${test.unit || ''}</span></td>
-                                                </tr>
-                                            `;
-        }
-        return '';
-    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    `).join('') : '<p style="text-align: center; width: 100%; color: #94a3b8; padding: 20px; border: 1px dashed #e2e8f0; border-radius: 8px;">No diagnostic investigation reports found for this admission.</p>'}
+                                `).join('') : '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #94a3b8;">No dietary intake recorded.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    ${(labOrders || []).length > 0 ? `
+                    <div class="section no-break">
+                        <div class="section-header-title">LAB INVESTIGATIONS REGISTRY</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>S.No</th>
+                                    <th>Date</th>
+                                    <th>Test Name</th>
+                                    <th>Status</th>
+                                    <th>Result</th>
+                                    <th>Unit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${(() => {
+                let html = '';
+                let labRowCounter = 1;
+                (labOrders || []).forEach((order: any) => {
+                    const date = format(new Date(order.createdAt), 'dd MMMM yyyy HH:mm');
+                    order.tests?.forEach((test: any) => {
+                        const testName = test.testName || test.test?.testName || 'Test';
+
+                        if (test.subTests && test.subTests.length > 0) {
+                            test.subTests.forEach((st: any) => {
+                                const hasResult = st.result !== undefined && st.result !== null && st.result !== '';
+                                html += `
+                                    <tr>
+                                        <td>${labRowCounter++}</td>
+                                        <td>${date}</td>
+                                        <td style="text-align: left;">${testName} - ${st.name}</td>
+                                        <td ${!hasResult ? 'style="color: #94a3b8; font-style: italic;"' : ''}>${order.status || (hasResult ? 'Completed' : 'Pending')}</td>
+                                        <td><strong>${hasResult ? st.result : '-'}</strong></td>
+                                        <td>${st.unit || '-'}</td>
+                                    </tr>
+                                `;
+                            });
+                        } else {
+                            const hasResult = test.resultValue !== undefined && test.resultValue !== null && test.resultValue !== '';
+                            html += `
+                                    <tr>
+                                        <td>${labRowCounter++}</td>
+                                        <td>${date}</td>
+                                        <td style="text-align: left;">${testName}</td>
+                                        <td ${!hasResult ? 'style="color: #94a3b8; font-style: italic;"' : ''}>${order.status || (hasResult ? 'Completed' : 'Pending')}</td>
+                                        <td><strong>${hasResult ? test.resultValue : '-'}</strong></td>
+                                        <td>${test.unit || '-'}</td>
+                                    </tr>
+                                `;
+                        }
+                    });
+                });
+                return html;
+            })()}
+                            </tbody>
+                        </table>
+                    </div>
+                    ` : ''}
+                </div>
+
+                <!-- Injected React MainFooter -->
+                <div class="footer-injection-zone" style="margin-top: auto;">
+                    ${footerHtml}
                 </div>
             </div>
-
-            <div class="footer">
-                <span>System Generated Report • ${format(new Date(), 'dd MMM yyyy HH:mm')}</span>
-                <span>${hospital?.name || "CureChain HMS"} • Confidential Patient Record</span>
-            </div>
-
-            </div>
-            <script>
-                // Auto-print on load if needed, but the user might want a button
-                // window.onload = () => { window.print(); }
-            </script>
         </body>
         </html>
     `;

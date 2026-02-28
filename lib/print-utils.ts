@@ -650,7 +650,7 @@ export const generatePayslipHtml = (data: any) => {
 };
 
 export const generateClinicalReceiptHtml = (data: any) => {
-  const { hospital, patient, appointment, payment } = data;
+  const { hospital, patient, appointment, payment, headerHtml, footerHtml } = data;
 
   return `
     <!DOCTYPE html>
@@ -682,14 +682,15 @@ export const generateClinicalReceiptHtml = (data: any) => {
           width: 95%;
           margin: 0 auto;
         }
+        ${headerHtml ? '' : `
         .hospital-header {
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 20px;
-          margin-bottom: 20px;
+          margin-bottom: 60px;
           border-bottom: 1.5px solid #000;
-          padding-bottom: 12px;
+          padding-bottom: 24px;
         }
         .hospital-details {
           text-align: left;
@@ -704,6 +705,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
           font-size: 12px;
           margin: 4px 0;
         }
+        `}
         .bill-title-row {
           display: flex;
           justify-content: space-between;
@@ -802,14 +804,16 @@ export const generateClinicalReceiptHtml = (data: any) => {
           color: #10b981;
         }
         .footer {
-          margin-top: 18px;
+          page-break-before: always;
+          margin-top: 30mm;
+          padding-top: 60px;
           border-top: 1px solid #eee;
-          padding-top: 10px;
           font-size: 10px;
           color: #777;
           display: flex;
           justify-content: space-between;
           align-items: flex-end;
+          padding-bottom: 15mm;
         }
         .signatory-box {
           text-align: right;
@@ -819,6 +823,10 @@ export const generateClinicalReceiptHtml = (data: any) => {
           border-bottom: 1px solid #000;
           margin-bottom: 5px;
           margin-left: auto;
+        }
+        .footer-wrapper {
+          page-break-before: always;
+          margin-top: 60px;
         }
         .no-print {
           display: block;
@@ -856,6 +864,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
       </div>
       <div class="receipt-container">
         <!-- Hospital Header -->
+        ${headerHtml || `
         <div class="hospital-header">
           ${hospital.logo ? `<img src="${hospital.logo}" alt="Logo" style="max-height: 85px; width: auto; object-fit: contain;" />` : ""}
           <div class="hospital-details">
@@ -864,6 +873,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
             <p class="hospital-info">${hospital.contact ? `Phone: ${hospital.contact}` : ""} ${hospital.email ? ` | Email: ${hospital.email}` : ""}</p>
           </div>
         </div>
+        `}
 
         <!-- Bill Title Row -->
         <div class="bill-title-row">
@@ -1066,16 +1076,20 @@ export const generateClinicalReceiptHtml = (data: any) => {
         </div>
 
         <!-- Footer -->
-        <div class="footer">
-          <div>
-            <p>This is a computer-generated receipt and does not require a signature.</p>
-            <p>Generated on: ${new Date().toLocaleString()}</p>
+        <div class="footer-wrapper">
+          ${footerHtml || `
+          <div class="footer">
+            <div>
+              <p>This is a computer-generated receipt and does not require a signature.</p>
+              <p>Generated on: ${new Date().toLocaleString()}</p>
+            </div>
+            <div class="signatory-box">
+              <div class="sign-line"></div>
+              <div style="font-weight: bold; text-transform: uppercase;">Authorized Signatory</div>
+              <div style="font-size: 10px;">${hospital.name}</div>
+            </div>
           </div>
-          <div class="signatory-box">
-            <div class="sign-line"></div>
-            <div style="font-weight: bold; text-transform: uppercase;">Authorized Signatory</div>
-            <div style="font-size: 10px;">${hospital.name}</div>
-          </div>
+          `}
         </div>
       </div>
     </body>
@@ -1086,7 +1100,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
 // --- NEW HELPERS FOR REPRINTING (MATCHING DOCTOR TEMPLATES) ---
 
 export const generatePrescriptionHtml = (data: any) => {
-  const { hospital, patient, doctor, prescription } = data;
+  const { hospital, patient, doctor, prescription, headerHtml, footerHtml } = data;
   const medicines = prescription.medicines || [];
   const dietAdvice = prescription.dietAdvice || [];
 
@@ -1143,6 +1157,7 @@ export const generatePrescriptionHtml = (data: any) => {
                         padding: 15mm 20mm;
                         position: relative;
                         box-sizing: border-box;
+                        border: 1px solid #e5e7eb;
                     }
 
                     /* Header */
@@ -1252,6 +1267,7 @@ export const generatePrescriptionHtml = (data: any) => {
                     </button>
                 </div>
                 <div class="container">
+                    ${headerHtml || `
                     <div class="header">
                         <div class="brand">
                             ${hospital.logo ? `<img src="${hospital.logo}" style="max-height: 70px; width: auto; object-fit: contain;" />` : ""}
@@ -1261,9 +1277,14 @@ export const generatePrescriptionHtml = (data: any) => {
                                 <p>${hospital.contact || hospital.phone || ""} ${hospital.email ? `• ${hospital.email}` : ""}</p>
                             </div>
                         </div>
-                        <div class="doctor">
-                            <h2>${formatDoctorName(doctor.name)}</h2>
-                            <p>${doctor.specialization || "Consultant Physician"}</p>
+                    </div>
+                    `}
+
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 1px solid #000; padding-bottom: 10px;">
+                        <div style="font-size: 16px; font-weight: 700; text-transform: uppercase; color: #1e40af;">PRESCRIPTION</div>
+                        <div style="text-align: right;">
+                            <h2 style="margin: 0; font-size: 14px; font-weight: 700;">${formatDoctorName(doctor.name)}</h2>
+                            <p style="margin: 2px 0 0; font-size: 9px; font-weight: 600; text-transform: uppercase; color: #555;">${doctor.specialization || "Consultant Physician"}</p>
                         </div>
                     </div>
 
@@ -1355,6 +1376,7 @@ export const generatePrescriptionHtml = (data: any) => {
                         : ""
                     }
 
+                    ${footerHtml || `
                     <div class="footer">
                         <div class="footer-l">
                             <span>Generated by MsCurechain Systems</span>
@@ -1365,6 +1387,7 @@ export const generatePrescriptionHtml = (data: any) => {
                             <div class="sig-line">Authorized Signature</div>
                         </div>
                     </div>
+                    `}
                 </div>
             </body>
             </html>
@@ -1372,7 +1395,7 @@ export const generatePrescriptionHtml = (data: any) => {
 };
 
 export const generateLabTokenHtml = (data: any) => {
-  const { hospital, patient, doctor, labToken } = data;
+  const { hospital, patient, doctor, labToken, headerHtml, footerHtml } = data;
   const tests = labToken.tests || [];
   const priority = labToken.priority || "routine";
   const notes = labToken.notes;
@@ -1445,6 +1468,15 @@ export const generateLabTokenHtml = (data: any) => {
                 text-transform: uppercase;
                 letter-spacing: 0.1em;
               }
+              .container {
+                width: 210mm;
+                min-height: 297mm;
+                margin: 0 auto;
+                padding: 15mm 20mm;
+                box-sizing: border-box;
+                border: 1px solid #e5e7eb;
+                position: relative;
+              }
               @media print {
                 .no-print { display: none !important; }
               }
@@ -1463,70 +1495,73 @@ export const generateLabTokenHtml = (data: any) => {
                     ← BACK TO HOSPITAL DASHBOARD
                 </button>
             </div>
-            <div class="header">
-              <h1 style="color: #9333ea; margin: 0; font-size: 24px;">LAB REQUISITION</h1>
-              <h2 style="margin: 8px 0; font-size: 18px;">${hospital.name || "CureChain Medical Center"}</h2>
-              <p style="margin: 4px 0; font-size: 12px; color: #6b7280;">Department of Pathology & Radiodiagnosis</p>
-              <div class="token-badge" style="margin-top: 12px;">
-                <p style="margin: 0; font-size: 10px; opacity: 0.7;">TOKEN</p>
-                <p style="margin: 0; font-size: 24px; font-weight: bold;">${labToken.tokenNumber}</p>
+            <div class="container">
+              ${headerHtml || `
+              <div class="header">
+                  <h1 style="color: #9333ea; margin: 0; font-size: 24px;">LAB REQUISITION</h1>
+                  <h2 style="margin: 8px 0; font-size: 18px;">${hospital.name || 'CureChain Medical Center'}</h2>
+                  <p style="margin: 4px 0; font-size: 12px; color: #6b7280;">Department of Pathology & Radiodiagnosis</p>
               </div>
-              <p style="margin-top: 8px; font-size: 12px;"><strong>Date:</strong> ${new Date(labToken.createdAt).toLocaleDateString("en-GB")}</p>
-              <span class="priority priority-${priority}">${priority}</span>
-            </div>
-            
-            <div style="background: #f9fafb; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
-              <p style="margin: 4px 0;"><strong>Patient:</strong> ${patientName}</p>
-              <p style="margin: 4px 0;"><strong>Age/Gender:</strong> ${ageDisplay} / ${genderDisplay}</p>
-              <p style="margin: 4px 0;"><strong>MRN:</strong> ${patient.mrn || "N/A"}</p>
-              <p style="margin: 4px 0;"><strong>Ordering Physician:</strong> ${formatDoctorName(doctor.name)}</p>
-            </div>
+              `}
 
-            <h3 style="color: #9333ea; font-size: 14px; margin-bottom: 12px;">CLINICAL INVESTIGATIONS</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Test Name</th>
-                  <th>Category</th>
-                  <th>Instructions</th>
-                  <th style="text-align: right;">Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${tests
-                  .filter((t: any) => t.name.trim())
-                  .map(
-                    (test: any, idx: number) => `
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;">
+                  <div>
+                      <h1 style="color: #1e40af; margin: 0; font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">LAB REQUISITION</h1>
+                      <p style="margin: 4px 0; font-size: 11px;"><strong>Date:</strong> ${new Date(labToken.createdAt).toLocaleDateString('en-GB')}</p>
+                      <span class="priority priority-${priority}">${priority}</span>
+                  </div>
+                  <div class="token-badge" style="text-align: center; min-width: 100px;">
+                      <p style="margin: 0; font-size: 10px; opacity: 0.7; color: white;">TOKEN</p>
+                      <p style="margin: 0; font-size: 24px; font-weight: bold; color: white;">${labToken.tokenNumber}</p>
+                  </div>
+              </div>
+              
+              <div style="background: #f9fafb; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                <p style="margin: 4px 0;"><strong>Patient:</strong> ${patientName}</p>
+                <p style="margin: 4px 0;"><strong>Age/Gender:</strong> ${ageDisplay} / ${genderDisplay}</p>
+                <p style="margin: 4px 0;"><strong>MRN:</strong> ${patient.mrn || 'N/A'}</p>
+                <p style="margin: 4px 0;"><strong>Ordering Physician:</strong> ${formatDoctorName(doctor.name)}</p>
+              </div>
+
+              <h3 style="color: #9333ea; font-size: 14px; margin-bottom: 12px;">CLINICAL INVESTIGATIONS</h3>
+              <table>
+                <thead>
                   <tr>
-                    <td>${idx + 1}</td>
-                    <td style="font-weight: bold;">${test.name}</td>
-                    <td>${test.category}</td>
-                    <td style="font-style: italic; color: #6b7280;">${test.instructions || "Standard"}</td>
-                    <td style="text-align: right; font-weight: 600;">₹${(parseFloat(String(test.price || test.testPrice || test.amount || test.test?.price || test.testId?.price || 0)) || 0).toFixed(2)}</td>
+                    <th>#</th>
+                    <th>Test Name</th>
+                    <th>Category</th>
+                    <th>Instructions</th>
+                    <th style="text-align: right;">Price</th>
                   </tr>
-                `,
-                  )
-                  .join("")}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  ${tests.filter((t: any) => t.name.trim()).map((test: any, idx: number) => `
+                    <tr>
+                      <td>${idx + 1}</td>
+                      <td style="font-weight: bold;">${test.name}</td>
+                      <td>${test.category}</td>
+                      <td style="font-style: italic; color: #6b7280;">${test.instructions || 'Standard'}</td>
+                      <td style="text-align: right; font-weight: 600;">₹${(parseFloat(String(test.price || test.testPrice || test.amount || test.test?.price || test.testId?.price || 0)) || 0).toFixed(2)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
 
-            ${
-              notes
-                ? `<div style="background: #fef3c7; padding: 12px; border-left: 4px solid #f59e0b; margin: 16px 0;">
-              <p style="margin: 0; font-weight: bold; font-size: 12px;">Physician Remarks:</p>
-              <p style="margin: 4px 0 0 0; font-style: italic;">${notes}</p>
-            </div>`
-                : ""
-            }
+              ${notes ? `<div style="background: #fef3c7; padding: 12px; border-left: 4px solid #f59e0b; margin: 16px 0;">
+                <p style="margin: 0; font-weight: bold; font-size: 12px;">Physician Remarks:</p>
+                <p style="margin: 4px 0 0 0; font-style: italic;">${notes}</p>
+              </div>` : ''}
 
-            <div style="text-align: right; margin-top: 50px;">
-              <div style="width: 200px; border-bottom: 1.5px solid #000; margin-left: auto; margin-bottom: 6px;"></div>
-              <p style="margin: 0; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #475569;">Medical Officer Signature</p>
-            </div>
+              <div style="text-align: right; margin-top: 50px;">
+                <div style="width: 200px; border-bottom: 1.5px solid #000; margin-left: auto; margin-bottom: 6px;"></div>
+                <p style="margin: 0; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #475569;">Medical Officer Signature</p>
+              </div>
 
-            <div style="border-top: 1px solid #e5e7eb; margin-top: 40px; padding-top: 8px; text-align: center; font-size: 8px; color: #9ca3af;">
-              <p style="margin: 0;">Generated by MsCureChain • ${new Date().toLocaleString()}</p>
+              ${footerHtml || `
+              <div style="border-top: 1px solid #e5e7eb; margin-top: 40px; padding-top: 8px; text-align: center; font-size: 8px; color: #9ca3af;">
+                <p style="margin: 0;">Generated by MsCureChain • ${new Date().toLocaleString()}</p>
+              </div>
+              `}
             </div>
           </body>
           </html>

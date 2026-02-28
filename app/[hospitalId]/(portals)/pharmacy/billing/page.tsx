@@ -20,6 +20,7 @@ const BillingPage = () => {
     // State
     const [patientName, setPatientName] = useState('');
     const [mobileNumber, setMobileNumber] = useState('');
+    const [doctorName, setDoctorName] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState<PharmacyProduct[]>([]);
     const [selectedProduct, setSelectedProduct] = useState<PharmacyProduct | null>(null);
@@ -100,6 +101,7 @@ const BillingPage = () => {
 
                         setPatientName(order.patient?.name || '');
                         setMobileNumber(order.patient?.mobile || '');
+                        setDoctorName(order.doctor?.user?.name || '');
 
                         const meds = (order.medicines || []).map((m: any) => ({ ...m, processed: false }));
                         setPrescribedMedicines(meds);
@@ -141,6 +143,7 @@ const BillingPage = () => {
                     if (!orderId || (orderId && draft.orderId === orderId)) {
                         setPatientName(draft.patientName || '');
                         setMobileNumber(draft.mobileNumber || '');
+                        setDoctorName(draft.doctorName || '');
                         setCart(draft.cart || []);
                         setPaymentMode(draft.paymentMode || 'Cash');
                         setMixedPayments(draft.mixedPayments || { cash: 0, card: 0, upi: 0 });
@@ -170,6 +173,7 @@ const BillingPage = () => {
         const draft = {
             patientName,
             mobileNumber,
+            doctorName,
             cart,
             paymentMode,
             mixedPayments,
@@ -180,7 +184,7 @@ const BillingPage = () => {
             orderId: orderId || undefined
         };
         localStorage.setItem('pharmacy_billing_draft', JSON.stringify(draft));
-    }, [isInitialized, patientName, mobileNumber, cart, paymentMode, mixedPayments, status, discount, discountType, prescribedMedicines, orderId]);
+    }, [isInitialized, patientName, mobileNumber, doctorName, cart, paymentMode, mixedPayments, status, discount, discountType, prescribedMedicines, orderId]);
 
     const clearDraft = () => {
         setIsInitialized(false);
@@ -287,7 +291,9 @@ const BillingPage = () => {
             hsn: selectedProduct.hsnCode,
             gstPct: selectedProduct.gst || 0,
             amount: total,
-            total: total
+            total: total,
+            batch: selectedProduct.batchNumber,
+            expiry: selectedProduct.expiryDate
         };
 
         setCart([...cart, newItem]);
@@ -339,6 +345,7 @@ const BillingPage = () => {
             const payload: any = {
                 patientName,
                 customerPhone: mobileNumber,
+                doctorName: doctorName || 'Self / Walk-in',
                 items: cart,
                 mode: paymentMode.toUpperCase(),
                 status: status.toUpperCase(),
@@ -394,6 +401,7 @@ const BillingPage = () => {
             items: cart,
             patientName,
             customerPhone: mobileNumber,
+            doctorName: doctorName || 'Self / Walk-in',
             paymentSummary: {
                 subtotal: Number(subtotal) || 0,
                 taxableAmount: Number(taxableAmount) || 0,
@@ -483,6 +491,15 @@ const BillingPage = () => {
                                     onChange={e => setMobileNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
                                     onBlur={() => setIsMobileTouched(true)}
                                     placeholder="10 digits..."
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Doctor Name</label>
+                                <input
+                                    className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl px-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500"
+                                    value={doctorName}
+                                    onChange={e => setDoctorName(e.target.value)}
+                                    placeholder="Self / Walk-in"
                                 />
                             </div>
                         </div>

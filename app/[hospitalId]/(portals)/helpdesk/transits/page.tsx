@@ -17,9 +17,13 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { helpdeskService } from '@/lib/integrations/services/helpdesk.service';
+import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 import { generatePrescriptionHtml, generateLabTokenHtml } from '@/lib/print-utils';
 import Link from 'next/link';
 import { useTransits } from '@/lib/integrations/hooks';
+import { renderToStaticMarkup } from 'react-dom/server';
+import MainHeader from '@/components/printers/MainHeader';
+import MainFooter from '@/components/printers/MainFooter';
 
 function useDebounce<T>(value: T, delay: number): T {
     const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -31,6 +35,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 function TransitsPage() {
+    const [hospitalDetails, setHospitalDetails] = useState<any>(null);
     const [filter, setFilter] = useState<'all' | 'prescription' | 'lab'>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearch = useDebounce(searchTerm, 500);
@@ -53,10 +58,44 @@ function TransitsPage() {
         setTimeout(() => setPage(1), 0);
     }, [filter, debouncedSearch]);
 
+    useEffect(() => {
+        const fetchHospital = async () => {
+            try {
+                const response = await hospitalAdminService.getHospital();
+                if (response?.hospital) setHospitalDetails(response.hospital);
+            } catch (err) {
+                console.error("Failed to fetch hospital details", err);
+            }
+        };
+        fetchHospital();
+    }, []);
+
 
 
     const handlePrint = (transit: any, type: 'prescription' | 'lab') => {
-        const hospital = transit.hospital || { name: "CureChain Medical Center", address: "Medical District", contact: "N/A", logo: "" };
+        const hospital = {
+            ...(hospitalDetails || {}),
+            ...(transit.hospital || {})
+        };
+
+        const headerHtml = renderToStaticMarkup(
+            <MainHeader initialDetails={{
+                name: hospital.name || "CureChain Medical Center",
+                address: hospital.address || "",
+                phone: hospital.phone || hospital.contact || "",
+                email: hospital.email || "",
+                logo: hospital.logo
+            }} />
+        );
+
+        const footerHtml = renderToStaticMarkup(
+            <MainFooter initialDetails={{
+                name: hospital.name || "CureChain Medical Center",
+                address: hospital.address || "",
+                phone: hospital.phone || hospital.contact || "",
+                email: hospital.email || "",
+            }} />
+        );
 
         if (type === 'prescription' && transit.prescription) {
             const data = {
@@ -73,7 +112,9 @@ function TransitsPage() {
                     specialization: transit.doctorSpecialization,
                     signature: transit.doctorSignature
                 },
-                prescription: transit.prescription
+                prescription: transit.prescription,
+                headerHtml,
+                footerHtml
             };
 
             const html = generatePrescriptionHtml({ ...data, returnUrl: '/helpdesk/transits' });
@@ -97,7 +138,9 @@ function TransitsPage() {
                 doctor: {
                     name: transit.doctorName
                 },
-                labToken: transit.labToken
+                labToken: transit.labToken,
+                headerHtml,
+                footerHtml
             };
 
             const html = generateLabTokenHtml({ ...data, returnUrl: '/helpdesk/transits' });

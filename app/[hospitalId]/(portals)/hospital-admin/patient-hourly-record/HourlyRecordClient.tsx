@@ -101,106 +101,343 @@ export default function HourlyRecordClient() {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Hourly Monitoring');
 
-        // Header Styling
-        worksheet.mergeCells('A1:K1');
-        const headerCell = worksheet.getCell('A1');
-        headerCell.value = 'MS CURECHAIN HOSPITAL - PATIENT HOURLY MONITORING RECORD';
-        headerCell.font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
-        headerCell.alignment = { horizontal: 'center' };
-        headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B82F6' } };
+        // Column Config
+        worksheet.columns = [
+            { key: 'A', width: 20 },
+            { key: 'B', width: 25 },
+            { key: 'C', width: 15 },
+            { key: 'D', width: 20 },
+            { key: 'E', width: 25 },
+            { key: 'F', width: 15 },
+            { key: 'G', width: 15 },
+            { key: 'H', width: 15 },
+            { key: 'I', width: 15 },
+            { key: 'J', width: 15 },
+            { key: 'K', width: 15 },
+        ];
 
-        // Patient Info
-        worksheet.addRow(['Patient Name:', admission.patientName, '', 'Admission ID:', admission.admissionId]);
-        const docName = admission.doctorName?.startsWith('Dr.') ? admission.doctorName : `Dr. ${admission.doctorName}`;
-        worksheet.addRow(['Doctor:', docName, '', 'Admission Date:', format(new Date(admission.admissionDate), 'dd MMM yyyy HH:mm')]);
-        worksheet.addRow(['Diet Plan:', admission.diet || 'Regular Diet']);
+        // 1. Report Headers
+        worksheet.mergeCells('A1:K1');
+        const mainTitle = worksheet.getCell('A1');
+        mainTitle.value = 'PATIENT HOURLY MONITORING SUMMARY REPORT';
+        mainTitle.font = { bold: true, size: 16, color: { argb: 'FF002060' } };
+        mainTitle.alignment = { horizontal: 'center', vertical: 'middle' };
+        worksheet.getRow(1).height = 30;
+
+        worksheet.mergeCells('A2:K2');
+        const subTitle = worksheet.getCell('A2');
+        subTitle.value = 'Clinical Observation Registry';
+        subTitle.font = { bold: true, size: 12, color: { argb: 'FF000000' } };
+        subTitle.alignment = { horizontal: 'center', vertical: 'middle' };
+        worksheet.getRow(2).height = 20;
+
+        worksheet.mergeCells('A3:K3');
+        const generatedCell = worksheet.getCell('A3');
+        generatedCell.value = `Report Generated: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`;
+        generatedCell.font = { italic: true, size: 10, color: { argb: 'FF555555' } };
+        generatedCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        worksheet.getRow(3).height = 18;
+
+        // Gap row
+        worksheet.addRow([]);
+        worksheet.getRow(4).height = 10;
+
+        // 2. Metadata Grid (Rows 5-8)
+        const labelStyle = {
+            font: { bold: true, size: 10, color: { argb: 'FF002060' } },
+            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } },
+            border: {
+                top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+            }
+        };
+        const valueStyle = {
+            font: { bold: true, size: 10 },
+            border: {
+                top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+            }
+        };
+
+        const metadata = [
+            { l1: 'Patient Name', v1: admission.patientName, l2: 'Admission ID', v2: admission.admissionId },
+            { l1: 'Department', v1: admission.wardName || 'ICU-D', l2: 'Status', v2: admission.status },
+            { l1: 'Adm Date', v1: format(new Date(admission.admissionDate), 'dd MMM yyyy, HH:mm'), l2: 'Length of Stay', v2: `${Math.max(0, differenceInCalendarDays(new Date(), new Date(admission.admissionDate)))} Days` },
+            { l1: 'Primary Dr.', v1: admission.doctorName, l2: 'Ward Details', v2: `${admission.wardName} / ${admission.roomName || 'N/A'}` }
+        ];
+
+        metadata.forEach((row, i) => {
+            const rowNum = 5 + i;
+            worksheet.getRow(rowNum).height = 22;
+            worksheet.getCell(`A${rowNum}`).value = row.l1;
+            worksheet.getCell(`B${rowNum}`).value = row.v1;
+            worksheet.getCell(`D${rowNum}`).value = row.l2;
+            worksheet.getCell(`E${rowNum}`).value = row.v2;
+
+            // Apply Styles
+            ['A', 'D'].forEach(col => {
+                const cell = worksheet.getCell(`${col}${rowNum}`);
+                cell.font = labelStyle.font as any;
+                cell.fill = labelStyle.fill as any;
+                cell.border = labelStyle.border as any;
+            });
+            ['B', 'E'].forEach(col => {
+                const cell = worksheet.getCell(`${col}${rowNum}`);
+                cell.font = valueStyle.font as any;
+                cell.border = valueStyle.border as any;
+            });
+        });
+
+        // Gap before tables
+        worksheet.addRow([]);
+        worksheet.getRow(9).height = 15;
+
+        // 3. Hourly Vitals Log
+        const vitalsHeaderRowNum = worksheet.lastRow ? worksheet.lastRow.number + 1 : 10;
+        worksheet.mergeCells(`A${vitalsHeaderRowNum}:K${vitalsHeaderRowNum}`);
+        const vitalsHeaderTitle = worksheet.getCell(`A${vitalsHeaderRowNum}`);
+        vitalsHeaderTitle.value = 'HOURLY VITALS LOG';
+        vitalsHeaderTitle.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        vitalsHeaderTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF002060' } };
+        vitalsHeaderTitle.alignment = { vertical: 'middle' };
+        worksheet.getRow(vitalsHeaderRowNum).height = 25;
+
         worksheet.addRow([]);
 
-        // Lab Investigations
+        const vitalsColumns = ['S.No', 'Date', 'Day', 'Time', 'Heart Rate', 'BP', 'SpO2', 'Temp (F)', 'Resp', 'Nurse', 'Status'];
+        const vitalsHeaderRow = worksheet.getRow(vitalsHeaderRowNum + 2);
+        vitalsHeaderRow.values = vitalsColumns;
+        vitalsHeaderRow.height = 20;
+        vitalsHeaderRow.eachCell(cell => {
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF002060' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                right: { style: 'thin', color: { argb: 'FFFFFFFF' } }
+            };
+        });
+
+        vitals.map((v: any, idx: number) => {
+            const row = worksheet.addRow([
+                idx + 1,
+                format(new Date(v.timestamp), 'dd/MM/yyyy'),
+                format(new Date(v.timestamp), 'EEEE'),
+                format(new Date(v.timestamp), 'HH:mm'),
+                v.heartRate,
+                `${v.systolicBP}/${v.diastolicBP}`,
+                `${v.spO2}%`,
+                v.temperature,
+                v.respiratoryRate || '--',
+                v.recordedBy?.name,
+                v.status
+            ]);
+            row.height = 18;
+            row.eachCell(cell => {
+                cell.font = { size: 10 };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                };
+            });
+        });
+
+        // 4. Medication Log
+        worksheet.addRow([]);
+        const mStartRow = (worksheet.lastRow?.number || 12) + 1;
+        worksheet.mergeCells(`A${mStartRow}:I${mStartRow}`);
+        const medsHeaderTitle = worksheet.getCell(`A${mStartRow}`);
+        medsHeaderTitle.value = 'MEDICATION ADMINISTRATION LOG';
+        medsHeaderTitle.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        medsHeaderTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF002060' } };
+        medsHeaderTitle.alignment = { vertical: 'middle' };
+        worksheet.getRow(mStartRow).height = 25;
+
+        worksheet.addRow([]);
+
+        const medsColumns = ['S.No', 'Drug Name', 'Route', 'Date', 'Time', 'Slot', 'Admin Nurse', 'Status'];
+        const medsHeaderRow = worksheet.getRow(mStartRow + 2);
+        medsHeaderRow.values = medsColumns;
+        medsHeaderRow.height = 20;
+        medsHeaderRow.eachCell(cell => {
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF002060' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                right: { style: 'thin', color: { argb: 'FFFFFFFF' } }
+            };
+        });
+
+        meds.map((m: any, idx: number) => {
+            const rawDrugName = m.drugName || '';
+
+            const row = worksheet.addRow([
+                idx + 1,
+                rawDrugName,
+                m.route || '-',
+                format(new Date(m.timestamp), 'dd/MM/yyyy'),
+                format(new Date(m.timestamp), 'HH:mm'),
+                m.timeSlot,
+                m.administeredBy?.name,
+                m.status
+            ]);
+            row.height = 18;
+            row.eachCell(cell => {
+                cell.font = { size: 10 };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                };
+            });
+        });
+
+        // 5. Dietary Intake Log
+        worksheet.addRow([]);
+        const dStartRow = (worksheet.lastRow?.number || 20) + 1;
+        worksheet.mergeCells(`A${dStartRow}:F${dStartRow}`);
+        const dietHeaderTitle = worksheet.getCell(`A${dStartRow}`);
+        dietHeaderTitle.value = 'DIETARY INTAKE LOG';
+        dietHeaderTitle.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        dietHeaderTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF002060' } };
+        dietHeaderTitle.alignment = { vertical: 'middle' };
+        worksheet.getRow(dStartRow).height = 25;
+
+        worksheet.addRow([]);
+
+        const dietColumns = ['S.No', 'Items', 'Category', 'Time', 'Date', 'Nurse', 'Notes'];
+        const dietHeaderRow = worksheet.getRow(dStartRow + 2);
+        dietHeaderRow.values = dietColumns;
+        dietHeaderRow.height = 20;
+        dietHeaderRow.eachCell(cell => {
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF002060' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                right: { style: 'thin', color: { argb: 'FFFFFFFF' } }
+            };
+        });
+
+        (diet || []).map((d: any, idx: number) => {
+            const row = worksheet.addRow([
+                idx + 1,
+                d.items?.map((item: any) => `${item.name || item} ${item.quantity ? `(${item.quantity})` : ''}`).join(', '),
+                d.category,
+                d.recordedTime,
+                format(new Date(d.timestamp), 'dd/MM/yyyy'),
+                d.recordedBy?.name,
+                d.notes || '-'
+            ]);
+            row.height = 18;
+            row.eachCell(cell => {
+                cell.font = { size: 10 };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                };
+            });
+        });
+
+        // 6. Lab Investigations Registry
         if (labOrders && labOrders.length > 0) {
-            worksheet.addRow(['LAB INVESTIGATIONS']).font = { bold: true };
-            worksheet.addRow(['Date', 'Test Name', 'Status', 'Result', 'Unit']);
+            worksheet.addRow([]);
+            const lStartRow = (worksheet.lastRow?.number || 30) + 1;
+            worksheet.mergeCells(`A${lStartRow}:E${lStartRow}`);
+            const labHeaderTitle = worksheet.getCell(`A${lStartRow}`);
+            labHeaderTitle.value = 'LAB INVESTIGATIONS REGISTRY';
+            labHeaderTitle.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+            labHeaderTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF002060' } };
+            labHeaderTitle.alignment = { vertical: 'middle' };
+            worksheet.getRow(lStartRow).height = 25;
+
+            worksheet.addRow([]);
+
+            const labColumns = ['S.No', 'Date', 'Test Name', 'Status', 'Result', 'Unit'];
+            const labHeaderRow = worksheet.getRow(lStartRow + 2);
+            labHeaderRow.values = labColumns;
+            labHeaderRow.height = 20;
+            labHeaderRow.eachCell(cell => {
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF002060' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                    left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                    bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                    right: { style: 'thin', color: { argb: 'FFFFFFFF' } }
+                };
+            });
+
+            let labRowCounter = 1;
             labOrders.forEach((order: any) => {
-                const date = format(new Date(order.createdAt), 'dd MMM HH:mm');
+                const date = format(new Date(order.createdAt), 'dd MMMM yyyy HH:mm');
                 order.tests?.forEach((test: any) => {
                     const testName = test.testName || test.test?.testName || 'Test';
 
-                    // Add subtests if they exist
+                    // Subtests (like CBC)
                     if (test.subTests && test.subTests.length > 0) {
                         test.subTests.forEach((st: any) => {
-                            if (st.result !== undefined && st.result !== null && st.result !== '') {
-                                worksheet.addRow([date, `${testName} - ${st.name}`, order.status, st.result, st.unit || '-']);
-                            }
+                            const hasResult = st.result !== undefined && st.result !== null && st.result !== '';
+                            const row = worksheet.addRow([
+                                labRowCounter++,
+                                date,
+                                `${testName} - ${st.name}`,
+                                order.status || (hasResult ? 'Completed' : 'Pending'),
+                                hasResult ? st.result : 'Pending',
+                                st.unit || '-'
+                            ]);
+                            row.height = 18;
+                            row.eachCell(cell => {
+                                cell.font = { size: 10, color: hasResult ? undefined : { argb: 'FF94A3B8' }, italic: !hasResult ? true : undefined };
+                                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                                cell.border = { top: { style: 'thin', color: { argb: 'FFCBD5E1' } }, left: { style: 'thin', color: { argb: 'FFCBD5E1' } }, bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } }, right: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+                            });
                         });
-                    } else if (test.resultValue) {
-                        worksheet.addRow([date, testName, order.status, test.resultValue, test.unit || '-']);
                     } else {
-                        worksheet.addRow([date, testName, order.status, 'Pending', '-']);
+                        const hasResult = test.resultValue !== undefined && test.resultValue !== null && test.resultValue !== '';
+                        const row = worksheet.addRow([
+                            labRowCounter++,
+                            date,
+                            testName,
+                            order.status || (hasResult ? 'Completed' : 'Pending'),
+                            hasResult ? test.resultValue : 'Pending',
+                            test.unit || '-'
+                        ]);
+                        row.height = 18;
+                        row.eachCell(cell => {
+                            cell.font = { size: 10, color: hasResult ? undefined : { argb: 'FF94A3B8' }, italic: !hasResult ? true : undefined };
+                            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                            cell.border = { top: { style: 'thin', color: { argb: 'FFCBD5E1' } }, left: { style: 'thin', color: { argb: 'FFCBD5E1' } }, bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } }, right: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+                        });
                     }
                 });
             });
-            worksheet.addRow([]);
         }
 
-        // Vitals Table
-        worksheet.addRow(['HOURLY VITALS']).font = { bold: true };
-        worksheet.addRow(['Date', 'Day', 'Time', 'Heart Rate', 'Blood Pressure', 'SpO2 (%)', 'Temp (°F)', 'Resp. Rate', 'Glucose', 'Nurse', 'Status']);
-
-        const vitalRows = vitals.map((v: any) => [
-            format(new Date(v.timestamp), 'dd MMM yyyy'),
-            format(new Date(v.timestamp), 'EEEE'),
-            format(new Date(v.timestamp), 'HH:mm'),
-            v.heartRate,
-            `${v.systolicBP}/${v.diastolicBP}`,
-            v.spO2,
-            v.temperature,
-            v.respiratoryRate,
-            v.glucose ? `${v.glucose} (${v.glucoseType})` : '-',
-            v.recordedBy?.name,
-            v.status
-        ]);
-        worksheet.addRows(vitalRows);
         worksheet.addRow([]);
-
-        // Medications Table
-        worksheet.addRow(['MEDICATION ADMINISTRATION LOG']).font = { bold: true };
-        worksheet.addRow(['Drug Name', 'Dose', 'Route', 'Time Given', 'Nurse', 'Time Slot', 'Status']);
-
-        const medRows = meds.map((m: any) => [
-            m.drugName,
-            m.dose,
-            m.route,
-            format(new Date(m.timestamp), 'dd/MM HH:mm'),
-            m.administeredBy?.name,
-            m.timeSlot,
-            m.status
-        ]);
-        worksheet.addRows(medRows);
         worksheet.addRow([]);
-
-        // Diet Table
-        worksheet.addRow(['DIETARY INTAKE LOG']).font = { bold: true };
-        worksheet.addRow(['Items', 'Category', 'Time', 'Date', 'Nurse', 'Notes']);
-
-        const dietRows = (diet || []).map((d: any) => [
-            d.items?.map((item: any) => `${item.name || item} ${item.quantity ? `(${item.quantity})` : ''}`).join(', '),
-            d.category,
-            d.recordedTime,
-            format(new Date(d.timestamp), 'dd MMM yyyy (EEEE)'),
-            d.recordedBy?.name,
-            d.notes || '-'
-        ]);
-        worksheet.addRows(dietRows);
-
-        // Footer
-        const rowCount = worksheet.rowCount;
-        worksheet.addRow([]);
-        worksheet.addRow(['This is a system generated report. All timestamps are in IST.']);
-
-        // Set style for all headers
-        ['B6', 'B16'].forEach(cell => {
-            // Styling as needed
-        });
+        const footerRow = worksheet.addRow(['This is a system generated report. Contact the helpdesk for discrepancies.']);
+        footerRow.getCell(1).font = { italic: true, color: { argb: 'FF64748B' }, size: 9 };
 
         const buffer = await workbook.xlsx.writeBuffer();
         saveAs(new Blob([buffer]), `Hourly_Record_${admission.patientName}_${format(new Date(), 'ddMMyy')}.xlsx`);
