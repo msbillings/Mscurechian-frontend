@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import {
     Mail, Phone, Award, MapPin,
     Calendar as CalendarIcon, Briefcase,
@@ -15,6 +17,9 @@ import StaffProfileHeader from '@/components/staff/StaffProfileHeader';
 import StaffTrainingHistoryClient from '@/components/staff/StaffTrainingHistoryClient';
 
 export default function StaffProfileClient() {
+    const params = useParams();
+    const hospitalId = params?.hospitalId as string;
+
     const { data: profileRes, isLoading: profileLoading } = useQuery({
         queryKey: ['staff-profile', 'my'],
         queryFn: getStaffProfileAction,
@@ -44,9 +49,9 @@ export default function StaffProfileClient() {
                         We couldn't fetch your profile details. This might be because your profile hasn't been set up yet.
                     </p>
                     <div className="pt-6">
-                        <a href="/staff/profile/edit" className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-2xl inline-block shadow-lg shadow-indigo-500/20">
+                        <Link href={`/${hospitalId}/staff/profile/edit`} className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-2xl inline-block shadow-lg shadow-indigo-500/20">
                             Set Up Profile Now
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </div>

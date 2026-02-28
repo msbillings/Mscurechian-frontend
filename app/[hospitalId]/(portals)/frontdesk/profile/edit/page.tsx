@@ -44,7 +44,7 @@ const DocumentViewerModal = ({ isOpen, onClose, url, title }: any) => {
     );
 };
 
-export default function EditStaffProfilePage() {
+export default function EditFrontdeskProfilePage() {
     const router = useRouter();
     const params = useParams();
     const hospitalId = params?.hospitalId as string;
@@ -114,7 +114,6 @@ export default function EditStaffProfilePage() {
 
                     let deptString = '';
                     if (Array.isArray(dept)) {
-                        // Repair potential double-stringification in array items
                         const cleanedDepts = dept.flatMap(item => {
                             if (typeof item === 'string' && item.startsWith('[') && item.endsWith(']')) {
                                 try {
@@ -126,8 +125,6 @@ export default function EditStaffProfilePage() {
                         });
                         deptString = [...new Set(cleanedDepts)].join(', ');
                     } else if (typeof dept === 'string') {
-                        // If it's a corrupted string like "Staff,IPD,OPD, [\"Staff\",...]"
-                        // We extract the unique words
                         const matches = dept.match(/[a-zA-Z0-9_-]+/g);
                         deptString = matches ? [...new Set(matches)].join(', ') : dept;
                     }
@@ -139,8 +136,8 @@ export default function EditStaffProfilePage() {
                         profilePic: (s.user as any)?.image || (s.user as any)?.profilePic || '',
                         gender: (s.user as any)?.gender || '',
                         dateOfBirth: (s.user as any)?.dateOfBirth ? new Date((s.user as any).dateOfBirth).toISOString().split('T')[0] : '',
-                        designation: s.designation || '',
-                        department: deptString,
+                        designation: s.designation || 'Frontdesk Specialist',
+                        department: deptString || 'Frontdesk',
                         employeeId: s.employeeId || '',
                         joiningDate: s.joiningDate ? new Date(s.joiningDate).toISOString().split('T')[0] : '',
                         experienceYears: s.experienceYears || '',
@@ -189,7 +186,6 @@ export default function EditStaffProfilePage() {
             newErrors.mobile = "Mobile number must be exactly 10 digits";
         }
 
-        // IFSC: 4 alphas, 0, 6 alpha-numeric
         if (formData.bankDetails.ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.bankDetails.ifscCode.toUpperCase())) {
             newErrors['bankDetails.ifscCode'] = "Invalid IFSC Code format";
         }
@@ -250,7 +246,7 @@ export default function EditStaffProfilePage() {
             if (!/^[0-9]{9,18}$/.test(value) && value.length > 0) fieldError = "9-18 digits only";
         }
         if (name === 'bankDetails.ifscCode') {
-            if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(value) && value.length > 0) fieldError = "Invalid IFSC (e.g., SBIN0012345)";
+            if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(value) && value.length > 0) fieldError = "Invalid IFSCCode (e.g., SBIN0012345)";
         }
         if (name === 'panNumber') {
             if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value) && value.length > 0) fieldError = "Invalid PAN format";
@@ -283,7 +279,6 @@ export default function EditStaffProfilePage() {
             [name]: fieldError
         }));
 
-        // Let global delete happen below if errors were set empty
         if (!fieldError && errors[name]) {
             setErrors(prev => {
                 const updated = { ...prev };
@@ -310,22 +305,16 @@ export default function EditStaffProfilePage() {
         const { name, files: selectedFiles } = e.target;
         if (selectedFiles && selectedFiles[0]) {
             const file = selectedFiles[0];
-
-            // SMART VALIDATION
-            if (file.size > 5 * 1024 * 1024) { // 5MB Limit
+            if (file.size > 5 * 1024 * 1024) {
                 toast.error("File size exceeds 5MB limit");
                 return;
             }
-
             const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
             if (!allowedTypes.includes(file.type)) {
                 toast.error("Format not supported. Please use PDF, JPG, PNG or DOCX");
                 return;
             }
-
             setFiles(prev => ({ ...prev, [name]: file }));
-
-            // Update preview for profile pic if applicable
             if (name === 'profilePic') {
                 const reader = new FileReader();
                 reader.onloadend = () => {
@@ -353,7 +342,6 @@ export default function EditStaffProfilePage() {
 
     const handleSave = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-
         if (!validate()) {
             toast.error("Please correct the errors in the form");
             return;
@@ -362,55 +350,37 @@ export default function EditStaffProfilePage() {
         setIsSaving(true);
         try {
             const formDataToSubmit = new FormData();
-
-            // Add all non-object fields
             Object.keys(formData).forEach(key => {
-                // VERY IMPORTANT: Do NOT send the binary preview string or the old URL as a text field for profilePic
-                // Multer expects profilePic to be a FILE, and sending it as both text and file causes "Unexpected field"
                 if (typeof formData[key] !== 'object' && key !== 'profilePic' && key !== 'profilepic' && key !== 'documents') {
                     formDataToSubmit.append(key, formData[key]);
                 }
             });
-
-            // Add nested objects as JSON strings or flat fields
             formDataToSubmit.append('workingHours', JSON.stringify(formData.workingHours));
             formDataToSubmit.append('bankDetails', JSON.stringify(formData.bankDetails));
-
-            // Special handling for qualification details
             formDataToSubmit.append('qualificationDetails', JSON.stringify({
                 registrationNumber: formData.registrationNumber,
                 licenseValidityDate: formData.licenseValidityDate,
                 qualifications: formData.qualifications
             }));
 
-            // Add department as array mapping done in backend usually
             const deptArray = typeof formData.department === 'string'
                 ? formData.department.split(',').map((d: string) => d.trim()).filter(Boolean)
                 : formData.department;
 
-            // CLEANUP: Ensure no duplicates are sent
             formDataToSubmit.delete('department');
             formDataToSubmit.append('department', JSON.stringify(deptArray));
 
-            // Add files
             Object.keys(files).forEach(key => {
                 if (files[key]) {
-                    // CRITICAL: Clean up ANY text-based leftover or previous version of this field
-                    // This prevents Multer "Unexpected field" due to name mismatches or prefixes
                     formDataToSubmit.delete(key);
                     formDataToSubmit.append(key, files[key]);
                 }
             });
 
-            console.log("[DEBUG] Final FormData Fields Before Submit:");
-            for (let [key, value] of (formDataToSubmit as any).entries()) {
-                console.log(`- ${key}: ${typeof value === 'string' ? (value.length > 50 ? value.substring(0, 50) + '...' : value) : '[FILE: ' + (value as File).name + ']'}`);
-            }
-
             const res = await updateStaffProfileAction(formDataToSubmit);
             if (res.success) {
-                toast.success('Profile updated successfully');
-                router.push(`/${hospitalId}/staff/profile`);
+                toast.success('Frontdesk Profile updated successfully');
+                router.push(`/${hospitalId}/helpdesk/profile`);
             } else {
                 toast.error(res.error || 'Failed to update profile');
             }
@@ -454,14 +424,14 @@ export default function EditStaffProfilePage() {
                         <ArrowLeft size={20} className="sm:size-6" />
                     </button>
                     <div>
-                        <h1 className="text-xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tighter">Edit Profile</h1>
-                        <p className="text-[10px] sm:text-xs text-gray-500 font-bold uppercase tracking-widest mt-0.5 sm:mt-1">Staff Management Registry</p>
+                        <h1 className="text-xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tighter">Frontdesk Profile</h1>
+                        <p className="text-[10px] sm:text-xs text-gray-500 font-bold uppercase tracking-widest mt-0.5 sm:mt-1">Healthcare Administration Registry</p>
                     </div>
                 </div>
                 <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-4 sm:px-8 py-2.5 sm:py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] sm:text-sm font-black uppercase tracking-widest rounded-xl sm:rounded-2xl shadow-xl shadow-indigo-500/20 active:scale-95 transition-all disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 sm:px-8 py-2.5 sm:py-3 bg-teal-600 hover:bg-teal-700 text-white text-[10px] sm:text-sm font-black uppercase tracking-widest rounded-xl sm:rounded-2xl shadow-xl shadow-teal-500/20 active:scale-95 transition-all disabled:opacity-50"
                 >
                     {isSaving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Save size={16} className="sm:size-5" />}
                     Save Changes
@@ -469,14 +439,13 @@ export default function EditStaffProfilePage() {
             </div>
 
             <div className="flex flex-col lg:flex-row gap-8">
-                {/* Sidebar Navigation - Scrollable on mobile  */}
                 <div className="lg:w-64 flex flex-row lg:flex-col gap-1.5 sm:gap-2 overflow-x-auto pb-2 lg:pb-0 px-1 sm:px-0 no-scrollbar">
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`whitespace-nowrap flex items-center gap-2.5 sm:gap-3 px-4 sm:px-5 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab.id
-                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                                ? 'bg-teal-600 text-white shadow-lg shadow-teal-500/20'
                                 : 'bg-white dark:bg-[#111] text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900 border border-gray-100 dark:border-gray-800 lg:border-none'
                                 }`}
                         >
@@ -486,7 +455,6 @@ export default function EditStaffProfilePage() {
                     ))}
                 </div>
 
-                {/* Main Form Content */}
                 <div className="flex-1 bg-white dark:bg-[#111] rounded-3xl border border-gray-100 dark:border-gray-800 p-3 sm:p-8 shadow-sm">
                     {activeTab === 'personal' && (
                         <div className="space-y-8 animate-in fade-in duration-300">
@@ -496,7 +464,7 @@ export default function EditStaffProfilePage() {
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Full Name <span className="text-rose-500">*</span></label>
                                         <div className="relative">
-                                            <input type="text" name="name" value={formData.name} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.name ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all`} />
+                                            <input type="text" name="name" value={formData.name} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.name ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all`} />
                                             <User className="absolute right-4 top-3.5 text-gray-300" size={16} />
                                         </div>
                                         {errors.name && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.name}</p>}
@@ -504,7 +472,7 @@ export default function EditStaffProfilePage() {
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Email Address <span className="text-rose-500">*</span></label>
                                         <div className="relative">
-                                            <input type="email" name="email" value={formData.email} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.email ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all`} />
+                                            <input type="email" name="email" value={formData.email} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.email ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all`} />
                                             <Mail className="absolute right-4 top-3.5 text-gray-300" size={16} />
                                         </div>
                                         {errors.email && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.email}</p>}
@@ -512,14 +480,14 @@ export default function EditStaffProfilePage() {
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Mobile Number</label>
                                         <div className="relative">
-                                            <input type="text" name="mobile" value={formData.mobile} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.mobile ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all`} />
+                                            <input type="text" name="mobile" value={formData.mobile} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.mobile ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all`} />
                                             <Phone className="absolute right-4 top-3.5 text-gray-300" size={16} />
                                         </div>
                                         {errors.mobile && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.mobile}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Gender</label>
-                                        <select name="gender" value={formData.gender} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                                        <select name="gender" value={formData.gender} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all">
                                             <option value="">Select Gender</option>
                                             <option value="male">Male</option>
                                             <option value="female">Female</option>
@@ -529,33 +497,10 @@ export default function EditStaffProfilePage() {
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Date of Birth</label>
                                         <div className="relative">
-                                            <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.dateOfBirth ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all`} />
+                                            <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.dateOfBirth ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all`} />
                                             <Calendar className="absolute right-4 top-3.5 text-gray-300" size={16} />
                                         </div>
                                         {errors.dateOfBirth && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.dateOfBirth}</p>}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="pt-6 border-t border-gray-50 dark:border-gray-800">
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Profile Photo</h3>
-                                <div className="flex flex-col sm:flex-row items-center gap-6">
-                                    <div className="w-24 h-24 bg-indigo-50 dark:bg-indigo-900/10 rounded-2xl flex items-center justify-center overflow-hidden border border-indigo-100 dark:border-indigo-800 relative group">
-                                        {formData.profilePic ? <img src={formData.profilePic} className="w-full h-full object-cover" /> : <User size={40} className="text-indigo-500/50" />}
-                                        <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-all">
-                                            <Upload className="text-white" size={20} />
-                                            <input type="file" name="profilePic" onChange={handleFileChange} className="hidden" accept="image/*" />
-                                        </label>
-                                    </div>
-                                    <div className="flex-1 space-y-3 w-full">
-                                        <div className="flex items-center gap-4">
-                                            <label className="flex-1 flex items-center justify-center gap-3 px-6 py-3 bg-gray-50 dark:bg-gray-900/50 border border-dashed border-indigo-200 dark:border-indigo-900 rounded-2xl cursor-pointer hover:bg-indigo-50/50 transition-all group">
-                                                <ImageIcon size={18} className="text-indigo-500 group-hover:scale-110 transition-transform" />
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Upload New Photo</span>
-                                                <input type="file" name="profilePic" onChange={handleFileChange} className="hidden" accept="image/*" />
-                                            </label>
-                                        </div>
-                                        <p className="text-[10px] text-gray-500 font-medium">JPG or PNG. Max size 5MB. Recommended square aspect ratio.</p>
                                     </div>
                                 </div>
                             </div>
@@ -570,181 +515,31 @@ export default function EditStaffProfilePage() {
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Designation</label>
                                         <div className="relative">
-                                            <input type="text" name="designation" value={formData.designation} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+                                            <input type="text" name="designation" value={formData.designation} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" />
                                             <Award className="absolute right-4 top-3.5 text-gray-300" size={16} />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Department(s)</label>
                                         <div className="relative">
-                                            <input type="text" name="department" value={formData.department} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. Nursing, ICU" />
+                                            <input type="text" name="department" value={formData.department} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" placeholder="e.g. Frontdesk, Helpdesk" />
                                             <Building className="absolute right-4 top-3.5 text-gray-300" size={16} />
                                         </div>
-                                        <p className="text-[10px] text-gray-400 italic">Comma-separated for multiple.</p>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Employee ID</label>
-                                        <input type="text" name="employeeId" value={formData.employeeId} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+                                        <input type="text" name="employeeId" value={formData.employeeId} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Joining Date</label>
-                                            <input type="date" name="joiningDate" value={formData.joiningDate} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+                                            <input type="date" name="joiningDate" value={formData.joiningDate} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Exp. (Years)</label>
-                                            <input type="number" name="experienceYears" value={formData.experienceYears} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+                                            <input type="number" name="experienceYears" value={formData.experienceYears} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" />
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-
-                            <div className="pt-8 border-t border-gray-50 dark:border-gray-800">
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                                    <Clock className="text-indigo-500" /> Working Hours
-                                </h3>
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Start Time</label>
-                                        <input type="time" name="workingHours.start" value={formData.workingHours.start} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">End Time</label>
-                                        <input type="time" name="workingHours.end" value={formData.workingHours.end} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
-                                    </div>
-                                </div>
-                                <p className="mt-4 text-xs text-gray-500 italic">This will be used to calculate your late markings and on-time performance.</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'qualifications' && (
-                        <div className="space-y-8 animate-in fade-in duration-300">
-                            <div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                                    <Award className="text-indigo-500" /> Professional Qualifications
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Registration Number</label>
-                                        <div className="relative">
-                                            <input type="text" name="registrationNumber" value={formData.registrationNumber} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. MC-12345" />
-                                            <FileText className="absolute right-4 top-3.5 text-gray-300" size={16} />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">License Validity Date</label>
-                                        <div className="relative">
-                                            <input type="date" name="licenseValidityDate" value={formData.licenseValidityDate} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
-                                            <Calendar className="absolute right-4 top-3.5 text-gray-300 pointer-events-none" size={16} />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="pt-8 border-t border-gray-50 dark:border-gray-800">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                        <Award className="text-indigo-500" /> Professional Degrees & Certifications
-                                    </h3>
-                                    <button
-                                        type="button"
-                                        onClick={addQualification}
-                                        className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-100 transition-all"
-                                    >
-                                        <Plus size={14} /> Add Degree
-                                    </button>
-                                </div>
-
-                                <div className="space-y-4">
-                                    {formData.qualifications.map((qual: string, index: number) => (
-                                        <div key={index} className="flex items-center gap-3 animate-in fade-in slide-in-from-left-4 duration-300">
-                                            <div className="flex-1 relative">
-                                                <input
-                                                    type="text"
-                                                    value={qual}
-                                                    onChange={(e) => handleQualificationChange(index, e.target.value)}
-                                                    placeholder="e.g. MBBS, MD (General Medicine), etc."
-                                                    className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-[10px] sm:text-xs font-bold text-gray-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                                                />
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => removeQualification(index)}
-                                                className="p-3 text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
-                                            >
-                                                <X size={18} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                    {formData.qualifications.length === 0 && (
-                                        <div className="py-12 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-[2rem] text-center">
-                                            <p className="text-sm text-gray-400 italic font-medium">No qualifications added yet. Click 'Add Degree' to begin.</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="pt-8 border-t border-gray-50 dark:border-gray-800">
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                                    <Upload className="text-indigo-500" /> Document Uploads
-                                </h3>
-                                <div className="space-y-6">
-                                    {[
-                                        { id: 'degreeCertificate', label: 'Degree Certificate', key: 'degreeCertificate' },
-                                        { id: 'medicalCouncilRegistration', label: 'Medical Council Registration', key: 'medicalCouncilRegistration' },
-                                        { id: 'nursingCouncilRegistration', label: 'Nursing Council Registration', key: 'nursingCouncilRegistration' },
-                                        { id: 'doctorateCertificate', label: 'Doctorate Certificate', key: 'doctorateCertificate' },
-                                        { id: 'internshipCertificate', label: 'Internship Certificate', key: 'internshipCertificate' }
-                                    ].map((doc: any) => (
-                                        <div key={doc.id} className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 gap-4">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-500 shrink-0">
-                                                    <FileText size={20} className="sm:size-6" />
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <div className="flex items-center gap-2">
-                                                        <h4 className="font-bold text-xs sm:text-sm text-gray-900 dark:text-white truncate">{doc.label}</h4>
-                                                        {formData.documents?.[doc.key]?.url && (
-                                                            <span className="px-1.5 py-0.5 bg-green-50 dark:bg-green-900/20 text-green-600 text-[8px] font-black uppercase rounded-md border border-green-100">Uploaded</span>
-                                                        )}
-                                                    </div>
-                                                    {formData.documents?.[doc.key]?.name ? (
-                                                        <p className="text-[9px] sm:text-[10px] text-gray-400 font-bold break-all mt-0.5">
-                                                            {formData.documents[doc.key].name}
-                                                            {formData.documents[doc.key].size && ` (${(formData.documents[doc.key].size / 1024 / 1024).toFixed(2)}MB)`}
-                                                        </p>
-                                                    ) : (
-                                                        <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium">PDF, JPG, PNG or DOCX • Max 5MB</p>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                                                {formData.documents?.[doc.key]?.url && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setViewer({ isOpen: true, url: formData.documents[doc.key].url, title: doc.label })}
-                                                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-all border border-indigo-100 text-[10px] font-black uppercase tracking-widest"
-                                                    >
-                                                        <Eye size={14} /> View
-                                                    </button>
-                                                )}
-                                                <label className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all overflow-hidden">
-                                                    <Upload size={14} className="shrink-0" />
-                                                    <span className="truncate max-w-[120px] sm:max-w-[200px]">
-                                                        {files[doc.id] ? (
-                                                            <>
-                                                                {files[doc.id].name}
-                                                                <span className="ml-1 opacity-60">({(files[doc.id].size / 1024 / 1024).toFixed(2)}MB)</span>
-                                                            </>
-                                                        ) : 'Upload New'}
-                                                    </span>
-                                                    <input type="file" name={doc.id} onChange={handleFileChange} className="hidden" accept=".pdf,image/*,.doc,.docx" />
-                                                </label>
-                                            </div>
-                                        </div>
-                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -754,22 +549,22 @@ export default function EditStaffProfilePage() {
                         <div className="space-y-8 animate-in fade-in duration-300">
                             <div>
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2 transition-all">
-                                    <Wallet className="text-indigo-500" /> Settlement Bank Details
+                                    <Wallet className="text-teal-500" /> Settlement Bank Details
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Account Holder Name</label>
-                                        <input type="text" name="bankDetails.accountName" value={formData.bankDetails.accountName} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.accountName'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none`} />
+                                        <input type="text" name="bankDetails.accountName" value={formData.bankDetails.accountName} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.accountName'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none`} />
                                         {errors['bankDetails.accountName'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.accountName']}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Bank Name</label>
-                                        <input type="text" name="bankDetails.bankName" value={formData.bankDetails.bankName} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.bankName'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none`} />
+                                        <input type="text" name="bankDetails.bankName" value={formData.bankDetails.bankName} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.bankName'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none`} />
                                         {errors['bankDetails.bankName'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.bankName']}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Account Number</label>
-                                        <input type="text" name="bankDetails.accountNumber" value={formData.bankDetails.accountNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.accountNumber'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none`} />
+                                        <input type="text" name="bankDetails.accountNumber" value={formData.bankDetails.accountNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.accountNumber'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none`} />
                                         {errors['bankDetails.accountNumber'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.accountNumber']}</p>}
                                     </div>
                                     <div className="space-y-2">
@@ -781,9 +576,9 @@ export default function EditStaffProfilePage() {
                                                 value={formData.bankDetails.ifscCode}
                                                 onChange={handleChange}
                                                 placeholder="e.g. HDFC0001234"
-                                                className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.ifscCode'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm font-bold uppercase tracking-widest focus:ring-2 focus:ring-indigo-500 outline-none`}
+                                                className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.ifscCode'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm font-bold uppercase tracking-widest focus:ring-2 focus:ring-teal-500 outline-none`}
                                             />
-                                            {isIFSCValidating && <div className="absolute right-4 top-3.5 w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>}
+                                            {isIFSCValidating && <div className="absolute right-4 top-3.5 w-4 h-4 border-2 border-teal-500 border-t-transparent rounded-full animate-spin"></div>}
                                         </div>
                                         {errors['bankDetails.ifscCode'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.ifscCode']}</p>}
                                     </div>
@@ -794,48 +589,40 @@ export default function EditStaffProfilePage() {
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Payroll & Tax Identifiers</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider flex justify-between">
-                                            Base Salary (Per Month)
-                                            <span className="text-gray-400 lowercase">(view only)</span>
-                                        </label>
+                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Base Salary</label>
                                         <input type="number" name="baseSalary" value={formData.baseSalary} readOnly className="w-full bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3 text-sm outline-none cursor-not-allowed text-gray-500" />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">PAN Card Number</label>
-                                        <input type="text" name="panNumber" value={formData.panNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.panNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none uppercase`} />
+                                        <input type="text" name="panNumber" value={formData.panNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.panNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none uppercase`} />
                                         {errors.panNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.panNumber}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Aadhar Number</label>
-                                        <input type="text" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.aadharNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none`} />
+                                        <input type="text" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.aadharNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none`} />
                                         {errors.aadharNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.aadharNumber}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">PF Number</label>
-                                        <input type="text" name="pfNumber" value={formData.pfNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.pfNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none uppercase`} />
-                                        {errors.pfNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.pfNumber}</p>}
-                                    </div>
-                                    <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">ESI Number</label>
-                                        <input type="text" name="esiNumber" value={formData.esiNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.esiNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none uppercase`} />
+                                        <input type="text" name="esiNumber" value={formData.esiNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.esiNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none`} />
                                         {errors.esiNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.esiNumber}</p>}
                                     </div>
                                     <div className="space-y-2">
+                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">PF Number</label>
+                                        <input type="text" name="pfNumber" value={formData.pfNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.pfNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none`} />
+                                        {errors.pfNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.pfNumber}</p>}
+                                    </div>
+                                    <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">UAN Number</label>
-                                        <input type="text" name="uanNumber" value={formData.uanNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.uanNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none uppercase`} />
+                                        <input type="text" name="uanNumber" value={formData.uanNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.uanNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none`} />
                                         {errors.uanNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.uanNumber}</p>}
                                     </div>
-                                </div>
-                                <div className="mt-8 p-6 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border border-dashed border-gray-200 dark:border-gray-800">
-                                    <p className="text-xs text-gray-500 leading-relaxed font-medium">
-                                        <strong>SECURITY NOTICE:</strong> All financial and statutory identifiers (PAN, PF, ESI, Bank Details) are encrypted at rest using institutional hardware security modules. Ensure the information matches your official documents to prevent payroll processing failures.
-                                    </p>
                                 </div>
                             </div>
                         </div>
                     )}
                 </div>
             </div>
-        </div >
+        </div>
     );
 }

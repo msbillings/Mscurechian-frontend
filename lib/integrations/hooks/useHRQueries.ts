@@ -48,6 +48,7 @@ export const useHRAttendance = (params?: {
   limit?: number;
   role?: string;
   status?: string;
+  search?: string;
 }) => {
   return useQuery({
     queryKey: ["hr", "attendance", params],

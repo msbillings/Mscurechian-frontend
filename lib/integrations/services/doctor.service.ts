@@ -41,6 +41,15 @@ export const doctorService = {
   // Patients
   getMyPatients: () => apiClient<DoctorPatient[]>(DOCTOR_ENDPOINTS.MY_PATIENTS),
 
+  getIncomeStats: (startDate?: string, endDate?: string) => {
+    let url = DOCTOR_ENDPOINTS.INCOME_STATS;
+    const params = new URLSearchParams();
+    if (startDate) params.append("startDate", startDate);
+    if (endDate) params.append("endDate", endDate);
+    if (params.toString()) url += `?${params.toString()}`;
+    return apiClient<any>(url);
+  },
+
   getPatientDetails: (id: string) =>
     apiClient<any>(DOCTOR_ENDPOINTS.PATIENT_DETAILS(id)),
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Bell,
   Search,
@@ -28,6 +28,9 @@ function DoctorAnnouncementsPage() {
 
   useEffect(() => {
     loadAnnouncements();
+    // Enable real-time updates via polling (every 30 seconds)
+    const interval = setInterval(loadAnnouncements, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadAnnouncements = async () => {
@@ -52,9 +55,18 @@ function DoctorAnnouncementsPage() {
     }
   };
 
-  const filteredAnnouncements = filter === 'all'
-    ? announcements
-    : announcements.filter(a => a.priority === filter);
+  const filteredAnnouncements = useMemo(() => {
+    const raw = filter === 'all'
+      ? announcements
+      : announcements.filter(a => a.priority === filter);
+
+    // Frontend Filter: Only show if 'all' or 'doctor' is in targetRoles
+    return raw.filter(a =>
+      !a.targetRoles ||
+      a.targetRoles.includes('all') ||
+      a.targetRoles.includes('doctor')
+    );
+  }, [announcements, filter]);
 
   // Pagination Logic
   const indexOfLastItem = currentPage * itemsPerPage;

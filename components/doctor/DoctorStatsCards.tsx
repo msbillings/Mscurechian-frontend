@@ -48,19 +48,11 @@ function DoctorStatsCards({ stats }: DoctorStatsCardsProps) {
             lightColor: 'bg-emerald-50 dark:bg-emerald-900/20',
             textColor: 'text-emerald-600 dark:text-emerald-400',
             subValue: 'Scheduled for today'
-        },
-        {
-            label: 'Consultation Value',
-            value: `₹${stats.consultationsValue.toLocaleString()}`,
-            icon: IndianRupee,
-            color: 'bg-purple-500',
-            lightColor: 'bg-purple-50 dark:bg-purple-900/20',
-            textColor: 'text-purple-600 dark:text-purple-400'
         }
     ];
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 max-sm:gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-sm:gap-3">
             {cards.map((card, index) => (
                 <div
                     key={index}

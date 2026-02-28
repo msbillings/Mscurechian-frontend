@@ -87,7 +87,7 @@ function NurseSchedulePage() {
                                 <div className="p-4 sm:p-6 bg-white rounded-xl text-gray-900 shadow-sm border border-slate-100 relative overflow-hidden group/shift">
                                     <p className="text-primary-theme text-[8px] sm:text-[10px] font-black uppercase tracking-widest">Designation</p>
                                     <div className="flex items-center justify-between mt-1 sm:mt-2">
-                                        <h3 className="text-sm sm:text-xl font-black uppercase tracking-tighter">{schedule?.shift || 'General'} Shift</h3>
+                                        <h3 className="text-sm sm:text-xl font-black uppercase tracking-tighter">{schedule?.shift && schedule.shift.toLowerCase().includes('shift') ? schedule.shift : `${schedule?.shift || 'General'} Shift`}</h3>
                                         <span className="bg-primary-theme/20 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[7px] sm:text-[10px] font-black text-primary-theme border border-primary-theme/30 uppercase tracking-widest whitespace-nowrap">Active</span>
                                     </div>
                                     <div className="flex items-center gap-3 sm:gap-6 mt-3 sm:mt-6">
@@ -208,7 +208,7 @@ function NurseSchedulePage() {
 
                                     {/* Empty slots for first week */}
                                     {Array.from({ length: firstDayOfMonth(currentMonth, currentYear) }).map((_, i) => (
-                                        <div key={`empty-${i}`} className="bg-white/40 p-2 h-20 sm:h-32 md:h-40"></div>
+                                        <div key={`empty-${i}`} className="bg-white/40 p-2 h-16 sm:h-24 md:h-32"></div>
                                     ))}
 
                                     {/* Days of the month */}
@@ -232,7 +232,7 @@ function NurseSchedulePage() {
                                         return (
                                             <div
                                                 key={day}
-                                                className={`bg-white p-2 sm:p-3 h-20 sm:h-32 md:h-40 relative group transition-all duration-300
+                                                className={`bg-white p-2 sm:p-3 h-16 sm:h-24 md:h-32 relative group transition-all duration-300
                                                     ${isToday ? 'ring-2 ring-inset ring-indigo-600 z-10' : ''}
                                                 `}
                                             >
@@ -254,11 +254,11 @@ function NurseSchedulePage() {
                                                             <div className="h-[2px] w-full bg-[#FB7185] rounded-full opacity-30"></div>
                                                         </div>
                                                     ) : !isOff ? (
-                                                        <div className="mt-1 px-2.5 py-2 bg-[#EFF2FF] text-[#4F46E5] rounded-md border border-indigo-100/50 shadow-sm hover:translate-y-[-1px] transition-transform">
-                                                            <div className="text-[9px] font-black uppercase tracking-tight leading-none mb-1">
-                                                                {schedule?.shift || 'MORNING'} SHIFT
+                                                        <div className="mt-1 px-2.5 py-1.5 bg-[#EFF2FF] text-[#4F46E5] rounded-md border border-indigo-100/50 shadow-sm hover:translate-y-[-1px] transition-transform">
+                                                            <div className="text-[8px] font-black uppercase tracking-tight leading-none mb-1">
+                                                                {schedule?.shift && schedule.shift.toLowerCase().includes('shift') ? schedule.shift : `${schedule?.shift || 'MORNING'} SHIFT`}
                                                             </div>
-                                                            <div className="text-[8px] font-bold opacity-60 tracking-wider">
+                                                            <div className="text-[7px] font-bold opacity-60 tracking-wider">
                                                                 {schedule?.workingHours?.start || '09:00'}-{schedule?.workingHours?.end || '19:00'}
                                                             </div>
                                                         </div>

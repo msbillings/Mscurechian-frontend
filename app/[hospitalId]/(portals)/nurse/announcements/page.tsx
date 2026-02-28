@@ -14,19 +14,24 @@ export default function AnnouncementsPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const announcementsPerPage = 10;
 
+    const loadAnnouncements = async () => {
+        try {
+            // Only show primary loader on first fetch
+            if (announcements.length === 0) setLoading(true);
+            const data = await notificationService.getAnnouncements();
+            setAnnouncements(data.announcements || []);
+        } catch (error: any) {
+            console.error("Failed to load announcements", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchAnnouncements = async () => {
-            try {
-                setLoading(true);
-                const data = await notificationService.getAnnouncements();
-                setAnnouncements(data.announcements || []);
-            } catch (error: any) {
-                toast.error("Failed to load announcements");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchAnnouncements();
+        loadAnnouncements();
+        // Enable real-time updates via polling (every 30 seconds)
+        const interval = setInterval(loadAnnouncements, 30000);
+        return () => clearInterval(interval);
     }, []);
 
     // Filtered announcements
@@ -35,7 +40,13 @@ export default function AnnouncementsPage() {
             const matchesSearch = (ann.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
                 (ann.content?.toLowerCase() || '').includes(searchQuery.toLowerCase());
             const matchesPriority = filterPriority === 'all' || ann.priority === filterPriority;
-            return matchesSearch && matchesPriority;
+
+            // Frontend Filter: Only show if 'all' or 'nurse' is in targetRoles
+            const matchesRole = !ann.targetRoles ||
+                ann.targetRoles.includes('all') ||
+                ann.targetRoles.includes('nurse');
+
+            return matchesSearch && matchesPriority && matchesRole;
         });
     }, [announcements, searchQuery, filterPriority]);
 
@@ -60,22 +71,22 @@ export default function AnnouncementsPage() {
     return (
         <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 px-4 md:px-6 lg:px-8">
             {/* HERO SECTION */}
-            <div className="relative overflow-hidden rounded-xl sm:rounded-[0.5rem] p-4 sm:p-10 bg-white border border-slate-100 shadow-sm">
+            <div className="relative overflow-hidden rounded-xl sm:rounded-[0.5rem] p-4 sm:p-6 bg-white border border-slate-100 shadow-sm">
                 <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 text-center sm:text-left">
-                    <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-5">
-                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary-theme rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20 rotate-3 shrink-0">
-                            <Megaphone size={20} className="sm:size-[28px] text-white" strokeWidth={2.5} />
+                    <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-theme rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20 rotate-3 shrink-0">
+                            <Megaphone size={16} className="sm:size-[20px] text-white" strokeWidth={2.5} />
                         </div>
                         <div>
-                            <h1 className="text-xs sm:text-2xl font-black uppercase text-slate-900 tracking-tight leading-none">Announcements</h1>
-                            <p className="text-slate-400 text-[8px] sm:text-sm font-bold uppercase tracking-widest mt-1">Hospital-wide broadcasts.</p>
+                            <h1 className="text-xs sm:text-lg font-black uppercase text-slate-900 tracking-tight leading-none">Announcements</h1>
+                            <p className="text-slate-400 text-[7px] sm:text-xs font-bold uppercase tracking-widest mt-1">Hospital-wide broadcasts.</p>
                         </div>
                     </div>
 
                     {/* SEARCH & FILTER BAR */}
-                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto p-1.5 sm:p-2 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100">
-                        <div className="relative group flex-1 sm:min-w-[280px]">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-theme transition-colors sm:size-[16px]" size={14} />
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-2 w-full sm:w-auto p-1 rounded-xl bg-slate-50 border border-slate-100">
+                        <div className="relative group flex-1 sm:min-w-[240px]">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-theme transition-colors sm:size-[14px]" size={12} />
                             <input
                                 placeholder="Search broadcasts..."
                                 value={searchQuery}
@@ -83,19 +94,19 @@ export default function AnnouncementsPage() {
                                     setSearchQuery(e.target.value);
                                     setCurrentPage(1);
                                 }}
-                                className="w-full pl-9 pr-4 py-2 sm:py-2.5 bg-transparent border-none text-[10px] sm:text-xs font-bold text-slate-900 placeholder:text-slate-400 outline-none"
+                                className="w-full pl-9 pr-4 py-1.5 bg-transparent border-none text-[9px] sm:text-[10px] font-bold text-slate-900 placeholder:text-slate-400 outline-none"
                             />
                         </div>
-                        <div className="w-full sm:w-px h-px sm:h-8 bg-slate-200"></div>
+                        <div className="w-full sm:w-px h-px sm:h-6 bg-slate-200 self-center"></div>
                         <div className="relative">
-                            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none sm:size-[14px]" size={12} />
+                            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none sm:size-[12px]" size={10} />
                             <select
                                 value={filterPriority}
                                 onChange={(e) => {
                                     setFilterPriority(e.target.value);
                                     setCurrentPage(1);
                                 }}
-                                className="w-full sm:w-auto pl-9 pr-8 py-2 sm:py-2.5 bg-transparent border-none text-[9px] sm:text-xs font-black uppercase tracking-widest text-slate-600 outline-none cursor-pointer appearance-none min-w-[120px]"
+                                className="w-full sm:w-auto pl-8 pr-8 py-1.5 bg-transparent border-none text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-slate-600 outline-none cursor-pointer appearance-none min-w-[100px]"
                             >
                                 <option value="all">Priority: All</option>
                                 <option value="high">High Only</option>

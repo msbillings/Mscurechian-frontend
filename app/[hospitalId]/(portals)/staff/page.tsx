@@ -153,7 +153,7 @@ const StaffDashboardPage = React.memo(function StaffDashboardPage() {
 
     return (
         <div
-            className="space-y-8 max-w-7xl mx-auto pb-12 animate-in fade-in duration-150"
+            className="space-y-4 md:space-y-8 max-w-7xl mx-auto pb-6 md:pb-12 animate-in fade-in duration-150 px-0.5 sm:px-4"
         >
             {/* Helpdesk Credentials Notification */}
             {helpdeskNotification && (
@@ -161,18 +161,18 @@ const StaffDashboardPage = React.memo(function StaffDashboardPage() {
                     <div className="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
                     <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-48 h-48 bg-indigo-400/20 rounded-full blur-2xl"></div>
 
-                    <div className="relative flex flex-col xl:flex-row items-center justify-between gap-8">
-                        <div className="flex items-center gap-6">
-                            <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center shadow-inner border border-white/20">
-                                <Key className="w-8 h-8 text-white" />
+                    <div className="relative flex flex-col xl:flex-row items-center justify-between gap-4 sm:gap-8 p-4 sm:p-0">
+                        <div className="flex items-center gap-4 sm:gap-6">
+                            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-xl rounded-xl sm:rounded-2xl flex items-center justify-center shadow-inner border border-white/20 shrink-0">
+                                <Key className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-black flex items-center gap-3">
-                                    New Helpdesk Assigned!
-                                    <span className="bg-emerald-400 text-emerald-950 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">Live</span>
+                                <h3 className="text-lg sm:text-2xl font-black flex items-center gap-3">
+                                    Helpdesk Assigned!
+                                    <span className="bg-emerald-400 text-emerald-950 text-[8px] sm:text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shadow-lg">Live</span>
                                 </h3>
-                                <p className="text-indigo-100 font-medium mt-1">
-                                    You have been assigned to <span className="font-black underline decoration-emerald-400 underline-offset-4">{helpdeskNotification.hospital}</span>.
+                                <p className="text-indigo-100 text-[10px] sm:text-sm font-medium mt-0.5">
+                                    Assigned to <span className="font-black underline decoration-emerald-400 underline-offset-2">{helpdeskNotification.hospital}</span>
                                 </p>
                             </div>
                         </div>
@@ -222,17 +222,59 @@ const StaffDashboardPage = React.memo(function StaffDashboardPage() {
             )}
 
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="space-y-1">
-                    <h1 className="text-3xl max-sm:text-2xl font-black text-gray-900 tracking-tight">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
+                <div className="space-y-0.5">
+                    <h1 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tight">
                         Hello, {(staff.user?.name || (staff as any).name || 'Staff').split(' ')[0]}!
                     </h1>
-                    <p className="text-gray-500 font-bold flex items-center gap-2">
-                        <Zap className="w-4 h-4 text-indigo-600" />
-                        Ready for another productive day at {staff.hospital.name}?
+                    <p className="text-[10px] sm:text-sm text-gray-500 font-bold flex items-center gap-1.5 uppercase tracking-widest">
+                        <Zap className="w-3.5 h-3.5 text-indigo-600" />
+                        Institutional Workspace • {staff.hospital.name}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 mr-2 bg-slate-50 p-1 rounded-xl border border-slate-200 shadow-inner">
+                        {!todayAttendance?.checkIn ? (
+                            <button
+                                onClick={handleCheckIn}
+                                disabled={checkInMutation.isPending}
+                                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-md active:scale-95 disabled:opacity-50 transition-all border border-emerald-500/20"
+                            >
+                                {checkInMutation.isPending ? (
+                                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                    <LogIn size={14} strokeWidth={3} />
+                                )}
+                                Clock In
+                            </button>
+                        ) : !todayAttendance?.checkOut ? (
+                            <div className="flex items-center gap-2">
+                                <div className="px-3 py-2 bg-white border border-slate-200 rounded-lg flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest tabular-nums">
+                                        {todayAttendance?.checkIn?.time ? new Date(todayAttendance.checkIn.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={handleCheckOut}
+                                    disabled={checkOutMutation.isPending}
+                                    className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 shadow-md active:scale-95 disabled:opacity-50 transition-all border border-rose-500/20"
+                                >
+                                    {checkOutMutation.isPending ? (
+                                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <LogOut size={14} strokeWidth={3} />
+                                    )}
+                                    Clock Out
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2 px-4 py-2 bg-slate-200 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-300/50">
+                                <CheckCircle2 size={14} strokeWidth={3} />
+                                Shift Ended
+                            </div>
+                        )}
+                    </div>
                     <div className="hidden lg:flex flex-col items-end mr-2">
                         <span className="text-sm font-black text-gray-900">{new Date().toLocaleDateString('en-US', { weekday: 'long' })}</span>
                         <span className="text-xs font-bold text-gray-400">{new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
@@ -242,127 +284,35 @@ const StaffDashboardPage = React.memo(function StaffDashboardPage() {
 
             {/* Quick Actions & Attendance */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Check In/Out Card */}
-                <div className="lg:col-span-4 h-full">
-                    <div className="bg-white rounded-[0.5rem] p-6 shadow-sm border border-gray-100 h-full flex flex-col relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-indigo-50 rounded-full group-hover:scale-125"></div>
-
-                        <div className="relative z-10 flex flex-col h-full">
-                            <div className="flex items-center gap-3 mb-8">
-                                <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
-                                    <Clock className="w-6 h-6" />
-                                </div>
-                                <h3 className="text-[18px]  max-sm:text-[17px] font-bold uppercase text-gray-900">Attendance</h3>
-                            </div>
-
-                            <div className="flex-1 space-y-8">
-                                <div className="text-center space-y-2">
-                                    {hasCheckedIn ? (
-                                        <div className="space-y-4">
-                                            <div className="p-4 bg-emerald-50 rounded-3xl border border-emerald-100 mb-6">
-                                                <div className="flex items-center justify-center gap-2 text-emerald-600 font-black">
-                                                    <CheckCircle2 className="w-5 h-5" />
-                                                    <span>ACTIVE SHIFT</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center justify-center gap-4">
-                                                <div className="text-center">
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">In Time</p>
-                                                    <p className="text-2xl font-black text-gray-900 mt-1">
-                                                        {new Date(todayAttendance?.checkIn?.time!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
-                                                    </p>
-                                                </div>
-                                                <div className="h-10 w-px bg-gray-100 mx-4"></div>
-                                                <div className="text-center">
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Shift</p>
-                                                    <p className="text-2xl font-black text-gray-600 mt-1 uppercase italic">
-                                                        {shiftName}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            <p className="text-3xl max-sm:text-[20px] font-thin text-gray-900">{isShiftEnded ? 'Shift Ended' : isTooEarly ? 'Shift Not Started' : 'Ready to Work'}</p>
-                                            <p className="text-gray-400 font-bold">
-                                                {isShiftEnded ? `Shift ended at ${formatTime(shiftEndTime)}` : `Your shift: ${formatTime(shiftStartTime)} - ${formatTime(shiftEndTime)}`}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="pt-4">
-                                    {!hasCheckedIn ? (
-                                        <button
-                                            onClick={handleCheckIn}
-                                            disabled={checkInMutation.isPending || !isShiftTime}
-                                            className="w-[90%] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-black py-3 rounded-[0.5rem] transform active:scale-95 flex items-center justify-center gap-3 group"
-                                        >
-                                            {checkInMutation.isPending ? (
-                                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                            ) : (
-                                                <>
-                                                    <LogIn className="w-6 h-6 group-hover:translate-x-1" />
-                                                    <span className="text-sm">{isShiftEnded ? 'Shift Over' : isTooEarly ? 'Wait for Shift' : 'Clock In Now'}</span>
-                                                </>
-                                            )}
-                                        </button>
-                                    ) : !hasCheckedOut ? (
-                                        <button
-                                            onClick={handleCheckOut}
-                                            disabled={checkOutMutation.isPending}
-                                            className="w-full bg-primary-theme hover:bg-primary-theme/80 disabled:opacity-50 text-white font-black py-4 rounded-3xl shadow-xl transform active:scale-95 flex items-center justify-center gap-3 group"
-                                        >
-                                            {checkOutMutation.isPending ? (
-                                                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                            ) : (
-                                                <>
-                                                    <LogOut className="w-6 h-6 group-hover:-translate-x-1" />
-                                                    <span className="text-lg">Clock Out</span>
-                                                </>
-                                            )}
-                                        </button>
-                                    ) : (
-                                        <div className="w-full bg-emerald-50 text-emerald-600 font-black py-4 rounded-3xl border-2 border-emerald-100 flex items-center justify-center gap-3">
-                                            <CheckCircle2 className="w-6 h-6" />
-                                            <span className="text-sm uppercase">Shift Completed</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Stats Cards Cluster */}
-                <div className="lg:col-span-8">
+                <div className="lg:col-span-12">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
                         {/* Attendance Stats Card */}
                         <div className="bg-white rounded-[0.5rem] p-8 text-gray-900  shadow-sm relative overflow-hidden flex flex-col justify-between group">
-                           
+
                             <div>
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-[18px]  max-sm:text-[17px] font-bold uppercase">Productivity Metrics</h3>
-                                    <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center border border-white/5">
-                                        <TrendingUp className="w-5 h-5 text-indigo-300" />
+                                <div className="flex items-center justify-between mb-4 sm:mb-8">
+                                    <h3 className="text-[14px] sm:text-[18px] font-black uppercase text-gray-900 tracking-widest">Efficiency</h3>
+                                    <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center border border-indigo-100">
+                                        <TrendingUp className="w-5 h-5 text-indigo-600" />
                                     </div>
                                 </div>
-                                <div className="mt-8 flex items-baseline gap-4">
-                                    <span className="text-[30px] font-bold">{stats.onTimePercentage}%</span>
-                                    <span className="flex items-center text-emerald-400 text-sm font-bold uppercase tracking-widest">
+                                <div className="mt-4 sm:mt-8 flex items-baseline gap-4">
+                                    <span className="text-3xl sm:text-[40px] font-black tracking-tighter text-gray-900">{stats.onTimePercentage}%</span>
+                                    <span className="flex items-center text-emerald-600 text-[10px] font-black uppercase tracking-[0.2em]">
                                         <ArrowUpRight className="w-4 h-4 mr-1" /> Precision
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-6 mt-8 pt-8 border-t border-white/10">
+                            <div className="grid grid-cols-2 gap-4 sm:gap-6 mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-gray-50">
                                 <div className="group/stat">
-                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest group-hover:text-indigo-400">Present Protocol</p>
-                                    <p className="text-3xl font-black mt-1 text-white">{stats.presentDays} <small className="text-gray-500 text-[10px] font-black tracking-widest">DAYS</small></p>
+                                    <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest group-hover:text-indigo-400">Present Protocol</p>
+                                    <p className="text-xl sm:text-3xl font-black mt-1 text-gray-900">{stats.presentDays} <small className="text-gray-400 text-[8px] sm:text-[10px] font-black tracking-widest uppercase">Days</small></p>
                                 </div>
                                 <div className="group/stat">
-                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest group-hover:text-rose-400">Absent Ledger</p>
-                                    <p className="text-3xl font-black mt-1 text-rose-500">{stats.absentDays} <small className="text-gray-500 text-[10px] font-black tracking-widest">DAYS</small></p>
+                                    <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest group-hover:text-rose-400">Absent Ledger</p>
+                                    <p className="text-xl sm:text-3xl font-black mt-1 text-rose-500">{stats.absentDays} <small className="text-gray-400 text-[8px] sm:text-[10px] font-black tracking-widest uppercase">Days</small></p>
                                 </div>
                             </div>
                         </div>
@@ -420,31 +370,31 @@ const StaffDashboardPage = React.memo(function StaffDashboardPage() {
             {/* Bottom Section: History & Announcements */}
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
                 {/* Recent Attendance */}
-                <div className="xl:col-span-8 bg-white rounded-[0.5rem] p-8 shadow-sm border border-gray-100 overflow-hidden relative group">
-                    <div className="flex items-center justify-between mb-8">
-                        <h3 className="text-[18px]  max-sm:text-[17px] font-bold text-gray-900">Recent Activity</h3>
+                <div className="xl:col-span-8 bg-white rounded-[0.5rem] p-4 sm:p-8 shadow-sm border border-gray-100 overflow-hidden relative group">
+                    <div className="flex items-center justify-between mb-6 sm:mb-8">
+                        <h3 className="text-[16px] sm:text-[18px] font-black text-gray-900 uppercase tracking-widest">Activity Registry</h3>
                     </div>
 
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead>
-                                <tr className="border-b border-gray-100 pb-4">
-                                    <th className="pb-4 text-[10px]  max-sm:text-[8px] font-black text-gray-400 uppercase tracking-widest">Date</th>
-                                    <th className="pb-4 text-[10px]  max-sm:text-[8px] font-black text-gray-400 uppercase tracking-widest">In Time</th>
-                                    <th className="pb-4 text-[10px]  max-sm:text-[8px] font-black text-gray-400 uppercase tracking-widest">Out Time</th>
-                                    <th className="pb-4 text-[10px]  max-sm:text-[8px] font-black text-gray-400 uppercase tracking-widest">Duration</th>
-                                    <th className="pb-4 text-right text-[10px]  max-sm:text-[8px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                                <tr>
+                                    <th className="pb-3 text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">Date</th>
+                                    <th className="pb-3 text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">In</th>
+                                    <th className="pb-3 text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">Out</th>
+                                    <th className="pb-3 text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest hidden sm:table-cell">Duration</th>
+                                    <th className="pb-3 text-right text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
                                 {attendanceHistory.filter(entry => entry.status !== 'on-leave').map((entry) => (
                                     <tr key={entry._id} className="group/row hover:bg-gray-50">
-                                        <td className="py-5 font-black text-gray-900  max-sm:text-[8px]">{new Date(entry.date).toLocaleDateString('en-US', { day: '2-digit', month: 'short' })}</td>
-                                        <td className="py-5 text-gray-500 font-bold  max-sm:text-[10px]">{entry.checkIn?.time ? new Date(entry.checkIn.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : '--:--'}</td>
-                                        <td className="py-5 text-gray-500 font-bold  max-sm:text-[10px]">{entry.checkOut?.time ? new Date(entry.checkOut.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : '--:--'}</td>
-                                        <td className="py-5 text-gray-500 font-bold  max-sm:text-[10px]">{entry.workingHours ? `${Math.floor(entry.workingHours / 60)}h ${entry.workingHours % 60}m` : '0h 0m'}</td>
-                                        <td className="py-5 text-right  max-sm:text-[10px]">
-                                            <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full border ${entry.status === 'present' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                        <td className="py-4 sm:py-5 font-black text-gray-900 text-[10px] sm:text-xs tracking-tighter shrink-0">{new Date(entry.date).toLocaleDateString('en-US', { day: '2-digit', month: 'short' })}</td>
+                                        <td className="py-4 sm:py-5 text-gray-500 font-bold text-[10px] sm:text-xs">{entry.checkIn?.time ? new Date(entry.checkIn.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : '--:--'}</td>
+                                        <td className="py-4 sm:py-5 text-gray-500 font-bold text-[10px] sm:text-xs">{entry.checkOut?.time ? new Date(entry.checkOut.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : '--:--'}</td>
+                                        <td className="py-4 sm:py-5 text-gray-500 font-bold text-[10px] sm:text-xs hidden sm:table-cell">{entry.workingHours ? `${Math.floor(entry.workingHours / 60)}h ${entry.workingHours % 60}m` : '0h 0m'}</td>
+                                        <td className="py-4 sm:py-5 text-right">
+                                            <span className={`px-2 sm:px-3 py-1 text-[8px] sm:text-[10px] font-black uppercase rounded-full border ${entry.status === 'present' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                                                 entry.status === 'late' ? 'bg-orange-50 text-orange-600 border-orange-100' :
                                                     'bg-gray-50 text-gray-600 border-gray-100'
                                                 }`}>

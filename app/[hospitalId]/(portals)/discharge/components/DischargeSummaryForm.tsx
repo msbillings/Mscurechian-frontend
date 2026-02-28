@@ -217,38 +217,64 @@ export function DischargeSummaryForm() {
     };
 
     const validateField = (name: string, value: any): string => {
-        if (!value && name.includes('*')) return 'This field is required';
+        const charLimit = getCharLimit(name);
+
+        // Character count validation
+        if (value && typeof value === 'string') {
+            if (value.length > charLimit) return `Limit: ${charLimit} chars`;
+        }
 
         switch (name) {
             case 'patientName':
-                if (!value) return 'Patient name is required';
-                if (value.length < 3) return 'Name is too short';
-                if (value.length > 150) return 'Name cannot exceed 150 characters';
+                if (!value) return 'Required';
+                if (value.length < 3) return 'Too short';
+                if (/[0-9]/.test(value)) return 'Characters only';
                 return '';
             case 'mrn':
-                if (!value) return 'MRN is required';
+                if (!value) return 'Required';
                 return '';
             case 'diagnosis':
-                if (!value) return 'Final diagnosis is required';
+                if (!value) return 'Required';
                 return '';
             case 'chiefComplaints':
-                if (!value) return 'Chief complaints are required';
+                if (!value) return 'Required';
                 return '';
             case 'treatmentGiven':
-                if (!value) return 'Treatment details are required';
+                if (!value) return 'Required';
                 return '';
             case 'conditionAtDischarge':
-                if (!value) return 'Discharge condition is required';
+                if (!value) return 'Required';
                 return '';
             case 'phone':
-                if (value && !/^\d{10}$/.test(value)) return 'Invalid phone number';
+            case 'mobile':
+            case 'guardianPhone':
+            case 'attendantPhone':
+                if (!value) return ''; // Optional but must be valid if present
+                if (!/^\d+$/.test(value)) return 'Digits only';
+                if (value.length !== 10) return 'Must be 10 digits';
                 return '';
             case 'email':
-                if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Invalid email address';
+                if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Invalid email';
                 return '';
             default:
+                if (!value && name.includes('*')) return 'Required';
                 return '';
         }
+    };
+
+    const getCharLimit = (name: string): number => {
+        const largeFields = [
+            'reasonForAdmission', 'provisionalDiagnosis', 'diagnosis',
+            'chiefComplaints', 'historyOfPresentIllness', 'pastMedicalHistory',
+            'generalAppearance', 'treatmentGiven', 'surgicalProcedures',
+            'surgeryNotes', 'investigationsPerformed', 'hospitalCourse',
+            'medicationsPrescribed', 'adviceAtDischarge',
+            'activityRestrictions', 'followUpInstructions', 'dietInstructions',
+            'warningSigns', 'allergyHistory', 'address'
+        ];
+
+        if (largeFields.includes(name)) return 400;
+        return 200;
     };
 
     const sanitizeData = (data: any): typeof INITIAL_FORM_STATE => {
@@ -408,13 +434,18 @@ export function DischargeSummaryForm() {
 
         if (name === 'patientName') {
             const charOnly = value.replace(/[0-9]/g, '');
+            if (charOnly.length > getCharLimit(name)) return;
             setFormData(prev => ({ ...prev, [name]: charOnly }));
+            const error = validateField(name, charOnly);
+            setErrors(prev => ({ ...prev, [name]: error }));
             return;
         }
 
-        if (name === 'phone') {
+        if (name === 'phone' || name === 'attendantPhone') {
             const digitsOnly = value.replace(/\D/g, '').slice(0, 10);
             setFormData(prev => ({ ...prev, [name]: digitsOnly }));
+            const error = validateField(name, digitsOnly);
+            setErrors(prev => ({ ...prev, [name]: error }));
             return;
         }
 
@@ -423,8 +454,13 @@ export function DischargeSummaryForm() {
             return;
         }
 
+        const limit = getCharLimit(name.includes('.') ? name.split('.')[1] : name);
+        if (value.length > limit) return;
+
         if (name.includes('.')) {
             const [parent, child] = name.split('.');
+            const error = validateField(child, value);
+            setErrors(prev => ({ ...prev, [name]: error }));
             setFormData(prev => ({
                 ...prev,
                 [parent]: {
@@ -1241,7 +1277,7 @@ export function DischargeSummaryForm() {
                 )}
 
                 {/* Footer Actions */}
-                <div className="flex items-center justify-between pt-6 border-t border-gray-100">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-gray-100 mt-8">
                     <Button
                         type="button"
                         onClick={() => {
@@ -1249,26 +1285,33 @@ export function DischargeSummaryForm() {
                             else if (user?.role === 'helpdesk') router.push('/helpdesk/discharge/history');
                             else router.push('/discharge');
                         }}
-                        className="bg-gray-600 text-gray-700 hover:bg-gray-400 rounded-2xl px-6 py-3 font-bold"
+                        className="bg-slate-800 text-white hover:bg-slate-900 rounded-xl px-6 py-3.5 font-bold w-full sm:w-auto flex items-center justify-center gap-2 transition-all order-2 sm:order-1"
                     >
-                        <ArrowLeft size={20} className="mr-2" />
+                        <ArrowLeft size={18} />
                         Back to Queue
                     </Button>
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto order-1 sm:order-2">
                         <Button
                             type="button"
                             onClick={handleReset}
-                            className="bg-rose-600 text-white hover:bg-rose-300 rounded-2xl px-6 py-3 font-bold"
+                            className="bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 rounded-xl px-6 py-3.5 font-bold w-full sm:w-auto flex items-center justify-center gap-2 transition-all"
                         >
-                            <Trash2 size={20} className="mr-2" />
-                            Reset
+                            <Trash2 size={18} />
+                            Reset Form
                         </Button>
                         <Button
                             type="submit"
-                            disabled={loading}
-                            className="bg-blue-600 text-white hover:bg-blue-700 rounded-2xl px-8 py-3 font-bold shadow-lg shadow-blue-200"
+                            disabled={loading || Object.keys(errors).length > 0}
+                            className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl px-8 py-3.5 font-black shadow-lg shadow-blue-200 w-full sm:w-auto flex items-center justify-center gap-2 transition-all"
                         >
-                            {loading ? 'Saving...' : (isNurse ? 'Prepare Discharge' : 'Commit & Print')}
+                            {loading ? (
+                                <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                <>
+                                    <Save size={18} />
+                                    {isNurse ? 'Prepare Discharge' : 'Commit & Print'}
+                                </>
+                            )}
                         </Button>
                     </div>
                 </div>

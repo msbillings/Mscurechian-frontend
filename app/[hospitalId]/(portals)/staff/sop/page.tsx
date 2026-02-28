@@ -129,16 +129,16 @@ export default function GeneralStaffSOPPage() {
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-6 md:space-y-10 max-w-7xl mx-auto min-h-screen">
+        <div className="p-0.5 sm:p-8 space-y-4 sm:space-y-10 max-w-7xl mx-auto min-h-screen">
             {/* Header Tier */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div className="space-y-4">
 
                     <div>
-                        <h1 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Institutional Protocols</h1>
-                        <p className="text-gray-500 dark:text-gray-400 font-bold mt-2 uppercase tracking-[0.2em] text-[8px] md:text-[10px] ml-1 flex items-center gap-2">
-                            <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                            Staff Compliance & Operational Registry
+                        <h1 className="text-lg sm:text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Institutional Registry</h1>
+                        <p className="text-gray-500 dark:text-gray-400 font-bold mt-1 uppercase tracking-widest text-[8px] sm:text-[10px] ml-1 flex items-center gap-1.5">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                            Compliance Protocols
                         </p>
                     </div>
                 </div>
@@ -147,16 +147,16 @@ export default function GeneralStaffSOPPage() {
                     <div className="relative w-full md:w-auto">
                         <button
                             onClick={() => setShowFilters(!showFilters)}
-                            className={`flex items-center justify-between md:justify-start gap-3 w-full md:w-auto px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all active:scale-95 ${showFilters
+                            className={`flex items-center justify-between sm:justify-start gap-4 w-full sm:w-auto px-5 py-3.5 sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all active:scale-95 ${showFilters
                                 ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white'
-                                : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-500 hover:border-emerald-500/50 hover:text-emerald-600'
+                                : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-500 hover:border-emerald-500/50 hover:text-emerald-600 shadow-sm'
                                 }`}
                         >
                             <div className="flex items-center gap-3">
-                                <Search size={16} />
-                                {activeCategory === 'all' ? 'Filters' : activeCategory}
+                                <Search size={14} className="sm:size-[16px]" />
+                                <span className="truncate">{activeCategory === 'all' ? 'Browse Library' : activeCategory}</span>
                             </div>
-                            <Info size={14} className="md:hidden opacity-50" />
+                            <Info size={14} className="sm:hidden opacity-50" />
                         </button>
 
                         <AnimatePresence>

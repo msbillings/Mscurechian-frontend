@@ -239,6 +239,7 @@ export const DOCTOR_ENDPOINTS = {
   CREATE_PHARMACY_TOKEN: "/doctor/pharmacy-tokens",
   ANNOUNCEMENTS: "/announcements/hospital",
   ANALYTICS: "/doctors/analytics",
+  INCOME_STATS: "/doctors/income-stats",
 };
 
 export const TRANSIT_ENDPOINTS = {

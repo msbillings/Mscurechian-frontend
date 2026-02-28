@@ -11,6 +11,7 @@ import AppointmentsQueueDynamic from './AppointmentsQueueDynamic';
 import DoctorStatsCards from './DoctorStatsCards';
 import EstimatedWaitCard from './EstimatedWaitCard';
 import DoctorDashboardCharts from './DoctorDashboardCharts';
+import DoctorIncomeStatsCard from './DoctorIncomeStatsCard';
 import { AttendanceButton } from '@/components/attendance/AttendanceButton';
 
 interface DoctorDashboardContainerProps {
@@ -79,23 +80,12 @@ function DoctorDashboardContainer({
     };
 
     return (
-        <div className="space-y-4 md:space-y-6 pt-4">
-            {/* Data Sync Status - Simple Text */}
-            <div className="flex items-center justify-center gap-2 py-2">
-                <div className={`flex h-2 w-2 ${isUpdating ? 'animate-pulse' : ''}`}>
-                    <span className={`inline-flex rounded-full h-2 w-2 bg-emerald-500 ${isUpdating ? 'animate-ping' : ''}`}></span>
-                </div>
-                <p className="text-xs text-muted">
-                    {isUpdating ? 'Syncing your data...' : 'Your data is being stored successfully'}
-                </p>
-                <span className="text-[10px] text-muted opacity-60">• Real-time sync enabled</span>
-            </div>
-
+        <div className="space-y-2 md:space-y-3 pt-1">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-card p-4 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-border-theme">
                 <div>
                     <div className="flex items-center gap-3">
-                        <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground uppercase tracking-tight">
+                        <h1 className="text-base sm:text-lg font-bold text-foreground uppercase tracking-tight">
                             Welcome, {doctorName.startsWith('Dr.') ? doctorName : `Dr. ${doctorName}`}
                         </h1>
                         <div className="flex items-center gap-2">
@@ -126,8 +116,15 @@ function DoctorDashboardContainer({
                 </div>
             </div>
 
-            {/* Stats Cards */}
-            <DoctorStatsCards stats={dynamicStats} />
+            {/* Stats Cards Section */}
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-6">
+                <div className="xl:col-span-9 h-full">
+                    <DoctorStatsCards stats={dynamicStats} />
+                </div>
+                <div className="xl:col-span-3 h-full">
+                    <DoctorIncomeStatsCard />
+                </div>
+            </div>
 
             {/* Queue Section */}
             <div className="grid grid-cols-1 gap-4 md:gap-6">

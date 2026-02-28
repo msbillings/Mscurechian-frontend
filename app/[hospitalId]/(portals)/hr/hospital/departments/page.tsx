@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Building2,
     Users,
@@ -94,7 +94,7 @@ const DepartmentModal = ({ isOpen, onClose, onSave, department = null }: any) =>
     );
 };
 
-const InfrastructureModal = ({ type, isOpen, onClose, onSave, departments, initialData = null }: any) => {
+const InfrastructureModal = ({ type, isOpen, onClose, onSave, departments, unitTypes, initialData = null }: any) => {
     // Fields for Room: label, type
     // Fields for Bed: bedId, type, floor, room, department, ward, pricePerDay
     const [name, setName] = useState(""); // Used for room.label or bed.bedId
@@ -109,9 +109,12 @@ const InfrastructureModal = ({ type, isOpen, onClose, onSave, departments, initi
 
     useEffect(() => {
         if (isOpen) {
+            if (unitTypes && unitTypes.length > 0 && !initialData) {
+                setCategoryType(unitTypes[0]);
+            }
             if (type === 'room') {
                 setName(initialData?.label || "");
-                setCategoryType(initialData?.type || "");
+                setCategoryType(initialData?.type || (unitTypes?.[0] || ""));
                 setDeptName(initialData?.department || ""); // String in schema
             } else {
                 setName(initialData?.bedId || "");
@@ -130,7 +133,7 @@ const InfrastructureModal = ({ type, isOpen, onClose, onSave, departments, initi
         try {
             const data = await ipdService.getRooms();
             setRoomsList(data);
-        } catch (error) {}
+        } catch (error) { }
     };
 
     if (!isOpen) return null;
@@ -141,10 +144,10 @@ const InfrastructureModal = ({ type, isOpen, onClose, onSave, departments, initi
         try {
             let payload: any = {};
             if (type === 'room') {
-                payload = { 
-                    label: name, 
+                payload = {
+                    label: name,
                     type: categoryType,
-                    department: deptName 
+                    department: deptName
                 };
             } else {
                 payload = {
@@ -195,13 +198,17 @@ const InfrastructureModal = ({ type, isOpen, onClose, onSave, departments, initi
 
                         <div className="space-y-1">
                             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Unit Type</label>
-                            <input
+                            <select
                                 required
                                 value={categoryType}
                                 onChange={(e) => setCategoryType(e.target.value)}
-                                className="w-full px-5 py-3.5 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase tracking-widest focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                                placeholder="e.g. ICU, GENERAL"
-                            />
+                                className="w-full px-5 py-3.5 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase tracking-widest focus:ring-2 focus:ring-indigo-500/20 outline-none appearance-none"
+                            >
+                                <option value="">Select...</option>
+                                {unitTypes.map((u: string) => (
+                                    <option key={u} value={u}>{u}</option>
+                                ))}
+                            </select>
                         </div>
 
                         <div className="space-y-1">
@@ -286,6 +293,7 @@ const HRHospitalDepartments = () => {
     const [departments, setDepartments] = useState<any[]>([]);
     const [rooms, setRooms] = useState<any[]>([]);
     const [beds, setBeds] = useState<any[]>([]);
+    const [unitTypes, setUnitTypes] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [activeTab, setActiveTab] = useState<'depts' | 'rooms' | 'beds'>('depts');
@@ -301,14 +309,16 @@ const HRHospitalDepartments = () => {
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
-            const [deptsData, roomsData, bedsData] = await Promise.all([
+            const [deptsData, roomsData, bedsData, unitTypesData] = await Promise.all([
                 ipdService.getIPDDepartments(),
                 ipdService.getRooms(),
-                ipdService.getBeds()
+                ipdService.getBeds(),
+                ipdService.getUnitTypes().catch(() => [])
             ]);
             setDepartments(deptsData || []);
             setRooms(roomsData || []);
             setBeds(bedsData || []);
+            setUnitTypes(unitTypesData || []);
         } catch (error) {
             toast.error("Failed to load clinical infrastructure");
         } finally {
@@ -370,151 +380,173 @@ const HRHospitalDepartments = () => {
     };
 
     return (
-        <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
+        <div className="p-4 space-y-4 bg-slate-50/50 min-h-screen">
             {/* Header Area */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                <div>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                        <Building2 className="text-indigo-600" size={32} />
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex items-center gap-4">
+                    <h1 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
+                        <Building2 className="text-indigo-600" size={20} />
                         Infrastructure Console
                     </h1>
-                    <p className="text-sm text-slate-500 font-medium mt-1">Strategic oversight and management of hospital clinical units.</p>
+
+                    {/* View Tabs Inline */}
+                    <div className="flex p-1 bg-slate-100/50 rounded-xl hidden md:flex">
+                        {[
+                            { id: 'depts', label: 'Departments', icon: Building2, count: departments.length },
+                            { id: 'rooms', label: 'Rooms', icon: DoorOpen, count: rooms.length },
+                            { id: 'beds', label: 'Beds', icon: Bed, count: beds.length },
+                        ].map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id as any)}
+                                className={`px-4 py-1.5 rounded-lg flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                            >
+                                <tab.icon size={12} />
+                                {tab.label}
+                                <span className={`px-1.5 py-0.5 rounded-md text-[9px] ${activeTab === tab.id ? 'bg-indigo-50' : 'bg-slate-200'}`}>{tab.count}</span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
-                <div className="flex gap-3">
-                    <button
-                        onClick={() => setDeptModal({ open: true, data: null })}
-                        className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-100 transition-all"
-                    >
-                        <Plus size={16} /> Add Unit
-                    </button>
-                    <button
-                        onClick={() => setInfraModal({ open: true, type: 'room', data: null })}
-                        className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-900 px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-sm border border-slate-200 transition-all"
-                    >
-                        <DoorOpen size={16} /> New Room
-                    </button>
-                    <button
-                        onClick={() => setInfraModal({ open: true, type: 'bed', data: null })}
-                        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-emerald-100 transition-all"
-                    >
-                        <Plus size={16} /> New Bed
-                    </button>
+
+                <div className="flex items-center gap-3 w-full lg:w-auto">
+                    {/* Search */}
+                    <div className="flex-1 lg:flex-none relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                        <input
+                            type="text"
+                            placeholder="Search..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full lg:w-48 pl-9 pr-3 py-2 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase tracking-widest outline-none placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500/20"
+                        />
+                    </div>
+
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setDeptModal({ open: true, data: null })}
+                            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-sm transition-all"
+                        >
+                            <Plus size={12} /> Unit
+                        </button>
+                        <button
+                            onClick={() => setInfraModal({ open: true, type: 'room', data: null })}
+                            className="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-900 px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-sm border border-slate-200 transition-all"
+                        >
+                            <DoorOpen size={12} /> Room
+                        </button>
+                        <button
+                            onClick={() => setInfraModal({ open: true, type: 'bed', data: null })}
+                            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-sm transition-all"
+                        >
+                            <Plus size={12} /> Bed
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {/* View Tabs */}
-            <div className="flex p-1.5 bg-slate-200/50 rounded-2xl w-fit">
+            {/* Mobile View Tabs (Shown only on small screens) */}
+            <div className="flex p-1 bg-slate-100/50 rounded-xl md:hidden overflow-x-auto custom-scrollbar">
                 {[
                     { id: 'depts', label: 'Departments', icon: Building2, count: departments.length },
-                    { id: 'rooms', label: 'Rooms/Wards', icon: DoorOpen, count: rooms.length },
-                    { id: 'beds', label: 'Bed Inventory', icon: Bed, count: beds.length },
+                    { id: 'rooms', label: 'Rooms', icon: DoorOpen, count: rooms.length },
+                    { id: 'beds', label: 'Beds', icon: Bed, count: beds.length },
                 ].map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as any)}
-                        className={`px-6 py-3 rounded-xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest transition-all ${
-                            activeTab === tab.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                        }`}
+                        className={`whitespace-nowrap px-4 py-2 rounded-lg flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                            }`}
                     >
-                        <tab.icon size={16} />
+                        <tab.icon size={12} />
                         {tab.label}
-                        <span className={`px-2 py-0.5 rounded-lg text-[9px] ${activeTab === tab.id ? 'bg-indigo-50' : 'bg-slate-200'}`}>{tab.count}</span>
+                        <span className={`px-1.5 py-0.5 rounded-md text-[9px] ${activeTab === tab.id ? 'bg-indigo-50' : 'bg-slate-200'}`}>{tab.count}</span>
                     </button>
                 ))}
             </div>
 
-            {/* Search */}
-            <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
-                <Search className="ml-4 text-slate-400" size={18} />
-                <input
-                    type="text"
-                    placeholder={`Search ${activeTab === 'depts' ? 'departments' : activeTab === 'rooms' ? 'rooms' : 'beds'}...`}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="flex-1 py-4 bg-transparent border-none focus:ring-0 text-[11px] font-black uppercase tracking-widest outline-none placeholder:text-slate-300"
-                />
-            </div>
-
             {/* Content Area */}
             {loading ? (
-                <div className="p-32 text-center bg-white rounded-5xl border border-slate-100 shadow-sm flex flex-col items-center gap-6">
-                    <Loader2 size={48} className="text-indigo-600 animate-spin" />
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Synchronizing Nodes...</p>
+                <div className="p-20 text-center bg-white rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center gap-4">
+                    <Loader2 size={32} className="text-indigo-600 animate-spin" />
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Synchronizing...</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
                     {activeTab === 'depts' && filteredItems().map((dept: any) => (
-                        <div key={dept._id} className="group bg-white rounded-4xl border border-slate-200 p-8 shadow-sm hover:shadow-xl transition-all flex flex-col justify-between">
+                        <div key={dept._id} className="group bg-white rounded-[20px] border border-slate-100 p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
                             <div>
-                                <div className="flex justify-between items-start mb-6">
-                                    <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shadow-inner group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                                        <Building2 size={24} />
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shadow-inner group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                                        <Building2 size={16} />
                                     </div>
                                     <button
                                         onClick={() => setDeptModal({ open: true, data: dept })}
-                                        className="p-3 bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                                        className="p-2 bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
                                     >
-                                        <Edit3 size={16} />
+                                        <Edit3 size={12} />
                                     </button>
                                 </div>
-                                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight truncate leading-tight mb-1">{dept.name}</h3>
-                                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Code: {dept.code || "UNCATEGORIZED"}</p>
+                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-tight truncate leading-tight">{dept.name}</h3>
+                                <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mt-0.5">Code: {dept.code || "UNCATEGORIZED"}</p>
                             </div>
-                            <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-between">
-                                <span className="text-[9px] font-black text-slate-300 uppercase">Verified Unit</span>
-                                <div className="text-[8px] font-black text-slate-200">ID: {dept._id?.slice(-6).toUpperCase()}</div>
+                            <div className="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between">
+                                <span className="text-[8px] font-black text-slate-300 uppercase">Verified Unit</span>
+                                <div className="text-[8px] font-black text-slate-200">ID: {dept._id?.slice(-4).toUpperCase()}</div>
                             </div>
                         </div>
                     ))}
 
                     {activeTab === 'rooms' && filteredItems().map((room: any) => (
-                        <div key={room._id} className="group bg-white rounded-4xl border border-slate-200 p-8 shadow-sm hover:shadow-xl transition-all">
-                            <div className="flex justify-between items-start mb-6">
-                                <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-inner group-hover:bg-emerald-600 group-hover:text-white transition-all">
-                                    <DoorOpen size={24} />
+                        <div key={room._id} className="group bg-white rounded-[20px] border border-slate-100 p-4 shadow-sm hover:shadow-md transition-all">
+                            <div className="flex justify-between items-start mb-3">
+                                <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shadow-inner group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                                    <DoorOpen size={16} />
                                 </div>
                                 <button
                                     onClick={() => setInfraModal({ open: true, type: 'room', data: room })}
-                                    className="p-3 bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                                    className="p-2 bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
                                 >
-                                    <Edit3 size={16} />
+                                    <Edit3 size={12} />
                                 </button>
                             </div>
-                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight truncate leading-tight mb-1">{room.label}</h3>
-                            <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">{room.type || "GENERAL"}</p>
-                            <p className="text-[9px] font-bold text-slate-400 mt-4 uppercase flex items-center gap-2">
-                                <Layers size={10} /> {room.department || "No Department"}
-                            </p>
+                            <h3 className="text-xs font-black text-slate-900 uppercase tracking-tight truncate leading-tight">{room.label}</h3>
+                            <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-0.5">{room.type || "GENERAL"}</p>
+                            {room.department && (
+                                <p className="text-[8px] font-bold text-slate-400 mt-2 flex items-center gap-1 uppercase">
+                                    <Layers size={8} /> {room.department}
+                                </p>
+                            )}
                         </div>
                     ))}
 
                     {activeTab === 'beds' && filteredItems().map((bed: any) => (
-                        <div key={bed._id} className="group bg-white rounded-4xl border border-slate-200 p-8 shadow-sm hover:shadow-xl transition-all">
-                            <div className="flex justify-between items-start mb-6">
-                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner transition-all ${
-                                    bed.status === 'Occupied' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'
-                                }`}>
-                                    <Bed size={24} />
+                        <div key={bed._id} className="group bg-white rounded-[20px] border border-slate-100 p-4 shadow-sm hover:shadow-md transition-all">
+                            <div className="flex justify-between items-start mb-3">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-inner transition-all ${bed.status === 'Occupied' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'
+                                    }`}>
+                                    <Bed size={16} />
                                 </div>
                                 <button
                                     onClick={() => setInfraModal({ open: true, type: 'bed', data: bed })}
-                                    className="p-3 bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                                    className="p-2 bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
                                 >
-                                    <Edit3 size={16} />
+                                    <Edit3 size={12} />
                                 </button>
                             </div>
-                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight truncate leading-tight mb-1">{bed.bedId}</h3>
-                            <div className="flex items-center gap-2 mb-4">
-                                <span className={`w-2 h-2 rounded-full ${bed.status === 'Occupied' ? 'bg-amber-500' : 'bg-emerald-500'} animate-pulse`} />
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{bed.status}</p>
+                            <h3 className="text-xs font-black text-slate-900 uppercase tracking-tight truncate leading-tight">{bed.bedId}</h3>
+                            <div className="flex items-center gap-1.5 mb-2 mt-0.5">
+                                <span className={`w-1.5 h-1.5 rounded-full ${bed.status === 'Occupied' ? 'bg-amber-500' : 'bg-emerald-500'} animate-pulse`} />
+                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{bed.status}</p>
                             </div>
-                            
-                            <div className="space-y-2 pt-4 border-t border-slate-50">
-                                <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-slate-400">
-                                    <span className="flex items-center gap-1"><DoorOpen size={10} /> {bed.room || "N/A"}</span>
-                                    <span className="flex items-center gap-1 text-emerald-600"><IndianRupee size={10} /> {bed.pricePerDay || 0}/day</span>
+
+                            <div className="space-y-1.5 pt-2 border-t border-slate-50">
+                                <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-widest text-slate-400">
+                                    <span className="flex items-center gap-1"><DoorOpen size={8} /> {bed.room || "N/A"}</span>
+                                    <span className="flex items-center gap-1 text-emerald-600"><IndianRupee size={8} /> {bed.pricePerDay || 0}/d</span>
                                 </div>
-                                <div className="flex items-center justify-between text-[8px] font-bold text-slate-300 uppercase italic">
+                                <div className="flex items-center justify-between text-[7px] font-bold text-slate-300 uppercase italic">
                                     <span>{bed.floor || "G-Floor"}</span>
                                     <span>{bed.type}</span>
                                 </div>
@@ -528,12 +560,12 @@ const HRHospitalDepartments = () => {
                             if (activeTab === 'depts') setDeptModal({ open: true, data: null });
                             else setInfraModal({ open: true, type: activeTab === 'rooms' ? 'room' : 'bed', data: null });
                         }}
-                        className="group bg-slate-100/30 rounded-4xl border-2 border-dashed border-slate-200 p-8 flex flex-col items-center justify-center hover:bg-white hover:border-indigo-200 transition-all gap-4 min-h-[220px]"
+                        className="group bg-slate-50/50 rounded-[20px] border-2 border-dashed border-slate-200 p-4 flex flex-col items-center justify-center hover:bg-white hover:border-indigo-200 transition-all gap-2 min-h-[140px]"
                     >
-                        <div className="w-16 h-16 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-300 group-hover:text-indigo-600 shadow-sm transition-all group-hover:scale-110">
-                            <Plus size={32} />
+                        <div className="w-10 h-10 bg-white rounded-xl border border-slate-100 flex items-center justify-center text-slate-300 group-hover:text-indigo-600 shadow-sm transition-all group-hover:scale-110">
+                            <Plus size={20} />
                         </div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-indigo-600">Provision Resource</span>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest group-hover:text-indigo-600">Provision Resource</span>
                     </button>
                 </div>
             )}
@@ -552,6 +584,7 @@ const HRHospitalDepartments = () => {
                 onClose={() => setInfraModal({ ...infraModal, open: false })}
                 onSave={handleSaveInfra}
                 departments={departments}
+                unitTypes={unitTypes}
                 initialData={infraModal.data}
             />
         </div>

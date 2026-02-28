@@ -115,6 +115,7 @@ export const hrService = {
     endDate?: string;
     role?: string;
     status?: string;
+    search?: string;
     page?: number;
     limit?: number;
   }) => {
@@ -124,6 +125,7 @@ export const hrService = {
     if (params?.endDate) url.searchParams.set("endDate", params.endDate);
     if (params?.role) url.searchParams.set("role", params.role);
     if (params?.status) url.searchParams.set("status", params.status);
+    if (params?.search) url.searchParams.set("search", params.search);
     if (params?.page) url.searchParams.set("page", params.page.toString());
     if (params?.limit) url.searchParams.set("limit", params.limit.toString());
     return apiClient<{ data: any[]; stats: any; pagination: any }>(

@@ -1114,8 +1114,8 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
 
                     <div className="space-y-3">
                         {/* Column Headers */}
-                        <div className="grid-cols-12 gap-3 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden md:grid">
-                            <div className="col-span-3">Medicine (Search)</div>
+                        <div className="grid grid-cols-12 gap-2 sm:gap-3 px-3 py-1 text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            <div className="col-span-3">Medicine</div>
                             <div className="col-span-2">Form</div>
                             <div className="col-span-2">Dosage</div>
                             <div className="col-span-2">Freq</div>
@@ -1125,18 +1125,18 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
 
                         {formData.medicines.map((med, idx) => (
                             <div key={idx} className="relative group bg-slate-50 hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 rounded-xl p-3">
-                                <div className="grid grid-cols-12 gap-3 items-start">
-                                    <div className="col-span-12 md:col-span-3 relative">
-                                        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
-                                            <Search size={14} />
+                                <div className="grid grid-cols-12 gap-2 sm:gap-3 items-center">
+                                    <div className="col-span-3 relative">
+                                        <div className="absolute inset-y-0 left-2 flex items-center pointer-events-none text-slate-400">
+                                            <Search size={12} className="sm:size-[14px]" />
                                         </div>
                                         <input
                                             type="text"
                                             value={med.name}
                                             onChange={(e) => updateMedicine(idx, 'name', e.target.value)}
                                             onFocus={() => setActiveMedIndex(idx)}
-                                            placeholder="Search medicine (Brand, Generic)..."
-                                            className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-800 placeholder:font-normal focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 uppercase"
+                                            placeholder="Search..."
+                                            className="w-full pl-7 pr-2 py-1.5 sm:py-2 bg-white border border-slate-200 rounded-lg text-[10px] sm:text-sm font-bold text-slate-800 placeholder:font-normal focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10 uppercase"
                                         />
 
                                         {/* Suggestions Dropdown */}
@@ -1185,63 +1185,65 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
 
                                     </div>
                                     {/* Form Type Badge */}
-                                    <div className="col-span-6 md:col-span-2 flex items-center">
+                                    <div className="col-span-2 flex items-center">
                                         {med.form ? (
-                                            <span className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wide bg-violet-50 text-violet-700 border border-violet-100 w-full justify-center">
+                                            <span className="inline-flex items-center gap-1 px-1 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[8px] sm:text-xs font-black uppercase tracking-tighter sm:tracking-wide bg-violet-50 text-violet-700 border border-violet-100 w-full justify-center truncate">
                                                 {med.form}
                                             </span>
                                         ) : (
-                                            <span className="inline-flex items-center px-3 py-2 rounded-lg text-[10px] font-bold text-slate-300 border border-dashed border-slate-200 w-full justify-center">
+                                            <span className="inline-flex items-center px-1 py-1.5 rounded-lg text-[8px] font-bold text-slate-300 border border-dashed border-slate-200 w-full justify-center">
                                                 —
                                             </span>
                                         )}
                                     </div>
-                                    <div className="col-span-6 md:col-span-2">
+                                    <div className="col-span-2">
                                         <input
                                             value={med.dosage}
                                             onChange={(e) => updateMedicine(idx, 'dosage', e.target.value)}
-                                            placeholder="Dosage (e.g. 500mg)"
-                                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-teal-500"
+                                            placeholder="Dosage"
+                                            className="w-full px-1.5 sm:px-3 py-1.5 sm:py-2 bg-white border border-slate-200 rounded-lg text-[10px] sm:text-sm focus:outline-none focus:border-teal-500"
                                         />
                                     </div>
-                                    <div className="col-span-6 md:col-span-2">
+                                    <div className="col-span-2">
                                         <input
                                             value={med.freq}
                                             onChange={(e) => updateMedicine(idx, 'freq', e.target.value)}
-                                            placeholder="Freq (e.g. 1-0-1)"
-                                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-teal-500"
+                                            placeholder="Freq"
+                                            className="w-full px-1.5 sm:px-3 py-1.5 sm:py-2 bg-white border border-slate-200 rounded-lg text-[10px] sm:text-sm focus:outline-none focus:border-teal-500"
                                         />
                                     </div>
-                                    <div className="col-span-6 md:col-span-2">
+                                    <div className="col-span-1">
                                         <input
                                             value={med.duration}
                                             onChange={(e) => updateMedicine(idx, 'duration', e.target.value)}
-                                            placeholder="Days (e.g. 5 days)"
-                                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-teal-500"
+                                            placeholder="Days"
+                                            className="w-full px-1 sm:px-3 py-1.5 sm:py-2 bg-white border border-slate-200 rounded-lg text-[10px] sm:text-sm focus:outline-none focus:border-teal-500"
                                         />
                                     </div>
-                                    <div className="col-span-6 md:col-span-2 flex flex-col gap-1">
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                value={med.quantity}
-                                                onChange={(e) => updateMedicine(idx, 'quantity', e.target.value)}
-                                                placeholder="Qty"
-                                                className={`w-full px-3 py-2 bg-white border ${med.error ? 'border-rose-500 focus:ring-rose-500/10' : 'border-slate-200 focus:border-teal-500'} rounded-lg text-sm font-bold focus:outline-none focus:ring-2`}
-                                            />
-                                            <button onClick={() => removeMedicine(idx)} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg">
-                                                <Trash2 size={16} />
+                                    <div className="col-span-2 relative group-med">
+                                        <div className="flex items-center gap-1 sm:gap-2">
+                                            <div className="flex-1">
+                                                <input
+                                                    value={med.quantity}
+                                                    onChange={(e) => updateMedicine(idx, 'quantity', e.target.value)}
+                                                    placeholder="Qty"
+                                                    className={`w-full px-1.5 sm:px-3 py-1.5 sm:py-2 bg-white border ${med.error ? 'border-rose-500 focus:ring-rose-500/10' : 'border-slate-200 focus:border-teal-500'} rounded-lg text-[10px] sm:text-sm font-bold focus:outline-none focus:ring-2`}
+                                                />
+                                            </div>
+                                            <button onClick={() => removeMedicine(idx)} className="p-1 sm:p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg shrink-0">
+                                                <Trash2 size={12} className="sm:size-[16px]" />
                                             </button>
                                         </div>
                                         {med.availableUnits !== undefined && (
-                                            <div className="flex justify-between items-center px-1">
-                                                <span className="text-[9px] font-bold text-slate-400">Number of pills: {med.availableUnits}</span>
+                                            <div className="mt-1 flex justify-between items-center px-1">
+                                                <span className="text-[8px] font-bold text-slate-400">Stock: {med.availableUnits}</span>
                                                 {med.pricePerUnit && (
-                                                    <span className="text-[9px] font-bold text-teal-600">₹{(med.pricePerUnit * (parseInt(med.quantity) || 0)).toFixed(2)}</span>
+                                                    <span className="text-[8px] font-bold text-teal-600">₹{(med.pricePerUnit * (parseInt(med.quantity) || 0)).toFixed(2)}</span>
                                                 )}
                                             </div>
                                         )}
                                         {med.error && (
-                                            <div className="text-[9px] font-bold text-rose-500 px-1 animate-pulse">
+                                            <div className="text-[8px] font-bold text-rose-500 px-1 animate-pulse">
                                                 {med.error}
                                             </div>
                                         )}

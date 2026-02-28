@@ -455,9 +455,9 @@ export default function MedicalIncidentForm({ onSuccess }: MedicalIncidentFormPr
                                     <button
                                         type="button"
                                         onClick={addCustomCategory}
-                                        className="px-4 py-3 bg-emerald-500 text-white rounded-2xl hover:bg-emerald-600 transition-all"
+                                        className="px-3 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all shadow-sm"
                                     >
-                                        <Check size={18} />
+                                        <Check size={16} />
                                     </button>
                                 </div>
                             ) : (
@@ -500,9 +500,9 @@ export default function MedicalIncidentForm({ onSuccess }: MedicalIncidentFormPr
                 </div>
 
                 {/* Right Column */}
-                <div className="space-y-6">
+                <div className="space-y-4">
                     {/* Description */}
-                    <div className="bg-white dark:bg-gray-800/50 p-6 md:p-8 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 flex-1">
+                    <div className="bg-white dark:bg-gray-800/50 p-4 md:p-8 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 flex-1">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="p-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 rounded-lg">
                                 <FileText size={20} />

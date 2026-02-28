@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Bell,
   Search,
@@ -26,6 +26,9 @@ function AnnouncementsPage() {
 
   useEffect(() => {
     loadAnnouncements();
+    // Enable real-time updates via polling (every 30 seconds)
+    const interval = setInterval(loadAnnouncements, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadAnnouncements = async () => {
@@ -50,9 +53,18 @@ function AnnouncementsPage() {
     }
   };
 
-  const filteredAnnouncements = filter === 'all'
-    ? announcements
-    : announcements.filter(a => a.priority === filter);
+  const filteredAnnouncements = useMemo(() => {
+    const raw = filter === 'all'
+      ? announcements
+      : announcements.filter(a => a.priority === filter);
+
+    // Frontend Filter: Only show if 'all' or 'staff' is in targetRoles
+    return raw.filter(a =>
+      !a.targetRoles ||
+      a.targetRoles.includes('all') ||
+      a.targetRoles.includes('staff')
+    );
+  }, [announcements, filter]);
 
   // Pagination logic
   useEffect(() => {
@@ -101,7 +113,7 @@ function AnnouncementsPage() {
       {/* Featured / Important Section */}
       {announcements.some(a => a.priority === 'high') && (
         <div className="bg-white rounded-[0.5rem] p-6 text-gray-900 relative overflow-hidden shadow-sm hover:shadow-indigo-500/20 group">
-        
+
 
           <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
             <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">
@@ -165,7 +177,7 @@ function AnnouncementsPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {paginatedAnnouncements.map((announcement) => (
+                      {paginatedAnnouncements.map((announcement: any) => (
                         <tr key={announcement._id} className="hover:bg-gray-50/50 group transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-3">
@@ -185,7 +197,7 @@ function AnnouncementsPage() {
                               className="text-[11px] font-bold text-gray-600 italic leading-relaxed cursor-help hover:text-indigo-600 transition-colors"
                               title={announcement.content}
                             >
-                              "{truncateText(announcement.content, 2)}"
+                              "{announcement.content}"
                             </p>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -229,8 +241,8 @@ function AnnouncementsPage() {
                         key={i + 1}
                         onClick={() => setCurrentPage(i + 1)}
                         className={`w-8 h-8 flex items-center justify-center rounded-lg text-[10px] font-black transition-all ${currentPage === i + 1
-                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100'
-                            : 'bg-white text-gray-400 hover:text-gray-600 border border-gray-100'
+                          ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100'
+                          : 'bg-white text-gray-400 hover:text-gray-600 border border-gray-100'
                           }`}
                       >
                         {i + 1}

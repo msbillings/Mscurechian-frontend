@@ -154,6 +154,50 @@ export default function NurseDashboard() {
                             Overview for <span className="font-semibold text-emerald-600">{nurseDept || 'All Departments'}</span> • {format(currentTime, 'EEEE')}
                         </p>
                     </div>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 mr-2 bg-slate-50 p-1 rounded-xl border border-slate-200 shadow-inner">
+                            {!todayAttendance?.checkIn ? (
+                                <button
+                                    onClick={handleCheckIn}
+                                    disabled={checkInMutation.isPending}
+                                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-md active:scale-95 disabled:opacity-50 transition-all border border-emerald-500/20"
+                                >
+                                    {checkInMutation.isPending ? (
+                                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <LogIn size={14} strokeWidth={3} />
+                                    )}
+                                    Clock In
+                                </button>
+                            ) : !todayAttendance?.checkOut ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="px-3 py-2 bg-white border border-slate-200 rounded-lg flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest tabular-nums">
+                                            {todayAttendance?.checkIn?.time ? new Date(todayAttendance.checkIn.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={handleCheckOut}
+                                        disabled={checkOutMutation.isPending}
+                                        className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 shadow-md active:scale-95 disabled:opacity-50 transition-all border border-rose-500/20"
+                                    >
+                                        {checkOutMutation.isPending ? (
+                                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        ) : (
+                                            <LogOut size={14} strokeWidth={3} />
+                                        )}
+                                        Clock Out
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2 px-4 py-2 bg-slate-200 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-300/50">
+                                    <CheckCircle2 size={14} strokeWidth={3} />
+                                    Shift Ended
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 {/* WELCOME & ATTENDANCE SECTION */}
@@ -174,51 +218,14 @@ export default function NurseDashboard() {
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6 items-start">
-                    <div className="lg:col-span-2">
+                <div className="flex flex-col space-y-2 mt-4">
+                    <div>
                         <h1 className="text-sm sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2 sm:gap-4 uppercase">
                             Nurse Care Portal <Activity className="text-teal-600 shrink-0" size={16} />
                         </h1>
                         <p className="text-[7px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest sm:tracking-[0.4em] mt-1">
                             Monitoring {nurseDept ? `${nurseDept}` : 'All Assigned Wards'} • Session Active
                         </p>
-                    </div>
-
-                    {/* ATTENDANCE QUICK ACTION */}
-                    <div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between gap-3 sm:gap-4 group hover:border-teal-200 transition-all">
-                        <div className="flex items-center gap-2 sm:gap-3">
-                            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center text-white shadow-md ${hasCheckedIn ? 'bg-emerald-500' : 'bg-teal-500'}`}>
-                                <Clock size={14} className="sm:size-[18px]" />
-                            </div>
-                            <div className="space-y-0.5">
-                                <p className="text-[6px] sm:text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none">Attendance</p>
-                                <p className="text-[9px] sm:text-[11px] font-black text-slate-900 uppercase">
-                                    {hasCheckedOut ? 'Ended' : hasCheckedIn ? 'Active' : 'Missing'}
-                                </p>
-                            </div>
-                        </div>
-
-                        {!hasCheckedIn ? (
-                            <button
-                                onClick={handleCheckIn}
-                                disabled={checkInMutation.isPending}
-                                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-primary-theme hover:bg-primary-theme/90 text-white text-[8px] sm:text-[9px] font-black uppercase tracking-widest rounded-lg sm:rounded-xl shadow-md transition-all flex items-center gap-1.5"
-                            >
-                                <LogIn size={10} className="sm:size-[12px]" /> Start
-                            </button>
-                        ) : !hasCheckedOut ? (
-                            <button
-                                onClick={handleCheckOut}
-                                disabled={checkOutMutation.isPending}
-                                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-primary-theme hover:bg-primary-theme/90 text-white text-[8px] sm:text-[9px] font-black uppercase tracking-widest rounded-lg sm:rounded-xl shadow-md transition-all flex items-center gap-1.5"
-                            >
-                                <LogOut size={10} className="sm:size-[12px]" /> End
-                            </button>
-                        ) : (
-                            <div className="px-3 sm:px-4 py-1.5 sm:py-2 bg-emerald-50 text-emerald-600 text-[8px] sm:text-[9px] font-black uppercase tracking-widest rounded-lg sm:rounded-xl border border-emerald-100 flex items-center gap-1.5">
-                                <CheckCircle2 size={10} className="sm:size-[12px]" /> Done
-                            </div>
-                        )}
                     </div>
                 </div>
 

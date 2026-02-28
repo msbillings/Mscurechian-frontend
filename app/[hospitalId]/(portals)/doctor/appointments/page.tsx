@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-   Calendar as CalendarIcon, Clock, Filter, Search, 
-   MoreVertical, X, ChevronLeft, ChevronRight, Activity 
+import {
+   Calendar as CalendarIcon, Clock, Filter, Search,
+   MoreVertical, X, ChevronLeft, ChevronRight, Activity
 } from 'lucide-react';
 import { getAllAppointmentsAction } from '@/lib/integrations/actions/doctor.actions';
 import toast from 'react-hot-toast';
@@ -109,7 +109,7 @@ function DoctorAppointmentsPage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by patient name or ID..."
+                  placeholder="Search Patient Name or MRN Number"
                   className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
                />
             </div>
@@ -162,13 +162,12 @@ function DoctorAppointmentsPage() {
                      setTypeFilter(e.target.value);
                      setCurrentPage(1);
                   }}
-                  className={`pl-10 pr-8 py-2 font-medium rounded-lg text-sm border outline-none focus:ring-2 appearance-none cursor-pointer transition-all ${
-                     typeFilter === 'all' 
-                     ? 'bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800 focus:ring-blue-500' 
+                  className={`pl-10 pr-8 py-2 font-medium rounded-lg text-sm border outline-none focus:ring-2 appearance-none cursor-pointer transition-all ${typeFilter === 'all'
+                     ? 'bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800 focus:ring-blue-500'
                      : typeFilter === 'IPD'
-                     ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 border-rose-100 dark:border-rose-800 focus:ring-rose-500'
-                     : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800 focus:ring-emerald-500'
-                  }`}
+                        ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 border-rose-100 dark:border-rose-800 focus:ring-rose-500'
+                        : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800 focus:ring-emerald-500'
+                     }`}
                >
                   <option value="all">All Departments</option>
                   <option value="OPD">OPD (Out-Patient)</option>
@@ -317,28 +316,28 @@ function DoctorAppointmentsPage() {
                                        {apt.status}
                                     </span>
                                  </td>
-                                  <td className="px-6 py-4 text-right whitespace-nowrap">
-                                     <div className="flex items-center justify-end gap-2">
-                                        <button
-                                           onClick={() => {
-                                              setSelectedAppointment(apt);
-                                              setIsDetailsModalOpen(true);
-                                           }}
-                                           className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold rounded-lg flex items-center gap-1"
-                                        >
-                                           <MoreVertical size={14} /> Details
-                                        </button>
-                                        
-                                        {!['completed', 'cancelled', 'no show', 'finished', 'rejected'].includes(apt.status?.toLowerCase()) && (
-                                           <button
-                                              onClick={() => router.push(`/doctor/appointment/${apt.id || apt._id}`)}
-                                              className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-md shadow-blue-600/20 hover:scale-105 active:scale-95 transition-all"
-                                           >
-                                              Start
-                                           </button>
-                                        )}
-                                     </div>
-                                  </td>
+                                 <td className="px-6 py-4 text-right whitespace-nowrap">
+                                    <div className="flex items-center justify-end gap-2">
+                                       <button
+                                          onClick={() => {
+                                             setSelectedAppointment(apt);
+                                             setIsDetailsModalOpen(true);
+                                          }}
+                                          className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold rounded-lg flex items-center gap-1"
+                                       >
+                                          <MoreVertical size={14} /> Details
+                                       </button>
+
+                                       {!['completed', 'cancelled', 'no show', 'finished', 'rejected'].includes(apt.status?.toLowerCase()) && (
+                                          <button
+                                             onClick={() => router.push(`/doctor/appointment/${apt.id || apt._id}`)}
+                                             className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-md shadow-blue-600/20 hover:scale-105 active:scale-95 transition-all"
+                                          >
+                                             Start
+                                          </button>
+                                       )}
+                                    </div>
+                                 </td>
                               </tr>
                            ))}
                         </tbody>
@@ -441,7 +440,7 @@ function DoctorAppointmentsPage() {
                         </div>
                      </div>
 
-                      {/* Vital Signs (if available) */}
+                     {/* Vital Signs (if available) */}
                      {selectedAppointment.vitals && (
                         <div className="space-y-3">
                            <div className="text-xs font-black uppercase text-gray-400 tracking-widest flex items-center gap-2">

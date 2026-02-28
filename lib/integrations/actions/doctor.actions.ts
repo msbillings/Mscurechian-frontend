@@ -242,6 +242,21 @@ export async function updateDoctorProfileAction(profileData: any): Promise<{ suc
     return { success: false, error: error.message || 'Failed to update profile' };
   }
 }
+
+export async function uploadDoctorPhotoAction(formData: FormData): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const data = await apiServer(`${DOCTOR_ENDPOINTS.PROFILE}/photo`, {
+      method: "PATCH",
+      body: formData
+    });
+    revalidatePath('/doctor/profile', 'page');
+    revalidatePath('/doctor', 'layout');
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to upload photo' };
+  }
+}
+
 export async function getDoctorInpatientsAction(doctorId?: string): Promise<{ success: boolean; data?: any[]; error?: string }> {
   try {
     const query = doctorId ? `?doctorId=${doctorId}` : '';

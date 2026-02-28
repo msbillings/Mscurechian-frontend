@@ -10,9 +10,8 @@ import {
     UserCheck,
     AlertCircle,
     History,
-    MoreVertical,
     MapPin,
-    Calendar as CalendarIcon,
+    CalendarIcon,
     ChevronLeft,
     ChevronRight,
     Filter,
@@ -97,7 +96,7 @@ export default function NurseAttendancePage() {
                 </div>
 
                 {/* KEY METRICS */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <MetricCard
                         label="Attendance Score"
                         value={`${stats.onTimePercentage}%`}
@@ -136,7 +135,7 @@ export default function NurseAttendancePage() {
                                 <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
                                     Recent Activity
                                 </h2>
-                                
+
                             </div>
 
                             <div className="flex-1 overflow-x-auto overflow-y-auto">
@@ -205,20 +204,11 @@ export default function NurseAttendancePage() {
                             </div>
 
                             <div className="flex flex-col items-center mb-8">
-                                <div className="text-6xl font-black text-slate-900 tracking-tighter tabular-nums leading-none">
+                                <div className="text-3xl sm:text-4xl md:text-6xl font-black text-slate-900 tracking-tighter tabular-nums leading-none">
                                     {format(currentTime, 'HH:mm')}
                                 </div>
-                                <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest">{format(currentTime, 'ss')} seconds</p>
+                                <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest leading-none">{format(currentTime, 'ss')} seconds</p>
                             </div>
-
-                            {hasCheckedIn && !hasCheckedOut && (
-                                <div className="w-full bg-emerald-50/50 rounded-xl p-4 border border-emerald-100 flex flex-col items-center gap-1 mb-6">
-                                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Shift Active</p>
-                                    <p className="text-[11px] font-bold text-emerald-800">
-                                        Clocked in at {todayAttendance?.checkIn?.time ? format(new Date(todayAttendance.checkIn.time), 'hh:mm a') : '11:04 AM'}
-                                    </p>
-                                </div>
-                            )}
 
                             <div className="w-full">
                                 {!hasCheckedIn ? (
@@ -231,14 +221,22 @@ export default function NurseAttendancePage() {
                                         <span>Start Shift</span>
                                     </button>
                                 ) : !hasCheckedOut ? (
-                                    <button
-                                        onClick={handleCheckOut}
-                                        disabled={checkOutMutation.isPending}
-                                        className="w-full bg-primary-theme hover:bg-primary-theme/80 disabled:opacity-50 text-white font-black py-4 rounded-[0.5rem] transform active:scale-95 flex items-center justify-center gap-3 transition-all shadow-xl shadow-slate-900/10 text-xs uppercase tracking-widest"
-                                    >
-                                        <LogOut className="w-4 h-4" />
-                                        <span>End Shift</span>
-                                    </button>
+                                    <div className="flex flex-row items-center justify-center gap-2 w-full">
+                                        <div className="px-3 py-1 bg-emerald-50 rounded-lg border border-emerald-100 flex items-center gap-1.5 shrink-0">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                            <span className="text-[9px] font-black text-emerald-600 uppercase tracking-tight leading-none whitespace-nowrap">
+                                                In: {todayAttendance?.checkIn?.time ? format(new Date(todayAttendance.checkIn.time), 'hh:mm a') : '09:00 AM'}
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={handleCheckOut}
+                                            disabled={checkOutMutation.isPending}
+                                            className="flex-1 bg-slate-900 hover:bg-black text-white font-black py-2.5 rounded-lg transform active:scale-95 flex items-center justify-center gap-2 transition-all shadow-lg text-[9px] uppercase tracking-widest"
+                                        >
+                                            <LogOut className="w-3.5 h-3.5" />
+                                            <span>End Shift</span>
+                                        </button>
+                                    </div>
                                 ) : (
                                     <div className="w-full bg-slate-50 rounded-xl p-4 border border-slate-100 text-center">
                                         <UserCheck size={20} className="mx-auto text-emerald-500 mb-2" />
@@ -283,21 +281,18 @@ function MetricCard({ label, value, subtext, icon, color }: any) {
     const theme = colors[color] || colors.emerald;
 
     return (
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between mb-3">
-                <div className={`p-3 rounded-xl ${theme.bg} ${theme.text} ${theme.border} border`}>
-                    {icon}
+        <div className="bg-white p-3 sm:p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-start justify-between mb-2 sm:mb-3">
+                <div className={`p-2 sm:p-3 rounded-xl ${theme.bg} ${theme.text} ${theme.border} border`}>
+                    {React.cloneElement(icon, { size: 16 })}
                 </div>
-                <button className="text-slate-300 hover:text-slate-500">
-                    <MoreVertical size={16} />
-                </button>
             </div>
             <div>
-                <h3 className="text-2xl font-bold text-slate-800 tracking-tight">{value}</h3>
-                <p className="text-sm font-medium text-slate-500">{label}</p>
-                <p className={`text-xs mt-1 font-bold ${theme.text} opacity-80 uppercase tracking-wide`}>{subtext}</p>
+                <h3 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight leading-none">{value}</h3>
+                <p className="text-[10px] sm:text-sm font-medium text-slate-500 mt-1">{label}</p>
+                <p className={`text-[8px] sm:text-xs mt-0.5 sm:mt-1 font-bold ${theme.text} opacity-80 uppercase tracking-wide`}>{subtext}</p>
             </div>
-        </div>
+        </div >
     );
 }
 

@@ -10,7 +10,8 @@ import {
     ShieldCheck
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { getDoctorProfileAction, updateDoctorProfileAction } from '@/lib/integrations/actions/doctor.actions';
+import { getDoctorProfileAction, updateDoctorProfileAction, uploadDoctorPhotoAction } from '@/lib/integrations/actions/doctor.actions';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function EditDoctorProfilePage() {
     const router = useRouter();
@@ -19,6 +20,7 @@ export default function EditDoctorProfilePage() {
     const [activeTab, setActiveTab] = useState('personal');
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [files, setFiles] = useState<Record<string, File>>({});
+    const { user, setUser } = useAuthStore();
 
     const [formData, setFormData] = useState<any>({
         // Personal & Account
@@ -179,16 +181,48 @@ export default function EditDoctorProfilePage() {
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
+        let { name, value } = e.target;
 
-        // Clear error when user changes the field
-        if (errors[name]) {
-            setErrors(prev => {
-                const updated = { ...prev };
-                delete updated[name];
-                return updated;
-            });
+        // Auto uppercase for specific fields
+        if (['bankDetails.ifscCode', 'panNumber'].includes(name)) {
+            value = value.toUpperCase();
         }
+
+        let fieldError = "";
+
+        // Real-time validations
+        if (name === 'bankDetails.accountName' || name === 'name') {
+            if (!/^[A-Za-z ]{3,}$/.test(value) && value.length > 0) fieldError = "Only alphabets & spaces, min 3 chars";
+        }
+        if (name === 'bankDetails.bankName') {
+            if (!/^[A-Za-z ]+$/.test(value) && value.length > 0) fieldError = "Only alphabets & spaces";
+        }
+        if (name === 'bankDetails.accountNumber') {
+            if (!/^[0-9]{9,18}$/.test(value) && value.length > 0) fieldError = "9-18 digits only";
+        }
+        if (name === 'bankDetails.ifscCode') {
+            if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(value) && value.length > 0) fieldError = "Invalid IFSC (e.g., SBIN0012345)";
+        }
+        if (name === 'panNumber') {
+            if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value) && value.length > 0) fieldError = "Invalid PAN format";
+        }
+        if (name === 'aadharNumber') {
+            if (!/^[0-9]{12}$/.test(value) && value.length > 0) fieldError = "Exactly 12 digits";
+        }
+        if (name === 'pfNumber') {
+            if (value.length > 0 && value.length < 5) fieldError = "Minimum 5 characters";
+        }
+        if (name === 'esiNumber') {
+            if (!/^[0-9]{10,17}$/.test(value) && value.length > 0) fieldError = "10 to 17 digits only";
+        }
+        if (name === 'uanNumber') {
+            if (!/^[0-9]{12}$/.test(value) && value.length > 0) fieldError = "Exactly 12 digits";
+        }
+
+        setErrors(prev => ({
+            ...prev,
+            [name]: fieldError
+        }));
 
         if (name.includes('.')) {
             const [parent, child] = name.split('.');
@@ -226,6 +260,37 @@ export default function EditDoctorProfilePage() {
         const { name, files: selectedFiles } = e.target;
         if (selectedFiles && selectedFiles[0]) {
             setFiles(prev => ({ ...prev, [name]: selectedFiles[0] }));
+        }
+    };
+
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const photoData = new FormData();
+        photoData.append("profilePic", file);
+
+        const uploadToast = toast.loading("Uploading photo...");
+        try {
+            const res = await uploadDoctorPhotoAction(photoData);
+            if (res.success && res.data) {
+                // Backend now returns the populated profile where profilePic is a string URL
+                const rawPic = res.data.profilePic?.url || res.data.profilePic;
+
+                // Add timestamp to bypass browser cache
+                const newPic = `${rawPic}${rawPic.includes('?') ? '&' : '?'}t=${Date.now()}`;
+
+                setFormData((prev: any) => ({ ...prev, profilePic: newPic }));
+
+                if (setUser && user) {
+                    setUser({ ...user, image: newPic }); // Reactively updates AuthContext
+                }
+                toast.success('Profile photo updated successfully', { id: uploadToast });
+            } else {
+                toast.error(res.error || 'Failed to upload photo', { id: uploadToast });
+            }
+        } catch (error: any) {
+            toast.error('An error occurred while uploading', { id: uploadToast });
         }
     };
 
@@ -409,6 +474,26 @@ export default function EditDoctorProfilePage() {
                                 </div>
                             </div>
 
+                            <div className="mt-8 pt-8 border-t border-gray-100 dark:border-gray-800">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Profile Photo</h3>
+                                <div className="flex flex-col md:flex-row items-center gap-6">
+                                    <div className="w-24 h-24 rounded-full bg-gray-100 dark:bg-gray-800 border-4 border-white dark:border-gray-900 shadow-xl overflow-hidden flex items-center justify-center shrink-0">
+                                        {formData.profilePic ? (
+                                            <img src={formData.profilePic?.url || formData.profilePic} alt="Profile" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <User size={40} className="text-gray-400" />
+                                        )}
+                                    </div>
+                                    <div className="flex-1 w-full flex flex-col items-start gap-2">
+                                        <label className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-bold rounded-xl border border-indigo-100 dark:border-indigo-800/30 hover:bg-indigo-100 transition-colors cursor-pointer">
+                                            <Upload size={18} />
+                                            <span>Upload New Photo</span>
+                                            <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+                                        </label>
+                                        <p className="text-xs text-gray-500">JPG, PNG or GIF up to 5MB</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
 
@@ -602,7 +687,7 @@ export default function EditDoctorProfilePage() {
                                     <FileText className="text-indigo-500" size={24} /> Previously Submitted Documents
                                 </h3>
                                 <p className="text-sm text-gray-500 mb-8">Review all the documents and certificates you have previously submitted. To replace any of these, upload a new file in the Professional or Practice tabs.</p>
-                                
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {/* Degree Certificate */}
                                     <div className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center gap-4 transition-all hover:border-indigo-200">
@@ -790,19 +875,22 @@ export default function EditDoctorProfilePage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Account Holder Name</label>
-                                        <input type="text" name="bankDetails.accountName" value={formData.bankDetails.accountName} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        <input type="text" name="bankDetails.accountName" value={formData.bankDetails.accountName} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.accountName'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
+                                        {errors['bankDetails.accountName'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.accountName']}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Bank Name</label>
-                                        <input type="text" name="bankDetails.bankName" value={formData.bankDetails.bankName} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        <input type="text" name="bankDetails.bankName" value={formData.bankDetails.bankName} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.bankName'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
+                                        {errors['bankDetails.bankName'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.bankName']}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Account Number</label>
-                                        <input type="text" name="bankDetails.accountNumber" value={formData.bankDetails.accountNumber} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        <input type="text" name="bankDetails.accountNumber" value={formData.bankDetails.accountNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.accountNumber'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
+                                        {errors['bankDetails.accountNumber'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.accountNumber']}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">IFSC Code</label>
-                                        <input type="text" name="bankDetails.ifscCode" value={formData.bankDetails.ifscCode} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.ifscCode'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
+                                        <input type="text" name="bankDetails.ifscCode" value={formData.bankDetails.ifscCode} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.ifscCode'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none uppercase`} />
                                         {errors['bankDetails.ifscCode'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.ifscCode']}</p>}
                                     </div>
                                 </div>
@@ -812,12 +900,18 @@ export default function EditDoctorProfilePage() {
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Payroll & Tax Identifiers</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Base Salary (Per Month)</label>
-                                        <input type="number" name="baseSalary" value={formData.baseSalary} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider flex justify-between">
+                                            Base Salary (Per Month)
+                                            <span className="text-gray-400 lowercase">(view only)</span>
+                                        </label>
+                                        <div className="relative">
+                                            <input type="number" name="baseSalary" value={formData.baseSalary} readOnly className="w-full bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3 text-sm outline-none cursor-not-allowed text-gray-500" />
+                                            <DollarSign className="absolute right-4 top-3.5 text-gray-400" size={16} />
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">PAN Card Number</label>
-                                        <input type="text" name="panNumber" value={formData.panNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.panNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
+                                        <input type="text" name="panNumber" value={formData.panNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.panNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none uppercase`} />
                                         {errors.panNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.panNumber}</p>}
                                     </div>
                                     <div className="space-y-2">
@@ -826,16 +920,19 @@ export default function EditDoctorProfilePage() {
                                         {errors.aadharNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.aadharNumber}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">PF Number</label>
-                                        <input type="text" name="pfNumber" value={formData.pfNumber} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">ESI Number</label>
+                                        <input type="text" name="esiNumber" value={formData.esiNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.esiNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
+                                        {errors.esiNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.esiNumber}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">ESI Number</label>
-                                        <input type="text" name="esiNumber" value={formData.esiNumber} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">PF Number</label>
+                                        <input type="text" name="pfNumber" value={formData.pfNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.pfNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
+                                        {errors.pfNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.pfNumber}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">UAN Number</label>
-                                        <input type="text" name="uanNumber" value={formData.uanNumber} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        <input type="text" name="uanNumber" value={formData.uanNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.uanNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
+                                        {errors.uanNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.uanNumber}</p>}
                                     </div>
                                 </div>
                                 <p className="mt-6 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 text-xs text-gray-500 leading-relaxed">

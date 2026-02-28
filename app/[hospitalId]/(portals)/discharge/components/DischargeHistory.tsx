@@ -134,6 +134,8 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
         } catch (err: any) {
             toast.error("Failed to fetch full record for printing");
             console.error(err);
+        } finally {
+            setLoading(false);
         }
     };
 
