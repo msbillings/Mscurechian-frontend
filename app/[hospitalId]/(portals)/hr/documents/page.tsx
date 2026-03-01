@@ -104,11 +104,10 @@ const DocumentUploadModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                 <button
                   key={type.value}
                   onClick={() => setDocType(type.value)}
-                  className={`px-4 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest border transition-all ${
-                    docType === type.value
-                      ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100'
-                      : 'bg-white border-gray-100 text-gray-500 hover:border-indigo-200'
-                  }`}
+                  className={`px-4 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest border transition-all ${docType === type.value
+                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100'
+                    : 'bg-white border-gray-100 text-gray-500 hover:border-indigo-200'
+                    }`}
                 >
                   {type.label}
                 </button>
@@ -129,9 +128,8 @@ const DocumentUploadModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
               />
               <label
                 htmlFor="file-upload"
-                className={`w-full flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-3xl transition-all cursor-pointer ${
-                  file ? 'border-emerald-200 bg-emerald-50/30' : 'border-gray-200 bg-gray-50/50 hover:bg-gray-100/50'
-                }`}
+                className={`w-full flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-3xl transition-all cursor-pointer ${file ? 'border-emerald-200 bg-emerald-50/30' : 'border-gray-200 bg-gray-50/50 hover:bg-gray-100/50'
+                  }`}
               >
                 {file ? (
                   <div className="flex flex-col items-center gap-2">
@@ -176,10 +174,73 @@ const DocumentUploadModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   );
 };
 
+const DocumentViewerModal = ({ isOpen, onClose, url, title }: any) => {
+  if (!isOpen) return null;
+
+  const getViewUrl = (originalUrl: string) => {
+    if (!originalUrl) return '';
+    if (originalUrl.includes('cloudinary.com')) {
+      return originalUrl
+        .replace('/upload/fl_attachment/', '/upload/')
+        .replace('/upload/', '/upload/fl_attachment:false/');
+    }
+    return originalUrl;
+  };
+
+  const viewUrl = getViewUrl(url);
+
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-0 sm:p-6 bg-[#020617]/40 backdrop-blur-xl animate-in fade-in duration-300">
+      <div className="bg-white dark:bg-[#0a0a09] w-full h-full sm:h-[92vh] sm:max-w-5xl sm:rounded-[3rem] overflow-hidden flex flex-col relative shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)] border border-white/10">
+        <div className="p-6 sm:p-8 border-b border-gray-100 dark:border-gray-800/50 flex items-center justify-between bg-white/80 dark:bg-black/80 backdrop-blur-md sticky top-0 z-10">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-100 dark:border-indigo-500/20">
+              <FileText size={24} />
+            </div>
+            <div>
+              <h3 className="font-black text-xs sm:text-sm text-gray-900 dark:text-white uppercase tracking-[0.2em] truncate max-w-[200px] sm:max-w-md">{title}</h3>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Institutional Document Vault</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-2xl text-gray-400 active:scale-95 transition-all shadow-sm border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <div className="flex-1 overflow-auto bg-gray-50/50 dark:bg-[#050505] flex items-center justify-center p-4">
+          {viewUrl?.toLowerCase().includes('.pdf') || viewUrl?.toLowerCase().includes('raw') || viewUrl?.toLowerCase().includes('pdf') ? (
+            <div className="w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-gray-200/50 dark:border-gray-800/50">
+              <iframe
+                src={`https://docs.google.com/viewer?url=${encodeURIComponent(viewUrl)}&embedded=true`}
+                className="w-full h-full border-none"
+                title={title}
+              />
+            </div>
+          ) : (
+            <div className="relative group p-4">
+              <img src={viewUrl} alt={title} className="max-w-full h-auto shadow-2xl rounded-2xl border border-white/20" />
+              <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-black/10 pointer-events-none" />
+            </div>
+          )}
+        </div>
+        <div className="p-4 border-t border-gray-100 dark:border-gray-800/50 bg-white/50 dark:bg-black/50 text-center">
+          <div className="flex items-center justify-center gap-2">
+            <CheckCircle2 size={12} className="text-indigo-500" />
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Institutional Secure Document Viewer</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function DocumentVaultPage() {
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [viewer, setViewer] = useState({ isOpen: false, url: '', title: '' });
 
   const { data: documentResponse, isLoading } = useHRDocuments({
     category: filter,
@@ -240,8 +301,8 @@ export default function DocumentVaultPage() {
     document.body.removeChild(link);
   };
 
-  const handleView = (url: string) => {
-    if (url) window.open(url, '_blank');
+  const handleView = (url: string, title?: string) => {
+    if (url) setViewer({ isOpen: true, url, title: title || 'Document Preview' });
   };
 
   const handleDelete = async (doc: any) => {
@@ -269,10 +330,6 @@ export default function DocumentVaultPage() {
           </p>
         </div>
         <div className="flex gap-4">
-          <button className="flex items-center gap-2 px-6 py-3 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-sm">
-            <Filter className="w-5 h-5 text-gray-400" />
-            Bulk Actions
-          </button>
           <button
             onClick={() => setIsUploadModalOpen(true)}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-indigo-100"
@@ -307,17 +364,15 @@ export default function DocumentVaultPage() {
                 <button
                   key={cat.value}
                   onClick={() => setFilter(cat.value)}
-                  className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all ${
-                    filter === cat.value
-                      ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100'
-                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
+                  className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all ${filter === cat.value
+                    ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100'
+                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
                 >
                   <span className="text-[10px] font-black uppercase tracking-widest">{cat.name}</span>
                   <span
-                    className={`text-[9px] font-black px-2 py-0.5 rounded-full ${
-                      filter === cat.value ? 'bg-white/20' : 'bg-gray-100'
-                    }`}
+                    className={`text-[9px] font-black px-2 py-0.5 rounded-full ${filter === cat.value ? 'bg-white/20' : 'bg-gray-100'
+                      }`}
                   >
                     {cat.count}
                   </span>
@@ -425,31 +480,29 @@ export default function DocumentVaultPage() {
                           </span>
                         </td>
                         <td className="p-6">
-                           <div className="flex items-center gap-2">
-                             <div className="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center text-[10px] font-black text-gray-400">
-                                {doc.staff?.charAt(0)}
-                             </div>
-                             <span className="text-[11px] font-black text-gray-700 uppercase tracking-tight">{doc.staff}</span>
-                           </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center text-[10px] font-black text-gray-400">
+                              {doc.staff?.charAt(0)}
+                            </div>
+                            <span className="text-[11px] font-black text-gray-700 uppercase tracking-tight">{doc.staff}</span>
+                          </div>
                         </td>
                         <td className="p-6">
                           <span
-                            className={`px-4 py-2 text-[9px] font-black uppercase tracking-[0.2rem] rounded-xl border flex items-center gap-2 w-fit ${
-                              doc.status === 'verified'
-                                ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                                : doc.status === 'expiring'
+                            className={`px-4 py-2 text-[9px] font-black uppercase tracking-[0.2rem] rounded-xl border flex items-center gap-2 w-fit ${doc.status === 'verified'
+                              ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                              : doc.status === 'expiring'
                                 ? 'bg-amber-50 text-amber-600 border-amber-100'
                                 : 'bg-gray-50 text-gray-600 border-gray-100'
-                            }`}
+                              }`}
                           >
                             <div
-                              className={`w-2 h-2 rounded-full shadow-sm animate-pulse ${
-                                doc.status === 'verified'
-                                  ? 'bg-emerald-500'
-                                  : doc.status === 'expiring'
+                              className={`w-2 h-2 rounded-full shadow-sm animate-pulse ${doc.status === 'verified'
+                                ? 'bg-emerald-500'
+                                : doc.status === 'expiring'
                                   ? 'bg-amber-500'
                                   : 'bg-gray-400'
-                              }`}
+                                }`}
                             />
                             {doc.status}
                           </span>
@@ -457,7 +510,7 @@ export default function DocumentVaultPage() {
                         <td className="p-6 text-right pr-8">
                           <div className="flex items-center justify-end gap-2">
                             <button
-                              onClick={() => handleView(doc.url)}
+                              onClick={() => handleView(doc.url, doc.title)}
                               className="p-3 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all shadow-sm bg-white border border-gray-50"
                               title="View Document"
                             >
@@ -490,6 +543,12 @@ export default function DocumentVaultPage() {
       </div>
 
       <DocumentUploadModal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} />
+      <DocumentViewerModal
+        isOpen={viewer.isOpen}
+        onClose={() => setViewer({ ...viewer, isOpen: false })}
+        url={viewer.url}
+        title={viewer.title}
+      />
     </div>
   );
 }

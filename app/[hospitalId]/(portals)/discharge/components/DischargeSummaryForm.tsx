@@ -216,65 +216,170 @@ export function DischargeSummaryForm() {
         return 'Mr';
     };
 
-    const validateField = (name: string, value: any): string => {
+    const getCharLimit = (name: string): number => {
+        const largeFields = [
+            'reasonForAdmission', 'diagnosis', 'chiefComplaints',
+            'historyOfPresentIllness', 'pastMedicalHistory',
+            'treatmentGiven', 'surgicalProcedures', 'surgeryNotes',
+            'investigationsPerformed', 'hospitalCourse',
+            'medicationsPrescribed', 'adviceAtDischarge',
+            'activityRestrictions', 'followUpInstructions',
+            'dietInstructions', 'warningSigns', 'address'
+        ];
+        const mediumFields = [
+            'provisionalDiagnosis', 'generalAppearance', 'allergyHistory'
+        ];
+        const smallFields = [
+            'patientName', 'nationality', 'department', 'specialistType',
+            'hospitalName', 'suggestedDoctorName', 'attendantName',
+            'attendantRelationship', 'mrn', 'roomNo', 'bedNo',
+            'govtId', 'insuranceName', 'hospitalRegNo', 'icdCode'
+        ];
+        if (largeFields.includes(name)) return 400;
+        if (mediumFields.includes(name)) return 200;
+        if (smallFields.includes(name)) return 150;
+        return 200;
+    };
+
+    const getCharCount = (name: string, formDataRef: typeof formData): number => {
+        if (name.includes('.')) {
+            const [parent, child] = name.split('.');
+            return ((formDataRef as any)[parent]?.[child] ?? '').toString().length;
+        }
+        const val = (formDataRef as any)[name];
+        if (val === null || val === undefined) return 0;
+        return val.toString().length;
+    };
+
+    const validateField = (name: string, value: any, allData?: typeof formData): string => {
         const charLimit = getCharLimit(name);
 
-        // Character count validation
-        if (value && typeof value === 'string') {
-            if (value.length > charLimit) return `Limit: ${charLimit} chars`;
+        // Character limit check
+        if (value && typeof value === 'string' && value.length > charLimit) {
+            return `Maximum ${charLimit} characters allowed`;
+        }
+
+        // Vitals nested validation
+        if (name === 'height') {
+            if (value && (!/^\d*\.?\d*$/.test(value) || Number(value) < 30 || Number(value) > 250))
+                return 'Height must be 30–250 cm';
+            return '';
+        }
+        if (name === 'weight') {
+            if (value && (!/^\d*\.?\d*$/.test(value) || Number(value) < 1 || Number(value) > 300))
+                return 'Weight must be 1–300 kg';
+            return '';
+        }
+        if (name === 'bloodPressure') {
+            if (value && !/^\d{2,3}\/\d{2,3}$/.test(value))
+                return 'Format: 120/80';
+            return '';
+        }
+        if (name === 'pulse') {
+            if (value && (!/^\d+$/.test(value) || Number(value) < 30 || Number(value) > 200))
+                return 'Pulse must be 30–200';
+            return '';
+        }
+        if (name === 'temperature') {
+            if (value && (!/^\d*\.?\d*$/.test(value) || Number(value) < 90 || Number(value) > 110))
+                return 'Temperature must be 90–110 °F';
+            return '';
+        }
+        if (name === 'spO2') {
+            if (value && (!/^\d+$/.test(value) || Number(value) < 50 || Number(value) > 100))
+                return 'SpO2 must be 50–100%';
+            return '';
+        }
+        if (name === 'glucose') {
+            if (value && (!/^\d+$/.test(value) || Number(value) < 20 || Number(value) > 600))
+                return 'Glucose must be 20–600';
+            return '';
         }
 
         switch (name) {
             case 'patientName':
-                if (!value) return 'Required';
-                if (value.length < 3) return 'Too short';
-                if (/[0-9]/.test(value)) return 'Characters only';
+                if (!value) return 'Patient name is required';
+                if (value.length < 3) return 'Minimum 3 characters required';
+                if (!/^[A-Za-z ]{3,150}$/.test(value)) return 'Only alphabets and spaces allowed';
                 return '';
             case 'mrn':
-                if (!value) return 'Required';
+                if (!value) return 'MRN is required';
+                if (!/^[A-Za-z0-9\-]+$/.test(value)) return 'Alphanumeric and hyphens only';
                 return '';
-            case 'diagnosis':
-                if (!value) return 'Required';
-                return '';
-            case 'chiefComplaints':
-                if (!value) return 'Required';
-                return '';
-            case 'treatmentGiven':
-                if (!value) return 'Required';
-                return '';
-            case 'conditionAtDischarge':
-                if (!value) return 'Required';
+            case 'age':
+                if (!value) return 'Age is required';
+                {
+                    const ageMatch = value.toString().match(/^(\d+)\s*[Yy]ears?$/);
+                    if (!ageMatch) return 'Format: 45 Years';
+                    const ageNum = parseInt(ageMatch[1]);
+                    if (ageNum < 0 || ageNum > 120) return 'Age must be 0–120';
+                }
                 return '';
             case 'phone':
             case 'mobile':
             case 'guardianPhone':
             case 'attendantPhone':
-                if (!value) return ''; // Optional but must be valid if present
-                if (!/^\d+$/.test(value)) return 'Digits only';
-                if (value.length !== 10) return 'Must be 10 digits';
+                if (!value) return '';
+                if (!/^[0-9]{10}$/.test(value)) return 'Must be exactly 10 digits';
                 return '';
             case 'email':
-                if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Invalid email';
+                if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Invalid email format';
+                return '';
+            case 'govtId':
+                if (value && !/^[A-Za-z0-9]+$/.test(value)) return 'Alphanumeric only';
+                return '';
+            case 'icdCode':
+                if (value && !/^[A-Z][0-9]{2}(\.[0-9]{1,2})?$/.test(value)) return 'Invalid ICD format (e.g. J45.9)';
+                return '';
+            case 'diagnosis':
+                if (!value) return 'Final diagnosis is required';
+                return '';
+            case 'chiefComplaints':
+                if (!value) return 'Chief complaints are required';
+                return '';
+            case 'treatmentGiven':
+                if (!value) return 'Treatment given is required';
+                return '';
+            case 'conditionAtDischarge':
+                if (!value) return 'Condition at discharge is required';
+                return '';
+            case 'admissionDate': {
+                if (value && new Date(value) > new Date()) return 'Admission date cannot be in the future';
+                return '';
+            }
+            case 'dischargeDate': {
+                const admDate = allData?.admissionDate;
+                if (value && admDate && new Date(value) < new Date(admDate))
+                    return 'Discharge date cannot be before admission date';
+                return '';
+            }
+            case 'followUpDate': {
+                const dischDate = allData?.dischargeDate;
+                if (value && dischDate && new Date(value) <= new Date(dischDate))
+                    return 'Follow-up must be after discharge date';
+                return '';
+            }
+            case 'advanceAmount':
+                if (Number(value) < 0) return 'Amount cannot be negative';
+                return '';
+            case 'finalPayment':
+                if (Number(value) < 0) return 'Amount cannot be negative';
+                return '';
+            case 'totalBillAmount': {
+                if (Number(value) < 0) return 'Amount cannot be negative';
+                if (allData && Number(value) < Number(allData.advanceAmount))
+                    return 'Total must be ≥ advance amount';
+                if (allData && Number(value) < Number(allData.finalPayment))
+                    return 'Total must be ≥ final payment';
+                return '';
+            }
+            case 'insuranceName':
+                if (allData?.paymentMode === 'Insurance' && !value)
+                    return 'Insurance name required when payment mode is Insurance';
                 return '';
             default:
-                if (!value && name.includes('*')) return 'Required';
                 return '';
         }
-    };
-
-    const getCharLimit = (name: string): number => {
-        const largeFields = [
-            'reasonForAdmission', 'provisionalDiagnosis', 'diagnosis',
-            'chiefComplaints', 'historyOfPresentIllness', 'pastMedicalHistory',
-            'generalAppearance', 'treatmentGiven', 'surgicalProcedures',
-            'surgeryNotes', 'investigationsPerformed', 'hospitalCourse',
-            'medicationsPrescribed', 'adviceAtDischarge',
-            'activityRestrictions', 'followUpInstructions', 'dietInstructions',
-            'warningSigns', 'allergyHistory', 'address'
-        ];
-
-        if (largeFields.includes(name)) return 400;
-        return 200;
     };
 
     const sanitizeData = (data: any): typeof INITIAL_FORM_STATE => {
@@ -433,8 +538,7 @@ export function DischargeSummaryForm() {
         const { name, value } = e.target;
 
         if (name === 'patientName') {
-            const charOnly = value.replace(/[0-9]/g, '');
-            if (charOnly.length > getCharLimit(name)) return;
+            const charOnly = value.replace(/[0-9]/g, '').slice(0, getCharLimit('patientName'));
             setFormData(prev => ({ ...prev, [name]: charOnly }));
             const error = validateField(name, charOnly);
             setErrors(prev => ({ ...prev, [name]: error }));
@@ -449,8 +553,33 @@ export function DischargeSummaryForm() {
             return;
         }
 
-        if (name === 'totalBillAmount') {
-            setFormData(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
+        if (name === 'icdCode') {
+            const upper = value.toUpperCase().slice(0, getCharLimit('icdCode'));
+            setFormData(prev => ({ ...prev, [name]: upper }));
+            const error = validateField(name, upper);
+            setErrors(prev => ({ ...prev, [name]: error }));
+            return;
+        }
+
+        if (['totalBillAmount', 'advanceAmount', 'finalPayment'].includes(name)) {
+            const numVal = parseFloat(value) || 0;
+            const updatedData = { ...formData, [name]: numVal };
+            setFormData(prev => ({ ...prev, [name]: numVal }));
+            const error = validateField(name, numVal, updatedData);
+            setErrors(prev => ({ ...prev, [name]: error }));
+            // Re-validate totalBillAmount when advance/final changes
+            if (name !== 'totalBillAmount') {
+                const totalError = validateField('totalBillAmount', updatedData.totalBillAmount, updatedData);
+                setErrors(prev => ({ ...prev, totalBillAmount: totalError }));
+            }
+            return;
+        }
+
+        if (name === 'paymentMode') {
+            setFormData(prev => ({ ...prev, [name]: value }));
+            const updatedData = { ...formData, [name]: value };
+            const insError = validateField('insuranceName', formData.insuranceName, updatedData);
+            setErrors(prev => ({ ...prev, insuranceName: insError }));
             return;
         }
 
@@ -471,9 +600,21 @@ export function DischargeSummaryForm() {
             return;
         }
 
-        const error = validateField(name, value);
+        // Handle date cross-validations
+        const updatedFormData = { ...formData, [name]: value };
+        const error = validateField(name, value, updatedFormData);
         setErrors(prev => ({ ...prev, [name]: error }));
         setFormData(prev => ({ ...prev, [name]: value }));
+
+        // Re-validate dependent date fields
+        if (name === 'admissionDate') {
+            const dischErr = validateField('dischargeDate', formData.dischargeDate, updatedFormData);
+            setErrors(prev => ({ ...prev, dischargeDate: dischErr }));
+        }
+        if (name === 'dischargeDate') {
+            const fuErr = validateField('followUpDate', formData.followUpDate, updatedFormData);
+            setErrors(prev => ({ ...prev, followUpDate: fuErr }));
+        }
     };
 
     const handleConsultantChange = (index: number, value: string) => {
@@ -613,26 +754,35 @@ export function DischargeSummaryForm() {
                             ]}
                         />
                         <div className="md:col-span-2">
+                            <div>
+                                <div className="flex justify-between items-center mb-1.5">
+                                    <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--secondary-color)' }}>Patient Name *</span>
+                                    <span className={`text-[10px] font-bold ${formData.patientName.length >= 130 ? 'text-red-500' : 'text-gray-400'}`}>{formData.patientName.length}/150</span>
+                                </div>
+                                <input
+                                    name="patientName"
+                                    value={formData.patientName}
+                                    onChange={handleChange}
+                                    placeholder="Enter patient name"
+                                    required
+                                    className={`w-full p-2.5 rounded-xl border outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold ${errors.patientName ? 'border-red-400' : 'border-gray-400'}`}
+                                    style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}
+                                />
+                                {errors.patientName && <p className="text-xs text-red-600 mt-1 font-semibold">{errors.patientName}</p>}
+                            </div>
+                        </div>
+                        <div>
                             <FormInput
-                                label="Patient Name *"
-                                name="patientName"
-                                value={formData.patientName}
+                                label="Age *"
+                                name="age"
+                                value={formData.age}
                                 onChange={handleChange}
-                                placeholder="Enter patient name"
-                                className="border-gray-400 font-bold"
-                                error={errors.patientName}
+                                placeholder="e.g., 45 Years"
+                                className={`font-bold ${errors.age ? 'border-red-400' : 'border-gray-400'}`}
+                                error={errors.age}
                                 required
                             />
                         </div>
-                        <FormInput
-                            label="Age *"
-                            name="age"
-                            value={formData.age}
-                            onChange={handleChange}
-                            placeholder="e.g., 45 years"
-                            className="border-gray-400 font-bold"
-                            required
-                        />
                         <FormSelect
                             label="Gender"
                             name="gender"
@@ -655,15 +805,21 @@ export function DischargeSummaryForm() {
                             error={errors.phone}
                         />
                         <div className="md:col-span-3">
-                            <FormTextarea
-                                label="Address"
-                                name="address"
-                                value={formData.address}
-                                onChange={handleChange}
-                                placeholder="Complete residential address"
-                                className="border-gray-400 font-bold"
-                                rows={2}
-                            />
+                            <div>
+                                <div className="flex justify-between items-center mb-1.5">
+                                    <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--secondary-color)' }}>Address</span>
+                                    <span className={`text-[10px] font-bold ${formData.address.length >= 360 ? 'text-red-500' : 'text-gray-400'}`}>{formData.address.length}/400</span>
+                                </div>
+                                <textarea
+                                    name="address"
+                                    value={formData.address}
+                                    onChange={handleChange}
+                                    placeholder="Complete residential address"
+                                    rows={2}
+                                    className="w-full p-2.5 rounded-xl border border-gray-400 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none"
+                                    style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}
+                                />
+                            </div>
                         </div>
 
                         <FormInput
@@ -725,14 +881,17 @@ export function DischargeSummaryForm() {
                                 { value: 'Widowed', label: 'Widowed' }
                             ]}
                         />
-                        <FormInput
-                            label="Government ID Number"
-                            name="govtId"
-                            value={formData.govtId}
-                            onChange={handleChange}
-                            placeholder="e.g., Aadhar/PAN Number"
-                            className="border-gray-400 font-bold"
-                        />
+                        <div>
+                            <FormInput
+                                label="Government ID Number"
+                                name="govtId"
+                                value={formData.govtId}
+                                onChange={handleChange}
+                                placeholder="e.g., Aadhar/PAN Number"
+                                className={`font-bold ${errors.govtId ? 'border-red-400' : 'border-gray-400'}`}
+                                error={errors.govtId}
+                            />
+                        </div>
                     </div>
                 </Card>
 
@@ -771,7 +930,8 @@ export function DischargeSummaryForm() {
                             value={formData.attendantPhone}
                             onChange={handleChange}
                             placeholder="Contact number"
-                            className="border-gray-400 font-bold"
+                            className={`font-bold ${errors.attendantPhone ? 'border-red-400' : 'border-gray-400'}`}
+                            error={errors.attendantPhone}
                         />
                     </div>
                 </Card>
@@ -789,16 +949,22 @@ export function DischargeSummaryForm() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <FormInput
-                            label="MRN *"
-                            name="mrn"
-                            value={formData.mrn}
-                            onChange={handleChange}
-                            placeholder="Medical Record Number"
-                            className="border-gray-400 font-bold"
-                            error={errors.mrn}
-                            required
-                        />
+                        <div>
+                            <div className="flex justify-between items-center mb-1.5">
+                                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--secondary-color)' }}>MRN *</span>
+                                <span className={`text-[10px] font-bold ${formData.mrn.length >= 130 ? 'text-red-500' : 'text-gray-400'}`}>{formData.mrn.length}/150</span>
+                            </div>
+                            <input
+                                name="mrn"
+                                value={formData.mrn}
+                                onChange={handleChange}
+                                placeholder="Medical Record Number"
+                                required
+                                className={`w-full p-2.5 rounded-xl border outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold ${errors.mrn ? 'border-red-400' : 'border-gray-400'}`}
+                                style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}
+                            />
+                            {errors.mrn && <p className="text-xs text-red-600 mt-1 font-semibold">{errors.mrn}</p>}
+                        </div>
                         <FormSelect
                             label="Room Type"
                             name="roomType"
@@ -828,22 +994,28 @@ export function DischargeSummaryForm() {
                             placeholder="e.g., Cardiology"
                             className="border-gray-400 font-bold"
                         />
-                        <FormInput
-                            label="Admission Date"
-                            name="admissionDate"
-                            type="datetime-local"
-                            value={formData.admissionDate}
-                            onChange={handleChange}
-                            className="border-gray-400 font-bold"
-                        />
-                        <FormInput
-                            label="Discharge Date"
-                            name="dischargeDate"
-                            type="datetime-local"
-                            value={formData.dischargeDate}
-                            onChange={handleChange}
-                            className="border-gray-400 font-bold"
-                        />
+                        <div>
+                            <FormInput
+                                label="Admission Date"
+                                name="admissionDate"
+                                type="datetime-local"
+                                value={formData.admissionDate}
+                                onChange={handleChange}
+                                className={`font-bold ${errors.admissionDate ? 'border-red-400' : 'border-gray-400'}`}
+                                error={errors.admissionDate}
+                            />
+                        </div>
+                        <div>
+                            <FormInput
+                                label="Discharge Date"
+                                name="dischargeDate"
+                                type="datetime-local"
+                                value={formData.dischargeDate}
+                                onChange={handleChange}
+                                className={`font-bold ${errors.dischargeDate ? 'border-red-400' : 'border-gray-400'}`}
+                                error={errors.dischargeDate}
+                            />
+                        </div>
                         <FormSelect
                             label="Admission Type"
                             name="admissionType"
@@ -873,14 +1045,17 @@ export function DischargeSummaryForm() {
                             placeholder="e.g., Senior Consultant"
                             className="border-gray-400 font-bold"
                         />
-                        <FormInput
-                            label="ICD-10 Code"
-                            name="icdCode"
-                            value={formData.icdCode}
-                            onChange={handleChange}
-                            placeholder="e.g., J45.901"
-                            className="border-gray-400 font-bold"
-                        />
+                        <div>
+                            <FormInput
+                                label="ICD-10 Code"
+                                name="icdCode"
+                                value={formData.icdCode}
+                                onChange={handleChange}
+                                placeholder="e.g., J45.9"
+                                className={`font-bold ${errors.icdCode ? 'border-red-400' : 'border-gray-400'}`}
+                                error={errors.icdCode}
+                            />
+                        </div>
                     </div>
                 </Card>
 
@@ -897,73 +1072,36 @@ export function DischargeSummaryForm() {
                     </div>
 
                     <div className="space-y-6">
-                        <FormTextarea
-                            label="Reason for Admission"
-                            name="reasonForAdmission"
-                            value={formData.reasonForAdmission}
-                            onChange={handleChange}
-                            placeholder="Why was the patient admitted?"
-                            className="border-gray-400 font-bold"
-                            rows={2}
-                        />
-                        <FormTextarea
-                            label="Chief Complaints *"
-                            name="chiefComplaints"
-                            value={formData.chiefComplaints}
-                            onChange={handleChange}
-                            placeholder="Main symptoms presented by patient"
-                            className="border-gray-400 font-bold"
-                            error={errors.chiefComplaints}
-                            rows={2}
-                            required
-                        />
-                        <FormTextarea
-                            label="History of Present Illness"
-                            name="historyOfPresentIllness"
-                            value={formData.historyOfPresentIllness}
-                            onChange={handleChange}
-                            placeholder="Detailed history of current illness"
-                            className="border-gray-400 font-bold"
-                            rows={3}
-                        />
-                        <FormTextarea
-                            label="Past Medical History"
-                            name="pastMedicalHistory"
-                            value={formData.pastMedicalHistory}
-                            onChange={handleChange}
-                            placeholder="Previous medical conditions, surgeries, etc."
-                            className="border-gray-400 font-bold"
-                            rows={2}
-                        />
-                        <FormTextarea
-                            label="Provisional Diagnosis"
-                            name="provisionalDiagnosis"
-                            value={formData.provisionalDiagnosis}
-                            onChange={handleChange}
-                            placeholder="Initial diagnosis at admission"
-                            className="border-gray-400 font-bold"
-                            rows={2}
-                        />
-                        <FormTextarea
-                            label="Final Diagnosis *"
-                            name="diagnosis"
-                            value={formData.diagnosis}
-                            onChange={handleChange}
-                            placeholder="Confirmed medical diagnosis"
-                            className="border-gray-400 font-bold"
-                            error={errors.diagnosis}
-                            rows={2}
-                            required
-                        />
-                        <FormTextarea
-                            label="Allergy History"
-                            name="allergyHistory"
-                            value={formData.allergyHistory}
-                            onChange={handleChange}
-                            placeholder="Known allergies"
-                            className="border-gray-400 font-bold"
-                            rows={2}
-                        />
+                        {[  { name: 'reasonForAdmission', label: 'Reason for Admission', placeholder: 'Why was the patient admitted?', limit: 400, rows: 2 },
+                            { name: 'chiefComplaints', label: 'Chief Complaints *', placeholder: 'Main symptoms presented by patient', limit: 400, rows: 2, required: true },
+                            { name: 'historyOfPresentIllness', label: 'History of Present Illness', placeholder: 'Detailed history of current illness', limit: 400, rows: 3 },
+                            { name: 'pastMedicalHistory', label: 'Past Medical History', placeholder: 'Previous medical conditions, surgeries, etc.', limit: 400, rows: 2 },
+                            { name: 'provisionalDiagnosis', label: 'Provisional Diagnosis', placeholder: 'Initial diagnosis at admission', limit: 200, rows: 2 },
+                            { name: 'diagnosis', label: 'Final Diagnosis *', placeholder: 'Confirmed medical diagnosis', limit: 400, rows: 2, required: true },
+                            { name: 'allergyHistory', label: 'Allergy History', placeholder: 'Known allergies', limit: 200, rows: 2 },
+                        ].map(({ name, label, placeholder, limit, rows, required: req }) => {
+                            const val = (formData as any)[name] as string;
+                            const errMsg = (errors as any)[name];
+                            return (
+                                <div key={name}>
+                                    <div className="flex justify-between items-center mb-1.5">
+                                        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--secondary-color)' }}>{label}</span>
+                                        <span className={`text-[10px] font-bold ${val.length >= limit * 0.9 ? (val.length >= limit ? 'text-red-600' : 'text-orange-500') : 'text-gray-400'}`}>{val.length}/{limit}</span>
+                                    </div>
+                                    <textarea
+                                        name={name}
+                                        value={val}
+                                        onChange={handleChange}
+                                        placeholder={placeholder}
+                                        rows={rows}
+                                        required={req}
+                                        className={`w-full p-2.5 rounded-xl border outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none ${errMsg ? 'border-red-400' : 'border-gray-400'}`}
+                                        style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}
+                                    />
+                                    {errMsg && <p className="text-xs text-red-600 mt-1 font-semibold">{errMsg}</p>}
+                                </div>
+                            );
+                        })}
                     </div>
                 </Card>
 
@@ -980,80 +1118,69 @@ export function DischargeSummaryForm() {
                     </div>
 
                     <div className="space-y-6">
+                        {/* Vitals with error messages */}
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-4">
-                            <FormInput label="Height (cm)" name="vitals.height" value={formData.vitals.height} onChange={handleChange} placeholder="170" className="border-gray-400 font-bold" />
-                            <FormInput label="Weight (kg)" name="vitals.weight" value={formData.vitals.weight} onChange={handleChange} placeholder="70" className="border-gray-400 font-bold" />
-                            <FormInput label="BP" name="vitals.bloodPressure" value={formData.vitals.bloodPressure} onChange={handleChange} placeholder="120/80" className="border-gray-400 font-bold" />
-                            <FormInput label="Pulse" name="vitals.pulse" value={formData.vitals.pulse} onChange={handleChange} placeholder="72" className="border-gray-400 font-bold" />
-                            <FormInput label="Temp (°F)" name="vitals.temperature" value={formData.vitals.temperature} onChange={handleChange} placeholder="98.6" className="border-gray-400 font-bold" />
-                            <FormInput label="SpO2 (%)" name="vitals.spO2" value={formData.vitals.spO2} onChange={handleChange} placeholder="99" className="border-gray-400 font-bold" />
-                            <FormInput label="Glucose" name="vitals.glucose" value={formData.vitals.glucose} onChange={handleChange} placeholder="100" className="border-gray-400 font-bold" />
+                            {[  { label: 'Height (cm)', vname: 'vitals.height', ph: '170' },
+                                { label: 'Weight (kg)', vname: 'vitals.weight', ph: '70' },
+                                { label: 'BP', vname: 'vitals.bloodPressure', ph: '120/80' },
+                                { label: 'Pulse', vname: 'vitals.pulse', ph: '72' },
+                                { label: 'Temp (°F)', vname: 'vitals.temperature', ph: '98.6' },
+                                { label: 'SpO2 (%)', vname: 'vitals.spO2', ph: '99' },
+                                { label: 'Glucose', vname: 'vitals.glucose', ph: '100' },
+                            ].map(({ label, vname, ph }) => {
+                                const errMsg = (errors as any)[vname];
+                                return (
+                                    <div key={vname}>
+                                        <FormInput label={label} name={vname} value={(formData.vitals as any)[vname.split('.')[1]]} onChange={handleChange} placeholder={ph} className={`font-bold ${errMsg ? 'border-red-400' : 'border-gray-400'}`} />
+                                        {errMsg && <p className="text-[10px] text-red-600 mt-0.5 font-semibold">{errMsg}</p>}
+                                    </div>
+                                );
+                            })}
                         </div>
-                        <FormTextarea
-                            label="General Appearance"
-                            name="generalAppearance"
-                            value={formData.generalAppearance}
-                            onChange={handleChange}
-                            placeholder="Physical examination findings"
-                            className="border-gray-400 font-bold"
-                            rows={2}
-                        />
-                        <FormTextarea
-                            label="Treatment Given *"
-                            name="treatmentGiven"
-                            value={formData.treatmentGiven}
-                            onChange={handleChange}
-                            placeholder="Summary of all treatments provided"
-                            className="border-gray-400 font-bold"
-                            error={errors.treatmentGiven}
-                            rows={3}
-                            required
-                        />
-                        <FormTextarea
-                            label="Surgical Procedures"
-                            name="surgicalProcedures"
-                            value={formData.surgicalProcedures}
-                            onChange={handleChange}
-                            placeholder="Any surgeries performed"
-                            className="border-gray-400 font-bold"
-                            rows={2}
-                        />
-                        <FormTextarea
-                            label="Surgery Notes"
-                            name="surgeryNotes"
-                            value={formData.surgeryNotes}
-                            onChange={handleChange}
-                            placeholder="Detailed surgical notes if applicable"
-                            className="border-gray-400 font-bold"
-                            rows={3}
-                        />
-                        <FormTextarea
-                            label="Investigations Performed"
-                            name="investigationsPerformed"
-                            value={formData.investigationsPerformed}
-                            onChange={handleChange}
-                            placeholder="Labs, Radiology, etc."
-                            className="border-gray-400 font-bold"
-                            rows={3}
-                        />
-                        <FormTextarea
-                            label="Hospital Course"
-                            name="hospitalCourse"
-                            value={formData.hospitalCourse}
-                            onChange={handleChange}
-                            placeholder="Summary of patient's stay and progress"
-                            className="border-gray-400 font-bold"
-                            rows={3}
-                        />
-                        <FormTextarea
-                            label="Medications Prescribed"
-                            name="medicationsPrescribed"
-                            value={formData.medicationsPrescribed}
-                            onChange={handleChange}
-                            placeholder="Post-discharge medications (one per line)"
-                            className="border-gray-400 font-bold"
-                            rows={5}
-                        />
+                        {[ { name: 'generalAppearance', label: 'General Appearance', placeholder: 'Physical examination findings', limit: 200, rows: 2 },
+                            { name: 'treatmentGiven', label: 'Treatment Given *', placeholder: 'Summary of all treatments provided', limit: 400, rows: 3, required: true },
+                            { name: 'surgicalProcedures', label: 'Surgical Procedures', placeholder: 'Any surgeries performed', limit: 400, rows: 2 },
+                            { name: 'surgeryNotes', label: 'Surgery Notes', placeholder: 'Detailed surgical notes if applicable', limit: 400, rows: 3 },
+                            { name: 'investigationsPerformed', label: 'Investigations Performed', placeholder: 'Labs, Radiology, etc.', limit: 400, rows: 3 },
+                            { name: 'hospitalCourse', label: 'Hospital Course', placeholder: "Summary of patient's stay and progress", limit: 400, rows: 3 },
+                        ].map(({ name, label, placeholder, limit, rows, required: req }) => {
+                            const val = (formData as any)[name] as string;
+                            const errMsg = (errors as any)[name];
+                            return (
+                                <div key={name}>
+                                    <div className="flex justify-between items-center mb-1.5">
+                                        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--secondary-color)' }}>{label}</span>
+                                        <span className={`text-[10px] font-bold ${val.length >= limit * 0.9 ? (val.length >= limit ? 'text-red-600' : 'text-orange-500') : 'text-gray-400'}`}>{val.length}/{limit}</span>
+                                    </div>
+                                    <textarea
+                                        name={name}
+                                        value={val}
+                                        onChange={handleChange}
+                                        placeholder={placeholder}
+                                        rows={rows}
+                                        required={req}
+                                        className={`w-full p-2.5 rounded-xl border outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none ${errMsg ? 'border-red-400' : 'border-gray-400'}`}
+                                        style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}
+                                    />
+                                    {errMsg && <p className="text-xs text-red-600 mt-1 font-semibold">{errMsg}</p>}
+                                </div>
+                            );
+                        })}
+                        <div>
+                            <div className="flex justify-between items-center mb-1.5">
+                                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--secondary-color)' }}>Medications Prescribed</span>
+                                <span className={`text-[10px] font-bold ${formData.medicationsPrescribed.length >= 360 ? 'text-red-600' : 'text-gray-400'}`}>{formData.medicationsPrescribed.length}/400</span>
+                            </div>
+                            <textarea
+                                name="medicationsPrescribed"
+                                value={formData.medicationsPrescribed}
+                                onChange={handleChange}
+                                placeholder="Post-discharge medications (one per line)"
+                                rows={5}
+                                className="w-full p-2.5 rounded-xl border border-gray-400 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none"
+                                style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}
+                            />
+                        </div>
                     </div>
                 </Card>
 
@@ -1070,79 +1197,74 @@ export function DischargeSummaryForm() {
                     </div>
 
                     <div className="space-y-6">
-                        <FormSelect
-                            label="Condition at Discharge *"
-                            name="conditionAtDischarge"
-                            value={formData.conditionAtDischarge}
-                            onChange={handleChange}
-                            className="border-gray-400 font-bold"
-                            error={errors.conditionAtDischarge}
-                            options={[
-                                { value: 'Stable', label: 'Stable' },
-                                { value: 'Fair', label: 'Fair' },
-                                { value: 'Serious', label: 'Serious' },
-                                { value: 'Critical', label: 'Critical' }
-                            ]}
-                            required
-                        />
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FormTextarea
-                                label="Advice at Discharge"
-                                name="adviceAtDischarge"
-                                value={formData.adviceAtDischarge}
+                        <div>
+                            <FormSelect
+                                label="Condition at Discharge *"
+                                name="conditionAtDischarge"
+                                value={formData.conditionAtDischarge}
                                 onChange={handleChange}
-                                placeholder="General health advice"
-                                className="border-gray-400 font-bold"
-                                rows={2}
-                            />
-                            <FormTextarea
-                                label="Diet Instructions"
-                                name="dietInstructions"
-                                value={formData.dietInstructions}
-                                onChange={handleChange}
-                                placeholder="Nutritional advice"
-                                className="border-gray-400 font-bold"
-                                rows={2}
+                                className={`font-bold ${errors.conditionAtDischarge ? 'border-red-400' : 'border-gray-400'}`}
+                                error={errors.conditionAtDischarge}
+                                options={[
+                                    { value: 'Stable', label: 'Stable' },
+                                    { value: 'Fair', label: 'Fair' },
+                                    { value: 'Serious', label: 'Serious' },
+                                    { value: 'Critical', label: 'Critical' }
+                                ]}
+                                required
                             />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FormTextarea
-                                label="Activity Restrictions"
-                                name="activityRestrictions"
-                                value={formData.activityRestrictions}
-                                onChange={handleChange}
-                                placeholder="Physical activity limitations"
-                                className="border-gray-400 font-bold"
-                                rows={2}
-                            />
-                            <FormTextarea
-                                label="Warning Signs"
-                                name="warningSigns"
-                                value={formData.warningSigns}
-                                onChange={handleChange}
-                                placeholder="Symptoms requiring immediate attention"
-                                className="border-gray-400 font-bold"
-                                rows={2}
-                            />
+                            {[  { name: 'adviceAtDischarge', label: 'Advice at Discharge', placeholder: 'General health advice', limit: 400 },
+                                { name: 'dietInstructions', label: 'Diet Instructions', placeholder: 'Nutritional advice', limit: 400 },
+                            ].map(({ name, label, placeholder, limit }) => {
+                                const val = (formData as any)[name] as string;
+                                return (
+                                    <div key={name}>
+                                        <div className="flex justify-between items-center mb-1.5">
+                                            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--secondary-color)' }}>{label}</span>
+                                            <span className={`text-[10px] font-bold ${val.length >= limit * 0.9 ? (val.length >= limit ? 'text-red-600' : 'text-orange-500') : 'text-gray-400'}`}>{val.length}/{limit}</span>
+                                        </div>
+                                        <textarea name={name} value={val} onChange={handleChange} placeholder={placeholder} rows={2} className="w-full p-2.5 rounded-xl border border-gray-400 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }} />
+                                    </div>
+                                );
+                            })}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FormTextarea
-                                label="Follow-up Instructions"
-                                name="followUpInstructions"
-                                value={formData.followUpInstructions}
-                                onChange={handleChange}
-                                placeholder="When and where to follow up"
-                                className="border-gray-400 font-bold"
-                                rows={2}
-                            />
-                            <FormInput
-                                label="Follow-up Date & Time"
-                                name="followUpDate"
-                                type="datetime-local"
-                                value={formData.followUpDate}
-                                onChange={handleChange}
-                                className="border-gray-400 font-bold"
-                            />
+                            {[  { name: 'activityRestrictions', label: 'Activity Restrictions', placeholder: 'Physical activity limitations', limit: 400 },
+                                { name: 'warningSigns', label: 'Warning Signs', placeholder: 'Symptoms requiring immediate attention', limit: 400 },
+                            ].map(({ name, label, placeholder, limit }) => {
+                                const val = (formData as any)[name] as string;
+                                return (
+                                    <div key={name}>
+                                        <div className="flex justify-between items-center mb-1.5">
+                                            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--secondary-color)' }}>{label}</span>
+                                            <span className={`text-[10px] font-bold ${val.length >= limit * 0.9 ? (val.length >= limit ? 'text-red-600' : 'text-orange-500') : 'text-gray-400'}`}>{val.length}/{limit}</span>
+                                        </div>
+                                        <textarea name={name} value={val} onChange={handleChange} placeholder={placeholder} rows={2} className="w-full p-2.5 rounded-xl border border-gray-400 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }} />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <div className="flex justify-between items-center mb-1.5">
+                                    <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--secondary-color)' }}>Follow-up Instructions</span>
+                                    <span className={`text-[10px] font-bold ${formData.followUpInstructions.length >= 360 ? 'text-red-600' : 'text-gray-400'}`}>{formData.followUpInstructions.length}/400</span>
+                                </div>
+                                <textarea name="followUpInstructions" value={formData.followUpInstructions} onChange={handleChange} placeholder="When and where to follow up" rows={2} className="w-full p-2.5 rounded-xl border border-gray-400 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }} />
+                            </div>
+                            <div>
+                                <FormInput
+                                    label="Follow-up Date & Time"
+                                    name="followUpDate"
+                                    type="datetime-local"
+                                    value={formData.followUpDate}
+                                    onChange={handleChange}
+                                    className={`font-bold ${errors.followUpDate ? 'border-red-400' : 'border-gray-400'}`}
+                                    error={errors.followUpDate}
+                                />
+                            </div>
                         </div>
 
                         {/* Consultants Section */}
@@ -1183,22 +1305,34 @@ export function DischargeSummaryForm() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                            <FormInput
-                                label="Suggested Doctor"
-                                name="suggestedDoctorName"
-                                value={formData.suggestedDoctorName}
-                                onChange={handleChange}
-                                placeholder="Doctor for follow-up"
-                                className="border-gray-400 font-bold"
-                            />
-                            <FormInput
-                                label="Referral Hospital"
-                                name="hospitalName"
-                                value={formData.hospitalName}
-                                onChange={handleChange}
-                                placeholder="If referral suggested"
-                                className="border-gray-400 font-bold"
-                            />
+                            <div>
+                                <div className="flex justify-between items-center mb-1.5">
+                                    <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--secondary-color)' }}>Suggested Doctor</span>
+                                    <span className={`text-[10px] font-bold ${formData.suggestedDoctorName.length >= 90 ? 'text-red-600' : 'text-gray-400'}`}>{formData.suggestedDoctorName.length}/100</span>
+                                </div>
+                                <FormInput
+                                    name="suggestedDoctorName"
+                                    value={formData.suggestedDoctorName}
+                                    onChange={handleChange}
+                                    placeholder="Doctor for follow-up"
+                                    className={`font-bold ${errors.suggestedDoctorName ? 'border-red-400' : 'border-gray-400'}`}
+                                    error={errors.suggestedDoctorName}
+                                />
+                            </div>
+                            <div>
+                                <div className="flex justify-between items-center mb-1.5">
+                                    <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--secondary-color)' }}>Referral Hospital</span>
+                                    <span className={`text-[10px] font-bold ${formData.hospitalName.length >= 90 ? 'text-red-600' : 'text-gray-400'}`}>{formData.hospitalName.length}/100</span>
+                                </div>
+                                <FormInput
+                                    name="hospitalName"
+                                    value={formData.hospitalName}
+                                    onChange={handleChange}
+                                    placeholder="If referral suggested"
+                                    className={`font-bold ${errors.hospitalName ? 'border-red-400' : 'border-gray-400'}`}
+                                    error={errors.hospitalName}
+                                />
+                            </div>
                         </div>
                     </div>
                 </Card>
@@ -1217,36 +1351,45 @@ export function DischargeSummaryForm() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                            <FormInput
-                                label="Advance Paid"
-                                name="advanceAmount"
-                                type="number"
-                                value={formData.advanceAmount}
-                                onChange={handleChange}
-                                placeholder="0.00"
-                                className="border-gray-400 font-bold"
-                                disabled={isHelpdesk}
-                            />
-                            <FormInput
-                                label="Final Payment"
-                                name="finalPayment"
-                                type="number"
-                                value={formData.finalPayment}
-                                onChange={handleChange}
-                                placeholder="0.00"
-                                className="border-gray-400 font-bold"
-                                disabled={isHelpdesk}
-                            />
-                            <FormInput
-                                label="Total Amount"
-                                name="totalBillAmount"
-                                type="number"
-                                value={formData.totalBillAmount}
-                                onChange={handleChange}
-                                placeholder="0.00"
-                                className="border-gray-400 font-bold"
-                                disabled={isHelpdesk}
-                            />
+                            <div>
+                                <FormInput
+                                    label="Advance Paid"
+                                    name="advanceAmount"
+                                    type="number"
+                                    value={formData.advanceAmount}
+                                    onChange={handleChange}
+                                    placeholder="0.00"
+                                    className={`font-bold ${errors.advanceAmount ? 'border-red-400' : 'border-gray-400'}`}
+                                    error={errors.advanceAmount}
+                                    disabled={isHelpdesk}
+                                />
+                            </div>
+                            <div>
+                                <FormInput
+                                    label="Final Payment"
+                                    name="finalPayment"
+                                    type="number"
+                                    value={formData.finalPayment}
+                                    onChange={handleChange}
+                                    placeholder="0.00"
+                                    className={`font-bold ${errors.finalPayment ? 'border-red-400' : 'border-gray-400'}`}
+                                    error={errors.finalPayment}
+                                    disabled={isHelpdesk}
+                                />
+                            </div>
+                            <div>
+                                <FormInput
+                                    label="Total Amount"
+                                    name="totalBillAmount"
+                                    type="number"
+                                    value={formData.totalBillAmount}
+                                    onChange={handleChange}
+                                    placeholder="0.00"
+                                    className={`font-bold ${errors.totalBillAmount ? 'border-red-400' : 'border-gray-400'}`}
+                                    error={errors.totalBillAmount}
+                                    disabled={isHelpdesk}
+                                />
+                            </div>
                             <FormSelect
                                 label="Payment Mode"
                                 name="paymentMode"
@@ -1268,7 +1411,8 @@ export function DischargeSummaryForm() {
                                     value={formData.insuranceName}
                                     onChange={handleChange}
                                     placeholder="If applicable"
-                                    className="border-gray-400 font-bold"
+                                    className={`font-bold ${errors.insuranceName ? 'border-red-400' : 'border-gray-400'}`}
+                                    error={errors.insuranceName}
                                     disabled={isHelpdesk}
                                 />
                             </div>
@@ -1301,7 +1445,7 @@ export function DischargeSummaryForm() {
                         </Button>
                         <Button
                             type="submit"
-                            disabled={loading || Object.keys(errors).length > 0}
+                            disabled={loading || Object.values(errors).some(e => e !== '')}
                             className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl px-8 py-3.5 font-black shadow-lg shadow-blue-200 w-full sm:w-auto flex items-center justify-center gap-2 transition-all"
                         >
                             {loading ? (
