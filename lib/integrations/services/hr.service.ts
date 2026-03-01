@@ -292,8 +292,8 @@ export const hrService = {
     );
   },
 
-  // Payroll Management (mirrors hospital admin payroll)
-  getPayroll: (
+  // Payroll Management by date range (used by payroll pages)
+  getPayrollByDateRange: (
     startDate?: string,
     endDate?: string,
     page: number = 1,

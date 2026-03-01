@@ -604,7 +604,7 @@ export default function EditDoctorProfilePage() {
                                             <label className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all">
                                                 <Upload size={14} />
                                                 {files['degreeCertificate'] ? 'Change File' : 'Upload'}
-                                                <input type="file" name="degreeCertificate" onChange={handleFileChange} className="hidden" accept=".pdf,image/*" />
+                                                <input type="file" name="degreeCertificate" onChange={handleFileChange} className="hidden" accept="*" />
                                             </label>
                                             {files['degreeCertificate'] && (
                                                 <span className="text-[10px] text-gray-500 font-medium max-w-[150px] truncate">
@@ -635,7 +635,7 @@ export default function EditDoctorProfilePage() {
                                             <label className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all">
                                                 <Upload size={14} />
                                                 {files['doctorateCertificate'] ? 'Change File' : 'Upload'}
-                                                <input type="file" name="doctorateCertificate" onChange={handleFileChange} className="hidden" accept=".pdf,image/*" />
+                                                <input type="file" name="doctorateCertificate" onChange={handleFileChange} className="hidden" accept="*" />
                                             </label>
                                             {files['doctorateCertificate'] && (
                                                 <span className="text-[10px] text-gray-500 font-medium max-w-[150px] truncate">
@@ -666,7 +666,7 @@ export default function EditDoctorProfilePage() {
                                             <label className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all">
                                                 <Upload size={14} />
                                                 {files['internshipCertificate'] ? 'Change File' : 'Upload'}
-                                                <input type="file" name="internshipCertificate" onChange={handleFileChange} className="hidden" accept=".pdf,image/*" />
+                                                <input type="file" name="internshipCertificate" onChange={handleFileChange} className="hidden" accept="*" />
                                             </label>
                                             {files['internshipCertificate'] && (
                                                 <span className="text-[10px] text-gray-500 font-medium max-w-[150px] truncate">
@@ -803,7 +803,7 @@ export default function EditDoctorProfilePage() {
                                             <label className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all">
                                                 <Upload size={14} />
                                                 {files['registrationCertificate'] ? 'Change File' : 'Upload'}
-                                                <input type="file" name="registrationCertificate" onChange={handleFileChange} className="hidden" accept=".pdf,image/*" />
+                                                <input type="file" name="registrationCertificate" onChange={handleFileChange} className="hidden" accept="*" />
                                             </label>
                                             {files['registrationCertificate'] && (
                                                 <span className="text-[10px] text-gray-500 font-medium max-w-[150px] truncate">

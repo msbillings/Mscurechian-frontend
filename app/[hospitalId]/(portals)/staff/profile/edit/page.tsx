@@ -118,7 +118,7 @@ const DocUploadCard = ({ label, doc, onUpload, onView, isUploading }: any) => {
                         </button>
                         <label className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-all text-indigo-600 cursor-pointer">
                             <Upload size={14} /> Replace
-                            <input type="file" className="hidden" accept=".pdf,image/*,.doc,.docx" onChange={(e) => onUpload(e)} />
+                            <input type="file" className="hidden" accept="*" onChange={(e) => onUpload(e)} />
                         </label>
                     </div>
                 </div>
@@ -802,59 +802,171 @@ export default function EditStaffProfilePage() {
                             </div>
 
                             <div className="pt-8 border-t border-gray-50 dark:border-gray-800">
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                                    <Shield className="text-indigo-500" /> Institutional Credentials
-                                </h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {[
-                                        { id: 'degreeCertificate', label: 'Degree Certificate' },
-                                        { id: 'medicalCouncilRegistration', label: 'Medical Council Registration' },
-                                        { id: 'nursingCouncilRegistration', label: 'Nursing Council Registration' },
-                                        { id: 'doctorateCertificate', label: 'Doctorate Certificate' },
-                                        { id: 'internshipCertificate', label: 'Internship Certificate' }
-                                    ].map((docType) => (
-                                        <DocUploadCard
-                                            key={docType.id}
-                                            label={docType.label}
-                                            doc={formData.documents?.[docType.id]}
-                                            isUploading={files[`uploading_${docType.id}`]}
-                                            onView={(url: string, title: string) => setViewer({ isOpen: true, url, title })}
-                                            onUpload={async (e: React.ChangeEvent<HTMLInputElement>) => {
-                                                const file = e.target.files?.[0];
-                                                if (!file) return;
-
-                                                // Validate
-                                                if (file.size > 5 * 1024 * 1024) return toast.error("File exceeds 5MB");
-
-                                                try {
-                                                    setFiles(prev => ({ ...prev, [`uploading_${docType.id}`]: true as any }));
-                                                    const res = await updateStaffProfileAction({ [docType.id]: file });
-                                                    if (res.success) {
-                                                        toast.success(`${docType.label} updated`);
-                                                        // Update local state
-                                                        setFormData((prev: any) => ({
-                                                            ...prev,
-                                                            documents: {
-                                                                ...prev.documents,
-                                                                [docType.id]: res.data?.staff?.documents?.[docType.id]
-                                                            }
-                                                        }));
-                                                    } else {
-                                                        toast.error(res.error || "Upload failed");
-                                                    }
-                                                } catch (err) {
-                                                    toast.error("An error occurred");
-                                                } finally {
-                                                    setFiles(prev => {
-                                                        const n = { ...prev };
-                                                        delete n[`uploading_${docType.id}`];
-                                                        return n;
-                                                    });
-                                                }
-                                            }}
-                                        />
-                                    ))}
+                                {/* Header */}
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl flex items-center justify-center border border-indigo-100 dark:border-indigo-500/20">
+                                            <Shield className="text-indigo-600 dark:text-indigo-400" size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight">Institutional Credentials</h3>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
+                                                {[
+                                                    formData.documents?.degreeCertificate,
+                                                    formData.documents?.medicalCouncilRegistration,
+                                                    formData.documents?.nursingCouncilRegistration,
+                                                    formData.documents?.doctorateCertificate,
+                                                    formData.documents?.internshipCertificate
+                                                ].filter(d => d?.url).length} of 5 documents uploaded
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {/* Upload progress pill */}
+                                    <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-full border border-gray-100 dark:border-gray-800">
+                                        {[
+                                            formData.documents?.degreeCertificate,
+                                            formData.documents?.medicalCouncilRegistration,
+                                            formData.documents?.nursingCouncilRegistration,
+                                            formData.documents?.doctorateCertificate,
+                                            formData.documents?.internshipCertificate
+                                        ].map((doc, i) => (
+                                            <div key={i} className={`w-2 h-2 rounded-full transition-all ${doc?.url ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
+                                        ))}
+                                    </div>
                                 </div>
+
+                                {/* Document List */}
+                                <div className="rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden divide-y divide-gray-50 dark:divide-gray-800/80">
+                                    {[
+                                        { id: 'degreeCertificate', label: 'Degree Certificate', shortLabel: 'Degree Cert.' },
+                                        { id: 'medicalCouncilRegistration', label: 'Medical Council Registration', shortLabel: 'Medical Council Reg.' },
+                                        { id: 'nursingCouncilRegistration', label: 'Nursing Council Registration', shortLabel: 'Nursing Council Reg.' },
+                                        { id: 'doctorateCertificate', label: 'Doctorate Certificate', shortLabel: 'Doctorate Cert.' },
+                                        { id: 'internshipCertificate', label: 'Internship Certificate', shortLabel: 'Internship Cert.' }
+                                    ].map((docType, idx) => {
+                                        const doc = formData.documents?.[docType.id];
+                                        const hasDoc = !!doc?.url;
+                                        const isUploading = !!files[`uploading_${docType.id}`];
+                                        const fileName = doc?.name || (doc?.url ? decodeURIComponent(doc.url.split('/').pop()?.split('?')[0] || '').replace(/^\d+_/, '') : null);
+                                        const isPdf = fileName?.toLowerCase().includes('.pdf');
+
+                                        return (
+                                            <div key={docType.id}
+                                                className={`flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3.5 sm:py-4 transition-all ${hasDoc ? 'bg-white dark:bg-[#111]' : 'bg-gray-50/70 dark:bg-gray-900/30'} hover:bg-indigo-50/30 dark:hover:bg-indigo-500/5`}
+                                            >
+                                                {/* Icon */}
+                                                <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center border text-sm font-black transition-all ${hasDoc
+                                                    ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-600'
+                                                    : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400'
+                                                }`}>
+                                                    {isUploading ? (
+                                                        <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                                                    ) : hasDoc ? (
+                                                        <CheckCircle2 size={18} />
+                                                    ) : (
+                                                        <FileText size={18} />
+                                                    )}
+                                                </div>
+
+                                                {/* Name + File info */}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[11px] sm:text-xs font-black text-gray-900 dark:text-white uppercase tracking-wide truncate">
+                                                        {docType.label}
+                                                    </p>
+                                                    {hasDoc ? (
+                                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                                            <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md ${isPdf ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400'}`}>
+                                                                {isPdf ? 'PDF' : 'IMG'}
+                                                            </span>
+                                                            <p className="text-[9px] sm:text-[10px] text-gray-400 font-medium truncate max-w-[120px] sm:max-w-[200px]" title={fileName || ''}>
+                                                                {fileName || 'Uploaded'}
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter mt-0.5">Not uploaded</p>
+                                                    )}
+                                                </div>
+
+                                                {/* Status badge (hidden on xs) */}
+                                                <div className="hidden sm:block shrink-0">
+                                                    {hasDoc ? (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-full border border-emerald-100 dark:border-emerald-500/20">
+                                                            <CheckCircle2 size={10} /> Uploaded
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-black uppercase tracking-widest rounded-full border border-amber-100 dark:border-amber-500/20">
+                                                            Missing
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {/* Actions */}
+                                                <div className="shrink-0 flex items-center gap-1.5 sm:gap-2">
+                                                    {hasDoc && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setViewer({ isOpen: true, url: doc.url, title: docType.label })}
+                                                            className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-500/50 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-300 hover:text-indigo-600 transition-all shadow-sm hover:shadow-md"
+                                                        >
+                                                            <Eye size={13} />
+                                                            <span className="hidden sm:inline">View</span>
+                                                        </button>
+                                                    )}
+                                                    <label className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all shadow-sm ${hasDoc
+                                                        ? 'bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 text-indigo-600 hover:bg-indigo-100 dark:hover:bg-indigo-500/20'
+                                                        : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 shadow-gray-900/10'
+                                                    }`}>
+                                                        {isUploading ? (
+                                                            <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                                        ) : (
+                                                            <Upload size={12} />
+                                                        )}
+                                                        <span className="hidden sm:inline">{hasDoc ? 'Replace' : 'Upload'}</span>
+                                                        <input
+                                                            type="file"
+                                                            className="hidden"
+                                                            accept="*"
+                                                            disabled={isUploading}
+                                                            onChange={async (e) => {
+                                                                const file = e.target.files?.[0];
+                                                                if (!file) return;
+                                                                if (file.size > 20 * 1024 * 1024) return toast.error("File exceeds 20MB");
+                                                                try {
+                                                                    setFiles(prev => ({ ...prev, [`uploading_${docType.id}`]: true as any }));
+                                                                    const fd = new FormData();
+                                                                    fd.append(docType.id, file);
+                                                                    const res = await updateStaffProfileAction(fd);
+                                                                    if (res.success) {
+                                                                        toast.success(`${docType.label} uploaded successfully`);
+                                                                        setFormData((prev: any) => ({
+                                                                            ...prev,
+                                                                            documents: {
+                                                                                ...prev.documents,
+                                                                                [docType.id]: res.data?.staff?.documents?.[docType.id]
+                                                                            }
+                                                                        }));
+                                                                    } else {
+                                                                        toast.error(res.error || "Upload failed");
+                                                                    }
+                                                                } catch {
+                                                                    toast.error("An error occurred");
+                                                                } finally {
+                                                                    setFiles(prev => { const n = { ...prev }; delete n[`uploading_${docType.id}`]; return n; });
+                                                                }
+                                                            }}
+                                                        />
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Footer hint */}
+                                 <p className="mt-3 text-[10px] text-gray-400 font-medium flex items-center gap-2">
+                                    <Shield size={11} className="text-indigo-400" />
+                                    Documents are securely stored · PDF, Word, Excel, Images, and all formats · Max 20MB per file
+                                </p>
                             </div>
                         </div>
                     )}
