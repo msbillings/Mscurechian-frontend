@@ -47,7 +47,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
 
-  // Rewrites removed - using physical [hospitalId] directory structure
+  // Proxy handled by /app/api/proxy/[...path]/route.ts (reliable with Turbopack)
 };
 
 export default nextConfig;
