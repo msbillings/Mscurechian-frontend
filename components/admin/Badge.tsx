@@ -22,13 +22,14 @@ export const Badge: React.FC<BadgeProps> = ({ children, variant = "default", cla
   );
 };
 
-export const getStatusVariant = (status: string): "success" | "warning" | "danger" | "info" | "default" => {
+export const getStatusVariant = (status: string | undefined | null): "success" | "warning" | "danger" | "info" | "default" => {
+  if (!status) return "default";
   const lowerStatus = status.toLowerCase();
   
   if (lowerStatus.includes("open") || lowerStatus.includes("pending")) return "warning";
   if (lowerStatus.includes("progress")) return "info";
-  if (lowerStatus.includes("resolved") || lowerStatus.includes("completed") || lowerStatus.includes("success")) return "success";
-  if (lowerStatus.includes("failed") || lowerStatus.includes("error")) return "danger";
+  if (lowerStatus.includes("resolved") || lowerStatus.includes("completed") || lowerStatus.includes("success") || lowerStatus.includes("active")) return "success";
+  if (lowerStatus.includes("failed") || lowerStatus.includes("error") || lowerStatus.includes("inactive") || lowerStatus.includes("blocked")) return "danger";
   
   return "default";
 };
