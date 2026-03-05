@@ -6,9 +6,10 @@ interface CardProps {
   padding?: string;
   title?: string;
   icon?: React.ReactNode;
+  extra?: React.ReactNode;
 }
 
-export const Card: React.FC<CardProps> = ({ children, className = "", padding = "p-6 md:p-8", title, icon }) => {
+export const Card: React.FC<CardProps> = ({ children, className = "", padding = "p-6 md:p-8", title, icon, extra }) => {
   return (
     <div
       className={`rounded-xl border ${padding} ${className}`}
@@ -19,13 +20,19 @@ export const Card: React.FC<CardProps> = ({ children, className = "", padding = 
       }}
     >
       {title && (
-        <h3
-          className="text-lg font-bold mb-4 pb-2 border-b flex items-center gap-2"
-          style={{ color: 'var(--text-color)', borderColor: 'var(--border-color)' }}
+        <div
+          className="flex items-center justify-between mb-4 pb-2 border-b"
+          style={{ borderColor: 'var(--border-color)' }}
         >
-          {icon && <span className="inline-flex">{icon}</span>}
-          {title}
-        </h3>
+          <h3
+            className="text-lg font-bold flex items-center gap-2"
+            style={{ color: 'var(--text-color)' }}
+          >
+            {icon && <span className="inline-flex">{icon}</span>}
+            {title}
+          </h3>
+          {extra && <div className="flex items-center">{extra}</div>}
+        </div>
       )}
       {children}
     </div>

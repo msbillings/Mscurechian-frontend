@@ -23,10 +23,61 @@ export default function AdminRecruitmentPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
 
+  const authUser = useAuthStore((state) => state.user) as any;
+
   const { data: recruitmentsResponse, isLoading } = useQuery({
     queryKey: ["hospital-admin", "recruitment"],
     queryFn: () => hrService.getRecruitment(),
+    refetchInterval: 15000,
+    staleTime: 5000,
   });
+
+  // Real-time synchronization
+  React.useEffect(() => {
+    let isMounted = true;
+    const initSocket = async () => {
+      try {
+        const { getSocket, joinSocketRoom } = await import('@/lib/integrations/api/socket');
+        const socket = await getSocket();
+        
+        if (socket && isMounted) {
+          const userId = authUser?.id || authUser?._id;
+          if (userId) {
+            joinSocketRoom({
+              userId,
+              role: 'hospital-admin',
+              hospitalId: (hospitalId as string) || authUser?.hospital
+            });
+
+            socket.on('new_recruitment_request', (data: any) => {
+              queryClient.invalidateQueries({ queryKey: ["hospital-admin", "recruitment"] });
+              toast.success("New recruitment request received");
+            });
+
+            socket.on('recruitment_review_update', (data: any) => {
+              queryClient.invalidateQueries({ queryKey: ["hospital-admin", "recruitment"] });
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Socket init error:", err);
+      }
+    };
+
+    initSocket();
+
+    return () => {
+      isMounted = false;
+      import('@/lib/integrations/api/socket').then(({ getSocket }) => {
+        getSocket().then(socket => {
+          if (socket) {
+            socket.off('new_recruitment_request');
+            socket.off('recruitment_review_update');
+          }
+        });
+      });
+    };
+  }, [queryClient, authUser, hospitalId]);
 
   const reviewMutation = useMutation({
     mutationFn: ({ id, status, rejectionReason }: { id: string, status: string, rejectionReason?: string }) =>

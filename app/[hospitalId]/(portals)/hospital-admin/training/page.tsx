@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import {
     BookOpen, Plus, Search, Filter, Calendar,
     Briefcase, Users, MoreVertical, Edit, Trash2,
-    CheckCircle2, Clock, XCircle, FileCheck
+    CheckCircle2, Clock, XCircle, FileCheck, ChevronDown
 } from 'lucide-react';
 import { getAllTrainingsAction, deleteTrainingAction } from '@/lib/integrations';
 import AddTrainingModal from '@/components/admin/training/AddTrainingModal';
@@ -21,6 +21,7 @@ export default function TrainingManagementPage() {
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
     const [filterStatus, setFilterStatus] = useState("");
+    const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [trainingToDelete, setTrainingToDelete] = useState<string | null>(null);
 
@@ -129,17 +130,44 @@ export default function TrainingManagementPage() {
                 </div>
                 <div className="flex items-center gap-3 w-full lg:w-auto">
                     <div className="relative flex-1 lg:w-48">
-                        <Filter className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                        <select
-                            value={filterStatus}
-                            onChange={(e) => setFilterStatus(e.target.value)}
-                            className="w-full pl-11 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-indigo-500/20 outline-none appearance-none cursor-pointer transition-all"
+                        <Filter className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 z-10" />
+                        <div
+                            onClick={() => setIsStatusFilterOpen(!isStatusFilterOpen)}
+                            className="w-full pl-11 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer flex justify-between items-center group hover:border-indigo-200 transition-colors"
                         >
-                            <option value="">Status: All</option>
-                            <option value="Scheduled">Scheduled</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Cancelled">Cancelled</option>
-                        </select>
+                            <span className={filterStatus ? 'text-slate-900' : 'text-slate-400'}>
+                                {filterStatus ? `Status: ${filterStatus}` : 'Status: All'}
+                            </span>
+                            <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 ${isStatusFilterOpen ? 'rotate-180' : ''}`} />
+                        </div>
+
+                        {isStatusFilterOpen && (
+                            <>
+                                <div
+                                    className="fixed inset-0 z-[60]"
+                                    onClick={() => setIsStatusFilterOpen(false)}
+                                />
+                                <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white border border-slate-100 rounded-2xl shadow-xl z-[70] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="p-1">
+                                        <div
+                                            onClick={() => { setFilterStatus(''); setIsStatusFilterOpen(false); }}
+                                            className="px-4 py-2.5 hover:bg-slate-50 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-300 cursor-pointer"
+                                        >
+                                            Status: All
+                                        </div>
+                                        {['Scheduled', 'Completed', 'Cancelled'].map(s => (
+                                            <div
+                                                key={s}
+                                                onClick={() => { setFilterStatus(s); setIsStatusFilterOpen(false); }}
+                                                className={`px-4 py-2.5 hover:bg-indigo-50/50 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-colors ${filterStatus === s ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:text-indigo-600'}`}
+                                            >
+                                                {s}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>

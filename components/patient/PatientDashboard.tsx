@@ -35,6 +35,7 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
     const [hospitals, setHospitals] = useState<any[]>([]);
     const [selectedHospitalId, setSelectedHospitalId] = useState<string>(''); // empty means All Hospitals
     const [isHospitalDropdownOpen, setIsHospitalDropdownOpen] = useState(false);
+    const [initialized, setInitialized] = useState(false);
 
     const searchParams = useSearchParams();
     const queryTab = searchParams.get('tab') as TabType;
@@ -50,10 +51,15 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
     }, []);
 
     useEffect(() => {
-        if (!initialData || selectedHospitalId !== '') {
-            fetchDashboardData(selectedHospitalId);
+        if (!initialized) {
+            setInitialized(true);
+            // Skip the very first fetch only if we already have initialData for the global view
+            if (initialData && selectedHospitalId === '') {
+                return;
+            }
         }
-    }, [initialData, selectedHospitalId]);
+        fetchDashboardData(selectedHospitalId);
+    }, [selectedHospitalId]);
 
     const fetchHospitals = async () => {
         try {

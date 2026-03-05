@@ -6,6 +6,7 @@ export const useHRStats = () => {
   return useQuery({
     queryKey: ["hr", "stats"],
     queryFn: () => hrService.getStats(),
+    refetchInterval: 30000, // Refresh dashboard stats every 30s
   });
 };
 

@@ -46,7 +46,7 @@ export default function HRDashboard() {
     },
     {
       title: 'Departments',
-      value: stats?.breakdown?.length || 0,
+      value: stats?.breakdown?.filter((item: any) => item.role !== 'emergency').length || 0,
       icon: Briefcase,
       color: 'bg-purple-500',
       link: `/${hospitalId}/hr/staff`,
@@ -120,7 +120,9 @@ export default function HRDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {stats?.recentStaff?.map((staff: any) => (
+                {stats?.recentStaff
+                  ?.filter((staff: any) => staff.role !== 'emergency')
+                  .map((staff: any) => (
                   <tr key={staff._id} className="hover:bg-gray-50 transition-colors">
                     <td className="py-4">
                       <div className="font-bold text-gray-900">{staff.name}</div>
@@ -151,7 +153,7 @@ export default function HRDashboard() {
           <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm h-full">
             <h3 className="text-xl font-bold text-gray-900 mb-8">Role Breakdown</h3>
             <div className="space-y-6">
-              {stats?.breakdown?.map((item: any) => (
+              {stats?.breakdown?.filter((item: any) => item.role !== 'emergency').map((item: any) => (
                 <div key={item.role} className="space-y-2">
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-bold text-gray-600 uppercase tracking-wider">{item.role}</span>

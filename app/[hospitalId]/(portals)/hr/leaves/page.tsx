@@ -177,6 +177,7 @@ export default function HRLeaveManagement() {
          }
       },
       staleTime: 10 * 1000,
+      refetchInterval: 15000,
    });
 
    const leaves = leaveResponse?.leaves || leaveResponse?.data || [];

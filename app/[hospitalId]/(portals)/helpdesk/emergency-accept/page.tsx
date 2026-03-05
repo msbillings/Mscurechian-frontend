@@ -20,8 +20,11 @@ import { helpdeskEmergencyService } from "@/lib/integrations/services/helpdesk-e
 import { EmergencyRequest } from "@/lib/integrations/types/emergency";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 
 function EmergencyAccept() {
+  const params = useParams();
+  const hospitalId = params.hospitalId as string;
   const [emergencies, setEmergencies] = useState<EmergencyRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'pending' | 'active'>('pending');
@@ -41,7 +44,7 @@ function EmergencyAccept() {
 
   useEffect(() => {
     fetchEmergencies();
-    const interval = setInterval(fetchEmergencies, 15000);
+    const interval = setInterval(fetchEmergencies, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -76,9 +79,16 @@ function EmergencyAccept() {
     );
   }
 
-  const pendingRequests = emergencies.filter(e => e.status === 'pending');
-  const activeResponses = emergencies.filter(e => e.status === 'accepted');
-  const displayList = activeTab === 'pending' ? pendingRequests : activeResponses;
+  const getHospitalStatus = (e: EmergencyRequest) => {
+    const rh = e.requestedHospitals?.find(h => 
+        (typeof h.hospital === 'string' ? h.hospital === hospitalId : h.hospital?._id === hospitalId)
+    );
+    return rh?.status || "pending";
+  };
+
+  const pendingRequests = emergencies.filter(e => getHospitalStatus(e) === 'pending');
+  const closedRequests = emergencies.filter(e => getHospitalStatus(e) !== 'pending');
+  const displayList = activeTab === 'pending' ? pendingRequests : closedRequests;
 
   // Pagination logic
   const totalPages = Math.ceil(displayList.length / itemsPerPage);
@@ -120,7 +130,7 @@ function EmergencyAccept() {
                 : 'text-slate-400 hover:text-slate-600'
                 }`}
             >
-              Pending ({pendingRequests.length})
+              Requests ({pendingRequests.length})
             </button>
             <button
               onClick={() => setActiveTab('active')}
@@ -129,7 +139,7 @@ function EmergencyAccept() {
                 : 'text-slate-400 hover:text-slate-600'
                 }`}
             >
-              Active ({activeResponses.length})
+              Closed ({emergencies.length - pendingRequests.length})
             </button>
           </div>
           <button onClick={fetchEmergencies} className="p-2.5 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-teal-600 shadow-sm" aria-label="Refresh Grid">
@@ -170,13 +180,15 @@ function EmergencyAccept() {
             </div>
 
             <div className="lg:w-72 space-y-2">
-              {req.status === 'pending' ? (
+              {getHospitalStatus(req) === 'pending' ? (
                 <div className="flex flex-col gap-2">
                   <button
                     onClick={() => handleStatusUpdate(req._id, 'accepted')}
-                    className="w-full py-4 bg-rose-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-rose-700 active:scale-95 shadow-lg shadow-rose-900/20 flex items-center justify-center gap-2"
+                    disabled={req.status === 'accepted' && req.acceptedByHospital?._id !== hospitalId}
+                    className="w-full py-4 bg-rose-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-rose-700 active:scale-95 shadow-lg shadow-rose-900/20 flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    <CheckCircle size={16} /> Authorize Admission
+                    {req.status === 'accepted' ? <Siren size={16} /> : <CheckCircle size={16} />}
+                    {req.status === 'accepted' ? 'Handled by Other' : 'Authorize Admission'}
                   </button>
                   <button
                     onClick={() => handleStatusUpdate(req._id, 'rejected')}
@@ -186,8 +198,20 @@ function EmergencyAccept() {
                   </button>
                 </div>
               ) : (
-                <div className="w-full py-4 bg-teal-50 border border-teal-100 text-teal-600 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 italic">
-                  <CheckCircle size={16} /> Asset Committed
+                <div className="flex flex-col gap-2 items-center">
+                    {getHospitalStatus(req) === "accepted" ? (
+                        <div className="w-full py-4 bg-teal-50 border border-teal-100 text-teal-600 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 italic">
+                            <CheckCircle size={16} /> Admission Confirmed
+                        </div>
+                    ) : req.acceptedByHospital ? (
+                        <div className="w-full py-4 bg-amber-50 border border-amber-100 text-amber-600 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 italic">
+                            <Siren size={16} /> Booked by {req.acceptedByHospital.name}
+                        </div>
+                    ) : (
+                        <div className="w-full py-4 bg-slate-50 border border-slate-200 text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 italic">
+                            <XCircle size={16} /> Mission Deployed / Deferred
+                        </div>
+                    )}
                 </div>
               )}
             </div>

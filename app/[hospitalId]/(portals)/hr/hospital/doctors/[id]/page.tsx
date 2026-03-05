@@ -19,11 +19,11 @@ import {
   Globe,
   Stethoscope,
   Edit,
-  Trash2,
-  FileText,
-  User,
   Briefcase,
-  Eye
+  Eye,
+  UserCheck,
+  Ban,
+  EyeOff
 } from "lucide-react";
 import { PageHeader, Button } from "@/components/admin";
 
@@ -80,20 +80,28 @@ function HRDoctorDetailPage() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleToggleStatus = async () => {
+    const isActivating = doctor.status === 'inactive';
+    const action = isActivating ? 'reactivate' : 'deactivate';
+
     setConfirmModal({
       isOpen: true,
-      title: "Deactivate Doctor",
-      message: `Are you sure you want to deactivate Dr. ${doctor?.name}?`,
+      title: `${isActivating ? 'Reactivate' : 'Deactivate'} Physician`,
+      message: `Are you sure you want to ${action} Dr. ${doctor?.name}? Account access will be ${isActivating ? 'restored' : 'suspended'}.`,
       onConfirm: async () => {
         setDeleteLoading(true);
         try {
-          await hospitalAdminService.deleteDoctor(doctor?.doctorProfileId || id);
-          toast.success(`Dr. ${doctor?.name} has been deactivated`);
-          router.push(`/${hospitalId}/hr/hospital/doctors`);
+          const { hrService } = await import("@/lib/integrations");
+          if (isActivating) {
+            await hrService.activateStaff(doctor?.doctorProfileId || id);
+          } else {
+            await hrService.deactivateStaff(doctor?.doctorProfileId || id);
+          }
+          toast.success(`Dr. ${doctor?.name} has been ${isActivating ? 'reactivated' : 'deactivated'}`);
+          fetchDoctor();
         } catch (error: any) {
-          console.error("Failed to deactivate doctor:", error);
-          toast.error(error.message || "Failed to deactivate doctor");
+          console.error(`Failed to ${action} doctor:`, error);
+          toast.error(error.message || `Failed to ${action} doctor`);
           setDeleteLoading(false);
         } finally {
           setConfirmModal(prev => ({ ...prev, isOpen: false }));
@@ -141,26 +149,25 @@ function HRDoctorDetailPage() {
       </div>
 
       <div className="flex gap-3 mb-8">
-        {doctor.status !== 'inactive' && (
-          <>
-            <Button
-              onClick={() => router.push(`/${hospitalId}/hr/hospital/doctors/edit/${id}`)}
-              icon={<Edit size={16} />}
-              variant="secondary"
-              className="!text-sm !py-2 !rounded-lg"
-            >
-              Edit Profile
-            </Button>
-            <Button
-              onClick={handleDelete}
-              loading={deleteLoading}
-              icon={<Trash2 size={16} />}
-              className="bg-red-600 hover:bg-red-700 text-white !text-sm !py-2 !rounded-lg border border-red-700 shadow-sm"
-            >
-              Deactivate
-            </Button>
-          </>
-        )}
+        <Button
+          onClick={() => router.push(`/${hospitalId}/hr/hospital/doctors/edit/${id}`)}
+          icon={<Edit size={16} />}
+          variant="secondary"
+          className="!text-sm !py-2 !rounded-lg"
+        >
+          Edit Profile
+        </Button>
+        <Button
+          onClick={handleToggleStatus}
+          loading={deleteLoading}
+          icon={doctor.status === 'inactive' ? <UserCheck size={16} /> : <Ban size={16} />}
+          className={doctor.status === 'inactive'
+            ? "bg-emerald-600 hover:bg-emerald-700 text-white !text-sm !py-2 !rounded-lg border border-emerald-700 shadow-sm"
+            : "bg-amber-500 hover:bg-amber-600 text-white !text-sm !py-2 !rounded-lg border border-amber-600 shadow-sm"
+          }
+        >
+          {doctor.status === 'inactive' ? 'Reactivate' : 'Deactivate'} Account
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -170,6 +170,7 @@ export const HOSPITAL_ADMIN_ENDPOINTS = {
   DASHBOARD: "/hospital/dashboard",
   STATS: "/hospital/stats",
   HOSPITAL: "/hospital/hospital",
+  METADATA: "/hospitals/metadata",
   DOCTORS: "/hospital/users?role=doctor",
   CREATE_DOCTOR: "/hospital/create-doctor",
   DOCTOR_DETAIL: (id: string) => `/doctors/${id}`,
