@@ -346,7 +346,7 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
                         </div>
                         <div style={{ ...styles.metaRow, marginBottom: 0 }}>
                             <span style={styles.metaLabel}>Status:</span>
-                            <span style={{ ...styles.metaValue, color: '#10b981' }}>{billData.paymentSummary.status.toUpperCase()}</span>
+                            <span style={{ ...styles.metaValue, color: '#10b981' }}>{(billData.paymentSummary.status || 'PAID').toUpperCase()}</span>
                         </div>
                     </div>
                 </div>
@@ -360,7 +360,7 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
                     <div style={styles.patientMeta}>
                         <span>📞 +91 {billData.customerPhone}</span>
                         <span>📍 {shopDetails.address?.split(',').slice(-1)[0].trim() || 'Karnataka'}, India</span>
-                        <span style={{ marginTop: '8px', fontWeight: 800, color: textMain }}>Doctor: <span style={{ fontWeight: 500 }}>{billData.doctorName || 'Self / Walk-in'}</span></span>
+                        <span style={{ marginTop: '8px', fontWeight: 800, color: textMain }}>Doctor: <span style={{ fontWeight: 500 }}>{(!billData.doctorName || billData.doctorName === '-') ? 'Self / Walk-in' : billData.doctorName}</span></span>
                     </div>
                 </div>
             </div>
@@ -429,15 +429,15 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
                 <div style={styles.calculations}>
                     <div style={styles.calcRow}>
                         <span>Subtotal:</span>
-                        <span style={styles.calcValue}>₹{billData.paymentSummary.subtotal.toFixed(2)}</span>
+                        <span style={styles.calcValue}>₹{(billData.paymentSummary.subtotal || 0).toFixed(2)}</span>
                     </div>
                     <div style={styles.calcRow}>
                         <span>Discount:</span>
-                        <span style={styles.calcValue}>-₹{billData.paymentSummary.discount.toFixed(2)}</span>
+                        <span style={styles.calcValue}>-₹{(billData.paymentSummary.discount || 0).toFixed(2)}</span>
                     </div>
                     <div style={styles.calcRow}>
                         <span>Taxable Amount (GST):</span>
-                        <span style={styles.calcValue}>₹{billData.paymentSummary.taxableAmount.toFixed(2)}</span>
+                        <span style={styles.calcValue}>₹{(billData.paymentSummary.taxableAmount || 0).toFixed(2)}</span>
                     </div>
                     <div style={styles.calcRow}>
 
@@ -445,7 +445,7 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
 
                     <div style={styles.grandTotalBar}>
                         <span style={styles.gtLabel}>Grand Total:</span>
-                        <span style={styles.gtValue}>₹{Math.round(billData.paymentSummary.grandTotal).toLocaleString()}</span>
+                        <span style={styles.gtValue}>₹{Math.round(billData.paymentSummary.grandTotal || 0).toLocaleString()}</span>
                     </div>
 
                     <div style={{ marginTop: '20px' }}>
@@ -464,11 +464,11 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
                         <div style={styles.paymentContent}>
                             <div style={styles.payRow}>
                                 <span style={styles.metaLabel}>Paid Amount:</span>
-                                <span style={styles.metaValue}>₹{billData.paymentSummary.paidAmount.toLocaleString()}</span>
+                                <span style={styles.metaValue}>₹{(billData.paymentSummary.paidAmount || 0).toLocaleString()}</span>
                             </div>
                             <div style={styles.payRow}>
                                 <span style={styles.metaLabel}>Balance:</span>
-                                <span style={styles.metaValue}>₹{billData.paymentSummary.balanceDue.toLocaleString()}</span>
+                                <span style={styles.metaValue}>₹{(billData.paymentSummary.balanceDue || 0).toLocaleString()}</span>
                             </div>
                             <div style={styles.payRow}>
                                 <span style={styles.metaLabel}>Payment Mode:</span>

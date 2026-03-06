@@ -17,7 +17,8 @@ import {
     AlertCircle,
     ShieldAlert,
     LayoutGrid,
-    Table as TableIcon
+    Table as TableIcon,
+    X
 } from 'lucide-react';
 import { ipdService, staffService } from '@/lib/integrations';
 import { Bed } from '@/lib/integrations/types';
@@ -116,7 +117,7 @@ const BedBlock = ({ bed, selectedBedId, handleBedClick, getStatusColor }: any) =
             <button
                 onClick={() => handleBedClick(bed)}
                 className={`
-                    relative p-2 rounded-[20px] border transition-all duration-500 text-left w-full aspect-square flex flex-col justify-between overflow-hidden
+                    relative p-2 rounded-[20px] border transition-all duration-500 text-left w-full h-full min-h-[150px] flex flex-col justify-between overflow-hidden
                     ${selectedBedId === bed._id ? 'border-teal-500 bg-white ring-2 ring-teal-500/10 shadow-lg' :
                         bed.currentOccupancy?.condition === 'Critical' ? 'border-rose-200 bg-rose-50/30' :
                             'border-slate-100 bg-white hover:border-teal-400 hover:shadow-md'}
@@ -642,8 +643,13 @@ export default function WardStatus() {
                                     <div className={`p-3 ${getStatusColor(bedDetails.bed.status)} text-white`}>
                                         <div className="flex justify-between items-start mb-2">
                                             <h2 className="text-sm font-black uppercase tracking-tighter leading-tight">{bedDetails.bed.bedId}</h2>
-                                            <div className="px-1.5 py-0.5 bg-white/20 rounded-lg text-[7px] font-black uppercase  backdrop-blur-md">
-                                                {bedDetails.bed.status}
+                                            <div className="flex items-center gap-2">
+                                              <div className="px-1.5 py-0.5 bg-white/20 rounded-lg text-[7px] font-black uppercase  backdrop-blur-md">
+                                                  {bedDetails.bed.status}
+                                              </div>
+                                              <button onClick={() => { setSelectedBedId(null); setBedDetails(null); }} className="p-1 hover:bg-white/20 rounded-md transition-colors xl:hidden">
+                                                  <X size={14} />
+                                              </button>
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-2">

@@ -607,14 +607,7 @@ const TransactionsPage = () => {
                             <div className="sticky top-0 bg-white border-b z-10 p-4 flex justify-between items-center text-black">
                                 <h3 className="font-black uppercase tracking-wider text-sm">Invoice Details</h3>
                                 <div className="flex gap-2">
-                                    <button
-                                        onClick={handleDownloadPDF}
-                                        disabled={isDownloading}
-                                        className="px-4 py-2 bg-teal-50 text-teal-600 hover:bg-teal-100 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
-                                    >
-                                        <Download size={14} />
-                                        {isDownloading ? 'Downloading...' : 'Download PDF'}
-                                    </button>
+
                                     <button
                                         onClick={() => setSelectedBill(null)}
                                         className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-black"

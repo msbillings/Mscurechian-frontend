@@ -39,9 +39,13 @@ const nurseMenuItems: SidebarItem[] = [
   { icon: Activity, label: 'Hourly Monitoring', href: '/nurse/patient-hourly-record' },
   { icon: ClipboardList, label: 'Daily Tasks', href: '/nurse/tasks' },
   { icon: ClipboardList, label: 'Discharge Management', href: '/nurse/discharge' },
-  { icon: Clock, label: 'Attendance', href: '/nurse/attendance' },
-  { icon: Calendar, label: 'Leave Management', href: '/nurse/leaves' },
-  { icon: Calendar, label: 'My Schedule', href: '/nurse/schedule' },
+  {
+    icon: Clock, label: 'My Workforce', href: '#', subItems: [
+      { icon: Clock, label: 'Attendance', href: '/nurse/attendance' },
+      { icon: Calendar, label: 'Leave Management', href: '/nurse/leaves' },
+      { icon: Calendar, label: 'My Schedule', href: '/nurse/schedule' },
+    ]
+  },
   { icon: AlertTriangle, label: 'Medical Incident', href: '/nurse/incidents' },
   { icon: RotateCcw, label: 'Medicine Return', href: '/nurse/medicine-return' },
   { icon: BookOpenCheck, label: 'Sop & Policies', href: '/nurse/sop' },

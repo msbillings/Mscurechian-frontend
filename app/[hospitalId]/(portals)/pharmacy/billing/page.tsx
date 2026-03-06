@@ -254,7 +254,7 @@ const BillingPage = () => {
         setSelectedProduct(product);
         setSearchTerm(product.brandName);
         const unitsPerPack = product.unitsPerPack || 1;
-        setPrice(product.mrp / unitsPerPack);
+        setPrice(Math.round((product.mrp / unitsPerPack) * 100) / 100);
         setSearchResults([]);
     };
 
@@ -593,7 +593,7 @@ const BillingPage = () => {
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Price</label>
                                     <div className="relative">
                                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-[12px]">₹</span>
-                                        <input type="number" className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl pl-10 pr-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500" value={price || ''} onChange={e => setPrice(Math.max(0, Number(e.target.value)))} />
+                                        <input type="number" step="0.01" className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl pl-10 pr-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500" value={price || ''} onChange={e => setPrice(Math.round(Math.max(0, Number(e.target.value)) * 100) / 100)} />
                                     </div>
                                 </div>
                                 <div className="flex items-end">

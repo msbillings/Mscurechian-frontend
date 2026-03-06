@@ -25,25 +25,17 @@ const DEFAULT_NOTE_TYPES = [
     'Shift Handover'
 ];
 
-const DEFAULT_VISIBILITIES = ['Nurse', 'Doctor', 'Admin'];
 
-const VISIBILITY_LABELS: Record<string, string> = {
-    'Nurse': 'Nurses Only',
-    'Doctor': 'Doctors & Nurses',
-    'Admin': 'All Staff'
-};
 
 export default function ClinicalNotesModal({ isOpen, onClose, admissionId, patientName, patientAge, patientGender, mrn, onSuccess }: ClinicalNotesModalProps) {
     const [loading, setLoading] = useState(false);
     const [noteTypes, setNoteTypes] = useState<string[]>(DEFAULT_NOTE_TYPES);
-    const [visibilities, setVisibilities] = useState<string[]>(DEFAULT_VISIBILITIES);
     const [formData, setFormData] = useState({
         type: '',
         subjective: '',
         objective: '',
         assessment: '',
-        plan: '',
-        visibility: ''
+        plan: ''
     });
 
     // Fetch clinical note metadata
@@ -54,15 +46,12 @@ export default function ClinicalNotesModal({ isOpen, onClose, admissionId, patie
                     const response = await hospitalAdminService.getHospitalMetadata({ skipCache: true });
                     if (response.success && response.data) {
                         const types = response.data.clinicalNoteTypes || DEFAULT_NOTE_TYPES;
-                        const vis = response.data.clinicalNoteVisibilities || DEFAULT_VISIBILITIES;
                         setNoteTypes(types);
-                        setVisibilities(vis);
 
                         // Set defaults if not already set by fetchLatestNote
                         setFormData(prev => ({
                             ...prev,
-                            type: prev.type || types[0] || '',
-                            visibility: prev.visibility || vis[0] || ''
+                            type: prev.type || types[0] || ''
                         }));
                     }
                 } catch (error) {
@@ -87,12 +76,28 @@ export default function ClinicalNotesModal({ isOpen, onClose, admissionId, patie
                             subjective: latest.subjective || '',
                             objective: latest.objective || '',
                             assessment: latest.assessment || '',
-                            plan: latest.plan || '',
-                            visibility: latest.visibility || 'Nurse'
+                            plan: latest.plan || ''
+                        });
+                    } else {
+                        // Reset to defaults if no history found
+                        setFormData({
+                            type: 'Progress Note',
+                            subjective: '',
+                            objective: '',
+                            assessment: '',
+                            plan: ''
                         });
                     }
                 } catch (error) {
                     console.error("Failed to fetch clinical notes:", error);
+                    // Reset to defaults on error
+                    setFormData({
+                        type: 'Progress Note',
+                        subjective: '',
+                        objective: '',
+                        assessment: '',
+                        plan: ''
+                    });
                 } finally {
                     setLoading(false);
                 }
@@ -111,7 +116,6 @@ export default function ClinicalNotesModal({ isOpen, onClose, admissionId, patie
 
         return (
             formData.type &&
-            formData.visibility &&
             sLen >= 5 && sLen <= 300 &&
             oLen >= 5 && oLen <= 300 &&
             aLen >= 5 && aLen <= 400 &&
@@ -164,35 +168,18 @@ export default function ClinicalNotesModal({ isOpen, onClose, admissionId, patie
 
                 {/* FORM */}
                 <form onSubmit={handleSubmit} className="p-3 sm:p-8 space-y-3 sm:space-y-6 overflow-y-auto custom-scrollbar flex-1">
-                    <div className="grid grid-cols-2 gap-3 sm:gap-6">
-                        <div className="space-y-1 sm:space-y-2">
-                            <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Note Type</label>
-                            <div className="relative">
-                                <select
-                                    value={formData.type}
-                                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                    className="w-full px-3 sm:px-5 py-2 sm:py-3.5 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-bold outline-none appearance-none cursor-pointer focus:border-teal-500"
-                                >
-                                    {!formData.type && <option value="">Type</option>}
-                                    {noteTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                                </select>
-                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                            </div>
-                        </div>
-
-                        <div className="space-y-1 sm:space-y-2">
-                            <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Visibility</label>
-                            <div className="relative">
-                                <select
-                                    value={formData.visibility}
-                                    onChange={(e) => setFormData({ ...formData, visibility: e.target.value })}
-                                    className="w-full px-3 sm:px-5 py-2 sm:py-3.5 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-bold outline-none appearance-none cursor-pointer focus:border-teal-500"
-                                >
-                                    {!formData.visibility && <option value="">Visibility</option>}
-                                    {visibilities.map(v => <option key={v} value={v}>{VISIBILITY_LABELS[v] || v}</option>)}
-                                </select>
-                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                            </div>
+                    <div className="space-y-1 sm:space-y-2">
+                        <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Note Type</label>
+                        <div className="relative">
+                            <select
+                                value={formData.type}
+                                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                                className="w-full px-3 sm:px-5 py-2 sm:py-3.5 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-bold outline-none appearance-none cursor-pointer focus:border-teal-500"
+                            >
+                                {!formData.type && <option value="">Type</option>}
+                                {noteTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                         </div>
                     </div>
 

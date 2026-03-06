@@ -86,7 +86,7 @@ export default function ClinicalNotesViewModal({ isOpen, onClose, admissionId, p
                                         </div>
                                         <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 rounded-lg">
                                             <User size={10} className="text-slate-400" />
-                                            <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">{note.createdBy?.name || 'Staff'}</span>
+                                            <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">{note.author?.name || 'Staff'}</span>
                                         </div>
                                     </div>
 

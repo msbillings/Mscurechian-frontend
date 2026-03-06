@@ -52,6 +52,7 @@ export default function NurseProfilePage() {
 
     // Document Viewer State
     const [docViewer, setDocViewer] = useState<{ url: string; label: string } | null>(null);
+    const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
 
     // Profile Picture Upload State
     const [uploadingPic, setUploadingPic] = useState(false);
@@ -231,7 +232,7 @@ export default function NurseProfilePage() {
         if (!file) return;
 
         try {
-            setSaving(true);
+            setUploadingDoc(docType);
             const fileName = `${docType}_${Date.now()}`;
 
             // Step 1: Upload file to Cloudinary
@@ -274,7 +275,7 @@ export default function NurseProfilePage() {
             console.error('Upload error:', error);
             toast.error(error.message || 'Upload failed');
         } finally {
-            setSaving(false);
+            setUploadingDoc(null);
         }
     };
 
@@ -410,18 +411,21 @@ export default function NurseProfilePage() {
                             doc={profile.documents?.degreeCertificate}
                             onUpload={(e: any) => handleFileUpload(e, 'degreeCertificate')}
                             onView={(url: string) => setDocViewer({ url, label: 'Degree / Certificate' })}
+                            isUploading={uploadingDoc === 'degreeCertificate'}
                         />
                         <DocUploadCard
                             label="Nursing Council Reg."
                             doc={profile.documents?.nursingCouncilRegistration}
                             onUpload={(e: any) => handleFileUpload(e, 'nursingCouncilRegistration')}
                             onView={(url: string) => setDocViewer({ url, label: 'Nursing Council Reg.' })}
+                            isUploading={uploadingDoc === 'nursingCouncilRegistration'}
                         />
                         <DocUploadCard
                             label="Internship Completion"
                             doc={profile.documents?.internshipCertificate}
                             onUpload={(e: any) => handleFileUpload(e, 'internshipCertificate')}
                             onView={(url: string) => setDocViewer({ url, label: 'Internship Completion' })}
+                            isUploading={uploadingDoc === 'internshipCertificate'}
                         />
                     </div>
                 </div>
@@ -687,7 +691,7 @@ function SectionCard({ title, icon, children, onEdit }: any) {
     );
 }
 
-function DocUploadCard({ label, doc, onUpload, onView }: any) {
+function DocUploadCard({ label, doc, onUpload, onView, isUploading }: any) {
     const hasDoc = !!doc?.url;
 
     // Extract filename from URL or publicId
@@ -747,9 +751,10 @@ function DocUploadCard({ label, doc, onUpload, onView }: any) {
                         <FileText size={12} /> View
                     </button>
                 )}
-                <label className={`flex-1 py-2 rounded-lg text-xs font-bold cursor-pointer flex items-center justify-center gap-1 transition-colors ${hasDoc ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'bg-slate-900 text-white hover:bg-slate-800 w-full'}`}>
-                    <UploadCloud size={14} /> {hasDoc ? 'Update' : 'Click to upload file'}
-                    <input type="file" className="hidden" accept=".pdf,.jpg,.png" onChange={onUpload} />
+                <label className={`flex-1 py-2 rounded-lg text-xs font-bold cursor-pointer flex items-center justify-center gap-1 transition-colors ${isUploading ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : hasDoc ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'bg-slate-900 text-white hover:bg-slate-800 w-full'}`}>
+                    {isUploading ? <Loader2 size={14} className="animate-spin" /> : <UploadCloud size={14} />} 
+                    {isUploading ? 'Uploading...' : (hasDoc ? 'Update' : 'Click to upload')}
+                    <input type="file" className="hidden" accept=".pdf,.jpg,.png" onChange={onUpload} disabled={isUploading} />
                 </label>
             </div>
         </div>

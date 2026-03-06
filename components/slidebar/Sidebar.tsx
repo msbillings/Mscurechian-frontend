@@ -14,8 +14,11 @@ import {
     FileText,
     BarChart,
     X,
-    LucideIcon
+    LucideIcon,
+    ChevronDown,
+    ChevronRight
 } from 'lucide-react';
+import { useState } from 'react';
 import LogoutModal from '../auth/LogoutModal';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
@@ -26,6 +29,7 @@ export interface SidebarItem {
     label: string;
     href: string;
     badge?: string;
+    subItems?: SidebarItem[];
 }
 
 interface SidebarProps {
@@ -129,6 +133,26 @@ function Sidebar({
                     <div className="flex-1 overflow-y-auto py-4">
                         <nav className="space-y-1 px-3">
                             {items.map((item) => {
+                                if (item.subItems) {
+                                  // For items with subItems, check if any child is active
+                                  const isChildActive = item.subItems.some(sub => {
+                                      const cleanPath = pathname.replace('/' + (pathname.split('/')[1] || ''), '');
+                                      return cleanPath.startsWith(sub.href.replace(/^\/[^\/]+/, ''));
+                                  });
+                                  
+                                  return (
+                                    <CollapsibleMenuItem
+                                      key={item.label}
+                                      item={item}
+                                      pathname={pathname}
+                                      activeColor={activeColor}
+                                      getPath={getPath}
+                                      onClose={onClose}
+                                      isChildActive={isChildActive}
+                                    />
+                                  );
+                                }
+
                                 const tenantHref = getPath(item.href);
                                 // For dashboard roots, we want exact match only
                                 const isRoot = item.href.endsWith('/nurse') || item.href === '/admin' || item.href === '/staff';
@@ -200,3 +224,46 @@ function Sidebar({
 }
 
 export default React.memo(Sidebar);
+
+function CollapsibleMenuItem({ item, pathname, activeColor, getPath, onClose, isChildActive }: any) {
+    const [isOpen, setIsOpen] = useState(isChildActive);
+
+    return (
+        <div className="space-y-1">
+            <div 
+              onClick={() => setIsOpen(!isOpen)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted cursor-pointer hover:bg-secondary-theme hover:text-foreground transition-colors overflow-hidden ${isChildActive ? 'text-primary-theme font-black' : ''}`}
+            >
+                <item.icon className={`w-5 h-5 shrink-0 ${isChildActive ? `text-${activeColor}-600 dark:text-${activeColor}-400` : 'text-gray-400 dark:text-gray-500'}`} />
+                <span className="flex-1 font-semibold text-xs tracking-wider uppercase text-gray-500">{item.label}</span>
+                {isOpen ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
+            </div>
+            
+            <div className={`pl-6 space-y-1 border-l-2 border-gray-100 dark:border-gray-800 ml-5 overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 opacity-100 mt-1 pb-1' : 'max-h-0 opacity-0 m-0 p-0 border-transparent'}`}>
+              {item.subItems.map((subItem: any) => {
+                const tenantHref = getPath(subItem.href);
+                const isActive = pathname === tenantHref || pathname.startsWith(tenantHref + '/');
+                
+                return (
+                  <Link
+                      key={subItem.href}
+                      href={tenantHref}
+                      onClick={(e) => {
+                          if (window.innerWidth < 1024 && onClose) {
+                              onClose();
+                          }
+                      }}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg group ${isActive
+                          ? 'bg-primary-theme/10 text-primary-theme font-black'
+                          : 'text-muted hover:bg-secondary-theme hover:text-foreground'
+                          }`}
+                  >
+                      <subItem.icon className={`w-4 h-4 shrink-0 ${isActive ? `text-${activeColor}-600 dark:text-${activeColor}-400` : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-500'}`} />
+                      <span className="flex-1 text-sm">{subItem.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+        </div>
+    );
+}
