@@ -1,11 +1,11 @@
 "use client";
 
-import React, {  useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from "next/navigation";
 import { hospitalAdminService } from "@/lib/integrations";
-import { 
-  Eye, 
-  EyeOff, 
+import {
+  Eye,
+  EyeOff,
   User,
   Mail,
   Phone,
@@ -40,7 +40,7 @@ const GENDER_OPTIONS = [
 ];
 
 const DESIGNATION_OPTIONS = [
-  "Consultant", "Senior Consultant", "Surgeon", "Resident", 
+  "Consultant", "Senior Consultant", "Surgeon", "Resident",
   "Fellow", "Professor", "Other"
 ];
 
@@ -51,7 +51,7 @@ const DEPARTMENTS = [
 ];
 
 const DAYS_OF_WEEK = [
-  "Monday", "Tuesday", "Wednesday", "Thursday", 
+  "Monday", "Tuesday", "Wednesday", "Thursday",
   "Friday", "Saturday", "Sunday"
 ];
 
@@ -113,7 +113,7 @@ function HREditDoctor() {
   const params = useParams();
   const hospitalId = params.hospitalId as string;
   const id = params.id as string;
-  
+
   const [formData, setFormData] = useState<FormData>({
     name: "", email: "", mobile: "", password: "", gender: "",
     dateOfBirth: "",
@@ -165,7 +165,7 @@ function HREditDoctor() {
         name: doctor.name || "",
         email: doctor.email || "",
         mobile: doctor.mobile || "",
-        password: "", 
+        password: "",
         gender: doctor.gender || "",
         dateOfBirth: doctor.dateOfBirth ? new Date(doctor.dateOfBirth).toISOString().split('T')[0] : "",
         street: doctor.address?.street || "",
@@ -239,21 +239,21 @@ function HREditDoctor() {
   };
 
   const addItem = (type: 'specialty' | 'qualification' | 'language' | 'award', value: string) => {
-    const tempValue = type === 'specialty' ? tempSpecialty : 
-                     type === 'qualification' ? tempQualification :
-                     type === 'language' ? tempLanguage : tempAward;
-    
-    const key: 'specialties' | 'qualifications' | 'languages' | 'awards' = 
-      type === 'specialty' ? 'specialties' : 
-      type === 'qualification' ? 'qualifications' :
-      type === 'language' ? 'languages' : 'awards';
-    
+    const tempValue = type === 'specialty' ? tempSpecialty :
+      type === 'qualification' ? tempQualification :
+        type === 'language' ? tempLanguage : tempAward;
+
+    const key: 'specialties' | 'qualifications' | 'languages' | 'awards' =
+      type === 'specialty' ? 'specialties' :
+        type === 'qualification' ? 'qualifications' :
+          type === 'language' ? 'languages' : 'awards';
+
     if (tempValue && !formData[key].includes(tempValue)) {
       setFormData(prev => ({
         ...prev,
         [key]: [...prev[key], tempValue]
       }));
-      
+
       if (type === 'specialty') setTempSpecialty("");
       else if (type === 'qualification') setTempQualification("");
       else if (type === 'language') setTempLanguage("");
@@ -269,9 +269,9 @@ function HREditDoctor() {
   };
 
   const addAvailabilitySlot = () => {
-    setAvailability([...availability, { 
-      days: [], startTime: "09:00", breakStart: "13:00", 
-      breakEnd: "14:00", endTime: "17:00" 
+    setAvailability([...availability, {
+      days: [], startTime: "09:00", breakStart: "13:00",
+      breakEnd: "14:00", endTime: "17:00"
     }]);
   };
 
@@ -298,17 +298,17 @@ function HREditDoctor() {
 
   const validateForm = (): boolean => {
     if (!formData.name.trim()) return toast.error("Doctor name required"), false;
-    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) 
+    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
       return toast.error("Valid email required"), false;
     if (formData.mobile.length !== 10) return toast.error("Mobile must be 10 digits"), false;
-    if (formData.password && formData.password.length < 6) 
+    if (formData.password && formData.password.length < 6)
       return toast.error("Password too short"), false;
     if (!formData.gender) return toast.error("Select gender"), false;
     if (formData.specialties.length === 0) return toast.error("Add at least one specialty"), false;
-    if (!formData.medicalRegistrationNumber.trim()) 
+    if (!formData.medicalRegistrationNumber.trim())
       return toast.error("Registration number required"), false;
     if (!formData.experienceStart) return toast.error("Experience start date required"), false;
-    if (!formData.consultationFee || parseInt(formData.consultationFee) <= 0) 
+    if (!formData.consultationFee || parseInt(formData.consultationFee) <= 0)
       return toast.error("Valid consultation fee required"), false;
 
     return true;
@@ -400,7 +400,7 @@ function HREditDoctor() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <FormInput label="Full Name" type="text" name="name" required
               value={formData.name} onChange={handleChange} placeholder="Full legal name" />
-            
+
             <div>
               <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Gender *</label>
               <select name="gender" value={formData.gender} onChange={handleChange} required
@@ -413,7 +413,7 @@ function HREditDoctor() {
             <div>
               <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Birth Date</label>
               <input type="date" name="dateOfBirth" value={formData.dateOfBirth}
-                onChange={handleChange} 
+                onChange={handleChange}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
           </div>
@@ -425,16 +425,28 @@ function HREditDoctor() {
               value={formData.email} onChange={handleChange} placeholder="Internal hospital email" />
             <FormInput label="Verified Mobile" type="tel" name="mobile" required
               value={formData.mobile} onChange={handleChange} placeholder="10-digit primary contact" />
-            <div className="relative">
-              <FormInput label="Credential Reset (Leave blank to keep)" type={showPassword ? "text" : "password"} name="password"
-                value={formData.password} onChange={handleChange} placeholder="New secure password" />
-              <button type="button" onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-10 text-slate-400 hover:text-blue-600">
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+            <div className="space-y-2">
+              <label className="block text-xs font-black uppercase tracking-widest text-slate-400">Credential Reset (Leave blank to keep)</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="New secure password"
+                  className="w-full px-4 py-3 pr-11 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
           </div>
-          
+
           <div className="mt-6">
             <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
               <MapPin size={14} /> Geographical Node
@@ -479,7 +491,7 @@ function HREditDoctor() {
                     <option value="">Select Domain</option>
                     {SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
-                  <button type="button" onClick={() => addItem('specialty', tempSpecialty)} 
+                  <button type="button" onClick={() => addItem('specialty', tempSpecialty)}
                     className="px-4 py-3 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase hover:bg-blue-700 transition-colors">Add</button>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -512,39 +524,12 @@ function HREditDoctor() {
           </div>
         </Card>
 
-        <Card title="System Permissions" icon={<Shield className="text-rose-600" />} padding="p-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {[
-              { name: 'canAccessEMR', label: 'EMR ACCESS' },
-              { name: 'canAccessBilling', label: 'BILLING' },
-              { name: 'canAccessLabReports', label: 'LABS' },
-              { name: 'canPrescribe', label: 'PRESCRIPTIONS' },
-              { name: 'canAdmitPatients', label: 'ADMISSIONS' },
-              { name: 'canPerformSurgery', label: 'SURGERY' }
-            ].map(perm => (
-              <label key={perm.name} className={`flex flex-col items-center gap-3 p-4 border rounded-2xl cursor-pointer transition-all ${
-                formData.permissions[perm.name as keyof typeof formData.permissions]
-                ? 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-500/20'
-                : 'bg-white border-slate-100 hover:border-slate-300'
-              }`}>
-                <input type="checkbox" name={perm.name}
-                  checked={formData.permissions[perm.name as keyof typeof formData.permissions]}
-                  onChange={(e) => handlePermissionChange(perm.name, e.target.checked)}
-                  className="hidden" />
-                <span className={`text-[9px] font-black tracking-widest text-center ${
-                  formData.permissions[perm.name as keyof typeof formData.permissions] ? 'text-white' : 'text-slate-400'
-                }`}>{perm.label}</span>
-              </label>
-            ))}
-          </div>
-        </Card>
-
         <div className="flex justify-end gap-4 pt-8">
           <button type="button" onClick={() => router.push(`/${hospitalId}/hr/hospital/doctors`)}
             disabled={loading} className="px-8 py-4 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-slate-800 transition-colors">Cancel</button>
           <button type="submit" disabled={loading}
             className="px-12 py-4 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:bg-blue-700 active:scale-95 transition-all flex items-center gap-3">
-            {loading ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : <Edit size={16} />} 
+            {loading ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : <Edit size={16} />}
             Synchronize Profile
           </button>
         </div>

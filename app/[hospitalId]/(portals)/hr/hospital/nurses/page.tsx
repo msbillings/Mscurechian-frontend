@@ -112,7 +112,7 @@ export default function HRHospitalNurses() {
                     subtitle={`Governance view of ${nurses.length} active clinical nursing nodes`}
                 />
                 <button
-                    onClick={() => router.push(`/${hospitalId}/hr/staff/create`)}
+                    onClick={() => router.push(`/${hospitalId}/hr/hospital/nurses/create`)}
                     className="flex items-center gap-2 px-6 py-2.5 text-xs font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 active:scale-95 transition-all "
                 >
                     <Plus className="w-4 h-4" /> Add Nurse

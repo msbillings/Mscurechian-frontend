@@ -16,7 +16,7 @@ interface FormData {
   name: string; email: string; mobile: string; password: string;
   gender: string; dateOfBirth: string;
   street: string; city: string; state: string; pincode: string;
-  department: string; assignedRoom: string; designation: string;
+  department: string[]; assignedRoom: string[]; designation: string;
   employeeId: string; employmentType: string; experienceYears: string; joiningDate: string;
   emergencyContactName: string; emergencyContactMobile: string; emergencyContactRelationship: string;
   shift: string; startTime: string; endTime: string; weeklyOff: string[];
@@ -30,11 +30,11 @@ interface FormData {
 
 type Errors = Partial<Record<string, string>>;
 
-const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 /* ─────────────────────── validation helpers ─────────────────── */
 const validators: Record<string, (v: string) => string> = {
-  name:  v => !v.trim() ? "Full name is required"
+  name: v => !v.trim() ? "Full name is required"
     : !/^[a-zA-Z\s.'-]+$/.test(v.trim()) ? "Only letters, spaces, dots & hyphens allowed" : "",
   email: v => !v.trim() ? "Email is required"
     : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? "Invalid email format (e.g. nurse@hospital.com)" : "",
@@ -93,7 +93,7 @@ function Field({ label, name, value, onChange, error, touched, type = "text",
           className={`w-full px-4 py-2.5 pr-9 bg-white dark:bg-gray-800 border rounded-xl text-sm outline-none transition-all
             ${hasError ? "border-rose-400 bg-rose-50/30 focus:ring-2 focus:ring-rose-400/20"
               : isOk ? "border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
-              : "border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-emerald-500/20"}
+                : "border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-emerald-500/20"}
             ${readOnly ? "bg-gray-50 dark:bg-white/5 cursor-not-allowed" : ""}
             ${inputClass}`}
         />
@@ -115,18 +115,18 @@ function CreateNurse() {
   const [loadingShifts, setLoadingShifts] = useState(true);
 
   const [formData, setFormData] = useState<FormData>({
-    name:"", email:"", mobile:"", password:"", gender:"", dateOfBirth:"",
-    street:"", city:"", state:"", pincode:"",
-    department:"Nursing", assignedRoom:"", designation:"Nurse", employeeId:"",
-    employmentType:"full-time", experienceYears:"", joiningDate:"",
-    emergencyContactName:"", emergencyContactMobile:"", emergencyContactRelationship:"",
-    shift:"", startTime:"09:00", endTime:"17:00", weeklyOff:["Saturday","Sunday"],
-    qualifications:[], certifications:[], skills:[],
-    bloodGroup:"", languages:[], notes:"",
-    sickLeaveQuota:"1", emergencyLeaveQuota:"1", status:"active",
-    baseSalary:"0", panNumber:"", pfNumber:"", esiNumber:"", uanNumber:"",
-    aadharNumber:"", fatherName:"", workLocation:"",
-    bankDetails:{ accountName:"", accountNumber:"", bankName:"", ifscCode:"" }
+    name: "", email: "", mobile: "", password: "", gender: "", dateOfBirth: "",
+    street: "", city: "", state: "", pincode: "",
+    department: [], assignedRoom: [], designation: "Nurse", employeeId: "",
+    employmentType: "full-time", experienceYears: "", joiningDate: "",
+    emergencyContactName: "", emergencyContactMobile: "", emergencyContactRelationship: "",
+    shift: "", startTime: "09:00", endTime: "17:00", weeklyOff: ["Saturday", "Sunday"],
+    qualifications: [], certifications: [], skills: [],
+    bloodGroup: "", languages: [], notes: "",
+    sickLeaveQuota: "1", emergencyLeaveQuota: "1", status: "active",
+    baseSalary: "0", panNumber: "", pfNumber: "", esiNumber: "", uanNumber: "",
+    aadharNumber: "", fatherName: "", workLocation: "",
+    bankDetails: { accountName: "", accountNumber: "", bankName: "", ifscCode: "" }
   });
 
   const [errors, setErrors] = useState<Errors>({});
@@ -146,8 +146,7 @@ function CreateNurse() {
         import('@/lib/integrations/services/ipd.service').then(m => m.ipdService.getRooms().catch(() => []))
       ]);
       setShifts(sd); setUnitTypes(td); setAllRooms(rd);
-      if (sd.length > 0) setFormData(p => ({ ...p, shift:sd[0]._id, startTime:sd[0].startTime, endTime:sd[0].endTime }));
-      if (td.length > 0) setFormData(p => ({ ...p, department:td[0] }));
+      if (sd.length > 0) setFormData(p => ({ ...p, shift: sd[0]._id, startTime: sd[0].startTime, endTime: sd[0].endTime }));
     } catch { toast.error("Failed to load registry configurations"); }
     finally { setLoadingShifts(false); }
   };
@@ -168,11 +167,11 @@ function CreateNurse() {
     if (name === "accountNumber" && value.toUpperCase() !== "N/A" && !/^\d{0,18}$/.test(value)) return;
     if (name === "panNumber" && value.toUpperCase() !== "N/A" && value.length > 10) return;
     if (name === "ifscCode" && value.toUpperCase() !== "N/A" && value.length > 11) return;
-    if (["sickLeaveQuota","emergencyLeaveQuota","baseSalary","experienceYears"].includes(name) && value.toUpperCase() !== "N/A" && !/^\d*$/.test(value)) return;
+    if (["sickLeaveQuota", "emergencyLeaveQuota", "baseSalary", "experienceYears"].includes(name) && value.toUpperCase() !== "N/A" && !/^\d*$/.test(value)) return;
 
     if (name === "shift") {
       const s = shifts.find(s => s._id === value);
-      if (s) { setFormData(p => ({ ...p, shift:value, startTime:s.startTime, endTime:s.endTime })); return; }
+      if (s) { setFormData(p => ({ ...p, shift: value, startTime: s.startTime, endTime: s.endTime })); return; }
     }
     setFormData(p => ({ ...p, [name]: (name === "panNumber" || value.toUpperCase() === "N/A") ? value.toUpperCase() : value }));
     if (touched[name]) setErrors(p => ({ ...p, [name]: validate(name, value) }));
@@ -200,33 +199,57 @@ function CreateNurse() {
     setErrors(p => ({ ...p, [name]: validate(name, value) }));
   };
 
+  const handleDepartmentAdd = (dept: string) => {
+    if (dept && !formData.department.includes(dept))
+      setFormData(p => ({ ...p, department: [...p.department, dept] }));
+  };
+
+  const handleDepartmentRemove = (dept: string) => {
+    setFormData(p => ({
+      ...p,
+      department: p.department.filter(d => d !== dept),
+      assignedRoom: p.assignedRoom.filter(r => {
+        const ro = allRooms.find(room => room.label === r);
+        return ro ? ro.type !== dept : true;
+      })
+    }));
+  };
+
+  const handleRoomAdd = (room: string) => {
+    if (room && !formData.assignedRoom.includes(room))
+      setFormData(p => ({ ...p, assignedRoom: [...p.assignedRoom, room] }));
+  };
+
+  const handleRoomRemove = (room: string) =>
+    setFormData(p => ({ ...p, assignedRoom: p.assignedRoom.filter(r => r !== room) }));
+
   const toggleWeeklyOff = (day: string) =>
     setFormData(p => ({ ...p, weeklyOff: p.weeklyOff.includes(day) ? p.weeklyOff.filter(d => d !== day) : [...p.weeklyOff, day] }));
 
-  const addItem = (type: 'qualification'|'certification'|'skill'|'language') => {
-    const vals: Record<string,string> = {qualification:tempQ, certification:tempC, skill:tempS, language:tempL};
-    const keys: Record<string,string> = {qualification:'qualifications', certification:'certifications', skill:'skills', language:'languages'};
-    const v = vals[type]; const k = keys[type] as keyof Pick<FormData,'qualifications'|'certifications'|'skills'|'languages'>;
+  const addItem = (type: 'qualification' | 'certification' | 'skill' | 'language') => {
+    const vals: Record<string, string> = { qualification: tempQ, certification: tempC, skill: tempS, language: tempL };
+    const keys: Record<string, string> = { qualification: 'qualifications', certification: 'certifications', skill: 'skills', language: 'languages' };
+    const v = vals[type]; const k = keys[type] as keyof Pick<FormData, 'qualifications' | 'certifications' | 'skills' | 'languages'>;
     if (v && !(formData[k] as string[]).includes(v)) {
       setFormData(p => ({ ...p, [k]: [...(p[k] as string[]), v] }));
-      if (type==='qualification') setTempQ(""); else if (type==='certification') setTempC("");
-      else if (type==='skill') setTempS(""); else setTempL("");
+      if (type === 'qualification') setTempQ(""); else if (type === 'certification') setTempC("");
+      else if (type === 'skill') setTempS(""); else setTempL("");
     }
   };
-  const removeItem = (k: keyof Pick<FormData,'qualifications'|'certifications'|'skills'|'languages'>, item: string) =>
+  const removeItem = (k: keyof Pick<FormData, 'qualifications' | 'certifications' | 'skills' | 'languages'>, item: string) =>
     setFormData(p => ({ ...p, [k]: (p[k] as string[]).filter(i => i !== item) }));
 
   /* touch all + validate before submit */
   const touchAll = () => {
-    const fields = ["name","email","mobile","password","designation","pincode",
-      "emergencyContactMobile","panNumber","aadharNumber","ifscCode","accountNumber"];
-    const newTouched: Record<string,boolean> = {};
+    const fields = ["name", "email", "mobile", "password", "designation", "pincode",
+      "emergencyContactMobile", "panNumber", "aadharNumber", "ifscCode", "accountNumber"];
+    const newTouched: Record<string, boolean> = {};
     const newErrors: Errors = {};
     fields.forEach(f => {
       newTouched[f] = true;
       const v = f === "ifscCode" ? formData.bankDetails.ifscCode
-              : f === "accountNumber" ? formData.bankDetails.accountNumber
-              : (formData as any)[f] ?? "";
+        : f === "accountNumber" ? formData.bankDetails.accountNumber
+          : (formData as any)[f] ?? "";
       newErrors[f] = validate(f, v);
     });
     setTouched(p => ({ ...p, ...newTouched }));
@@ -244,27 +267,27 @@ function CreateNurse() {
         name: formData.name.trim(), email: formData.email.trim(), mobile: formData.mobile,
         password: formData.password, gender: formData.gender || undefined,
         dateOfBirth: formData.dateOfBirth || undefined,
-        address: formData.street || formData.city ? { street:formData.street, city:formData.city, state:formData.state, pincode:formData.pincode, country:"India" } : undefined,
-        department: formData.department.trim(), assignedRoom: formData.assignedRoom.trim(),
+        address: formData.street || formData.city ? { street: formData.street, city: formData.city, state: formData.state, pincode: formData.pincode, country: "India" } : undefined,
+        department: formData.department, assignedRoom: formData.assignedRoom,
         designation: formData.designation.trim(), employeeId: formData.employeeId.trim() || undefined,
         employmentType: formData.employmentType,
         experienceYears: formData.experienceYears ? parseInt(formData.experienceYears) : 0,
         joiningDate: formData.joiningDate || new Date().toISOString().split('T')[0],
-        emergencyContact: formData.emergencyContactName ? { name:formData.emergencyContactName, mobile:formData.emergencyContactMobile, relationship:formData.emergencyContactRelationship } : undefined,
-        shift: formData.shift, workingHours:{ start:formData.startTime, end:formData.endTime }, weeklyOff:formData.weeklyOff,
+        emergencyContact: formData.emergencyContactName ? { name: formData.emergencyContactName, mobile: formData.emergencyContactMobile, relationship: formData.emergencyContactRelationship } : undefined,
+        shift: formData.shift, workingHours: { start: formData.startTime, end: formData.endTime }, weeklyOff: formData.weeklyOff,
         qualifications: formData.qualifications, certifications: formData.certifications, skills: formData.skills,
         bloodGroup: formData.bloodGroup || undefined, languages: formData.languages,
         notes: formData.notes.trim() || undefined,
-        sickLeaveQuota: parseInt(formData.sickLeaveQuota)||1, emergencyLeaveQuota: parseInt(formData.emergencyLeaveQuota)||1,
-        baseSalary: parseInt(formData.baseSalary)||0, panNumber:formData.panNumber,
-        pfNumber:formData.pfNumber, esiNumber:formData.esiNumber, uanNumber:formData.uanNumber,
-        aadharNumber:formData.aadharNumber, fatherName:formData.fatherName, workLocation:formData.workLocation,
-        bankDetails: formData.bankDetails, role:'nurse'
+        sickLeaveQuota: parseInt(formData.sickLeaveQuota) || 1, emergencyLeaveQuota: parseInt(formData.emergencyLeaveQuota) || 1,
+        baseSalary: parseInt(formData.baseSalary) || 0, panNumber: formData.panNumber,
+        pfNumber: formData.pfNumber, esiNumber: formData.esiNumber, uanNumber: formData.uanNumber,
+        aadharNumber: formData.aadharNumber, fatherName: formData.fatherName, workLocation: formData.workLocation,
+        bankDetails: formData.bankDetails, role: 'nurse'
       };
       await hospitalAdminService.createStaff(nurseData);
       toast.success(`Nurse "${formData.name}" added to registry successfully!`, { duration: 4000 });
       queryClient.invalidateQueries({ queryKey: ['hospital-admin-nurses'] });
-      queryClient.invalidateQueries({ queryKey: ['hospital-admin','dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['hospital-admin', 'dashboard'] });
       router.push("/hospital-admin/nurses");
     } catch (err: any) {
       toast.error(err.message || "Failed to add nurse to registry", { duration: 5000 });
@@ -281,7 +304,7 @@ function CreateNurse() {
 
   /* ────────────────────────── JSX ──────────────────────────── */
   return (
-    <div className="max-w-5xl mx-auto pb-12 space-y-6">
+    <div className="max-w-7xl mx-auto pb-12 space-y-6">
       {/* header */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-white/5 shadow-sm">
         <div className="flex items-center gap-4">
@@ -345,7 +368,7 @@ function CreateNurse() {
                     className={`w-full px-4 py-2.5 pr-10 border rounded-xl text-sm outline-none transition-all
                       ${touched.password && errors.password ? "border-rose-400 bg-rose-50/30 focus:ring-2 focus:ring-rose-400/20"
                         : touched.password && !errors.password && formData.password ? "border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
-                        : "border-gray-200 dark:border-white/10 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500/20"}`} />
+                          : "border-gray-200 dark:border-white/10 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500/20"}`} />
                   <button type="button" onClick={() => setShowPwd(!showPwd)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-emerald-500 transition-colors">
                     {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -368,24 +391,57 @@ function CreateNurse() {
           {/* Clinical Employment */}
           <Card title="Clinical Employment Details" icon={<Briefcase className="text-indigo-500" />} padding="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Department */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Department / Unit Type<span className="text-rose-500 ml-0.5">*</span></label>
-                <select name="department" value={formData.department} onChange={handleChange} required
-                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none cursor-pointer">
-                  <option value="">Select Department</option>
-                  {unitTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
+
+              {/* ── Assigned Department(s) ── multi-chip picker */}
+              <div className="md:col-span-2 space-y-1.5">
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">
+                  Assigned Department(s) <span className="text-rose-500">*</span>
+                </label>
+                <div className="min-h-[46px] w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all flex flex-wrap gap-2 items-center">
+                  {formData.department.map(dept => (
+                    <span key={dept} className="px-2.5 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-md border border-indigo-100 flex items-center gap-1">
+                      {dept}
+                      <button type="button" onClick={() => handleDepartmentRemove(dept)} className="hover:text-red-600">&times;</button>
+                    </span>
+                  ))}
+                  <select
+                    className="bg-transparent border-none outline-none text-xs font-medium min-w-[80px] text-gray-500 cursor-pointer p-0"
+                    value=""
+                    onChange={(e) => { if (e.target.value) handleDepartmentAdd(e.target.value); }}
+                  >
+                    <option value="">+ Add</option>
+                    {unitTypes.filter(d => !formData.department.includes(d)).map(dept => (
+                      <option key={dept} value={dept}>{dept}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              {/* Assigned Room */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Assigned Room</label>
-                <select name="assignedRoom" value={formData.assignedRoom} onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none cursor-pointer">
-                  <option value="">Select Room (Optional)</option>
-                  {allRooms.filter(r => r.type === formData.department).map(r => <option key={r._id} value={r.label}>{r.label}</option>)}
-                </select>
+              {/* ── Assigned Rooms (Conditional to Types) ── multi-chip picker */}
+              <div className="md:col-span-2 space-y-1.5">
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Assigned Rooms (Conditional to Types)</label>
+                <div className="min-h-[46px] w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all flex flex-wrap gap-2 items-center">
+                  {formData.assignedRoom.map(room => (
+                    <span key={room} className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-md border border-emerald-100 flex items-center gap-1">
+                      {room}
+                      <button type="button" onClick={() => handleRoomRemove(room)} className="hover:text-red-600">&times;</button>
+                    </span>
+                  ))}
+                  <select
+                    className="bg-transparent border-none outline-none text-xs font-medium min-w-[120px] text-gray-500 cursor-pointer p-0"
+                    value=""
+                    onChange={(e) => { if (e.target.value) handleRoomAdd(e.target.value); }}
+                    disabled={formData.department.length === 0}
+                  >
+                    <option value="">+ Add Room</option>
+                    {allRooms
+                      .filter(r => formData.department.includes(r.type) && !formData.assignedRoom.includes(r.label))
+                      .map(room => (
+                        <option key={room._id} value={room.label}>{room.label} ({room.type})</option>
+                      ))}
+                  </select>
+                </div>
+                <p className="text-[10px] text-gray-400 ml-1 italic">Rooms must belong to one of the assigned departments above.</p>
               </div>
 
               <Field label="Designation" {...f("designation")} required placeholder="e.g. Staff Nurse" />
@@ -429,9 +485,8 @@ function CreateNurse() {
               <div className="flex flex-wrap gap-2">
                 {DAYS.map(day => (
                   <button key={day} type="button" onClick={() => toggleWeeklyOff(day)}
-                    className={`px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border ${
-                      formData.weeklyOff.includes(day) ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-gray-50 dark:bg-white/5 text-gray-400 border-gray-100 dark:border-white/10 hover:border-emerald-500/30'}`}>
-                    {day.substring(0,3)}
+                    className={`px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border ${formData.weeklyOff.includes(day) ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-gray-50 dark:bg-white/5 text-gray-400 border-gray-100 dark:border-white/10 hover:border-emerald-500/30'}`}>
+                    {day.substring(0, 3)}
                   </button>
                 ))}
               </div>
@@ -468,7 +523,7 @@ function CreateNurse() {
                     className={`w-full px-4 py-2.5 pr-9 border rounded-xl text-sm uppercase font-bold outline-none transition-all
                       ${touched.panNumber && errors.panNumber ? "border-rose-400 bg-rose-50/30 focus:ring-2 focus:ring-rose-400/20"
                         : touched.panNumber && !errors.panNumber && formData.panNumber ? "border-emerald-400 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-400/20"
-                        : "border-gray-200 dark:border-white/10 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500/20"}`} />
+                          : "border-gray-200 dark:border-white/10 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500/20"}`} />
                   {touched.panNumber && !errors.panNumber && formData.panNumber && <CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500" />}
                 </div>
                 <FieldError msg={touched.panNumber ? errors.panNumber : undefined} />
@@ -485,7 +540,7 @@ function CreateNurse() {
                     className={`w-full px-4 py-2.5 pr-9 border rounded-xl text-sm font-bold outline-none transition-all
                       ${touched.aadharNumber && errors.aadharNumber ? "border-rose-400 bg-rose-50/30 focus:ring-2 focus:ring-rose-400/20"
                         : touched.aadharNumber && !errors.aadharNumber && formData.aadharNumber ? "border-emerald-400 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-400/20"
-                        : "border-gray-200 dark:border-white/10 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500/20"}`} />
+                          : "border-gray-200 dark:border-white/10 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500/20"}`} />
                   {touched.aadharNumber && !errors.aadharNumber && formData.aadharNumber && <CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500" />}
                 </div>
                 <FieldError msg={touched.aadharNumber ? errors.aadharNumber : undefined} />
@@ -516,7 +571,7 @@ function CreateNurse() {
                       className={`w-full px-4 py-2.5 pr-9 border rounded-xl text-sm font-bold outline-none transition-all
                         ${touched.accountNumber && errors.accountNumber ? "border-rose-400 bg-rose-50/30 focus:ring-2 focus:ring-rose-400/20"
                           : touched.accountNumber && !errors.accountNumber && formData.bankDetails.accountNumber ? "border-emerald-400 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-400/20"
-                          : "border-gray-200 dark:border-white/10 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500/20"}`} />
+                            : "border-gray-200 dark:border-white/10 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500/20"}`} />
                     {touched.accountNumber && !errors.accountNumber && formData.bankDetails.accountNumber && <CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500" />}
                   </div>
                   <FieldError msg={touched.accountNumber ? errors.accountNumber : undefined} />
@@ -540,7 +595,7 @@ function CreateNurse() {
                       className={`w-full px-4 py-2.5 pr-9 uppercase border rounded-xl text-sm font-bold outline-none transition-all
                         ${touched.ifscCode && errors.ifscCode ? "border-rose-400 bg-rose-50/30 focus:ring-2 focus:ring-rose-400/20"
                           : touched.ifscCode && !errors.ifscCode && formData.bankDetails.ifscCode ? "border-emerald-400 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-400/20"
-                          : "border-gray-200 dark:border-white/10 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500/20"}`} />
+                            : "border-gray-200 dark:border-white/10 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500/20"}`} />
                     {touched.ifscCode && !errors.ifscCode && formData.bankDetails.ifscCode && <CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500" />}
                   </div>
                   <FieldError msg={touched.ifscCode ? errors.ifscCode : undefined} />
@@ -573,7 +628,7 @@ function CreateNurse() {
                     className={`w-full px-4 py-2.5 pr-9 border rounded-xl text-sm outline-none transition-all
                       ${touched.emergencyContactMobile && errors.emergencyContactMobile ? "border-rose-400 bg-rose-50/30 focus:ring-2 focus:ring-rose-400/20"
                         : touched.emergencyContactMobile && !errors.emergencyContactMobile && formData.emergencyContactMobile ? "border-emerald-400 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-400/20"
-                        : "border-gray-200 dark:border-white/10 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500/20"}`} />
+                          : "border-gray-200 dark:border-white/10 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500/20"}`} />
                   {touched.emergencyContactMobile && !errors.emergencyContactMobile && formData.emergencyContactMobile && <CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500" />}
                 </div>
                 <FieldError msg={touched.emergencyContactMobile ? errors.emergencyContactMobile : undefined} />
@@ -592,14 +647,14 @@ function CreateNurse() {
           <Card title="Academic Qualifications" icon={<Globe className="text-indigo-500" />} padding="p-6">
             <div className="space-y-6">
               {[
-                { label:"Nursing Degrees / Diplomas", temp:tempQ, setTemp:setTempQ, type:'qualification' as const, items:formData.qualifications, key:'qualifications' as const, placeholder:"e.g. B.Sc Nursing, GNM" },
-                { label:"Certifications", temp:tempC, setTemp:setTempC, type:'certification' as const, items:formData.certifications, key:'certifications' as const, placeholder:"e.g. ACLS, BLS" },
+                { label: "Nursing Degrees / Diplomas", temp: tempQ, setTemp: setTempQ, type: 'qualification' as const, items: formData.qualifications, key: 'qualifications' as const, placeholder: "e.g. B.Sc Nursing, GNM" },
+                { label: "Certifications", temp: tempC, setTemp: setTempC, type: 'certification' as const, items: formData.certifications, key: 'certifications' as const, placeholder: "e.g. ACLS, BLS" },
               ].map(({ label, temp, setTemp, type, items, key, placeholder }) => (
                 <div key={type} className="space-y-3">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">{label}</label>
                   <div className="flex gap-2">
                     <input type="text" value={temp} onChange={e => setTemp(e.target.value)}
-                      onKeyDown={e => e.key==='Enter' && (e.preventDefault(), addItem(type))}
+                      onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addItem(type))}
                       placeholder={placeholder}
                       className="flex-1 px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-xs font-medium focus:ring-2 focus:ring-emerald-500/10 outline-none" />
                     <button type="button" onClick={() => addItem(type)} className="p-2.5 bg-emerald-600 text-white rounded-xl active:scale-90 transition-transform"><Plus size={16} /></button>
@@ -623,7 +678,7 @@ function CreateNurse() {
               <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Add Specialized Skill</label>
               <div className="flex gap-2">
                 <input type="text" value={tempS} onChange={e => setTempS(e.target.value)}
-                  onKeyDown={e => e.key==='Enter' && (e.preventDefault(), addItem('skill'))}
+                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addItem('skill'))}
                   placeholder="ICU, Pediatric, etc."
                   className="flex-1 px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-xs font-medium focus:ring-2 focus:ring-emerald-500/10 outline-none" />
                 <button type="button" onClick={() => addItem('skill')} className="p-2.5 bg-emerald-600 text-white rounded-xl active:scale-90 transition-transform"><Plus size={16} /></button>

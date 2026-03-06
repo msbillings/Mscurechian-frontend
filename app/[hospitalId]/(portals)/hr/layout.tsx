@@ -6,30 +6,23 @@ import { useAuthStore } from '@/stores/authStore';
 import {
   LayoutDashboard,
   Users,
-  Calendar,
-  Clock,
-  CreditCard,
   Briefcase,
-  Trophy,
   FileText,
-  LineChart,
   Building2,
   Stethoscope,
   Headphones,
-  Pill,
-  FlaskConical,
   Bell,
-  Activity,
   LogOut,
   Menu,
   X,
 } from "lucide-react";
-import Navbar from "@/components/navbar/Navbar";
 import LogoutModal from "@/components/auth/LogoutModal";
 import { useTenantLink } from "@/hooks/useTenantLink";
 import { getSocket, joinSocketRoom } from "@/lib/integrations/api/socket";
 import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import NotificationCenter from "@/components/navbar/NotificationCenter";
+import HRNavQuickActions from "./components/HRNavQuickActions";
 
 const hrMenu = [
   {
@@ -41,17 +34,8 @@ const hrMenu = [
     ]
   },
   {
-    group: "Operations",
-    items: [
-      { icon: <Calendar size={20} />, label: "Leave Requests", path: "/hr/leaves" },
-      { icon: <Clock size={20} />, label: "Attendance", path: "/hr/attendance" },
-      { icon: <CreditCard size={20} />, label: "Payroll", path: "/hr/payroll" },
-    ]
-  },
-  {
     group: "Development & Compliance",
     items: [
-      { icon: <Trophy size={20} />, label: "Performance", path: "/hr/performance" },
       { icon: <FileText size={20} />, label: "Document Vault", path: "/hr/documents" },
     ]
   },
@@ -219,15 +203,40 @@ export default function HRLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="flex-1 flex flex-col h-full min-w-0 lg:ml-64 relative">
-        <Navbar
-          title="HR Portal"
-          user={hrUser}
-          onMenuClick={() => setIsSidebarOpen(true)}
-          onLogout={() => setIsLogoutModalOpen(true)}
-          className="sticky top-0 z-30 shrink-0"
-          titleHref={getPath('/hr')}
-          showLogo={false}
-        />
+        {/* ── HR Navbar (mirrors Helpdesk pattern) ── */}
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 sticky top-0 z-30 shrink-0 shadow-sm">
+          {/* Mobile hamburger */}
+          <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 text-slate-600">
+            <Menu size={20} />
+          </button>
+
+          {/* CENTER: quick-action tabs */}
+          <div className="flex-1 hidden lg:flex justify-center">
+            <HRNavQuickActions />
+          </div>
+
+          {/* RIGHT: notifications + user */}
+          <div className="flex items-center gap-4">
+            <NotificationCenter />
+            <div className="h-8 w-px bg-slate-100 hidden sm:block" />
+            <div className="flex items-center gap-2.5">
+              <div className="text-right hidden sm:block">
+                <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{hrUser.name}</p>
+                <p className="text-[8px] font-bold text-indigo-600 uppercase tracking-widest mt-0.5">HR Portal</p>
+              </div>
+              <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-sm">
+                {hrUser.name?.charAt(0)}
+              </div>
+              <button
+                onClick={() => setIsLogoutModalOpen(true)}
+                className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                title="Logout"
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+          </div>
+        </header>
 
         <main className="flex-1 overflow-y-auto no-scrollbar">
           {children}

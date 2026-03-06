@@ -533,7 +533,7 @@ export default function AppointmentBooking() {
                     specialization: selectedDoctor.specialties?.[0] || 'General Physician',
                     qualification: selectedDoctor.qualifications?.[0] || 'MBBS, DM',
                     date: new Date(selectedDate).toLocaleDateString(),
-                    time: bookingMode === 'slot' ? selectedSlot : "IN QUEUE",
+                    time: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
                     type: appointmentType.toUpperCase(),
                     notes: notes,
                     appointmentId: appointment.appointmentId || appointment.id || appointment._id || 'APT-' + Math.random().toString(36).substr(2, 9).toUpperCase()
@@ -578,17 +578,19 @@ export default function AppointmentBooking() {
     }
 
     return (
-        <div className="max-w-full mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="max-w-full mx-auto space-y-4 animate-in fade-in duration-500">
 
             {/* HEADER */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200 pb-4 px-4 md:px-0">
-                <div>
-                    <div className="flex items-center gap-2 mb-1.5">
-                        <Link href="/helpdesk" className="p-1.5 bg-slate-100 rounded-lg text-slate-400 hover:text-teal-600 transition-all">
-                            <ArrowLeft size={14} />
-                        </Link>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Medical Scheduling / Appointment Booking</span>
-                    </div>
+            <div className="relative flex items-center border-b border-slate-200 pb-2 px-4 md:px-0 min-h-[52px]">
+                {/* LEFT: Breadcrumb */}
+                <div className="flex items-center gap-2 z-10">
+                    <Link href="/helpdesk" className="p-1.5 bg-slate-100 rounded-lg text-slate-400 hover:text-teal-600 transition-all">
+                        <ArrowLeft size={14} />
+                    </Link>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Medical Scheduling / Appointment Booking</span>
+                </div>
+                {/* CENTER: Title + Subtitle — absolutely centered in the full row */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
                     <h1 className="text-xl font-black text-slate-900 tracking-tight">
                         {registrationType === 'IPD' ? 'IPD Patient Admission' : 'Schedule Appointment'}
                     </h1>
@@ -854,7 +856,11 @@ export default function AppointmentBooking() {
                                             type="date"
                                             value={selectedDate}
                                             min={new Date().toISOString().split('T')[0]}
-                                            onChange={(e) => setSelectedDate(e.target.value)}
+                                            max={new Date().toISOString().split('T')[0]}
+                                            onChange={(e) => {
+                                                const today = new Date().toISOString().split('T')[0];
+                                                if (e.target.value === today) setSelectedDate(today);
+                                            }}
                                             className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all cursor-pointer hover:bg-white"
                                         />
                                     </div>
@@ -954,10 +960,10 @@ export default function AppointmentBooking() {
                     </div>
 
                     {/* RIGHT SIDE: FINALIZATION & REVENUE */}
-                    <div className={`lg:col-span-4 space-y-8 transition-all duration-700 ${!selectedPatient ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
-                        <div className="lg:sticky lg:top-24 space-y-8">
+                    <div className={`lg:col-span-4 space-y-4 transition-all duration-700 ${!selectedPatient ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
+                        <div className="lg:sticky lg:top-24 space-y-4">
                             {/* REVENUE CYCLE */}
-                            <div className="bg-slate-900 rounded-[24px] p-6 text-white space-y-6 shadow-2xl">
+                            <div className="bg-slate-900 rounded-[20px] p-5 text-white space-y-4 shadow-xl">
                                 <div className="flex items-center gap-2 border-b border-white/10 pb-4">
                                     <div className="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-teal-400">
                                         <Receipt size={14} />
@@ -1039,7 +1045,7 @@ export default function AppointmentBooking() {
                                             ) : (
                                                 <div className="space-y-1">
                                                     <h4 className="text-2xl font-black text-white">
-                                                        ₹{selectedDoctor ? (selectedDoctor.consultationFee ?? (selectedDoctor as any).hospitals?.[0]?.consultationFee ?? '0') : '--'}.00
+                                                        ₹{selectedDoctor ? (selectedDoctor.consultationFee ?? (selectedDoctor as any).hospitals?.[0]?.consultationFee ?? '0') : '0'}.00
                                                     </h4>
                                                 </div>
                                             )}

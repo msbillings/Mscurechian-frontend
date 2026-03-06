@@ -31,9 +31,9 @@ export const generatePayslipHtml = (data: any) => {
 
   const monthName = rx.startDate
     ? new Date(rx.startDate).toLocaleString("default", {
-        month: "short",
-        year: "numeric",
-      })
+      month: "short",
+      year: "numeric",
+    })
     : "Pay Period";
   const fullPeriod =
     rx.startDate && rx.endDate
@@ -663,7 +663,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
         @media print {
           @page {
             size: A4;
-            margin: 10mm;
+            margin: 6mm 8mm;
           }
           body {
             margin: 0 !important;
@@ -673,28 +673,30 @@ export const generateClinicalReceiptHtml = (data: any) => {
         body {
           font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
           color: #333;
-          line-height: 1.45;
+          line-height: 1.3;
           margin: 0;
-          padding: 12px;
+          padding: 6px;
           background: white;
-          font-size: 12px;
+          font-size: 11px;
         }
         .receipt-container {
           width: 95%;
           margin: 0 auto;
+          display: flex;
+          flex-direction: column;
+          min-height: 267mm;
         }
-        ${
-          headerHtml
-            ? ""
-            : `
+        ${headerHtml
+      ? ""
+      : `
         .hospital-header {
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 20px;
-          margin-bottom: 60px;
+          margin-bottom: 10px;
           border-bottom: 1.5px solid #000;
-          padding-bottom: 24px;
+          padding-bottom: 8px;
         }
         .hospital-details {
           text-align: left;
@@ -710,7 +712,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
           margin: 4px 0;
         }
         `
-        }
+    }
         .bill-title-row {
           display: flex;
           justify-content: space-between;
@@ -731,15 +733,15 @@ export const generateClinicalReceiptHtml = (data: any) => {
           font-size: 12px;
         }
         .section {
-          margin-bottom: 12px;
+          margin-bottom: 5px;
         }
         .section-header {
-          font-size: 12px;
+          font-size: 10px;
           font-weight: bold;
           text-transform: uppercase;
-          margin-bottom: 5px;
+          margin-bottom: 3px;
           border-bottom: 1px solid #eee;
-          padding-bottom: 3px;
+          padding-bottom: 2px;
         }
         .data-grid {
           width: 100%;
@@ -747,9 +749,9 @@ export const generateClinicalReceiptHtml = (data: any) => {
           margin-bottom: 8px;
         }
         .data-grid td {
-          padding: 5px 8px;
+          padding: 3px 6px;
           border: 1px solid #ddd;
-          font-size: 11px;
+          font-size: 10px;
         }
         .label {
           font-weight: bold;
@@ -766,9 +768,9 @@ export const generateClinicalReceiptHtml = (data: any) => {
         }
         .vitals-grid th, .vitals-grid td {
           border: 1px solid #ddd;
-          padding: 5px 8px;
+          padding: 3px 6px;
           text-align: left;
-          font-size: 11px;
+          font-size: 10px;
         }
         .vitals-grid th {
           background-color: #fcfcfc;
@@ -776,10 +778,12 @@ export const generateClinicalReceiptHtml = (data: any) => {
         .symptoms-box {
           border-left: 4px solid #f59e0b;
           background-color: #fffbeb;
-          padding: 10px;
-          font-size: 12px;
+          padding: 5px 8px;
+          font-size: 10px;
           font-weight: 500;
-          margin-top: 5px;
+          margin-top: 3px;
+          display: inline-block;
+          width: auto;
         }
         .payment-table {
           width: 100%;
@@ -787,10 +791,10 @@ export const generateClinicalReceiptHtml = (data: any) => {
           margin-top: 5px;
         }
         .payment-table th, .payment-table td {
-          padding: 7px;
+          padding: 4px 6px;
           border: 1px solid #ddd;
           text-align: left;
-          font-size: 12px;
+          font-size: 10px;
         }
         .payment-table th {
           background-color: #fcfcfc;
@@ -809,16 +813,14 @@ export const generateClinicalReceiptHtml = (data: any) => {
           color: #10b981;
         }
         .footer {
-          page-break-before: always;
-          margin-top: 30mm;
-          padding-top: 60px;
+          margin-top: 8px;
+          padding-top: 8px;
           border-top: 1px solid #eee;
           font-size: 10px;
           color: #777;
           display: flex;
           justify-content: space-between;
           align-items: flex-end;
-          padding-bottom: 15mm;
         }
         .signatory-box {
           text-align: right;
@@ -830,8 +832,8 @@ export const generateClinicalReceiptHtml = (data: any) => {
           margin-left: auto;
         }
         .footer-wrapper {
-          page-break-before: always;
-          margin-top: 60px;
+          margin-top: auto;
+          padding-top: 10px;
         }
         .no-print {
           display: block;
@@ -869,9 +871,8 @@ export const generateClinicalReceiptHtml = (data: any) => {
       </div>
       <div class="receipt-container">
         <!-- Hospital Header -->
-        ${
-          headerHtml ||
-          `
+        ${headerHtml ||
+    `
         <div class="hospital-header">
           ${hospital.logo ? `<img src="${hospital.logo}" alt="Logo" style="max-height: 85px; width: auto; object-fit: contain;" />` : ""}
           <div class="hospital-details">
@@ -881,7 +882,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
           </div>
         </div>
         `
-        }
+    }
 
         <!-- Bill Title Row -->
         <div class="bill-title-row">
@@ -917,12 +918,15 @@ export const generateClinicalReceiptHtml = (data: any) => {
               <td class="label">Mobile:</td>
               <td class="value">${patient.mobile}</td>
             </tr>
-            <tr>
+            ${patient.email ? `<tr>
               <td class="label">Email:</td>
-              <td class="value">${patient.email || "-"}</td>
+              <td class="value">${patient.email}</td>
               <td class="label">Alt. Contact:</td>
-              <td class="value">${patient.emergencyContact || "-"}</td>
-            </tr>
+              <td class="value">${patient.emergencyContact || '-'}</td>
+            </tr>` : (patient.emergencyContact ? `<tr>
+              <td class="label">Alt. Contact:</td>
+              <td colspan="3" class="value">${patient.emergencyContact}</td>
+            </tr>` : '')}
             <tr>
               <td class="label">Address:</td>
               <td colspan="3" class="value">${patient.address || "-"}</td>
@@ -980,61 +984,37 @@ export const generateClinicalReceiptHtml = (data: any) => {
           </table>
         </div>
 
-        <!-- Allergies & History -->
-        ${
-          (patient.allergies &&
-            patient.allergies.length > 0 &&
-            patient.allergies !== "None" &&
-            patient.allergies !== "NONE") ||
-          (patient.medicalHistory &&
-            patient.medicalHistory !== "None" &&
-            patient.medicalHistory !== "NONE" &&
-            patient.medicalHistory !== "CLEAR")
-            ? `
+        <!-- Medical History & Allergies + Symptoms combined row -->
+        ${((patient.allergies && patient.allergies.length > 0 && patient.allergies !== 'None' && patient.allergies !== 'NONE') ||
+      (patient.medicalHistory && patient.medicalHistory !== 'None' && patient.medicalHistory !== 'NONE' && patient.medicalHistory !== 'CLEAR') ||
+      appointment.notes)
+      ? `
         <div class="section">
-          <div class="section-header">Medical History & Allergies</div>
+          <div class="section-header">Medical History, Allergies &amp; Current Symptoms</div>
           <table class="data-grid">
-            ${
-              patient.allergies &&
-              patient.allergies.length > 0 &&
-              patient.allergies !== "None" &&
-              patient.allergies !== "NONE"
-                ? `
             <tr>
-              <td class="label" style="color: #e11d48;">Allergies:</td>
-              <td colspan="3" class="value" style="color: #e11d48;">${Array.isArray(patient.allergies) ? patient.allergies.join(", ") : patient.allergies}</td>
-            </tr>`
-                : ""
-            }
-            ${
-              patient.medicalHistory &&
-              patient.medicalHistory !== "None" &&
-              patient.medicalHistory !== "NONE" &&
-              patient.medicalHistory !== "CLEAR"
-                ? `
+              ${patient.allergies && patient.allergies.length > 0 && patient.allergies !== 'None' && patient.allergies !== 'NONE'
+        ? `<td class="label" style="color: #e11d48; width:14%;">Allergies:</td>
+                   <td class="value" style="color: #e11d48; width:36%;">
+                     ${Array.isArray(patient.allergies) ? patient.allergies.join(', ') : patient.allergies}
+                   </td>`
+        : `<td class="label" style="width:14%;">Allergies:</td><td class="value" style="width:36%;">-</td>`
+      }
+              ${patient.medicalHistory && patient.medicalHistory !== 'None' && patient.medicalHistory !== 'NONE' && patient.medicalHistory !== 'CLEAR'
+        ? `<td class="label" style="width:14%;">Hist/Issues:</td>
+                   <td class="value" style="width:36%;">${patient.medicalHistory}</td>`
+        : `<td class="label" style="width:14%;">Hist/Issues:</td><td class="value" style="width:36%;">-</td>`
+      }
+            </tr>
+            ${appointment.notes ? `
             <tr>
-              <td class="label">Hist/Issues:</td>
-              <td colspan="3" class="value">${patient.medicalHistory}</td>
-            </tr>`
-                : ""
-            }
+              <td class="label">Symptoms:</td>
+              <td colspan="3" class="value">${appointment.notes}</td>
+            </tr>` : ''}
           </table>
         </div>`
-            : ""
-        }
-
-        <!-- Symptoms -->
-        ${
-          appointment.notes
-            ? `
-        <div class="section">
-          <div class="section-header">Current Symptoms</div>
-          <div class="symptoms-box">
-            ${appointment.notes}
-          </div>
-        </div>`
-            : ""
-        }
+      : ''
+    }
 
         <!-- Payment Summary -->
         <div class="section">
@@ -1047,10 +1027,9 @@ export const generateClinicalReceiptHtml = (data: any) => {
               </tr>
             </thead>
             <tbody>
-              ${
-                data.registrationType === "IPD" &&
-                appointment.type?.includes("Settlement")
-                  ? `
+              ${data.registrationType === "IPD" &&
+      appointment.type?.includes("Settlement")
+      ? `
                 <tr>
                   <td style="font-weight: bold; color: #475569;">Advance Amount</td>
                   <td style="text-align: right; font-weight: bold;">₹ ${Math.round(payment.advanceAmount || 0).toLocaleString()}</td>
@@ -1064,7 +1043,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
                   <td style="text-align: right;">₹ ${Math.round(payment.totalBillAmount || payment.amount + (payment.advanceAmount || 0)).toLocaleString()}</td>
                 </tr>
               `
-                  : `
+      : `
                 <tr>
                   <td>${data.registrationType === "IPD" ? "IPD Admission Fee" : "Consultation Fee (OPD)"}</td>
                   <td style="text-align: right;">₹ ${Math.round(payment.amount).toLocaleString()}</td>
@@ -1074,7 +1053,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
                   <td style="text-align: right;">₹ ${Math.round(payment.amount).toLocaleString()}</td>
                 </tr>
               `
-              }
+    }
             </tbody>
           </table>
           <div class="payment-footer">
@@ -1085,9 +1064,8 @@ export const generateClinicalReceiptHtml = (data: any) => {
 
         <!-- Footer -->
         <div class="footer-wrapper">
-          ${
-            footerHtml ||
-            `
+          ${footerHtml ||
+    `
           <div class="footer">
             <div>
               <p>This is a computer-generated receipt and does not require a signature.</p>
@@ -1100,7 +1078,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
             </div>
           </div>
           `
-          }
+    }
         </div>
       </div>
     </body>
@@ -1279,9 +1257,8 @@ export const generatePrescriptionHtml = (data: any) => {
                     </button>
                 </div>
                 <div class="container">
-                    ${
-                      headerHtml ||
-                      `
+                    ${headerHtml ||
+    `
                     <div class="header">
                         <div class="brand">
                             ${hospital.logo ? `<img src="${hospital.logo}" style="max-height: 70px; width: auto; object-fit: contain;" />` : ""}
@@ -1293,7 +1270,7 @@ export const generatePrescriptionHtml = (data: any) => {
                         </div>
                     </div>
                     `
-                    }
+    }
 
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 1px solid #000; padding-bottom: 10px;">
                         <div style="font-size: 16px; font-weight: 700; text-transform: uppercase; color: #1e40af;">PRESCRIPTION</div>
@@ -1322,16 +1299,15 @@ export const generatePrescriptionHtml = (data: any) => {
                         </div>
                     </div>
 
-                    ${
-                      prescription.diagnosis
-                        ? `
+                    ${prescription.diagnosis
+      ? `
                     <div class="diagnosis-box">
                         <span class="diagnosis-label">Diagnosis:</span>
                         <span class="diagnosis-val">${prescription.diagnosis}</span>
                     </div>
                     `
-                        : ""
-                    }
+      : ""
+    }
 
                     <div class="section-label">Medications</div>
                     <table>
@@ -1346,8 +1322,8 @@ export const generatePrescriptionHtml = (data: any) => {
                         </thead>
                         <tbody>
                             ${medicines
-                              .map(
-                                (med: any) => `
+      .map(
+        (med: any) => `
                             <tr>
                                 <td>
                                     <div class="med-name">${med.name}</div>
@@ -1358,42 +1334,39 @@ export const generatePrescriptionHtml = (data: any) => {
                                 <td class="med-meta">${med.quantity || "-"}</td>
                             </tr>
                             `,
-                              )
-                              .join("")}
+      )
+      .join("")}
                         </tbody>
                     </table>
 
                     <div class="advice-grid">
-                        ${
-                          dietAdvice.length > 0
-                            ? `
+                        ${dietAdvice.length > 0
+      ? `
                         <div>
                             <div class="section-label" style="border-bottom: 1px solid #eee; margin-top: 10px;">Advice</div>
                             <ul class="advice-list">
                                 ${dietAdvice
-                                  .filter((i: string) => i.trim())
-                                  .map((d: string) => `<li>${d}</li>`)
-                                  .join("")}
+        .filter((i: string) => i.trim())
+        .map((d: string) => `<li>${d}</li>`)
+        .join("")}
                             </ul>
                         </div>
                         `
-                            : ""
-                        }
+      : ""
+    }
                     </div>
 
-                    ${
-                      prescription.advice
-                        ? `
+                    ${prescription.advice
+      ? `
                     <div class="follow-up">
                         <strong>Advice / Follow Up:</strong> ${prescription.advice}
                     </div>
                     `
-                        : ""
-                    }
+      : ""
+    }
 
-                    ${
-                      footerHtml ||
-                      `
+                    ${footerHtml ||
+    `
                     <div class="footer">
                         <div class="footer-l">
                             <span>Generated by MsCurechain Systems</span>
@@ -1405,7 +1378,7 @@ export const generatePrescriptionHtml = (data: any) => {
                         </div>
                     </div>
                     `
-                    }
+    }
                 </div>
             </body>
             </html>
@@ -1514,16 +1487,15 @@ export const generateLabTokenHtml = (data: any) => {
                 </button>
             </div>
             <div class="container">
-              ${
-                headerHtml ||
-                `
+              ${headerHtml ||
+    `
               <div class="header">
                   <h1 style="color: #9333ea; margin: 0; font-size: 24px;">LAB REQUISITION</h1>
                   <h2 style="margin: 8px 0; font-size: 18px;">${hospital.name || "CureChain Medical Center"}</h2>
                   <p style="margin: 4px 0; font-size: 12px; color: #6b7280;">Department of Pathology & Radiodiagnosis</p>
               </div>
               `
-              }
+    }
 
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;">
                   <div>
@@ -1557,9 +1529,9 @@ export const generateLabTokenHtml = (data: any) => {
                 </thead>
                 <tbody>
                   ${tests
-                    .filter((t: any) => t.name.trim())
-                    .map(
-                      (test: any, idx: number) => `
+      .filter((t: any) => t.name.trim())
+      .map(
+        (test: any, idx: number) => `
                     <tr>
                       <td>${idx + 1}</td>
                       <td style="font-weight: bold;">${test.name}</td>
@@ -1568,33 +1540,31 @@ export const generateLabTokenHtml = (data: any) => {
                       <td style="text-align: right; font-weight: 600;">₹${(parseFloat(String(test.price || test.testPrice || test.amount || test.test?.price || test.testId?.price || 0)) || 0).toFixed(2)}</td>
                     </tr>
                   `,
-                    )
-                    .join("")}
+      )
+      .join("")}
                 </tbody>
               </table>
 
-              ${
-                notes
-                  ? `<div style="background: #fef3c7; padding: 12px; border-left: 4px solid #f59e0b; margin: 16px 0;">
+              ${notes
+      ? `<div style="background: #fef3c7; padding: 12px; border-left: 4px solid #f59e0b; margin: 16px 0;">
                 <p style="margin: 0; font-weight: bold; font-size: 12px;">Physician Remarks:</p>
                 <p style="margin: 4px 0 0 0; font-style: italic;">${notes}</p>
               </div>`
-                  : ""
-              }
+      : ""
+    }
 
               <div style="text-align: right; margin-top: 50px;">
                 <div style="width: 200px; border-bottom: 1.5px solid #000; margin-left: auto; margin-bottom: 6px;"></div>
                 <p style="margin: 0; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #475569;">Medical Officer Signature</p>
               </div>
 
-              ${
-                footerHtml ||
-                `
+              ${footerHtml ||
+    `
               <div style="border-top: 1px solid #e5e7eb; margin-top: 40px; padding-top: 8px; text-align: center; font-size: 8px; color: #9ca3af;">
                 <p style="margin: 0;">Generated by MsCureChain • ${new Date().toLocaleString()}</p>
               </div>
               `
-              }
+    }
             </div>
           </body>
           </html>

@@ -102,7 +102,7 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
             id: 'prescriptions' as TabType,
             label: 'Medication',
             icon: Pill,
-            count: dashboardData?.prescriptions?.count || 0,
+            count: (dashboardData?.prescriptions?.data || []).filter(p => p.displayType !== 'Hospital Administration').length,
             color: 'green',
         },
         {
@@ -185,20 +185,29 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-6 space-y-4 sm:space-y-6">
+        <div className="max-w-7xl mx-auto px-0 sm:px-4 lg:px-6 py-2 sm:py-6 space-y-3 sm:space-y-6">
             {/* Simple Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-4 sm:pb-6 border-b border-gray-100 dark:border-white/5">
-                <div>
-                    <h1 className="text-lg sm:text-xl font-black text-gray-950 dark:text-white uppercase tracking-tight italic flex items-center gap-2">
-                        <div className="w-1 h-6 sm:w-1.5 sm:h-8 bg-blue-600 rounded-full" />
-                        Health <span className="text-blue-600">Records</span>
-                    </h1>
-                    <p className="text-gray-500 dark:text-gray-400 font-bold uppercase tracking-[0.2em] text-[8px] sm:text-[10px] mt-1 ml-0.5">
-                        Your Personal Medical History
-                    </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 pb-3 sm:pb-6 border-b border-gray-100 dark:border-white/5">
+                <div className="flex items-center justify-between sm:block">
+                    <div>
+                        <h1 className="text-base sm:text-xl font-black text-gray-950 dark:text-white uppercase tracking-tight italic flex items-center gap-2">
+                            <div className="w-1 h-5 sm:w-1.5 sm:h-8 bg-blue-600 rounded-full" />
+                            Health <span className="text-blue-600">Records</span>
+                        </h1>
+                        <p className="text-gray-500 dark:text-gray-400 font-bold uppercase tracking-[0.2em] text-[7px] sm:text-[10px] mt-0.5 ml-0.5">
+                            Your Personal Medical History
+                        </p>
+                    </div>
+
+                    <div className="sm:hidden flex items-center gap-2 bg-gray-50 dark:bg-white/5 px-2 py-1 rounded-lg border border-gray-100 dark:border-white/5">
+                        <UserCircle className="w-3.5 h-3.5 text-blue-600" />
+                        <span className="font-black text-gray-900 dark:text-white uppercase tracking-tight italic text-[10px]">
+                            {dashboardData?.profile?.user?.name?.split(' ')[0] || 'Member'}
+                        </span>
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-white/5 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-gray-200/50 dark:border-white/5 shadow-sm">
+                <div className="hidden sm:flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-white/5 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-gray-200/50 dark:border-white/5 shadow-sm">
                     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
                         <UserCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
@@ -212,25 +221,25 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
 
                 <button
                     onClick={() => setIsEmergencyModalOpen(true)}
-                    className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest shadow-lg shadow-red-500/20 active:scale-95 transition-all outline-none animate-pulse"
+                    className="flex items-center justify-center gap-2 px-4 py-2 sm:py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl sm:rounded-2xl font-black text-[9px] sm:text-xs uppercase tracking-widest shadow-lg shadow-red-500/20 active:scale-95 transition-all outline-none animate-pulse"
                 >
-                    <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4" />
                     Emergency
                 </button>
             </div>
 
             {/* Hospital Switcher Section */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-[24px] border border-slate-200/50 dark:border-white/5 shadow-sm">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-white dark:bg-gray-900 border border-slate-200 dark:border-white/10 flex items-center justify-center text-blue-600 shadow-sm">
-                        <Building2 className="w-6 h-6" />
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 sm:p-4 bg-slate-50 dark:bg-white/5 rounded-[20px] sm:rounded-[24px] border border-slate-200/50 dark:border-white/5 shadow-sm">
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white dark:bg-gray-900 border border-slate-200 dark:border-white/10 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+                        <Building2 className="w-5 h-5 sm:w-6 sm:h-6" />
                     </div>
                     <div>
-                        <h2 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tighter italic">
+                        <h2 className="text-xs sm:text-sm font-black text-slate-800 dark:text-white uppercase tracking-tighter italic">
                             Facility <span className="text-blue-600">Context</span>
                         </h2>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">
-                            {selectedHospitalId ? 'Viewing Single Hospital Data' : 'Viewing Global Medical History'}
+                        <p className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-0.5">
+                            {selectedHospitalId ? 'Viewing Single Hospital' : 'Viewing Global History'}
                         </p>
                     </div>
                 </div>
@@ -307,7 +316,7 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
             </div>
 
             {/* Responsive Tabs - More Compact on Mobile */}
-            <div className="sticky top-16 sm:top-20 z-30">
+            <div className="sticky top-16 sm:top-20 z-10">
                 <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-xl sm:rounded-2xl p-1 sm:p-1.5 shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-white/10 flex overflow-x-auto no-scrollbar md:grid md:grid-cols-4 gap-1">
                     {tabs.map((tab) => {
                         const Icon = tab.icon;

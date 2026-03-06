@@ -1,30 +1,30 @@
 'use client';
- 
+
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, X, Navigation, Loader2, Send, Activity, ShieldAlert, Check, Building2 } from 'lucide-react';
 import { emergencyService } from '@/lib/integrations/services/emergency.service';
 import toast from 'react-hot-toast';
- 
+
 interface EmergencyModalProps {
     isOpen: boolean;
     onClose: () => void;
     patientProfile: any;
     availableHospitals?: any[];
 }
- 
+
 const EMERGENCY_TYPES = [
     "Chest Pain", "Breathing Difficulty", "Severe Injury", "Unconsciousness",
     "High Fever", "Severe Bleeding", "Poisoning", "Other"
 ];
- 
+
 const SEVERITY_LEVELS = [
     { value: "critical", label: "Critical", color: "bg-red-600", bg: "bg-red-50" },
     { value: "high", label: "High", color: "bg-orange-500", bg: "bg-orange-50" },
     { value: "medium", label: "Medium", color: "bg-yellow-500", bg: "bg-yellow-50" },
     { value: "low", label: "Low", color: "bg-blue-500", bg: "bg-blue-50" }
 ];
- 
+
 export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose, patientProfile, availableHospitals = [] }) => {
     const [loading, setLoading] = useState(false);
     const [selectedHospitalIds, setSelectedHospitalIds] = useState<string[]>([]);
@@ -44,23 +44,23 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose,
             if (primaryId) {
                 setSelectedHospitalIds([primaryId.toString()]);
             } else if (availableHospitals.length > 0) {
-                 // Or pre-select all if no primary
-                 setSelectedHospitalIds(availableHospitals.map(h => h._id.toString()));
+                // Or pre-select all if no primary
+                setSelectedHospitalIds(availableHospitals.map(h => h._id.toString()));
             }
         }
     }, [isOpen, availableHospitals, patientProfile]);
- 
+
     if (!isOpen) return null;
 
     const toggleHospital = (id: string) => {
-        setSelectedHospitalIds(prev => 
+        setSelectedHospitalIds(prev =>
             prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
         );
     };
- 
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!formData.emergencyType || !formData.description || !formData.currentLocation) {
             toast.error("Please fill all mandatory fields");
             return;
@@ -70,15 +70,15 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose,
             toast.error("Please select at least one hospital to alert");
             return;
         }
- 
+
         try {
             setLoading(true);
-            
+
             await emergencyService.createPatientEmergencyRequest({
                 ...formData,
                 hospitalIds: selectedHospitalIds
             });
- 
+
             toast.success(`Emergency alert broadcasted to ${selectedHospitalIds.length} hospital(s)!`, {
                 duration: 6000,
                 icon: '🚨'
@@ -90,7 +90,7 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose,
             setLoading(false);
         }
     };
- 
+
     return (
         <AnimatePresence>
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
@@ -98,10 +98,10 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose,
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[28px] shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800"
+                    className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[28px] shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 max-h-[90vh] flex flex-col"
                 >
                     {/* Header */}
-                    <div className="bg-red-600 p-6 text-white relative overflow-hidden">
+                    <div className="bg-red-600 p-4 sm:p-6 text-white relative overflow-hidden shrink-0">
                         <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12">
                             <ShieldAlert size={120} />
                         </div>
@@ -115,7 +115,7 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose,
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">Instant Helpdesk Response</p>
                                 </div>
                             </div>
-                            <button 
+                            <button
                                 onClick={onClose}
                                 className="p-2 hover:bg-white/20 rounded-full transition-colors"
                             >
@@ -123,8 +123,8 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose,
                             </button>
                         </div>
                     </div>
- 
-                    <form onSubmit={handleSubmit} className="p-6 space-y-5">
+
+                    <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto custom-scrollbar">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {/* Emergency Type */}
                             <div className="space-y-1.5">
@@ -141,7 +141,7 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose,
                                     ))}
                                 </select>
                             </div>
- 
+
                             {/* Severity */}
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Severity Level</label>
@@ -151,11 +151,10 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose,
                                             key={level.value}
                                             type="button"
                                             onClick={() => setFormData(prev => ({ ...prev, severity: level.value as any }))}
-                                            className={`py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
-                                                formData.severity === level.value 
-                                                ? `${level.color} border-transparent text-white shadow-lg` 
-                                                : `bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400`
-                                            }`}
+                                            className={`py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${formData.severity === level.value
+                                                    ? `${level.color} border-transparent text-white shadow-lg`
+                                                    : `bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400`
+                                                }`}
                                         >
                                             {level.label}
                                         </button>
@@ -163,7 +162,7 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose,
                                 </div>
                             </div>
                         </div>
- 
+
                         {/* Current Location */}
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 flex items-center gap-1.5">
@@ -178,7 +177,7 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose,
                                 required
                             />
                         </div>
- 
+
                         {/* Hospital Selection */}
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 flex items-center gap-1.5">
@@ -192,11 +191,10 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose,
                                             key={hospital._id}
                                             type="button"
                                             onClick={() => toggleHospital(hospital._id.toString())}
-                                            className={`flex items-center justify-between p-3 rounded-2xl border-2 transition-all ${
-                                                isSelected
+                                            className={`flex items-center justify-between p-3 rounded-2xl border-2 transition-all ${isSelected
                                                     ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 text-blue-700 dark:text-blue-300'
                                                     : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
-                                            }`}
+                                                }`}
                                         >
                                             <div className="flex items-center gap-2 overflow-hidden">
                                                 <Building2 size={14} className={isSelected ? 'text-blue-500' : 'text-slate-400'} />
@@ -227,7 +225,7 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose,
                                 required
                             />
                         </div>
- 
+
                         {/* Submit */}
                         <div className="pt-2">
                             <button
