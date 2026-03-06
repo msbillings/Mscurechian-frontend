@@ -534,9 +534,9 @@ export default function WardStatus() {
                         />
                     </div>
 
-                    <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                         <select
-                            className="flex-1 sm:flex-none px-3 sm:px-6 py-2 sm:py-3 bg-slate-50 border border-slate-100 rounded-xl text-[8px] sm:text-[10px] font-black uppercase tracking-widest outline-none appearance-none cursor-pointer"
+                            className="flex-1 min-w-[calc(50%-0.25rem)] sm:flex-none sm:min-w-0 px-3 sm:px-6 py-2 sm:py-3 bg-slate-50 border border-slate-100 rounded-xl text-[8px] sm:text-[10px] font-black uppercase tracking-widest outline-none appearance-none cursor-pointer"
                             value={filters.status}
                             onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
                         >
@@ -546,7 +546,7 @@ export default function WardStatus() {
                             <option value="Cleaning">Cleaning</option>
                         </select>
                         <select
-                            className="flex-1 sm:flex-none px-3 sm:px-6 py-2 sm:py-3 bg-slate-50 border border-slate-100 rounded-xl text-[8px] sm:text-[10px] font-black uppercase tracking-widest outline-none appearance-none cursor-pointer"
+                            className="flex-1 min-w-[calc(50%-0.25rem)] sm:flex-none sm:min-w-0 px-3 sm:px-6 py-2 sm:py-3 bg-slate-50 border border-slate-100 rounded-xl text-[8px] sm:text-[10px] font-black uppercase tracking-widest outline-none appearance-none cursor-pointer"
                             value={filters.type}
                             onChange={(e) => {
                                 setFilters(prev => ({ ...prev, type: e.target.value, room: '' }));
@@ -567,7 +567,7 @@ export default function WardStatus() {
                             }}
                             rooms={allRooms.filter(r => nurseRooms.length === 0 || nurseRooms.includes(r.label))}
                             typeFilter={filters.type}
-                            className="flex-1 sm:flex-none"
+                            className="w-full sm:flex-1 sm:w-auto"
                         />
                     </div>
 
