@@ -30,6 +30,7 @@ const PUBLIC_PATHS = [
   "/patient", // Added back to prevent it being treated as a hospitalId
   "/ambulance",
   "/about",
+  "/blogs",
   "/features",
   "/pricing",
   "/solutions",
@@ -95,6 +96,7 @@ function isValidHospitalId(segment: string): boolean {
     "admin",
     "ambulance",
     "about",
+    "blogs",
     "features",
     "pricing",
     "solutions",

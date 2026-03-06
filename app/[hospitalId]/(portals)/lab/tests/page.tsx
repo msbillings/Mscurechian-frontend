@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Edit2, Trash2, Search, FlaskConical, LayoutGrid, ListFilter, Database, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, FlaskConical, LayoutGrid, ListFilter, Database, ChevronLeft, ChevronRight, FileSpreadsheet } from 'lucide-react';
 import { LabTestService } from '@/lib/integrations/services/labTest.service';
 import { DepartmentService } from '@/lib/integrations/services/department.service';
 import { getTestsByCategory } from '@/lib/constants/labTestsConfig';
@@ -64,60 +64,7 @@ function TestListPage() {
         }
     };
 
-    const handleSeed = async () => {
-        if (!confirm("This will populate the database with default lab tests. Proceed?")) return;
-        setLoading(true);
-        const loadingToast = toast.loading("Seeding database...");
 
-        try {
-            const categories = getTestsByCategory();
-            const existingDepts = await DepartmentService.getDepartments();
-
-            let addedTestsCount = 0;
-
-            for (const [deptName, testNames] of Object.entries(categories)) {
-                let deptId = existingDepts.find(d => d.name === deptName)?._id;
-
-                if (!deptId) {
-                    try {
-                        const newDept = await DepartmentService.addDepartment({
-                            name: deptName,
-                            description: `${deptName} Department`
-                        });
-                        deptId = newDept.department._id;
-                    } catch (err) {
-                        console.error(`Failed to create department ${deptName}`, err);
-                        continue;
-                    }
-                }
-
-                for (const testName of testNames) {
-                    try {
-                        await LabTestService.addTest({
-                            testName: testName,
-                            departmentId: deptId,
-                            price: 500,
-                            sampleType: "Blood",
-                            turnaroundTime: "24 Hours",
-                            isActive: true
-                        });
-                        addedTestsCount++;
-                    } catch (err) {
-                        console.error(`Failed to create test ${testName}`, err);
-                    }
-                }
-            }
-
-            toast.success(`Successfully added ${addedTestsCount} tests!`, { id: loadingToast });
-            fetchTests();
-
-        } catch (error: any) {
-            console.error("Seeding failed", error);
-            toast.error(error.message || "Seeding failed", { id: loadingToast });
-        } finally {
-            setLoading(false);
-        }
-    };
 
     // Derived Lists
     const uniqueDepartments = Array.from(new Set(tests.map(t =>
@@ -170,15 +117,7 @@ function TestListPage() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                        {tests.length === 0 ? (
-                            <button
-                                onClick={handleSeed}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium shadow-sm transition-all"
-                            >
-                                <Database className="w-4 h-4" />
-                                Seed Catalog
-                            </button>
-                        ) : (
+                        {tests.length > 0 && (
                             <button
                                 onClick={handleDeleteAll}
                                 className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-900 text-rose-600 dark:text-rose-400 rounded-lg text-sm font-medium border border-rose-200 dark:border-rose-900/30 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all"
@@ -187,6 +126,13 @@ function TestListPage() {
                                 Clear All
                             </button>
                         )}
+                        <button
+                            onClick={() => router.push('/lab/tests/bulk-import')}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium shadow-sm transition-all"
+                        >
+                            <FileSpreadsheet className="w-4 h-4" />
+                            Bulk Import
+                        </button>
                         <button
                             onClick={() => router.push('/lab/tests/manage')}
                             className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow-sm transition-all"

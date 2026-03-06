@@ -126,7 +126,7 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
             notes: patient.symptoms // Map symptoms to appointment notes as existing receipts do
           },
           payment,
-          registrationType: appointment.type === 'IPD' ? 'IPD' : 'OPD',
+          registrationType: appointment.type?.toUpperCase().includes('IPD') || appointment.type?.toUpperCase().includes('DISCHARGE') ? 'IPD' : 'OPD',
           headerHtml,
           footerHtml,
           returnUrl: '#'

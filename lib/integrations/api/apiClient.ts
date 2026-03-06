@@ -20,20 +20,35 @@ const isValidHospitalId = (segment: string): boolean => {
 
   // 2. Reserved system segments that are NOT hospital IDs
   const reserved = [
+    // Auth & system
     "auth",
+    "api",
+    "dashboard",
+    "login",
+    "admin",
+    "super-admin",
+    // Portal roles
     "pharmacy",
     "pharma",
     "lab",
     "nurse",
     "hr",
-    "super-admin",
-    "admin",
-    "dashboard",
-    "login",
-    "api",
     "emergency",
     "discharge",
     "helpdesk",
+    "doctor",
+    "staff",
+    // Public landing pages — must NOT be treated as hospital slugs
+    "about",
+    "blogs",
+    "features",
+    "pricing",
+    "solutions",
+    "portals",
+    "support",
+    "coming-soon",
+    "ambulance",
+    "patient",
   ];
   if (reserved.includes(segment.toLowerCase())) return false;
 

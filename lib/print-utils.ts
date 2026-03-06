@@ -882,8 +882,8 @@ export const generateClinicalReceiptHtml = (data: any) => {
             <div class="bill-subtitle">${data.registrationType === "IPD" ? "Hospital Admission Document" : "Appointment Receipt"}</div>
           </div>
           <div class="bill-meta">
-            <div><strong>Date:</strong> ${appointment.date}</div>
-            <div><strong>Bill No:</strong> ${appointment.appointmentId}</div>
+            <div><strong>Date:</strong> ${payment.date ? new Date(payment.date).toLocaleDateString('en-GB') : appointment.date}</div>
+            <div><strong>Bill No:</strong> ${payment.receiptNumber || payment.receiptNo || appointment.appointmentId}</div>
           </div>
         </div>
 
@@ -929,19 +929,19 @@ export const generateClinicalReceiptHtml = (data: any) => {
             <tr>
               <td class="label">Consulting Doctor:</td>
               <td class="value">${appointment.doctorName?.toLowerCase().startsWith("dr") ? appointment.doctorName : `Dr. ${appointment.doctorName || "Assigned Physician"}`}</td>
-              <td class="label">Appointment Date:</td>
+              <td class="label">${data.registrationType === "IPD" ? "Admission Date:" : "Appointment Date:"}</td>
               <td class="value">${appointment.date}</td>
             </tr>
             <tr>
               <td class="label">Qualification:</td>
               <td class="value">${appointment.qualification || "MBBS, DM"}</td>
-              <td class="label">Appointment Time:</td>
+              <td class="label">${data.registrationType === "IPD" ? "Admission Time:" : "Appointment Time:"}</td>
               <td class="value">${appointment.time || "IN QUEUE"}</td>
             </tr>
             <tr>
               <td class="label">Specialization:</td>
               <td class="value">${appointment.specialization || "General Doctor"}</td>
-              <td class="label">Visit Type:</td>
+              <td class="label">${data.registrationType === "IPD" ? "Admission Type:" : "Visit Type:"}</td>
               <td class="value">${appointment.type || "Consultation"}</td>
             </tr>
           </table>

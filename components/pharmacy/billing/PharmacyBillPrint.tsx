@@ -378,7 +378,6 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
                         <th style={{ ...styles.th, width: '70px' }}>MRP</th>
                         <th style={{ ...styles.th, width: '50px' }}>Disc%</th>
                         <th style={{ ...styles.th, width: '50px' }}>GST%</th>
-                        <th style={{ ...styles.th, width: '80px', textAlign: 'right' }}>Amount</th>
                         <th style={{ ...styles.th, width: '80px', textAlign: 'right', borderRight: 'none' }}>Amount</th>
                     </tr>
                 </thead>
@@ -418,7 +417,6 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
                                 <td style={styles.td}>₹{mrp.toFixed(2)}</td>
                                 <td style={styles.td}>{disc}%</td>
                                 <td style={styles.td}>{gst}%</td>
-                                <td style={{ ...styles.td, ...styles.tdRight }}>₹{amount.toFixed(2)}</td>
                                 <td style={{ ...styles.td, ...styles.tdRight, borderRight: 'none', fontWeight: 800 }}>₹{amount.toFixed(2)}</td>
                             </tr>
                         );
@@ -488,7 +486,7 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
                 </div>
             </div>
 
-            {/* Signatory Section */}
+            {/* Footer */}
             <div style={styles.footerNote}>
                 <div>
                     <span style={{ fontSize: '8px', color: textMuted }}>Printed: {new Date().toLocaleString()}</span>
@@ -496,9 +494,7 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
                 <div style={{ textAlign: 'center' }}>
                     <span style={{ fontSize: '8px', fontWeight: 600 }}>Computer Generated Invoice</span>
                 </div>
-                <div>
-                    <div style={styles.signatory}>Authorized Signatory</div>
-                </div>
+                <div />
             </div>
         </div>
     );

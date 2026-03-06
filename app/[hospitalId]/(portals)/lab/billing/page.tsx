@@ -419,7 +419,7 @@ function LabBillingPage() {
                                             if (isSelected) {
                                                 setSelectedTests(selectedTests.filter(t => t.testName !== currentName));
                                             } else {
-                                                setSelectedTests([...selectedTests, { testName: currentName, price: test.price, discount: 0 }]);
+                                                setSelectedTests([...selectedTests, { testName: currentName, testId: test._id, price: test.price, discount: 0 }]);
                                             }
                                         }}
                                         className={`p-4 rounded-xl border cursor-pointer transition-all group ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 ring-1 ring-indigo-500/20' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-sm'}`}

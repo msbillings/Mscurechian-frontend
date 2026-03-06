@@ -405,7 +405,14 @@ const IPDBillingPage = () => {
                                                 }}
                                                 className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${med.processed ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-primary-theme text-white hover:bg-primary-theme/90'}`}
                                             >
-                                                {med.processed ? "Processed" : "Process"}
+                                                {med.processed ? "Processed" :
+                                                    processingMedIndex === i ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                                            Processing...
+                                                        </div>
+                                                    ) : "Process"
+                                                }
                                             </button>
                                         </div>
                                     );

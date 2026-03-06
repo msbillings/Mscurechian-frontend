@@ -56,6 +56,13 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
     useEffect(() => {
         if (isOpen && admissionId) {
             fetchSummary();
+            // ── Auto-refresh every 5s so lab/pharma charges appear without manual reload ──
+            const interval = setInterval(() => {
+                ipdService.getBillSummary(admissionId)
+                    .then(data => setSummary(data))
+                    .catch(() => {});
+            }, 5000);
+            return () => clearInterval(interval);
         }
     }, [isOpen, admissionId]);
 
@@ -71,6 +78,7 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
             setLoading(false);
         }
     };
+
 
     const handleAddCharge = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -219,88 +227,176 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                             {/* Financial Summary Tab */}
                             {activeTab === 'summary' && (
                                 <div className="space-y-8">
-                                    {/* Stat Grid */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <div className="p-3 bg-slate-50 rounded-[16px] border border-slate-100 text-center space-y-0.5">
-                                            <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Total Bill</p>
-                                            <p className="text-lg font-black text-slate-900">₹{Math.round(summary?.financials?.finalAmount || 0).toLocaleString()}</p>
-                                        </div>
-                                        <div className="p-3 bg-teal-50 rounded-[16px] border border-teal-100 text-center space-y-0.5">
-                                            <p className="text-[7px] font-black text-teal-600 uppercase tracking-widest">Advance Paid</p>
-                                            <p className="text-lg font-black text-teal-700">₹{Math.round(summary?.financials?.totalAdvance || 0).toLocaleString()}</p>
-                                        </div>
-                                        <div className={`p-3 rounded-[16px] border text-center space-y-0.5 ${Math.round(summary?.financials?.balance || 0) > 0 ? 'bg-rose-50 border-rose-100' : 'bg-emerald-50 border-emerald-100'}`}>
-                                            <p className={`text-[7px] font-black uppercase tracking-widest ${Math.round(summary?.financials?.balance || 0) > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>Balance Due</p>
-                                            <p className={`text-lg font-black ${Math.round(summary?.financials?.balance || 0) > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>₹{Math.max(0, Math.round(summary?.financials?.balance || 0)).toLocaleString()}</p>
-                                        </div>
-                                    </div>
+                                    {/* ── Step-by-step Billing Ledger ── */}
+                                    {(() => {
+                                        const bedTotal       = Math.round(summary?.bedCharges?.total || 0);
+                                        const catBreakdown   = summary?.extraCharges?.categoryBreakdown || {};
 
-                                    {/* Detailed Breakdown */}
-                                    <div className="bg-white rounded-[16px] border border-slate-200 overflow-hidden shadow-sm">
-                                        <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-                                            <h3 className="text-[9px] font-black uppercase tracking-tight text-slate-700">Statement Breakdown</h3>
-                                            <div className="text-[6px] font-black text-slate-400 uppercase tracking-widest">Live Ledger</div>
-                                        </div>
-                                        <div className="p-3 space-y-2">
-                                            <div className="flex justify-between items-center pb-3 border-b border-slate-50">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center shadow-sm"><Tag size={14} /></div>
-                                                    <div>
-                                                        <p className="text-[9px] font-black text-slate-800 uppercase leading-none">Bed Charges</p>
-                                                        <p className="text-[7px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Days @ Daily Rate</p>
-                                                    </div>
+                                        // Pharmacy medicine bill — ONLY from pharmacy issuances (category "Pharmacy", positive amounts)
+                                        const pharmaTotal    = Math.round(catBreakdown['Pharmacy'] || 0);
+
+                                        // Other charges: Nursing, OT, Admission, Lab, Misc etc. — everything except Pharmacy
+                                        const otherExtra     = Math.round(
+                                            Object.entries(catBreakdown)
+                                                .filter(([cat]) => cat !== 'Pharmacy')
+                                                .reduce((sum, [, val]) => sum + (val as number), 0)
+                                        );
+                                        const otherExtraCats = Object.keys(catBreakdown)
+                                            .filter(c => c !== 'Pharmacy');
+
+                                        // Total = Bed + Pharma + Other (Admission is part of Other — already offset by Advance)
+                                        const totalAmount    = bedTotal + pharmaTotal + otherExtra;
+                                        const returnCredits  = Math.round(summary?.financials?.returnCredits || 0);
+                                        const netAfterReturn = Math.max(0, totalAmount - returnCredits);
+                                        const discount       = Math.round(summary?.financials?.discount || 0);
+                                        const afterDiscount  = Math.max(0, netAfterReturn - discount);
+                                        const totalAdvance   = Math.round(summary?.financials?.totalAdvance || 0);
+                                        const finalBill      = Math.max(0, afterDiscount - totalAdvance);
+                                        const overpaid       = Math.max(0, totalAdvance - afterDiscount);
+
+                                        // Row helper
+                                        const Row = ({ label, sub, amount, color = 'text-slate-800', bg = '' }: {
+                                            label: string; sub?: string; amount: string; color?: string; bg?: string;
+                                        }) => (
+                                            <div className={`flex justify-between items-center px-3 py-2 rounded-lg ${bg}`}>
+                                                <div>
+                                                    <span className={`text-[8px] font-bold uppercase ${color}`}>{label}</span>
+                                                    {sub && <span className="ml-2 text-[6px] font-black text-slate-400 uppercase tracking-widest">{sub}</span>}
                                                 </div>
-                                                <p className="text-xs font-black text-slate-900">₹{Math.round(summary?.bedCharges?.total || 0).toLocaleString()}</p>
+                                                <span className={`text-[9px] font-black ${color}`}>{amount}</span>
                                             </div>
-                                            <div className="flex justify-between items-center pb-3 border-b border-slate-50">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center shadow-sm"><AlertCircle size={14} /></div>
-                                                    <div>
-                                                        <p className="text-[9px] font-black text-slate-800 uppercase leading-none">Extra Charges</p>
-                                                        <p className="text-[7px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Nursing, OT, Lab, Misc</p>
-                                                    </div>
-                                                </div>
-                                                <p className="text-xs font-black text-slate-900">₹{Math.round(summary?.extraCharges?.total || 0).toLocaleString()}</p>
+                                        );
+
+                                        const Divider = ({ label }: { label: string }) => (
+                                            <div className="border-t border-dashed border-slate-200 pt-3 mt-1 mb-2">
+                                                <p className="text-[6px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
                                             </div>
+                                        );
 
-                                            {summary?.financials?.returnCredits > 0 && (
-                                                <div className="flex justify-between items-center pb-3 border-b border-slate-50 text-rose-600 bg-rose-50/30 px-2 py-1.5 rounded-lg -mx-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-7 h-7 bg-white text-rose-500 rounded-lg flex items-center justify-center shadow-sm border border-rose-100"><History size={14} /></div>
-                                                        <div>
-                                                            <p className="text-[9px] font-black uppercase leading-none">Medicine Returns</p>
-                                                            <p className="text-[7px] font-bold opacity-70 mt-0.5 uppercase tracking-widest italic">Subtracted Credit</p>
-                                                        </div>
-                                                    </div>
-                                                    <p className="text-xs font-black">- ₹{Math.round(summary.financials.returnCredits).toLocaleString()}</p>
-                                                </div>
-                                            )}
+                                        const SubTotal = ({ label, amount, color = 'text-slate-900', bg = 'bg-slate-100' }: {
+                                            label: string; amount: string; color?: string; bg?: string;
+                                        }) => (
+                                            <div className={`flex justify-between items-center px-3 py-2 rounded-lg mt-2 ${bg}`}>
+                                                <span className={`text-[8px] font-black uppercase ${color}`}>{label}</span>
+                                                <span className={`text-[10px] font-black ${color}`}>{amount}</span>
+                                            </div>
+                                        );
 
-                                            {summary?.financials?.discount > 0 && (
-                                                <div className="flex justify-between items-center pb-3 border-b border-slate-50 text-emerald-600 px-2 py-1.5 rounded-lg -mx-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-7 h-7 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center shadow-sm"><Tag size={14} /></div>
+                                        return (
+                                            <div className="bg-white rounded-[16px] border border-slate-200 overflow-hidden shadow-sm">
+                                                <div className="px-4 py-2.5 bg-slate-900 text-white flex justify-between items-center">
+                                                    <h3 className="text-[9px] font-black uppercase tracking-widest">Patient Bill Statement</h3>
+                                                    <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                                        <span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse inline-block" />
+                                                        Live
+                                                    </span>
+                                                </div>
+
+                                                <div className="p-4 space-y-1">
+
+                                                    {/* ── CHARGES ── */}
+                                                    <Row
+                                                        label="Bed Charges"
+                                                        sub={`${summary?.bedCharges?.items?.length || 0} bed(s) @ daily rate`}
+                                                        amount={`₹${bedTotal.toLocaleString()}`}
+                                                        bg="bg-blue-50/50"
+                                                        color="text-blue-800"
+                                                    />
+
+                                                    <Row
+                                                        label="Pharmacy Medicine Bill"
+                                                        sub="IPD medicine issuances only"
+                                                        amount={`₹${pharmaTotal.toLocaleString()}`}
+                                                        bg="bg-violet-50/50"
+                                                        color="text-violet-800"
+                                                    />
+
+                                                    {otherExtra > 0 && (
+                                                        <Row
+                                                            label="Other Charges"
+                                                            sub={otherExtraCats.join(', ') || 'Nursing, OT, Lab, Misc'}
+                                                            amount={`₹${otherExtra.toLocaleString()}`}
+                                                            bg="bg-orange-50/50"
+                                                            color="text-orange-800"
+                                                        />
+                                                    )}
+
+                                                    <SubTotal label="Total Amount" amount={`₹${totalAmount.toLocaleString()}`} />
+
+                                                    {/* ── DEDUCTIONS ── */}
+                                                    {returnCredits > 0 && (
+                                                        <>
+                                                            <Divider label="Deductions" />
+                                                            <Row
+                                                                label="(−) Returned Medicines"
+                                                                sub="medicine return credit"
+                                                                amount={`− ₹${returnCredits.toLocaleString()}`}
+                                                                bg="bg-rose-50/50"
+                                                                color="text-rose-600"
+                                                            />
+                                                            <SubTotal
+                                                                label="Net Bill After Returns"
+                                                                amount={`₹${netAfterReturn.toLocaleString()}`}
+                                                                bg="bg-slate-100"
+                                                            />
+                                                        </>
+                                                    )}
+
+                                                    {discount > 0 && (
+                                                        <>
+                                                            {returnCredits === 0 && <Divider label="Deductions" />}
+                                                            <Row
+                                                                label="(−) Discount / Adjustment"
+                                                                amount={`− ₹${discount.toLocaleString()}`}
+                                                                bg="bg-emerald-50/50"
+                                                                color="text-emerald-700"
+                                                            />
+                                                            <SubTotal
+                                                                label="After Discount"
+                                                                amount={`₹${afterDiscount.toLocaleString()}`}
+                                                                bg="bg-slate-100"
+                                                            />
+                                                        </>
+                                                    )}
+
+                                                    {/* ── PAYMENT ── */}
+                                                    <Divider label="Payment Received" />
+                                                    <Row
+                                                        label="(−) Advance Paid"
+                                                        sub="all recorded payments incl. admission"
+                                                        amount={`− ₹${totalAdvance.toLocaleString()}`}
+                                                        bg="bg-teal-50/50"
+                                                        color="text-teal-700"
+                                                    />
+
+                                                    {/* ── FINAL BILL ── */}
+                                                    <div className={`rounded-xl p-4 mt-3 flex justify-between items-center border-2 ${
+                                                        overpaid > 0
+                                                            ? 'bg-emerald-50 border-emerald-300'
+                                                            : finalBill === 0
+                                                                ? 'bg-emerald-50 border-emerald-200'
+                                                                : 'bg-rose-50 border-rose-300'
+                                                    }`}>
                                                         <div>
-                                                            <p className="text-[9px] font-black uppercase leading-none">Discount Applied</p>
-                                                            <p className="text-[7px] font-bold opacity-60 mt-0.5 uppercase tracking-widest">Adjusted</p>
+                                                            <p className={`text-[9px] font-black uppercase tracking-widest ${
+                                                                overpaid > 0 || finalBill === 0 ? 'text-emerald-600' : 'text-rose-600'
+                                                            }`}>
+                                                                {overpaid > 0 ? 'Overpaid — Refund Due' : finalBill === 0 ? '✓ Fully Settled' : 'Final Patient Bill'}
+                                                            </p>
+                                                            {overpaid > 0 && (
+                                                                <p className="text-[7px] font-bold text-emerald-500 mt-0.5">Return ₹{overpaid.toLocaleString()} to patient</p>
+                                                            )}
                                                         </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-3">
-                                                        <p className="text-xs font-black text-emerald-700">- ₹{Math.round(summary?.financials?.discount || 0).toLocaleString()}</p>
-                                                        {!summary?.isBillLocked && (
-                                                            <button
-                                                                onClick={handleRemoveDiscount}
-                                                                className="p-1.5 hover:bg-rose-50 text-slate-300 hover:text-rose-500 rounded-lg transition-all"
-                                                                title="Remove Discount"
-                                                            >
-                                                                <Trash2 size={12} />
-                                                            </button>
-                                                        )}
+                                                        <p className={`text-3xl font-black tracking-tight ${
+                                                            overpaid > 0 || finalBill === 0 ? 'text-emerald-600' : 'text-rose-600'
+                                                        }`}>
+                                                            ₹{(overpaid > 0 ? overpaid : finalBill).toLocaleString()}
+                                                        </p>
                                                     </div>
                                                 </div>
-                                            )}
-                                        </div>
-                                    </div>
+                                            </div>
+                                        );
+                                    })()}
 
                                     {/* Actions */}
                                     <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-100">

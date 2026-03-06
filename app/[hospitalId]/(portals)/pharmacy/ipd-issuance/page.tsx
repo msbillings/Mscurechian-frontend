@@ -145,7 +145,10 @@ export default function IPDIssuancePage() {
         mutationFn: (payload: { admissionId: string, forceOverride?: boolean, overrideReason?: string }) =>
             ipdIssuanceService.signoffPharmacy(payload),
         onSuccess: (res: any) => {
+            // Invalidate both the summary AND the admissions list so the badge flips
+            // from PENDING → CLEARED instantly without needing a manual page refresh
             queryClient.invalidateQueries({ queryKey: ["pharmacy", "ipd-issuance-summary", admId] });
+            queryClient.invalidateQueries({ queryKey: ["ipd", "active-admissions"] });
             toast.success(res?.message || "Pharmacy cleared!");
             setOverrideMismatch(null);
             setOverrideReason("");

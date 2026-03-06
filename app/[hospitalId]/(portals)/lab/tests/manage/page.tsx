@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Save, Plus, X, Database, FlaskConical, Clock, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Database, FlaskConical, Clock, AlertCircle, Settings, Edit2, Trash2, Check } from 'lucide-react';
 import { LabTestService } from '@/lib/integrations/services/labTest.service';
 import { DepartmentService } from '@/lib/integrations/services/department.service';
 import { Department } from '@/lib/integrations/types/department';
@@ -28,6 +28,11 @@ function ManageTestPage() {
 
     const [modalState, setModalState] = useState<{ type: string | null, title: string }>({ type: null, title: '' });
     const [newItemName, setNewItemName] = useState('');
+
+    // Method manager state
+    const [showMethodManager, setShowMethodManager] = useState(false);
+    const [editingMethod, setEditingMethod] = useState<{ index: number; value: string } | null>(null);
+    const [editMethodError, setEditMethodError] = useState('');
 
     const [formData, setFormData] = useState({
         testName: '',
@@ -64,14 +69,12 @@ function ManageTestPage() {
     });
 
     useEffect(() => {
-        fetchInitialData();
-        if (isEditMode) {
-            fetchTestDetails();
-        }
+        loadEditData();
     }, [testId]);
 
-    const fetchInitialData = async () => {
+    const loadEditData = async () => {
         try {
+            // 1. Always load departments + meta FIRST
             const [depts, meta] = await Promise.all([
                 DepartmentService.getDepartments(),
                 LabTestService.getMetaOptions()
@@ -82,50 +85,87 @@ function ManageTestPage() {
             if (!isEditMode && depts.length > 0) {
                 setFormData(prev => ({ ...prev, departmentId: depts[0]._id, departmentIds: [depts[0]._id] }));
             }
+
+            // 2. If editing, load test details AFTER meta is ready
+            if (isEditMode && testId) {
+                setInitialLoading(true);
+                try {
+                    const test = await LabTestService.getTestById(testId);
+
+                    // Resolve method field (stored as 'methodology' in DB)
+                    const methodVal = test.method || (test as any).methodology || '';
+                    // Resolve turnaround time (stored as 'temporalTATCycle' or 'turnaroundTime')
+                    const tatVal = test.turnaroundTime || (test as any).temporalTATCycle || '';
+                    const unitVal = test.unit || '';
+                    const sampleTypeVal = test.sampleType || '';
+
+                    // Inject any custom values into metaOptions so the dropdowns show them
+                    setMetaOptions((prev: any) => {
+                        const inject = (list: string[], val: string) =>
+                            val && !list.some(x => x.toLowerCase() === val.toLowerCase())
+                                ? [...list, val]
+                                : list;
+                        return {
+                            ...prev,
+                            methods: inject(prev.methods, methodVal),
+                            sampleTypes: inject(prev.sampleTypes, sampleTypeVal),
+                            turnaroundTimes: inject(prev.turnaroundTimes, tatVal),
+                            units: inject(prev.units, unitVal),
+                        };
+                    });
+
+                    // Map resultParameters — handle both inline subdoc and separate collection response
+                    const rawParams = (test as any).resultParameters || [];
+                    const mappedParams = rawParams.map((p: any) => ({
+                        label: p.label || p.name || '',
+                        unit: p.unit || '',
+                        normalRange: p.normalRange || p.range || '',
+                        remarks: p.remarks || '',
+                        example: p.example || '',
+                        fieldType: p.fieldType || p.type || 'text',
+                        isRequired: p.isRequired ?? false,
+                        displayOrder: p.displayOrder ?? 0,
+                    }));
+
+                    setFormData({
+                        testName: test.testName || (test as any).name || '',
+                        departmentId: typeof test.departmentId === 'object' ? (test.departmentId as any)?._id : test.departmentId || '',
+                        departmentIds: (test as any).departmentIds?.map((d: any) => typeof d === 'object' ? d._id : d) ||
+                            (test.departmentId ? [typeof test.departmentId === 'object' ? (test.departmentId as any)._id : test.departmentId] : []),
+                        sampleType: sampleTypeVal,
+                        price: test.price?.toString() || '0',
+                        unit: unitVal,
+                        method: methodVal,
+                        turnaroundTime: tatVal,
+                        normalRanges: {
+                            male: { min: test.normalRanges?.male?.min?.toString() || '', max: test.normalRanges?.male?.max?.toString() || '' },
+                            female: { min: test.normalRanges?.female?.min?.toString() || '', max: test.normalRanges?.female?.max?.toString() || '' },
+                            child: { min: test.normalRanges?.child?.min?.toString() || '', max: test.normalRanges?.child?.max?.toString() || '' },
+                            newborn: { min: test.normalRanges?.newborn?.min?.toString() || '', max: test.normalRanges?.newborn?.max?.toString() || '' },
+                            infant: { min: test.normalRanges?.infant?.min?.toString() || '', max: test.normalRanges?.infant?.max?.toString() || '' },
+                            geriatric: { min: test.normalRanges?.geriatric?.min?.toString() || '', max: test.normalRanges?.geriatric?.max?.toString() || '' },
+                        },
+                        fastingRequired: test.fastingRequired || false,
+                        sampleVolume: (test as any).sampleVolume || '',
+                        reportType: test.reportType || 'numeric',
+                        reportFormat: (test as any).reportFormat || '',
+                        testCode: (test as any).testCode || '',
+                        resultParameters: mappedParams,
+                    });
+                } catch (error) {
+                    console.error("Failed to fetch test details", error);
+                    toast.error("Failed to load test details");
+                    router.push('/lab/tests');
+                } finally {
+                    setInitialLoading(false);
+                }
+            }
         } catch (error) {
             console.error("Failed to fetch initial data", error);
             toast.error("Failed to load form data");
         }
     };
 
-    const fetchTestDetails = async () => {
-        if (!testId) return;
-        setInitialLoading(true);
-        try {
-            const test = await LabTestService.getTestById(testId);
-            setFormData({
-                testName: test.testName || (test as any).name,
-                departmentId: typeof test.departmentId === 'object' ? test.departmentId._id : test.departmentId || '',
-                departmentIds: test.departmentIds?.map((d: any) => typeof d === 'object' ? d._id : d) ||
-                    (test.departmentId ? [typeof test.departmentId === 'object' ? test.departmentId._id : test.departmentId] : []),
-                sampleType: test.sampleType || '',
-                price: test.price.toString(),
-                unit: test.unit || '',
-                method: test.method || test.methodology || '',
-                turnaroundTime: test.turnaroundTime || test.temporalTATCycle || '',
-                normalRanges: {
-                    male: { min: test.normalRanges?.male?.min?.toString() || '', max: test.normalRanges?.male?.max?.toString() || '' },
-                    female: { min: test.normalRanges?.female?.min?.toString() || '', max: test.normalRanges?.female?.max?.toString() || '' },
-                    child: { min: test.normalRanges?.child?.min?.toString() || '', max: test.normalRanges?.child?.max?.toString() || '' },
-                    newborn: { min: test.normalRanges?.newborn?.min?.toString() || '', max: test.normalRanges?.newborn?.max?.toString() || '' },
-                    infant: { min: test.normalRanges?.infant?.min?.toString() || '', max: test.normalRanges?.infant?.max?.toString() || '' },
-                    geriatric: { min: test.normalRanges?.geriatric?.min?.toString() || '', max: test.normalRanges?.geriatric?.max?.toString() || '' },
-                },
-                fastingRequired: test.fastingRequired || false,
-                sampleVolume: test.sampleVolume || '',
-                reportType: test.reportType || 'numeric',
-                reportFormat: test.reportFormat || '',
-                testCode: test.testCode || '',
-                resultParameters: (test as any).resultParameters || []
-            });
-        } catch (error) {
-            console.error("Failed to fetch test details", error);
-            toast.error("Failed to load test details");
-            router.push('/lab/tests');
-        } finally {
-            setInitialLoading(false);
-        }
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -180,7 +220,7 @@ function ManageTestPage() {
     };
 
     const handleAddCustomItem = async () => {
-        if (!newItemName) return;
+        if (!newItemName.trim()) return;
 
         if (modalState.type === 'dept') {
             try {
@@ -198,12 +238,26 @@ function ManageTestPage() {
         } else if (modalState.type === 'sample') {
             setFormData(prev => ({ ...prev, sampleType: newItemName }));
         } else if (modalState.type === 'method') {
-            setFormData(prev => ({ ...prev, method: newItemName }));
+            const trimmed = newItemName.trim();
+            // Guard: block if already exists
+            const alreadyExists = metaOptions.methods.some(
+                (m: string) => m.trim().toLowerCase() === trimmed.toLowerCase()
+            );
+            if (alreadyExists) return; // error shown inline, prevent add
+            // Add to dropdown list
+            setMetaOptions((prev: any) => ({
+                ...prev,
+                methods: [...prev.methods, trimmed],
+            }));
+            // Auto-select the new method
+            setFormData(prev => ({ ...prev, method: trimmed }));
+            toast.success(`Method "${trimmed}" added`);
         } else if (modalState.type === 'tat') {
             setFormData(prev => ({ ...prev, turnaroundTime: newItemName }));
         }
 
         setModalState({ type: null, title: '' });
+        setNewItemName('');
     };
 
     if (initialLoading) return (
@@ -324,9 +378,30 @@ function ManageTestPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                                    Method
-                                </label>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Method
+                                    </label>
+                                    <div className="flex items-center gap-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => openModal('method', 'Add New Method')}
+                                            className="flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-indigo-800 transition-all"
+                                        >
+                                            <Plus className="w-3 h-3" />
+                                            Add Method
+                                        </button>
+                                        <button
+                                            type="button"
+                                            title="Edit / Delete methods"
+                                            onClick={() => { setShowMethodManager(true); setEditingMethod(null); setEditMethodError(''); }}
+                                            className="flex items-center gap-1 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-slate-100 dark:bg-gray-700 hover:bg-slate-200 dark:hover:bg-gray-600 px-2 py-1 rounded-lg border border-slate-200 dark:border-gray-600 transition-all"
+                                        >
+                                            <Settings className="w-3 h-3" />
+                                            Manage
+                                        </button>
+                                    </div>
+                                </div>
                                 <select
                                     className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none cursor-pointer"
                                     value={formData.method}
@@ -472,33 +547,283 @@ function ManageTestPage() {
             {/* Modal */}
             {modalState.type && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 dark:border-gray-700 p-6 animate-in zoom-in-95 duration-200">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">{modalState.title}</h3>
-                            <button onClick={() => setModalState({ type: null, title: '' })} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                                <X size={20} />
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 dark:border-gray-700 overflow-hidden animate-in zoom-in-95 duration-200">
+
+                        {/* Modal Header */}
+                        <div className={`px-6 py-5 border-b border-slate-100 dark:border-gray-700 flex items-center justify-between ${modalState.type === 'method' ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}>
+                            <div className="flex items-center gap-3">
+                                {modalState.type === 'method' && (
+                                    <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
+                                        <Database className="w-4 h-4 text-white" />
+                                    </div>
+                                )}
+                                <div>
+                                    <h3 className="text-base font-bold text-gray-900 dark:text-white">{modalState.title}</h3>
+                                    {modalState.type === 'method' && (
+                                        <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mt-0.5">
+                                            Will be added to the Method dropdown
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => { setModalState({ type: null, title: '' }); setNewItemName(''); }}
+                                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            >
+                                <X size={18} />
                             </button>
                         </div>
 
-                        <div className="space-y-4">
+                        {/* Modal Body */}
+                        <div className="p-6 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Name</label>
-                                <input
-                                    type="text"
-                                    autoFocus
-                                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
-                                    placeholder="Enter name..."
-                                    value={newItemName}
-                                    onChange={e => setNewItemName(e.target.value)}
-                                    onKeyDown={e => e.key === 'Enter' && handleAddCustomItem()}
-                                />
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                    {modalState.type === 'method' ? 'Method Name' : 'Name'}
+                                </label>
+                                {(() => {
+                                    const isDuplicate = modalState.type === 'method' &&
+                                        newItemName.trim() !== '' &&
+                                        metaOptions.methods.some((m: string) =>
+                                            m.trim().toLowerCase() === newItemName.trim().toLowerCase()
+                                        );
+                                    return (
+                                        <>
+                                            <input
+                                                type="text"
+                                                autoFocus
+                                                className={`w-full px-4 py-2.5 bg-white dark:bg-gray-900 border rounded-lg text-sm outline-none transition-all ${
+                                                    isDuplicate
+                                                        ? 'border-rose-400 dark:border-rose-500 focus:ring-2 focus:ring-rose-400/20 focus:border-rose-500'
+                                                        : 'border-slate-200 dark:border-gray-700 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500'
+                                                }`}
+                                                placeholder={
+                                                    modalState.type === 'method'
+                                                        ? 'e.g. Colorimetry, PCR, ELISA, Nephelometry...'
+                                                        : 'Enter name...'
+                                                }
+                                                value={newItemName}
+                                                onChange={e => setNewItemName(e.target.value)}
+                                                onKeyDown={e => e.key === 'Enter' && handleAddCustomItem()}
+                                            />
+                                            {isDuplicate ? (
+                                                <div className="mt-2 flex items-start gap-1.5 px-3 py-2 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-lg">
+                                                    <AlertCircle className="w-3.5 h-3.5 text-rose-500 mt-0.5 shrink-0" />
+                                                    <p className="text-xs text-rose-600 dark:text-rose-400 font-medium leading-tight">
+                                                        <span className="font-bold">&ldquo;{newItemName.trim()}&rdquo;</span> already exists in the Method list. Please try a different name.
+                                                    </p>
+                                                </div>
+                                            ) : modalState.type === 'method' && (
+                                                <p className="mt-1.5 text-xs text-gray-400">
+                                                    Common methods: Automated, Manual, Colorimetry, ELISA, PCR, Nephelometry, Immunoassay, Flow Cytometry
+                                                </p>
+                                            )}
+                                        </>
+                                    );
+                                })()}
                             </div>
 
+                            <div className="flex gap-3 pt-1">
+                                <button
+                                    type="button"
+                                    onClick={() => { setModalState({ type: null, title: '' }); setNewItemName(''); }}
+                                    className="flex-1 py-2.5 bg-slate-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-slate-200 dark:hover:bg-gray-600 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleAddCustomItem}
+                                    disabled={
+                                        !newItemName.trim() ||
+                                        (modalState.type === 'method' &&
+                                            metaOptions.methods.some((m: string) =>
+                                                m.trim().toLowerCase() === newItemName.trim().toLowerCase()
+                                            ))
+                                    }
+                                    className="flex-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium shadow-sm transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    {modalState.type === 'method' ? 'Add Method' : 'Add'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Method Manager Modal ── */}
+            {showMethodManager && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 dark:border-gray-700 overflow-hidden animate-in zoom-in-95 duration-200">
+
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-5 bg-slate-50 dark:bg-gray-700/50 border-b border-slate-100 dark:border-gray-700">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 bg-slate-700 dark:bg-gray-600 rounded-xl flex items-center justify-center shadow-sm">
+                                    <Settings className="w-4 h-4 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-bold text-gray-900 dark:text-white">Manage Methods</h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Edit or delete existing methods</p>
+                                </div>
+                            </div>
                             <button
-                                onClick={handleAddCustomItem}
-                                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all"
+                                onClick={() => { setShowMethodManager(false); setEditingMethod(null); setEditMethodError(''); }}
+                                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                             >
-                                Add
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-5 max-h-[420px] overflow-y-auto space-y-2">
+                            {metaOptions.methods.length === 0 ? (
+                                <div className="py-10 text-center">
+                                    <Database className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                                    <p className="text-sm text-gray-400">No methods yet. Add one first.</p>
+                                </div>
+                            ) : (
+                                metaOptions.methods.map((method: string, idx: number) => {
+                                    const isEditing = editingMethod?.index === idx;
+                                    const isDuplicateEdit = isEditing &&
+                                        editingMethod!.value.trim() !== '' &&
+                                        editingMethod!.value.trim().toLowerCase() !== method.toLowerCase() &&
+                                        metaOptions.methods.some((m: string, i: number) =>
+                                            i !== idx && m.trim().toLowerCase() === editingMethod!.value.trim().toLowerCase()
+                                        );
+
+                                    return (
+                                        <div key={idx} className={`rounded-xl border transition-all ${isEditing ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50/50 dark:bg-indigo-900/10' : 'border-slate-100 dark:border-gray-700 bg-white dark:bg-gray-900/30 hover:border-slate-200 dark:hover:border-gray-600'}`}>
+                                            {isEditing ? (
+                                                /* Edit Row */
+                                                <div className="p-3 space-y-2">
+                                                    <input
+                                                        type="text"
+                                                        autoFocus
+                                                        value={editingMethod!.value}
+                                                        onChange={e => {
+                                                            setEditingMethod({ index: idx, value: e.target.value });
+                                                            setEditMethodError('');
+                                                        }}
+                                                        onKeyDown={e => {
+                                                            if (e.key === 'Enter') {
+                                                                // Confirm rename
+                                                                const trimmed = editingMethod!.value.trim();
+                                                                if (!trimmed) return;
+                                                                if (isDuplicateEdit) return;
+                                                                const updated = [...metaOptions.methods];
+                                                                const oldName = updated[idx];
+                                                                updated[idx] = trimmed;
+                                                                setMetaOptions((prev: any) => ({ ...prev, methods: updated }));
+                                                                // If this was the selected method, update selection
+                                                                if (formData.method === oldName) {
+                                                                    setFormData(prev => ({ ...prev, method: trimmed }));
+                                                                }
+                                                                setEditingMethod(null);
+                                                                setEditMethodError('');
+                                                            }
+                                                            if (e.key === 'Escape') {
+                                                                setEditingMethod(null);
+                                                                setEditMethodError('');
+                                                            }
+                                                        }}
+                                                        className={`w-full px-3 py-2 bg-white dark:bg-gray-900 border rounded-lg text-sm outline-none transition-all ${
+                                                            isDuplicateEdit
+                                                                ? 'border-rose-400 focus:ring-2 focus:ring-rose-400/20'
+                                                                : 'border-indigo-300 dark:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20'
+                                                        }`}
+                                                    />
+                                                    {isDuplicateEdit && (
+                                                        <div className="flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400 font-medium">
+                                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                                            <span>&ldquo;{editingMethod!.value.trim()}&rdquo; already exists. Use a different name.</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            type="button"
+                                                            disabled={!editingMethod!.value.trim() || isDuplicateEdit}
+                                                            onClick={() => {
+                                                                const trimmed = editingMethod!.value.trim();
+                                                                if (!trimmed || isDuplicateEdit) return;
+                                                                const updated = [...metaOptions.methods];
+                                                                const oldName = updated[idx];
+                                                                updated[idx] = trimmed;
+                                                                setMetaOptions((prev: any) => ({ ...prev, methods: updated }));
+                                                                if (formData.method === oldName) {
+                                                                    setFormData(prev => ({ ...prev, method: trimmed }));
+                                                                }
+                                                                setEditingMethod(null);
+                                                                setEditMethodError('');
+                                                            }}
+                                                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold transition-all"
+                                                        >
+                                                            <Check className="w-3.5 h-3.5" />
+                                                            Save
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setEditingMethod(null); setEditMethodError(''); }}
+                                                            className="flex-1 py-1.5 bg-slate-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-gray-600 transition-all"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                /* Display Row */
+                                                <div className="flex items-center justify-between px-4 py-3 group">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className="w-2 h-2 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0" />
+                                                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{method}</span>
+                                                        {formData.method === method && (
+                                                            <span className="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold uppercase tracking-widest rounded">
+                                                                selected
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            type="button"
+                                                            title="Rename"
+                                                            onClick={() => { setEditingMethod({ index: idx, value: method }); setEditMethodError(''); }}
+                                                            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+                                                        >
+                                                            <Edit2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            title="Delete"
+                                                            onClick={() => {
+                                                                const updated = metaOptions.methods.filter((_: string, i: number) => i !== idx);
+                                                                setMetaOptions((prev: any) => ({ ...prev, methods: updated }));
+                                                                // Clear selection if deleted method was selected
+                                                                if (formData.method === method) {
+                                                                    setFormData(prev => ({ ...prev, method: '' }));
+                                                                }
+                                                            }}
+                                                            className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-5 py-4 bg-slate-50 dark:bg-gray-700/30 border-t border-slate-100 dark:border-gray-700 flex items-center justify-between">
+                            <p className="text-xs text-gray-400">{metaOptions.methods.length} method{metaOptions.methods.length !== 1 ? 's' : ''} total</p>
+                            <button
+                                type="button"
+                                onClick={() => { setShowMethodManager(false); setEditingMethod(null); setEditMethodError(''); }}
+                                className="px-4 py-2 bg-slate-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-slate-300 dark:hover:bg-gray-500 transition-all"
+                            >
+                                Done
                             </button>
                         </div>
                     </div>
@@ -509,3 +834,5 @@ function ManageTestPage() {
 }
 
 export default React.memo(ManageTestPage);
+
+

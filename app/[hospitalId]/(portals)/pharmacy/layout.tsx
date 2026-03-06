@@ -14,26 +14,22 @@ import { pharmacyService } from '@/lib/integrations/services/pharmacy.service';
 import {
     LayoutDashboard,
     Package,
-    BarChart,
     PlusCircle,
     Users,
-    Pill,
     RotateCcw,
-    Shield, // Added Shield
+    Receipt,
+    ShoppingCart,
+    ArrowLeftRight,
 } from "lucide-react";
 
-// Pharmacy specific menu items
+// Pharmacy specific menu items (sidebar)
 const pharmacyMenu: SidebarItem[] = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/pharmacy/dashboard" },
     { icon: PlusCircle, label: "Create Invoice", href: "/pharmacy/billing" },
-    { icon: PlusCircle, label: "IPD Billing", href: "/pharmacy/ipd-billing" },
-    { icon: Pill, label: "Active Orders", href: "/pharmacy/orders" },
-    { icon: PlusCircle, label: "IPD Issuance", href: "/pharmacy/ipd-issuance" },
+    { icon: ArrowLeftRight, label: "IPD Issuance", href: "/pharmacy/ipd-issuance" },
     { icon: RotateCcw, label: "Medicine Returns", href: "/pharmacy/medicine-return" },
     { icon: Package, label: "Products", href: "/pharmacy/products" },
     { icon: Users, label: "Suppliers", href: "/pharmacy/suppliers" },
-    { icon: BarChart, label: "Transactions", href: "/pharmacy/transactions" },
-    { icon: Shield, label: "Audit Logs", href: "/pharmacy/audit-logs" },
 ];
 
 const PharmacyLayout = ({ children }: { children: React.ReactNode }) => {
@@ -158,6 +154,36 @@ const PharmacyLayout = ({ children }: { children: React.ReactNode }) => {
                     onLogout={() => setIsLogoutModalOpen(true)}
                     title="Pharmacy Panel"
                     profileHref={getPath('/pharmacy/profile')}
+                    centerActions={
+                        <div className="hidden md:flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+                            {[
+                                { label: 'IPD Billing', href: getPath('/pharmacy/ipd-billing'), icon: Receipt },
+                                { label: 'Active Orders', href: getPath('/pharmacy/orders'), icon: ShoppingCart, badge: activeOrdersCountData?.count },
+                                { label: 'Transactions', href: getPath('/pharmacy/transactions'), icon: ArrowLeftRight },
+                            ].map(({ label, href, icon: Icon, badge }) => {
+                                const isActive = pathname.includes(href.split('/').pop() || '');
+                                return (
+                                    <a
+                                        key={label}
+                                        href={href}
+                                        className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                            isActive
+                                                ? 'bg-white dark:bg-gray-700 text-teal-700 dark:text-teal-400 shadow-sm'
+                                                : 'text-gray-600 dark:text-gray-400 hover:bg-white/60 dark:hover:bg-gray-700/60 hover:text-gray-900 dark:hover:text-white'
+                                        }`}
+                                    >
+                                        <Icon className="w-3.5 h-3.5" />
+                                        {label}
+                                        {badge && badge > 0 ? (
+                                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-teal-600 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                                                {badge > 9 ? '9+' : badge}
+                                            </span>
+                                        ) : null}
+                                    </a>
+                                );
+                            })}
+                        </div>
+                    }
                 />
 
                 <main className="flex-1 p-4 lg:p-8 overflow-y-auto">

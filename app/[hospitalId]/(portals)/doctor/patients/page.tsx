@@ -176,12 +176,12 @@ function PatientsPage() {
                                           (patient as any).isIPD === true ||
                                           (patient as any).isIpd === true
                                        ) ? (
-                                          <span className="px-3 py-1 bg-rose-50 text-rose-700 text-[10px] font-black uppercase tracking-widest rounded-full border border-rose-200 flex items-center gap-1 w-fit shadow-xs">
-                                             <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> IPD
+                                          <span className="px-3 py-1 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-rose-100 dark:border-rose-800 flex items-center gap-1 w-fit">
+                                             <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> IPD Node
                                           </span>
                                        ) : (
-                                          <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest rounded-full border border-emerald-200 flex items-center gap-1 w-fit shadow-xs">
-                                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> OPD
+                                          <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100 dark:border-emerald-800 flex items-center gap-1 w-fit">
+                                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> OPD Active
                                           </span>
                                        )}
                                     </td>

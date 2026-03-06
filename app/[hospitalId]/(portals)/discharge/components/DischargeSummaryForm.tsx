@@ -1166,21 +1166,7 @@ export function DischargeSummaryForm() {
                                 </div>
                             );
                         })}
-                        <div>
-                            <div className="flex justify-between items-center mb-1.5">
-                                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--secondary-color)' }}>Medications Prescribed</span>
-                                <span className={`text-[10px] font-bold ${formData.medicationsPrescribed.length >= 360 ? 'text-red-600' : 'text-gray-400'}`}>{formData.medicationsPrescribed.length}/400</span>
-                            </div>
-                            <textarea
-                                name="medicationsPrescribed"
-                                value={formData.medicationsPrescribed}
-                                onChange={handleChange}
-                                placeholder="Post-discharge medications (one per line)"
-                                rows={5}
-                                className="w-full p-2.5 rounded-xl border border-gray-400 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none"
-                                style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}
-                            />
-                        </div>
+
                     </div>
                 </Card>
 

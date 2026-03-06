@@ -7,7 +7,7 @@ import { ArrowLeft, Save, FileCheck, Receipt } from 'lucide-react';
 import { dischargeService } from '@/lib/integrations/services/discharge.service';
 import { ipdService } from '@/lib/integrations/services/ipd.service';
 import toast from 'react-hot-toast';
-import { Tag, AlertCircle, Info, Lock, Wallet, Plus, X } from 'lucide-react';
+import { Tag, AlertCircle, Info, Lock, Wallet, Plus, X, DollarSign } from 'lucide-react';
 import ClinicalReceipt from '@/components/helpdesk/ClinicalReceipt';
 
 export function DischargeBillingProcess() {
@@ -63,7 +63,7 @@ export function DischargeBillingProcess() {
                 // Auto-fill from SUMMARY if available (SOURCE OF TRUTH)
                 if (summary?.financials) {
                     setBillingData({
-                        advanceAmount: summary.financials.totalAdvance || 0,
+                        advanceAmount: summary.financials.totalPaid || 0,
                         totalBillAmount: summary.financials.finalAmount || 0,
                         finalPayment: summary.financials.balance || 0,
                         paymentMode: data.paymentMode || 'cash',
@@ -146,7 +146,44 @@ export function DischargeBillingProcess() {
             }
 
             toast.success("Discharge finalized & Bill generated");
-            router.push('/helpdesk/discharge');
+            
+            // Set receipt data so the preview modal opens!
+            setReceiptData({
+                hospital: recordData.hospital || {},
+                patient: {
+                    name: recordData.patientName,
+                    mrn: recordData.mrn,
+                    age: recordData.age,
+                    gender: recordData.gender,
+                    mobile: recordData.phone,
+                    email: recordData.email,
+                    address: recordData.address,
+                    emergencyContact: recordData.attendantName ? `${recordData.attendantName} (${recordData.attendantPhone})` : '',
+                    bloodGroup: recordData.bloodGroup,
+                    dateOfBirth: recordData.dob,
+                    allergies: recordData.allergyHistory,
+                    medicalHistory: recordData.pastMedicalHistory,
+                    symptoms: recordData.reasonForAdmission,
+                    vitals: recordData.vitals
+                },
+                appointment: {
+                    type: 'Final Discharge Summary',
+                    doctorName: recordData.primaryDoctor || recordData.suggestedDoctorName || 'Assigned Physician',
+                    appointmentId: recordData._id || `DIS-${Date.now()}`,
+                    date: recordData.admissionDate ? new Date(recordData.admissionDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB'),
+                    time: recordData.admissionDate ? new Date(recordData.admissionDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString(),
+                    specialization: recordData.specialistType || 'IPD'
+                },
+                payment: {
+                    receiptNo: recordData._id || `BILL-${Date.now()}`,
+                    date: new Date().toISOString(),
+                    amount: Math.round(billingData.totalBillAmount),
+                    advanceAmount: Math.round(billingData.advanceAmount),
+                    totalBillAmount: Math.round(billingData.totalBillAmount),
+                    mode: billingData.paymentMode,
+                    status: 'PAID'
+                }
+            });
         } catch (error: any) {
             toast.error(error.message || "Failed to finalize discharge");
         } finally {
@@ -176,11 +213,26 @@ export function DischargeBillingProcess() {
                 patient: {
                     name: recordData.patientName,
                     mrn: recordData.mrn,
-                    phone: recordData.phone
+                    age: recordData.age,
+                    gender: recordData.gender,
+                    mobile: recordData.phone,
+                    email: recordData.email,
+                    address: recordData.address,
+                    emergencyContact: recordData.attendantName ? `${recordData.attendantName} (${recordData.attendantPhone})` : '',
+                    bloodGroup: recordData.bloodGroup,
+                    dateOfBirth: recordData.dob,
+                    allergies: recordData.allergyHistory,
+                    medicalHistory: recordData.pastMedicalHistory,
+                    symptoms: recordData.reasonForAdmission,
+                    vitals: recordData.vitals
                 },
                 appointment: {
                     type: 'IPD Final Settlement',
-                    doctor: recordData.primaryDoctor || 'N/A'
+                    doctorName: recordData.primaryDoctor || recordData.suggestedDoctorName || 'Assigned Physician',
+                    appointmentId: recordData._id || `SET-${Date.now()}`,
+                    date: recordData.admissionDate ? new Date(recordData.admissionDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB'),
+                    time: recordData.admissionDate ? new Date(recordData.admissionDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString(),
+                    specialization: recordData.specialistType || 'IPD'
                 },
                 payment: {
                     receiptNo: response._id || `REC-${Date.now()}`,
@@ -309,18 +361,6 @@ export function DischargeBillingProcess() {
                                 readOnly
                                 required
                             />
-                            {Math.round(billingData.finalPayment) > 0 && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setPaymentData(prev => ({ ...prev, amount: Math.round(billingData.finalPayment) }));
-                                        setShowPaymentModal(true);
-                                    }}
-                                    className="absolute right-2 top-[30px] px-3 py-1.5 bg-rose-600 text-white text-[10px] font-bold uppercase rounded-lg hover:bg-rose-700 transition flex items-center gap-1.5 shadow-md"
-                                >
-                                    <Wallet size={12} /> Record Payment
-                                </button>
-                            )}
                             {Math.round(billingData.finalPayment) === 0 && Math.round(billingData.totalBillAmount) > 0 && (
                                 <span className="absolute right-3 top-[34px] text-[10px] font-black uppercase text-emerald-600 bg-emerald-100 px-2 py-1 rounded">Paid</span>
                             )}
@@ -375,28 +415,19 @@ export function DischargeBillingProcess() {
                             </div>
 
                             <div className="space-y-3">
+                                {/* 1. Gross Charges */}
                                 <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-white text-slate-400 rounded-lg flex items-center justify-center border border-slate-100"><Tag size={14} /></div>
+                                        <div className="w-8 h-8 bg-white text-slate-400 rounded-lg flex items-center justify-center border border-slate-100"><DollarSign size={14} /></div>
                                         <div>
-                                            <p className="text-[9px] font-black text-slate-800 uppercase leading-none">Bed Charges</p>
-                                            <p className="text-[7px] font-bold text-slate-400 mt-1 uppercase tracking-tight">Stay & Services</p>
+                                            <p className="text-[9px] font-black text-slate-800 uppercase leading-none">Gross Clinical Charges</p>
+                                            <p className="text-[7px] font-bold text-slate-400 mt-1 uppercase tracking-tight">Bed & Extra Charges</p>
                                         </div>
                                     </div>
-                                    <p className="text-xs font-black text-slate-900">₹{billSummary.bedCharges?.total?.toLocaleString() || '0'}</p>
+                                    <p className="text-xs font-black text-slate-900">₹{(Math.round(billSummary.bedCharges?.total + billSummary.extraCharges?.total)).toLocaleString()}</p>
                                 </div>
 
-                                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-white text-slate-400 rounded-lg flex items-center justify-center border border-slate-100"><Info size={14} /></div>
-                                        <div>
-                                            <p className="text-[9px] font-black text-slate-800 uppercase leading-none">Extra Charges</p>
-                                            <p className="text-[7px] font-bold text-slate-400 mt-1 uppercase tracking-tight">Clinical & Misc</p>
-                                        </div>
-                                    </div>
-                                    <p className="text-xs font-black text-slate-900">₹{billSummary.extraCharges?.total?.toLocaleString() || '0'}</p>
-                                </div>
-
+                                {/* 2. Medicine Returns (if any) */}
                                 {billSummary.financials?.returnCredits > 0 && (
                                     <div className="flex justify-between items-center pb-2 border-b border-rose-100 text-rose-600 bg-rose-50/50 px-2 py-1.5 rounded-lg -mx-2">
                                         <div className="flex items-center gap-3">
@@ -410,24 +441,60 @@ export function DischargeBillingProcess() {
                                     </div>
                                 )}
 
+                                {/* 3. Discount (if any) */}
                                 {billSummary.financials?.discount > 0 && (
                                     <div className="flex justify-between items-center pb-2 border-b border-slate-100 text-emerald-600">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center"><Tag size={14} /></div>
                                             <div>
-                                                <p className="text-[9px] font-black uppercase leading-none">Discount Applied</p>
-                                                <p className="text-[7px] font-bold opacity-60 mt-1 uppercase tracking-tight">Managed Adjustment</p>
+                                                <p className="text-[9px] font-black uppercase leading-none">Discount Details</p>
+                                                <p className="text-[7px] font-bold opacity-60 mt-1 uppercase tracking-tight">Admin Adjustment</p>
                                             </div>
                                         </div>
                                         <p className="text-xs font-black">- ₹{billSummary.financials.discount.toLocaleString()}</p>
                                     </div>
                                 )}
 
-                                <div className="flex justify-between items-center pt-2 text-teal-600">
-                                    <p className="text-[10px] font-black uppercase tracking-widest">Net Payable</p>
-                                    <p className="text-sm font-black underline decoration-2 underline-offset-4">₹{Math.round(billSummary.financials?.finalAmount || 0).toLocaleString()}</p>
+                                {/* 4. Advance Paid */}
+                                <div className="flex justify-between items-center pb-2 border-b border-emerald-100 text-emerald-600 bg-emerald-50/30 px-2 py-1.5 rounded-lg -mx-2 mt-2">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-white text-emerald-600 rounded-lg flex items-center justify-center border border-emerald-100 shadow-sm"><Wallet size={14} /></div>
+                                        <div>
+                                            <p className="text-[9px] font-black uppercase leading-none">Net Advance Paid</p>
+                                            <p className="text-[7px] font-bold opacity-70 mt-1 uppercase tracking-tight">Payments Recorded</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs font-black">- ₹{(billingData.advanceAmount || 0).toLocaleString()}</p>
+                                </div>
+
+                                {/* 5. Final Balance */}
+                                <div className="flex justify-between items-center pt-3 text-rose-600 border-t-2 border-dashed border-slate-200 mt-2">
+                                    <div className="flex flex-col">
+                                        <p className="text-[10px] font-black uppercase tracking-widest leading-none">Final Balance Due</p>
+                                        <p className="text-[8px] font-bold opacity-60 uppercase mt-1">Settlement required for discharge</p>
+                                    </div>
+                                    <div className="flex flex-col items-end">
+                                        <p className="text-lg font-black underline decoration-2 underline-offset-4">₹{Math.round(billingData.finalPayment || 0).toLocaleString()}</p>
+                                    </div>
                                 </div>
                             </div>
+                            
+                            {/* Settlement Action Button moved here */}
+                            {Math.round(billingData.finalPayment) > 0 && (
+                                <div className="mt-6 flex justify-center">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setPaymentData(prev => ({ ...prev, amount: Math.round(billingData.finalPayment) }));
+                                            setShowPaymentModal(true);
+                                        }}
+                                        className="w-full md:w-auto px-10 py-3 bg-rose-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-rose-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-200"
+                                    >
+                                        <Wallet size={16} /> Record Settlement Payment
+                                    </button>
+                                </div>
+                            )}
+
                         </div>
                     )}
 
@@ -451,6 +518,23 @@ export function DischargeBillingProcess() {
                             </div>
                         )}
 
+                        {Math.round(billingData.finalPayment) === 0 && (
+                            <div className="flex items-center gap-2">
+                                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Invoice Payment Mode:</label>
+                                <select
+                                    value={billingData.paymentMode}
+                                    onChange={(e) => setBillingData({ ...billingData, paymentMode: e.target.value })}
+                                    className="bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-blue-500"
+                                >
+                                    <option value="Cash">Cash</option>
+                                    <option value="UPI">UPI</option>
+                                    <option value="Card">Card</option>
+                                    <option value="Bank TXN">Bank Transfer</option>
+                                    <option value="Insurance">Insurance/TPA</option>
+                                </select>
+                            </div>
+                        )}
+
                         <Button
                             type="submit"
                             disabled={loading || Math.round(billingData.finalPayment) > 0}
@@ -468,7 +552,7 @@ export function DischargeBillingProcess() {
 
             {/* Payment Modal */}
             {showPaymentModal && (
-                <div className="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
                     <div className="bg-white rounded-[24px] shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
                         <div className="flex justify-between items-center p-4 bg-slate-50 border-b border-slate-100">
                             <h3 className="font-black text-slate-800 uppercase tracking-tight text-sm flex items-center gap-2">
@@ -487,7 +571,7 @@ export function DischargeBillingProcess() {
                                     onChange={(e) => setPaymentData(prev => ({ ...prev, amount: Number(e.target.value) }))}
                                     className="w-full text-lg font-black bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-rose-500"
                                     required
-                                    max={billingData.finalPayment}
+                                    max={Math.round(billingData.finalPayment)}
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
@@ -527,17 +611,20 @@ export function DischargeBillingProcess() {
                 </div>
             )}
 
-            {/* Invisible Clinical Receipt for Auto-Print */}
+            {/* Clinical Receipt Preview */}
             {receiptData && (
-                <div className="hidden">
-                    <ClinicalReceipt
-                        hospital={receiptData.hospital}
-                        patient={receiptData.patient}
-                        appointment={receiptData.appointment}
-                        payment={receiptData.payment}
-                        onClose={() => setReceiptData(null)}
-                    />
-                </div>
+                <ClinicalReceipt
+                    hospital={receiptData.hospital}
+                    patient={receiptData.patient}
+                    appointment={receiptData.appointment}
+                    payment={receiptData.payment}
+                    onClose={() => {
+                        setReceiptData(null);
+                        if (receiptData.appointment.type === 'Final Discharge Summary') {
+                            router.push('/helpdesk/discharge');
+                        }
+                    }}
+                />
             )}
         </div>
     );
