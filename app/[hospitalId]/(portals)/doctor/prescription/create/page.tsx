@@ -983,7 +983,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                 onClick={() => setMode('AI')}
                                 className={`px-4 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 ${mode === 'AI' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-white/50'}`}
                             >
-                                <Sparkles size={12} /> AI Assist
+                                <Sparkles size={12} /> One Click Prescription
                             </button>
                         </div>
                     </div>
