@@ -41,14 +41,14 @@ export default function HRDashboard() {
       title: 'Today Present',
       value: stats?.todayAttendance || 0,
       icon: Clock,
-      color: 'bg-emerald-500',
+      color: 'bg-green-500',
       link: `/${hospitalId}/hr/attendance`,
     },
     {
       title: 'Departments',
       value: stats?.breakdown?.filter((item: any) => item.role !== 'emergency').length || 0,
       icon: Briefcase,
-      color: 'bg-purple-500',
+      color: 'bg-blue-500',
       link: `/${hospitalId}/hr/staff`,
     },
   ], [stats, hospitalId]);
@@ -123,27 +123,27 @@ export default function HRDashboard() {
                 {stats?.recentStaff
                   ?.filter((staff: any) => staff.role !== 'emergency')
                   .map((staff: any) => (
-                  <tr key={staff._id} className="hover:bg-gray-50 transition-colors">
-                    <td className="py-4">
-                      <div className="font-bold text-gray-900">{staff.name}</div>
-                      <div className="text-xs text-gray-400">{staff.email}</div>
-                    </td>
-                    <td className="py-4">
-                      <span className="text-xs font-bold text-gray-600 bg-gray-50 px-3 py-1 rounded-full border border-gray-100 uppercase tracking-wider">
-                        {staff.role}
-                      </span>
-                    </td>
-                    <td className="py-4 text-sm text-gray-500 font-medium">
-                      {new Date(staff.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="py-4">
-                      <span className={`flex items-center gap-1 text-[10px] font-black uppercase ${staff.status === 'active' ? 'text-emerald-600' : 'text-amber-600'}`}>
-                        {staff.status === 'active' ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                        {staff.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                    <tr key={staff._id} className="hover:bg-gray-50 transition-colors">
+                      <td className="py-4">
+                        <div className="font-bold text-gray-900">{staff.name}</div>
+                        <div className="text-xs text-gray-400">{staff.email}</div>
+                      </td>
+                      <td className="py-4">
+                        <span className="text-xs font-bold text-gray-600 bg-gray-50 px-3 py-1 rounded-full border border-gray-100 uppercase tracking-wider">
+                          {staff.role}
+                        </span>
+                      </td>
+                      <td className="py-4 text-sm text-gray-500 font-medium">
+                        {new Date(staff.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="py-4">
+                        <span className={`flex items-center gap-1 text-[10px] font-black uppercase ${staff.status === 'active' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                          {staff.status === 'active' ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                          {staff.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
@@ -160,8 +160,8 @@ export default function HRDashboard() {
                     <span className="font-black text-gray-900">{item.count}</span>
                   </div>
                   <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                    <div 
-                      className="bg-indigo-600 h-full transition-all duration-1000" 
+                    <div
+                      className="bg-indigo-600 h-full transition-all duration-1000"
                       style={{ width: `${(item.count / stats.totalStaff) * 100}%` }}
                     />
                   </div>

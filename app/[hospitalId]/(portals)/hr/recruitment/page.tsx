@@ -59,7 +59,7 @@ export default function RecruitmentPage() {
       try {
         const { getSocket, joinSocketRoom } = await import('@/lib/integrations/api/socket');
         const socket = await getSocket();
-        
+
         if (socket && isMounted) {
           const userId = authUser?.id || authUser?._id;
           if (userId) {
@@ -169,24 +169,26 @@ export default function RecruitmentPage() {
 
   return (
     <div className="p-8 space-y-8 bg-gray-50 min-h-screen">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-        <div className="flex items-center gap-6">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-4">
-              <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">Recruitment Management</h1>
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-lg shadow-indigo-100 text-[10px] uppercase tracking-widest"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Raise Request
-              </button>
-            </div>
-            <p className="text-slate-500 text-[10px] font-medium uppercase tracking-tight">Manage job postings and evaluate talent across departments.</p>
-          </div>
+      <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm min-h-[72px]">
+        {/* LEFT: Title + subtitle */}
+        <div className="flex flex-col gap-1 shrink-0">
+          <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">Recruitment Management</h1>
+          <p className="text-slate-500 text-[10px] font-medium uppercase tracking-tight">Manage job postings and evaluate talent across departments.</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4">
+        {/* CENTER: Raise Request button — flex-1 keeps it truly centred */}
+        <div className="flex-1 flex items-center justify-center">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-lg shadow-indigo-100 text-[10px] uppercase tracking-widest"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Raise Request
+          </button>
+        </div>
+
+        {/* RIGHT: Stats */}
+        <div className="flex items-center shrink-0">
           <div className="flex items-center gap-6 px-6 py-2 bg-slate-50/50 rounded-xl border border-slate-100">
             {stats.map((stat, i) => (
               <React.Fragment key={i}>

@@ -57,15 +57,21 @@ function NotificationCenter({ showAuditHistory = true }: NotificationCenterProps
 
               // 🎵 Play notification sound
               try {
-                let soundFile = '/assets/nurse.mp3';
+                // Check if this is an appointment-related notification
+                const isAppointment = newNotif.type?.toLowerCase().includes('appointment') ||
+                  newNotif.message?.toLowerCase().includes('appointment');
 
-                // Use emergency sound for critical alerts and hospital-wide announcements
-                if (['emergency_alert', 'critical_vitals', 'abnormal_vitals', 'hospital_announcement'].includes(newNotif.type)) {
-                  soundFile = '/assets/emergency.mp3';
+                if (!isAppointment) {
+                  let soundFile = '/assets/nurse.mp3';
+
+                  // Use emergency sound for critical alerts and hospital-wide announcements
+                  if (['emergency_alert', 'critical_vitals', 'abnormal_vitals', 'hospital_announcement'].includes(newNotif.type)) {
+                    soundFile = '/assets/emergency.mp3';
+                  }
+
+                  const audio = new Audio(soundFile);
+                  audio.play().catch(e => console.warn('Audio play failed:', e));
                 }
-
-                const audio = new Audio(soundFile);
-                audio.play().catch(e => console.warn('Audio play failed:', e));
               } catch (e) {
                 console.error('Audio initialization failed:', e);
               }

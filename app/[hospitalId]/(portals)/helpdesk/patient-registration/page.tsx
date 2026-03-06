@@ -46,8 +46,8 @@ export default function PatientRegistration() {
         gender: 'male',
         address: '',
         mobile: '',
+        patientEmail: '',
         emergencyContact: '',
-        emergencyContactEmail: '',
         bloodGroup: 'Unknown',
         allergies: '',
         medicalHistory: '',
@@ -132,7 +132,7 @@ export default function PatientRegistration() {
             case 'emergencyContact':
                 if (trimmed && !/^[6-9][0-9]{9}$/.test(trimmed.replace(/\D/g, ''))) return 'Invalid 10-digit number';
                 return '';
-            case 'emergencyContactEmail':
+            case 'patientEmail':
                 if (trimmed && trimmed.length > 100) return 'Email cannot exceed 100 characters';
                 if (trimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return 'Invalid email format';
                 return '';
@@ -178,7 +178,7 @@ export default function PatientRegistration() {
             processedValue = value.slice(0, 200);
         } else if (name === 'medicalHistory') {
             processedValue = value.slice(0, 400);
-        } else if (name === 'emergencyContactEmail') {
+        } else if (name === 'patientEmail') {
             processedValue = value.slice(0, 100);
         }
 
@@ -225,6 +225,7 @@ export default function PatientRegistration() {
             setSubmitting(true);
             const registrationData = {
                 ...formData,
+                email: formData.patientEmail || undefined,
                 age: parseInt(formData.age),
                 name: formData.name.trim(),
                 address: formData.address.trim(),
@@ -317,23 +318,28 @@ export default function PatientRegistration() {
                                         <input name="mobile" value={formData.mobile} onChange={handleChange} onBlur={() => handleBlur('mobile')} placeholder="10-digit number" className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${errors.mobile && touched.mobile ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold transition-all`} />
                                     } />
                                 </div>
-                                <div className="md:col-span-4">
+                                <div className="md:col-span-3">
                                     <FormInput label="Date of Birth" required error={touched.dob ? errors.dob : ''} component={
                                         <input type="date" name="dob" value={formData.dob} onChange={handleChange} onBlur={() => handleBlur('dob')} className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${errors.dob && touched.dob ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold transition-all`} />
                                     } />
                                 </div>
-                                <div className="md:col-span-3">
+                                <div className="md:col-span-2">
                                     <FormInput label="Age" required={!formData.dob} error={touched.age ? errors.age : ''} component={
                                         <input name="age" type="number" value={formData.age} onChange={handleChange} onBlur={() => handleBlur('age')} placeholder="Age" readOnly className={`w-full px-3 py-2 rounded-xl bg-slate-100 border ${errors.age && touched.age ? 'border-rose-500' : 'border-slate-200'} cursor-not-allowed text-sm font-bold transition-all opacity-70`} />
                                     } />
                                 </div>
-                                <div className="md:col-span-5">
+                                <div className="md:col-span-3">
                                     <FormInput label="Gender" required component={
                                         <select name="gender" value={formData.gender} onChange={handleChange} className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-teal-500 focus:bg-white outline-none text-sm font-bold transition-all">
                                             <option value="male">Male</option>
                                             <option value="female">Female</option>
                                             <option value="other">Other</option>
                                         </select>
+                                    } />
+                                </div>
+                                <div className="md:col-span-4">
+                                    <FormInput label="Patient Email" error={touched.patientEmail ? errors.patientEmail : ''} component={
+                                        <input name="patientEmail" type="email" value={formData.patientEmail} onChange={handleChange} onBlur={() => handleBlur('patientEmail')} placeholder="patient@example.com (optional)" className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${errors.patientEmail && touched.patientEmail ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold transition-all`} />
                                     } />
                                 </div>
                             </div>
@@ -362,9 +368,6 @@ export default function PatientRegistration() {
                                 </div>
                                 <FormInput label="Emergency Mobile" error={touched.emergencyContact ? errors.emergencyContact : ''} component={
                                     <input name="emergencyContact" value={formData.emergencyContact} onChange={handleChange} onBlur={() => handleBlur('emergencyContact')} placeholder="10-digit number" className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${errors.emergencyContact && touched.emergencyContact ? 'border-rose-500' : 'border-slate-200'} outline-none text-sm font-bold transition-all`} />
-                                } />
-                                <FormInput label="Email Address" error={touched.emergencyContactEmail ? errors.emergencyContactEmail : ''} component={
-                                    <input name="emergencyContactEmail" type="email" value={formData.emergencyContactEmail} onChange={handleChange} onBlur={() => handleBlur('emergencyContactEmail')} placeholder="patient@example.com" className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${errors.emergencyContactEmail && touched.emergencyContactEmail ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold transition-all`} />
                                 } />
                             </div>
                         </section>

@@ -16,6 +16,7 @@ export default function FeedbackForm() {
     const [selectedHospitals, setSelectedHospitals] = useState<string[]>([]);
     const [hospitals, setHospitals] = useState<any[]>([]);
     const [comment, setComment] = useState('');
+    const [otherText, setOtherText] = useState('');
     const [isConfirmed, setIsConfirmed] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoadingHospitals, setIsLoadingHospitals] = useState(false);
@@ -96,6 +97,7 @@ export default function FeedbackForm() {
         setSelectedCategories([]);
         setSelectedHospitals([]);
         setComment('');
+        setOtherText('');
         setIsConfirmed(false);
         setIsSubmitting(false);
         setIsSuccess(false);
@@ -286,6 +288,21 @@ export default function FeedbackForm() {
                                     </button>
                                 ))}
                             </div>
+                            {/* Other text input */}
+                            {selectedCategories.includes('Other') && (
+                                <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <label className="block text-xs font-bold text-gray-600 mb-1.5">Please specify the topic</label>
+                                    <input
+                                        autoFocus
+                                        type="text"
+                                        value={otherText}
+                                        onChange={(e) => setOtherText(e.target.value)}
+                                        placeholder="e.g. Cleanliness, Parking, Food quality..."
+                                        className="w-full px-4 py-2.5 rounded-xl border border-blue-200 bg-blue-50 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+                                        maxLength={120}
+                                    />
+                                </div>
+                            )}
                         </div>
                     )}
 

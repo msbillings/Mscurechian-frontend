@@ -10,6 +10,8 @@ import {
   Building,
   ShieldCheck,
   Zap,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Card, FormInput } from "@/components/admin";
@@ -102,6 +104,7 @@ export default function HREditStaffPage() {
   });
 
   const [showPasswordFields] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
@@ -340,8 +343,24 @@ export default function HREditStaffPage() {
             <div className="md:col-span-2">
               <FormInput label="Date of Birth" type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} className="rounded-xl" />
             </div>
-            <div className="md:col-span-3">
-              <FormInput label="Update Password" type="password" name="password" placeholder="Optional" onChange={handleChange} className="rounded-xl" />
+            <div className="md:col-span-3 space-y-1.5">
+              <label className="text-xs font-semibold text-gray-700 ml-1">Update Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="Optional"
+                  onChange={handleChange}
+                  className="w-full px-3 py-2.5 pr-10 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/10 outline-none transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(p => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
             </div>
           </div>
         </Card>

@@ -70,7 +70,21 @@ function ProfileSection({ profile, appointments }: ProfileSectionProps) {
                                 { label: 'Name', value: profile.user?.name || profile.name },
                                 { label: 'ID', value: profile.mrn, mono: true, color: 'text-blue-600' },
                                 { label: 'Gender', value: profile.gender || '---' },
-                                { label: 'Age', value: profile.dob ? (profile as any).age + ' Y' : profile.age ? profile.age + ' Y' : '---' }
+                                {
+                                    label: 'Age',
+                                    value: (() => {
+                                        const dobRaw = profile.dateOfBirth || profile.dob;
+                                        if (profile.age) return `${profile.age} Y`;
+                                        if (dobRaw) {
+                                            const dob = new Date(dobRaw);
+                                            const today = new Date();
+                                            let age = today.getFullYear() - dob.getFullYear();
+                                            if (today < new Date(today.getFullYear(), dob.getMonth(), dob.getDate())) age--;
+                                            return `${age} Y`;
+                                        }
+                                        return '---';
+                                    })()
+                                }
                             ].map((item, i) => (
                                 <div key={i} className="flex justify-between items-center py-1 sm:py-1.5 border-b border-gray-50 dark:border-white/5 last:border-0">
                                     <span className="text-[8px] font-black uppercase text-gray-400 tracking-wider ">{item.label}</span>
@@ -173,75 +187,47 @@ function ProfileSection({ profile, appointments }: ProfileSectionProps) {
                     </div>
                 </div>
 
-                {/* Vitals History */}
-                {vitalsHistory.length > 0 && (
-                    <div className="space-y-3 sm:space-y-4 py-6 sm:py-8">
-                        <div>
-                            <h3 className="text-lg sm:text-xl font-black uppercase tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
-                                <Activity className="w-5 h-5 text-blue-600" />
-                                Vitals <span className="text-blue-600">Trend</span>
+                {/* Vitals Trend — only show if there is more than 1 reading to avoid duplicating the card above */}
+                {vitalsHistory.length > 1 && (
+                    <div className="space-y-3 sm:space-y-4 pt-2">
+                        <div className="flex items-center gap-2 px-1">
+                            <Activity className="w-4 h-4 text-blue-600" />
+                            <h3 className="text-sm font-black uppercase tracking-tight text-gray-900 dark:text-white">
+                                Vitals <span className="text-blue-600">History</span>
                             </h3>
+                            <span className="text-[9px] font-black text-gray-400 bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded-full uppercase tracking-widest">{vitalsHistory.length} readings</span>
                         </div>
 
-                        <div className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm overflow-hidden">
+                        <div className="bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm overflow-hidden">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left">
                                     <thead>
                                         <tr className="bg-gray-50 dark:bg-white/5 uppercase font-black text-[8px] sm:text-[9px] tracking-widest text-gray-400">
-                                            <th className="py-4 px-4 sm:px-6">Timeline</th>
-                                            <th className="py-4 px-4 sm:px-6">Weight/Height</th>
-                                            <th className="py-4 px-4 sm:px-6">BP/Pulse</th>
-                                            <th className="py-4 px-4 sm:px-6">Temp/O2</th>
+                                            <th className="py-2.5 px-3 sm:px-5">Date</th>
+                                            <th className="py-2.5 px-3 sm:px-5">Wt / Ht</th>
+                                            <th className="py-2.5 px-3 sm:px-5">BP / Pulse</th>
+                                            <th className="py-2.5 px-3 sm:px-5">Temp / SpO₂</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50 dark:divide-white/5">
                                         {vitalsHistory.map((item, idx) => (
-                                            <tr key={idx} className="group hover:bg-gray-50 dark:hover:bg-white/5">
-                                                <td className="py-4 sm:py-6 px-4 sm:px-6">
-                                                    <p className="font-black text-gray-900 dark:text-white text-xs sm:text-sm">
+                                            <tr key={idx} className="group hover:bg-gray-50 dark:hover:bg-white/5 text-[9px] sm:text-xs">
+                                                <td className="py-2.5 sm:py-3 px-3 sm:px-5">
+                                                    <p className="font-black text-gray-900 dark:text-white">
                                                         {format(new Date(item.date), 'MMM dd, yy')}
                                                     </p>
-                                                    <p className="text-[8px] sm:text-[9px] text-gray-400 font-bold uppercase truncate max-w-[80px] sm:max-w-none">{item.hospital || 'Vault'}</p>
+                                                    <p className="text-[8px] text-gray-400 font-bold uppercase truncate max-w-[70px] sm:max-w-none">{item.hospital || 'Vault'}</p>
                                                 </td>
-                                                <td className="py-4 sm:py-6 px-4 sm:px-6">
-                                                    <div className="flex flex-col sm:flex-row gap-1 sm:gap-4 items-center">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <Activity className="w-3 h-3 text-gray-400" />
-                                                            <span className="text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300">{item.vitals.weight || '-'}kg</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <User className="w-3 h-3 text-gray-400" />
-                                                            <span className="text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300">{item.vitals.height || '-'}cm</span>
-                                                        </div>
-                                                    </div>
+                                                <td className="py-2.5 sm:py-3 px-3 sm:px-5 font-bold text-gray-700 dark:text-gray-300">
+                                                    {item.vitals.weight || '-'}kg / {item.vitals.height || '-'}cm
                                                 </td>
-                                                <td className="py-4 sm:py-6 px-4 sm:px-6">
-                                                    <div className="flex flex-col sm:flex-row gap-1 sm:gap-4 items-center">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <Heart className="w-3 h-3 text-red-500" />
-                                                            <span className="text-[10px] sm:text-xs font-bold text-blue-600">{item.vitals.bloodPressure || item.vitals.bp || '-'}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <Activity className="w-3 h-3 text-green-500" />
-                                                            <span className="text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300">{item.vitals.pulse || item.vitals.pulseRate || '-'}bpm</span>
-                                                        </div>
-                                                    </div>
+                                                <td className="py-2.5 sm:py-3 px-3 sm:px-5">
+                                                    <span className="font-bold text-blue-600">{item.vitals.bloodPressure || item.vitals.bp || '-'}</span>
+                                                    <span className="text-gray-400 mx-1">/</span>
+                                                    <span className="font-bold text-gray-700 dark:text-gray-300">{item.vitals.pulse || item.vitals.pulseRate || '-'}bpm</span>
                                                 </td>
-                                                <td className="py-4 sm:py-6 px-4 sm:px-6">
-                                                    <div className="flex flex-col sm:flex-row gap-1 sm:gap-4 items-center">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <Thermometer className="w-3 h-3 text-orange-500" />
-                                                            <span className="text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300">{item.vitals.temperature || '-'}°F</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <Wind className="w-3 h-3 text-blue-400" />
-                                                            <span className="text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300">{item.vitals.spO2 || item.vitals.spo2 || '-'}%</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <Activity className="w-3 h-3 text-amber-600" />
-                                                            <span className="text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300">{item.vitals.glucose || item.vitals.sugar || '-'}{item.vitals.glucoseType ? ` (${item.vitals.glucoseType})` : ''}</span>
-                                                        </div>
-                                                    </div>
+                                                <td className="py-2.5 sm:py-3 px-3 sm:px-5 font-bold text-gray-700 dark:text-gray-300">
+                                                    {item.vitals.temperature || '-'}°F / {item.vitals.spO2 || item.vitals.spo2 || '-'}%
                                                 </td>
                                             </tr>
                                         ))}

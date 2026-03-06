@@ -115,7 +115,7 @@ function HRHospitalDoctors() {
           <p className="text-sm text-slate-500 font-medium mt-1">Registry of {doctors.length} verified medical faculty</p>
         </div>
         <button
-          onClick={() => router.push(`/${hospitalId}/hr/staff/create`)}
+          onClick={() => router.push(`/${hospitalId}/hr/hospital/doctors/create`)}
           className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all"
         >
           <Plus size={16} strokeWidth={3} /> Onboard Physician

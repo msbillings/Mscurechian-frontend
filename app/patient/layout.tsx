@@ -117,7 +117,7 @@ function PatientPortalLayout({ children }: { children: React.ReactNode }) {
                     onLogout={() => setIsLogoutModalOpen(true)}
                 />
 
-                <main className="p-4 sm:p-6 flex-1 bg-white relative mt-16">
+                <main className="p-2 sm:p-6 flex-1 bg-white relative mt-16">
                     {isPending && (
                         <div className="absolute inset-0 bg-white/10 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-300">
                             <div className="flex flex-col items-center gap-4">

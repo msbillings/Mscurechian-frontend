@@ -407,7 +407,7 @@ export default function EditFrontdeskProfilePage() {
     ];
 
     return (
-        <div className="max-w-6xl mx-auto py-2 sm:py-8 px-[5px] sm:px-4">
+        <div className="max-w-7xl mx-auto py-2 sm:py-8 px-[5px] sm:px-4">
             <DocumentViewerModal
                 isOpen={viewer.isOpen}
                 onClose={() => setViewer({ ...viewer, isOpen: false })}
@@ -424,7 +424,7 @@ export default function EditFrontdeskProfilePage() {
                         <ArrowLeft size={20} className="sm:size-6" />
                     </button>
                     <div>
-                        <h1 className="text-xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tighter">Frontdesk Profile</h1>
+                        <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter">Frontdesk Profile</h1>
                         <p className="text-[10px] sm:text-xs text-gray-500 font-bold uppercase tracking-widest mt-0.5 sm:mt-1">Healthcare Administration Registry</p>
                     </div>
                 </div>
@@ -537,9 +537,78 @@ export default function EditFrontdeskProfilePage() {
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Exp. (Years)</label>
-                                            <input type="number" name="experienceYears" value={formData.experienceYears} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" />
+                                            <input type="text" name="experienceYears" value={formData.experienceYears} onChange={handleChange} placeholder="e.g. 3" className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none" />
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'qualifications' && (
+                        <div className="space-y-8 animate-in fade-in duration-300">
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Qualifications &amp; Credentials</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Registration / License Number</label>
+                                        <input
+                                            type="text"
+                                            name="registrationNumber"
+                                            value={formData.registrationNumber}
+                                            onChange={handleChange}
+                                            placeholder="e.g. REG-2024-001"
+                                            className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">License Validity Date</label>
+                                        <input
+                                            type="date"
+                                            name="licenseValidityDate"
+                                            value={formData.licenseValidityDate}
+                                            onChange={handleChange}
+                                            className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Qualifications / Degrees</label>
+                                        <button
+                                            type="button"
+                                            onClick={addQualification}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all active:scale-95"
+                                        >
+                                            <Plus size={12} /> Add
+                                        </button>
+                                    </div>
+
+                                    {formData.qualifications.length === 0 && (
+                                        <p className="text-xs text-gray-400 italic py-4 text-center border border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
+                                            No qualifications added yet. Click &ldquo;Add&rdquo; to begin.
+                                        </p>
+                                    )}
+
+                                    {formData.qualifications.map((q: string, i: number) => (
+                                        <div key={i} className="flex items-center gap-3">
+                                            <input
+                                                type="text"
+                                                value={q}
+                                                onChange={(e) => handleQualificationChange(i, e.target.value)}
+                                                placeholder={`e.g. B.Sc in Healthcare Administration`}
+                                                className="flex-1 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeQualification(i)}
+                                                className="p-2.5 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>

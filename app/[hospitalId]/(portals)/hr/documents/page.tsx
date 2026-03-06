@@ -290,15 +290,32 @@ export default function DocumentVaultPage() {
     },
   ];
 
-  const handleDownload = (url: string, title: string) => {
+  const handleDownload = async (url: string, title: string) => {
     if (!url) return;
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = title;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      // Force Cloudinary to serve the file as an attachment (download)
+      const downloadUrl = url.includes('cloudinary.com')
+        ? url.replace('/upload/', '/upload/fl_attachment/')
+        : url;
+      const res = await fetch(downloadUrl);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = title || 'document';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      // Fallback: open with download attribute hint
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = title || 'document';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const handleView = (url: string, title?: string) => {
@@ -321,38 +338,43 @@ export default function DocumentVaultPage() {
   };
 
   return (
-    <div className="p-8 space-y-8 bg-gray-50 min-h-screen font-sans">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight uppercase">Document Vault</h1>
-          <p className="text-gray-500 font-medium tracking-tight">
-            Securely manage staff contracts, identification, and medical credentials.
-          </p>
+    <div className="p-8 space-y-6 bg-gray-50 min-h-screen font-sans">
+      {/* HEADER BAR — same pattern as Recruitment page */}
+      <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm min-h-[72px]">
+        {/* LEFT: title + subtitle */}
+        <div className="flex flex-col gap-0.5 shrink-0">
+          <h1 className="text-xl font-black text-gray-900 tracking-tight leading-none uppercase">Document Vault</h1>
+          <p className="text-slate-500 text-[10px] font-medium uppercase tracking-tight">Securely manage staff contracts, identification, and medical credentials.</p>
         </div>
-        <div className="flex gap-4">
+
+        {/* CENTER: Upload button */}
+        <div className="flex-1 flex items-center justify-center">
           <button
             onClick={() => setIsUploadModalOpen(true)}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-indigo-100"
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-lg shadow-indigo-100 text-[10px] uppercase tracking-widest"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-3.5 h-3.5" />
             Upload Document
           </button>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {stats.map((stat, i) => (
-          <div
-            key={i}
-            className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all hover:-translate-y-1"
-          >
-            <div className={`w-12 h-12 rounded-xl ${stat.bg} flex items-center justify-center ${stat.color} mb-4`}>
-              <stat.icon className="w-6 h-6" />
-            </div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{stat.label}</p>
-            <h3 className="text-2xl font-black text-gray-900">{stat.value}</h3>
+        {/* RIGHT: Stats */}
+        <div className="flex items-center shrink-0">
+          <div className="flex items-center gap-6 px-6 py-2 bg-slate-50/50 rounded-xl border border-slate-100">
+            {stats.map((stat, i) => (
+              <React.Fragment key={i}>
+                <div className="flex flex-col">
+                  <div className={`flex items-center gap-1.5 mb-0.5 ${stat.color}`}>
+                    <stat.icon size={12} />
+                    <span className="text-[8px] font-black uppercase tracking-widest">{stat.label}</span>
+                  </div>
+                  <p className="text-lg font-black text-slate-900 leading-none">{stat.value}</p>
+                </div>
+                {i < stats.length - 1 && <div className="w-px h-8 bg-slate-200" />}
+              </React.Fragment>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -459,76 +481,72 @@ export default function DocumentVaultPage() {
                   ) : (
                     documents.map((doc: any) => (
                       <tr key={doc.id} className="hover:bg-gray-50/50 transition-all group">
-                        <td className="p-6 pl-8">
-                          <div className="flex items-center gap-5">
-                            <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 transition-all group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white group-hover:rotate-3 shadow-sm">
-                              <FileText size={24} />
+                        <td className="px-5 py-3 pl-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 transition-all group-hover:bg-indigo-600 group-hover:text-white shadow-sm shrink-0">
+                              <FileText size={16} />
                             </div>
                             <div>
-                              <p className="font-black text-gray-900 group-hover:text-indigo-600 transition-all uppercase tracking-tight text-[13px]">
+                              <p className="font-black text-gray-900 group-hover:text-indigo-600 transition-all uppercase tracking-tight text-[11px]">
                                 {doc.title}
                               </p>
-                              <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2rem] mt-0.5">
+                              <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15rem] mt-0.5">
                                 {doc.size} • Uploaded {doc.date}
                               </p>
                             </div>
                           </div>
                         </td>
-                        <td className="p-6">
-                          <span className="text-[10px] font-black text-gray-500 bg-gray-50 px-3 py-1.5 rounded-xl uppercase tracking-widest border border-gray-100">
+                        <td className="px-5 py-3">
+                          <span className="text-[9px] font-black text-gray-500 bg-gray-50 px-2 py-1 rounded-lg uppercase tracking-widest border border-gray-100">
                             {doc.type}
                           </span>
                         </td>
-                        <td className="p-6">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center text-[10px] font-black text-gray-400">
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-5 h-5 rounded-md bg-gray-100 flex items-center justify-center text-[9px] font-black text-gray-400">
                               {doc.staff?.charAt(0)}
                             </div>
-                            <span className="text-[11px] font-black text-gray-700 uppercase tracking-tight">{doc.staff}</span>
+                            <span className="text-[10px] font-black text-gray-700 uppercase tracking-tight">{doc.staff}</span>
                           </div>
                         </td>
-                        <td className="p-6">
+                        <td className="px-5 py-3">
                           <span
-                            className={`px-4 py-2 text-[9px] font-black uppercase tracking-[0.2rem] rounded-xl border flex items-center gap-2 w-fit ${doc.status === 'verified'
-                              ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                              : doc.status === 'expiring'
-                                ? 'bg-amber-50 text-amber-600 border-amber-100'
-                                : 'bg-gray-50 text-gray-600 border-gray-100'
+                            className={`px-3 py-1 text-[9px] font-black uppercase tracking-[0.15rem] rounded-lg border flex items-center gap-1.5 w-fit ${doc.status === 'verified'
+                                ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                : doc.status === 'expiring'
+                                  ? 'bg-amber-50 text-amber-600 border-amber-100'
+                                  : 'bg-gray-50 text-gray-600 border-gray-100'
                               }`}
                           >
                             <div
-                              className={`w-2 h-2 rounded-full shadow-sm animate-pulse ${doc.status === 'verified'
-                                ? 'bg-emerald-500'
-                                : doc.status === 'expiring'
-                                  ? 'bg-amber-500'
-                                  : 'bg-gray-400'
+                              className={`w-1.5 h-1.5 rounded-full ${doc.status === 'verified' ? 'bg-emerald-500' : doc.status === 'expiring' ? 'bg-amber-500' : 'bg-gray-400'
                                 }`}
                             />
                             {doc.status}
                           </span>
                         </td>
-                        <td className="p-6 text-right pr-8">
-                          <div className="flex items-center justify-end gap-2">
+                        <td className="px-5 py-3 text-right pr-6">
+                          <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => handleView(doc.url, doc.title)}
-                              className="p-3 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all shadow-sm bg-white border border-gray-50"
+                              className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
                               title="View Document"
                             >
-                              <Eye size={18} />
+                              <Eye size={15} />
                             </button>
                             <button
                               onClick={() => handleDownload(doc.url, doc.title)}
-                              className="p-3 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-all shadow-sm bg-white border border-gray-50"
+                              className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
                               title="Download Document"
                             >
-                              <Download size={18} />
+                              <Download size={15} />
                             </button>
                             <button
                               onClick={() => handleDelete(doc)}
-                              className="p-3 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-2xl transition-all shadow-sm bg-white border border-gray-50"
+                              className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                               title="Delete Document"
                             >
-                              <Trash2 size={18} />
+                              <Trash2 size={15} />
                             </button>
                           </div>
                         </td>
