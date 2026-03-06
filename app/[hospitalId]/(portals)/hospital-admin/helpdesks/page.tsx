@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
 import {
   Headphones, Plus, Edit2, Trash2, Phone, Mail, Search,
-  Copy, Check, KeyRound, Eye, EyeOff, ShieldCheck, AlertCircle, CheckCircle2,
+  Copy, Check, KeyRound, Eye, EyeOff, ShieldCheck, ShieldOff, AlertCircle, CheckCircle2,
 } from "lucide-react";
 import { Modal, ConfirmModal, FormInput, FormSelect, FormTextarea } from "@/components/admin";
 
@@ -236,13 +236,49 @@ export default function HelpdeskManagement() {
     finally { setLoading(false); }
   };
 
+  const handleToggleStatus = async (h: Helpdesk) => {
+    const isActivating = h.status === 'inactive';
+    const action = isActivating ? 'Reactivate' : 'Deactivate';
+
+    setConfirmModal({
+      isOpen: true,
+      title: `${action} Hub Account`,
+      message: isActivating 
+        ? `Ready to restore operational status for ${h.name || 'this personnel'}?` 
+        : `Are you sure you want to deactivate ${h.name || 'this personnel'}? Dashboard access will be suspended but credentials will be preserved.`,
+      onConfirm: async () => {
+        try {
+          setLoading(true);
+          await hospitalAdminService.updateHelpdesk(h._id, { status: isActivating ? 'active' : 'inactive' });
+          toast.success(isActivating ? "Account reactivated" : "Account suspended");
+          queryClient.invalidateQueries({ queryKey: ['helpdesks'] });
+        } catch (err: any) {
+          toast.error(err.message || "Status change failed");
+        } finally {
+          setLoading(false);
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
+  };
+
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: "", message: "", onConfirm: () => { } });
+
   const onDeleteConfirm = async () => {
     if (!selectedHelpdesk) return;
+    if (selectedHelpdesk.status !== 'inactive') {
+      toast.error("Account must be deactivated (status: inactive) before permanent deletion.");
+      setIsDeleteModalOpen(false);
+      return;
+    }
     try {
       await hospitalAdminService.deleteHelpdesk(selectedHelpdesk._id);
-      toast.success("Staff removed"); setIsDeleteModalOpen(false);
+      toast.success("Staff removed permanently"); 
+      setIsDeleteModalOpen(false);
       queryClient.invalidateQueries({ queryKey: ['helpdesks'] });
-    } catch { toast.error("Delete failed"); }
+    } catch (err: any) { 
+      toast.error(err.message || "Delete failed"); 
+    }
   };
 
   const onResetPassword = async (h: Helpdesk) => {
@@ -385,15 +421,32 @@ export default function HelpdeskManagement() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
-                      {h.status?.toUpperCase() || 'ACTIVE'}
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
+                      h.status === 'inactive' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                    }`}>
+                      {h.status || 'ACTIVE'}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex justify-end gap-3">
                       <button type="button" onClick={() => onResetPassword(h)} className="text-orange-400 hover:text-orange-600 transition-colors" title="Reset Password"><KeyRound size={17}/></button>
                       <button type="button" onClick={() => handleEditClick(h)} className="text-blue-400 hover:text-blue-600 transition-colors" title="Edit"><Edit2 size={17}/></button>
-                      <button type="button" onClick={() => { setSelectedHelpdesk(h); setIsDeleteModalOpen(true); }} className="text-red-400 hover:text-red-600 transition-colors" title="Delete"><Trash2 size={17}/></button>
+                      
+                      {/* Toggle Status */}
+                      <button type="button" onClick={() => handleToggleStatus(h)} className={`${h.status === 'inactive' ? 'text-emerald-500 hover:text-emerald-700' : 'text-amber-400 hover:text-amber-600'} transition-colors`} title={h.status === 'inactive' ? "Activate" : "Deactivate"}>
+                        {h.status === 'inactive' ? <ShieldCheck size={17}/> : <ShieldOff size={17}/>}
+                      </button>
+
+                      {/* Delete - Only enabled if inactive */}
+                      <button 
+                        type="button" 
+                        onClick={() => { setSelectedHelpdesk(h); setIsDeleteModalOpen(true); }} 
+                        className={`${h.status === 'inactive' ? 'text-red-400 hover:text-red-600' : 'text-slate-300 cursor-not-allowed'} transition-colors`} 
+                        title={h.status === 'inactive' ? "Permanently Remove" : "Deactivate before deleting"}
+                        disabled={h.status !== 'inactive'}
+                      >
+                        <Trash2 size={17}/>
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -768,6 +821,14 @@ export default function HelpdeskManagement() {
         title="Remove Hub Staff"
         message="Are you sure? This will immediately revoke their dashboard access and credentials. This action cannot be undone."
         confirmText="Remove Access"
+      />
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
       />
     </div>
   );

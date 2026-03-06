@@ -19,9 +19,12 @@ import {
   Search,
   Filter,
   Power,
-  Ban
+  Ban,
+  ShieldCheck,
+  ShieldOff
 } from "lucide-react";
 import { PageHeader, Card, Button } from "@/components/admin";
+import { ConfirmModal } from '@/components/admin/Modal';
 
 function HospitalAdminDoctors() {
   const router = useRouter();
@@ -48,54 +51,72 @@ function HospitalAdminDoctors() {
     retry: 1,
   });
 
-  const handleDeactivate = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to deactivate Dr. ${name}? The doctor will no longer be active but their profile will be preserved.`)) {
-      return;
-    }
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: "", message: "", onConfirm: () => { } });
 
-    setDeleteLoading(`${id}:toggle`);
-    try {
-      await hospitalAdminService.deactivateDoctor(id);
-      toast.success(`Dr. ${name} has been deactivated successfully`);
-      refetch(); // ✅ Use React Query refetch
-    } catch (error: any) {
-      console.error("Failed to deactivate doctor:", error);
-      toast.error(error.message || "Failed to deactivate doctor");
-    } finally {
-      setDeleteLoading(null);
-    }
+  const handleDeactivate = async (id: string, name: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Deactivate Faculty",
+      message: `Are you sure you want to deactivate Dr. ${name}? The physician node will be placed in suspension but metadata will be preserved.`,
+      onConfirm: async () => {
+        setDeleteLoading(`${id}:toggle`);
+        try {
+          await hospitalAdminService.deactivateDoctor(id);
+          toast.success(`Dr. ${name} suspended successfully`);
+          refetch();
+        } catch (error: any) {
+          console.error("Failed to deactivate doctor:", error);
+          toast.error(error.message || "Failed to deactivate faculty node");
+        } finally {
+          setDeleteLoading(null);
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
   };
 
   const handleActivate = async (id: string, name: string) => {
-    setDeleteLoading(`${id}:toggle`);
-    try {
-      await hospitalAdminService.activateDoctor(id);
-      toast.success(`Dr. ${name} has been activated successfully`);
-      refetch(); // ✅ Use React Query refetch
-    } catch (error: any) {
-      console.error("Failed to activate doctor:", error);
-      toast.error(error.message || "Failed to activate doctor");
-    } finally {
-      setDeleteLoading(null);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: "Reactivate Faculty",
+      message: `Ready to restore operational status for Dr. ${name}?`,
+      onConfirm: async () => {
+        setDeleteLoading(`${id}:toggle`);
+        try {
+          await hospitalAdminService.activateDoctor(id);
+          toast.success(`Dr. ${name} restored to active registry`);
+          refetch();
+        } catch (error: any) {
+          console.error("Failed to activate doctor:", error);
+          toast.error(error.message || "Failed to reactivate faculty node");
+        } finally {
+          setDeleteLoading(null);
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
   };
 
   const handlePermanentDelete = async (id: string, name: string) => {
-    if (!confirm(`⚠️ PERMANENT DELETE: Are you sure you want to permanently remove Dr. ${name} from your hospital? This action cannot be undone!`)) {
-      return;
-    }
-
-    setDeleteLoading(`${id}:delete`);
-    try {
-      await hospitalAdminService.deleteDoctor(id);
-      toast.success(`Dr. ${name} has been permanently removed from the hospital`);
-      refetch(); // ✅ Use React Query refetch
-    } catch (error: any) {
-      console.error("Failed to delete doctor:", error);
-      toast.error(error.message || "Failed to delete doctor");
-    } finally {
-      setDeleteLoading(null);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: "Permanent Node Purge",
+      message: `CRITICAL: Are you sure you want to permanently purge Dr. ${name}? All clinical metadata, credentials, and links to this node will be wiped. Action is IRREVERSIBLE.`,
+      onConfirm: async () => {
+        setDeleteLoading(`${id}:delete`);
+        try {
+          await hospitalAdminService.deleteDoctor(id);
+          toast.success(`Faculty node ${name} purged from mainframe`);
+          refetch();
+        } catch (error: any) {
+          console.error("Failed to delete doctor:", error);
+          toast.error(error.message || "Purge failed — ensure node is inactive first");
+        } finally {
+          setDeleteLoading(null);
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
   };
 
   // ✅ OPTIMIZATION: Memoize unique specialties
@@ -293,28 +314,30 @@ function HospitalAdminDoctors() {
                         ? 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 hover:border-emerald-200'
                         : 'text-amber-500 hover:text-amber-600 hover:bg-amber-50 hover:border-amber-200'
                         }`}
-                      title={doctor.status === 'inactive' ? "Reactivate Doctor" : "Deactivate Doctor"}
+                      title={doctor.status === 'inactive' ? "Reactivate Physician" : "Suspend Physician"}
                     >
                       {deleteLoading === `${doctor.doctorProfileId || doctor._id}:toggle` ? (
                         <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                       ) : (
-                        doctor.status === 'inactive' ? <Power size={16} strokeWidth={2.5} /> : <Ban size={16} strokeWidth={2.5} />
+                        doctor.status === 'inactive' ? <ShieldCheck size={16} strokeWidth={2.5} /> : <ShieldOff size={16} strokeWidth={2.5} />
                       )}
                     </button>
 
-                    {/* Permanent Delete */}
-                    <button
-                      onClick={() => handlePermanentDelete(doctor.doctorProfileId || doctor._id, doctor.name)}
-                      disabled={!!deleteLoading && deleteLoading.startsWith(doctor.doctorProfileId || doctor._id)}
-                      className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all disabled:opacity-50"
-                      title="Permanently Delete"
-                    >
-                      {deleteLoading === `${doctor.doctorProfileId || doctor._id}:delete` ? (
-                        <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                      ) : (
-                        <Trash2 size={16} />
-                      )}
-                    </button>
+                    {/* Permanent Delete - Only Visible when Inactive */}
+                    {doctor.status === 'inactive' && (
+                      <button
+                        onClick={() => handlePermanentDelete(doctor.doctorProfileId || doctor._id, doctor.name)}
+                        disabled={!!deleteLoading && deleteLoading.startsWith(doctor.doctorProfileId || doctor._id)}
+                        className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all disabled:opacity-50"
+                        title="Permanent Master Delete"
+                      >
+                        {deleteLoading === `${doctor.doctorProfileId || doctor._id}:delete` ? (
+                          <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <Trash2 size={16} />
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -322,6 +345,14 @@ function HospitalAdminDoctors() {
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+      />
     </div>
   );
 }

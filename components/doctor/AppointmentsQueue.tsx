@@ -14,9 +14,10 @@ interface Appointment {
 
 interface QueueToggleProps {
   appointments: Appointment[];
+  consultationDuration?: number;
 }
 
-function AppointmentsQueue({ appointments }: QueueToggleProps) {
+function AppointmentsQueue({ appointments, consultationDuration = 0 }: QueueToggleProps) {
   const [showQueue, setShowQueue] = useState(false);
 
   // Sort appointments by creation time (queue order)
@@ -59,8 +60,9 @@ function AppointmentsQueue({ appointments }: QueueToggleProps) {
           appointments.length > 0 ? (
             <div className="space-y-3">
               {sortedAppointments.map((apt, idx) => {
-                // Calculate estimated wait time (20 min per patient)
-                const estimatedWaitMinutes = idx * 20;
+                // Calculate estimated wait time
+                const duration = consultationDuration || 15;
+                const estimatedWaitMinutes = idx * duration;
                 const hours = Math.floor(estimatedWaitMinutes / 60);
                 const minutes = estimatedWaitMinutes % 60;
                 const waitTime = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
@@ -101,7 +103,7 @@ function AppointmentsQueue({ appointments }: QueueToggleProps) {
                       <p className="text-sm font-bold text-gray-900 dark:text-white">
                         {apt.time}
                       </p>
-                      <p className="text-xs text-gray-400">~20min</p>
+                      <p className="text-xs text-gray-400">~{consultationDuration || 15}min</p>
                     </div>
                   </div>
                 );
@@ -114,7 +116,7 @@ function AppointmentsQueue({ appointments }: QueueToggleProps) {
                     Total Estimated Time
                   </span>
                   <span className="text-lg font-black text-blue-600">
-                    {Math.floor((appointments.length * 20) / 60)}h {(appointments.length * 20) % 60}m
+                    {Math.floor((appointments.length * (consultationDuration || 15)) / 60)}h {(appointments.length * (consultationDuration || 15)) % 60}m
                   </span>
                 </div>
               </div>

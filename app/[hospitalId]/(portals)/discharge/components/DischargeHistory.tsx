@@ -15,7 +15,6 @@ import {
     ArrowLeft,
     Plus,
     CreditCard,
-    Settings,
     LayoutGrid,
     Table as TableIcon
 } from 'lucide-react';
@@ -26,7 +25,6 @@ import { useReactToPrint } from 'react-to-print';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
-import { BrandingModal } from '@/components/hospital-admin/BrandingModal';
 
 interface DischargeHistoryProps {
     basePath: string;
@@ -50,7 +48,6 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
     });
 
     const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
-    const [isBrandingModalOpen, setIsBrandingModalOpen] = useState(false);
 
     // Printing state
     const [printData, setPrintData] = useState<any>(null);
@@ -206,15 +203,6 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
 
                             {user?.role === 'hospital-admin' && (
                                 <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        suppressHydrationWarning
-                                        onClick={() => setIsBrandingModalOpen(true)}
-                                        className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-900 rounded-xl font-bold hover:bg-slate-50 transition-all text-[10px] uppercase tracking-wider shadow-sm"
-                                    >
-                                        <Settings size={16} />
-                                        Receipt Meta
-                                    </button>
                                     <Link
                                         href="/hospital-admin/transactions?type=Discharge"
                                         className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all text-[10px] uppercase tracking-wider shadow-lg shadow-emerald-200"
@@ -497,11 +485,6 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
                     consultants={printData?.consultants || []}
                 />
             </div>
-
-            <BrandingModal
-                isOpen={isBrandingModalOpen}
-                onClose={() => setIsBrandingModalOpen(false)}
-            />
         </div>
     );
 }

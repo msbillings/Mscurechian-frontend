@@ -23,10 +23,7 @@ export default function CreateTicketModal({ isOpen, onClose, onSuccess, basePath
                 </div>
                 <div className="p-8 max-h-[80vh] overflow-y-auto">
                     <CreateTicketForm
-                        onSuccess={() => {
-                            onSuccess();
-                            onClose();
-                        }}
+                        onSuccess={onSuccess}
                         basePath={basePath}
                     />
                 </div>

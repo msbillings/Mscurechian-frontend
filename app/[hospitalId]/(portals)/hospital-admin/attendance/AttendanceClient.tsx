@@ -16,7 +16,8 @@ import {
   LayoutGrid,
   List,
   FileSpreadsheet,
-  ChevronDown
+  ChevronDown,
+  CalendarRange
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { PageHeader, Card, Button } from "@/components/admin";
@@ -232,7 +233,7 @@ const SummaryRow = React.memo(({
 SummaryRow.displayName = 'SummaryRow';
 
 
-// Helper to filter data by role — always excludes helpdesk
+// Helper to filter data by role — includes all roles (doctors, nurses, staff, helpdesk/frontdesk)
 const rowFilterData = (data: any[], roleFilter?: string) => {
   return data.filter(item => {
     const role = (
@@ -242,7 +243,7 @@ const rowFilterData = (data: any[], roleFilter?: string) => {
       ''
     ).toLowerCase();
 
-    // If a specific role is requested, filter to that role
+    // If a specific role is requested, filter to that role only
     if (roleFilter) return role === roleFilter.toLowerCase();
 
     return true;
@@ -262,6 +263,11 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
   const [staffList, setStaffList] = useState<any[]>([]);
   const [page, setPage] = useState(1);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showDateRangePicker, setShowDateRangePicker] = useState(false);
+  const [customRange, setCustomRange] = useState({
+    from: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // last 7 days default
+    to: new Date().toISOString().split('T')[0]
+  });
 
   useEffect(() => {
     fetchStaff();
@@ -453,10 +459,16 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
     }
   };
 
-  const exportData = async (type: 'today' | 'weekly' | 'monthly' | 'yearly' | 'consolidated') => {
+  const exportData = async (type: 'today' | 'weekly' | 'monthly' | 'yearly' | 'consolidated' | 'custom') => {
     if (type === 'consolidated') {
       exportSummaryReport();
       setShowExportMenu(false);
+      return;
+    }
+
+    // Custom date range: show inline picker, don't close menu yet
+    if (type === 'custom') {
+      setShowDateRangePicker(true);
       return;
     }
 
@@ -581,6 +593,95 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
     }
   };
 
+  // ── Custom range export ──
+  const exportCustomRange = async () => {
+    if (!customRange.from || !customRange.to) {
+      toast.error('Please select both From and To dates');
+      return;
+    }
+    if (customRange.from > customRange.to) {
+      toast.error('From date cannot be after To date');
+      return;
+    }
+    setShowExportMenu(false);
+    setShowDateRangePicker(false);
+    try {
+      setLoading(true);
+      const res = await hospitalAdminService.getAttendance({
+        startDate: customRange.from,
+        endDate: customRange.to,
+      });
+      const dataToExport = res.attendance || [];
+      if (dataToExport.length === 0) {
+        toast.error(`No logs found between ${customRange.from} and ${customRange.to}`);
+        return;
+      }
+      const ExcelJS = (await import('exceljs')).default;
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Attendance History');
+
+      const titleRow = worksheet.addRow(['ATTENDANCE HISTORY LOGS']);
+      titleRow.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF1F4E78' } };
+      titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      worksheet.mergeCells('A1:H1');
+      titleRow.height = 30;
+      const orgRow = worksheet.addRow(['Attendance History Logs']);
+      orgRow.font = { name: 'Calibri', size: 12, bold: true };
+      orgRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      worksheet.mergeCells('A2:H2');
+      const periodRow = worksheet.addRow([`Period: ${customRange.from}  to  ${customRange.to} | Generated: ${new Date().toLocaleDateString('en-GB')}`]);
+      periodRow.font = { name: 'Calibri', size: 11, italic: true };
+      periodRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      worksheet.mergeCells('A3:H3');
+      worksheet.addRow([]);
+
+      const headers = ["Personnel Name", "Designation", "Employee ID", "Date", "Check-In", "Check-Out", "Duty Hours", "Status"];
+      const headerRow = worksheet.addRow(headers);
+      headerRow.eachCell((cell) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F2937' } };
+        cell.font = { name: 'Calibri', bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = { top: { style: 'thin', color: { argb: 'FF0070C0' } }, left: { style: 'thin', color: { argb: 'FF0070C0' } }, bottom: { style: 'thin', color: { argb: 'FF0070C0' } }, right: { style: 'thin', color: { argb: 'FF0070C0' } } };
+      });
+      worksheet.columns = [
+        { key: 'name', width: 25 }, { key: 'designation', width: 20 }, { key: 'empId', width: 15 },
+        { key: 'date', width: 12 }, { key: 'in', width: 15 }, { key: 'out', width: 15 },
+        { key: 'hours', width: 15 }, { key: 'status', width: 15 },
+      ];
+      dataToExport.forEach((rec: any) => {
+        const row = worksheet.addRow({
+          name: rec.staff?.user?.name || 'Unknown',
+          designation: rec.staff?.designation || 'Staff',
+          empId: rec.staff?.employeeId || 'N/A',
+          date: new Date(rec.date).toLocaleDateString('en-GB'),
+          in: rec.checkIn?.time ? new Date(rec.checkIn.time).toLocaleTimeString() : "-",
+          out: rec.checkOut?.time ? new Date(rec.checkOut.time).toLocaleTimeString() : "-",
+          hours: Number((rec.workingHours || 0) / 60).toFixed(2),
+          status: rec.status.toUpperCase()
+        });
+        row.eachCell((cell) => {
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+          cell.border = { top: { style: 'thin', color: { argb: 'FF0070C0' } }, left: { style: 'thin', color: { argb: 'FF0070C0' } }, bottom: { style: 'thin', color: { argb: 'FF0070C0' } }, right: { style: 'thin', color: { argb: 'FF0070C0' } } };
+          cell.font = { name: 'Calibri', size: 10 };
+        });
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `attendance_${customRange.from}_to_${customRange.to}.xlsx`);
+      link.click();
+      toast.success(`Custom range report exported (${customRange.from} to ${customRange.to})`);
+    } catch (err) {
+      console.error(err);
+      toast.error('Custom range export failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ✅ PERFORMANCE: Pagination Logic
   const paginatedAttendance = useMemo(() => {
     const start = (page - 1) * ITEMS_PER_PAGE;
@@ -634,11 +735,13 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
           </div>
         </Card>
 
+        {/* Present Today — only 'present' status, NOT late */}
         <Card padding="p-5" className="bg-white dark:bg-gray-900 border-none shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-gray-400 mb-1">Present Today</p>
               <h3 className="text-2xl font-bold text-emerald-600">{stats.today?.present || 0}</h3>
+              <p className="text-[10px] text-gray-400 mt-0.5">On-time arrivals only</p>
             </div>
             <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600">
               <CheckCircle size={20} />
@@ -646,14 +749,16 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
           </div>
         </Card>
 
+        {/* Late Today — shown separately from Present */}
         <Card padding="p-5" className="bg-white dark:bg-gray-900 border-none shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-400 mb-1">Absent Today</p>
-              <h3 className="text-2xl font-bold text-rose-600">{stats.today?.absent || 0}</h3>
+              <p className="text-xs font-semibold text-gray-400 mb-1">Late Today</p>
+              <h3 className="text-2xl font-bold text-amber-500">{stats.today?.late || 0}</h3>
+              <p className="text-[10px] text-gray-400 mt-0.5">Arrived after cutoff</p>
             </div>
-            <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-600">
-              <XCircle size={20} />
+            <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-500">
+              <Clock size={20} />
             </div>
           </div>
         </Card>
@@ -721,7 +826,7 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
           <div className="relative w-full md:w-auto mt-2 md:mt-0">
             <Button
               variant="primary"
-              onClick={() => setShowExportMenu(!showExportMenu)}
+              onClick={() => { setShowExportMenu(!showExportMenu); setShowDateRangePicker(false); }}
               className="w-full flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg font-bold text-sm bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               <FileSpreadsheet size={16} />
@@ -733,16 +838,16 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
               <>
                 <div
                   className="fixed inset-0 z-10"
-                  onClick={() => setShowExportMenu(false)}
+                  onClick={() => { setShowExportMenu(false); setShowDateRangePicker(false); }}
                 />
-                <div className="absolute right-0 mt-3 w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-20 py-2 backdrop-blur-lg overflow-hidden animate-in fade-in slide-in-from-top-2">
+                <div className="absolute right-0 mt-3 w-72 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-20 py-2 backdrop-blur-lg overflow-hidden">
                   <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-50 dark:border-gray-700 mb-1">Select Report Type</p>
                   {[
                     { key: 'consolidated', label: 'Consolidated Summary' },
-                    { key: 'today', label: 'Today\'s Attendance' },
+                    { key: 'today', label: "Today's Attendance" },
                     { key: 'weekly', label: 'Last 7 Days' },
                     { key: 'monthly', label: 'Monthly Logs' },
-                    { key: 'yearly', label: 'Yearly Logs' }
+                    { key: 'yearly', label: 'Yearly Logs' },
                   ].map((item) => (
                     <button
                       key={item.key}
@@ -750,9 +855,55 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
                       className="w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-gray-600 dark:text-gray-300 hover:text-indigo-600 transition-colors flex items-center justify-between"
                     >
                       {item.label}
-                      <Download size={14} className="opacity-0 group-hover:opacity-100" />
+                      <Download size={14} className="opacity-40" />
                     </button>
                   ))}
+
+                  {/* Custom Date Range section */}
+                  <div className="border-t border-gray-100 dark:border-gray-700 mt-1 pt-1">
+                    <button
+                      onClick={() => setShowDateRangePicker(prev => !prev)}
+                      className="w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-indigo-600 transition-colors flex items-center gap-2"
+                    >
+                      <CalendarRange size={14} />
+                      Custom Date Range
+                      <ChevronDown size={12} className={`ml-auto transition-transform ${showDateRangePicker ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {showDateRangePicker && (
+                      <div className="px-4 pb-3 space-y-2" onClick={e => e.stopPropagation()}>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">From</label>
+                            <input
+                              type="date"
+                              value={customRange.from}
+                              max={customRange.to}
+                              onChange={e => setCustomRange(r => ({ ...r, from: e.target.value }))}
+                              className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">To</label>
+                            <input
+                              type="date"
+                              value={customRange.to}
+                              min={customRange.from}
+                              max={new Date().toISOString().split('T')[0]}
+                              onChange={e => setCustomRange(r => ({ ...r, to: e.target.value }))}
+                              className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                            />
+                          </div>
+                        </div>
+                        <button
+                          onClick={exportCustomRange}
+                          className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
+                        >
+                          <Download size={13} /> Export Range
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </>
             )}

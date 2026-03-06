@@ -19,7 +19,9 @@ import {
     Search,
     Filter,
     ShieldCheck,
-    Building2
+    ShieldOff,
+    Building2,
+    Shield
 } from "lucide-react";
 import { PageHeader } from "@/components/admin";
 
@@ -55,20 +57,45 @@ export default function HospitalAdminNurses() {
     const nurses = nursesData?.nurses || [];
     const unitTypes = nursesData?.unitTypes || [];
 
-    const handleRetract = async (id: string, name: string) => {
+    const handleToggleStatus = async (id: string, currentStatus: string) => {
+        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+        const action = newStatus === 'active' ? 'Reactivate' : 'Deactivate';
+        
         setConfirmModal({
             isOpen: true,
-            title: "Retract Nurse",
-            message: `Are you sure you want to retract ${name} from the active nursing registry?`,
+            title: `${action} Nurse`,
+            message: `Are you sure you want to ${action.toLowerCase()} this nursing node?`,
             onConfirm: async () => {
                 try {
                     setDeleteLoading(id);
-                    await hospitalAdminService.updateStaff(id, { status: 'inactive' });
-                    toast.success("Nursing credentials retracted");
+                    await hospitalAdminService.updateStaff(id, { status: newStatus });
+                    toast.success(`Nursing credentials ${newStatus === 'active' ? 'reactivated' : 'deactivated'}`);
                     refetch();
                 } catch (error: any) {
-                    console.error("Failed to retract nurse:", error);
+                    console.error(`Failed to ${action} nurse:`, error);
                     toast.error(error.message || "Failed to update status");
+                } finally {
+                    setDeleteLoading(null);
+                    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                }
+            }
+        });
+    };
+
+    const handleDelete = async (id: string, name: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: "Permanent Deletion",
+            message: `Are you sure you want to permanently delete ${name}? This action is irreversible and will wipe all credentials and metadata for this clinical node.`,
+            onConfirm: async () => {
+                try {
+                    setDeleteLoading(id);
+                    await hospitalAdminService.deleteStaff(id);
+                    toast.success("Nursing node permanently deleted");
+                    refetch();
+                } catch (error: any) {
+                    console.error("Failed to delete nurse:", error);
+                    toast.error(error.message || "Deletion failed — node might still be active");
                 } finally {
                     setDeleteLoading(null);
                     setConfirmModal(prev => ({ ...prev, isOpen: false }));
@@ -86,7 +113,10 @@ export default function HospitalAdminNurses() {
             nurse.employeeId?.toLowerCase().includes(searchTerm.toLowerCase());
 
         const matchesDepartment =
-            !filterDepartment || nurse.department === filterDepartment;
+            !filterDepartment || 
+            (Array.isArray(nurse.department) 
+                ? nurse.department.includes(filterDepartment) 
+                : nurse.department === filterDepartment);
 
         return matchesSearch && matchesDepartment;
     });
@@ -165,6 +195,15 @@ export default function HospitalAdminNurses() {
                                             </div>
                                         </div>
                                     </div>
+                                    <div className="flex flex-col items-end">
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                                            nurse.status === 'active' 
+                                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                                            : 'bg-rose-50 text-rose-600 border-rose-100'
+                                        }`}>
+                                            {nurse.status || 'active'}
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-4 mb-8">
@@ -210,17 +249,40 @@ export default function HospitalAdminNurses() {
                                     >
                                         <Edit size={16} />
                                     </button>
-                                    <button
-                                        onClick={() => handleRetract(nurse._id, nurse.name)}
-                                        disabled={deleteLoading === nurse._id}
-                                        className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-400 hover:bg-rose-500 hover:text-white transition-all disabled:opacity-50"
-                                    >
-                                        {deleteLoading === nurse._id ? (
-                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                        ) : (
-                                            <Trash2 size={16} />
-                                        )}
-                                    </button>
+                                    
+                                    {nurse.status !== 'inactive' ? (
+                                        <button
+                                            onClick={() => handleToggleStatus(nurse._id, nurse.status || 'active')}
+                                            disabled={deleteLoading === nurse._id}
+                                            className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-400 hover:bg-amber-500 hover:text-white transition-all disabled:opacity-50"
+                                            title="Deactivate clinical node"
+                                        >
+                                            <ShieldOff size={16} />
+                                        </button>
+                                    ) : (
+                                        <>
+                                            <button
+                                                onClick={() => handleToggleStatus(nurse._id, nurse.status)}
+                                                disabled={deleteLoading === nurse._id}
+                                                className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all disabled:opacity-50"
+                                                title="Reactivate clinical node"
+                                            >
+                                                <ShieldCheck size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(nurse._id, nurse.name)}
+                                                disabled={deleteLoading === nurse._id}
+                                                className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-rose-400 hover:bg-rose-500 hover:text-white transition-all disabled:opacity-50"
+                                                title="Permanent purge"
+                                            >
+                                                {deleteLoading === nurse._id ? (
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                ) : (
+                                                    <Trash2 size={16} />
+                                                )}
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>

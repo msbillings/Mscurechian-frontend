@@ -8,16 +8,18 @@ interface DoctorQueueStatsProps {
   showQueue: boolean;
   totalAppointments: number;
   completedCount: number;
+  consultationDuration?: number;
 }
 
 function DoctorQueueStats({ 
     queueCount, 
     showQueue, 
     totalAppointments = 0, 
-    completedCount = 0 
+    completedCount = 0,
+    consultationDuration = 0
 }: DoctorQueueStatsProps) {
   
-  const estimatedTime = queueCount * 20; // 20 mins per patient avg
+  const estimatedTime = queueCount * (consultationDuration || 15); // Fallback to 15 if not set
 
   const formatEstimatedTime = (minutes: number) => {
     if (minutes < 60) return `${minutes} mins`;
@@ -64,7 +66,7 @@ function DoctorQueueStats({
             </div>
             <div>
               <h3 className="text-sm max-sm:text-[12px] font-black text-foreground dark:text-foreground uppercase tracking-tight">Estimated Wait</h3>
-              <p className="text-[10px] max-sm:text-[8px] text-muted font-bold">Based on 12 mins avg.</p>
+              <p className="text-[10px] max-sm:text-[8px] text-muted font-bold">Based on {consultationDuration || 15} mins avg.</p>
             </div>
           </div>
 

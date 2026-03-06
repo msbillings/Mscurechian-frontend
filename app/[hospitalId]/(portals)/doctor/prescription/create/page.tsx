@@ -67,6 +67,7 @@ interface PrescriptionForm {
     followUpDate: string;
     avoid: string[];
     doctorName: string;
+    doctorSpecialization: string;
     doctorSignature?: string; // URL or base64
     subtotal: number;
     tax: number;
@@ -89,6 +90,7 @@ const INITIAL_FORM: PrescriptionForm = {
     followUpDate: '',
     avoid: [],
     doctorName: '',
+    doctorSpecialization: '',
     subtotal: 0,
     tax: 0,
     total: 0
@@ -224,20 +226,21 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
         }
     }, [formData, appointmentId, patientId]);
 
-    // -- Fetch Doctor Profile --
     useEffect(() => {
         const fetchDoctorProfile = async () => {
             const res = await getDoctorProfileAction();
             if (res.success && res.data) {
                 const doc = res.data;
+                const specialization = doc.specialties && Array.isArray(doc.specialties) && doc.specialties.length > 0 
+                    ? doc.specialties.join(', ') 
+                    : (doc.department || 'Medical Practitioner');
+
                 setFormData(prev => ({
                     ...prev,
                     doctorName: doc.user?.name || doc.name || prev.doctorName,
+                    doctorSpecialization: specialization,
                     doctorSignature: doc.signature
                 }));
-                // if (doc.hospital) { // Removed, replaced by useQuery
-                //     setHospitalData(doc.hospital);
-                // }
             }
         };
         fetchDoctorProfile();
@@ -582,7 +585,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             <h1 class="title">Rx Prescription</h1>
                             <div class="doctor-info">
                                 <p class="doctor-name">Dr. ${formData.doctorName}</p>
-                                <p class="doctor-spec">Medical Practitioner</p>
+                                <p class="doctor-spec">${formData.doctorSpecialization || 'Medical Practitioner'}</p>
                             </div>
                         </div>
 

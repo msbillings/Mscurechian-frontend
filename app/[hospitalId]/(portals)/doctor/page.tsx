@@ -46,7 +46,7 @@ export default async function DoctorDashboard() {
    }
 
    const notes = notesRes.success && notesRes.data ? notesRes.data : [];
-   const consultationDuration = meRes.success && meRes.data?.consultationDuration ? meRes.data.consultationDuration : 20;
+   const consultationDuration = meRes.data?.consultationDuration || 0;
 
    return (
       <div className="pb-20">

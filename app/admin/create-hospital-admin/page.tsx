@@ -14,6 +14,8 @@ interface FormData {
   mobile: string;
   password: string;
   hospitalId: string;
+  employeeId: string;
+  department: string;
 }
 
 function CreateHospitalAdmin() {
@@ -25,7 +27,9 @@ function CreateHospitalAdmin() {
     email: "",
     mobile: "",
     password: "",
-    hospitalId: ""
+    hospitalId: "",
+    employeeId: "",
+    department: ""
   });
 
   // UI State
@@ -124,7 +128,7 @@ function CreateHospitalAdmin() {
   };
 
   const resetForm = () => {
-    setFormData({ name: "", email: "", mobile: "", password: "", hospitalId: "" });
+    setFormData({ name: "", email: "", mobile: "", password: "", hospitalId: "", employeeId: "", department: "" });
     setSearchQuery("");
   };
 
@@ -143,7 +147,9 @@ function CreateHospitalAdmin() {
         email: formData.email,
         mobile: formData.mobile,
         password: formData.password,
-        hospitalId: formData.hospitalId
+        hospitalId: formData.hospitalId,
+        employeeId: formData.employeeId,
+        department: formData.department
       });
 
       if (!adminResult.success) {
@@ -283,6 +289,24 @@ function CreateHospitalAdmin() {
               value={formData.mobile}
               onChange={handleChange}
               placeholder="10-digit mobile"
+            />
+
+            <FormInput
+              label="Employee ID (Optional)"
+              type="text"
+              name="employeeId"
+              value={formData.employeeId}
+              onChange={handleChange}
+              placeholder="Enter employee ID"
+            />
+
+            <FormInput
+              label="Department (Optional)"
+              type="text"
+              name="department"
+              value={formData.department}
+              onChange={handleChange}
+              placeholder="Enter department"
             />
 
             <div className="relative">

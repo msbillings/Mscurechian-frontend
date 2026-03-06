@@ -392,7 +392,7 @@ export default function AppointmentBooking() {
                 patientDetails: {
                     age: selectedPatient.age,
                     gender: selectedPatient.gender,
-                    duration: "20 min"
+                    duration: selectedDoctor?.consultationDuration ? `${selectedDoctor.consultationDuration} min` : "15 min"
                 },
                 // Pass extended details to ensure profile is updated/corrected
                 honorific: selectedPatient.honorific || selectedPatient.profile?.honorific,

@@ -53,13 +53,24 @@ function CreateTicketForm({ onSuccess, basePath }: CreateTicketFormProps) {
         });
 
         try {
-            await supportService.createTicket(data);
-            toast.success("Ticket created successfully");
-            if (onSuccess) onSuccess();
-            else router.push(basePath);
+            const newTicket = await supportService.createTicket(data);
+            toast.success("Ticket submitted successfully!");
+
+            // Reset form
+            setFormData({ subject: '', category: 'feedback', message: '' });
+            setFiles([]);
+
+            if (onSuccess) {
+                // Called from modal — parent will reload the list
+                onSuccess();
+            } else {
+                // Navigate to list, then force a refresh so the list re-fetches
+                router.push(basePath);
+                router.refresh();
+            }
         } catch (error) {
             console.error(error);
-            toast.error("Failed to create ticket");
+            toast.error("Failed to create ticket. Please try again.");
         } finally {
             setLoading(false);
         }

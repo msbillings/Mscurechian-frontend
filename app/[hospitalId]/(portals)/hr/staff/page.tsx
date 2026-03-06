@@ -16,8 +16,11 @@ import {
   Filter,
   UserPlus,
   Briefcase,
-  Building2
+  Building2,
+  ShieldCheck,
+  ShieldOff
 } from "lucide-react";
+import { ConfirmModal } from '@/components/admin/Modal';
 
 import { useDebounce } from "@/hooks/useDebounce";
 
@@ -132,7 +135,7 @@ const StaffCard = React.memo(({
                   isActive ? 'border-t-amber-600' : 'border-t-emerald-600'
                 }`}></div>
               ) : (
-                isActive ? <Ban size={16} /> : <UserCheck size={16} />
+                isActive ? <ShieldOff size={16} /> : <ShieldCheck size={16} />
               )}
             </button>
           </div>
@@ -153,6 +156,7 @@ function HRStaffDirectory() {
   const [filterDepartment, setFilterDepartment] = useState("");
   const [statusLoading, setStatusLoading] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: "", message: "", onConfirm: () => { } });
 
   const { data: staffResponse, isLoading: loading, refetch } = useQuery({
     queryKey: ['hr-staff-directory', debouncedSearch, filterDepartment, page],
@@ -181,28 +185,31 @@ function HRStaffDirectory() {
 
   const handleToggleStatus = async (id: string, name: string, currentStatus: string) => {
     const isActive = currentStatus === 'active' || !currentStatus;
-    const action = isActive ? 'deactivate' : 'activate';
+    const action = isActive ? 'Deactivate' : 'Reactivate';
     
-    if (!confirm(`Are you sure you want to ${action} ${name}?`)) {
-      return;
-    }
-
-    setStatusLoading(id);
-    try {
-      if (isActive) {
-        await hrService.deactivateStaff(id);
-        toast.success(`${name} has been deactivated`);
-      } else {
-        await hrService.activateStaff(id);
-        toast.success(`${name} has been reactivated`);
+    setConfirmModal({
+      isOpen: true,
+      title: `${action} Personnel`,
+      message: `Are you sure you want to ${action.toLowerCase()} ${name}? Operational access will be ${isActive ? 'suspended' : 'restored'}.`,
+      onConfirm: async () => {
+        try {
+          setStatusLoading(id);
+          if (isActive) {
+            await hrService.deactivateStaff(id);
+          } else {
+            await hrService.activateStaff(id);
+          }
+          toast.success(`${name} has been ${isActive ? 'deactivated' : 'reactivated'}`);
+          refetch();
+        } catch (error: any) {
+          console.error(`Failed to ${action} staff:`, error);
+          toast.error(error.message || "Operation failed");
+        } finally {
+          setStatusLoading(null);
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
       }
-      refetch();
-    } catch (error: any) {
-      console.error(`Failed to ${action} staff:`, error);
-      toast.error(error.message || "Operation failed");
-    } finally {
-      setStatusLoading(null);
-    }
+    });
   };
 
   const departments = useMemo(() => {
@@ -316,6 +323,13 @@ function HRStaffDirectory() {
           )}
         </div>
       )}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+      />
     </div>
   );
 }

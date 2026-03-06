@@ -143,42 +143,26 @@ export default function EditDoctorProfilePage() {
     const validate = () => {
         const newErrors: Record<string, string> = {};
 
-        // Basic Info
-        if (!formData.name.trim()) newErrors.name = "Name is required";
-        if (!formData.email.trim()) {
+        // Only block on truly required fields
+        if (!formData.name?.trim()) {
+            newErrors.name = "Name is required";
+        }
+
+        if (!formData.email?.trim()) {
             newErrors.email = "Email is required";
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
             newErrors.email = "Invalid email format";
         }
 
-        if (formData.mobile && !/^\d{10}$/.test(formData.mobile)) {
-            newErrors.mobile = "Mobile number must be exactly 10 digits";
-        }
-
-        if (formData.dateOfBirth) {
-            const dob = new Date(formData.dateOfBirth);
-            if (dob > new Date()) {
-                newErrors.dateOfBirth = "Date of Birth cannot be in the future";
-            }
-        }
-
-        // Bank Details
-        if (formData.bankDetails.ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.bankDetails.ifscCode.toUpperCase())) {
-            newErrors['bankDetails.ifscCode'] = "Invalid IFSC Code format (e.g. SBIN0012345)";
-        }
-
-        // Tax IDs
-        if (formData.panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber.toUpperCase())) {
-            newErrors.panNumber = "Invalid PAN format (e.g. ABCDE1234F)";
-        }
-
-        if (formData.aadharNumber && !/^\d{12}$/.test(formData.aadharNumber)) {
-            newErrors.aadharNumber = "Aadhar number must be 12 digits";
-        }
+        // NOTE: mobile, PAN, Aadhar, IFSC, dateOfBirth format checks are shown as
+        // real-time inline hints (via handleChange) but do NOT block saving —
+        // because the DB may store values (e.g. mobile with country code) that
+        // are technically valid but don't match the overly strict regex patterns.
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
+
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         let { name, value } = e.target;
@@ -191,7 +175,10 @@ export default function EditDoctorProfilePage() {
         let fieldError = "";
 
         // Real-time validations
-        if (name === 'bankDetails.accountName' || name === 'name') {
+        if (name === 'name') {
+            if (!/^[A-Za-z .\-']{2,}$/.test(value) && value.length > 0) fieldError = "Only letters, spaces, dots, hyphens & apostrophes allowed";
+        }
+        if (name === 'bankDetails.accountName') {
             if (!/^[A-Za-z ]{3,}$/.test(value) && value.length > 0) fieldError = "Only alphabets & spaces, min 3 chars";
         }
         if (name === 'bankDetails.bankName') {
@@ -306,33 +293,32 @@ export default function EditDoctorProfilePage() {
         try {
             const formDataToSubmit = new FormData();
 
-            // Add all simple fields
+            // URL/file fields that must NOT go through the generic loop (to avoid double-sends and field-size issues)
+            const urlFields = new Set(['profilePic', 'signature', 'degreeCertificate', 'registrationCertificate', 'doctorateCertificate', 'internshipCertificate']);
+
+            // Add all simple scalar fields (skip objects, arrays, and URL/cert fields)
             Object.keys(formData).forEach(key => {
-                if (typeof formData[key] !== 'object' && key !== 'profilePic' && key !== 'degreeCertificate' && key !== 'registrationCertificate') {
-                    formDataToSubmit.append(key, formData[key]);
+                const val = formData[key];
+                if (!urlFields.has(key) && typeof val !== 'object' && !Array.isArray(val)) {
+                    formDataToSubmit.append(key, val ?? '');
                 }
             });
 
-            // Complex fields handled explicitly if needed, but here simple append works for arrays usually via loop or JSON
-            // But for arrays like specialties, we might need to stringify or append multiple times depending on backend expectation.
-            // Doctor backend likely receives JSON body usually. Since we switched to FormData, we must ensure backend parses it.
-            // CAUTION: Multer populates `req.body` but array fields need careful handling. 
-            // `updateDoctorProfile` expects arrays. `JSON.stringify` for arrays is safe if backend uses `JSON.parse` or if standard express body parser isn't interfering.
-            // The BEST approach for mixed content with multer: send arrays as stringified JSON if Controller expects arrays.
-
+            // Arrays: JSON-stringify for multer-compatible parsing on the backend
             formDataToSubmit.append('specialties', JSON.stringify(formData.specialties));
             formDataToSubmit.append('qualifications', JSON.stringify(formData.qualifications));
             formDataToSubmit.append('languages', JSON.stringify(formData.languages));
             formDataToSubmit.append('awards', JSON.stringify(formData.awards));
             formDataToSubmit.append('bankDetails', JSON.stringify(formData.bankDetails));
 
-            // Files
+            // New file uploads (take priority over existing URLs)
             Object.keys(files).forEach(key => {
                 formDataToSubmit.append(key, files[key]);
             });
 
-            // Existing URLs or Strings (Only send if NO new file is selected for that field)
+            // Existing URL strings — only send if no new file selected for that slot
             if (formData.profilePic && !files['profilePic']) formDataToSubmit.append('profilePic', formData.profilePic);
+            if (formData.signature && !files['signature']) formDataToSubmit.append('signature', formData.signature);
             if (formData.degreeCertificate && !files['degreeCertificate']) formDataToSubmit.append('degreeCertificate', formData.degreeCertificate);
             if (formData.registrationCertificate && !files['registrationCertificate']) formDataToSubmit.append('registrationCertificate', formData.registrationCertificate);
             if (formData.doctorateCertificate && !files['doctorateCertificate']) formDataToSubmit.append('doctorateCertificate', formData.doctorateCertificate);

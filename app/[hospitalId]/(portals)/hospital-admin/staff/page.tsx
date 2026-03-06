@@ -21,10 +21,14 @@ import {
 
 
 
-  Building2
+  Building2,
+  ShieldCheck,
+  ShieldOff,
+  Shield
 } from "lucide-react";
 
 import { useDebounce } from "@/hooks/useDebounce";
+import { ConfirmModal } from '@/components/admin/Modal';
 
 // ============================================================================
 // PERFORMANCE: Pagination Settings
@@ -39,12 +43,14 @@ const StaffCard = React.memo(({
   onView,
   onEdit,
   onDelete,
+  onToggleStatus,
   deleteLoading
 }: {
   member: any;
   onView: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onToggleStatus: (status: string) => void;
   deleteLoading: boolean;
 }) => {
   return (
@@ -123,16 +129,31 @@ const StaffCard = React.memo(({
               <Edit size={16} />
             </button>
             <button
-              onClick={onDelete}
+              onClick={() => onToggleStatus(member.status || 'active')}
               disabled={deleteLoading}
-              className="px-4 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 transition-all disabled:opacity-50"
+              className={`px-4 rounded-xl bg-white border border-slate-200 transition-all disabled:opacity-50 ${
+                member.status === 'inactive' 
+                ? 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 hover:border-emerald-200' 
+                : 'text-amber-500 hover:text-amber-600 hover:bg-amber-50 hover:border-amber-200'
+              }`}
+              title={member.status === 'inactive' ? "Reactivate Personnel" : "Deactivate Personnel"}
             >
-              {deleteLoading ? (
-                <div className="h-4 w-4 border-2 border-slate-200 border-t-rose-600 rounded-full animate-spin"></div>
-              ) : (
-                <Trash2 size={16} />
-              )}
+              {member.status === 'inactive' ? <ShieldCheck size={16} /> : <ShieldOff size={16} />}
             </button>
+            {member.status === 'inactive' && (
+              <button
+                onClick={onDelete}
+                disabled={deleteLoading}
+                className="px-4 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 transition-all disabled:opacity-50"
+                title="Permanent Master Delete"
+              >
+                {deleteLoading ? (
+                  <div className="h-4 w-4 border-2 border-slate-200 border-t-rose-600 rounded-full animate-spin"></div>
+                ) : (
+                  <Trash2 size={16} />
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -149,6 +170,7 @@ function HospitalAdminStaff() {
   const [filterDepartment, setFilterDepartment] = useState("");
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: "", message: "", onConfirm: () => { } });
 
   const { data: staff = [], isLoading: loading, refetch } = useQuery<any[]>({
     queryKey: ['hospital-admin-staff'],
@@ -166,45 +188,72 @@ function HospitalAdminStaff() {
     gcTime: 15 * 60 * 1000,
   });
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to retract ${name} from the active registry?`)) {
-      return;
-    }
+  const handleToggleStatus = async (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const action = newStatus === 'active' ? 'Reactivate' : 'Deactivate';
 
-    setDeleteLoading(id);
-    try {
-      await hospitalAdminService.deleteStaff(id);
-      toast.success(`${name} has been removed from the directory`);
-      refetch();
-    } catch (error: any) {
-      console.error("Failed to delete staff:", error);
-      toast.error(error.message || "Operation failed");
-    } finally {
-      setDeleteLoading(null);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: `${action} Personnel`,
+      message: `Are you sure you want to ${action.toLowerCase()} this personnel node?`,
+      onConfirm: async () => {
+        try {
+          setDeleteLoading(id);
+          await hospitalAdminService.updateStaff(id, { status: newStatus });
+          toast.success(`Personnel node ${newStatus === 'active' ? 'reactivated' : 'deactivated'}`);
+          refetch();
+        } catch (error: any) {
+          console.error(`Failed to ${action} staff:`, error);
+          toast.error(error.message || "Operation failed");
+        } finally {
+          setDeleteLoading(null);
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Permanent Node Purge",
+      message: `Are you sure you want to permanently delete ${name}? This action is irreversible and will wipe all credentials and metadata for this clinical node.`,
+      onConfirm: async () => {
+        try {
+          setDeleteLoading(id);
+          await hospitalAdminService.deleteStaff(id);
+          toast.success("Personnel node permanently deleted");
+          refetch();
+        } catch (error: any) {
+          console.error("Failed to delete staff:", error);
+          toast.error(error.message || "Deletion failed — node might still be active");
+        } finally {
+          setDeleteLoading(null);
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
   };
 
   const filteredStaff = useMemo(() => {
-    if (!Array.isArray(staff)) return [];
-    return staff.filter((member) => {
+    return staff.filter((member: any) => {
       const matchesSearch =
-        !debouncedSearch ||
         member.name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        member.email?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        member.employeeId?.toLowerCase().includes(debouncedSearch.toLowerCase());
+        member.employeeId?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        member.email?.toLowerCase().includes(debouncedSearch.toLowerCase());
 
-      const matchesDepartment =
-        !filterDepartment || member.department === filterDepartment;
+      const matchesDept = !filterDepartment || member.department === filterDepartment;
 
-      return matchesSearch && matchesDepartment;
+      return matchesSearch && matchesDept;
     });
   }, [staff, debouncedSearch, filterDepartment]);
 
   const departments = useMemo(() => {
-    if (!Array.isArray(staff)) return [];
-    return Array.from(
-      new Set(staff.map((member) => member.department).filter(Boolean))
-    ).sort();
+    const depts = new Set<string>();
+    staff.forEach((member: any) => {
+      if (member.department) depts.add(member.department);
+    });
+    return Array.from(depts);
   }, [staff]);
 
   const paginatedStaff = useMemo(() => {
@@ -289,6 +338,7 @@ function HospitalAdminStaff() {
                 onView={() => router.push(`/hospital-admin/staff/${member._id || member.staffProfileId}`)}
                 onEdit={() => router.push(`/hospital-admin/staff/edit/${member._id || member.staffProfileId}`)}
                 onDelete={() => handleDelete(member._id || member.staffProfileId, member.name)}
+                onToggleStatus={(status) => handleToggleStatus(member._id || member.staffProfileId, status)}
                 deleteLoading={deleteLoading === (member._id || member.staffProfileId)}
               />
             ))}
@@ -317,6 +367,22 @@ function HospitalAdminStaff() {
           )}
         </div>
       )}
+
+      {/* Registry Information Footer */}
+      <div className="mt-12 flex flex-col md:flex-row justify-between items-center gap-6 px-4">
+        <div className="flex items-center gap-2 text-slate-400 text-sm italic">
+          <Shield size={16} />
+          <span>Personnel Registry compliant with HMS-P Master Control Protocols</span>
+        </div>
+      </div>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+      />
     </div>
   );
 }

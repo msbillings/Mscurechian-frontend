@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -73,13 +73,22 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
     fetchAppointment(true);
   }, [appointmentId]);
 
+  const currentAppointmentIdRef = useRef(appointmentId);
+  const currentPatientIdRef = useRef(appointment?.patient?._id);
+
+  useEffect(() => {
+    currentAppointmentIdRef.current = appointmentId;
+    currentPatientIdRef.current = appointment?.patient?._id;
+  }, [appointmentId, appointment?.patient?._id]);
+
   // Real-time Lab Updates via Socket.IO
   useEffect(() => {
     let socket: any;
+    let isActive = true;
 
     const setupSocket = async () => {
       socket = await getSocket();
-      if (!socket) return;
+      if (!socket || !isActive) return;
 
       // Join doctor and hospital rooms for updates
       if (user) {
@@ -91,48 +100,65 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
       }
 
       // If we have a patient, subscribe to their specific room for vitals
-      if (appointment?.patient?._id) {
-        socket.emit('subscribe-patient', appointment.patient._id);
-        console.log(`📡 [Consultation] Subscribed to patient ${appointment.patient._id} for live vitals`);
+      const patientId = currentPatientIdRef.current;
+      if (patientId) {
+        socket.emit('subscribe-patient', patientId);
+        console.log(`📡 [Consultation] Subscribed to patient ${patientId} for live vitals`);
       }
 
       console.log('📡 [Consultation] Listening for live lab updates...');
 
       // Listen for specific order updates
       socket.on('lab_order_updated', (data: any) => {
+        if (!isActive) return;
         console.log('📡 [Consultation] Lab Order Update Received:', data);
-        // We refresh if any order is updated, as it might belong to this appointment
-        // We do a background refresh (no loading state)
-        fetchAppointment(false);
+        
+        // Refresh only if it's for this appointment or patient
+        if (data.appointmentId === currentAppointmentIdRef.current || data.patientId === currentPatientIdRef.current) {
+          fetchAppointment(false);
+        }
       });
 
       // Listen for sample collection
       socket.on('sample_collected', (data: any) => {
+        if (!isActive) return;
         console.log('📡 [Consultation] Sample Collected:', data);
-        fetchAppointment(false);
+        if (data.patientId === currentPatientIdRef.current) {
+          fetchAppointment(false);
+        }
       });
 
       // Listen for doctor-specific results ready notifications
       socket.on('lab_result_notification', (data: any) => {
+        if (!isActive) return;
         console.log('📡 [Consultation] Lab Result Ready:', data);
-        fetchAppointment(false);
-        toast.success(`Lab result ready for ${appointment?.patient?.name || 'patient'}`);
+
+        // Only show toast and refresh if it's for this specific patient
+        if (data.patientId === currentPatientIdRef.current) {
+          fetchAppointment(false);
+          // Prevent multiple identical toasts in short succession
+          toast.success(`Lab result ready for ${data.patientName || 'patient'}`, {
+            id: `lab-notif-${data.orderId || data.patientId}` // Unique ID to deduplicate
+          });
+        }
       });
     };
 
     setupSocket();
 
     return () => {
+      isActive = false;
       if (socket) {
         socket.off('lab_order_updated');
         socket.off('sample_collected');
         socket.off('lab_result_notification');
-        if (appointment?.patient?._id) {
-          socket.emit('unsubscribe-patient', appointment.patient._id);
+        const patientId = currentPatientIdRef.current;
+        if (patientId) {
+          socket.emit('unsubscribe-patient', patientId);
         }
       }
     };
-  }, [appointmentId, appointment?.patient?.name]);
+  }, [appointmentId]);
 
   // Handle initial state of lab mode if results exist
   useEffect(() => {

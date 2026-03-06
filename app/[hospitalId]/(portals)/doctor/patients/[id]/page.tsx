@@ -6,7 +6,7 @@ import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, FileText, Clo
 import Link from 'next/link';
 import { getDoctorPatientDetailsAction, getDoctorProfileAction, getAllAppointmentsAction, getDoctorInpatientsAction } from '@/lib/integrations/actions/doctor.actions';
 import { doctorService } from '@/lib/integrations/services/doctor.service';
-import { pharmacyService } from '@/lib/integrations/services/pharmacy.service';
+import { ipdIssuanceService } from '@/lib/integrations/services/pharmacy.service';
 import { ipdService } from '@/lib/integrations/services/ipd.service';
 import { PrescriptionDocument } from '@/components/documents/PrescriptionDocument';
 import toast from 'react-hot-toast';
@@ -140,83 +140,107 @@ function PatientDetailsPage() {
     const loadPatientData = async (id: string) => {
         setIsLoading(true);
         try {
-            // Parallel fetch: Patient Profile, All Appointments, and Active Inpatients (for accurate bed status)
-            const [profileRes, appointmentsRes, inpatientsRes] = await Promise.all([
+            // Use Promise.allSettled so a single failing call doesn't break the entire page load
+            const [profileResult, appointmentsResult, inpatientsResult] = await Promise.allSettled([
                 getDoctorPatientDetailsAction(id),
-                getAllAppointmentsAction(),
+                // Pass the patient user ID as a search hint; backend filters by it if it's a doctor role
+                // We'll do additional client-side filtering after we know the patient IDs
+                getAllAppointmentsAction({ limit: 100 }),
                 getDoctorInpatientsAction()
             ]);
 
-            if (profileRes.success && profileRes.data) {
-                let patientData = profileRes.data;
+            // --- Handle Patient Profile ---
+            const profileRes = profileResult.status === 'fulfilled' ? profileResult.value : { success: false, error: 'Failed to load patient profile' };
 
-                // Sync correct admission/bed data from Inpatients source of truth
-                // BUT preserve vitals data from patient details API
-                if (inpatientsRes.success && inpatientsRes.data) {
-                    const pId = patientData._id || patientData.id;
-                    const pUserId = patientData.user?._id || patientData.user?.id;
-
-                    const activeAdmission = inpatientsRes.data.find((adm: any) => {
-                        const admPId = adm.patient?._id || adm.patient?.id;
-                        return admPId === pId || admPId === pUserId;
-                    });
-
-                    if (activeAdmission && patientData.admission) {
-                        console.log('Found active admission for patient:', activeAdmission);
-                        // Merge bed info from inpatients API while preserving vitals from patient details API
-                        patientData = {
-                            ...patientData,
-                            admission: {
-                                ...patientData.admission,
-                                bed: activeAdmission.bed || patientData.admission.bed,
-                                // Preserve vitals from patient details API
-                                vitals: patientData.admission.vitals
-                            }
-                        };
-                    } else if (activeAdmission) {
-                        // If no admission in patient data, use the one from inpatients
-                        patientData = {
-                            ...patientData,
-                            admission: activeAdmission
-                        };
-                    }
-                }
-
-                setPatient(patientData);
-
-                // ✅ NEW: Fetch Pharmacy Issuances & Bill Summary if there's an active admission
-                if (patientData.admission?.admissionId) {
-                    const admId = patientData.admission.admissionId;
-
-                    // Fetch issuances
-                    (pharmacyService as any).getIssuancesByAdmission(admId)
-                        .then((data: any) => setIssuances(data || []))
-                        .catch((err: any) => console.error("Issuance fetch failed", err));
-
-                    // Fetch bill summary
-                    (ipdService as any).getBillSummary(admId)
-                        .then((res: any) => setBillSummary(res.summary || res.data?.summary || null))
-                        .catch((err: any) => console.error("Bill summary fetch failed", err));
-                }
-
-                if (appointmentsRes.success && appointmentsRes.data) {
-                    // Filter appointments for this patient
-                    const pUserId = patientData.user?._id || patientData.user?.id;
-                    const pProfileId = patientData._id || patientData.id;
-
-                    const filtered = appointmentsRes.data.filter((appt: any) => {
-                        const apptPId = appt.patient?._id || appt.patient?.id || appt.patientId || appt.patient;
-                        return (pUserId && apptPId === pUserId) || (pProfileId && apptPId === pProfileId);
-                    });
-
-                    filtered.sort((a: any, b: any) => new Date(b.date || b.startTime).getTime() - new Date(a.date || a.startTime).getTime());
-                    setAppointments(filtered);
-                }
-            } else {
+            if (!profileRes.success || !profileRes.data) {
                 toast.error(profileRes.error || "Failed to load patient details");
+                setIsLoading(false);
+                return;
             }
+
+            let patientData = profileRes.data;
+
+            // --- Handle Inpatients (non-critical, gracefully ignored on failure) ---
+            const inpatientsRes = inpatientsResult.status === 'fulfilled' ? inpatientsResult.value : { success: false, data: [] };
+
+            if (inpatientsRes.success && inpatientsRes.data) {
+                const pId = patientData._id || patientData.id;
+                const pUserId = patientData.user?._id || patientData.user?.id;
+
+                const activeAdmission = inpatientsRes.data.find((adm: any) => {
+                    const admPId = adm.patient?._id || adm.patient?.id || adm.patient;
+                    return admPId === pId || admPId === pUserId ||
+                        String(admPId) === String(pId) || String(admPId) === String(pUserId);
+                });
+
+                if (activeAdmission && patientData.admission) {
+                    // Merge bed info from inpatients API while preserving vitals from patient details API
+                    patientData = {
+                        ...patientData,
+                        admission: {
+                            ...patientData.admission,
+                            bed: activeAdmission.bed || patientData.admission.bed,
+                            vitals: patientData.admission.vitals // Preserve vitals from patient details API
+                        }
+                    };
+                } else if (activeAdmission && !patientData.admission) {
+                    patientData = { ...patientData, admission: activeAdmission };
+                }
+            }
+
+            setPatient(patientData);
+
+            // --- Handle Pharmacy and Bill data ONLY for confirmed active IPD admissions ---
+            // Check if the admission is a real active IPD record (not a stub from appointment data)
+            const hasRealActiveAdmission = (() => {
+                if (!patientData.admission?.admissionId) return false;
+                // Verify via inpatients list (most reliable source of truth)
+                const inpData = inpatientsRes.success && inpatientsRes.data ? inpatientsRes.data : [];
+                const pId = patientData._id || patientData.id;
+                const pUserId = patientData.user?._id || patientData.user?.id;
+                const confirmedInIpd = inpData.some((adm: any) => {
+                    const admPId = adm.patient?._id || adm.patient?.id || adm.patient;
+                    return admPId === pId || admPId === pUserId ||
+                        String(admPId) === String(pId) || String(admPId) === String(pUserId);
+                });
+                // Also allow if the admission object itself has an explicit Active status
+                const hasActiveStatus = patientData.admission.status === 'Active' || patientData.admission.status === 'active';
+                return confirmedInIpd || hasActiveStatus;
+            })();
+
+            if (hasRealActiveAdmission) {
+                const admId = patientData.admission!.admissionId;
+
+                ipdIssuanceService.getIssuancesByAdmission(admId)
+                    .then((data: any) => setIssuances(data || []))
+                    .catch((err: any) => console.error("Issuance fetch failed (non-critical):", err));
+
+                (ipdService as any).getBillSummary(admId)
+                    .then((res: any) => setBillSummary(res.summary || res.data?.summary || null))
+                    .catch((err: any) => console.error("Bill summary fetch failed (non-critical):", err));
+            }
+
+            // --- Handle Appointments (non-critical, gracefully ignored on failure) ---
+            const appointmentsRes = appointmentsResult.status === 'fulfilled' ? appointmentsResult.value : { success: false, data: [] };
+
+            if (appointmentsRes.success && appointmentsRes.data) {
+                const pUserId = patientData.user?._id || patientData.user?.id;
+                const pProfileId = patientData._id || patientData.id;
+
+                const filtered = appointmentsRes.data.filter((appt: any) => {
+                    const apptPId = appt.patient?._id || appt.patient?.id || appt.patientId || appt.patient;
+                    return (pUserId && (apptPId === pUserId || String(apptPId) === String(pUserId))) ||
+                        (pProfileId && (apptPId === pProfileId || String(apptPId) === String(pProfileId)));
+                });
+
+                filtered.sort((a: any, b: any) => new Date(b.date || b.startTime).getTime() - new Date(a.date || a.startTime).getTime());
+                setAppointments(filtered);
+            } else if (appointmentsResult.status === 'rejected') {
+                console.warn('Appointments fetch failed (non-critical):', appointmentsResult.reason);
+            }
+
         } catch (error) {
-            console.error("Error loading data:", error);
+            console.error("Error loading patient data:", error);
             toast.error("An error occurred while loading patient data.");
         } finally {
             setIsLoading(false);

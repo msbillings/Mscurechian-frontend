@@ -141,7 +141,7 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration }: Queue
   // Notify parent of stats changes
   useEffect(() => {
     const completedCount = appointments.filter(apt => apt.status === 'completed').length;
-    const estimatedMinutes = queueAppointments.length * (consultationDuration || 0);
+    const estimatedMinutes = queueAppointments.length * (consultationDuration || 15);
     const nextAppointmentId = sortedAppointments.length > 0 ? sortedAppointments[0].id : null;
 
     // Find ongoing appointment (in-progress status)
@@ -217,7 +217,7 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration }: Queue
 
               {sortedAppointments.map((apt, idx) => {
                 // Calculate estimated wait time
-                const estimatedWaitMinutes = idx * (consultationDuration || 0);
+                const estimatedWaitMinutes = idx * (consultationDuration || 15);
                 const hours = Math.floor(estimatedWaitMinutes / 60);
                 const minutes = estimatedWaitMinutes % 60;
                 const waitTime = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
@@ -253,7 +253,7 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration }: Queue
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-sm font-bold text-foreground">{apt.time}</p>
-                        <p className="text-xs text-muted">~{consultationDuration || 0}min</p>
+                        <p className="text-xs text-muted">~{consultationDuration || 15}min</p>
                       </div>
                       <button
                         onClick={async (e) => {
@@ -294,7 +294,7 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration }: Queue
                       </div>
                       <div className="col-span-3 text-center">
                         <p className="text-[10px] font-black text-foreground">{apt.time}</p>
-                        <p className="text-[8px] text-muted font-bold">~{consultationDuration || 0}min</p>
+                        <p className="text-[8px] text-muted font-bold">~{consultationDuration || 15}min</p>
                       </div>
                       <div className="col-span-3 text-right">
                         <button
@@ -316,11 +316,11 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration }: Queue
                     Total Estimated Time
                   </span>
                   <span className="text-lg max-sm:text-sm font-black text-primary-theme">
-                    {Math.floor((queueAppointments.length * (consultationDuration || 0)) / 60)}h {(queueAppointments.length * (consultationDuration || 0)) % 60}m
+                    {Math.floor((queueAppointments.length * (consultationDuration || 15)) / 60)}h {(queueAppointments.length * (consultationDuration || 15)) % 60}m
                   </span>
                 </div>
                 <p className="text-xs max-sm:text-[10px] text-accent-theme-foreground mt-1 opacity-80">
-                  {queueAppointments.length} appointments × {consultationDuration || 0} min each
+                  {queueAppointments.length} appointments × {consultationDuration || 15} min each
                 </p>
               </div>
             </div>

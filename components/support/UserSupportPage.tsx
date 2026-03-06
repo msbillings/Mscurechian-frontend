@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { supportService } from '@/lib/integrations/services/support.service';
 import { SupportTicket } from '@/lib/integrations/types/support';
@@ -27,7 +27,7 @@ export default function UserSupportPage({ basePath, title }: UserSupportPageProp
         loadTickets();
     }, []);
 
-    const loadTickets = async () => {
+    const loadTickets = useCallback(async () => {
         try {
             setLoading(true);
             const data = await supportService.getMyTickets();
@@ -38,7 +38,16 @@ export default function UserSupportPage({ basePath, title }: UserSupportPageProp
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    // Called by the modal after a ticket is successfully created
+    const handleTicketCreated = useCallback(async () => {
+        setIsCreateModalOpen(false);
+        // Reload the ticket list immediately
+        await loadTickets();
+        // Also bust Next.js route cache so navigating away and back still shows fresh data
+        router.refresh();
+    }, [loadTickets, router]);
 
     return (
         <div className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
@@ -59,7 +68,7 @@ export default function UserSupportPage({ basePath, title }: UserSupportPageProp
 
             <TicketList
                 tickets={tickets}
-                isAdmin={false} // User view
+                isAdmin={false}
                 loading={loading}
                 onView={(id) => router.push(`${effectiveBasePath}/${id}`)}
             />
@@ -67,9 +76,10 @@ export default function UserSupportPage({ basePath, title }: UserSupportPageProp
             <CreateTicketModal
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
-                onSuccess={loadTickets}
+                onSuccess={handleTicketCreated}
                 basePath={effectiveBasePath}
             />
         </div>
     );
 }
+

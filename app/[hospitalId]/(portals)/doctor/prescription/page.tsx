@@ -65,6 +65,7 @@ interface PrescriptionForm {
     followUpDate: string;
     avoid: string[];
     doctorName: string;
+    doctorSpecialization: string;
     doctorSignature?: string; // URL or base64
     subtotal: number;
     tax: number;
@@ -87,6 +88,7 @@ const INITIAL_FORM: PrescriptionForm = {
     followUpDate: '',
     avoid: [],
     doctorName: '',
+    doctorSpecialization: '',
     subtotal: 0,
     tax: 0,
     total: 0
@@ -234,12 +236,16 @@ function CreatePrescriptionPage() {
         setPatientSuggestions([]);
     };
 
-    // Pre-fill doctor info when profile loads
     useEffect(() => {
         if (doctorProfile) {
+            const specialization = doctorProfile.specialties && Array.isArray(doctorProfile.specialties) && doctorProfile.specialties.length > 0 
+                ? doctorProfile.specialties.join(', ') 
+                : (doctorProfile.department || 'Medical Practitioner');
+
             setFormData(prev => ({
                 ...prev,
                 doctorName: doctorProfile.user?.name || doctorProfile.name || prev.doctorName,
+                doctorSpecialization: specialization,
                 doctorSignature: doctorProfile.signature
             }));
         }
@@ -752,7 +758,7 @@ function CreatePrescriptionPage() {
 
                     <div class="doc-info">
                         <p class="doc-name">Dr. ${formData.doctorName}</p>
-                        <p class="doc-spec">Consultant Physician</p>
+                        <p class="doc-spec">${formData.doctorSpecialization || 'Medical Practitioner'}</p>
                     </div>
 
                     <div class="patient-info">

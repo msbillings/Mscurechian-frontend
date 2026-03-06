@@ -1,6 +1,6 @@
-import { USER_ENDPOINTS } from '../config';
-import { apiClient } from '../api';
-import type { User } from '../types';
+import { USER_ENDPOINTS } from "../config";
+import { apiClient } from "../api";
+import type { User } from "../types";
 
 export interface UserAttendance {
   _id: string;
@@ -14,7 +14,7 @@ export interface UserAttendance {
     location?: string;
   };
   workingHours: number;
-  status: 'present' | 'absent' | 'late' | 'half-day' | 'on-leave';
+  status: "present" | "absent" | "late" | "half-day" | "on-leave";
   notes?: string;
 }
 
@@ -26,16 +26,14 @@ export interface TodayAttendanceStatus {
 
 export const userService = {
   // Client-side
-  getAllClient: () =>
-    apiClient<User[]>(USER_ENDPOINTS.PROFILE),
+  getAllClient: () => apiClient<User[]>(USER_ENDPOINTS.PROFILE),
 
   // Profile
-  getProfile: () =>
-    apiClient<{ user: User }>(USER_ENDPOINTS.PROFILE),
+  getProfile: () => apiClient<User>(USER_ENDPOINTS.PROFILE),
 
   updateProfile: (data: Partial<User>) =>
     apiClient<User>(USER_ENDPOINTS.UPDATE_PROFILE, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(data),
     }),
 
@@ -45,21 +43,23 @@ export const userService = {
 
   checkIn: (notes?: string) =>
     apiClient<TodayAttendanceStatus>(USER_ENDPOINTS.ATTENDANCE_CHECK_IN, {
-      method: 'POST',
-      body: JSON.stringify({ notes: notes || '' }),
+      method: "POST",
+      body: JSON.stringify({ notes: notes || "" }),
     }),
 
   checkOut: (notes?: string) =>
     apiClient<TodayAttendanceStatus>(USER_ENDPOINTS.ATTENDANCE_CHECK_OUT, {
-      method: 'POST',
-      body: JSON.stringify({ notes: notes || '' }),
+      method: "POST",
+      body: JSON.stringify({ notes: notes || "" }),
     }),
 
   // Get all attendance records for current user
   getMyAttendance: (params?: { month?: string; year?: string }) => {
     const url = new URL(USER_ENDPOINTS.ATTENDANCE, window.location.origin);
-    if (params?.month) url.searchParams.set('month', params.month);
-    if (params?.year) url.searchParams.set('year', params.year);
-    return apiClient<{ attendance: UserAttendance[] }>(url.pathname + url.search);
+    if (params?.month) url.searchParams.set("month", params.month);
+    if (params?.year) url.searchParams.set("year", params.year);
+    return apiClient<{ attendance: UserAttendance[] }>(
+      url.pathname + url.search,
+    );
   },
 };

@@ -78,12 +78,28 @@ function AnnouncementManagement() {
 
   const [search, setSearch] = useState('');
 
-  // Filter nodes based on search
+  // Helper: get current datetime string for `datetime-local` min (format: YYYY-MM-DDTHH:MM)
+  const getNowDatetimeLocal = () => {
+    const now = new Date();
+    // offset to local time
+    const offset = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - offset).toISOString().slice(0, 16);
+  };
+
+  // Filter nodes based on search + client-side expiry guard (full datetime comparison)
   const filteredAnnouncements = useMemo(() => {
-    return announcements.filter(ann =>
-      ann.title.toLowerCase().includes(search.toLowerCase()) ||
-      ann.content.toLowerCase().includes(search.toLowerCase())
-    );
+    const now = new Date();
+    return announcements.filter(ann => {
+      // Client-side expiry guard — full datetime precision
+      if (ann.expiryDate) {
+        const expiry = new Date(ann.expiryDate);
+        if (expiry <= now) return false; // expired
+      }
+      return (
+        ann.title.toLowerCase().includes(search.toLowerCase()) ||
+        ann.content.toLowerCase().includes(search.toLowerCase())
+      );
+    });
   }, [announcements, search]);
 
   // Pagination State
@@ -217,6 +233,7 @@ function AnnouncementManagement() {
                   <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-1/4">Content</th>
                   <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Target</th>
                   <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Priority</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Expiry</th>
                   <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
                 </tr>
               </thead>
@@ -264,6 +281,21 @@ function AnnouncementManagement() {
                         }`}>
                         {announcement.priority}
                       </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {announcement.expiryDate ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-xs font-bold text-amber-600 flex items-center gap-1.5">
+                            <Clock size={11} strokeWidth={3} />
+                            {new Date(announcement.expiryDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}
+                          </span>
+                          <span className="text-[9px] font-bold text-amber-400 pl-4">
+                            {new Date(announcement.expiryDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">No Expiry</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
@@ -439,13 +471,19 @@ function AnnouncementManagement() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">Expiry Sector</label>
-                      <input
-                        type="date"
-                        value={newAnnouncement.expiryDate}
-                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, expiryDate: e.target.value })}
-                        className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                      />
+                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">
+                         Expiry Sector <span className="text-amber-500 ml-1">(Date &amp; Time)</span>
+                       </label>
+                       <input
+                         type="datetime-local"
+                         value={newAnnouncement.expiryDate}
+                         min={getNowDatetimeLocal()}
+                         onChange={(e) => setNewAnnouncement({ ...newAnnouncement, expiryDate: e.target.value })}
+                         className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                       />
+                       <p className="text-[8px] font-bold text-slate-400 px-1 mt-1">
+                         Leave empty for no expiry. Set a near time to test.
+                       </p>
                     </div>
                   </div>
                 </div>

@@ -30,10 +30,12 @@ import {
   TestTube,
   Pill,
   Headphones,
-  BellRing
+  BellRing,
+  Settings
 } from "lucide-react";
 import { Card } from "@/components/admin";
 import LiveFeedbackWidget from './components/LiveFeedbackWidget';
+import { BrandingModal } from '@/components/hospital-admin/BrandingModal';
 
 // Dynamic import for charts
 const AttendancePieChart = dynamic(
@@ -57,6 +59,7 @@ function HospitalAdminDashboard() {
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("all");
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
+  const [isBrandingModalOpen, setIsBrandingModalOpen] = useState(false);
 
 
   const getMetricDetails = (label: string) => {
@@ -407,6 +410,13 @@ function HospitalAdminDashboard() {
               <span className="text-[9px] font-black uppercase tracking-widest">Reload</span>
             </button>
             <button
+              onClick={() => setIsBrandingModalOpen(true)}
+              className="p-2 bg-white border border-slate-200 rounded-xl text-slate-900 font-bold hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span className="text-[9px] font-black uppercase tracking-widest">Receipt Meta</span>
+            </button>
+            <button
               onClick={() => setIsReminderModalOpen(true)}
               className="p-2 bg-slate-900 text-white border border-slate-900 rounded-xl hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg shadow-slate-200"
             >
@@ -529,6 +539,19 @@ function HospitalAdminDashboard() {
                 </div>
                 <span className="text-sm font-black text-slate-900">{stats.totalHelpdesk || 0}</span>
               </div>
+
+              {stats.inactiveCount > 0 && (
+                <div className="flex items-center justify-between p-3 bg-rose-50/50 rounded-xl border border-rose-100 mt-2">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-rose-50 text-rose-600 rounded-lg"><AlertCircle size={16} /></div>
+                    <div>
+                      <span className="text-[10px] font-black text-rose-600 uppercase tracking-tight block">Suspended Nodes</span>
+                      <span className="text-[9px] font-bold text-rose-400">Total inactive personnel</span>
+                    </div>
+                  </div>
+                  <span className="text-sm font-black text-rose-600">{stats.inactiveCount}</span>
+                </div>
+              )}
             </div>
           </Card>
 
@@ -689,6 +712,11 @@ function HospitalAdminDashboard() {
       <ReminderConfigModal
         isOpen={isReminderModalOpen}
         onClose={() => setIsReminderModalOpen(false)}
+      />
+
+      <BrandingModal
+        isOpen={isBrandingModalOpen}
+        onClose={() => setIsBrandingModalOpen(false)}
       />
     </div>
   );

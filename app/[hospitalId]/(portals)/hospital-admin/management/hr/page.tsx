@@ -17,8 +17,12 @@ import {
   Search,
   Filter,
   Power,
-  Ban
+  Ban,
+  ShieldCheck,
+  ShieldOff,
+  Shield
 } from "lucide-react";
+import { ConfirmModal } from '@/components/admin/Modal';
 
 function HospitalAdminHRManagement() {
   const router = useRouter();
@@ -40,45 +44,57 @@ function HospitalAdminHRManagement() {
     staleTime: 0,
   });
 
-  const handleDeactivate = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to deactivate ${name}?`)) return;
-    setDeleteLoading(`${id}:toggle`);
-    try {
-      await hospitalAdminService.deactivateHR(id);
-      toast.success(`${name} has been deactivated`);
-      refetch();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to deactivate");
-    } finally {
-      setDeleteLoading(null);
-    }
-  };
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: "", message: "", onConfirm: () => { } });
 
-  const handleActivate = async (id: string, name: string) => {
-    setDeleteLoading(`${id}:toggle`);
-    try {
-      await hospitalAdminService.activateHR(id);
-      toast.success(`${name} has been activated`);
-      refetch();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to activate");
-    } finally {
-      setDeleteLoading(null);
-    }
+  const handleToggleStatus = async (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const action = newStatus === 'active' ? 'Reactivate' : 'Deactivate';
+
+    setConfirmModal({
+      isOpen: true,
+      title: `${action} HR Representative`,
+      message: `Are you sure you want to ${action.toLowerCase()} this HR node? Operational access will be ${newStatus === 'active' ? 'restored' : 'suspended'}.`,
+      onConfirm: async () => {
+        try {
+          setDeleteLoading(`${id}:toggle`);
+          if (newStatus === 'active') {
+            await hospitalAdminService.activateHR(id);
+          } else {
+            await hospitalAdminService.deactivateHR(id);
+          }
+          toast.success(`HR node ${newStatus === 'active' ? 'reactivated' : 'deactivated'}`);
+          refetch();
+        } catch (error: any) {
+          console.error(`Failed to ${action} HR:`, error);
+          toast.error(error.message || "Operation failed");
+        } finally {
+          setDeleteLoading(null);
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`⚠️ PERMANENT DELETE: Are you sure you want to remove ${name}?`)) return;
-    setDeleteLoading(`${id}:delete`);
-    try {
-      await hospitalAdminService.deleteHR(id);
-      toast.success(`${name} has been removed`);
-      refetch();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete");
-    } finally {
-      setDeleteLoading(null);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: "Permanent HR Node Purge",
+      message: `Are you sure you want to permanently delete HR Representative ${name}? This action is irreversible and requires the node to be in an inactive state.`,
+      onConfirm: async () => {
+        try {
+          setDeleteLoading(`${id}:delete`);
+          await hospitalAdminService.deleteHR(id);
+          toast.success("HR node purged from institutional registry");
+          refetch();
+        } catch (error: any) {
+          console.error("Failed to delete HR:", error);
+          toast.error(error.message || "Purge failed — ensure node is inactive first");
+        } finally {
+          setDeleteLoading(null);
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
   };
 
   const filteredHRs = useMemo(() => hrs.filter((hr) => {
@@ -140,9 +156,11 @@ function HospitalAdminHRManagement() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <h3 className="text-lg font-black text-slate-900 truncate">{hr.name}</h3>
-                  <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border ${hr.status === 'inactive' ? 'bg-rose-50 text-rose-500 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
-                    {hr.status || 'Active'}
-                  </span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border ${hr.status === 'inactive' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
+                      {hr.status || 'Active'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -170,26 +188,45 @@ function HospitalAdminHRManagement() {
                     <Edit size={14} /> Edit
                   </button>
                   <button
-                    onClick={() => hr.status === 'inactive' ? handleActivate(hr._id, hr.name) : handleDeactivate(hr._id, hr.name)}
+                    onClick={() => handleToggleStatus(hr._id, hr.status || 'active')}
                     disabled={!!deleteLoading && deleteLoading.startsWith(hr._id)}
-                    className={`p-2.5 rounded-xl border border-slate-200 transition-all font-bold text-xs flex items-center gap-2 ${hr.status === 'inactive' ? 'text-emerald-600 hover:bg-emerald-50' : 'text-amber-500 hover:bg-amber-50'}`}
+                    className={`p-2.5 rounded-xl border border-slate-200 transition-all font-bold text-xs flex items-center justify-center min-w-[44px] ${hr.status === 'inactive' ? 'text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200' : 'text-amber-500 hover:bg-amber-50 hover:border-amber-200'}`}
+                    title={hr.status === 'inactive' ? "Reactivate Node" : "Deactivate Node"}
                   >
-                    {deleteLoading === `${hr._id}:toggle` ? <div className="h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin" /> : (hr.status === 'inactive' ? <Power size={14} /> : <Ban size={14} />)}
-                    {hr.status === 'inactive' ? 'Activate' : 'Deactivate'}
+                    {deleteLoading === `${hr._id}:toggle` ? (
+                      <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      hr.status === 'inactive' ? <ShieldCheck size={16} /> : <ShieldOff size={16} />
+                    )}
                   </button>
-                  <button
-                    onClick={() => handleDelete(hr._id, hr.name)}
-                    disabled={!!deleteLoading && deleteLoading.startsWith(hr._id)}
-                    className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+
+                  {hr.status === 'inactive' && (
+                    <button
+                      onClick={() => handleDelete(hr._id, hr.name)}
+                      disabled={!!deleteLoading && deleteLoading.startsWith(hr._id)}
+                      className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all disabled:opacity-50"
+                      title="Permanent Wipe"
+                    >
+                      {deleteLoading === `${hr._id}:delete` ? (
+                        <div className="h-4 w-4 border-2 border-slate-200 border-t-rose-600 rounded-full animate-spin" />
+                      ) : (
+                        <Trash2 size={16} />
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
           ))}
         </div>
       )}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+      />
     </div>
   );
 }
