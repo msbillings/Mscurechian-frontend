@@ -187,12 +187,31 @@ export default function EditStaffPage() {
 
     // Strict Validations
     if (name === "mobile" && (!/^\d*$/.test(value) || value.length > 10)) return;
-    if (name === "aadharNumber" && (!/^\d*$/.test(value) || value.length > 12)) return;
-    if (name === "panNumber" && (value.length > 10)) return;
-    if (name === "baseSalary" && !/^\d*$/.test(value)) return;
-    if (name.includes("Number") && !name.includes("pan") && !/^\d*$/.test(value)) return; // Generic number check for other IDs
+    if (name === "aadharNumber" && value.toUpperCase() !== "N/A" && (!/^\d*$/.test(value) || value.length > 12)) return;
+    if (name === "panNumber" && value.toUpperCase() !== "N/A" && (value.length > 10)) return;
+    if (name === "baseSalary" && value.toUpperCase() !== "N/A" && !/^\d*$/.test(value)) return;
+    if (name.includes("Number") && !name.includes("pan") && value.toUpperCase() !== "N/A" && !/^\d*$/.test(value)) return; // Generic number check for other IDs
 
-    setFormData(prev => ({ ...prev, [name]: name === "panNumber" ? value.toUpperCase() : value }));
+    setFormData(prev => ({ ...prev, [name]: (name === "panNumber" || value.toUpperCase() === "N/A") ? value.toUpperCase() : value }));
+  };
+
+  const markFinancialNA = () => {
+    setFormData(prev => ({
+      ...prev,
+      baseSalary: "0",
+      panNumber: "N/A",
+      pfNumber: "N/A",
+      esiNumber: "N/A",
+      uanNumber: "N/A",
+      aadharNumber: "N/A",
+      bankDetails: {
+        accountName: "N/A",
+        accountNumber: "N/A",
+        bankName: "N/A",
+        ifscCode: "N/A"
+      }
+    }));
+    toast.success("Financial fields marked as N/A");
   };
 
   const handleDepartmentAdd = (dept: string) => {
@@ -230,8 +249,8 @@ export default function EditStaffPage() {
       if (!value) error = "Mobile is required";
       else if (value.length < 10) error = "Valid 10-digit Mobile is required";
     }
-    if (name === "panNumber" && value && value.length !== 10) error = "Invalid PAN (Must be 10 chars)";
-    if (name === "aadharNumber" && value && value.length !== 12) error = "Invalid Aadhar (Must be 12 digits)";
+    if (name === "panNumber" && value && value.toUpperCase() !== "N/A" && value.length !== 10) error = "Invalid PAN (Must be 10 chars)";
+    if (name === "aadharNumber" && value && value.toUpperCase() !== "N/A" && value.length !== 12) error = "Invalid Aadhar (Must be 12 digits)";
 
     if (error) toast.error(error);
     return !error;
@@ -243,11 +262,19 @@ export default function EditStaffPage() {
   };
 
   const validateForm = () => {
-    const fieldsToValidate = ['name', 'email', 'mobile', 'panNumber', 'aadharNumber'] as const;
+    const requiredFields = ['name', 'email', 'mobile'] as const;
     let isValid = true;
-    fieldsToValidate.forEach(field => {
+    requiredFields.forEach(field => {
       if (!validateField(field, formData[field])) isValid = false;
     });
+
+    // Optional fields validation only if they have data and it's not "N/A"
+    if (formData.panNumber && formData.panNumber.toUpperCase() !== "N/A") {
+      if (!validateField('panNumber', formData.panNumber)) isValid = false;
+    }
+    if (formData.aadharNumber && formData.aadharNumber.toUpperCase() !== "N/A") {
+      if (!validateField('aadharNumber', formData.aadharNumber)) isValid = false;
+    }
     return isValid;
   };
 
@@ -417,10 +444,23 @@ export default function EditStaffPage() {
         </Card>
 
         {/* Dense Financial Grid */}
-        <Card title="Financial & Bank Disclosure" icon={<CreditCard className="text-blue-600" />} padding="p-6">
+        <Card
+          title="Financial & Bank Disclosure"
+          icon={<CreditCard className="text-blue-600" />}
+          padding="p-6"
+          extra={
+            <button
+              type="button"
+              onClick={markFinancialNA}
+              className="text-[9px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-all border border-indigo-100"
+            >
+              Mark all as N/A
+            </button>
+          }
+        >
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
             <div className="md:col-span-2">
-              <FormInput label="Base Salary" type="text" name="baseSalary" required value={formData.baseSalary} onChange={handleChange} className="rounded-xl font-bold text-blue-600 bg-blue-50/30" />
+              <FormInput label="Base Salary" type="text" name="baseSalary" value={formData.baseSalary} onChange={handleChange} className="rounded-xl font-bold text-blue-600 bg-blue-50/30" />
             </div>
             <div className="md:col-span-2">
               <FormInput label="PAN No" type="text" name="panNumber" placeholder="ABCDE1234F" maxLength={10} value={formData.panNumber} onChange={handleChange} onBlur={handleBlur} className="rounded-xl uppercase font-bold" />

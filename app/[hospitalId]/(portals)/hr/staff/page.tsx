@@ -7,7 +7,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { hrService } from "@/lib/integrations";
 import {
   Users,
-  Trash2,
+  Ban,
+  UserCheck,
   Edit,
   Mail,
   Phone,
@@ -32,15 +33,16 @@ const StaffCard = React.memo(({
   member,
   onView,
   onEdit,
-  onDelete,
-  deleteLoading
+  onToggleStatus,
+  statusLoading
 }: {
   member: any;
   onView: () => void;
   onEdit: () => void;
-  onDelete: () => void;
-  deleteLoading: boolean;
+  onToggleStatus: () => void;
+  statusLoading: boolean;
 }) => {
+  const isActive = member.status === 'active' || !member.status;
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-all group">
       <div className="p-6">
@@ -116,14 +118,21 @@ const StaffCard = React.memo(({
               <Edit size={16} />
             </button>
             <button
-              onClick={onDelete}
-              disabled={deleteLoading}
-              className="px-4 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 transition-all disabled:opacity-50"
+              onClick={onToggleStatus}
+              disabled={statusLoading}
+              title={isActive ? "Deactivate Staff" : "Activate Staff"}
+              className={`px-4 rounded-xl bg-white border border-slate-200 transition-all disabled:opacity-50 ${
+                isActive 
+                  ? 'text-slate-400 hover:text-amber-600 hover:border-amber-200' 
+                  : 'text-slate-400 hover:text-emerald-600 hover:border-emerald-200'
+              }`}
             >
-              {deleteLoading ? (
-                <div className="h-4 w-4 border-2 border-slate-200 border-t-rose-600 rounded-full animate-spin"></div>
+              {statusLoading ? (
+                <div className={`h-4 w-4 border-2 border-slate-200 rounded-full animate-spin ${
+                  isActive ? 'border-t-amber-600' : 'border-t-emerald-600'
+                }`}></div>
               ) : (
-                <Trash2 size={16} />
+                isActive ? <Ban size={16} /> : <UserCheck size={16} />
               )}
             </button>
           </div>
@@ -142,7 +151,7 @@ function HRStaffDirectory() {
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounce(searchTerm, 300);
   const [filterDepartment, setFilterDepartment] = useState("");
-  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [statusLoading, setStatusLoading] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
   const { data: staffResponse, isLoading: loading, refetch } = useQuery({
@@ -170,24 +179,29 @@ function HRStaffDirectory() {
   const staff = staffResponse?.data || [];
   const pagination = staffResponse?.pagination;
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to retract ${name} from the active registry?`)) {
+  const handleToggleStatus = async (id: string, name: string, currentStatus: string) => {
+    const isActive = currentStatus === 'active' || !currentStatus;
+    const action = isActive ? 'deactivate' : 'activate';
+    
+    if (!confirm(`Are you sure you want to ${action} ${name}?`)) {
       return;
     }
 
-    setDeleteLoading(id);
+    setStatusLoading(id);
     try {
-      // Use hospitalAdminService for deletion as it's the more robust implementation
-      // and HR role is authorized for it
-      const { hospitalAdminService } = await import("@/lib/integrations");
-      await hospitalAdminService.deleteStaff(id);
-      toast.success(`${name} has been removed from the directory`);
+      if (isActive) {
+        await hrService.deactivateStaff(id);
+        toast.success(`${name} has been deactivated`);
+      } else {
+        await hrService.activateStaff(id);
+        toast.success(`${name} has been reactivated`);
+      }
       refetch();
     } catch (error: any) {
-      console.error("Failed to delete staff:", error);
+      console.error(`Failed to ${action} staff:`, error);
       toast.error(error.message || "Operation failed");
     } finally {
-      setDeleteLoading(null);
+      setStatusLoading(null);
     }
   };
 
@@ -273,8 +287,8 @@ function HRStaffDirectory() {
                 member={member}
                 onView={() => router.push(`/${hospitalId}/hr/staff/${member._id}`)}
                 onEdit={() => router.push(`/${hospitalId}/hr/staff/edit/${member._id}`)}
-                onDelete={() => handleDelete(member._id, member.name)}
-                deleteLoading={deleteLoading === member._id}
+                onToggleStatus={() => handleToggleStatus(member._id, member.name, member.status)}
+                statusLoading={statusLoading === member._id}
               />
             ))}
           </div>

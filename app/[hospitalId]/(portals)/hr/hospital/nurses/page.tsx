@@ -8,14 +8,15 @@ import { ConfirmModal } from '@/components/admin/Modal';
 import {
     Users,
     Plus,
-    Trash2,
     Edit,
     Eye,
     Briefcase,
     Search,
     Filter,
     ShieldCheck,
-    Building2
+    Building2,
+    Ban,
+    UserCheck
 } from "lucide-react";
 import { PageHeader } from "@/components/admin";
 
@@ -56,19 +57,25 @@ export default function HRHospitalNurses() {
         }
     };
 
-    const handleRetract = async (id: string, name: string) => {
+    const handleToggleStatus = async (id: string, name: string, currentStatus: string) => {
+        const isActivating = currentStatus === 'inactive';
         setConfirmModal({
             isOpen: true,
-            title: "Retract Nurse",
-            message: `Are you sure you want to retract ${name} from the active nursing registry?`,
+            title: `${isActivating ? 'Reactivate' : 'Deactivate'} Nurse`,
+            message: `Are you sure you want to ${isActivating ? 'reactivate' : 'deactivate'} ${name}? ${isActivating ? 'Login access will be restored.' : 'Login access will be suspended.'}`,
             onConfirm: async () => {
                 try {
                     setDeleteLoading(id);
-                    await hospitalAdminService.updateStaff(id, { status: 'inactive' });
-                    toast.success("Nursing credentials retracted");
+                    const { hrService } = await import("@/lib/integrations");
+                    if (isActivating) {
+                        await hrService.activateStaff(id);
+                    } else {
+                        await hrService.deactivateStaff(id);
+                    }
+                    toast.success(`${name} ${isActivating ? 'reactivated' : 'deactivated'} successfully`);
                     fetchInitialData();
                 } catch (error: any) {
-                    console.error("Failed to retract nurse:", error);
+                    console.error("Failed to update nurse status:", error);
                     toast.error(error.message || "Failed to update status");
                 } finally {
                     setDeleteLoading(null);
@@ -87,7 +94,11 @@ export default function HRHospitalNurses() {
             nurse.employeeId?.toLowerCase().includes(searchTerm.toLowerCase());
 
         const matchesDepartment =
-            !filterDepartment || nurse.department === filterDepartment;
+            !filterDepartment || (
+                Array.isArray(nurse.department)
+                    ? nurse.department.includes(filterDepartment)
+                    : nurse.department === filterDepartment
+            );
 
         return matchesSearch && matchesDepartment;
     });
@@ -178,13 +189,28 @@ export default function HRHospitalNurses() {
                                             <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{nurse.designation || 'Clinical Nurse'}</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-700/50 flex items-center justify-center text-slate-400">
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-700/50 flex items-center justify-center text-slate-400 shrink-0 mt-0.5">
                                             <Building2 size={14} />
                                         </div>
-                                        <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Department</p>
-                                            <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{nurse.department || 'General Facility'}</p>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2.5">Active Departments</p>
+                                            {Array.isArray(nurse.department) && nurse.department.length > 0 ? (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {nurse.department.filter(Boolean).map((dept: string, idx: number) => (
+                                                        <span
+                                                            key={idx}
+                                                            className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50/50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 border border-blue-100/50 dark:border-blue-800/50 text-[10px] font-bold uppercase tracking-tight shadow-sm transition-all hover:scale-105 active:scale-95"
+                                                        >
+                                                            {dept}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-700 text-[10px] font-bold uppercase tracking-tight">
+                                                    {typeof nurse.department === 'string' && nurse.department ? nurse.department : 'General Staff'}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -203,14 +229,18 @@ export default function HRHospitalNurses() {
                                         <Edit size={16} />
                                     </button>
                                     <button
-                                        onClick={() => handleRetract(nurse._id, nurse.name)}
+                                        onClick={() => handleToggleStatus(nurse._id, nurse.name, nurse.status)}
                                         disabled={deleteLoading === nurse._id}
-                                        className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-400 hover:bg-rose-500 hover:text-white transition-all disabled:opacity-50"
+                                        className={`p-3 rounded-xl transition-all disabled:opacity-50 ${nurse.status === 'inactive'
+                                            ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white dark:bg-emerald-900/20 dark:text-emerald-400'
+                                            : 'bg-amber-50 text-amber-500 hover:bg-amber-500 hover:text-white dark:bg-amber-900/20 dark:text-amber-400'
+                                            }`}
+                                        title={nurse.status === 'inactive' ? "Reactivate Nurse" : "Deactivate Nurse"}
                                     >
                                         {deleteLoading === nurse._id ? (
                                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                                         ) : (
-                                            <Trash2 size={16} />
+                                            nurse.status === 'inactive' ? <UserCheck size={16} /> : <Ban size={16} />
                                         )}
                                     </button>
                                 </div>

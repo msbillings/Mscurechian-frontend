@@ -176,6 +176,7 @@ export default function HospitalAdminLeaves() {
          }
       },
       staleTime: 10 * 1000,
+      refetchInterval: 15000,
    });
 
    const leaves = Array.isArray(leavesResponse) ? leavesResponse : (leavesResponse?.leaves || []);
@@ -200,6 +201,11 @@ export default function HospitalAdminLeaves() {
                   queryClient.invalidateQueries({ queryKey: ['hospital-admin', 'leaves'] });
                   toast.success("New leave request received");
                });
+
+               socket.on('leave:status_change', (data: any) => {
+                  queryClient.invalidateQueries({ queryKey: ['hospital-admin', 'leaves'] });
+                  toast.success(`Leave request status updated: ${data.leave.status}`);
+               });
             }
          }
       };
@@ -209,7 +215,10 @@ export default function HospitalAdminLeaves() {
          isMounted = false;
          import('@/lib/integrations/api/socket').then(({ getSocket }) => {
             getSocket().then(socket => {
-               if (socket) socket.off('leave:new');
+               if (socket) {
+                  socket.off('leave:new');
+                  socket.off('leave:status_change');
+               }
             });
          });
       };

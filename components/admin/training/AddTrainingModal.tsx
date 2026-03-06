@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { X, Calendar, Users, Check, Search, Trash2, Image as ImageIcon, Upload, XCircle } from 'lucide-react';
-import { getHospitalStaffAction, getHospitalNursesAction, createTrainingAction, updateTrainingAction, getHospitalAction } from '@/lib/integrations';
+import { X, Calendar, Users, Check, Search, Trash2, Image as ImageIcon, Upload, XCircle, ChevronDown } from 'lucide-react';
+import { getHospitalStaffAction, getHospitalNursesAction, createTrainingAction, updateTrainingAction, getHospitalMetadataAction } from '@/lib/integrations';
 
 interface AddTrainingModalProps {
     isOpen: boolean;
@@ -27,6 +27,8 @@ export default function AddTrainingModal({ isOpen, onClose, training }: AddTrain
     const [certificateFile, setCertificateFile] = useState<File | null>(null);
     const [certificatePreview, setCertificatePreview] = useState<string | null>(null);
     const [staffSearch, setStaffSearch] = useState('');
+    const [isDeptDropdownOpen, setIsDeptDropdownOpen] = useState(false);
+    const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
 
     // Fetch Staff for participant selection
     const { data: staffData } = useQuery({
@@ -44,12 +46,12 @@ export default function AddTrainingModal({ isOpen, onClose, training }: AddTrain
     const nurseList = (nurseData as any)?.nurses || nurseData?.staff || [];
 
     // Fetch Hospital info for departments
-    const { data: hospitalData } = useQuery({
-        queryKey: ['hospital-details'],
-        queryFn: getHospitalAction
+    const { data: metadataData } = useQuery({
+        queryKey: ['hospital-metadata'],
+        queryFn: getHospitalMetadataAction
     });
 
-    const hospitalDepartments = hospitalData?.hospital?.departments || [];
+    const hospitalDepartments = metadataData?.data?.departments || [];
 
     const combinedList = [...staffList, ...nurseList];
 
@@ -200,42 +202,89 @@ export default function AddTrainingModal({ isOpen, onClose, training }: AddTrain
                             </div>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-2 relative">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Department *</label>
-                            <select
-                                value={formData.department}
-                                onChange={e => setFormData(prev => ({ ...prev, department: e.target.value }))}
-                                className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-indigo-500/20 outline-none appearance-none cursor-pointer"
-                                required
+                            <div
+                                onClick={() => setIsDeptDropdownOpen(!isDeptDropdownOpen)}
+                                className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest cursor-pointer flex justify-between items-center group hover:border-indigo-200 transition-colors"
                             >
-                                <option value="">Select Department</option>
-                                {hospitalDepartments.map((dept: any) => (
-                                    <option key={dept._id || dept.name} value={dept.name}>
-                                        {dept.name}
-                                    </option>
-                                ))}
-                                {/* Fallback options if departments are empty */}
-                                {hospitalDepartments.length === 0 && (
-                                    <>
-                                        <option value="General">General</option>
-                                        <option value="ICU">ICU</option>
-                                        <option value="Emergency">Emergency</option>
-                                    </>
-                                )}
-                            </select>
+                                <span className={formData.department ? 'text-slate-900' : 'text-slate-400'}>
+                                    {formData.department || 'Select Department'}
+                                </span>
+                                <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 ${isDeptDropdownOpen ? 'rotate-180' : ''}`} />
+                            </div>
+
+                            {isDeptDropdownOpen && (
+                                <>
+                                    <div
+                                        className="fixed inset-0 z-[60]"
+                                        onClick={() => setIsDeptDropdownOpen(false)}
+                                    />
+                                    <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white border border-slate-100 rounded-2xl shadow-xl z-[70] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                        <div className="max-h-40 overflow-y-auto p-1 custom-scrollbar">
+                                            <div
+                                                onClick={() => { setFormData(prev => ({ ...prev, department: '' })); setIsDeptDropdownOpen(false); }}
+                                                className="px-4 py-2.5 hover:bg-slate-50 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-300 cursor-pointer"
+                                            >
+                                                Select Department
+                                            </div>
+                                            {hospitalDepartments.map((dept: any) => (
+                                                <div
+                                                    key={dept._id || dept.name}
+                                                    onClick={() => { setFormData(prev => ({ ...prev, department: dept.name })); setIsDeptDropdownOpen(false); }}
+                                                    className={`px-4 py-2.5 hover:bg-indigo-50/50 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-colors ${formData.department === dept.name ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:text-indigo-600'}`}
+                                                >
+                                                    {dept.name}
+                                                </div>
+                                            ))}
+                                            {hospitalDepartments.length === 0 && (
+                                                ['General', 'ICU', 'Emergency'].map(d => (
+                                                    <div
+                                                        key={d}
+                                                        onClick={() => { setFormData(prev => ({ ...prev, department: d })); setIsDeptDropdownOpen(false); }}
+                                                        className={`px-4 py-2.5 hover:bg-indigo-50/50 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-colors ${formData.department === d ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:text-indigo-600'}`}
+                                                    >
+                                                        {d}
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-2 relative">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
-                            <select
-                                value={formData.status}
-                                onChange={e => setFormData(prev => ({ ...prev, status: e.target.value }))}
-                                className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-indigo-500/20 outline-none appearance-none cursor-pointer"
+                            <div
+                                onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                                className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest cursor-pointer flex justify-between items-center group hover:border-indigo-200 transition-colors"
                             >
-                                <option value="Scheduled">Scheduled</option>
-                                <option value="Completed">Completed</option>
-                                <option value="Cancelled">Cancelled</option>
-                            </select>
+                                <span className="text-slate-900">{formData.status}</span>
+                                <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                            </div>
+
+                            {isStatusDropdownOpen && (
+                                <>
+                                    <div
+                                        className="fixed inset-0 z-[60]"
+                                        onClick={() => setIsStatusDropdownOpen(false)}
+                                    />
+                                    <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white border border-slate-100 rounded-2xl shadow-xl z-[70] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                        <div className="p-1">
+                                            {['Scheduled', 'Completed', 'Cancelled'].map(s => (
+                                                <div
+                                                    key={s}
+                                                    onClick={() => { setFormData(prev => ({ ...prev, status: s })); setIsStatusDropdownOpen(false); }}
+                                                    className={`px-4 py-2.5 hover:bg-indigo-50/50 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-colors ${formData.status === s ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:text-indigo-600'}`}
+                                                >
+                                                    {s}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
 
@@ -410,7 +459,7 @@ function ParticipantItem({ staff, isSelected, onToggle }: { staff: any, isSelect
                 <div className="min-w-0">
                     <p className="text-xs font-bold truncate">{staff.name}</p>
                     <p className={`text-[9px] font-bold uppercase truncate ${isSelected ? 'text-indigo-100' : 'text-slate-400'
-                        }`}>{staff.department || staff.role || 'General'}</p>
+                        }`}>{Array.isArray(staff.department) ? staff.department.join(', ') : (staff.department || staff.role || 'General')}</p>
                 </div>
             </div>
             {isSelected && <Check size={14} strokeWidth={4} />}

@@ -76,6 +76,12 @@ export const hrService = {
       },
     ),
 
+  deactivateStaff: (id: string) =>
+    hrService.updateStaff(id, { status: "inactive" }),
+
+  activateStaff: (id: string) =>
+    hrService.updateStaff(id, { status: "active" }),
+
   getLeaves: (params?: {
     status?: string;
     page?: number;

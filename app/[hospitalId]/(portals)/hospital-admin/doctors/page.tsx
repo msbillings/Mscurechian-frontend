@@ -44,6 +44,7 @@ function HospitalAdminDoctors() {
     },
     staleTime: 0,
     gcTime: 15 * 60 * 1000,
+    refetchOnMount: 'always',
     retry: 1,
   });
 

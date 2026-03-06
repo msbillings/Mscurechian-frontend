@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { incidentService } from '@/lib/integrations/services/incident.service';
-import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
+import { ipdService } from '@/lib/integrations/services/ipd.service';
 import {
     AlertTriangle,
     ChevronRight,
@@ -62,9 +62,9 @@ export default function HospitalAdminIncidentPage() {
         })
     });
 
-    const { data: hospitalMeta } = useQuery({
-        queryKey: ['hospital-metadata'],
-        queryFn: () => hospitalAdminService.getHospitalMetadata()
+    const { data: hospitalDepartments = [] } = useQuery({
+        queryKey: ['ipd-departments'],
+        queryFn: () => ipdService.getIPDDepartments()
     });
 
     const respondMutation = useMutation({
@@ -308,12 +308,6 @@ export default function HospitalAdminIncidentPage() {
             doc.setFont('helvetica', 'normal');
             doc.text(`Generated on: ${format(new Date(), 'PPPP p')}`, 14, 28);
 
-            // Refined Filters Layout
-            doc.setTextColor(80);
-            doc.setFont('helvetica', 'bold');
-            const filterText = `Dept[${deptFilter === 'all' ? 'all' : deptFilter}]  Status[${statusFilter === 'all' ? 'all' : statusFilter}]  Period[${startDate || 'Any'} - ${endDate || 'Any'}]`;
-            doc.text(`Filters: ${filterText}`, 14, 33);
-
             doc.setDrawColor(220);
             doc.setLineWidth(0.5);
             doc.line(14, 38, 283, 38);
@@ -541,25 +535,10 @@ export default function HospitalAdminIncidentPage() {
                         onChange={(e) => setDeptFilter(e.target.value)}
                         className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-xs font-bold outline-none ring-2 ring-transparent focus:ring-emerald-500/20 appearance-none"
                     >
-                        <option value="all">Global Sectors</option>
-
-                        {/* Departments Group */}
-                        {hospitalMeta?.data?.departments && hospitalMeta.data.departments.length > 0 && (
-                            <optgroup label="🏥 Departments">
-                                {hospitalMeta.data.departments.map(dept => (
-                                    <option key={dept._id} value={dept.name}>{dept.name}</option>
-                                ))}
-                            </optgroup>
-                        )}
-
-                        {/* Rooms Group */}
-                        {hospitalMeta?.data?.rooms && hospitalMeta.data.rooms.length > 0 && (
-                            <optgroup label="🛏️ Rooms">
-                                {hospitalMeta.data.rooms.map(room => (
-                                    <option key={room._id} value={room.label}>{room.label} ({room.type})</option>
-                                ))}
-                            </optgroup>
-                        )}
+                        <option value="all">All Departments</option>
+                        {hospitalDepartments.map((dept: any) => (
+                            <option key={dept._id} value={dept.name}>{dept.name}</option>
+                        ))}
                     </select>
                 </div>
 

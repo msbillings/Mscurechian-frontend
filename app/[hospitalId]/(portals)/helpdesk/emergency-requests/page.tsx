@@ -10,11 +10,16 @@ import {
     Navigation,
     Siren
 } from "lucide-react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useQueryClient } from "@tanstack/react-query";
 import { helpdeskEmergencyService } from "@/lib/integrations/services/helpdesk-emergency.service";
 import { EmergencyRequest } from "@/lib/integrations/types/emergency";
 
 function EmergencyRequestsPage() {
+    const params = useParams();
+    const hospitalId = params.hospitalId as string;
+    const queryClient = useQueryClient();
     const [requests, setRequests] = useState<EmergencyRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState<string | null>(null);
@@ -27,7 +32,7 @@ function EmergencyRequestsPage() {
     useEffect(() => {
         loadRequests();
         // Poll every 30 seconds for new requests
-        const interval = setInterval(loadRequests, 30000);
+        const interval = setInterval(loadRequests, 10000);
         return () => clearInterval(interval);
     }, []);
 
@@ -107,8 +112,15 @@ function EmergencyRequestsPage() {
         }
     };
 
-    const pendingRequests = requests.filter((r: EmergencyRequest) => r.status === "pending");
-    const respondedRequests = requests.filter((r: EmergencyRequest) => r.status !== "pending");
+    const getHospitalStatus = (r: EmergencyRequest) => {
+        const rh = r.requestedHospitals.find(h => 
+            (typeof h.hospital === 'string' ? h.hospital === hospitalId : h.hospital?._id === hospitalId)
+        );
+        return rh?.status || "pending";
+    };
+
+    const pendingRequests = requests.filter((r: EmergencyRequest) => getHospitalStatus(r) === "pending");
+    const respondedRequests = requests.filter((r: EmergencyRequest) => getHospitalStatus(r) !== "pending");
 
     if (loading) {
         return (
@@ -152,91 +164,98 @@ function EmergencyRequestsPage() {
             {/* STATS GRID */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <MetricTile label="Pending Admission" value={pendingRequests.length} color="amber" icon={<Clock size={20} />} />
-                <MetricTile label="Active Responses" value={requests.filter((r: EmergencyRequest) => r.status === "accepted").length} color="teal" icon={<Activity size={20} />} />
-                <MetricTile label="Mission Lifetime" value={requests.length} color="slate" icon={<Navigation size={20} />} />
+                <MetricTile label="Mission Completed" value={requests.filter((r: EmergencyRequest) => getHospitalStatus(r) === "accepted").length} color="teal" icon={<Activity size={20} />} />
+                <MetricTile label="Total Alerts" value={requests.length} color="slate" icon={<Navigation size={20} />} />
             </div>
 
             {/* LIVE ALERT FEED */}
             {pendingRequests.length > 0 && (
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="px-6 py-4 bg-rose-50 border-b border-rose-100 flex items-center justify-between">
-                        <h2 className="text-xs font-bold text-rose-700 uppercase tracking-widest flex items-center gap-2">
-                            <Siren size={16} className="" /> Active Emergency Alerts ({pendingRequests.length})
-                        </h2>
-                    </div>
-                    <div className="divide-y divide-slate-100">
+                <div className="space-y-4">
+                    <h2 className="text-xs font-bold text-rose-700 uppercase tracking-widest flex items-center gap-2 px-2">
+                        <Siren size={16} className="animate-pulse" /> Active Emergency Alerts ({pendingRequests.length})
+                    </h2>
+                    <div className="grid grid-cols-1 gap-6">
                         {pendingRequests.map((request: EmergencyRequest) => (
-                            <div key={request._id} className="p-8">
-                                <div className="flex justify-between items-start mb-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-2xl uppercase shadow-inner">
-                                            {request.patientName?.charAt(0)}
+                            <div key={request._id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                                <div className="p-8">
+                                    <div className="flex justify-between items-start mb-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-2xl uppercase shadow-inner">
+                                                {request.patientName?.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-bold text-slate-900 uppercase tracking-tight">
+                                                    {request.patientName}
+                                                </h3>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                                                    {request.patientAge}Y • {request.patientGender}
+                                                    {request.patientMobile && ` • TEL: ${request.patientMobile}`}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold text-slate-900 uppercase tracking-tight">
-                                                {request.patientName}
-                                            </h3>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                                                {request.patientAge}Y • {request.patientGender}
-                                                {request.patientMobile && ` • TEL: ${request.patientMobile}`}
-                                            </p>
+                                        <div className="flex flex-col items-end gap-2">
+                                            <span
+                                                className={`px-3 py-1 rounded-lg text-[10px] font-bold border uppercase tracking-widest ${getSeverityColor(
+                                                    request.severity
+                                                )}`}
+                                            >
+                                                {request.severity}
+                                            </span>
+                                            {request.status === "accepted" && request.acceptedByHospital && (
+                                                <span className="text-[9px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-100 uppercase tracking-widest">
+                                                    Booked by {request.acceptedByHospital.name}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
-                                    <span
-                                        className={`px-3 py-1 rounded-lg text-[10px] font-bold border uppercase tracking-widest ${getSeverityColor(
-                                            request.severity
-                                        )}`}
-                                    >
-                                        {request.severity}
-                                    </span>
-                                </div>
 
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-                                    <StatusItem label="Index Case" value={request.emergencyType} color="rose" />
-                                    <StatusItem label="Location" value={request.currentLocation} color="slate" />
-                                    <StatusItem label="Arrival ETA" value={request.eta ? `${request.eta} MINS` : 'URGENT'} color="amber" />
-                                    <StatusItem label="Field Asset" value={request.ambulancePersonnel?.vehicleNumber} color="teal" />
-                                </div>
-
-                                <div className="mb-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Field Observation</p>
-                                    <p className="text-sm text-slate-700 italic font-medium">"{request.description}"</p>
-                                </div>
-
-                                {request.vitals && (
-                                    <div className="mb-6 p-4 bg-teal-50 border border-teal-100 rounded-xl grid grid-cols-4 gap-4">
-                                        <VitalMini label="BP" value={request.vitals.bloodPressure} />
-                                        <VitalMini label="HR" value={request.vitals.heartRate ? `${request.vitals.heartRate} BPM` : null} />
-                                        <VitalMini label="TEMP" value={request.vitals.temperature ? `${request.vitals.temperature}°F` : null} />
-                                        <VitalMini label="SPO2" value={request.vitals.oxygenLevel ? `${request.vitals.oxygenLevel}%` : null} />
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+                                        <StatusItem label="Index Case" value={request.emergencyType} color="rose" />
+                                        <StatusItem label="Location" value={request.currentLocation} color="slate" />
+                                        <StatusItem label="Arrival ETA" value={request.eta ? `${request.eta} MINS` : 'URGENT'} color="amber" />
+                                        <StatusItem label="Field Asset" value={request.ambulancePersonnel?.vehicleNumber || 'Patient Direct'} color="teal" />
                                     </div>
-                                )}
 
-                                <div className="flex justify-between items-center pt-6 border-t border-slate-100">
-                                    <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
-                                        Relayed: {new Date(request.createdAt).toLocaleTimeString()}
-                                    </p>
-                                    <div className="flex gap-3">
-                                        <button
-                                            onClick={() => {
-                                                setSelectedRequest(request);
-                                                setShowRejectModal(true);
-                                            }}
-                                            disabled={processingId === request._id}
-                                            className="px-6 py-2.5 bg-white border border-slate-200 text-slate-400 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:border-rose-200 hover:text-rose-600 active:scale-95"
-                                        >
-                                            Defer
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                setSelectedRequest(request);
-                                                setShowAcceptModal(true);
-                                            }}
-                                            disabled={processingId === request._id}
-                                            className="px-8 py-2.5 bg-rose-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-rose-700 active:scale-95 shadow-lg shadow-rose-900/20"
-                                        >
-                                            Commit Admission
-                                        </button>
+                                    <div className="mb-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Field Observation</p>
+                                        <p className="text-sm text-slate-700 italic font-medium">"{request.description}"</p>
+                                    </div>
+
+                                    {request.vitals && (
+                                        <div className="mb-6 p-4 bg-teal-50 border border-teal-100 rounded-xl grid grid-cols-4 gap-4">
+                                            <VitalMini label="BP" value={request.vitals.bloodPressure} />
+                                            <VitalMini label="HR" value={request.vitals.heartRate ? `${request.vitals.heartRate} BPM` : null} />
+                                            <VitalMini label="TEMP" value={request.vitals.temperature ? `${request.vitals.temperature}°F` : null} />
+                                            <VitalMini label="SPO2" value={request.vitals.oxygenLevel ? `${request.vitals.oxygenLevel}%` : null} />
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-between items-center pt-6 border-t border-slate-100">
+                                        <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                                            Relayed: {new Date(request.createdAt).toLocaleTimeString()}
+                                        </p>
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedRequest(request);
+                                                    setShowRejectModal(true);
+                                                }}
+                                                disabled={processingId === request._id}
+                                                className="px-6 py-2.5 bg-white border border-slate-200 text-slate-400 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:border-rose-200 hover:text-rose-600 active:scale-95"
+                                            >
+                                                Defer
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedRequest(request);
+                                                    setShowAcceptModal(true);
+                                                }}
+                                                disabled={processingId === request._id || (request.status === 'accepted' && request.acceptedByHospital?._id !== hospitalId)}
+                                                className="px-8 py-2.5 bg-rose-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-rose-700 active:scale-95 shadow-lg shadow-rose-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {request.status === 'accepted' ? 'Already Accepted' : 'Commit Admission'}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -245,32 +264,67 @@ function EmergencyRequestsPage() {
                 </div>
             )}
 
-            {/* RESPONDED LOG */}
+            {/* CLOSED / HANDLED SECTION */}
             {respondedRequests.length > 0 && (
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                        <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Response History ({respondedRequests.length})</h2>
-                    </div>
-                    <div className="divide-y divide-slate-100">
+                <div className="space-y-4 pt-12 border-t border-slate-200">
+                    <h2 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2 px-2">
+                        Closed / Handled Requests ({respondedRequests.length})
+                    </h2>
+                    <div className="grid grid-cols-1 gap-4">
                         {respondedRequests.map((request: EmergencyRequest) => (
-                            <div key={request._id} className="p-4 flex items-center justify-between hover:bg-slate-50">
-                                <div>
-                                    <h3 className="text-xs font-bold text-slate-900 uppercase">
-                                        {request.patientName}
-                                    </h3>
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-                                        {request.emergencyType} • {request.currentLocation}
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date(request.createdAt).toLocaleDateString()}</p>
-                                    <span
-                                        className={`px-3 py-1 rounded-lg text-[8px] font-bold uppercase tracking-widest border ${getStatusColor(
-                                            request.status
-                                        )}`}
-                                    >
-                                        {request.status}
-                                    </span>
+                            <div key={request._id} className="bg-slate-50 rounded-2xl border border-slate-200 shadow-sm overflow-hidden opacity-90 hover:opacity-100 transition-all">
+                                <div className="p-6">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg uppercase shadow-inner ${
+                                                getHospitalStatus(request) === 'accepted' ? 'bg-teal-100 text-teal-600' : 'bg-slate-100 text-slate-400'
+                                            }`}>
+                                                {request.patientName?.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight">
+                                                    {request.patientName}
+                                                </h3>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                                    {request.emergencyType} • {new Date(request.createdAt).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {getHospitalStatus(request) === "accepted" ? (
+                                                <span className="px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-teal-50 text-teal-600 border border-teal-100">
+                                                    Accepted by Us
+                                                </span>
+                                            ) : request.acceptedByHospital ? (
+                                                <span className="px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100">
+                                                    Booked by {request.acceptedByHospital.name}
+                                                </span>
+                                            ) : (
+                                                <span className="px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100">
+                                                    Rejected / Deferred
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-y border-slate-50">
+                                        <StatusItem label="Field Case" value={request.emergencyType} color="slate" />
+                                        <StatusItem label="Location" value={request.currentLocation} color="slate" />
+                                        <StatusItem label="Severity" value={request.severity} color="rose" />
+                                        <StatusItem label="Field Asset" value={request.ambulancePersonnel?.vehicleNumber || 'Direct Case'} color="slate" />
+                                    </div>
+                                    
+                                    <div className="mt-4 flex flex-col gap-2">
+                                        <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Field Condition Notes:</p>
+                                        <p className="text-xs text-slate-500 italic">"{request.description}"</p>
+                                    </div>
+
+                                    {request.notes && (
+                                        <div className="mt-4 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100/50">
+                                            <p className="text-[8px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Our Response Notes:</p>
+                                            <p className="text-[10px] text-indigo-700 font-medium">{request.notes}</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}

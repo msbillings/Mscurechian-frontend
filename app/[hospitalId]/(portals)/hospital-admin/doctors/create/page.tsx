@@ -1,32 +1,56 @@
 "use client";
 
-import React, {  useState , useMemo } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { hospitalAdminService } from "@/lib/integrations";
 import {
-  UserPlus,
-  Eye,
-  EyeOff,
-  Calendar,
-  DollarSign,
-  User,
-  Mail,
-  Phone,
-  Briefcase,
-  FileText,
-  Award,
-  Image as ImageIcon,
-  MapPin,
-  Clock,
-  Building,
-  CreditCard,
-  Globe,
-  Landmark
+  UserPlus, Eye, EyeOff, DollarSign, User, Mail,
+  Briefcase, FileText, Award, Image as ImageIcon, MapPin,
+  Clock, CreditCard, Globe, Landmark, AlertCircle, CheckCircle2
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { PageHeader, Card, FormInput, Button } from "@/components/admin";
 import type { CreateDoctorRequest } from "@/lib/integrations/types";
+
+type Errors = Partial<Record<string, string>>;
+const docValidators: Record<string, (v: string) => string> = {
+  name:  v => !v.trim() ? "Full name is required" : !/^[a-zA-Z\s.'-]+$/.test(v.trim()) ? "Only letters, spaces, dots & hyphens allowed" : "",
+  email: v => !v.trim() ? "Email is required" : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? "Invalid email — e.g. doctor@hospital.com" : "",
+  mobile: v => v.length === 0 ? "Mobile is required" : v.length !== 10 ? `${v.length}/10 digits — must be exactly 10` : "",
+  password: v => !v ? "Password is required" : v.length < 6 ? `Too short — ${v.length}/6 chars minimum` : "",
+  medicalRegistrationNumber: v => !v.trim() ? "Medical Registration Number is mandatory" : "",
+  consultationFee: v => !v || parseInt(v) <= 0 ? "Consultation fee is required" : "",
+  pincode: v => v && v.length !== 6 ? `${v.length}/6 digits` : "",
+  panNumber: v => v && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(v.toUpperCase()) ? "Invalid PAN — e.g. ABCDE1234F" : "",
+  aadharNumber: v => v && v.length !== 12 ? `${v.length}/12 digits — must be exactly 12` : "",
+  ifscCode: v => v && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(v.toUpperCase()) ? "Invalid IFSC — e.g. HDFC0001234" : "",
+  accountNumber: v => v && (v.length < 9 || v.length > 18) ? "Must be 9–18 digits" : "",
+};
+const dValidate = (n: string, v: string) => docValidators[n] ? docValidators[n](v) : "";
+function DErr({ msg }: { msg?: string }) {
+  if (!msg) return null;
+  return <p className="flex items-center gap-1 text-[11px] font-semibold text-rose-500 mt-1"><AlertCircle size={12}/>{msg}</p>;
+}
+function DField({ label, name, value, onChange, onBlur, error, touched, type="text", placeholder, required, extraClass="" }: {
+  label:string;name:string;value:string;onChange:(e:React.ChangeEvent<HTMLInputElement>)=>void;
+  onBlur?:(e:React.FocusEvent<HTMLInputElement>)=>void;error?:string;touched?:boolean;
+  type?:string;placeholder?:string;required?:boolean;extraClass?:string;
+}) {
+  const hasErr=touched&&!!error,isOk=touched&&!error&&value.trim()!=="";
+  return(
+    <div className="space-y-1.5">
+      <label className="block text-sm font-medium" style={{color:'var(--text-color)'}}>{label}{required&&<span className="text-red-500 ml-0.5">*</span>}</label>
+      <div className="relative">
+        <input type={type} name={name} value={value} onChange={onChange} onBlur={onBlur} placeholder={placeholder}
+          className={`w-full px-4 py-3 pr-9 rounded-xl border focus:outline-none focus:ring-2 transition-all ${extraClass} ${hasErr?"border-rose-400 bg-rose-50/20 focus:ring-rose-400/20":isOk?"border-emerald-400 focus:ring-emerald-400/20":"focus:ring-blue-500"}`}
+          style={hasErr?{}:isOk?{borderColor:'#34d399',backgroundColor:'var(--card-bg)',color:'var(--text-color)'}:{backgroundColor:'var(--card-bg)',color:'var(--text-color)',borderColor:'var(--border-color)'}}/>
+        {isOk&&<CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none"/>}
+      </div>
+      <DErr msg={hasErr?error:undefined}/>
+    </div>
+  );
+}
 
 // Constants
 const SPECIALTIES = [
@@ -149,19 +173,12 @@ function CreateDoctor() {
     bio: "", profilePic: "", signature: "",
     languages: [],
     awards: [],
-
-    // Bank & Payroll
-    bankName: "",
-    accountNumber: "",
-    accountName: "",
-    ifscCode: "",
-    baseSalary: "",
-    panNumber: "",
-    aadharNumber: "",
-    pfNumber: "",
-    esiNumber: "",
-    uanNumber: ""
+    bankName: "", accountNumber: "", accountName: "", ifscCode: "",
+    baseSalary: "", panNumber: "", aadharNumber: "", pfNumber: "", esiNumber: "", uanNumber: ""
   });
+
+  const [errors, setErrors] = useState<Errors>({});
+  const [touched, setTouched] = useState<Record<string,boolean>>({});
 
   const [availability, setAvailability] = useState<AvailabilitySlot[]>([
     { days: [], startTime: "09:00", breakStart: "13:00", breakEnd: "14:00", endTime: "17:00" }
@@ -173,6 +190,11 @@ function CreateDoctor() {
   const [tempAward, setTempAward] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const handleBlur = (n: string, v: string) => {
+    setTouched(p => ({ ...p, [n]: true }));
+    setErrors(p => ({ ...p, [n]: dValidate(n, v) }));
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -189,6 +211,7 @@ function CreateDoctor() {
     if (["consultationFee", "maxAppointmentsPerDay", "consultationDuration", "baseSalary"].includes(name) && !/^\d*$/.test(value)) return;
 
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (touched[name]) setErrors(p => ({ ...p, [name]: dValidate(name, value) }));
   };
 
 
@@ -250,55 +273,24 @@ function CreateDoctor() {
     setAvailability(updated);
   };
 
-  const validateForm = (): boolean => {
-    // Required fields
-    if (!formData.name.trim()) return toast.error("Please enter doctor's name"), false;
-    if (!/^[a-zA-Z\s.'-]+$/.test(formData.name.trim())) return toast.error("Doctor name can only contain letters, spaces, dots, and hyphens"), false;
-    
-    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) 
-      return toast.error("Please enter a valid email address"), false;
-    
-    if (formData.mobile.length !== 10) return toast.error("Mobile number must be exactly 10 digits"), false;
-    
-    if (!formData.password || formData.password.length < 6) 
-      return toast.error("Password must be at least 6 characters"), false;
-    
-    if (!formData.gender) return toast.error("Please select gender"), false;
-    
-    if (formData.specialties.length === 0) return toast.error("Please add at least one specialty"), false;
-    
-    // Medical Registration Number - Mandatory
-    if (!formData.medicalRegistrationNumber.trim()) 
-      return toast.error("Medical Registration Number is mandatory"), false;
-    
-    if (!formData.experienceStart) return toast.error("Please select experience start date"), false;
-    
-    if (!formData.consultationFee || parseInt(formData.consultationFee) <= 0) 
-      return toast.error("Please enter a valid consultation fee"), false;
-
-    // Financial Validations
-    if (formData.panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber.toUpperCase())) {
-      return toast.error("Invalid PAN number format (e.g., ABCDE1234F)"), false;
-    }
-    
-    if (formData.aadharNumber && formData.aadharNumber.length !== 12) {
-      return toast.error("Aadhar number must be exactly 12 digits"), false;
-    }
-    
-    if (formData.ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifscCode.toUpperCase())) {
-      return toast.error("Invalid IFSC code format (e.g., ABCD0123456)"), false;
-    }
-    
-    if (formData.accountNumber && (formData.accountNumber.length < 9 || formData.accountNumber.length > 18)) {
-      return toast.error("Bank account number should be between 9 and 18 digits"), false;
-    }
-
-    return true;
+  const touchAll = () => {
+    const fields = ["name","email","mobile","password","medicalRegistrationNumber","consultationFee","panNumber","aadharNumber","ifscCode","accountNumber","pincode"];
+    const nt: Record<string,boolean> = {}, ne: Errors = {};
+    fields.forEach(f => { nt[f]=true; ne[f]=dValidate(f,(formData as any)[f]??""); });
+    // extra checks
+    if (!formData.gender) ne["gender"] = "Please select gender";
+    if (formData.specialties.length === 0) ne["specialties"] = "At least one specialty is required";
+    if (!formData.experienceStart) ne["experienceStart"] = "Experience start date is required";
+    setTouched(p => ({ ...p, ...nt }));
+    setErrors(p => ({ ...p, ...ne }));
+    return Object.values(ne).every(e => !e);
   };
+
+  const validateForm = (): boolean => touchAll();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validateForm()) { toast.error("Please fix the highlighted errors before submitting"); return; }
 
     setLoading(true);
 
@@ -360,15 +352,14 @@ function CreateDoctor() {
     };
 
       await hospitalAdminService.createDoctor(doctorData);
+      
+      toast.success(`Doctor "${formData.name}" created successfully!`, { duration: 4000 });
+      
       queryClient.invalidateQueries({ queryKey: ['hospital-admin-doctors'] });
       queryClient.invalidateQueries({ queryKey: ['hospital-admin', 'dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['hospital-admin', 'doctors-list'] });
 
-      toast.success(`Doctor "${formData.name}" created successfully!`, { duration: 4000 });
-
-      setTimeout(() => {
-        router.push("/hospital-admin/doctors");
-      }, 1000);
+      router.push("/hospital-admin/doctors");
     } catch (err: any) {
       toast.error(err.message || "Failed to create doctor", { duration: 5000 });
     } finally {
@@ -384,33 +375,28 @@ function CreateDoctor() {
         subtitle="Complete doctor profile with medical registration and professional details"
       />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} noValidate className="space-y-6">
         {/* 1. Personal Information */}
         <Card title="Personal Information" icon={<User className="text-blue-500" />} padding="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <FormInput label="Full Name" type="text" name="name" required
-              value={formData.name} onChange={handleChange} placeholder="Dr. John Smith" />
-            
+            <DField label="Full Name" name="name" value={formData.name} onChange={handleChange}
+              onBlur={e=>handleBlur("name",e.target.value)} error={errors.name} touched={touched.name}
+              required placeholder="Dr. John Smith"/>
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-color)' }}>
-                Gender <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium mb-2" style={{color:'var(--text-color)'}}>Gender<span className="text-red-500 ml-0.5">*</span></label>
               <select name="gender" value={formData.gender} onChange={handleChange} required
-                className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
-                style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }}>
+                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 ${touched.gender&&errors.gender?"border-rose-400 bg-rose-50/20":""}`}
+                style={{backgroundColor:'var(--card-bg)',color:'var(--text-color)',borderColor:touched.gender&&errors.gender?undefined:'var(--border-color)'}}>
                 <option value="">Select Gender</option>
-                {GENDER_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                {GENDER_OPTIONS.map(opt=><option key={opt.value} value={opt.value}>{opt.label}</option>)}
               </select>
+              {touched.gender&&errors.gender&&<p className="flex items-center gap-1 text-[11px] font-semibold text-rose-500 mt-1"><AlertCircle size={12}/>{errors.gender}</p>}
             </div>
-
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-color)' }}>
-                Date of Birth
-              </label>
-              <input type="date" name="dateOfBirth" value={formData.dateOfBirth}
-                onChange={handleChange} max={new Date().toISOString().split('T')[0]}
+              <label className="block text-sm font-medium mb-2" style={{color:'var(--text-color)'}}>Date of Birth</label>
+              <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} max={new Date().toISOString().split('T')[0]}
                 className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
-                style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }} />
+                style={{backgroundColor:'var(--card-bg)',color:'var(--text-color)',borderColor:'var(--border-color)'}}/>
             </div>
           </div>
         </Card>
@@ -418,17 +404,23 @@ function CreateDoctor() {
         {/* 2. Contact Information */}
         <Card title="Contact Information" icon={<Mail className="text-green-500" />} padding="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <FormInput label="Email Address" type="email" name="email" required
-              value={formData.email} onChange={handleChange} placeholder="doctor@hospital.com" />
-            <FormInput label="Mobile Number (10 digits)" type="tel" name="mobile" required
-              value={formData.mobile} onChange={handleChange} placeholder="10-digit mobile" />
-            <div className="relative">
-              <FormInput label="Password" type={showPassword ? "text" : "password"} name="password" required
-                value={formData.password} onChange={handleChange} placeholder="Min 6 characters" />
-              <button type="button" onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-10 text-gray-500 hover:text-blue-500">
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
+            <DField label="Email Address" name="email" value={formData.email} onChange={handleChange}
+              onBlur={e=>handleBlur("email",e.target.value)} error={errors.email} touched={touched.email}
+              required type="email" placeholder="doctor@hospital.com"/>
+            <DField label="Mobile Number" name="mobile" value={formData.mobile} onChange={handleChange}
+              onBlur={e=>handleBlur("mobile",e.target.value)} error={errors.mobile} touched={touched.mobile}
+              required type="tel" placeholder="10-digit mobile"/>
+            <div className="relative space-y-1.5">
+              <label className="block text-sm font-medium" style={{color:'var(--text-color)'}}>Password<span className="text-red-500 ml-0.5">*</span></label>
+              <div className="relative">
+                <input type={showPassword?"text":"password"} name="password" value={formData.password}
+                  onChange={handleChange} onBlur={e=>handleBlur("password",e.target.value)} placeholder="Min 6 characters"
+                  className={`w-full px-4 py-3 pr-10 rounded-xl border focus:outline-none focus:ring-2 transition-all ${touched.password&&errors.password?"border-rose-400 bg-rose-50/20 focus:ring-rose-400/20":touched.password&&!errors.password&&formData.password?"border-emerald-400 focus:ring-emerald-400/20":"focus:ring-blue-500"}`}
+                  style={touched.password&&!errors.password&&formData.password?{borderColor:'#34d399',backgroundColor:'var(--card-bg)',color:'var(--text-color)'}:{backgroundColor:'var(--card-bg)',color:'var(--text-color)',borderColor:touched.password&&errors.password?undefined:'var(--border-color)'}}/>
+                <button type="button" onClick={()=>setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-500">{showPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button>
+              </div>
+              <DErr msg={touched.password?errors.password:undefined}/>
+              {touched.password&&!errors.password&&formData.password&&<p className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 mt-1"><CheckCircle2 size={12}/>Password looks good</p>}
             </div>
           </div>
           
@@ -454,13 +446,11 @@ function CreateDoctor() {
                 <CreditCard size={18} /> Medical Registration (Mandatory in India)
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <FormInput label="NMC Registration Number" type="text" name="medicalRegistrationNumber" required
-                  value={formData.medicalRegistrationNumber} onChange={handleChange} 
-                  placeholder="NMC/State Council No." />
-                <FormInput label="Registration Council" type="text" name="registrationCouncil"
-                  value={formData.registrationCouncil} onChange={handleChange} />
-                <FormInput label="Registration Year" type="text" name="registrationYear"
-                  value={formData.registrationYear} onChange={handleChange} placeholder="YYYY" />
+                <DField label="NMC Registration Number" name="medicalRegistrationNumber" value={formData.medicalRegistrationNumber} onChange={handleChange}
+                  onBlur={e=>handleBlur("medicalRegistrationNumber",e.target.value)} error={errors.medicalRegistrationNumber}
+                  touched={touched.medicalRegistrationNumber} required placeholder="NMC/State Council No."/>
+                <FormInput label="Registration Council" type="text" name="registrationCouncil" value={formData.registrationCouncil} onChange={handleChange}/>
+                <FormInput label="Registration Year" type="text" name="registrationYear" value={formData.registrationYear} onChange={handleChange} placeholder="YYYY"/>
                 <div>
                   <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-color)' }}>
                     Registration Expiry Date
@@ -555,13 +545,17 @@ function CreateDoctor() {
         {/* 4. Scheduling & Availability */}
         <Card title="Scheduling & Availability" icon={<Clock className="text-orange-500" />} padding="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="relative">
-              <label className="block text-sm font-medium mb-2">Consultation Fee (₹) <span className="text-red-500">*</span></label>
-              <input type="text" name="consultationFee" value={formData.consultationFee}
-                onChange={handleChange} required placeholder="500"
-                className="w-full px-4 py-3 pl-10 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
-                style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }} />
-              <DollarSign className="absolute left-3 top-10 text-gray-400" size={18} />
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium" style={{color:'var(--text-color)'}}>Consultation Fee (₹)<span className="text-red-500 ml-0.5">*</span></label>
+              <div className="relative">
+                <input type="text" name="consultationFee" value={formData.consultationFee}
+                  onChange={handleChange} onBlur={e=>handleBlur("consultationFee",e.target.value)} placeholder="500"
+                  className={`w-full px-4 py-3 pl-10 pr-9 rounded-xl border focus:outline-none focus:ring-2 transition-all ${touched.consultationFee&&errors.consultationFee?"border-rose-400 bg-rose-50/20 focus:ring-rose-400/20":touched.consultationFee&&!errors.consultationFee&&formData.consultationFee?"border-emerald-400 focus:ring-emerald-400/20":"focus:ring-blue-500"}`}
+                  style={touched.consultationFee&&!errors.consultationFee&&formData.consultationFee?{borderColor:'#34d399',backgroundColor:'var(--card-bg)',color:'var(--text-color)'}:{backgroundColor:'var(--card-bg)',color:'var(--text-color)',borderColor:touched.consultationFee&&errors.consultationFee?undefined:'var(--border-color)'}}/>
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
+                {touched.consultationFee&&!errors.consultationFee&&formData.consultationFee&&<CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500"/>}
+              </div>
+              <DErr msg={touched.consultationFee?errors.consultationFee:undefined}/>
             </div>
 
             <FormInput label="Consultation Duration (mins)" type="text" name="consultationDuration"
@@ -725,19 +719,23 @@ function CreateDoctor() {
         <Card title="Bank & Payroll Details (Mandatory for Payslips)" icon={<Landmark className="text-emerald-500" />} padding="p-6">
           <div className="space-y-6">
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <FormInput label="Account Holder Name" type="text" name="accountName" value={formData.accountName} onChange={handleChange} placeholder="As per bank records" />
-                <FormInput label="Bank Name" type="text" name="bankName" value={formData.bankName} onChange={handleChange} placeholder="e.g. HDFC Bank" />
-                <FormInput label="Account Number" type="text" name="accountNumber" value={formData.accountNumber} onChange={handleChange} placeholder="Account Number" />
-                <FormInput label="IFSC Code" type="text" name="ifscCode" value={formData.ifscCode} onChange={handleChange} placeholder="HDFC0001234" />
+                <FormInput label="Account Holder Name" type="text" name="accountName" value={formData.accountName} onChange={handleChange} placeholder="As per bank records"/>
+                <FormInput label="Bank Name" type="text" name="bankName" value={formData.bankName} onChange={handleChange} placeholder="e.g. HDFC Bank"/>
+                <DField label="Account Number" name="accountNumber" value={formData.accountNumber} onChange={handleChange}
+                  onBlur={e=>handleBlur("accountNumber",e.target.value)} error={errors.accountNumber} touched={touched.accountNumber} placeholder="9–18 digits"/>
+                <DField label="IFSC Code" name="ifscCode" value={formData.ifscCode} onChange={handleChange}
+                  onBlur={e=>handleBlur("ifscCode",e.target.value)} error={errors.ifscCode} touched={touched.ifscCode} placeholder="HDFC0001234" extraClass="uppercase"/>
              </div>
-
+             {!formData.ifscCode&&<p className="text-[10px] text-gray-400 ml-1">IFSC Format: ABCD0123456</p>}
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t border-slate-100">
-                <FormInput label="Base Salary (Monthly)" type="text" name="baseSalary" value={formData.baseSalary} onChange={handleChange} placeholder="e.g. 150000" />
-                <FormInput label="PAN Number" type="text" name="panNumber" value={formData.panNumber} onChange={handleChange} placeholder="ABCDE1234F" />
-                <FormInput label="Aadhar Number" type="text" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} placeholder="12-digit Aadhar" />
-                <FormInput label="PF Number" type="text" name="pfNumber" value={formData.pfNumber} onChange={handleChange} placeholder="Provident Fund No." />
-                <FormInput label="ESI Number" type="text" name="esiNumber" value={formData.esiNumber} onChange={handleChange} placeholder="ESI Number" />
-                <FormInput label="UAN Number" type="text" name="uanNumber" value={formData.uanNumber} onChange={handleChange} placeholder="Universal Account No." />
+                <FormInput label="Base Salary (Monthly)" type="text" name="baseSalary" value={formData.baseSalary} onChange={handleChange} placeholder="e.g. 150000"/>
+                <DField label="PAN Number" name="panNumber" value={formData.panNumber} onChange={handleChange}
+                  onBlur={e=>handleBlur("panNumber",e.target.value)} error={errors.panNumber} touched={touched.panNumber} placeholder="ABCDE1234F" extraClass="uppercase"/>
+                <DField label="Aadhar Number" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange}
+                  onBlur={e=>handleBlur("aadharNumber",e.target.value)} error={errors.aadharNumber} touched={touched.aadharNumber} placeholder="12-digit Aadhar"/>
+                <FormInput label="PF Number" type="text" name="pfNumber" value={formData.pfNumber} onChange={handleChange} placeholder="Provident Fund No."/>
+                <FormInput label="ESI Number" type="text" name="esiNumber" value={formData.esiNumber} onChange={handleChange} placeholder="ESI Number"/>
+                <FormInput label="UAN Number" type="text" name="uanNumber" value={formData.uanNumber} onChange={handleChange} placeholder="Universal Account No."/>
              </div>
           </div>
         </Card>

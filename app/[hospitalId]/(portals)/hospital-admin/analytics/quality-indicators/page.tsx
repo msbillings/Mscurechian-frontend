@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     BarChart3,
     Clock,
@@ -26,7 +26,10 @@ import {
     User,
     BarChart,
     FileText,
-    FileSpreadsheet
+    FileSpreadsheet,
+    Settings2,
+    Save,
+    X as XIcon,
 } from 'lucide-react';
 import { exportQualityToExcel } from '@/lib/excel-utils';
 import {
@@ -101,6 +104,14 @@ const QualityIndicatorDashboard = () => {
     const [selectedIndicator, setSelectedIndicator] = useState<any>(null);
     const [isFinalizing, setIsFinalizing] = useState(false);
     const [showExportMenu, setShowExportMenu] = useState(false);
+    const [showTargets, setShowTargets] = useState(false);
+    const [savingTargets, setSavingTargets] = useState(false);
+
+    const DEFAULT_TARGETS = {
+        opdWaitingTime: 30, bedOccupancyMin: 80, bedOccupancyMax: 90,
+        alos: 5, billingTat: 180, incidentRateMax: 1, incidentCountMax: 5, readmissionRate: 5,
+    };
+    const [targetForm, setTargetForm] = useState(DEFAULT_TARGETS);
 
     // Enhanced Query: Fetch current + previous + metadata
     const { data: enhancedMetrics, isLoading, refetch, isFetching } = useQuery({
@@ -114,6 +125,24 @@ const QualityIndicatorDashboard = () => {
         queryFn: () => analyticsService.getAuditTrends({ months: auditTimeframe }),
     });
 
+    // Load saved targets
+    const queryClient = useQueryClient();
+    const { data: savedTargets } = useQuery({
+        queryKey: ['quality-targets'],
+        queryFn: () => analyticsService.getQualityTargets(),
+        onSuccess: (res: any) => {
+            if (res?.data) setTargetForm({ ...DEFAULT_TARGETS, ...res.data });
+        }
+    } as any);
+
+    // Sync targetForm whenever savedTargets loads
+    React.useEffect(() => {
+        const d = (savedTargets as any)?.data;
+        if (d) setTargetForm({ ...DEFAULT_TARGETS, ...d });
+    }, [savedTargets]);
+
+    const T = targetForm; // shorthand
+
     const metrics = enhancedMetrics?.data?.current;
     const prevIndicators = enhancedMetrics?.data?.previous;
 
@@ -124,8 +153,8 @@ const QualityIndicatorDashboard = () => {
             value: metrics?.indicators?.opdWaitingTime || 0,
             prevValue: prevIndicators?.opdWaitingTime || 0,
             unit: "min",
-            target: "< 30 min",
-            status: (metrics?.indicators?.opdWaitingTime || 0) < 30 ? "success" : "warning",
+            target: `< ${T.opdWaitingTime} min`,
+            status: (metrics?.indicators?.opdWaitingTime || 0) < T.opdWaitingTime ? "success" : "warning",
             icon: Clock,
             color: "blue",
             description: "Registration to Consult"
@@ -136,8 +165,8 @@ const QualityIndicatorDashboard = () => {
             value: metrics?.indicators?.bedOccupancyRate || 0,
             prevValue: prevIndicators?.bedOccupancyRate || 0,
             unit: "%",
-            target: "80-90%",
-            status: (metrics?.indicators?.bedOccupancyRate || 0) > 80 ? "success" : "danger",
+            target: `${T.bedOccupancyMin}–${T.bedOccupancyMax}%`,
+            status: (() => { const v = metrics?.indicators?.bedOccupancyRate || 0; return v >= T.bedOccupancyMin && v <= T.bedOccupancyMax ? "success" : "danger"; })(),
             icon: Bed,
             color: "emerald",
             description: "Utilized vs Available"
@@ -148,8 +177,8 @@ const QualityIndicatorDashboard = () => {
             value: metrics?.indicators?.alos || 0,
             prevValue: prevIndicators?.alos || 0,
             unit: "days",
-            target: "< 5 days",
-            status: (metrics?.indicators?.alos || 0) < 5 ? "success" : "warning",
+            target: `< ${T.alos} days`,
+            status: (metrics?.indicators?.alos || 0) < T.alos ? "success" : "warning",
             icon: Calendar,
             color: "violet",
             description: "Admission to Discharge"
@@ -160,37 +189,44 @@ const QualityIndicatorDashboard = () => {
             value: metrics?.indicators?.billingTat || 0,
             prevValue: prevIndicators?.billingTat || 0,
             unit: "min",
-            target: "< 180 min",
-            status: (metrics?.indicators?.billingTat || 0) < 180 ? "success" : "warning",
+            target: `< ${T.billingTat} min`,
+            status: (metrics?.indicators?.billingTat || 0) < T.billingTat ? "success" : "warning",
             icon: Wallet,
             color: "amber",
             description: "Advice to Settlement"
         },
-        {
-            id: "incidentRate",
-            title: "Incident Rate",
-            value: metrics?.indicators?.incidentRate || 0,
-            prevValue: prevIndicators?.incidentRate || 0,
-            unit: "‰",
-            target: "< 1.0‰",
-            status: (metrics?.indicators?.incidentRate || 0) < 1 ? "success" : "danger",
-            icon: AlertTriangle,
-            color: "rose",
-            description: "Incidents per 1000 Days"
-        },
+        (() => {
+            const rawCount = metrics?.rawCounts?.totalIncidents ?? 0;
+            const bedDays  = metrics?.rawCounts?.totalOccupiedBedDays ?? 0;
+            const useRaw   = bedDays < 30;
+            return {
+                id: "incidentRate",
+                title: "Incidents",
+                value: useRaw ? rawCount : (metrics?.indicators?.incidentRate || 0),
+                prevValue: useRaw ? 0 : (prevIndicators?.incidentRate || 0),
+                unit: useRaw ? "reported" : "‰",
+                target: useRaw ? `< ${T.incidentCountMax} /month` : `< ${T.incidentRateMax}‰`,
+                status: useRaw
+                    ? (rawCount < T.incidentCountMax ? "success" : "danger")
+                    : ((metrics?.indicators?.incidentRate || 0) < T.incidentRateMax ? "success" : "danger"),
+                icon: AlertTriangle,
+                color: "rose",
+                description: useRaw ? "Total this month" : "Per 1000 patient-days"
+            };
+        })(),
         {
             id: "readmissionRate",
             title: "Readmission Rate",
             value: metrics?.indicators?.readmissionRate || 0,
             prevValue: prevIndicators?.readmissionRate || 0,
             unit: "%",
-            target: "< 5%",
-            status: (metrics?.indicators?.readmissionRate || 0) < 5 ? "success" : "warning",
+            target: `< ${T.readmissionRate}%`,
+            status: (metrics?.indicators?.readmissionRate || 0) < T.readmissionRate ? "success" : "warning",
             icon: TrendingUp,
             color: "indigo",
             description: "Readmit w/i 30 Days"
         }
-    ], [metrics, prevIndicators]);
+    ], [metrics, prevIndicators, T]);
 
     const handleDateChange = (increment: number) => {
         let newMonth = selectedDate.month + increment;
@@ -214,7 +250,8 @@ const QualityIndicatorDashboard = () => {
             month: selectedDate.month,
             year: selectedDate.year,
             hospital: { name: 'CureChain Hospital' },
-            metadata: INDICATOR_METADATA
+            metadata: INDICATOR_METADATA,
+            targets: T
         });
         const win = window.open('', '_blank');
         if (win) {
@@ -234,7 +271,8 @@ const QualityIndicatorDashboard = () => {
                 month: selectedDate.month,
                 year: selectedDate.year,
                 hospital: { name: 'CureChain Hospital' },
-                metadata: INDICATOR_METADATA
+                metadata: INDICATOR_METADATA,
+                targets: T
             });
             toast.success("Excel report generated");
         } catch (error) {
@@ -256,6 +294,20 @@ const QualityIndicatorDashboard = () => {
             toast.error(error?.message || "Finalization failed");
         } finally {
             setIsFinalizing(false);
+        }
+    };
+
+    const handleSaveTargets = async () => {
+        setSavingTargets(true);
+        try {
+            await analyticsService.saveQualityTargets(targetForm);
+            queryClient.invalidateQueries({ queryKey: ['quality-targets'] });
+            toast.success('Targets saved successfully');
+            setShowTargets(false);
+        } catch (e: any) {
+            toast.error(e?.message || 'Failed to save targets');
+        } finally {
+            setSavingTargets(false);
         }
     };
 
@@ -324,6 +376,14 @@ const QualityIndicatorDashboard = () => {
 
                     <button onClick={() => refetch()} className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-all">
                         <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
+                    </button>
+
+                    {/* Configure Targets */}
+                    <button
+                        onClick={() => setShowTargets(true)}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all"
+                    >
+                        <Settings2 size={14} /> Targets
                     </button>
 
                     <div className="relative">
@@ -584,6 +644,180 @@ const QualityIndicatorDashboard = () => {
             <style jsx global>{`
                 /* Global polish */
             `}</style>
+            {/* =========== Configure Targets Modal =========== */}
+            {showTargets && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowTargets(false)} />
+
+                    {/* Modal */}
+                    <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
+
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-primary-theme/10 text-primary-theme rounded-xl">
+                                    <Settings2 size={20} />
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-black text-slate-900 uppercase tracking-tight">Configure Quality Targets</h2>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">NABH benchmark thresholds · per hospital</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowTargets(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-all text-slate-400 hover:text-slate-600">
+                                <XIcon size={18} />
+                            </button>
+                        </div>
+
+                        {/* Grid Form */}
+                        <div className="overflow-y-auto px-6 py-5">
+                            <div className="grid grid-cols-2 gap-4">
+
+                                {/* OPD Wait Time */}
+                                <div className="p-4 bg-blue-50/70 border border-blue-100 rounded-2xl space-y-3">
+                                    <label className="text-[10px] font-black text-blue-700 uppercase tracking-widest flex items-center gap-1.5">
+                                        <Clock size={11} /> OPD Wait Time
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold text-slate-400 shrink-0">Less than</span>
+                                        <input
+                                            type="number" min={1} max={300}
+                                            value={targetForm.opdWaitingTime}
+                                            onChange={e => setTargetForm(p => ({ ...p, opdWaitingTime: +e.target.value }))}
+                                            className="flex-1 px-3 py-2 border border-blue-200 rounded-xl text-sm font-black text-center focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                                        />
+                                        <span className="text-[10px] font-bold text-slate-400 shrink-0">min</span>
+                                    </div>
+                                </div>
+
+                                {/* ALOS */}
+                                <div className="p-4 bg-violet-50/70 border border-violet-100 rounded-2xl space-y-3">
+                                    <label className="text-[10px] font-black text-violet-700 uppercase tracking-widest flex items-center gap-1.5">
+                                        <Calendar size={11} /> Avg Length of Stay
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold text-slate-400 shrink-0">Less than</span>
+                                        <input
+                                            type="number" min={1} max={60} step={0.5}
+                                            value={targetForm.alos}
+                                            onChange={e => setTargetForm(p => ({ ...p, alos: +e.target.value }))}
+                                            className="flex-1 px-3 py-2 border border-violet-200 rounded-xl text-sm font-black text-center focus:outline-none focus:ring-2 focus:ring-violet-400 bg-white"
+                                        />
+                                        <span className="text-[10px] font-bold text-slate-400 shrink-0">days</span>
+                                    </div>
+                                </div>
+
+                                {/* Billing TAT */}
+                                <div className="p-4 bg-amber-50/70 border border-amber-100 rounded-2xl space-y-3">
+                                    <label className="text-[10px] font-black text-amber-700 uppercase tracking-widest flex items-center gap-1.5">
+                                        <Wallet size={11} /> Billing TAT
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold text-slate-400 shrink-0">Less than</span>
+                                        <input
+                                            type="number" min={1} max={1440}
+                                            value={targetForm.billingTat}
+                                            onChange={e => setTargetForm(p => ({ ...p, billingTat: +e.target.value }))}
+                                            className="flex-1 px-3 py-2 border border-amber-200 rounded-xl text-sm font-black text-center focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                                        />
+                                        <span className="text-[10px] font-bold text-slate-400 shrink-0">min</span>
+                                    </div>
+                                </div>
+
+                                {/* Readmission */}
+                                <div className="p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl space-y-3">
+                                    <label className="text-[10px] font-black text-indigo-700 uppercase tracking-widest flex items-center gap-1.5">
+                                        <TrendingUp size={11} /> Readmission Rate
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold text-slate-400 shrink-0">Less than</span>
+                                        <input
+                                            type="number" min={0.1} max={100} step={0.1}
+                                            value={targetForm.readmissionRate}
+                                            onChange={e => setTargetForm(p => ({ ...p, readmissionRate: +e.target.value }))}
+                                            className="flex-1 px-3 py-2 border border-indigo-200 rounded-xl text-sm font-black text-center focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                                        />
+                                        <span className="text-[10px] font-bold text-slate-400 shrink-0">%</span>
+                                    </div>
+                                </div>
+
+                                {/* Bed Occupancy — full width */}
+                                <div className="col-span-2 p-4 bg-emerald-50/70 border border-emerald-100 rounded-2xl space-y-3">
+                                    <label className="text-[10px] font-black text-emerald-700 uppercase tracking-widest flex items-center gap-1.5">
+                                        <Bed size={11} /> Bed Occupancy Range
+                                    </label>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-[10px] font-bold text-slate-400 shrink-0">Between</span>
+                                        <input
+                                            type="number" min={0} max={100}
+                                            value={targetForm.bedOccupancyMin}
+                                            onChange={e => setTargetForm(p => ({ ...p, bedOccupancyMin: +e.target.value }))}
+                                            className="w-20 px-3 py-2 border border-emerald-200 rounded-xl text-sm font-black text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
+                                        />
+                                        <span className="text-[10px] font-bold text-slate-400">%  and</span>
+                                        <input
+                                            type="number" min={0} max={100}
+                                            value={targetForm.bedOccupancyMax}
+                                            onChange={e => setTargetForm(p => ({ ...p, bedOccupancyMax: +e.target.value }))}
+                                            className="w-20 px-3 py-2 border border-emerald-200 rounded-xl text-sm font-black text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
+                                        />
+                                        <span className="text-[10px] font-bold text-slate-400">%</span>
+                                        <span className="text-[9px] text-slate-300 font-bold ml-auto">(Target range — ✅ if within bounds)</span>
+                                    </div>
+                                </div>
+
+                                {/* Incidents — full width */}
+                                <div className="col-span-2 p-4 bg-rose-50/70 border border-rose-100 rounded-2xl space-y-3">
+                                    <label className="text-[10px] font-black text-rose-700 uppercase tracking-widest flex items-center gap-1.5">
+                                        <AlertTriangle size={11} /> Incident Targets
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-bold text-slate-400 shrink-0 w-28">Rate (‰) target</span>
+                                            <input
+                                                type="number" min={0.1} max={100} step={0.1}
+                                                value={targetForm.incidentRateMax}
+                                                onChange={e => setTargetForm(p => ({ ...p, incidentRateMax: +e.target.value }))}
+                                                className="flex-1 px-3 py-2 border border-rose-200 rounded-xl text-sm font-black text-center focus:outline-none focus:ring-2 focus:ring-rose-400 bg-white"
+                                            />
+                                            <span className="text-[10px] font-bold text-slate-400">‰</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-bold text-slate-400 shrink-0 w-28">Count/month</span>
+                                            <input
+                                                type="number" min={1} max={500}
+                                                value={targetForm.incidentCountMax}
+                                                onChange={e => setTargetForm(p => ({ ...p, incidentCountMax: +e.target.value }))}
+                                                className="flex-1 px-3 py-2 border border-rose-200 rounded-xl text-sm font-black text-center focus:outline-none focus:ring-2 focus:ring-rose-400 bg-white"
+                                            />
+                                            <span className="text-[9px] font-bold text-slate-300">low-data</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-6 py-4 border-t border-slate-100 flex gap-3">
+                            <button
+                                onClick={() => setShowTargets(false)}
+                                className="px-6 py-2.5 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveTargets}
+                                disabled={savingTargets}
+                                className="flex-1 py-2.5 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary-theme/20 disabled:opacity-60"
+                            >
+                                {savingTargets ? <RefreshCw size={12} className="animate-spin" /> : <Save size={12} />}
+                                {savingTargets ? 'Saving…' : 'Save Targets'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

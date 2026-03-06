@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { hrService } from "@/lib/integrations/services/hr.service";
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
+import { useAuthStore } from "@/stores/authStore";
 import {
   Briefcase,
   Users,
@@ -42,10 +43,62 @@ export default function RecruitmentPage() {
 
   const [viewingJob, setViewingJob] = useState<any>(null);
 
+  const authUser = useAuthStore((state) => state.user) as any;
+
   const { data: recruitmentResponse, isLoading } = useQuery({
     queryKey: ["hr", "recruitment"],
     queryFn: () => hrService.getRecruitment(),
+    refetchInterval: 15000, // Fallback refetch every 15s
+    staleTime: 5000,
   });
+
+  // Real-time synchronization
+  useEffect(() => {
+    let isMounted = true;
+    const initSocket = async () => {
+      try {
+        const { getSocket, joinSocketRoom } = await import('@/lib/integrations/api/socket');
+        const socket = await getSocket();
+        
+        if (socket && isMounted) {
+          const userId = authUser?.id || authUser?._id;
+          if (userId) {
+            joinSocketRoom({
+              userId,
+              role: 'hr',
+              hospitalId: (hospitalId as string) || authUser?.hospital
+            });
+
+            socket.on('new_recruitment_request', (data: any) => {
+              queryClient.invalidateQueries({ queryKey: ["hr", "recruitment"] });
+              toast.success("New recruitment entry detected");
+            });
+
+            socket.on('recruitment_review_update', (data: any) => {
+              queryClient.invalidateQueries({ queryKey: ["hr", "recruitment"] });
+              toast.success("Recruitment status updated");
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Socket init error:", err);
+      }
+    };
+
+    initSocket();
+
+    return () => {
+      isMounted = false;
+      import('@/lib/integrations/api/socket').then(({ getSocket }) => {
+        getSocket().then(socket => {
+          if (socket) {
+            socket.off('new_recruitment_request');
+            socket.off('recruitment_review_update');
+          }
+        });
+      });
+    };
+  }, [queryClient, authUser, hospitalId]);
 
   const { data: metadataResponse } = useQuery({
     queryKey: ["hospital", "metadata"],
@@ -53,7 +106,7 @@ export default function RecruitmentPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Build department list from hospital's Lab departments + unitTypes
+  // Build department list from clinical departments + unitTypes
   const dynamicDepartments = React.useMemo(() => {
     const depts = (metadataResponse?.data?.departments || []).map((d: any) => d.name).filter(Boolean);
     const units = (metadataResponse?.data?.unitTypes || []).filter(Boolean);

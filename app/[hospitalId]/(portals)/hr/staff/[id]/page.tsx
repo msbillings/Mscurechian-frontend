@@ -11,7 +11,7 @@ import {
   Building,
   Clock,
   Edit,
-  Trash2,
+  UserCheck,
   FileText,
   User,
   ShieldCheck,
@@ -35,7 +35,6 @@ function HRStaffDetailPage() {
   const [shifts, setShifts] = useState<any[]>([]);
   const [trainingHistory, setTrainingHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [deleteLoading, setDeleteLoading] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
 
   useEffect(() => {
@@ -105,10 +104,11 @@ function HRStaffDetailPage() {
 
     setStatusLoading(true);
     try {
+      const { hrService } = await import("@/lib/integrations");
       if (isActivating) {
-        await hospitalAdminService.activateStaff(id);
+        await hrService.activateStaff(id);
       } else {
-        await hospitalAdminService.deactivateStaff(id);
+        await hrService.deactivateStaff(id);
       }
       toast.success(`${staff?.name} has been ${action}d successfully`);
       setStaff({ ...staff, status: isActivating ? 'active' : 'inactive' });
@@ -120,22 +120,6 @@ function HRStaffDetailPage() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm(`CAUTION: This will permanently purge ${staff?.name} from the active system directory. This action cannot be undone. Proceed?`)) {
-      return;
-    }
-
-    setDeleteLoading(true);
-    try {
-      await hospitalAdminService.deleteStaff(id);
-      toast.success(`${staff?.name} has been permanently removed`);
-      router.push(`/${hospitalId}/hr/staff`);
-    } catch (error: any) {
-      console.error("Failed to delete staff:", error);
-      toast.error(error.message || "Operation failed during directory purge");
-      setDeleteLoading(false);
-    }
-  };
 
   const shiftName = useMemo(() => {
     if (!staff?.shift || shifts.length === 0) return staff?.shift || 'General';
@@ -214,24 +198,15 @@ function HRStaffDetailPage() {
             <button
               onClick={handleToggleStatus}
               disabled={statusLoading}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all active:scale-95 ${staff.status === 'active'
-                ? 'bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/20'
-                : 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20'
+              className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95 flex-1 md:flex-none ${staff.status === 'active'
+                ? 'bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100 hover:border-amber-300'
+                : 'bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300'
                 }`}
             >
-              {staff.status === 'active' ? <EyeOff size={14} /> : <Eye size={14} />}
-              {staff.status === 'active' ? 'Deactivate' : 'Activate'}
-            </button>
-
-            <button
-              onClick={handleDelete}
-              disabled={deleteLoading}
-              className="flex items-center gap-2 px-5 py-2.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-xl text-xs font-semibold hover:bg-rose-600 hover:text-white transition-all active:scale-95 dark:bg-rose-500/10 dark:border-rose-500/20"
-            >
-              {deleteLoading ? (
-                <div className="h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+              {statusLoading ? (
+                <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
               ) : (
-                <><Trash2 size={14} /> Purge</>
+                staff.status === 'active' ? <><EyeOff size={16} /> Deactivate Account</> : <><UserCheck size={16} /> Reactivate Account</>
               )}
             </button>
           </div>

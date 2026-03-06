@@ -47,7 +47,9 @@ export default function HospitalAdminNurses() {
                 nurses: nursesResp.nurses || [],
                 unitTypes: typesData || []
             };
-        }
+        },
+        staleTime: 0,
+        refetchOnMount: 'always',
     });
 
     const nurses = nursesData?.nurses || [];
