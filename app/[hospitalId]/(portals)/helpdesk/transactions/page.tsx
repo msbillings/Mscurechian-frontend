@@ -43,7 +43,6 @@ export default function TransactionsPage() {
         const typeMap: Record<string, string> = {
             'opd': 'appointment_booking,consultation',
             'ipd': ipdPaymentType === 'advance' ? 'ipd_advance,ipd_refund' : ipdPaymentType === 'discharge' ? 'ipd_final_settlement,ipd_bill_payment' : 'ipd_advance,ipd,ipd_refund,ipd_admission_fee,ipd_bill_payment',
-            'pharmacy': 'pharmacy',
         };
 
         return typeMap[filterValue] || filterValue;
@@ -293,12 +292,6 @@ export default function TransactionsPage() {
                             >
                                 IPD Payments
                             </button>
-                            <button
-                                onClick={() => setTypeFilter('pharmacy')}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${typeFilter === 'pharmacy' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
-                            >
-                                Pharmacy
-                            </button>
                         </div>
 
                         {/* IPD Payment Type Filter - Side by Side UI */}
@@ -397,7 +390,6 @@ export default function TransactionsPage() {
                                         'ipd_final_settlement': 'IPD Final Settlement',
                                         'discharge': 'Discharge Settlement',
                                         'lab_test': 'Lab Test',
-                                        'pharmacy': 'Pharmacy'
                                     };
                                     const type = typeMapping[rawType.toLowerCase()] || rawType.toUpperCase();
 

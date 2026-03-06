@@ -72,7 +72,7 @@ const HybridRoomSearch: React.FC<HybridRoomSearchProps> = ({
             </div>
 
             {isOpen && (
-                <div className="absolute top-full left-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-2xl z-[150] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="absolute top-full right-0 mt-2 w-full min-w-[200px] max-w-[280px] bg-white border border-slate-200 rounded-2xl shadow-2xl z-[150] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                     <div className="p-3 border-b border-slate-100 bg-slate-50">
                         <div className="relative">
                             <Search
@@ -110,8 +110,8 @@ const HybridRoomSearch: React.FC<HybridRoomSearchProps> = ({
                                         setSearchTerm("");
                                     }}
                                     className={`px-4 py-3 text-[10px] font-black uppercase tracking-widest hover:bg-teal-50 hover:text-teal-600 cursor-pointer transition-colors ${value === room.label
-                                            ? "bg-teal-50 text-teal-600"
-                                            : "text-slate-700"
+                                        ? "bg-teal-50 text-teal-600"
+                                        : "text-slate-700"
                                         }`}
                                 >
                                     {room.label}
