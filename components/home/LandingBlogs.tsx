@@ -36,7 +36,7 @@ const LandingBlogs = () => {
                <div className="w-6 h-px bg-primary-theme/30" />
                Knowledge Base
              </div>
-             <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight italic uppercase">
+             <h2 className="text-xl md:text-2xl font-black text-slate-900 uppercase">
                Medical <span className="text-primary-theme">Insights</span> & Research
              </h2>
              <p className="text-slate-500 font-medium mt-2 text-[10px] leading-relaxed max-w-lg">
@@ -94,7 +94,7 @@ const LandingBlogs = () => {
                     </div>
                     
                     <Link href={`/blogs/${blog.slug}`}>
-                      <h3 className="text-xs font-black text-slate-900 leading-snug tracking-tight mb-2.5 group-hover:text-primary-theme transition-colors line-clamp-2 italic uppercase">
+                      <h3 className="text-xs font-black text-slate-900 leading-snug tracking-tight mb-2.5 group-hover:text-primary-theme transition-colors line-clamp-2  uppercase">
                         {blog.title}
                       </h3>
                     </Link>

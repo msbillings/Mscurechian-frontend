@@ -30,7 +30,8 @@ import {
     Pill,
     LayoutGrid,
     ArrowLeft,
-    CheckCircle
+    CheckCircle,
+    ChevronDown
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import PortalGrid from "@/components/home/PortalGrid";
@@ -43,6 +44,8 @@ import DeploymentSecurity from "@/components/home/DeploymentSecurity";
 import TermsSection from "@/components/home/TermsSection";
 import LandingBlogs from "@/components/home/LandingBlogs";
 import LandingTestimonials from "@/components/home/LandingTestimonials";
+import ProblemBasedFeatures from "@/components/home/ProblemBasedFeatures";
+import SecurityComplianceNew from "@/components/home/SecurityComplianceNew";
 
 
 export default function Home() {
@@ -53,6 +56,7 @@ export default function Home() {
     const [showFloatingPlayer, setShowFloatingPlayer] = useState(true);
     const [pendingPath, setPendingPath] = useState('');
     const [hasAgreed, setHasAgreed] = useState(false);
+    const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
     useEffect(() => {
         const agreed = localStorage.getItem('mscurechain_terms_accepted');
@@ -147,33 +151,82 @@ export default function Home() {
                 {/* Hidden Audio Element */}
                 <audio ref={audioRef} src="/assets/voiceMS.mp3" preload="auto" autoPlay aria-hidden="true" />
 
-                
+
 
                 {/* Hero Section */}
-                <section
-                    className="relative flex h-[90vh] w-full items-center justify-center bg-cover bg-center"
-                    style={{
-                        backgroundImage: "url('/assets/lan3.png')",
-                    }}
-                >
-                    <div className="absolute inset-0 bg-slate-900/70" />
-                    <div className="relative z-10 max-w-4xl px-6 text-center text-white">
 
-                        <h1 className="mb-6 text-4xl max-sm:text-2xl font-extrabold leading-tight md:text-5xl uppercase tracking-tighter">
-                            Modern Hospital Management System  <span className="text-primary-theme">Curing Process</span>
-                        </h1>
-                        <p className="mb-10 text-base leading-relaxed text-slate-200 md:text-lg">
-                            MSCureChain securely connects hospitals, doctors, labs, pharmacies, and patients on one unified digital platform.
-                            AI-powered prescriptions, smart bookings, and integrated records ensure smooth, accurate, and efficient care delivery.
-                        </p>
-                        <div className="flex flex-wrap items-center justify-center gap-4">
-                            <button type="button" suppressHydrationWarning onClick={() => handleProtectedClick('/pricing')} className="rounded-xl bg-primary-theme px-10 py-5 text-lg font-bold text-primary-theme-foreground shadow-2xl shadow-primary-theme/40 transition-all hover:scale-105 hover:bg-primary-theme/90 active:scale-95">
-                                Request a Live Hospital Demo
-                            </button>
+                <section className="relative min-h-0 lg:min-h-[85vh] flex items-center pt-20 pb-4 lg:pb-12 overflow-hidden bg-white">
+                    {/* Centered DNA Background Image */}
+                    <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
+                        <div className="w-full max-w-2xl opacity-[0.05] blur-[1px]">
+                            <img
+                                src="/assets/image.png"
+                                alt="DNA Background"
+                                className="w-full h-auto object-contain"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Vertical Stripe Background Pattern */}
+                    <div className="absolute inset-0 z-0 opacity-[0.02] pointer-events-none"
+                        style={{
+                            backgroundImage: `linear-gradient(to right, #000000 1px, transparent 1px)`,
+                            backgroundSize: '40px 100%'
+                        }}
+                    />
+
+                    <div className="max-w-7xl mx-auto px-6 relative z-10 w-full">
+                        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-8">
+                            {/* Left Side: Content */}
+                            <div className="flex-[1.2] space-y-8 text-center lg:text-left pt-10">
+                                <ScrollReveal distance="30px" duration={800}>
+                                    <div className="space-y-4">
+
+                                        <h1 className="text-2xl md:text-2xl lg:text-3xl font-black text-slate-900 leading-[0.9] tracking-tighter uppercase">
+                                            Hospital Management System
+
+                                        </h1>
+                                        <p className="text-base md:text-lg text-slate-600 font-medium leading-relaxed max-w-2xl mx-auto lg:mx-0 pt-6">
+                                            MSCureChain securely connects hospitals, doctors, labs, pharmacies, and patients on one unified digital platform. AI-powered prescriptions, smart bookings, and integrated records ensure smooth, accurate, and efficient care delivery.
+                                        </p>
+                                    </div>
+                                </ScrollReveal>
+
+                                <ScrollReveal distance="30px" duration={800} delay={200}>
+                                    <div className="flex flex-wrap items-center justify-center lg:justify-start gap-10 pt-6">
+                                        <button
+                                            onClick={() => router.push('/portals')}
+                                            className="px-10 py-5 bg-primary-theme text-white rounded-md font-black text-xs uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all"
+                                        >
+                                            Go for live demo
+                                        </button>
+
+
+                                        <button
+                                            onClick={() => router.push('/contact')}
+                                            className="text-slate-900 font-black text-xs uppercase tracking-[0.2em] border-b-2 border-slate-900 pb-1 hover:text-primary-theme hover:border-primary-theme transition-colors"
+                                        >
+                                            GET STARTED NOW
+                                        </button>
+                                    </div>
+                                </ScrollReveal>
+                            </div>
+
+
+                            <div className="flex-1 relative w-full lg:h-[75vh] flex items-center justify-center lg:justify-end">
+                                <div className="relative w-full max-w-md lg:max-w-sm">
+                                    <img
+                                        src="/assets/doctor1.png"
+                                        alt="Healthcare Professional"
+                                        className="w-full h-auto object-contain filter drop-shadow-[0_20px_50px_rgba(0,0,0,0.1)]"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
-
+                <DeploymentSecurity />
+                <ProblemBasedFeatures />
                 {/* Voice & Project Information Section */}
                 <section className="pb-8 mt-20 relative z-20 ">
                     <div className="max-w-7xl mx-auto rounded-[0.5rem] px-6 border border-primary-theme/40 py-8">
@@ -392,11 +445,11 @@ export default function Home() {
                                     <ChevronRight size={20} className="ml-0.5" />
                                 </div>
                                 <h2 className="flex flex-col items-center text-white drop-shadow-2xl">
-                                    <span className={`text-3xl md:text-4xl font-black uppercase tracking-[0.3em] opacity-80 mb-2`}>
+                                    <span className={`text-3xl md:text-4xl  max-sm:text-[12px] font-black uppercase tracking-[0.3em] opacity-80 mb-2`}>
                                         Our Mission to
                                     </span>
-                                    <span className="text-background px-10 py-4 text-4xl md:text-7xl font-black tracking-tighter uppercase leading-none  transform hover:scale-105 transition-transform duration-500">
-                                        DIGITALIZE <span className="text-primary-theme">CURING PROCESS</span>
+                                    <span className="text-background max-sm:text-[14px] px-10 py-4 text-4xl md:text-7xl font-black tracking-tighter uppercase leading-none  transform hover:scale-105 transition-transform duration-500">
+                                        DIGITALIZE <span className="text-primary-theme max-sm:text-[14px]">CURING PROCESS</span>
                                     </span>
                                     <span className={`text-2xl md:text-4xl font-medium ${dancingScript.className} mt-6 text-white/90`}>
                                         Towards a smarter healthcare ecosystem
@@ -410,7 +463,7 @@ export default function Home() {
                                 <div className="flex flex-col lg:flex-row rounded-[2rem] overflow-hidden border border-white/5 bg-background">
                                     <div className="lg:w-[45%] bg-primary-theme p-10 lg:p-14 text-white space-y-8 relative overflow-hidden">
                                         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-32 -mt-32" />
-                                        <h3 className="text-3xl font-bold uppercase leading-tight relative">
+                                        <h3 className="text-3xl  max-sm:text-[16px] font-bold uppercase leading-tight relative">
                                             The Most Affordable <br /> Hospital Software
                                         </h3>
                                         <p className="text-white/80 leading-relaxed text-sm relative">
@@ -432,11 +485,11 @@ export default function Home() {
                                                 </li>
                                             ))}
                                         </ul>
-                                        <div className="flex gap-4 pt-6 relative">
-                                            <button type="button" suppressHydrationWarning className="bg-white text-primary-theme px-10 py-5 rounded-xl font-bold text-sm uppercase hover:bg-white/90 transition-all shadow-xl active:scale-95 hover:scale-105">
+                                        <div className="flex gap-3 sm:gap-4 pt-6 relative w-full">
+                                            <button type="button" suppressHydrationWarning className="flex-1 sm:flex-none bg-white text-primary-theme px-3 py-3 sm:px-10 sm:py-5 rounded-xl font-bold text-[11px] sm:text-sm uppercase hover:bg-white/90 transition-all shadow-xl active:scale-95 hover:scale-105 flex items-center justify-center text-center leading-snug">
                                                 Request a Live Demo
                                             </button>
-                                            <button type="button" suppressHydrationWarning className="bg-transparent border-2 border-white text-white px-10 py-5 rounded-xl font-bold text-sm uppercase hover:bg-white/10 transition-all active:scale-95">
+                                            <button type="button" suppressHydrationWarning className="flex-1 sm:flex-none bg-transparent border-2 border-white text-white px-3 py-3 sm:px-10 sm:py-5 rounded-xl font-bold text-[11px] sm:text-sm uppercase hover:bg-white/10 transition-all active:scale-95 flex items-center justify-center text-center leading-snug">
                                                 Talk to an Expert
                                             </button>
                                         </div>
@@ -448,7 +501,7 @@ export default function Home() {
                                                     <Activity size={32} />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <h4 className="text-xl font-bold text-foreground uppercase">Seamless Appointment Booking</h4>
+                                                    <h4 className="text-xl  max-sm:text-[16px] font-bold text-foreground uppercase">Seamless Appointment Booking</h4>
                                                     <p className="text-muted text-sm leading-relaxed">
                                                         Automated scheduling system that reduces wait times by 40%.
                                                     </p>
@@ -459,7 +512,7 @@ export default function Home() {
                                                     <CheckCircle size={32} />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <h4 className="text-xl font-bold text-foreground uppercase">In patinet Bedmanagement system</h4>
+                                                    <h4 className="text-xl max-sm:text-[16px] font-bold text-foreground uppercase">In patinet Bedmanagement system</h4>
                                                     <p className="text-muted text-sm leading-relaxed">
                                                         Ward-wise and category-wise bed management
                                                     </p>
@@ -470,7 +523,7 @@ export default function Home() {
                                                     <Network size={32} />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <h4 className="text-xl font-bold text-foreground uppercase">Multiportal Interconnectivity</h4>
+                                                    <h4 className="text-xl max-sm:text-[16px] font-bold text-foreground uppercase">Multiportal Interconnectivity</h4>
                                                     <p className="text-muted text-sm leading-relaxed">
                                                         Integration with multiple portals for seamless access
                                                     </p>
@@ -482,7 +535,7 @@ export default function Home() {
                                                     <Lock size={32} />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <h4 className="text-xl font-bold text-foreground uppercase">AI-Powered Digital Prescriptions</h4>
+                                                    <h4 className="text-xl max-sm:text-[16px] font-bold text-foreground uppercase">AI-Powered Digital Prescriptions</h4>
                                                     <p className="text-muted text-sm leading-relaxed">
                                                         Cloud-stored prescriptions accessible via QR.
                                                     </p>
@@ -493,7 +546,7 @@ export default function Home() {
                                                     <Database size={32} />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <h4 className="text-xl font-bold text-foreground uppercase">Integrated Lab & Pharmacy</h4>
+                                                    <h4 className="text-xl max-sm:text-[16px] font-bold text-foreground uppercase">Integrated Lab & Pharmacy</h4>
                                                     <p className="text-muted text-sm leading-relaxed">
                                                         Seamless integration between clinical diagnosis and diagnostic reports.
                                                     </p>
@@ -550,7 +603,7 @@ export default function Home() {
                     </div>
                 </section >
 
-                <DeploymentSecurity />
+
 
                 {/* Unified Healthcare Solution Section */}
                 <section className="py-24 bg-background relative overflow-hidden">
@@ -576,7 +629,7 @@ export default function Home() {
                                     { id: "06", title: "Connected Portals", desc: "Unified platform connecting all.", icon: LayoutGrid, iconBg: "bg-indigo-600", iconColor: "text-white" }
                                 ].map((card, idx) => (
                                     <div key={idx} className="group relative p-10 unified-card overflow-hidden">
-                                        <span className="absolute top-8 right-10 text-4xl font-gray-500 select-none unified-card-number">{card.id}</span>
+                                        <span className="absolute top-8 right-10 text-4xl text-gray-200 select-none unified-card-number">{card.id}</span>
                                         <div className={`w-14 h-14 ${card.iconBg} ${card.iconColor} rounded-2xl flex items-center justify-center shadow-lg mb-8 transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}>
                                             <card.icon size={28} />
                                         </div>
@@ -600,6 +653,11 @@ export default function Home() {
 
                 {/* Bed Management Marvel Hero Section */}
                 <BedManagementMarvel />
+
+                {/* Security & Compliance */}
+
+                <SecurityComplianceNew />
+
 
                 {/* FAQ Section */}
                 <section id="faq" className="py-24 bg-slate-50 relative overflow-hidden">
@@ -628,7 +686,7 @@ export default function Home() {
                                 },
                                 {
                                     q: "Is my medical data secure?",
-                                    a: "Yes, security is our top priority. We use AES-256 encryption and follow strict HIPAA-compliant data handle practices to ensure that all patient and clinical data remain private and tamper-proof."
+                                    a: "Yes, security is our top priority. We use AES-256 encryption and follow strict NABH-compliant data handle practices to ensure that all patient and clinical data remain private and tamper-proof."
                                 },
                                 {
                                     q: "Can I book appointments online?",
@@ -644,18 +702,33 @@ export default function Home() {
                                 }
                             ].map((faq, idx) => (
                                 <ScrollReveal key={idx} distance="20px" delay={idx * 100}>
-                                    <div className="group bg-white rounded-2xl border border-slate-200 p-6 hover:border-primary-theme/30 hover:shadow-xl hover:shadow-primary-theme/5 transition-all duration-300">
-                                        <div className="flex gap-4">
-                                            <div className="w-8 h-8 rounded-lg bg-primary-theme/10 text-primary-theme flex items-center justify-center font-bold text-sm shrink-0">
-                                                {idx + 1}
-                                            </div>
-                                            <div className="space-y-2">
-                                                <h3 className="text-lg font-bold text-slate-900 group-hover:text-primary-theme transition-colors">
-                                                    {faq.q}
-                                                </h3>
-                                                <p className="text-slate-500 leading-relaxed font-medium">
-                                                    {faq.a}
-                                                </p>
+                                    <div
+                                        className="group bg-white rounded-2xl border border-slate-200 hover:border-primary-theme/30 hover:shadow-xl hover:shadow-primary-theme/5 transition-all duration-300 cursor-pointer"
+                                        onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)}
+                                    >
+                                        <div className="p-6">
+                                            <div className="flex gap-4 items-start">
+                                                <div className="w-8 h-8 rounded-lg bg-primary-theme/10 text-primary-theme flex items-center justify-center font-bold text-sm shrink-0">
+                                                    {idx + 1}
+                                                </div>
+                                                <div className="flex-1 space-y-2">
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <h3 className="text-lg font-bold text-slate-900 group-hover:text-primary-theme transition-colors">
+                                                            {faq.q}
+                                                        </h3>
+                                                        <ChevronDown
+                                                            className={`text-primary-theme transition-transform duration-300 shrink-0 ${openFaqIndex === idx ? 'rotate-180' : ''}`}
+                                                            size={20}
+                                                        />
+                                                    </div>
+                                                    <div
+                                                        className={`overflow-hidden transition-all duration-300 ${openFaqIndex === idx ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
+                                                    >
+                                                        <p className="text-slate-500 leading-relaxed font-medium pt-2">
+                                                            {faq.a}
+                                                        </p>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -665,11 +738,10 @@ export default function Home() {
 
                         <div className="mt-16 text-center">
                             <button
-                                type="button" suppressHydrationWarning
-                                onClick={() => router.push('/pricing')}
+                                onClick={() => router.push('/contact')}
                                 className="inline-flex items-center gap-3 bg-primary-theme text-white px-10 py-5 rounded-2xl font-bold shadow-xl shadow-primary-theme/20 hover:scale-105 transition-all active:scale-95"
                             >
-                                Talk to a Healthcare Solutions Expert <ArrowRight size={20} />
+                                GET STARTED NOW <ArrowRight size={20} />
                             </button>
                         </div>
                     </div>
@@ -704,7 +776,7 @@ const BedManagementMarvel = () => {
             category: "Assignment",
             desc: "Room 203 assigned, Bed 1 secured. Surgery scheduled and synchronized with clinical teams for instant readiness.",
             icon: Bed,
-            image: "../assets/bed.png",
+            image: "/assets/bed.png",
             bgText: "ALLOCATE",
             color: "#3b82f6"
         },
@@ -731,7 +803,7 @@ const BedManagementMarvel = () => {
             category: "Finalization",
             desc: "Final medical summary generated. Home care instructions provided for seamless post-hospital recovery.",
             icon: FileText,
-            image: "../assets/discharge.png",
+            image: "/assets/discharge.png",
             bgText: "DISCHARGE",
             color: "#8b5cf6"
         }
@@ -745,113 +817,169 @@ const BedManagementMarvel = () => {
     }, []);
 
     return (
-        <section className="relative h-screen bg-white overflow-hidden py-20 px-6 md:px-20">
-            {/* Background Layered Text */}
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key={currentIndex}
-                    initial={{ opacity: 0, x: -100 }}
-                    animate={{ opacity: 0.05, x: 0 }}
-                    exit={{ opacity: 0, x: 100 }}
-                    transition={{ duration: 0.8, ease: "circOut" }}
-                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                >
-                    <span className="text-[20vw] font-black tracking-tighter text-slate-900 select-none">
-                        {steps[currentIndex].bgText}
-                    </span>
-                </motion.div>
-            </AnimatePresence>
+        <section className="relative min-h-screen bg-white overflow-hidden py-16 px-6 lg:px-20">
+            {/* Background Layered Text - Desktop */}
+            <div className="hidden lg:block">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={currentIndex}
+                        initial={{ opacity: 0, x: -100 }}
+                        animate={{ opacity: 0.05, x: 0 }}
+                        exit={{ opacity: 0, x: 100 }}
+                        transition={{ duration: 0.8, ease: "circOut" }}
+                        className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    >
+                        <span className="text-[20vw] font-black tracking-tighter text-slate-900 select-none">
+                            {steps[currentIndex].bgText}
+                        </span>
+                    </motion.div>
+                </AnimatePresence>
+            </div>
 
             {/* Main Stage */}
             <div className="relative z-10 max-w-7xl mx-auto h-full flex flex-col justify-center">
-                <div className="relative group/card bg-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] rounded-[2.5rem] border border-slate-100 overflow-hidden min-h-[500px] flex flex-col md:flex-row">
 
-                    {/* Content Section (Left) */}
-                    <div className="flex-1 p-10 md:p-16 flex flex-col justify-between relative z-20">
-                        <div className="space-y-8">
-                            <motion.div
-                                key={`cat-${currentIndex}`}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="flex items-center gap-2"
-                            >
-                                <div className="w-2 h-2 rounded-full bg-primary-theme animate-pulse" />
-                                <span className="text-sm font-black uppercase tracking-[0.3em] text-slate-400">
-                                    {steps[currentIndex].category}
-                                </span>
-                            </motion.div>
+                {/* Mobile and Tablet View: Vertical Cards */}
+                <div className="flex flex-col gap-10 lg:hidden text-slate-900">
+                    <div className="text-center space-y-3 mb-4">
+                        <span className="bg-primary-theme text-white px-4 py-1 text-xs font-black uppercase tracking-widest rounded-full">Inpatient Care</span>
+                        <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Bed Management System</h2>
+                    </div>
 
-                            <motion.h2
-                                key={`title-${currentIndex}`}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter uppercase leading-none"
-                            >
-                                {steps[currentIndex].title}
-                            </motion.h2>
+                    {steps.map((step, idx) => (
+                        <motion.div
+                            key={idx}
+                            initial={{ opacity: 0, y: 30 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden flex flex-col"
+                        >
+                            {/* Image Section */}
+                            <div className="relative h-64 md:h-96 w-full">
+                                <div
+                                    className="absolute inset-0 z-10 opacity-10"
+                                    style={{ backgroundColor: step.color }}
+                                />
+                                <div className="absolute top-4 left-6 z-30">
+                                    <span className="bg-primary-theme text-white px-3 py-1 text-lg font-black uppercase">CURE</span>
+                                </div>
+                                <img
+                                    src={step.image}
+                                    alt={step.title}
+                                    className="w-full h-full object-cover p-4 md:p-8 rounded-[2.5rem] relative z-20"
+                                />
+                            </div>
 
-                            <motion.p
-                                key={`desc-${currentIndex}`}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.2 }}
-                                className="text-lg text-slate-500 leading-relaxed max-w-md font-medium"
-                            >
-                                {steps[currentIndex].desc}
-                            </motion.p>
+                            {/* Content Section */}
+                            <div className="p-8 md:p-12 space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-primary-theme animate-pulse" />
+                                    <span className="text-xs md:text-sm font-black uppercase tracking-[0.2em] text-slate-400">
+                                        {step.category}
+                                    </span>
+                                </div>
+                                <h3 className="text-2xl md:text-4xl font-black text-slate-900 uppercase tracking-tight">{step.title}</h3>
+                                <p className="text-slate-500 font-medium leading-relaxed text-sm md:text-base">
+                                    {step.desc}
+                                </p>
+
+                                <div className="flex items-center gap-4 pt-4 border-t border-slate-50">
+                                    {[Users, ShieldCheck, Database, Globe].map((Icon, i) => (
+                                        <Icon key={i} size={20} className="text-slate-300" />
+                                    ))}
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))}
+                </div>
+
+                {/* Desktop View: Interactive Carousel */}
+                <div className="hidden lg:block h-full">
+                    <div className="relative group/card bg-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] rounded-[2.5rem] border border-slate-100 overflow-hidden min-h-[500px] flex flex-row">
+
+                        {/* Content Section (Left) */}
+                        <div className="flex-1 p-16 flex flex-col justify-between relative z-20">
+                            <div className="space-y-8">
+                                <motion.div
+                                    key={`cat-${currentIndex}`}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="flex items-center gap-2"
+                                >
+                                    <div className="w-2 h-2 rounded-full bg-primary-theme animate-pulse" />
+                                    <span className="text-sm font-black uppercase tracking-[0.3em] text-slate-400">
+                                        {steps[currentIndex].category}
+                                    </span>
+                                </motion.div>
+
+                                <motion.h2
+                                    key={`title-${currentIndex}`}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="text-7xl font-black text-slate-900 tracking-tighter uppercase leading-none"
+                                >
+                                    {steps[currentIndex].title}
+                                </motion.h2>
+
+                                <motion.p
+                                    key={`desc-${currentIndex}`}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.2 }}
+                                    className="text-lg text-slate-500 leading-relaxed max-w-md font-medium"
+                                >
+                                    {steps[currentIndex].desc}
+                                </motion.p>
+                            </div>
+
+                            <div className="flex items-center gap-6 pt-10 border-t border-slate-100 mt-10">
+                                {[Users, ShieldCheck, Database, Globe].map((Icon, i) => (
+                                    <Icon key={i} size={18} className="text-slate-300 hover:text-primary-theme cursor-pointer transition-colors" />
+                                ))}
+                            </div>
                         </div>
 
-                        {/* Social/Bottom Icons */}
-                        <div className="flex items-center gap-6 pt-10 border-t border-slate-100 mt-10">
-                            {[Users, ShieldCheck, Database, Globe].map((Icon, i) => (
-                                <Icon key={i} size={18} className="text-slate-300 hover:text-primary-theme cursor-pointer transition-colors" />
+                        {/* Image Section / Slanted Panel (Right) */}
+                        <div className="flex-1 relative overflow-hidden bg-slate-50">
+                            <motion.div
+                                animate={{ backgroundColor: steps[currentIndex].color }}
+                                className="absolute inset-0 z-10 transition-colors duration-1000"
+                                style={{ clipPath: "polygon(25% 0%, 100% 0%, 100% 100%, 0% 100%)" }}
+                            />
+
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={`img-${currentIndex}`}
+                                    initial={{ opacity: 0, scale: 0.8, x: 50, rotate: 5 }}
+                                    animate={{ opacity: 1, scale: 1.1, x: 0, rotate: -2 }}
+                                    exit={{ opacity: 0, scale: 0.5, x: -50, rotate: -10 }}
+                                    transition={{ type: "spring", damping: 15, stiffness: 100 }}
+                                    className="absolute inset-0 z-20 flex items-center justify-center p-10 mt-10 pointer-events-none"
+                                >
+                                    <img
+                                        src={steps[currentIndex].image}
+                                        alt={steps[currentIndex].title}
+                                        className="w-full h-full object-cover rounded-[2rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.5)] border-4 border-white/20"
+                                    />
+                                </motion.div>
+                            </AnimatePresence>
+                        </div>
+
+                        {/* Badge Positioning */}
+                        <div className="absolute top-5 left-10 z-30">
+                            <span className="bg-primary-theme text-white px-3 py-1 text-2xl font-black uppercase tracking-tighter shadow-lg">CURE</span>
+                        </div>
+
+                        {/* Progress Dots */}
+                        <div className="absolute right-10 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-2">
+                            {steps.map((_, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setCurrentIndex(i)}
+                                    className={`w-1 h-6 transition-all duration-500 rounded-full cursor-pointer ${i === currentIndex ? 'bg-white scale-y-150 shadow-md' : 'bg-white/30 hover:bg-white/50'}`}
+                                />
                             ))}
                         </div>
-                    </div>
-
-                    {/* Image Section / Slanted Panel (Right) */}
-                    <div className="flex-1 relative overflow-hidden bg-slate-50">
-                        {/* Slanted Decor */}
-                        <motion.div
-                            animate={{ backgroundColor: steps[currentIndex].color }}
-                            className="absolute inset-0 z-10 transition-colors duration-1000"
-
-                            style={{ clipPath: "polygon(25% 0%, 100% 0%, 100% 100%, 0% 100%)" } as any}
-                        />
-
-                        {/* Pop-out Image Wrapper */}
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={`img-${currentIndex}`}
-                                initial={{ opacity: 0, scale: 0.8, x: 50, rotate: 5 }}
-                                animate={{ opacity: 1, scale: 1.1, x: 0, rotate: -2 }}
-                                exit={{ opacity: 0, scale: 0.5, x: -50, rotate: -10 }}
-                                transition={{ type: "spring", damping: 15, stiffness: 100 }}
-                                className="absolute inset-0 z-20 flex items-center justify-center p-10 mt-10 pointer-events-none"
-                            >
-                                <img
-                                    src={steps[currentIndex].image}
-                                    alt={steps[currentIndex].title}
-                                    className="w-full h-full object-cover rounded-[2rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.5)] border-4 border-white/20"
-                                />
-                            </motion.div>
-                        </AnimatePresence>
-                    </div>
-
-
-                    {/* Marvel-style Logo Placeholder Area */}
-                    <div className="absolute top-5 left-10 z-30">
-                        <span className="bg-primary-theme text-white px-3 py-1 text-2xl font-black uppercase tracking-tighter">CURE</span>
-                    </div>
-
-                    {/* Progress Dots (Side) */}
-                    <div className="absolute right-10 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-2">
-                        {steps.map((_, i) => (
-                            <div
-                                key={i}
-                                className={`w-1 h-6 transition-all duration-500 rounded-full ${i === currentIndex ? 'bg-white scale-y-150' : 'bg-white/30'}`}
-                            />
-                        ))}
                     </div>
                 </div>
             </div>

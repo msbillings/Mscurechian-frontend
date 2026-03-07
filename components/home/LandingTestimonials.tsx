@@ -92,7 +92,7 @@ const LandingTestimonials = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="text-2xl md:text-3xl font-black text-slate-900 leading-tight uppercase italic"
+              className="text-2xl md:text-3xl font-black text-slate-900 leading-tight uppercase"
             >
               The Voice of <span className="text-primary-theme">Innovation</span>
             </motion.h2>
@@ -150,7 +150,7 @@ const LandingTestimonials = () => {
                           ))}
                         </div>
 
-                        <blockquote className="text-slate-700 font-medium italic mb-12 leading-relaxed text-lg">
+                        <blockquote className="text-slate-700 font-medium  mb-12 leading-relaxed text-lg">
                           "{item.content}"
                         </blockquote>
 
@@ -163,7 +163,7 @@ const LandingTestimonials = () => {
                             />
                           </div>
                           <div>
-                            <h4 className="font-black text-slate-900 uppercase italic tracking-tight text-base group-hover:text-primary-theme transition-colors leading-none mb-1.5">
+                            <h4 className="font-black text-slate-900 uppercase  tracking-tight text-base group-hover:text-primary-theme transition-colors leading-none mb-1.5">
                               {item.name}
                             </h4>
                             <p className="text-[9px] text-primary-theme font-black uppercase tracking-[0.2em] opacity-70">
@@ -195,10 +195,10 @@ const LandingTestimonials = () => {
         <div className="md:hidden flex overflow-x-auto no-scrollbar gap-6 pb-8 snap-x snap-mandatory">
           {testimonials.map((item) => (
              <div key={item._id} className="min-w-full snap-center bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/40">
-                <blockquote className="text-slate-600 font-medium italic text-sm mb-6">"{item.content}"</blockquote>
+                <blockquote className="text-slate-600 font-medium text-sm mb-6">"{item.content}"</blockquote>
                 <div className="flex items-center gap-3">
                    <img src={item.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=random`} className="w-10 h-10 rounded-lg" alt="" />
-                   <h4 className="font-black text-slate-900 italic text-sm">{item.name}</h4>
+                   <h4 className="font-black text-slate-900 text-sm">{item.name}</h4>
                 </div>
              </div>
           ))}
