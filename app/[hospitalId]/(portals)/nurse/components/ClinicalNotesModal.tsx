@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, FileText, CheckCircle2, ChevronDown, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { ipdService, hospitalAdminService } from '@/lib/integrations';
+import { ipdService } from '@/lib/integrations';
+import HybridClinicalNoteTypeSearch from './HybridClinicalNoteTypeSearch';
 
 interface ClinicalNotesModalProps {
     isOpen: boolean;
@@ -16,20 +17,12 @@ interface ClinicalNotesModalProps {
     onSuccess?: () => void;
 }
 
-const DEFAULT_NOTE_TYPES = [
-    'Progress Note',
-    'Nursing Assessment',
-    'Medication Administration Note',
-    'Post-Op Monitoring',
-    'Incident',
-    'Shift Handover'
-];
+
 
 
 
 export default function ClinicalNotesModal({ isOpen, onClose, admissionId, patientName, patientAge, patientGender, mrn, onSuccess }: ClinicalNotesModalProps) {
     const [loading, setLoading] = useState(false);
-    const [noteTypes, setNoteTypes] = useState<string[]>(DEFAULT_NOTE_TYPES);
     const [formData, setFormData] = useState({
         type: '',
         subjective: '',
@@ -38,32 +31,10 @@ export default function ClinicalNotesModal({ isOpen, onClose, admissionId, patie
         plan: ''
     });
 
-    // Fetch clinical note metadata
-    React.useEffect(() => {
-        if (isOpen) {
-            const fetchMetadata = async () => {
-                try {
-                    const response = await hospitalAdminService.getHospitalMetadata({ skipCache: true });
-                    if (response.success && response.data) {
-                        const types = response.data.clinicalNoteTypes || DEFAULT_NOTE_TYPES;
-                        setNoteTypes(types);
-
-                        // Set defaults if not already set by fetchLatestNote
-                        setFormData(prev => ({
-                            ...prev,
-                            type: prev.type || types[0] || ''
-                        }));
-                    }
-                } catch (error) {
-                    console.error("Failed to fetch hospital metadata:", error);
-                }
-            };
-            fetchMetadata();
-        }
-    }, [isOpen]);
+    // Note: Templates are now managed by HybridClinicalNoteTypeSearch internally
 
     // Fetch latest note to pre-fill on open
-    React.useEffect(() => {
+    useEffect(() => {
         if (isOpen && admissionId) {
             const fetchLatestNote = async () => {
                 try {
@@ -149,7 +120,7 @@ export default function ClinicalNotesModal({ isOpen, onClose, admissionId, patie
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white w-full max-w-2xl max-h-[95vh] rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
+            <div className="bg-white w-full max-w-2xl max-h-[85vh] rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 relative">
                 {/* HEADER */}
                 <div className="p-4 sm:p-8 bg-primary-theme text-white flex justify-between items-center shrink-0">
                     <div>
@@ -170,17 +141,10 @@ export default function ClinicalNotesModal({ isOpen, onClose, admissionId, patie
                 <form onSubmit={handleSubmit} className="p-3 sm:p-8 space-y-3 sm:space-y-6 overflow-y-auto custom-scrollbar flex-1">
                     <div className="space-y-1 sm:space-y-2">
                         <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Note Type</label>
-                        <div className="relative">
-                            <select
-                                value={formData.type}
-                                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                className="w-full px-3 sm:px-5 py-2 sm:py-3.5 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-bold outline-none appearance-none cursor-pointer focus:border-teal-500"
-                            >
-                                {!formData.type && <option value="">Type</option>}
-                                {noteTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                            </select>
-                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                        </div>
+                        <HybridClinicalNoteTypeSearch
+                            value={formData.type}
+                            onSelect={(type) => setFormData({ ...formData, type })}
+                        />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">

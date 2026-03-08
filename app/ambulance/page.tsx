@@ -6,6 +6,8 @@ import {
     CreateEmergencyRequestData,
     Hospital
 } from "@/lib/integrations/types/emergency";
+import { ShieldCheck, Clock, MapPin, Activity, Building2, AlertCircle, Search, Info } from 'lucide-react';
+import { format } from 'date-fns';
 
 function AmbulanceDashboard() {
     const [activeTab, setActiveTab] = useState<"new" | "history">("new");
@@ -27,6 +29,7 @@ function AmbulanceDashboard() {
         oxygenLevel: "",
         bloodPressure: ""
     });
+    const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
 
     // Form state
     const [formData, setFormData] = useState<CreateEmergencyRequestData>({
@@ -48,23 +51,24 @@ function AmbulanceDashboard() {
         targetHospitals: [], // Empty = send to all
     });
 
-    // Load hospitals and requests on mount
     useEffect(() => {
-        const checkAuth = async () => {
-            // Wait a tiny bit for sessionStorage to be ready
-            await new Promise(resolve => setTimeout(resolve, 100));
+        const checkAuth = () => {
+            const token = sessionStorage.getItem("accessToken") ||
+                document.cookie.split('; ').find(row => row.startsWith('accessToken='))?.split('=')[1];
 
-            const token = sessionStorage.getItem("accessToken");
+            console.log("🚑 AMBULANCE - AUTH TRACE:", {
+                sessionToken: !!sessionStorage.getItem("accessToken"),
+                cookieToken: !!document.cookie.split('; ').find(row => row.startsWith('accessToken=')),
+                hospitalId: sessionStorage.getItem("activeHospitalId") || document.cookie.split('; ').find(row => row.startsWith('hospitalId='))?.split('=')[1]
+            });
+
             if (!token) {
-                console.error("❌ No token found! Redirecting to login...");
+                console.error("❌ No token found! Redirecting...");
                 window.location.href = "/emergency-login";
                 return;
             }
-
-            console.log("✅ Token found, loading dashboard data...");
             loadData();
         };
-
         checkAuth();
     }, []);
 
@@ -87,12 +91,67 @@ function AmbulanceDashboard() {
         }
     };
 
+    const startPolling = () => {
+        if (pollingInterval) clearInterval(pollingInterval);
+        const interval = setInterval(async () => {
+            try {
+                const requestsData = await emergencyService.getMyRequests();
+                setMyRequests(requestsData.requests);
+            } catch (error) {
+                console.error("Polling error:", error);
+            }
+        }, 5000); // Poll every 5 seconds
+        setPollingInterval(interval);
+    };
+
+    const stopPolling = () => {
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+            setPollingInterval(null);
+        }
+    };
+
+    useEffect(() => {
+        let isMounted = true;
+        startPolling();
+
+        const initSocket = async () => {
+            try {
+                const { getSocket, subscribeToSocket } = await import('@/lib/integrations/api/socket');
+                const userData = sessionStorage.getItem('user');
+                if (!userData) return;
+
+                const user = JSON.parse(userData);
+                const currentUserId = user.id || user._id;
+
+                if (currentUserId) {
+                    subscribeToSocket(`user_${currentUserId}`, 'emergency:update', (updatedReq: any) => {
+                        console.log('📡 [SOCKET] Emergency Mission Flux Update:', updatedReq);
+                        if (isMounted) {
+                            // Instantly refresh the data list without waiting for the 5s poll
+                            loadData();
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Socket error in Ambulance Dashboard:", err);
+            }
+        };
+
+        initSocket();
+
+        return () => {
+            isMounted = false;
+            stopPolling();
+        };
+    }, []);
+
     // Validation functions
     const validateMobile = () => {
         if (!formData.patientMobile) {
-            setFieldErrors(prev => ({ ...prev, patientMobile: "This field is required" }));
+            setFieldErrors(prev => ({ ...prev, patientMobile: "Required" }));
         } else if (formData.patientMobile.length !== 10) {
-            setFieldErrors(prev => ({ ...prev, patientMobile: "Enter a valid 10-digit mobile number." }));
+            setFieldErrors(prev => ({ ...prev, patientMobile: "Invalid" }));
         } else {
             setFieldErrors(prev => ({ ...prev, patientMobile: "" }));
         }
@@ -100,9 +159,9 @@ function AmbulanceDashboard() {
 
     const validateAge = () => {
         if (!formData.patientAge && formData.patientAge !== 0) {
-            setFieldErrors(prev => ({ ...prev, patientAge: "This field is required" }));
+            setFieldErrors(prev => ({ ...prev, patientAge: "Required" }));
         } else if (formData.patientAge < 0 || formData.patientAge > 120) {
-            setFieldErrors(prev => ({ ...prev, patientAge: "Age must be between 0 and 120 years." }));
+            setFieldErrors(prev => ({ ...prev, patientAge: "Invalid" }));
         } else {
             setFieldErrors(prev => ({ ...prev, patientAge: "" }));
         }
@@ -112,7 +171,7 @@ function AmbulanceDashboard() {
         const hr = formData.vitals?.heartRate;
         if (hr !== undefined && hr !== null) {
             if (hr < 30 || hr > 220) {
-                setFieldErrors(prev => ({ ...prev, heartRate: "Heart rate must be between 30 and 220 bpm." }));
+                setFieldErrors(prev => ({ ...prev, heartRate: "Invalid" }));
             } else {
                 setFieldErrors(prev => ({ ...prev, heartRate: "" }));
             }
@@ -125,7 +184,7 @@ function AmbulanceDashboard() {
         const temp = formData.vitals?.temperature;
         if (temp !== undefined && temp !== null) {
             if (temp < 95 || temp > 108) {
-                setFieldErrors(prev => ({ ...prev, temperature: "Temperature must be between 95°F and 108°F." }));
+                setFieldErrors(prev => ({ ...prev, temperature: "Invalid" }));
             } else {
                 setFieldErrors(prev => ({ ...prev, temperature: "" }));
             }
@@ -138,7 +197,7 @@ function AmbulanceDashboard() {
         const oxygen = formData.vitals?.oxygenLevel;
         if (oxygen !== undefined && oxygen !== null) {
             if (oxygen < 50 || oxygen > 100) {
-                setFieldErrors(prev => ({ ...prev, oxygenLevel: "Oxygen level must be between 50% and 100%." }));
+                setFieldErrors(prev => ({ ...prev, oxygenLevel: "Invalid" }));
             } else {
                 setFieldErrors(prev => ({ ...prev, oxygenLevel: "" }));
             }
@@ -149,17 +208,14 @@ function AmbulanceDashboard() {
 
     const validateRequiredField = (fieldName: keyof typeof fieldErrors, value: string | undefined) => {
         if (!value || value.trim() === "") {
-            setFieldErrors(prev => ({ ...prev, [fieldName]: "This field is required" }));
+            setFieldErrors(prev => ({ ...prev, [fieldName]: "Required" }));
         } else {
             setFieldErrors(prev => ({ ...prev, [fieldName]: "" }));
         }
     };
 
     const handleBloodPressureChange = (value: string) => {
-        // Only allow numbers and slash (e.g., 120/80)
         const filtered = value.replace(/[^0-9\/]/g, '');
-
-        // Check if any number exceeds 180
         const parts = filtered.split('/');
         let hasLimitError = false;
         const validParts = parts.map(part => {
@@ -167,7 +223,7 @@ function AmbulanceDashboard() {
             const num = parseInt(part);
             if (!isNaN(num) && num > 180) {
                 hasLimitError = true;
-                return part.slice(0, -1); // Remove last digit
+                return part.slice(0, -1);
             }
             return part;
         });
@@ -178,9 +234,8 @@ function AmbulanceDashboard() {
             vitals: { ...formData.vitals, bloodPressure: finalValue },
         });
 
-        // Show error if blood pressure is invalid format or exceeds limit
         if (hasLimitError || (finalValue && !/^\d{1,3}\/\d{1,3}$/.test(finalValue) && finalValue !== '')) {
-            setFieldErrors(prev => ({ ...prev, bloodPressure: "Blood pressure must be in format XXX/XXX (max 180/180)" }));
+            setFieldErrors(prev => ({ ...prev, bloodPressure: "Invalid" }));
         } else {
             setFieldErrors(prev => ({ ...prev, bloodPressure: "" }));
         }
@@ -190,87 +245,20 @@ function AmbulanceDashboard() {
         e.preventDefault();
         setMessage(null);
 
-        // Comprehensive validation before submission
         let hasErrors = false;
         const errors = { ...fieldErrors };
 
-        // Patient Name validation
-        if (!formData.patientName.trim()) {
-            errors.patientName = "This field is required";
-            hasErrors = true;
-        }
+        if (!formData.patientName.trim()) { errors.patientName = "Required"; hasErrors = true; }
+        if (formData.patientAge === undefined || formData.patientAge === null) { errors.patientAge = "Required"; hasErrors = true; }
+        if (!formData.patientMobile) { errors.patientMobile = "Required"; hasErrors = true; }
+        if (!formData.emergencyType.trim()) { errors.emergencyType = "Required"; hasErrors = true; }
+        if (!formData.description.trim()) { errors.description = "Required"; hasErrors = true; }
+        if (!formData.currentLocation.trim()) { errors.currentLocation = "Required"; hasErrors = true; }
+        if (!formData.eta || formData.eta <= 0) { errors.eta = "Required"; hasErrors = true; }
 
-        // Patient Age validation
-        if (formData.patientAge === undefined || formData.patientAge === null) {
-            errors.patientAge = "This field is required";
-            hasErrors = true;
-        } else if (formData.patientAge < 0 || formData.patientAge > 120) {
-            errors.patientAge = "Age must be between 0 and 120 years.";
-            hasErrors = true;
-        }
-
-        // Patient Mobile validation
-        if (!formData.patientMobile) {
-            errors.patientMobile = "This field is required";
-            hasErrors = true;
-        } else if (formData.patientMobile.length !== 10) {
-            errors.patientMobile = "Enter a valid 10-digit mobile number.";
-            hasErrors = true;
-        }
-
-        // Emergency Type validation
-        if (!formData.emergencyType.trim()) {
-            errors.emergencyType = "This field is required";
-            hasErrors = true;
-        }
-
-        // Description validation
-        if (!formData.description.trim()) {
-            errors.description = "This field is required";
-            hasErrors = true;
-        }
-
-        // Current Location validation
-        if (!formData.currentLocation.trim()) {
-            errors.currentLocation = "This field is required";
-            hasErrors = true;
-        }
-
-        // ETA validation
-        if (!formData.eta || formData.eta <= 0) {
-            errors.eta = "This field is required";
-            hasErrors = true;
-        }
-
-        // Vitals validation (optional but must be in range if provided)
-        if (formData.vitals?.heartRate !== undefined && formData.vitals?.heartRate !== null) {
-            if (formData.vitals.heartRate < 30 || formData.vitals.heartRate > 220) {
-                errors.heartRate = "Heart rate must be between 30 and 220 bpm.";
-                hasErrors = true;
-            }
-        }
-
-        if (formData.vitals?.temperature !== undefined && formData.vitals?.temperature !== null) {
-            if (formData.vitals.temperature < 95 || formData.vitals.temperature > 108) {
-                errors.temperature = "Temperature must be between 95°F and 108°F.";
-                hasErrors = true;
-            }
-        }
-
-        if (formData.vitals?.oxygenLevel !== undefined && formData.vitals?.oxygenLevel !== null) {
-            if (formData.vitals.oxygenLevel < 50 || formData.vitals.oxygenLevel > 100) {
-                errors.oxygenLevel = "Oxygen level must be between 50% and 100%.";
-                hasErrors = true;
-            }
-        }
-
-        // If there are any errors, set them and prevent submission
         if (hasErrors) {
             setFieldErrors(errors);
-            setMessage({
-                type: "error",
-                text: "Please fix all validation errors before submitting."
-            });
+            setMessage({ type: "error", text: "Please fix all validation errors." });
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
@@ -280,12 +268,9 @@ function AmbulanceDashboard() {
             await emergencyService.createEmergencyRequest(formData);
             setMessage({
                 type: "success",
-                text: (formData.targetHospitals?.length || 0) > 0
-                    ? `Emergency request sent to ${formData.targetHospitals?.length} selected hospital(s)!`
-                    : "Emergency request sent successfully to all available hospitals!",
+                text: "Emergency request sent successfully!",
             });
 
-            // Reset form and errors
             setFormData({
                 patientName: "",
                 patientAge: 0,
@@ -305,27 +290,15 @@ function AmbulanceDashboard() {
                 targetHospitals: [],
             });
             setFieldErrors({
-                patientName: "",
-                patientAge: "",
-                patientMobile: "",
-                emergencyType: "",
-                description: "",
-                currentLocation: "",
-                eta: "",
-                heartRate: "",
-                temperature: "",
-                oxygenLevel: "",
-                bloodPressure: ""
+                patientName: "", patientAge: "", patientMobile: "", emergencyType: "",
+                description: "", currentLocation: "", eta: "", heartRate: "",
+                temperature: "", oxygenLevel: "", bloodPressure: ""
             });
 
-            // Reload requests
             loadData();
             setActiveTab("history");
         } catch (error: any) {
-            setMessage({
-                type: "error",
-                text: error.message || "Failed to send emergency request",
-            });
+            setMessage({ type: "error", text: error.message || "Failed to send emergency request" });
         } finally {
             setSubmitting(false);
         }
@@ -351,233 +324,171 @@ function AmbulanceDashboard() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-2 sm:space-y-4">
             {/* Header Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600 mb-1">Available Hospitals</p>
-                            <p className="text-3xl font-bold text-gray-900">{hospitals.length}</p>
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-4">
+                <div className="bg-white rounded-lg shadow-xs border border-gray-100 p-1.5 sm:p-4 transition-all hover:shadow-sm">
+                    <div className="flex flex-col sm:flex-row items-center sm:justify-between text-center sm:text-left gap-0.5">
+                        <div className="min-w-0">
+                            <p className="text-[6px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest truncate leading-none mb-0.5">Registry</p>
+                            <p className="text-xs sm:text-2xl font-black text-gray-900 leading-none">{hospitals.length}</p>
                         </div>
-                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                            </svg>
+                        <div className="hidden sm:flex w-8 h-8 bg-blue-50 rounded-lg items-center justify-center">
+                            <Building2 size={16} className="text-blue-500" />
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600 mb-1">Pending Requests</p>
-                            <p className="text-3xl font-bold text-orange-600">
+                <div className="bg-white rounded-lg shadow-xs border border-gray-100 p-1.5 sm:p-4 transition-all hover:shadow-sm">
+                    <div className="flex flex-col sm:flex-row items-center sm:justify-between text-center sm:text-left gap-0.5">
+                        <div className="min-w-0">
+                            <p className="text-[6px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest truncate leading-none mb-0.5">Active</p>
+                            <p className="text-xs sm:text-2xl font-black text-orange-600 leading-none">
                                 {myRequests.filter(r => r.status === "pending").length}
                             </p>
                         </div>
-                        <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                            <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                        <div className="hidden sm:flex w-8 h-8 bg-orange-50 rounded-lg items-center justify-center">
+                            <Activity size={16} className="text-orange-500" />
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600 mb-1">Total Requests</p>
-                            <p className="text-3xl font-bold text-gray-900">{myRequests.length}</p>
+                <div className="bg-white rounded-lg shadow-xs border border-gray-100 p-1.5 sm:p-4 transition-all hover:shadow-sm">
+                    <div className="flex flex-col sm:flex-row items-center sm:justify-between text-center sm:text-left gap-0.5">
+                        <div className="min-w-0">
+                            <p className="text-[6px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest truncate leading-none mb-0.5">Archive</p>
+                            <p className="text-xs sm:text-2xl font-black text-emerald-600 leading-none">{myRequests.length}</p>
                         </div>
-                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
+                        <div className="hidden sm:flex w-8 h-8 bg-emerald-50 rounded-lg items-center justify-center">
+                            <ShieldCheck size={16} className="text-emerald-500" />
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Tabs */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                <div className="border-b border-gray-200">
-                    <div className="flex">
-                        <button
-                            onClick={() => setActiveTab("new")}
-                            className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === "new"
-                                ? "border-red-600 text-red-600"
-                                : "border-transparent text-gray-500 hover:text-gray-700"
-                                }`}
-                        >
-                            New Emergency Request
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("history")}
-                            className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === "history"
-                                ? "border-red-600 text-red-600"
-                                : "border-transparent text-gray-500 hover:text-gray-700"
-                                }`}
-                        >
-                            Request History
-                        </button>
-                    </div>
+            <div className="bg-white rounded-lg border border-gray-100 overflow-hidden shadow-xs">
+                <div className="flex border-b border-gray-100 bg-gray-50/30">
+                    <button
+                        onClick={() => setActiveTab("new")}
+                        className={`flex-1 px-3 py-2 text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all ${activeTab === "new"
+                            ? "bg-white text-red-600 border-b-2 border-red-600 shadow-sm"
+                            : "text-gray-400 hover:text-gray-600"
+                            }`}
+                    >
+                        Initiate Request
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("history")}
+                        className={`flex-1 px-3 py-2 text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all ${activeTab === "history"
+                            ? "bg-white text-red-600 border-b-2 border-red-600 shadow-sm"
+                            : "text-gray-400 hover:text-gray-600"
+                            }`}
+                    >
+                        <div className="flex items-center justify-center gap-1.5">
+                            Mission Logs
+                            <span className="flex h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+                        </div>
+                    </button>
                 </div>
 
-                <div className="p-6">
+                <div className="p-1.5 sm:p-5">
                     {activeTab === "new" ? (
-                        <form onSubmit={handleSubmit} className="space-y-6">
+                        <form onSubmit={handleSubmit} className="space-y-4">
                             {message && (
-                                <div
-                                    className={`px-4 py-3 rounded-lg text-sm ${message.type === "success"
-                                        ? "bg-green-50 text-green-800 border border-green-200"
-                                        : "bg-red-50 text-red-800 border border-red-200"
-                                        }`}
-                                >
+                                <div className={`p-2 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wide border ${message.type === "success" ? "bg-emerald-50 border-emerald-100 text-emerald-700" : "bg-red-50 border-red-100 text-red-700"}`}>
                                     {message.text}
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Patient Details */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Patient Name *
-                                    </label>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
+                                <div className="col-span-2">
+                                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Patient Name</label>
                                     <input
                                         type="text"
                                         value={formData.patientName}
-                                        onChange={(e) => {
-                                            const filtered = e.target.value.replace(/[^a-zA-Z\s]/g, '');
-                                            setFormData({ ...formData, patientName: filtered });
-                                            if (fieldErrors.patientName) {
-                                                setFieldErrors(prev => ({ ...prev, patientName: "" }));
-                                            }
-                                        }}
-                                        onBlur={() => validateRequiredField('patientName', formData.patientName)}
-                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all ${fieldErrors.patientName ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                                            }`}
-                                        placeholder="Enter patient name (letters only)"
+                                        onChange={(e) => setFormData({ ...formData, patientName: e.target.value.replace(/[^a-zA-Z\s]/g, '') })}
+                                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-red-500 outline-none"
+                                        placeholder="Full Name"
                                         required
                                     />
-                                    {fieldErrors.patientName && (
-                                        <p className="text-red-600 text-xs mt-1 font-medium">{fieldErrors.patientName}</p>
-                                    )}
                                 </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Patient Age *
-                                    </label>
+                                <div className="col-span-1">
+                                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Age</label>
                                     <input
-                                        type="text"
+                                        type="number"
                                         value={formData.patientAge || ""}
-                                        onChange={(e) => {
-                                            const value = e.target.value;
-                                            if (value && !/^\d*$/.test(value)) return;
-                                            setFormData({ ...formData, patientAge: value ? parseInt(value) : 0 });
-                                            if (fieldErrors.patientAge) {
-                                                setFieldErrors(prev => ({ ...prev, patientAge: "" }));
-                                            }
-                                        }}
-                                        onBlur={validateAge}
-                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all ${fieldErrors.patientAge ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                                            }`}
-                                        placeholder="0-120"
+                                        onChange={(e) => setFormData({ ...formData, patientAge: parseInt(e.target.value) || 0 })}
+                                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs outline-none"
+                                        placeholder="Age"
                                         required
-                                        maxLength={3}
                                     />
-                                    {fieldErrors.patientAge && (
-                                        <p className="text-red-600 text-xs mt-1 font-medium">{fieldErrors.patientAge}</p>
-                                    )}
                                 </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Gender *
-                                    </label>
+                                <div className="col-span-1">
+                                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Gender</label>
                                     <select
                                         value={formData.patientGender}
-                                        onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                patientGender: e.target.value as "male" | "female" | "other",
-                                            })
-                                        }
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                                        required
+                                        onChange={(e) => setFormData({ ...formData, patientGender: e.target.value as any })}
+                                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs outline-none"
                                     >
                                         <option value="male">Male</option>
                                         <option value="female">Female</option>
                                         <option value="other">Other</option>
                                     </select>
                                 </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Patient Mobile *
-                                    </label>
+                                <div className="col-span-2">
+                                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Mobile</label>
                                     <input
                                         type="tel"
-                                        value={formData.patientMobile || ""}
-                                        onChange={(e) => {
-                                            const filtered = e.target.value.replace(/\D/g, '').slice(0, 10);
-                                            setFormData({ ...formData, patientMobile: filtered });
-                                            if (fieldErrors.patientMobile) {
-                                                setFieldErrors(prev => ({ ...prev, patientMobile: "" }));
-                                            }
-                                        }}
-                                        onBlur={validateMobile}
-                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all ${fieldErrors.patientMobile ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                                            }`}
-                                        placeholder="10-digit mobile number"
-                                        maxLength={10}
+                                        value={formData.patientMobile}
+                                        onChange={(e) => setFormData({ ...formData, patientMobile: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs outline-none"
+                                        placeholder="10-digit #"
                                         required
                                     />
-                                    {fieldErrors.patientMobile && (
-                                        <p className="text-red-600 text-xs mt-1 font-medium">{fieldErrors.patientMobile}</p>
-                                    )}
                                 </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Emergency Type *
-                                    </label>
+                                <div className="col-span-2">
+                                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Emergency Type</label>
                                     <input
                                         type="text"
                                         value={formData.emergencyType}
-                                        onChange={(e) => {
-                                            const filtered = e.target.value.replace(/[^a-zA-Z\s]/g, '');
-                                            setFormData({ ...formData, emergencyType: filtered });
-                                            if (fieldErrors.emergencyType) {
-                                                setFieldErrors(prev => ({ ...prev, emergencyType: "" }));
-                                            }
-                                        }}
-                                        onBlur={() => validateRequiredField('emergencyType', formData.emergencyType)}
-                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all ${fieldErrors.emergencyType ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                                            }`}
-                                        placeholder="e.g., Heart Attack, Accident"
+                                        onChange={(e) => setFormData({ ...formData, emergencyType: e.target.value })}
+                                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs outline-none"
+                                        placeholder="Nature of Emergency"
                                         required
                                     />
-                                    {fieldErrors.emergencyType && (
-                                        <p className="text-red-600 text-xs mt-1 font-medium">{fieldErrors.emergencyType}</p>
-                                    )}
                                 </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Severity *
-                                    </label>
+                                <div className="col-span-2">
+                                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Location</label>
+                                    <div className="relative">
+                                        <MapPin size={10} className="absolute left-2 top-2.5 text-gray-400" />
+                                        <input
+                                            type="text"
+                                            value={formData.currentLocation}
+                                            onChange={(e) => setFormData({ ...formData, currentLocation: e.target.value })}
+                                            className="w-full pl-6 pr-2 py-1.5 border border-gray-200 rounded text-xs outline-none"
+                                            placeholder="Incident Location"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                <div className="col-span-1">
+                                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 block">ETA (m)</label>
+                                    <input
+                                        type="number"
+                                        value={formData.eta || ""}
+                                        onChange={(e) => setFormData({ ...formData, eta: parseInt(e.target.value) || undefined })}
+                                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs outline-none"
+                                        placeholder="Min"
+                                        required
+                                    />
+                                </div>
+                                <div className="col-span-1">
+                                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Severity</label>
                                     <select
                                         value={formData.severity}
-                                        onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                severity: e.target.value as "critical" | "high" | "medium" | "low",
-                                            })
-                                        }
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                                        required
+                                        onChange={(e) => setFormData({ ...formData, severity: e.target.value as any })}
+                                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs outline-none font-bold text-red-600"
                                     >
                                         <option value="critical">Critical</option>
                                         <option value="high">High</option>
@@ -585,313 +496,141 @@ function AmbulanceDashboard() {
                                         <option value="low">Low</option>
                                     </select>
                                 </div>
+                            </div>
 
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Description *
-                                    </label>
-                                    <textarea
-                                        value={formData.description}
-                                        onChange={(e) => {
-                                            setFormData({ ...formData, description: e.target.value });
-                                            if (fieldErrors.description) {
-                                                setFieldErrors(prev => ({ ...prev, description: "" }));
-                                            }
-                                        }}
-                                        onBlur={() => validateRequiredField('description', formData.description)}
-                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all ${fieldErrors.description ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                                            }`}
-                                        rows={3}
-                                        required
-                                    />
-                                    {fieldErrors.description && (
-                                        <p className="text-red-600 text-xs mt-1 font-medium">{fieldErrors.description}</p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Current Location *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={formData.currentLocation}
-                                        onChange={(e) => {
-                                            setFormData({ ...formData, currentLocation: e.target.value });
-                                            if (fieldErrors.currentLocation) {
-                                                setFieldErrors(prev => ({ ...prev, currentLocation: "" }));
-                                            }
-                                        }}
-                                        onBlur={() => validateRequiredField('currentLocation', formData.currentLocation)}
-                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all ${fieldErrors.currentLocation ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                                            }`}
-                                        required
-                                    />
-                                    {fieldErrors.currentLocation && (
-                                        <p className="text-red-600 text-xs mt-1 font-medium">{fieldErrors.currentLocation}</p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        ETA (minutes) *
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={formData.eta || ""}
-                                        onChange={(e) => {
-                                            setFormData({
-                                                ...formData,
-                                                eta: e.target.value ? parseInt(e.target.value) : undefined,
-                                            });
-                                            if (fieldErrors.eta) {
-                                                setFieldErrors(prev => ({ ...prev, eta: "" }));
-                                            }
-                                        }}
-                                        onKeyDown={(e) => {
-                                            if (['e', 'E', '+', '-', '.'].includes(e.key)) e.preventDefault();
-                                        }}
-                                        onBlur={() => validateRequiredField('eta', formData.eta?.toString())}
-                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all ${fieldErrors.eta ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                                            }`}
-                                        min="0"
-                                        required
-                                    />
-                                    {fieldErrors.eta && (
-                                        <p className="text-red-600 text-xs mt-1 font-medium">{fieldErrors.eta}</p>
-                                    )}
-                                </div>
+                            <div>
+                                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Incident Description</label>
+                                <textarea
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs outline-none min-h-[60px]"
+                                    placeholder="Brief summary of condition..."
+                                    required
+                                />
                             </div>
 
                             {/* Vitals */}
-                            <div>
-                                <h3 className="text-sm font-medium text-gray-700 mb-4">
-                                    Vitals (Optional)
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="bg-gray-50/50 p-2 rounded-lg border border-gray-100">
+                                <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-1">
+                                    <Activity size={10} /> Clinical Vitals (Optional)
+                                </p>
+                                <div className="grid grid-cols-4 gap-2">
                                     <div>
-                                        <label className="block text-xs text-gray-600 mb-2">
-                                            Blood Pressure
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={formData.vitals?.bloodPressure || ""}
-                                            onChange={(e) => handleBloodPressureChange(e.target.value)}
-                                            className={`w-full px-3 py-2 border rounded-lg text-sm outline-none transition-all ${fieldErrors.bloodPressure ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                                                }`}
-                                            placeholder="120/80 (max 180/180)"
-                                        />
-                                        {fieldErrors.bloodPressure && (
-                                            <p className="text-red-600 text-[10px] mt-1 font-medium">{fieldErrors.bloodPressure}</p>
-                                        )}
+                                        <label className="text-[7px] font-black text-gray-400 uppercase tracking-widest block mb-0.5">BP</label>
+                                        <input type="text" value={formData.vitals?.bloodPressure} onChange={(e) => handleBloodPressureChange(e.target.value)} className="w-full px-1.5 py-1 border border-gray-200 rounded text-[10px]" placeholder="120/80" />
                                     </div>
                                     <div>
-                                        <label className="block text-xs text-gray-600 mb-2">
-                                            Heart Rate (bpm)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={formData.vitals?.heartRate || ""}
-                                            onChange={(e) => {
-                                                setFormData({
-                                                    ...formData,
-                                                    vitals: {
-                                                        ...formData.vitals,
-                                                        heartRate: e.target.value ? parseInt(e.target.value) : undefined,
-                                                    },
-                                                });
-                                                if (fieldErrors.heartRate) {
-                                                    setFieldErrors(prev => ({ ...prev, heartRate: "" }));
-                                                }
-                                            }}
-                                            onKeyDown={(e) => {
-                                                if (['e', 'E', '+', '-', '.'].includes(e.key)) e.preventDefault();
-                                            }}
-                                            onBlur={validateHeartRate}
-                                            className={`w-full px-3 py-2 border rounded-lg text-sm outline-none transition-all ${fieldErrors.heartRate ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                                                }`}
-                                            placeholder="60-100 (max 220)"
-                                        />
-                                        {fieldErrors.heartRate && (
-                                            <p className="text-red-600 text-[10px] mt-1 font-medium">{fieldErrors.heartRate}</p>
-                                        )}
+                                        <label className="text-[7px] font-black text-gray-400 uppercase tracking-widest block mb-0.5">HR</label>
+                                        <input type="number" value={formData.vitals?.heartRate || ""} onChange={(e) => setFormData({ ...formData, vitals: { ...formData.vitals, heartRate: parseInt(e.target.value) || 0 } })} className="w-full px-1.5 py-1 border border-gray-200 rounded text-[10px]" placeholder="BPM" />
                                     </div>
                                     <div>
-                                        <label className="block text-xs text-gray-600 mb-2">
-                                            Temperature (°F)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            step="0.1"
-                                            value={formData.vitals?.temperature || ""}
-                                            onChange={(e) => {
-                                                setFormData({
-                                                    ...formData,
-                                                    vitals: {
-                                                        ...formData.vitals,
-                                                        temperature: e.target.value ? parseFloat(e.target.value) : undefined,
-                                                    },
-                                                });
-                                                if (fieldErrors.temperature) {
-                                                    setFieldErrors(prev => ({ ...prev, temperature: "" }));
-                                                }
-                                            }}
-                                            onBlur={validateTemperature}
-                                            className={`w-full px-3 py-2 border rounded-lg text-sm outline-none transition-all ${fieldErrors.temperature ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                                                }`}
-                                            placeholder="98.6 (95-108)"
-                                        />
-                                        {fieldErrors.temperature && (
-                                            <p className="text-red-600 text-[10px] mt-1 font-medium">{fieldErrors.temperature}</p>
-                                        )}
+                                        <label className="text-[7px] font-black text-gray-400 uppercase tracking-widest block mb-0.5">Temp</label>
+                                        <input type="number" step="0.1" value={formData.vitals?.temperature || ""} onChange={(e) => setFormData({ ...formData, vitals: { ...formData.vitals, temperature: parseFloat(e.target.value) || 0 } })} className="w-full px-1.5 py-1 border border-gray-200 rounded text-[10px]" placeholder="°F" />
                                     </div>
                                     <div>
-                                        <label className="block text-xs text-gray-600 mb-2">
-                                            Oxygen Level (%)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={formData.vitals?.oxygenLevel || ""}
-                                            onChange={(e) => {
-                                                setFormData({
-                                                    ...formData,
-                                                    vitals: {
-                                                        ...formData.vitals,
-                                                        oxygenLevel: e.target.value ? parseInt(e.target.value) : undefined,
-                                                    },
-                                                });
-                                                if (fieldErrors.oxygenLevel) {
-                                                    setFieldErrors(prev => ({ ...prev, oxygenLevel: "" }));
-                                                }
-                                            }}
-                                            onKeyDown={(e) => {
-                                                if (['e', 'E', '+', '-', '.'].includes(e.key)) e.preventDefault();
-                                            }}
-                                            onBlur={validateOxygenLevel}
-                                            className={`w-full px-3 py-2 border rounded-lg text-sm outline-none transition-all ${fieldErrors.oxygenLevel ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                                                }`}
-                                            placeholder="95-100 (min 50)"
-                                            min="0"
-                                            max="100"
-                                        />
-                                        {fieldErrors.oxygenLevel && (
-                                            <p className="text-red-600 text-[10px] mt-1 font-medium">{fieldErrors.oxygenLevel}</p>
-                                        )}
+                                        <label className="text-[7px] font-black text-gray-400 uppercase tracking-widest block mb-0.5">O2</label>
+                                        <input type="number" value={formData.vitals?.oxygenLevel || ""} onChange={(e) => setFormData({ ...formData, vitals: { ...formData.vitals, oxygenLevel: parseInt(e.target.value) || 0 } })} className="w-full px-1.5 py-1 border border-gray-200 rounded text-[10px]" placeholder="%" />
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Hospital Selection */}
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-3">
-                                    Send to Hospitals (Select specific or leave empty for ALL)
-                                </label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {/* Hospital Registry */}
+                            <div>
+                                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Hospital Registry (Target Selection)</label>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
                                     {hospitals.map((hospital) => (
                                         <label
                                             key={hospital._id}
-                                            className={`flex items-start p-3 border rounded-xl cursor-pointer ${formData.targetHospitals?.includes(hospital._id)
-                                                ? "border-red-500 bg-red-50 ring-1 ring-red-500"
-                                                : "border-gray-200 hover:border-gray-300 bg-white"
+                                            className={`flex items-start p-1.5 border rounded-lg cursor-pointer transition-all ${formData.targetHospitals?.includes(hospital._id)
+                                                ? "border-red-500 bg-red-50"
+                                                : "border-gray-100 hover:border-gray-200 bg-white"
                                                 }`}
                                         >
-                                            <div className="flex items-center h-5">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={formData.targetHospitals?.includes(hospital._id)}
-                                                    onChange={() => {
-                                                        const current = [...(formData.targetHospitals || [])];
-                                                        if (current.includes(hospital._id)) {
-                                                            setFormData({
-                                                                ...formData,
-                                                                targetHospitals: current.filter((id) => id !== hospital._id),
-                                                            });
-                                                        } else {
-                                                            setFormData({
-                                                                ...formData,
-                                                                targetHospitals: [...current, hospital._id],
-                                                            });
-                                                        }
-                                                    }}
-                                                    className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
-                                                />
-                                            </div>
-                                            <div className="ml-3 text-sm">
-                                                <span className="font-medium text-gray-900">{hospital.name}</span>
-                                                <p className="text-gray-500 text-xs truncate">{hospital.address}</p>
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.targetHospitals?.includes(hospital._id)}
+                                                onChange={() => {
+                                                    const current = [...(formData.targetHospitals || [])];
+                                                    setFormData({
+                                                        ...formData,
+                                                        targetHospitals: current.includes(hospital._id)
+                                                            ? current.filter(id => id !== hospital._id)
+                                                            : [...current, hospital._id]
+                                                    });
+                                                }}
+                                                className="mt-0.5 h-3 w-3 text-red-600 rounded border-gray-300"
+                                            />
+                                            <div className="ml-1.5 min-w-0 flex-1">
+                                                <p className="text-[8px] sm:text-[10px] font-black text-gray-900 truncate uppercase tracking-tighter" title={hospital.name}>{hospital.name}</p>
+                                                <p className="text-[6px] sm:text-[9px] font-bold text-gray-400 truncate tracking-tight" title={hospital.address}>{hospital.address}</p>
                                             </div>
                                         </label>
                                     ))}
                                     {hospitals.length === 0 && (
-                                        <div className="col-span-full p-4 bg-gray-50 border border-dashed border-gray-300 rounded-xl text-center">
-                                            <p className="text-sm text-gray-500 italic">No hospitals available. Request will be broadcasted.</p>
+                                        <div className="col-span-full py-3 border border-dashed border-gray-200 rounded-lg text-center">
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Awaiting Registry Data...</p>
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Submit Button */}
-                            <div className="flex justify-end pt-4">
-                                <button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className="px-8 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white font-semibold rounded-lg hover:from-red-700 hover:to-orange-700 transition-all disabled:opacity-50 shadow-lg"
-                                >
-                                    {submitting ? "Sending..." : "Send Emergency Request"}
-                                </button>
-                            </div>
+                            <button
+                                type="submit"
+                                disabled={submitting}
+                                className="w-full py-2.5 bg-linear-to-r from-red-600 to-orange-600 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-lg shadow-lg shadow-red-500/20 active:scale-[0.98] transition-all disabled:opacity-50"
+                            >
+                                {submitting ? "Processing..." : "Dispatch Emergency Alert"}
+                            </button>
                         </form>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-2">
                             {loading ? (
-                                <div className="text-center py-12">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-                                    <p className="mt-4 text-gray-600">Loading requests...</p>
+                                <div className="py-10 flex flex-col items-center justify-center gap-2">
+                                    <Clock className="animate-spin text-red-600" size={24} />
+                                    <p className="text-[10px] font-black uppercase text-gray-400 tracking-[.2em]">Synchronizing...</p>
                                 </div>
                             ) : myRequests.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                    <p className="text-gray-600">No emergency requests yet</p>
+                                <div className="py-10 text-center">
+                                    <AlertCircle className="mx-auto text-gray-200 mb-2" size={32} />
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">No Active Logs Detected</p>
                                 </div>
                             ) : (
                                 myRequests.map((request) => (
-                                    <div key={request._id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div>
-                                                <h3 className="font-semibold text-gray-900">{request.patientName}</h3>
-                                                <p className="text-sm text-gray-600">{request.patientAge} years, {request.patientGender}</p>
+                                    <div key={request._id} className="bg-white rounded-lg p-2.5 border border-gray-100 shadow-xs hover:border-gray-200 transition-all">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div className="min-w-0">
+                                                <h3 className="text-xs font-black text-gray-900 truncate uppercase tracking-tight">{request.patientName}</h3>
+                                                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest italic">{request.patientAge}Y • {request.patientGender}</p>
                                             </div>
-                                            <div className="flex items-center space-x-2">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getSeverityColor(request.severity)}`}>
-                                                    {request.severity.toUpperCase()}
+                                            <div className="flex gap-1">
+                                                <span className={`px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest border ${getSeverityColor(request.severity)}`}>
+                                                    {request.severity}
                                                 </span>
-                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
-                                                    {request.status.toUpperCase()}
+                                                <span className={`px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest ${getStatusColor(request.status)}`}>
+                                                    {request.status}
                                                 </span>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
-                                            <div>
-                                                <span className="text-gray-600">Emergency:</span> <span className="font-medium">{request.emergencyType}</span>
+                                        <div className="grid grid-cols-2 gap-1.5 mb-1.5">
+                                            <div className="bg-gray-50 p-1.5 rounded">
+                                                <p className="text-[7px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Protocol</p>
+                                                <p className="text-[9px] font-bold text-gray-700 truncate">{request.emergencyType}</p>
                                             </div>
-                                            <div>
-                                                <span className="text-gray-600">Location:</span> <span className="font-medium">{request.currentLocation}</span>
+                                            <div className="bg-gray-50 p-1.5 rounded">
+                                                <p className="text-[7px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Coordinate</p>
+                                                <p className="text-[9px] font-bold text-gray-700 truncate">{request.currentLocation}</p>
                                             </div>
                                         </div>
 
-                                        <p className="text-sm text-gray-700 mb-3">{request.description}</p>
-
-                                        {/* Hospital Responses */}
-                                        <div className="border-t border-gray-200 pt-3">
-                                            <p className="text-xs font-medium text-gray-600 mb-2">Hospital Responses:</p>
-                                            <div className="space-y-2">
+                                        {/* Responses Table-like list */}
+                                        <div className="border-t border-gray-50 pt-2 mt-2">
+                                            <p className="text-[7px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Network Node Status</p>
+                                            <div className="space-y-1">
                                                 {request.requestedHospitals.map((rh, idx) => (
-                                                    <div key={idx} className="flex justify-between items-center text-sm">
-                                                        <span className="text-gray-700">{rh.hospital?.name || "Unknown Hospital"}</span>
-                                                        <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(rh.status)}`}>
+                                                    <div key={idx} className="flex justify-between items-center bg-gray-50/50 px-2 py-1 rounded">
+                                                        <span className="text-[9px] font-bold text-gray-600 truncate max-w-[70%]">{rh.hospital?.name || "Remote Node"}</span>
+                                                        <span className={`text-[8px] font-black uppercase ${getStatusColor(rh.status)} bg-transparent`}>
                                                             {rh.status}
                                                         </span>
                                                     </div>
@@ -900,13 +639,18 @@ function AmbulanceDashboard() {
                                         </div>
 
                                         {request.acceptedByHospital && (
-                                            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                                <p className="text-sm font-medium text-green-800">✓ Accepted by {request.acceptedByHospital?.name || "Hospital"}</p>
-                                                {request.notes && <p className="text-xs text-green-700 mt-1">Notes: {request.notes}</p>}
+                                            <div className="mt-2 p-2 bg-emerald-50/50 border border-emerald-100 rounded flex items-center gap-2">
+                                                <ShieldCheck size={12} className="text-emerald-500" />
+                                                <p className="text-[9px] font-black text-emerald-800 uppercase tracking-tight">Accepted: {request.acceptedByHospital?.name}</p>
                                             </div>
                                         )}
 
-                                        <p className="text-xs text-gray-500 mt-3">Submitted: {new Date(request.createdAt).toLocaleString()}</p>
+                                        <div className="mt-2 flex items-center justify-between opacity-50">
+                                            <p className="text-[7px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
+                                                <Clock size={8} /> {format(new Date(request.createdAt), 'MMM dd, HH:mm')}
+                                            </p>
+                                            <p className="text-[7px] font-bold text-gray-400 uppercase tracking-tighter">ID: {request._id.slice(-6)}</p>
+                                        </div>
                                     </div>
                                 ))
                             )}

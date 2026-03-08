@@ -70,7 +70,7 @@ export default function HRLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isInitialized && !isAuthenticated) {
-      router.push('/auth/login');
+      router.push('/hr/login');
     }
   }, [isAuthenticated, isInitialized, router]);
 
@@ -122,7 +122,7 @@ export default function HRLayout({ children }: { children: React.ReactNode }) {
 
   const handleConfirmLogout = async () => {
     await logout();
-    router.push('/auth/login');
+    router.push('/hr/login');
   };
 
   if (isLoading || !isInitialized) {

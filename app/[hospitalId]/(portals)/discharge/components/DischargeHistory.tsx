@@ -165,7 +165,7 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
 
     return (
         <div className="min-h-screen bg-gray-50/50">
-            <div className="w-full py-4 space-y-5">
+            <div className="w-full p-[1px] sm:py-4 space-y-2 sm:space-y-5">
                 {/* CONSOLIDATED HEADER & CONTROLS */}
                 <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2 pt-2">
@@ -305,11 +305,11 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-slate-50 border-b border-slate-200">
-                                        <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Patient Details</th>
-                                        <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">ID Identifiers</th>
-                                        <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Clinical Team</th>
-                                        <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Status / Date</th>
-                                        <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                                        <th className="px-2 sm:px-6 py-2 sm:py-4 text-[7px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest">Patient Details</th>
+                                        <th className="px-2 sm:px-6 py-2 sm:py-4 text-[7px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">ID Identifiers</th>
+                                        <th className="px-2 sm:px-6 py-2 sm:py-4 text-[7px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest">Clinical Team</th>
+                                        <th className="px-2 sm:px-6 py-2 sm:py-4 text-[7px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest">Status / Date</th>
+                                        <th className="px-2 sm:px-6 py-2 sm:py-4 text-[7px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
@@ -326,71 +326,71 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
                                     ) : (
                                         records.map((record) => (
                                             <tr key={record._id} className="hover:bg-blue-50/20 transition-colors border-b border-slate-50 last:border-0 group">
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm shadow-sm border border-blue-100 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                                <td className="px-2 sm:px-6 py-2 sm:py-4">
+                                                    <div className="flex items-center gap-1.5 sm:gap-3">
+                                                        <div className="w-6 h-6 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-[10px] sm:text-sm shadow-sm border border-blue-100 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                                             {record.patientName?.charAt(0) || 'P'}
                                                         </div>
                                                         <div>
-                                                            <h4 className="font-black text-blue-600 text-sm leading-tight uppercase tracking-tight">{record.patientName}</h4>
-                                                            <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">{record.gender} • {record.age}</p>
+                                                            <h4 className="font-black text-blue-600 text-[9px] sm:text-sm leading-tight uppercase tracking-tight">{record.patientName}</h4>
+                                                            <p className="text-[7px] sm:text-[10px] font-bold text-slate-400 uppercase mt-0.5">{record.gender} • {record.age}</p>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
+                                                <td className="px-2 sm:px-6 py-2 sm:py-4">
                                                     <div className="flex flex-col items-center gap-1">
-                                                        <span className="px-2 py-0.5 bg-slate-50 border border-slate-100 rounded-lg text-[9px] font-black text-slate-500 uppercase tracking-widest">MRN: {record.mrn}</span>
+                                                        <span className="px-1 py-0.5 bg-slate-50 border border-slate-100 rounded text-[7px] sm:text-[9px] font-black text-slate-500 uppercase tracking-widest">MRN: {record.mrn}</span>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
+                                                <td className="px-2 sm:px-6 py-2 sm:py-4">
                                                     <div className="space-y-0.5">
-                                                        <p className="text-xs font-bold text-indigo-600 line-clamp-1 italic uppercase tracking-tight">
+                                                        <p className="text-[8px] sm:text-xs font-bold text-indigo-600 line-clamp-1 italic uppercase tracking-tight">
                                                             {record.primaryDoctor || record.suggestedDoctorName || 'N/A'}
                                                         </p>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
+                                                <td className="px-2 sm:px-6 py-2 sm:py-4">
                                                     <div className="space-y-1">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <div className={`w-1.5 h-1.5 rounded-full ${record.conditionAtDischarge === 'Stable' || record.conditionAtDischarge === 'Improved' ? 'bg-emerald-500' : record.conditionAtDischarge === 'Critical' ? 'bg-rose-500' : 'bg-amber-500'}`} />
-                                                            <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">{record.conditionAtDischarge || record.status || 'Completed'}</span>
+                                                        <div className="flex items-center gap-1">
+                                                            <div className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${record.conditionAtDischarge === 'Stable' || record.conditionAtDischarge === 'Improved' ? 'bg-emerald-500' : record.conditionAtDischarge === 'Critical' ? 'bg-rose-500' : 'bg-amber-500'}`} />
+                                                            <span className="text-[7px] sm:text-[10px] font-black text-slate-700 uppercase tracking-widest">{record.conditionAtDischarge || record.status || 'Completed'}</span>
                                                         </div>
-                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                                        <p className="text-[7px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                                                             {new Date(record.dischargeDate || record.createdAt).toLocaleDateString()}
                                                         </p>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <div className="flex items-center justify-end gap-1.5">
+                                                <td className="px-2 sm:px-6 py-2 sm:py-4 text-right">
+                                                    <div className="flex items-center justify-end gap-1 sm:gap-1.5">
                                                         {user?.role === 'helpdesk' && (
                                                             <button
                                                                 type="button"
                                                                 suppressHydrationWarning
                                                                 onClick={() => handleEdit(record._id)}
-                                                                className="p-2.5 bg-white border border-slate-200 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all shadow-sm"
+                                                                className="p-1.5 sm:p-2.5 bg-white border border-slate-200 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg sm:rounded-xl transition-all shadow-sm"
                                                                 title="Edit Summary"
                                                             >
-                                                                <FileEdit size={16} />
+                                                                <FileEdit size={14} className="sm:w-[16px] sm:h-[16px]" />
                                                             </button>
                                                         )}
                                                         <button
                                                             type="button"
                                                             suppressHydrationWarning
                                                             onClick={() => triggerPrint(record)}
-                                                            className="p-2.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-800 hover:text-white rounded-xl transition-all shadow-sm"
+                                                            className="p-1.5 sm:p-2.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-800 hover:text-white rounded-lg sm:rounded-xl transition-all shadow-sm"
                                                             title="Print Directly"
                                                         >
-                                                            <Printer size={16} />
+                                                            <Printer size={14} className="sm:w-[16px] sm:h-[16px]" />
                                                         </button>
                                                         {user?.role === 'hospital-admin' && (
                                                             <button
                                                                 type="button"
                                                                 suppressHydrationWarning
                                                                 onClick={() => handleDelete(record._id)}
-                                                                className="p-2.5 bg-white border border-slate-200 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all shadow-sm"
+                                                                className="p-1.5 sm:p-2.5 bg-white border border-slate-200 text-rose-600 hover:bg-rose-600 hover:text-white rounded-lg sm:rounded-xl transition-all shadow-sm"
                                                                 title="Delete Record"
                                                             >
-                                                                <Trash2 size={16} />
+                                                                <Trash2 size={14} className="sm:w-[16px] sm:h-[16px]" />
                                                             </button>
                                                         )}
                                                     </div>
@@ -422,51 +422,43 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
                             <NoRecordsFound variant="grid" />
                         ) : (
                             records.map((record) => (
-                                <div key={record._id} className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm hover:border-blue-400 transition-all flex flex-col gap-6 relative group overflow-hidden">
-                                    <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div key={record._id} className="bg-white p-2 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-200 shadow-sm hover:border-blue-400 transition-all flex flex-col gap-2 sm:gap-6 relative group overflow-hidden">
+                                    <div className="absolute top-0 right-0 p-2 sm:p-4 opacity-100 transition-opacity">
                                         <div className="flex gap-1.5">
-                                            <button type="button" suppressHydrationWarning onClick={() => triggerPrint(record)} className="p-2 bg-slate-900 text-white rounded-xl shadow-lg"><Printer size={14} /></button>
+                                            <button type="button" suppressHydrationWarning onClick={() => triggerPrint(record)} className="p-1.5 sm:p-2 bg-slate-900 text-white rounded-lg sm:rounded-xl shadow-lg hover:bg-blue-600 transition-colors"><Printer size={12} className="sm:w-[14px] sm:h-[14px]" /></button>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-14 h-14 rounded-[1.25rem] bg-blue-600 text-white flex items-center justify-center font-black text-xl shadow-lg shadow-blue-200">
+                                    <div className="flex items-center gap-2 sm:gap-4">
+                                        <div className="w-8 h-8 sm:w-14 sm:h-14 rounded-lg sm:rounded-[1.25rem] bg-blue-600 text-white flex items-center justify-center font-black text-xs sm:text-xl shadow-lg shadow-blue-200">
                                             {record.patientName?.charAt(0) || 'P'}
                                         </div>
                                         <div>
-                                            <h4 className="font-black text-slate-900 text-sm uppercase tracking-tight">{record.patientName}</h4>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{record.gender} • {record.age}</p>
+                                            <h4 className="font-black text-slate-900 text-[10px] sm:text-sm uppercase tracking-tight">{record.patientName}</h4>
+                                            <p className="text-[7px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">{record.gender} • {record.age}</p>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-4 pt-4 border-t border-slate-50">
+                                    <div className="space-y-1 sm:space-y-4 pt-1 sm:pt-4 border-t border-slate-50">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Clinical Team</span>
-                                            <span className="text-[11px] font-black text-blue-600 uppercase italic">{record.primaryDoctor || 'N/A'}</span>
+                                            <span className="text-[7px] sm:text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Clinical Team</span>
+                                            <span className="text-[8px] sm:text-[11px] font-black text-blue-600 uppercase italic">{record.primaryDoctor || 'N/A'}</span>
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Discharge Date</span>
-                                            <span className="text-[11px] font-bold text-slate-700 uppercase">{new Date(record.dischargeDate || record.createdAt).toLocaleDateString()}</span>
+                                            <span className="text-[7px] sm:text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Discharge Date</span>
+                                            <span className="text-[8px] sm:text-[11px] font-bold text-slate-700 uppercase">{new Date(record.dischargeDate || record.createdAt).toLocaleDateString()}</span>
                                         </div>
                                     </div>
 
-                                    <div className="mt-auto pt-4 flex gap-2">
-                                        <button
-                                            type="button"
-                                            suppressHydrationWarning
-                                            onClick={() => triggerPrint(record)}
-                                            className="flex-1 py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all"
-                                        >
-                                            View Report
-                                        </button>
+                                    <div className="mt-auto pt-2 flex gap-2">
                                         {user?.role === 'helpdesk' && (
                                             <button
                                                 type="button"
                                                 suppressHydrationWarning
                                                 onClick={() => handleEdit(record._id)}
-                                                className="px-4 py-3 border border-slate-200 text-slate-400 rounded-2xl hover:text-blue-600 hover:border-blue-200 transition-all"
+                                                className="w-full py-2 border border-slate-200 text-slate-400 rounded-xl hover:text-blue-600 hover:border-blue-200 transition-all flex items-center justify-center gap-2 text-[9px] uppercase font-bold"
                                             >
-                                                <FileEdit size={16} />
+                                                <FileEdit size={14} /> Edit Summary
                                             </button>
                                         )}
                                     </div>

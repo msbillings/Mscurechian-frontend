@@ -129,34 +129,34 @@ export default function GeneralStaffSOPPage() {
     };
 
     return (
-        <div className="p-0.5 sm:p-8 space-y-4 sm:space-y-10 max-w-7xl mx-auto min-h-screen">
+        <div className="p-0 sm:p-2 space-y-1 sm:space-y-10 max-w-7xl mx-auto min-h-screen">
             {/* Header Tier */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                <div className="space-y-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-3 px-1 sm:px-0">
+                <div className="space-y-1 sm:space-y-4">
 
                     <div>
-                        <h1 className="text-lg sm:text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Institutional Registry</h1>
-                        <p className="text-gray-500 dark:text-gray-400 font-bold mt-1 uppercase tracking-widest text-[8px] sm:text-[10px] ml-1 flex items-center gap-1.5">
-                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                        <h1 className="text-[10px] sm:text-base font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none">Institutional Registry</h1>
+                        <p className="text-gray-500 dark:text-gray-400 font-bold mt-0.5 uppercase tracking-widest text-[6px] sm:text-[8px] sm:ml-0.5 flex items-center gap-1">
+                            <ShieldCheck className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-500" />
                             Compliance Protocols
                         </p>
                     </div>
                 </div>
 
-                <div className="flex gap-3 w-full md:w-auto">
+                <div className="flex gap-2 w-full md:w-auto">
                     <div className="relative w-full md:w-auto">
                         <button
                             onClick={() => setShowFilters(!showFilters)}
-                            className={`flex items-center justify-between sm:justify-start gap-4 w-full sm:w-auto px-5 py-3.5 sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all active:scale-95 ${showFilters
+                            className={`flex items-center justify-between sm:justify-start gap-1 w-full sm:w-auto px-2 py-1 sm:px-4 sm:py-2.5 rounded text-[6px] sm:text-[9px] font-black uppercase tracking-widest border transition-all active:scale-95 leading-none ${showFilters
                                 ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white'
                                 : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-500 hover:border-emerald-500/50 hover:text-emerald-600 shadow-sm'
                                 }`}
                         >
-                            <div className="flex items-center gap-3">
-                                <Search size={14} className="sm:size-[16px]" />
-                                <span className="truncate">{activeCategory === 'all' ? 'Browse Library' : activeCategory}</span>
+                            <div className="flex items-center gap-1">
+                                <Search size={8} className="sm:size-[14px]" />
+                                <span className="truncate leading-none">{activeCategory === 'all' ? 'Browse Library' : activeCategory}</span>
                             </div>
-                            <Info size={14} className="sm:hidden opacity-50" />
+                            <Info size={8} className="sm:hidden opacity-50" />
                         </button>
 
                         <AnimatePresence>
@@ -167,14 +167,14 @@ export default function GeneralStaffSOPPage() {
                                     exit={{ opacity: 0, y: 10 }}
                                     className="absolute right-0 mt-2 w-full md:w-64 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-2xl z-[50] overflow-hidden p-2"
                                 >
-                                    <div className="relative mb-2">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                    <div className="relative mb-1">
+                                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={10} />
                                         <input
                                             type="text"
                                             placeholder="Search Categories..."
                                             value={searchTerm}
                                             onChange={(e) => updateSearch(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-[10px] font-bold outline-none"
+                                            className="w-full pl-6 pr-2 py-1.5 bg-gray-50 dark:bg-gray-900 border-none rounded text-[8px] font-bold outline-none leading-none"
                                         />
                                     </div>
                                     <div className="max-h-60 overflow-y-auto custom-scrollbar">
@@ -182,8 +182,8 @@ export default function GeneralStaffSOPPage() {
                                             <button
                                                 key={cat}
                                                 onClick={() => updateCategory(cat)}
-                                                className={`w-full text-left px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all mb-1 ${activeCategory === cat
-                                                    ? 'bg-primary-theme text-white shadow-lg'
+                                                className={`w-full text-left px-2 py-1.5 rounded text-[8px] font-black uppercase tracking-wider transition-all mb-0.5 leading-none ${activeCategory === cat
+                                                    ? 'bg-primary-theme text-white shadow-sm'
                                                     : 'bg-transparent text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white'
                                                     }`}
                                             >
@@ -198,7 +198,7 @@ export default function GeneralStaffSOPPage() {
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800/50 p-4 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700/50">
+            <div className="bg-transparent p-0 md:p-4 rounded-lg border border-gray-100 dark:border-gray-700/50 shadow-sm">
                 <SOPTable
                     sops={filteredSops}
                     isLoading={isLoading}

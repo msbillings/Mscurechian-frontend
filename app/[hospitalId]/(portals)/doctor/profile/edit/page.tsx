@@ -7,11 +7,13 @@ import {
     CreditCard, Building, Landmark, Wallet, Globe,
     Save, ArrowLeft, Plus, X,
     Calendar, Clock, DollarSign, FileText, Upload, CheckCircle2,
-    ShieldCheck
+    ShieldCheck, ChevronDown, Trash2, UploadCloud
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getDoctorProfileAction, updateDoctorProfileAction, uploadDoctorPhotoAction } from '@/lib/integrations/actions/doctor.actions';
 import { useAuthStore } from '@/stores/authStore';
+import ImageCropper from '@/components/ui/ImageCropper';
+import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
 
 export default function EditDoctorProfilePage() {
     const router = useRouter();
@@ -20,7 +22,18 @@ export default function EditDoctorProfilePage() {
     const [activeTab, setActiveTab] = useState('personal');
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [files, setFiles] = useState<Record<string, File>>({});
+    const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
     const { user, setUser } = useAuthStore();
+    const [docViewer, setDocViewer] = useState<{ url: string; label: string } | null>(null);
+
+    // Cropper State
+    const [cropper, setCropper] = useState<{
+        isOpen: boolean;
+        image: string;
+    }>({
+        isOpen: false,
+        image: ''
+    });
 
     const [formData, setFormData] = useState<any>({
         // Personal & Account
@@ -88,6 +101,27 @@ export default function EditDoctorProfilePage() {
                 const res = await getDoctorProfileAction();
                 if (res.success && res.data) {
                     const d = res.data;
+                    const cleanArrayArtefacts = (arr: any) => {
+                        if (!arr || !Array.isArray(arr)) return [];
+                        let result: string[] = [];
+                        for (let item of arr) {
+                            if (!item || item === "[]" || item === '["[]"]' || item === '""') continue;
+                            try {
+                                const parsed = JSON.parse(item);
+                                if (Array.isArray(parsed)) {
+                                    result.push(...parsed.filter(Boolean));
+                                } else if (typeof parsed === 'string') {
+                                    result.push(parsed);
+                                } else {
+                                    result.push(item);
+                                }
+                            } catch {
+                                result.push(item);
+                            }
+                        }
+                        return [...new Set(result)].filter(i => i && i !== "[]" && i !== '["[]"]');
+                    };
+
                     setFormData({
                         name: d.user?.name || '',
                         email: d.user?.email || '',
@@ -96,12 +130,12 @@ export default function EditDoctorProfilePage() {
                         signature: d.signature || '',
                         gender: d.user?.gender || d.gender || '',
                         dateOfBirth: d.user?.dateOfBirth ? new Date(d.user.dateOfBirth).toISOString().split('T')[0] : (d.dateOfBirth ? new Date(d.dateOfBirth).toISOString().split('T')[0] : ''),
-                        specialties: d.specialties || [],
-                        qualifications: d.qualifications || [],
+                        specialties: cleanArrayArtefacts(d.specialties),
+                        qualifications: cleanArrayArtefacts(d.qualifications),
                         bio: d.bio || '',
                         experienceStart: d.experienceStart ? new Date(d.experienceStart).toISOString().split('T')[0] : '',
-                        languages: d.languages || [],
-                        awards: d.awards || [],
+                        languages: cleanArrayArtefacts(d.languages),
+                        awards: cleanArrayArtefacts(d.awards),
                         medicalRegistrationNumber: d.medicalRegistrationNumber || '',
                         registrationCouncil: d.registrationCouncil || '',
                         registrationYear: d.registrationYear || '',
@@ -206,7 +240,7 @@ export default function EditDoctorProfilePage() {
             if (!/^[0-9]{12}$/.test(value) && value.length > 0) fieldError = "Exactly 12 digits";
         }
 
-        setErrors(prev => ({
+        setErrors((prev: any) => ({
             ...prev,
             [name]: fieldError
         }));
@@ -246,7 +280,22 @@ export default function EditDoctorProfilePage() {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files: selectedFiles } = e.target;
         if (selectedFiles && selectedFiles[0]) {
-            setFiles(prev => ({ ...prev, [name]: selectedFiles[0] }));
+            const file = selectedFiles[0];
+            if (file.size > 5 * 1024 * 1024) {
+                setUploadErrors((prev: any) => ({
+                    ...prev,
+                    [name]: "Particular size exceed, please choose below the 5MB"
+                }));
+                toast.error(`${name} exceeds 5MB limit`);
+                return;
+            } else {
+                setUploadErrors((prev: any) => {
+                    const next = { ...prev };
+                    delete next[name];
+                    return next;
+                });
+            }
+            setFiles((prev: any) => ({ ...prev, [name]: selectedFiles[0] }));
         }
     };
 
@@ -254,30 +303,80 @@ export default function EditDoctorProfilePage() {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        const photoData = new FormData();
-        photoData.append("profilePic", file);
+        if (file.size > 5 * 1024 * 1024) {
+            setUploadErrors((prev: any) => ({ ...prev, profilePic: "Particular size exceed, please choose below the 5MB" }));
+            toast.error('Image must be smaller than 5MB');
+            return;
+        } else {
+            setUploadErrors((prev: any) => {
+                const next = { ...prev };
+                delete next.profilePic;
+                return next;
+            });
+        }
 
-        const uploadToast = toast.loading("Uploading photo...");
+        // Open Cropper
+        const reader = new FileReader();
+        reader.onload = () => {
+            setCropper({
+                isOpen: true,
+                image: reader.result as string
+            });
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleCropComplete = async (croppedDataUrl: string) => {
         try {
-            const res = await uploadDoctorPhotoAction(photoData);
-            if (res.success && res.data) {
-                // Backend now returns the populated profile where profilePic is a string URL
-                const rawPic = res.data.profilePic?.url || res.data.profilePic;
+            setCropper({ isOpen: false, image: '' });
 
-                // Add timestamp to bypass browser cache
+            // Convert data URL to File
+            const resBlob = await fetch(croppedDataUrl);
+            const blob = await resBlob.blob();
+            const file = new File([blob], "profile-pic.png", { type: "image/png" });
+
+            const photoData = new FormData();
+            photoData.append("profilePic", file);
+
+            const uploadToast = toast.loading("Uploading cropped photo...");
+            const res = await uploadDoctorPhotoAction(photoData);
+
+            if (res.success && res.data) {
+                const rawPic = res.data.profilePic?.url || res.data.profilePic;
                 const newPic = `${rawPic}${rawPic.includes('?') ? '&' : '?'}t=${Date.now()}`;
 
                 setFormData((prev: any) => ({ ...prev, profilePic: newPic }));
 
                 if (setUser && user) {
-                    setUser({ ...user, image: newPic }); // Reactively updates AuthContext
+                    setUser({ ...user, image: newPic });
                 }
-                toast.success('Profile photo updated successfully', { id: uploadToast });
+                toast.success('Profile photo updated', { id: uploadToast });
             } else {
                 toast.error(res.error || 'Failed to upload photo', { id: uploadToast });
             }
         } catch (error: any) {
-            toast.error('An error occurred while uploading', { id: uploadToast });
+            toast.error('An error occurred while uploading');
+        }
+    };
+
+    const handleDeleteDocument = async (field: string) => {
+        if (!confirm("Are you sure you want to delete this document?")) return;
+
+        try {
+            // Optimistic Update
+            setFormData((prev: any) => ({ ...prev, [field]: '' }));
+            setFiles((prev: any) => {
+                const next = { ...prev };
+                delete next[field];
+                return next;
+            });
+
+            toast.loading("Removing document reference...", { duration: 1500 });
+            // Since we save the whole profile, we'll just empty the URL on the next Save.
+            // But if we want immediate sync, we can call handleSave() or an action.
+            toast.success("Document removed locally. Save profile to confirm deletion permanently.");
+        } catch (err) {
+            toast.error("Failed to delete document");
         }
     };
 
@@ -366,10 +465,20 @@ export default function EditDoctorProfilePage() {
     ];
 
     return (
-        <div className="max-w-6xl mx-auto py-8 px-4">
+        <div className="max-w-6xl mx-auto py-4 sm:py-8 px-2 sm:px-4 min-h-[calc(100vh-100px)]">
+            {cropper.isOpen && (
+                <ImageCropper
+                    src={cropper.image}
+                    onCrop={handleCropComplete}
+                    onCancel={() => setCropper({ isOpen: false, image: '' })}
+                    aspectRatio={1}
+                    circular={true}
+                />
+            )}
+
             {/* Header */}
-            <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-100 dark:border-gray-800">
-                <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between mb-4 sm:mb-8 pb-4 sm:pb-6 border-b border-gray-100 dark:border-gray-800 gap-4">
+                <div className="flex items-center gap-3 sm:gap-4 w-full">
                     <button
                         onClick={() => router.back()}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-400 transition-colors"
@@ -384,33 +493,50 @@ export default function EditDoctorProfilePage() {
                 <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-xl shadow-emerald-500/20 active:scale-95 transition-all disabled:opacity-50"
+                    className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm sm:text-base font-bold rounded-xl sm:rounded-2xl shadow-xl shadow-emerald-500/20 active:scale-95 transition-all disabled:opacity-50"
                 >
                     {isSaving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Save size={20} />}
-                    Save All Changes
+                    <span className="shrink-0">Save Changes</span>
                 </button>
             </div>
 
-            <div className="flex flex-col lg:flex-row gap-8">
-                {/* Sidebar Navigation */}
+            <div className="flex flex-col lg:flex-row gap-6 sm:gap-8">
+                {/* Sidebar Navigation - Dropdown on Mobile, Sidebar on LG */}
                 <div className="lg:w-64 space-y-2">
-                    {tabs.map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === tab.id
-                                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
-                                : 'bg-white dark:bg-[#111] text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900'
-                                }`}
+                    {/* Mobile Tab Select */}
+                    <div className="lg:hidden relative">
+                        <select
+                            value={activeTab}
+                            onChange={(e) => setActiveTab(e.target.value)}
+                            className="w-full bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-2xl px-5 py-4 text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-emerald-500"
                         >
-                            {tab.icon}
-                            {tab.label}
-                        </button>
-                    ))}
+                            {tabs.map(tab => (
+                                <option key={tab.id} value={tab.id}>{tab.label}</option>
+                            ))}
+                        </select>
+                        <ChevronDown size={18} className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+                    </div>
+
+                    {/* Desktop Tab List */}
+                    <div className="hidden lg:block space-y-2">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === tab.id
+                                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+                                    : 'bg-white dark:bg-[#111] text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900'
+                                    }`}
+                            >
+                                {tab.icon}
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Main Form Content */}
-                <div className="flex-1 bg-white dark:bg-[#111] rounded-3xl border border-gray-100 dark:border-gray-800 p-8 shadow-sm">
+                <div className="flex-1 bg-white dark:bg-[#111] rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 p-4 sm:p-8 shadow-sm">
                     {activeTab === 'personal' && (
                         <div className="space-y-8 animate-in fade-in duration-300">
                             <div>
@@ -465,18 +591,21 @@ export default function EditDoctorProfilePage() {
                                 <div className="flex flex-col md:flex-row items-center gap-6">
                                     <div className="w-24 h-24 rounded-full bg-gray-100 dark:bg-gray-800 border-4 border-white dark:border-gray-900 shadow-xl overflow-hidden flex items-center justify-center shrink-0">
                                         {formData.profilePic ? (
-                                            <img src={formData.profilePic?.url || formData.profilePic} alt="Profile" className="w-full h-full object-cover" />
+                                            <img src={(typeof formData.profilePic === 'string' ? formData.profilePic : formData.profilePic?.url) || ''} alt="Profile" className="w-full h-full object-cover" />
                                         ) : (
                                             <User size={40} className="text-gray-400" />
                                         )}
                                     </div>
                                     <div className="flex-1 w-full flex flex-col items-start gap-2">
-                                        <label className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-bold rounded-xl border border-indigo-100 dark:border-indigo-800/30 hover:bg-indigo-100 transition-colors cursor-pointer">
+                                        <label className="flex items-center justify-center gap-2 w-full md:w-auto max-w-[280px] px-6 py-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-bold rounded-xl border border-indigo-100 dark:border-indigo-800/30 hover:bg-indigo-100 transition-colors cursor-pointer">
                                             <Upload size={18} />
                                             <span>Upload New Photo</span>
                                             <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
                                         </label>
-                                        <p className="text-xs text-gray-500">JPG, PNG or GIF up to 5MB</p>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">Only PDF and any type of image only. Max 5MB</p>
+                                        {uploadErrors.profilePic && (
+                                            <p className="text-[10px] text-rose-500 font-bold uppercase tracking-tighter mt-1 animate-bounce">{uploadErrors.profilePic}</p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -580,11 +709,16 @@ export default function EditDoctorProfilePage() {
                                             <p className="text-[10px] text-gray-500">Upload your highest degree certificate (PDF/Image)</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 sm:gap-3">
                                         {formData.degreeCertificate && (
-                                            <a href={formData.degreeCertificate} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
-                                                <CheckCircle2 size={12} /> View
-                                            </a>
+                                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                                <button type="button" onClick={() => setDocViewer({ url: formData.degreeCertificate, label: 'Degree Certificate' })} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] sm:text-[11px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
+                                                    <CheckCircle2 size={12} /> View
+                                                </button>
+                                                <button onClick={() => handleDeleteDocument('degreeCertificate')} className="p-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors">
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
                                         )}
                                         <div className="flex flex-col items-end gap-1">
                                             <label className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all">
@@ -593,13 +727,17 @@ export default function EditDoctorProfilePage() {
                                                 <input type="file" name="degreeCertificate" onChange={handleFileChange} className="hidden" accept="*" />
                                             </label>
                                             {files['degreeCertificate'] && (
-                                                <span className="text-[10px] text-gray-500 font-medium max-w-[150px] truncate">
+                                                <span className="text-[10px] text-gray-500 font-medium max-w-[100px] sm:max-w-[150px] truncate">
                                                     {files['degreeCertificate'].name}
                                                 </span>
                                             )}
                                         </div>
                                     </div>
                                 </div>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-2">Only PDF and any type of image only. Max 5MB</p>
+                                {uploadErrors.degreeCertificate && (
+                                    <p className="text-[10px] text-rose-500 font-bold uppercase tracking-tighter mt-1 animate-bounce">{uploadErrors.degreeCertificate}</p>
+                                )}
 
                                 <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-4">
                                     <div className="flex items-center gap-4">
@@ -611,11 +749,16 @@ export default function EditDoctorProfilePage() {
                                             <p className="text-[10px] text-gray-500">Upload your Doctorate/PhD certificate (PDF/Image)</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 sm:gap-3">
                                         {formData.doctorateCertificate && (
-                                            <a href={formData.doctorateCertificate} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
-                                                <CheckCircle2 size={12} /> View
-                                            </a>
+                                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                                <button type="button" onClick={() => setDocViewer({ url: formData.doctorateCertificate, label: 'Doctorate Certificate' })} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] sm:text-[11px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
+                                                    <CheckCircle2 size={12} /> View
+                                                </button>
+                                                <button onClick={() => handleDeleteDocument('doctorateCertificate')} className="p-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors">
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
                                         )}
                                         <div className="flex flex-col items-end gap-1">
                                             <label className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all">
@@ -624,13 +767,17 @@ export default function EditDoctorProfilePage() {
                                                 <input type="file" name="doctorateCertificate" onChange={handleFileChange} className="hidden" accept="*" />
                                             </label>
                                             {files['doctorateCertificate'] && (
-                                                <span className="text-[10px] text-gray-500 font-medium max-w-[150px] truncate">
+                                                <span className="text-[10px] text-gray-500 font-medium max-w-[100px] sm:max-w-[150px] truncate">
                                                     {files['doctorateCertificate'].name}
                                                 </span>
                                             )}
                                         </div>
                                     </div>
                                 </div>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-2">Only PDF and any type of image only. Max 5MB</p>
+                                {uploadErrors.doctorateCertificate && (
+                                    <p className="text-[10px] text-rose-500 font-bold uppercase tracking-tighter mt-1 animate-bounce">{uploadErrors.doctorateCertificate}</p>
+                                )}
 
                                 <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-4">
                                     <div className="flex items-center gap-4">
@@ -642,11 +789,16 @@ export default function EditDoctorProfilePage() {
                                             <p className="text-[10px] text-gray-500">Upload your Internship Completion certificate (PDF/Image)</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 sm:gap-3">
                                         {formData.internshipCertificate && (
-                                            <a href={formData.internshipCertificate} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
-                                                <CheckCircle2 size={12} /> View
-                                            </a>
+                                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                                <button type="button" onClick={() => setDocViewer({ url: formData.internshipCertificate, label: 'Internship Completion' })} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] sm:text-[11px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
+                                                    <CheckCircle2 size={12} /> View
+                                                </button>
+                                                <button onClick={() => handleDeleteDocument('internshipCertificate')} className="p-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors">
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
                                         )}
                                         <div className="flex flex-col items-end gap-1">
                                             <label className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all">
@@ -655,13 +807,17 @@ export default function EditDoctorProfilePage() {
                                                 <input type="file" name="internshipCertificate" onChange={handleFileChange} className="hidden" accept="*" />
                                             </label>
                                             {files['internshipCertificate'] && (
-                                                <span className="text-[10px] text-gray-500 font-medium max-w-[150px] truncate">
+                                                <span className="text-[10px] text-gray-500 font-medium max-w-[100px] sm:max-w-[150px] truncate">
                                                     {files['internshipCertificate'].name}
                                                 </span>
                                             )}
                                         </div>
                                     </div>
                                 </div>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-2">Only PDF and any type of image only. Max 5MB</p>
+                                {uploadErrors.internshipCertificate && (
+                                    <p className="text-[10px] text-rose-500 font-bold uppercase tracking-tighter mt-1 animate-bounce">{uploadErrors.internshipCertificate}</p>
+                                )}
                             </div>
                         </div>
                     )}
@@ -683,9 +839,9 @@ export default function EditDoctorProfilePage() {
                                         <div>
                                             <h4 className="font-bold text-sm text-gray-900 dark:text-white">Degree Certificate</h4>
                                             {formData.degreeCertificate ? (
-                                                <a href={formData.degreeCertificate} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
+                                                <button type="button" onClick={() => setDocViewer({ url: formData.degreeCertificate, label: 'Degree Certificate' })} className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
                                                     <CheckCircle2 size={16} /> View Document
-                                                </a>
+                                                </button>
                                             ) : (
                                                 <p className="mt-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Not Submitted</p>
                                             )}
@@ -700,9 +856,9 @@ export default function EditDoctorProfilePage() {
                                         <div>
                                             <h4 className="font-bold text-sm text-gray-900 dark:text-white">Doctorate Certificate</h4>
                                             {formData.doctorateCertificate ? (
-                                                <a href={formData.doctorateCertificate} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
+                                                <button type="button" onClick={() => setDocViewer({ url: formData.doctorateCertificate, label: 'Doctorate Certificate' })} className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
                                                     <CheckCircle2 size={16} /> View Document
-                                                </a>
+                                                </button>
                                             ) : (
                                                 <p className="mt-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Not Submitted</p>
                                             )}
@@ -717,9 +873,9 @@ export default function EditDoctorProfilePage() {
                                         <div>
                                             <h4 className="font-bold text-sm text-gray-900 dark:text-white">Internship Completion</h4>
                                             {formData.internshipCertificate ? (
-                                                <a href={formData.internshipCertificate} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
+                                                <button type="button" onClick={() => setDocViewer({ url: formData.internshipCertificate, label: 'Internship Completion' })} className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
                                                     <CheckCircle2 size={16} /> View Document
-                                                </a>
+                                                </button>
                                             ) : (
                                                 <p className="mt-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Not Submitted</p>
                                             )}
@@ -734,9 +890,9 @@ export default function EditDoctorProfilePage() {
                                         <div>
                                             <h4 className="font-bold text-sm text-gray-900 dark:text-white">Registration Certificate</h4>
                                             {formData.registrationCertificate ? (
-                                                <a href={formData.registrationCertificate} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
+                                                <button type="button" onClick={() => setDocViewer({ url: formData.registrationCertificate, label: 'Registration Certificate' })} className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
                                                     <CheckCircle2 size={16} /> View Document
-                                                </a>
+                                                </button>
                                             ) : (
                                                 <p className="mt-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Not Submitted</p>
                                             )}
@@ -779,11 +935,16 @@ export default function EditDoctorProfilePage() {
                                             <p className="text-[10px] text-gray-500">Upload your Medical Council Registration (PDF/Image)</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 sm:gap-3">
                                         {formData.registrationCertificate && (
-                                            <a href={formData.registrationCertificate} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
-                                                <CheckCircle2 size={12} /> View
-                                            </a>
+                                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                                <button type="button" onClick={() => setDocViewer({ url: formData.registrationCertificate, label: 'Registration Certificate' })} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] sm:text-[11px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
+                                                    <CheckCircle2 size={12} /> View
+                                                </button>
+                                                <button onClick={() => handleDeleteDocument('registrationCertificate')} className="p-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors">
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
                                         )}
                                         <div className="flex flex-col items-end gap-1">
                                             <label className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all">
@@ -792,13 +953,17 @@ export default function EditDoctorProfilePage() {
                                                 <input type="file" name="registrationCertificate" onChange={handleFileChange} className="hidden" accept="*" />
                                             </label>
                                             {files['registrationCertificate'] && (
-                                                <span className="text-[10px] text-gray-500 font-medium max-w-[150px] truncate">
+                                                <span className="text-[10px] text-gray-500 font-medium max-w-[100px] sm:max-w-[150px] truncate">
                                                     {files['registrationCertificate'].name}
                                                 </span>
                                             )}
                                         </div>
                                     </div>
                                 </div>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-2">Only PDF and any type of image only. Max 5MB</p>
+                                {uploadErrors.registrationCertificate && (
+                                    <p className="text-[10px] text-rose-500 font-bold uppercase tracking-tighter mt-1 animate-bounce">{uploadErrors.registrationCertificate}</p>
+                                )}
                             </div>
 
                             <div className="pt-8 border-t border-gray-50 dark:border-gray-800">
@@ -929,7 +1094,14 @@ export default function EditDoctorProfilePage() {
                     )}
                 </div>
             </div>
-            {/* Removed Cropper Modal for performance */}
+
+            {/* DOCUMENT VIEWER MODAL */}
+            <DocumentViewerModal
+                isOpen={!!docViewer}
+                onClose={() => setDocViewer(null)}
+                url={docViewer?.url || ''}
+                title={docViewer?.label || ''}
+            />
         </div>
     );
 }

@@ -18,9 +18,12 @@ import {
   User,
   Upload,
   Trash2,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useHRDocuments, useHRStaff, useUploadHRDocument, useDeleteHRDocument } from '@/lib/integrations/hooks';
 import { toast } from 'react-hot-toast';
+import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
 
 const DocumentUploadModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const [selectedStaff, setSelectedStaff] = useState('');
@@ -54,10 +57,10 @@ const DocumentUploadModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-5xl w-full max-w-lg overflow-hidden shadow-2xl border border-gray-100 flex flex-col">
-        <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+        <div className="p-4 sm:p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
           <div>
-            <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Upload Document</h2>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Upload Document</h2>
+            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-0.5">
               Add a new credential to the vault
             </p>
           </div>
@@ -66,17 +69,17 @@ const DocumentUploadModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
           </button>
         </div>
 
-        <div className="p-8 space-y-6">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
+        <div className="p-4 sm:p-6 space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest pl-1">
               Select Staff Member
             </label>
             <div className="relative">
-              <User className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <User className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               <select
                 value={selectedStaff}
                 onChange={(e) => setSelectedStaff(e.target.value)}
-                className="w-full pl-14 pr-6 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold text-[11px] uppercase tracking-widest appearance-none cursor-pointer"
+                className="w-full pl-14 pr-6 py-3 border-none bg-gray-50 rounded-xl focus:ring-2 focus:ring-indigo-500 font-bold text-[10px] uppercase tracking-widest appearance-none cursor-pointer"
               >
                 <option value="">Choose Staff...</option>
                 {staffListRes?.data?.map((staff: any) => (
@@ -88,11 +91,11 @@ const DocumentUploadModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
+          <div className="space-y-1.5">
+            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest pl-1">
               Document Type
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               {[
                 { label: 'Degree Certificate', value: 'degreeCertificate' },
                 { label: 'Registration', value: 'registrationCertificate' },
@@ -104,7 +107,7 @@ const DocumentUploadModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                 <button
                   key={type.value}
                   onClick={() => setDocType(type.value)}
-                  className={`px-4 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest border transition-all ${docType === type.value
+                  className={`px-3 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest border transition-all ${docType === type.value
                     ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100'
                     : 'bg-white border-gray-100 text-gray-500 hover:border-indigo-200'
                     }`}
@@ -115,20 +118,33 @@ const DocumentUploadModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
+          <div className="space-y-1.5">
+            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest pl-1">
               Document File
             </label>
             <div className="relative group">
               <input
                 type="file"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                onChange={(e) => {
+                  const selectedFile = e.target.files?.[0];
+                  if (selectedFile) {
+                    if (selectedFile.size > 5 * 1024 * 1024) {
+                      toast.error("File size limits 5MB. Please choose a smaller file.");
+                      e.target.value = ''; // Reset input
+                      setFile(null);
+                      return;
+                    }
+                    setFile(selectedFile);
+                  } else {
+                    setFile(null);
+                  }
+                }}
                 className="hidden"
                 id="file-upload"
               />
               <label
                 htmlFor="file-upload"
-                className={`w-full flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-3xl transition-all cursor-pointer ${file ? 'border-emerald-200 bg-emerald-50/30' : 'border-gray-200 bg-gray-50/50 hover:bg-gray-100/50'
+                className={`w-full flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-2xl transition-all cursor-pointer ${file ? 'border-emerald-200 bg-emerald-50/30' : 'border-gray-200 bg-gray-50/50 hover:bg-gray-100/50'
                   }`}
               >
                 {file ? (
@@ -152,21 +168,21 @@ const DocumentUploadModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
           </div>
         </div>
 
-        <div className="p-8 bg-gray-50/50 border-t border-gray-50 flex gap-4">
+        <div className="p-4 sm:p-6 bg-gray-50/50 border-t border-gray-50 flex gap-4">
           <button
             disabled={uploadMutation.isPending}
             onClick={onClose}
-            className="flex-1 px-6 py-4 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] transition-all"
+            className="flex-1 px-4 py-3 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all"
           >
             Cancel
           </button>
           <button
             disabled={uploadMutation.isPending}
             onClick={handleUpload}
-            className="flex-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-2 disabled:opacity-50"
+            className="flex-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {uploadMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderOpen size={16} />}
-            {uploadMutation.isPending ? 'Uploading...' : 'Publish to Vault'}
+            {uploadMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderOpen size={14} />}
+            {uploadMutation.isPending ? 'Uploading...' : 'Publish'}
           </button>
         </div>
       </div>
@@ -174,83 +190,34 @@ const DocumentUploadModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   );
 };
 
-const DocumentViewerModal = ({ isOpen, onClose, url, title }: any) => {
-  if (!isOpen) return null;
-
-  const getViewUrl = (originalUrl: string) => {
-    if (!originalUrl) return '';
-    if (originalUrl.includes('cloudinary.com')) {
-      return originalUrl
-        .replace('/upload/fl_attachment/', '/upload/')
-        .replace('/upload/', '/upload/fl_attachment:false/');
-    }
-    return originalUrl;
-  };
-
-  const viewUrl = getViewUrl(url);
-
-  return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-0 sm:p-6 bg-[#020617]/40 backdrop-blur-xl animate-in fade-in duration-300">
-      <div className="bg-white dark:bg-[#0a0a09] w-full h-full sm:h-[92vh] sm:max-w-5xl sm:rounded-[3rem] overflow-hidden flex flex-col relative shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)] border border-white/10">
-        <div className="p-6 sm:p-8 border-b border-gray-100 dark:border-gray-800/50 flex items-center justify-between bg-white/80 dark:bg-black/80 backdrop-blur-md sticky top-0 z-10">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-100 dark:border-indigo-500/20">
-              <FileText size={24} />
-            </div>
-            <div>
-              <h3 className="font-black text-xs sm:text-sm text-gray-900 dark:text-white uppercase tracking-[0.2em] truncate max-w-[200px] sm:max-w-md">{title}</h3>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Institutional Document Vault</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-2xl text-gray-400 active:scale-95 transition-all shadow-sm border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
-          >
-            <X size={20} />
-          </button>
-        </div>
-        <div className="flex-1 overflow-auto bg-gray-50/50 dark:bg-[#050505] flex items-center justify-center p-4">
-          {viewUrl?.toLowerCase().includes('.pdf') || viewUrl?.toLowerCase().includes('raw') || viewUrl?.toLowerCase().includes('pdf') ? (
-            <div className="w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-gray-200/50 dark:border-gray-800/50">
-              <iframe
-                src={`https://docs.google.com/viewer?url=${encodeURIComponent(viewUrl)}&embedded=true`}
-                className="w-full h-full border-none"
-                title={title}
-              />
-            </div>
-          ) : (
-            <div className="relative group p-4">
-              <img src={viewUrl} alt={title} className="max-w-full h-auto shadow-2xl rounded-2xl border border-white/20" />
-              <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-black/10 pointer-events-none" />
-            </div>
-          )}
-        </div>
-        <div className="p-4 border-t border-gray-100 dark:border-gray-800/50 bg-white/50 dark:bg-black/50 text-center">
-          <div className="flex items-center justify-center gap-2">
-            <CheckCircle2 size={12} className="text-indigo-500" />
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Institutional Secure Document Viewer</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+// Removed inline DocumentViewerModal in favor of centralized import
 
 export default function DocumentVaultPage() {
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [viewer, setViewer] = useState({ isOpen: false, url: '', title: '' });
 
   const { data: documentResponse, isLoading } = useHRDocuments({
     category: filter,
     search: searchTerm,
+    page,
+    limit,
   } as any);
 
   const deleteMutation = useDeleteHRDocument();
 
   const statsData = documentResponse?.stats || {};
   const documents = documentResponse?.data || [];
+
+  // Try to use backend pagination, otherwise fallback to stats total
+  const pagination = documentResponse?.pagination || {};
+  const totalPagesResp = pagination.totalPages || Math.ceil((parseInt(statsData.totalDocuments || '0', 10) || 0) / limit) || 1;
+  const totalPages = Math.max(1, totalPagesResp);
+
   const categories = documentResponse?.categories || [
     { name: 'All Documents', value: 'all', count: 0 },
     { name: 'Contracts', value: 'contracts', count: 0 },
@@ -338,39 +305,41 @@ export default function DocumentVaultPage() {
   };
 
   return (
-    <div className="p-8 space-y-6 bg-gray-50 min-h-screen font-sans">
-      {/* HEADER BAR — same pattern as Recruitment page */}
-      <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm min-h-[72px]">
-        {/* LEFT: title + subtitle */}
-        <div className="flex flex-col gap-0.5 shrink-0">
-          <h1 className="text-xl font-black text-gray-900 tracking-tight leading-none uppercase">Document Vault</h1>
-          <p className="text-slate-500 text-[10px] font-medium uppercase tracking-tight">Securely manage staff contracts, identification, and medical credentials.</p>
+    <div className="p-4 sm:p-6 md:px-6 space-y-6 bg-gray-50 min-h-screen font-sans w-full max-w-[100vw] overflow-x-hidden">
+      {/* HEADER BAR */}
+      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm min-h-[72px] w-full">
+        {/* LEFT: title */}
+        <div className="flex flex-col justify-center shrink-0 w-full lg:w-auto">
+          <h1 className="text-lg font-black text-gray-900 tracking-tight leading-none uppercase">Document Vault</h1>
+          <p className="mt-1 text-slate-500 text-[10px] font-medium uppercase tracking-tight">Securely manage staff contracts, IDs, and medical credentials</p>
         </div>
 
-        {/* CENTER: Upload button */}
-        <div className="flex-1 flex items-center justify-center">
-          <button
-            onClick={() => setIsUploadModalOpen(true)}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-lg shadow-indigo-100 text-[10px] uppercase tracking-widest"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Upload Document
-          </button>
-        </div>
+        {/* RIGHT SIDE (Upload & Stats wrapped) */}
+        <div className="flex flex-col md:flex-row flex-wrap items-start md:items-center gap-3 sm:gap-4 w-full xl:w-auto flex-1 justify-start xl:justify-end">
 
-        {/* RIGHT: Stats */}
-        <div className="flex items-center shrink-0">
-          <div className="flex items-center gap-6 px-6 py-2 bg-slate-50/50 rounded-xl border border-slate-100">
+          {/* Upload button */}
+          <div className="shrink-0 w-full md:w-auto">
+            <button
+              onClick={() => setIsUploadModalOpen(true)}
+              className="flex items-center justify-center gap-2 w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-indigo-100 text-[10px] uppercase tracking-widest"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Upload Document
+            </button>
+          </div>
+
+          {/* Stats */}
+          <div className="flex flex-wrap items-center gap-y-3 gap-x-4 sm:gap-x-5 px-4 sm:px-5 py-2.5 bg-slate-50/50 rounded-xl border border-slate-100">
             {stats.map((stat, i) => (
               <React.Fragment key={i}>
                 <div className="flex flex-col">
                   <div className={`flex items-center gap-1.5 mb-0.5 ${stat.color}`}>
-                    <stat.icon size={12} />
-                    <span className="text-[8px] font-black uppercase tracking-widest">{stat.label}</span>
+                    <stat.icon size={10} />
+                    <span className="text-[7.5px] font-black uppercase tracking-widest">{stat.label}</span>
                   </div>
-                  <p className="text-lg font-black text-slate-900 leading-none">{stat.value}</p>
+                  <p className="text-base font-black text-slate-900 leading-none">{stat.value}</p>
                 </div>
-                {i < stats.length - 1 && <div className="w-px h-8 bg-slate-200" />}
+                {i < stats.length - 1 && <div className="w-px h-6 bg-slate-200 hidden sm:block" />}
               </React.Fragment>
             ))}
           </div>
@@ -385,7 +354,7 @@ export default function DocumentVaultPage() {
               {categories.map((cat: any) => (
                 <button
                   key={cat.value}
-                  onClick={() => setFilter(cat.value)}
+                  onClick={() => { setFilter(cat.value); setPage(1); }}
                   className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all ${filter === cat.value
                     ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100'
                     : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
@@ -422,16 +391,49 @@ export default function DocumentVaultPage() {
 
         <div className="lg:col-span-3">
           <div className="bg-white rounded-4xl border border-gray-100 shadow-sm overflow-hidden flex flex-col h-full min-h-[600px]">
-            <div className="p-8 border-b border-gray-50 bg-gray-50/30">
-              <div className="relative">
+            <div className="p-6 border-b border-gray-50 bg-gray-50/30 flex flex-col md:flex-row items-center gap-6 justify-between">
+              <div className="relative flex-1 w-full">
                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
                   placeholder="Search vault by staff name or document title..."
                   className="w-full pl-14 pr-6 py-4 bg-white border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold text-[11px] uppercase tracking-widest shadow-inner shadow-gray-100/50"
                 />
+              </div>
+
+              {/* Pagination controls on the same line */}
+              <div className="flex items-center gap-6 bg-white px-6 py-2 rounded-2xl border border-gray-100 shadow-sm shrink-0 w-full md:w-auto overflow-x-auto justify-center md:justify-start custom-scrollbar">
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                    className="p-1 min-w-[32px] min-h-[32px] flex items-center justify-center rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 transition-all font-bold"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <span className="text-[7.5px] font-black uppercase tracking-widest text-gray-400 mt-0.5">
+                    {page - 1} Prev
+                  </span>
+                </div>
+
+                <span className="text-[10px] font-black px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl uppercase tracking-widest whitespace-nowrap">
+                  Page {page}
+                </span>
+
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                    className="p-1 min-w-[32px] min-h-[32px] flex items-center justify-center rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-30 transition-all font-bold"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                  <span className="text-[7.5px] font-black uppercase tracking-widest text-gray-400 mt-0.5">
+                    {Math.max(0, totalPages - page)} Next
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -512,10 +514,10 @@ export default function DocumentVaultPage() {
                         <td className="px-5 py-3">
                           <span
                             className={`px-3 py-1 text-[9px] font-black uppercase tracking-[0.15rem] rounded-lg border flex items-center gap-1.5 w-fit ${doc.status === 'verified'
-                                ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                                : doc.status === 'expiring'
-                                  ? 'bg-amber-50 text-amber-600 border-amber-100'
-                                  : 'bg-gray-50 text-gray-600 border-gray-100'
+                              ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                              : doc.status === 'expiring'
+                                ? 'bg-amber-50 text-amber-600 border-amber-100'
+                                : 'bg-gray-50 text-gray-600 border-gray-100'
                               }`}
                           >
                             <div

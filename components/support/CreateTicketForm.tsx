@@ -78,12 +78,12 @@ function CreateTicketForm({ onSuccess, basePath }: CreateTicketFormProps) {
 
     return (
         <>
-            <form onSubmit={handleSubmit} className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Category</label>
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-8">
+                    <div className="space-y-1.5 sm:space-y-3">
+                        <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Category</label>
                         <select
-                            className="w-full p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold dark:text-white appearance-none"
+                            className="w-full p-2 sm:p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-xl sm:rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm font-bold dark:text-white appearance-none"
                             value={formData.category}
                             onChange={e => setFormData({ ...formData, category: e.target.value })}
                         >
@@ -94,12 +94,12 @@ function CreateTicketForm({ onSuccess, basePath }: CreateTicketFormProps) {
                         </select>
                     </div>
 
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Subject</label>
+                    <div className="space-y-1.5 sm:space-y-3">
+                        <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Subject</label>
                         <input
                             type="text"
                             required
-                            className="w-full p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold dark:text-white"
+                            className="w-full p-2 sm:p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-xl sm:rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm font-bold dark:text-white"
                             placeholder="Brief summary of the issue"
                             value={formData.subject}
                             onChange={e => setFormData({ ...formData, subject: e.target.value })}
@@ -107,12 +107,12 @@ function CreateTicketForm({ onSuccess, basePath }: CreateTicketFormProps) {
                     </div>
                 </div>
 
-                <div className="space-y-3">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Message</label>
+                <div className="space-y-1.5 sm:space-y-3">
+                    <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Message</label>
                     <textarea
                         required
-                        rows={6}
-                        className="w-full p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium dark:text-white resize-none"
+                        rows={4}
+                        className="w-full p-2 sm:p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-xl sm:rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm font-medium dark:text-white resize-none"
                         placeholder="Describe your issue in detail..."
                         value={formData.message}
                         onChange={e => setFormData({ ...formData, message: e.target.value })}
@@ -155,9 +155,9 @@ function CreateTicketForm({ onSuccess, basePath }: CreateTicketFormProps) {
                 <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-[0.3em] text-xs shadow-xl shadow-blue-500/20 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
+                    className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[10px] sm:text-xs shadow-xl shadow-blue-500/20 active:scale-95 flex items-center justify-center gap-2 sm:gap-3 disabled:opacity-50"
                 >
-                    {loading ? <Activity className="w-5 h-5 animate-spin" /> : <><Send size={18} /> Submit Ticket</>}
+                    {loading ? <Activity className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <><Send size={14} /> Submit Ticket</>}
                 </button>
             </form>
         </>

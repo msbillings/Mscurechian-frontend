@@ -175,9 +175,7 @@ export const useHRDocuments = (params?: {
   return useQuery({
     queryKey: ["hr", "documents", params],
     queryFn: () => hrService.getDocuments(params),
-    refetchInterval: 5000,        // Poll every 5s → new uploads appear automatically
-    refetchOnWindowFocus: true,   // Instant refresh when HR switches back to this tab
-    staleTime: 0,                 // Always treat data as stale so refetches run
+    refetchOnWindowFocus: true,   // Refresh when HR switches back to this tab
   });
 };
 

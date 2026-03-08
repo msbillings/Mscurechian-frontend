@@ -109,21 +109,24 @@ export default function PatientDischargeView() {
     if (!record) return null;
 
     return (
-        <div className="min-h-screen bg-slate-100 pb-10">
-            {/* MOBILE HEADER */}
-            <div className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b border-slate-200 z-50 px-4 py-3 flex items-center justify-between">
-                <button onClick={() => router.back()} className="p-2 rounded-full hover:bg-slate-100">
-                    <ArrowLeft size={20} className="text-slate-600" />
+        <div className="min-h-screen bg-slate-50 pb-10">
+            {/* COMPACT PAGE HEADER */}
+            <div className="bg-white/40 backdrop-blur-sm border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 sm:relative sm:top-auto z-10 sm:z-0">
+                <button onClick={() => router.back()} className="p-2 rounded-xl hover:bg-slate-100 group transition-all">
+                    <ArrowLeft size={18} className="text-slate-600 group-hover:-translate-x-1 transition-transform" />
                 </button>
-                <p className="text-xs font-black text-slate-900 uppercase tracking-widest">Discharge Summary</p>
-
+                <div className="text-center">
+                    <p className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">Discharge Summary</p>
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Verified Medical Record</p>
+                </div>
+                <div className="w-10"></div> {/* Spacer for symmetry */}
             </div>
 
             {/* CONTENT CONTAINER */}
-            <div className="pt-20 px-4 max-w-3xl mx-auto space-y-4">
+            <div className="pt-6 px-4 max-w-4xl mx-auto space-y-4">
 
                 {/* PDF PRINTABLE AREA */}
-                <div ref={componentRef} className="bg-white p-6 md:p-10 rounded-[24px] shadow-sm print:shadow-none print:rounded-none print:p-0">
+                <div ref={componentRef} className="bg-white p-5 sm:p-10 rounded-[2rem] sm:rounded-[3rem] shadow-sm ring-1 ring-slate-100 print:shadow-none print:rounded-none print:p-0 print:ring-0">
 
                     {/* HOSPITAL HEADER */}
                     <div className="text-center border-b-2 border-slate-100 pb-6 mb-6">

@@ -16,8 +16,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 const DocumentViewerModal = ({ isOpen, onClose, url, title }: any) => {
     if (!isOpen) return null;
     return (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-[#0a0a0a] w-full h-full sm:h-[90vh] sm:max-w-4xl sm:rounded-[2rem] overflow-hidden flex flex-col relative shadow-2xl">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-8 md:p-12 bg-[#020617]/80 backdrop-blur-xl animate-in fade-in duration-300">
+            <div className="bg-white dark:bg-[#0a0a09] w-full h-full max-h-[90vh] max-w-6xl rounded-[2.5rem] sm:rounded-[3.5rem] overflow-hidden flex flex-col relative shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)] border border-white/10">
                 <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-white/50 dark:bg-black/50 backdrop-blur-md sticky top-0 z-10">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-600">

@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { helpdeskEmergencyService } from "@/lib/integrations/services/helpdesk-emergency.service";
 import { EmergencyRequest } from "@/lib/integrations/types/emergency";
+import { toast } from "react-hot-toast";
 
 function EmergencyRequestsPage() {
     const params = useParams();
@@ -28,6 +29,7 @@ function EmergencyRequestsPage() {
     const [selectedRequest, setSelectedRequest] = useState<EmergencyRequest | null>(null);
     const [notes, setNotes] = useState("");
     const [rejectionReason, setRejectionReason] = useState("");
+    const lastPendingCount = React.useRef(0);
 
     useEffect(() => {
         loadRequests();
@@ -39,7 +41,44 @@ function EmergencyRequestsPage() {
     const loadRequests = async () => {
         try {
             const response = await helpdeskEmergencyService.getHospitalEmergencyRequests();
-            setRequests(response.requests);
+            const newRequests = response.requests;
+            setRequests(newRequests);
+
+            // Check if this hospital's pending count increased
+            const currentPending = newRequests.filter(r => {
+                const rh = r.requestedHospitals.find(h =>
+                    (typeof h.hospital === 'string' ? h.hospital === hospitalId : h.hospital?._id === hospitalId)
+                );
+                return rh?.status === "pending";
+            }).length;
+
+            if (currentPending > lastPendingCount.current) {
+                // Find the latest pending request for this hospital
+                const latestRequest = newRequests.find(r => {
+                    const rh = r.requestedHospitals.find(h =>
+                        (typeof h.hospital === 'string' ? h.hospital === hospitalId : h.hospital?._id === hospitalId)
+                    );
+                    return rh?.status === "pending";
+                });
+
+                const patientName = latestRequest?.patientName || "UNKNOWN";
+                const type = latestRequest?.emergencyType || "EMERGENCY";
+                const vehicle = latestRequest?.ambulancePersonnel?.vehicleNumber || "DIRECT";
+
+                // Trigger Sound & Notification
+                toast.error(`NEW SIGNAL: ${patientName} (${type}) | ASSET: ${vehicle}`, {
+                    icon: '🚨',
+                    duration: 10000,
+                    className: 'font-black uppercase tracking-widest text-[9px] bg-red-600 text-white shadow-2xl border-2 border-white'
+                });
+
+                try {
+                    const audio = new Audio('https://res.cloudinary.com/dnjxgcl3f/video/upload/v1772986420/alert_mscure.mp3');
+                    audio.play().catch(e => console.warn("Audio play blocked:", e));
+                } catch (e) { }
+            }
+            lastPendingCount.current = currentPending;
+
         } catch (error) {
             console.error("Error loading emergency requests:", error);
         } finally {
@@ -113,7 +152,7 @@ function EmergencyRequestsPage() {
     };
 
     const getHospitalStatus = (r: EmergencyRequest) => {
-        const rh = r.requestedHospitals.find(h => 
+        const rh = r.requestedHospitals.find(h =>
             (typeof h.hospital === 'string' ? h.hospital === hospitalId : h.hospital?._id === hospitalId)
         );
         return rh?.status || "pending";
@@ -276,9 +315,8 @@ function EmergencyRequestsPage() {
                                 <div className="p-6">
                                     <div className="flex justify-between items-center mb-4">
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg uppercase shadow-inner ${
-                                                getHospitalStatus(request) === 'accepted' ? 'bg-teal-100 text-teal-600' : 'bg-slate-100 text-slate-400'
-                                            }`}>
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg uppercase shadow-inner ${getHospitalStatus(request) === 'accepted' ? 'bg-teal-100 text-teal-600' : 'bg-slate-100 text-slate-400'
+                                                }`}>
                                                 {request.patientName?.charAt(0)}
                                             </div>
                                             <div>
@@ -306,14 +344,14 @@ function EmergencyRequestsPage() {
                                             )}
                                         </div>
                                     </div>
-                                    
+
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-y border-slate-50">
                                         <StatusItem label="Field Case" value={request.emergencyType} color="slate" />
                                         <StatusItem label="Location" value={request.currentLocation} color="slate" />
                                         <StatusItem label="Severity" value={request.severity} color="rose" />
                                         <StatusItem label="Field Asset" value={request.ambulancePersonnel?.vehicleNumber || 'Direct Case'} color="slate" />
                                     </div>
-                                    
+
                                     <div className="mt-4 flex flex-col gap-2">
                                         <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Field Condition Notes:</p>
                                         <p className="text-xs text-slate-500 italic">"{request.description}"</p>

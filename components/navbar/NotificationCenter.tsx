@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Check, Trash2, Clock, Inbox, MoreVertical } from 'lucide-react';
 import { notificationService, AppNotification } from '@/lib/integrations';
 import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface NotificationCenterProps {
   showAuditHistory?: boolean;
@@ -204,8 +205,8 @@ function NotificationCenter({ showAuditHistory = true }: NotificationCenterProps
     }
   };
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDelete = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     try {
       await notificationService.deleteNotification(id);
       setNotifications(prev => prev.filter(n => {
@@ -307,69 +308,96 @@ function NotificationCenter({ showAuditHistory = true }: NotificationCenterProps
           {/* List */}
           <div className="max-h-[400px] overflow-y-auto divide-y divide-gray-50 dark:divide-gray-800">
             {notifications.length > 0 ? (
-              notifications.map((notif, idx) => {
-                const notifId = typeof notif._id === 'object' ? (notif._id as any).$oid : notif._id;
-                const key = notifId || `notif-${idx}`;
-                return (
-                  <div
-                    key={key}
-                    onClick={() => {
-                      if (['discharge_initiated', 'discharge_pending'].includes(notif.type)) {
-                        const rel = notif.relatedId;
-                        const admissionId = (notif as any).admissionId; // Use admissionId if payload has it
-
-                        if (admissionId) {
-                          window.location.href = `/discharge?admissionId=${admissionId}`;
-                        } else if (rel) {
-                          const relatedIdStr = (rel as any).$oid || (rel as any)?.toString() || String(rel);
-                          // If it's an ObjectId, we'll try to use it as id (fallback)
-                          window.location.href = `/discharge?id=${relatedIdStr}`;
+              <AnimatePresence initial={false}>
+                {notifications.map((notif, idx) => {
+                  const notifId = typeof notif._id === 'object' ? (notif._id as any).$oid : notif._id;
+                  const key = notifId || `notif-${idx}`;
+                  return (
+                    <motion.div
+                      key={key}
+                      initial={{ opacity: 0, x: 0 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -100 }}
+                      drag="x"
+                      dragConstraints={{ left: -100, right: 100 }}
+                      dragElastic={0.05}
+                      onDragEnd={(_, info) => {
+                        if (Math.abs(info.offset.x) > 80) {
+                          handleDelete(notifId, { stopPropagation: () => { } } as any);
                         }
-                      }
-                      handleMarkAsRead(notifId);
-                    }}
-                    className={`p-3 sm:p-5 hover:bg-gray-50 dark:hover:bg-gray-800/50 group relative cursor-pointer ${!notif.isRead ? 'bg-blue-50/20 dark:bg-blue-900/10' : ''}`}
-                  >
-                    <div className="flex gap-2 sm:gap-4">
-                      <div className={`mt-1.5 h-1.5 w-1.5 rounded-full shrink-0 ${!notif.isRead ? 'bg-blue-600' : 'bg-transparent'}`} />
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-[10px] sm:text-sm leading-tight sm:leading-relaxed ${!notif.isRead ? 'text-gray-900 dark:text-white font-bold' : 'text-gray-600 dark:text-gray-400'}`}>
-                          {notif.message}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1.5 text-[7px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-2.5 h-2.5 sm:w-3 h-3" />
-                            {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                          <span>•</span>
-                          <span>{new Date(notif.createdAt).toLocaleDateString()}</span>
+                      }}
+                      className="relative overflow-hidden bg-white dark:bg-gray-900"
+                    >
+                      {/* Delete Background Indicator */}
+                      <div className="absolute inset-0 bg-rose-500/10 flex items-center justify-between px-6 pointer-events-none">
+                        <Trash2 className="text-rose-600" size={20} />
+                        <Trash2 className="text-rose-600" size={20} />
+                      </div>
+
+                      <div
+                        onClick={() => {
+                          if (['discharge_initiated', 'discharge_pending'].includes(notif.type)) {
+                            const rel = notif.relatedId;
+                            const admissionId = (notif as any).admissionId;
+
+                            if (admissionId) {
+                              window.location.href = `/discharge?admissionId=${admissionId}`;
+                            } else if (rel) {
+                              const relatedIdStr = (rel as any).$oid || (rel as any)?.toString() || String(rel);
+                              window.location.href = `/discharge?id=${relatedIdStr}`;
+                            }
+                          }
+                          handleMarkAsRead(notifId);
+                        }}
+                        className={`p-3 sm:p-5 hover:bg-gray-50 dark:hover:bg-gray-800/50 group relative cursor-pointer transition-colors bg-white dark:bg-gray-900 ${!notif.isRead ? 'bg-blue-50/10 dark:bg-blue-900/10' : ''}`}
+                        style={{ position: 'relative', zIndex: 10 }}
+                      >
+                        <div className="flex gap-2 sm:gap-4">
+                          <div className={`mt-1.5 h-1.5 w-1.5 rounded-full shrink-0 ${!notif.isRead ? 'bg-blue-600' : 'bg-transparent'}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-[10px] sm:text-sm leading-tight sm:leading-relaxed ${!notif.isRead ? 'text-gray-900 dark:text-white font-bold' : 'text-gray-600 dark:text-gray-400'}`}>
+                              {notif.message}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1.5 text-[7px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-2.5 h-2.5 sm:w-3 h-3" />
+                                {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              <span>•</span>
+                              <span>{new Date(notif.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-2 shrink-0">
+                            {!notif.isRead && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMarkAsRead(notifId);
+                                }}
+                                className="sm:opacity-0 sm:group-hover:opacity-100 p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg text-blue-600 shadow-sm transition-all"
+                                title="Mark as read"
+                              >
+                                <Check className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={(e) => handleDelete(notifId, e)}
+                              className="sm:opacity-0 sm:group-hover:opacity-100 p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg text-rose-600 shadow-sm transition-all"
+                              title="Delete notification"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        {/* Swipe Hint for Mobile */}
+                        <div className="sm:hidden mt-2 flex justify-center">
+                          <div className="w-4 h-1 rounded-full bg-gray-200 dark:bg-gray-800" />
                         </div>
                       </div>
-                      <div className="flex flex-col gap-2">
-                        {!notif.isRead && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleMarkAsRead(notifId);
-                            }}
-                            className="opacity-0 group-hover:opacity-100 p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg text-blue-600 shadow-sm transition-all"
-                            title="Mark as read"
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                        )}
-                        <button
-                          onClick={(e) => handleDelete(notifId, e)}
-                          className="opacity-0 group-hover:opacity-100 p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg text-rose-600 shadow-sm transition-all"
-                          title="Delete notification"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
             ) : (
               <div className="py-20 flex flex-col items-center justify-center text-center px-4">
                 <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-300 dark:text-gray-600 mb-4">

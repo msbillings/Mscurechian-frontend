@@ -14,57 +14,10 @@ import {
 import { getStaffProfileAction, getStaffDashboardAction } from '@/lib/integrations/actions/staff.actions';
 import StaffProfileHeader from '@/components/staff/StaffProfileHeader';
 import StaffTrainingHistoryClient from '@/components/staff/StaffTrainingHistoryClient';
+import { format } from 'date-fns';
+import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
 
-// --- Document Viewer Modal ---
-const DocViewerModal = ({ isOpen, onClose, url, title }: { isOpen: boolean; onClose: () => void; url: string; title: string }) => {
-    if (!isOpen) return null;
-    const getViewUrl = (u: string) => {
-        if (!u) return '';
-        if (u.includes('cloudinary.com')) {
-            return u.replace('/upload/fl_attachment/', '/upload/').replace('/upload/', '/upload/fl_attachment:false/');
-        }
-        return u;
-    };
-    const viewUrl = getViewUrl(url);
-    const isPdf = viewUrl?.toLowerCase().includes('pdf') || viewUrl?.toLowerCase().includes('raw');
-    return (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-0 sm:p-6 bg-black/50 backdrop-blur-xl animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-[#0a0a09] w-full h-full sm:h-[92vh] sm:max-w-5xl sm:rounded-[3rem] overflow-hidden flex flex-col shadow-2xl border border-white/10">
-                <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between sticky top-0 z-10 bg-white/90 dark:bg-black/90 backdrop-blur-md">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-600 border border-indigo-100 dark:border-indigo-500/20">
-                            <FileText size={20} />
-                        </div>
-                        <div>
-                            <h3 className="font-black text-sm text-gray-900 dark:text-white uppercase tracking-wider truncate max-w-[220px] sm:max-w-md">{title}</h3>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Institutional Document Vault</p>
-                        </div>
-                    </div>
-                    <button onClick={onClose} className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-2xl text-gray-400 transition-all border border-transparent hover:border-gray-200 dark:hover:border-gray-700">
-                        <X size={18} />
-                    </button>
-                </div>
-                <div className="flex-1 overflow-auto bg-gray-50 dark:bg-[#050505] flex items-center justify-center p-4">
-                    {isPdf ? (
-                        <div className="w-full h-full rounded-2xl overflow-hidden shadow-xl border border-gray-200/50 dark:border-gray-800/50">
-                            <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(viewUrl)}&embedded=true`} className="w-full h-full border-none" title={title} />
-                        </div>
-                    ) : (
-                        <div className="relative p-4">
-                            <img src={viewUrl} alt={title} className="max-w-full h-auto shadow-2xl rounded-2xl border border-white/20" />
-                        </div>
-                    )}
-                </div>
-                <div className="p-3 border-t border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-black/50 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                        <CheckCircle2 size={11} className="text-indigo-500" />
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Secure Institutional Document Viewer</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
+// Removed inline DocViewerModal in favor of shared component
 
 // --- Credentials Document Viewer Component ---
 const CredentialsDocViewer = ({ documents }: { documents: any }) => {
@@ -73,29 +26,27 @@ const CredentialsDocViewer = ({ documents }: { documents: any }) => {
         { id: 'degreeCertificate', label: 'Degree Certificate' },
         { id: 'medicalCouncilRegistration', label: 'Medical Council Registration' },
         { id: 'nursingCouncilRegistration', label: 'Nursing Council Registration' },
-        { id: 'doctorateCertificate', label: 'Doctorate Certificate' },
+
         { id: 'internshipCertificate', label: 'Internship Certificate' },
     ];
     const uploadedCount = docs.filter(d => documents?.[d.id]?.url).length;
 
     return (
-        <div className="md:col-span-2 flex flex-col gap-4">
-            <DocViewerModal isOpen={viewer.isOpen} onClose={() => setViewer(v => ({ ...v, isOpen: false }))} url={viewer.url} title={viewer.title} />
+        <div className="md:col-span-2 flex flex-col gap-2">
+            <DocumentViewerModal isOpen={viewer.isOpen} onClose={() => setViewer((prev: any) => ({ ...prev, isOpen: false }))} url={viewer.url} title={viewer.title} />
 
-            {/* Progress header */}
             <div className="flex items-center justify-between">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                    {uploadedCount} of {docs.length} certificates uploaded
+                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">
+                    {uploadedCount} of {docs.length} certificates registered
                 </p>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5">
                     {docs.map((d, i) => (
-                        <div key={i} className={`w-2 h-2 rounded-full ${documents?.[d.id]?.url ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
+                        <div key={i} className={`w-1.5 h-1.5 rounded-full ${documents?.[d.id]?.url ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
                     ))}
                 </div>
             </div>
 
-            {/* Document rows */}
-            <div className="rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden divide-y divide-gray-50 dark:divide-gray-800/60">
+            <div className="rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden divide-y divide-gray-50 dark:divide-gray-800/60">
                 {docs.map((doc) => {
                     const docData = documents?.[doc.id];
                     const hasDoc = !!docData?.url;
@@ -103,58 +54,46 @@ const CredentialsDocViewer = ({ documents }: { documents: any }) => {
                     const isPdf = fileName?.toLowerCase().includes('.pdf');
 
                     return (
-                        <div key={doc.id} className={`flex items-center gap-3 px-4 py-3.5 transition-all ${hasDoc ? 'bg-white dark:bg-[#111]' : 'bg-gray-50/70 dark:bg-gray-900/30'} hover:bg-indigo-50/30 dark:hover:bg-indigo-500/5 group`}>
-                            {/* Status icon */}
-                            <div className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center border ${hasDoc ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-600' : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400'}`}>
-                                {hasDoc ? <CheckCircle2 size={16} /> : <FileText size={15} />}
+                        <div key={doc.id} className={`flex items-center gap-2 px-3 py-2 transition-all ${hasDoc ? 'bg-white dark:bg-[#111]' : 'bg-gray-50/70 dark:bg-gray-900/30'} hover:bg-indigo-50/30 dark:hover:bg-indigo-500/5 group`}>
+                            <div className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border ${hasDoc ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-600' : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400'}`}>
+                                {hasDoc ? <CheckCircle2 size={12} /> : <FileText size={12} />}
                             </div>
 
-                            {/* Name + filename */}
                             <div className="flex-1 min-w-0">
-                                <p className="text-[11px] sm:text-xs font-black text-gray-900 dark:text-white uppercase tracking-wide truncate">{doc.label}</p>
+                                <p className="text-[9px] font-black text-gray-900 dark:text-white uppercase tracking-tight truncate">{doc.label}</p>
                                 {hasDoc ? (
-                                    <div className="flex items-center gap-1.5 mt-0.5">
-                                        <span className={`inline-flex text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md ${isPdf ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-500' : 'bg-sky-50 dark:bg-sky-500/10 text-sky-500'}`}>
+                                    <div className="flex items-center gap-1 mt-0.5">
+                                        <span className={`inline-flex text-[7px] font-black uppercase px-1 py-0.5 rounded-md ${isPdf ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-500' : 'bg-sky-50 dark:bg-sky-500/10 text-sky-500'}`}>
                                             {isPdf ? 'PDF' : 'IMG'}
                                         </span>
-                                        <p className="text-[9px] text-gray-400 truncate max-w-[100px] sm:max-w-[160px]" title={fileName || ''}>{fileName || 'Uploaded'}</p>
+                                        <p className="text-[7px] text-gray-400 font-bold uppercase tracking-tighter truncate max-w-[80px] sm:max-w-[140px]">{fileName || 'Uploaded'}</p>
                                     </div>
                                 ) : (
-                                    <p className="text-[9px] text-amber-500 font-bold uppercase tracking-tighter mt-0.5">Not uploaded</p>
+                                    <p className="text-[7px] text-amber-500 font-black uppercase tracking-tighter mt-0.5">Missing Index</p>
                                 )}
                             </div>
 
-                            {/* Status badge (sm+) */}
                             <div className="hidden sm:block shrink-0">
                                 {hasDoc ? (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase rounded-full border border-emerald-100 dark:border-emerald-500/20">
-                                        <CheckCircle2 size={9} /> Uploaded
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[7px] font-black uppercase rounded-md border border-emerald-100 dark:border-emerald-500/20">
+                                        <CheckCircle2 size={7} /> Done
                                     </span>
                                 ) : (
-                                    <span className="inline-flex px-2 py-0.5 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-black uppercase rounded-full border border-amber-100 dark:border-amber-500/20">
-                                        Missing
+                                    <span className="inline-flex px-1.5 py-0.5 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[7px] font-black uppercase rounded-md border border-amber-100 dark:border-amber-500/20">
+                                        Void
                                     </span>
                                 )}
                             </div>
 
-                            {/* View / Upload button */}
-                            {hasDoc ? (
+                            {hasDoc && (
                                 <button
                                     type="button"
                                     onClick={() => setViewer({ isOpen: true, url: docData.url, title: doc.label })}
-                                    className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-500/60 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-300 hover:text-indigo-600 transition-all shadow-sm hover:shadow-md"
+                                    className="shrink-0 flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-400 rounded-md text-[8px] font-black uppercase tracking-widest text-gray-600 hover:text-indigo-600 transition-all shadow-sm"
                                 >
-                                    <Eye size={13} />
-                                    <span className="hidden sm:inline">View</span>
+                                    <Eye size={10} />
+                                    <span>View</span>
                                 </button>
-                            ) : (
-                                <Link
-                                    href="edit"
-                                    className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all"
-                                >
-                                    <Upload size={11} />
-                                    <span className="hidden sm:inline">Upload</span>
-                                </Link>
                             )}
                         </div>
                     );
@@ -217,7 +156,7 @@ export default function StaffProfileClient() {
     const staffDepartments = Array.isArray(profile.department) ? profile.department.join(', ') : (profile.department || 'General');
 
     return (
-        <div className="max-w-6xl mx-auto space-y-8 pb-32 pt-12 px-4 animate-in fade-in duration-700">
+        <div className="max-w-7xl mx-auto space-y-2 pb-6 pt-1 px-1 sm:px-2 animate-in fade-in duration-700">
             <StaffProfileHeader
                 profile={profile}
                 staffName={staffName}
@@ -225,176 +164,176 @@ export default function StaffProfileClient() {
                 staffExperience={staffExperience}
             />
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
                 {/* Left Column: Sidebar Details */}
-                <div className="lg:col-span-4 space-y-6">
+                <div className="lg:col-span-4 space-y-1.5">
                     {/* Contact Info Card */}
-                    <div className="bg-white dark:bg-[#111] p-6 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm space-y-5">
-                        <h3 className="font-black text-xs uppercase tracking-widest text-indigo-600 dark:text-indigo-400">Contact & Base Info</h3>
-                        <div className="space-y-4">
-                            <div className="flex items-start gap-4">
-                                <div className="p-2.5 bg-gray-50 dark:bg-gray-900 rounded-xl text-gray-400">
-                                    <Mail size={18} />
+                    <div className="bg-white dark:bg-[#111] p-1.5 sm:p-2.5 rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm space-y-1.5">
+                        <h3 className="font-black text-[8px] uppercase tracking-widest text-indigo-600 dark:text-indigo-400">Contact & Base Info</h3>
+                        <div className="space-y-2.5">
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded-lg text-gray-300">
+                                    <Mail size={14} />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase">Email Address</p>
-                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{staffEmail}</p>
+                                    <p className="text-[7px] font-black text-gray-400 uppercase tracking-tighter leading-none">Email Matrix</p>
+                                    <p className="text-[10px] font-black text-gray-900 dark:text-white leading-tight">{staffEmail}</p>
                                 </div>
                             </div>
-                            <div className="flex items-start gap-4">
-                                <div className="p-2.5 bg-gray-50 dark:bg-gray-900 rounded-xl text-gray-400">
-                                    <Phone size={18} />
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded-lg text-gray-300">
+                                    <Phone size={14} />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase">Phone Number</p>
-                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{staffPhone}</p>
+                                    <p className="text-[7px] font-black text-gray-400 uppercase tracking-tighter leading-none">Phone Identity</p>
+                                    <p className="text-[10px] font-black text-gray-900 dark:text-white leading-tight">{staffPhone}</p>
                                 </div>
                             </div>
-                            <div className="flex items-start gap-4">
-                                <div className="p-2.5 bg-gray-50 dark:bg-gray-900 rounded-xl text-gray-400">
-                                    <MapPin size={18} />
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded-lg text-gray-300">
+                                    <MapPin size={14} />
                                 </div>
-                                <div>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase">Hospital Placement</p>
-                                    <p className="text-sm font-semibold text-gray-900 dark:text-white leading-relaxed">
-                                        {profile.hospital?.name || 'Main Campus Center'}
+                                <div className="min-w-0">
+                                    <p className="text-[7px] font-black text-gray-400 uppercase tracking-tighter leading-none">Infrastructure Placement</p>
+                                    <p className="text-[10px] font-black text-gray-900 dark:text-white leading-tight truncate">
+                                        {profile.hospital?.name || 'Main Campus'}
                                     </p>
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase mt-0.5 tracking-tighter">Code: {profile.hospital?.code}</p>
+                                    <p className="text-[7px] font-black text-indigo-500 uppercase mt-0.5 tracking-tighter">NODE-{(profile.hospital as any)?.code}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-[#111] p-6 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm space-y-5">
-                        <h3 className="font-black text-xs uppercase tracking-widest text-gray-400">Profile Metadata</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Gender</p>
-                                <p className="text-sm font-bold text-gray-900 dark:text-white capitalize">{(profile.user as any)?.gender || 'N/A'}</p>
+                    <div className="bg-white dark:bg-[#111] p-1.5 sm:p-2.5 rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm space-y-1.5">
+                        <h3 className="font-black text-[8px] uppercase tracking-widest text-gray-400">Profile Metadata</h3>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="p-2 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-100 dark:border-gray-800">
+                                <p className="text-[7px] font-black text-gray-400 uppercase mb-0.5">Gender</p>
+                                <p className="text-[9px] font-black text-gray-900 dark:text-white capitalize">{(profile.user as any)?.gender || 'N/A'}</p>
                             </div>
-                            <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">DOB</p>
-                                <p className="text-sm font-bold text-gray-900 dark:text-white">
+                            <div className="p-2 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-100 dark:border-gray-800">
+                                <p className="text-[7px] font-black text-gray-400 uppercase mb-0.5">DOB Index</p>
+                                <p className="text-[9px] font-black text-gray-900 dark:text-white">
                                     {(profile.user as any)?.dateOfBirth ? new Date((profile.user as any).dateOfBirth).toLocaleDateString() : 'N/A'}
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-[#111] p-6 rounded-3xl border border-indigo-100 dark:border-indigo-900/30 shadow-sm space-y-5">
+                    <div className="bg-white dark:bg-[#111] p-1.5 sm:p-2.5 rounded-lg border border-indigo-100 dark:border-indigo-900/30 shadow-sm space-y-1.5">
                         <div className="flex items-center justify-between">
-                            <h3 className="font-extrabold text-sm text-gray-900 dark:text-white flex items-center gap-2">
-                                <ShieldCheck size={18} className="text-indigo-500" /> Identity Tokens
+                            <h3 className="font-black text-[9px] text-gray-900 dark:text-white flex items-center gap-1.5 uppercase tracking-tight">
+                                <ShieldCheck size={12} className="text-indigo-500" /> Identity Tokens
                             </h3>
-                            <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/20 text-indigo-600 text-[10px] font-black rounded-lg">VERIFIED</span>
+                            <span className="px-1 py-0.5 bg-indigo-100 dark:bg-indigo-900/20 text-indigo-600 text-[6px] font-black rounded-md">VERIFIED_SECURE</span>
                         </div>
-                        <div className="space-y-4">
+                        <div className="space-y-2">
                             <div>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase">PAN Number</p>
-                                <p className="text-sm font-black text-gray-900 dark:text-white uppercase">{profile.panNumber || 'Not Provided'}</p>
+                                <p className="text-[7px] font-black text-gray-400 uppercase leading-none">PAN ID</p>
+                                <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-tight">{profile.panNumber || 'VOID'}</p>
                             </div>
                             <div>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase">Aadhar Card</p>
-                                <p className="text-sm font-black text-gray-900 dark:text-white">
-                                    {profile.aadharNumber ? `**** **** ${profile.aadharNumber.slice(-4)}` : 'Not Provided'}
+                                <p className="text-[7px] font-black text-gray-400 uppercase leading-none">Aadhar ID</p>
+                                <p className="text-[10px] font-black text-gray-900 dark:text-white tracking-widest">
+                                    {profile.aadharNumber ? `****${profile.aadharNumber.slice(-4)}` : 'VOID'}
                                 </p>
                             </div>
-                            <div className="grid grid-cols-2 gap-2 pt-2">
-                                <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded-xl">
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase">UAN NO.</p>
-                                    <p className="text-xs font-bold text-indigo-600 uppercase">{profile.uanNumber || 'N/A'}</p>
+                            <div className="grid grid-cols-2 gap-1.5 pt-1">
+                                <div className="p-1.5 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800">
+                                    <p className="text-[7px] font-black text-gray-400 uppercase leading-none">UAN IDX</p>
+                                    <p className="text-[9px] font-black text-indigo-600 uppercase tracking-tighter">{profile.uanNumber || 'N/A'}</p>
                                 </div>
-                                <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded-xl">
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Employee ID</p>
-                                    <p className="text-xs font-bold">{profile.employeeId || 'N/A'}</p>
+                                <div className="p-1.5 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800">
+                                    <p className="text-[7px] font-black text-gray-400 uppercase leading-none">EMP ID</p>
+                                    <p className="text-[9px] font-black tracking-tighter">{profile.employeeId || 'N/A'}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="lg:col-span-8 space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white dark:bg-[#111] p-8 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
-                            <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                                <Building size={20} className="text-indigo-600" /> Infrastructure Deployment
+                <div className="lg:col-span-8 space-y-1.5 sm:space-y-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 sm:gap-2">
+                        <div className="bg-white dark:bg-[#111] p-2 sm:p-3 rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm">
+                            <h3 className="font-black text-[10px] sm:text-xs text-gray-900 dark:text-white mb-2 flex items-center gap-1.5 uppercase tracking-tight">
+                                <Building size={12} className="text-indigo-600" /> Deployment Registry
                             </h3>
-                            <div className="space-y-5">
-                                <div className="flex justify-between items-center py-3 border-b border-gray-50 dark:border-gray-800">
-                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Department</span>
-                                    <span className="text-sm font-black text-gray-900 dark:text-white">{staffDepartments}</span>
+                            <div className="space-y-1 sm:space-y-1.5">
+                                <div className="flex justify-between items-center py-1 sm:py-1.5 border-b border-gray-50 dark:border-gray-800">
+                                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">Placement Unit</span>
+                                    <span className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-tight">{staffDepartments}</span>
                                 </div>
-                                <div className="flex justify-between items-center py-3 border-b border-gray-50 dark:border-gray-800">
-                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Designation</span>
-                                    <span className="text-sm font-black text-gray-900 dark:text-white">{profile.designation || 'Staff Member'}</span>
+                                <div className="flex justify-between items-center py-1 sm:py-1.5 border-b border-gray-50 dark:border-gray-800">
+                                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">Designation Index</span>
+                                    <span className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-tight">{profile.designation || 'Staff'}</span>
                                 </div>
-                                <div className="flex justify-between items-center py-3 border-b border-gray-50 dark:border-gray-800">
-                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Joined On</span>
-                                    <span className="text-sm font-black text-gray-900 dark:text-white">
-                                        {profile.joiningDate ? new Date(profile.joiningDate).toLocaleDateString() : 'N/A'}
+                                <div className="flex justify-between items-center py-1 sm:py-1.5 border-b border-gray-50 dark:border-gray-800">
+                                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">Induction Date</span>
+                                    <span className="text-[10px] font-black text-gray-900 dark:text-white tracking-tighter">
+                                        {profile.joiningDate ? format(new Date(profile.joiningDate), 'dd, MM, yyyy') : 'N/A'}
                                     </span>
                                 </div>
-                                <div className="flex justify-between items-center py-3">
-                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Shift Registry</span>
-                                    <span className="text-sm font-black text-indigo-600">
-                                        {profile.resolvedShift?.name || 'Standard Central Shift'}
+                                <div className="flex justify-between items-center py-1 sm:py-1.5 leading-none pt-0.5">
+                                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">Assigned Rota</span>
+                                    <span className="text-[10px] font-black text-indigo-600 uppercase tracking-tighter truncate max-w-[120px]">
+                                        {profile.resolvedShift?.name || 'Standard Shift'}
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="bg-white dark:bg-[#111] p-8 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm space-y-6">
-                            <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                                <Award size={20} className="text-indigo-600" /> Professional Overview
+                        <div className="bg-white dark:bg-[#111] p-2 sm:p-3 rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm space-y-1.5">
+                            <h3 className="font-black text-[10px] sm:text-xs text-gray-900 dark:text-white mb-2 flex items-center gap-1.5 uppercase tracking-tight">
+                                <Award size={12} className="text-indigo-600" /> Professional Overview
                             </h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="p-4 bg-indigo-50 dark:bg-indigo-900/10 rounded-2xl border border-indigo-100 dark:border-indigo-800">
-                                    <p className="text-[10px] font-black text-indigo-600 uppercase mb-1">Total Exp.</p>
-                                    <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter">{profile.experienceYears || 0} <span className="text-xs font-bold text-gray-400">Yrs</span></p>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="p-1.5 bg-indigo-50 dark:bg-indigo-900/10 rounded-lg border border-indigo-100 dark:border-indigo-800">
+                                    <p className="text-[8px] font-black text-indigo-600 uppercase mb-0.5 tracking-tighter">Total Exp.</p>
+                                    <p className="text-base sm:text-xl font-black text-gray-900 dark:text-white tracking-tighter">{profile.experienceYears || 0} <span className="text-[8px] font-bold text-gray-400 uppercase">Yrs</span></p>
                                 </div>
-                                <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-800">
-                                    <p className="text-[10px] font-black text-emerald-600 uppercase mb-1">Status</p>
-                                    <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter">Active</p>
+                                <div className="p-1.5 bg-emerald-50 dark:bg-emerald-900/10 rounded-lg border border-emerald-100 dark:border-emerald-800">
+                                    <p className="text-[8px] font-black text-emerald-600 uppercase mb-0.5 tracking-tighter">Sync State</p>
+                                    <p className="text-base sm:text-xl font-black text-gray-900 dark:text-white tracking-tighter uppercase">Active</p>
                                 </div>
                             </div>
-                            <div className="pt-4 space-y-3">
-                                <h4 className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Work Schedule</h4>
-                                <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-xl">
-                                    <CalendarIcon size={16} className="text-indigo-600" />
-                                    <p className="text-xs font-bold text-gray-600 dark:text-gray-400">
-                                        {profile.workingHours?.start || '09:00 AM'} - {profile.workingHours?.end || '05:00 PM'}
+                            <div className="pt-1 space-y-1">
+                                <h4 className="text-[8px] font-black uppercase text-gray-400 tracking-widest leading-none">Rota Schedule</h4>
+                                <div className="flex items-center gap-1.5 p-1.5 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800">
+                                    <CalendarIcon size={12} className="text-indigo-600" />
+                                    <p className="text-[9px] font-black text-gray-600 dark:text-gray-400 tracking-tighter">
+                                        {profile.workingHours?.start || '09:00'} - {profile.workingHours?.end || '17:00'}
                                     </p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-[#111] p-8 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
-                        <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                            <Award size={20} className="text-indigo-600" /> Qualifications & Documentation
+                    <div className="bg-white dark:bg-[#111] p-2 sm:p-3 rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm">
+                        <h3 className="font-black text-[10px] sm:text-xs text-gray-900 dark:text-white mb-2 flex items-center gap-1.5 uppercase tracking-tight">
+                            <Award size={12} className="text-indigo-600" /> Credentials Vault
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="md:col-span-1 space-y-4">
-                                <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800">
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Registration Number</p>
-                                    <p className="text-sm font-black text-gray-900 dark:text-white">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                            <div className="md:col-span-1 space-y-1.5">
+                                <div className="p-1.5 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-100 dark:border-gray-800">
+                                    <p className="text-[7px] font-black text-gray-400 uppercase leading-none mb-0.5">Registry Number</p>
+                                    <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-tight">
                                         {profile.qualificationDetails?.registrationNumber || 'NOT REGISTERED'}
                                     </p>
                                 </div>
-                                <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800">
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">License Validity</p>
-                                    <p className="text-sm font-black text-gray-900 dark:text-white">
+                                <div className="p-1.5 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-100 dark:border-gray-800">
+                                    <p className="text-[7px] font-black text-gray-400 uppercase leading-none mb-0.5">License Validity</p>
+                                    <p className="text-[10px] font-black text-gray-900 dark:text-white tracking-tighter">
                                         {profile.qualificationDetails?.licenseValidityDate
-                                            ? new Date(profile.qualificationDetails.licenseValidityDate).toLocaleDateString()
+                                            ? format(new Date(profile.qualificationDetails.licenseValidityDate), 'dd, MM, yyyy')
                                             : 'PENDING'}
                                     </p>
                                 </div>
                                 {profile.qualificationDetails?.qualifications && profile.qualificationDetails.qualifications.length > 0 && (
-                                    <div className="pt-2">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Degrees & Certifications</p>
-                                        <div className="flex flex-wrap gap-2">
+                                    <div className="pt-0.5">
+                                        <p className="text-[7px] font-black text-gray-400 uppercase mb-1 tracking-tighter">Deg/Cert Matrix</p>
+                                        <div className="flex flex-wrap gap-1">
                                             {profile.qualificationDetails.qualifications.map((qual: string, idx: number) => (
-                                                <span key={idx} className="px-2 py-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold rounded-lg border border-indigo-100 dark:border-indigo-800/30">
+                                                <span key={idx} className="px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 text-[8px] font-black rounded-md border border-indigo-100 dark:border-indigo-800/30 uppercase tracking-tighter">
                                                     {qual}
                                                 </span>
                                             ))}
@@ -402,51 +341,49 @@ export default function StaffProfileClient() {
                                     </div>
                                 )}
                             </div>
-                            {/* Full 5-doc credentials list with View modal */}
                             <CredentialsDocViewer documents={profile.documents} />
                         </div>
                     </div>
 
-                    <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden">
-                        <div className="relative flex flex-col md:flex-row gap-8 items-start">
-                            <div className="flex-1 space-y-6 w-full">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-3 bg-indigo-500/20 rounded-2xl">
-                                        <Landmark size={24} className="text-indigo-400" />
+                    <div className="bg-slate-900 rounded-lg p-2 sm:p-3 text-white shadow-xl relative overflow-hidden">
+                        <div className="relative flex flex-col md:flex-row gap-2 items-start">
+                            <div className="flex-1 space-y-2.5 w-full">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-1.5 bg-indigo-500/20 rounded-lg">
+                                        <Landmark size={14} className="text-indigo-400" />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-bold">Financial & Payout Registry</h3>
-                                        <p className="text-slate-400 text-xs mt-1">Institutional data securely stored for payroll processing.</p>
+                                        <h3 className="text-[10px] font-black tracking-widest uppercase">Financial Payout Matrix</h3>
+                                        <p className="text-slate-400 text-[7px] uppercase font-black tracking-tighter leading-none">Secure Institutional Registry</p>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Bank Account</p>
-                                        <p className="text-sm font-bold tracking-widest">
-                                            {profile.bankDetails?.accountNumber ? `****${profile.bankDetails.accountNumber.slice(-4)}` : 'NOT PROVIDED'}
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <div className="p-1.5 bg-white/5 rounded-lg border border-white/5">
+                                        <p className="text-[7px] font-black text-slate-500 uppercase tracking-tighter leading-none mb-0.5">Account IDX</p>
+                                        <p className="text-[10px] font-black tracking-widest leading-none">
+                                            {profile.bankDetails?.accountNumber ? `****${profile.bankDetails.accountNumber.slice(-4)}` : 'VOID'}
                                         </p>
-                                        <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold">{profile.bankDetails?.bankName || 'NOT REGISTERED'}</p>
                                     </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">IFSC Code</p>
-                                        <p className="text-sm font-bold uppercase">{profile.bankDetails?.ifscCode || 'NOT PROVIDED'}</p>
+                                    <div className="p-1.5 bg-white/5 rounded-lg border border-white/5">
+                                        <p className="text-[7px] font-black text-slate-500 uppercase tracking-tighter leading-none mb-0.5">IFSC Token</p>
+                                        <p className="text-[9px] font-black uppercase leading-none">{profile.bankDetails?.ifscCode || 'VOID'}</p>
                                     </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">PF Registry No.</p>
-                                        <p className="text-sm font-bold uppercase tracking-tighter text-indigo-400">{profile.pfNumber || 'PENDING'}</p>
+                                    <div className="p-1.5 bg-white/5 rounded-lg border border-white/5">
+                                        <p className="text-[7px] font-black text-slate-500 uppercase tracking-tighter leading-none mb-0.5">PF Registry</p>
+                                        <p className="text-[9px] font-black uppercase text-indigo-400 leading-none">{profile.pfNumber || 'VOID'}</p>
                                     </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Base Salary</p>
-                                        <p className="text-sm font-black text-emerald-400 tracking-tighter">₹{profile.baseSalary?.toLocaleString() || '0'}</p>
+                                    <div className="p-1.5 bg-white/5 rounded-lg border border-white/5">
+                                        <p className="text-[7px] font-black text-slate-500 uppercase tracking-tighter leading-none mb-0.5">Base Salary</p>
+                                        <p className="text-[10px] font-black text-emerald-400 leading-none">₹{profile.baseSalary?.toLocaleString() || '0'}</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-[#111] p-8 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
-                        <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                            <BookOpen size={20} className="text-indigo-600" /> Training History & Compliance
+                    <div className="bg-white dark:bg-[#111] p-2 sm:p-3 rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm">
+                        <h3 className="font-black text-[10px] sm:text-xs text-gray-900 dark:text-white mb-2 flex items-center gap-1.5 uppercase tracking-tight">
+                            <BookOpen size={12} className="text-indigo-600" /> Compliance Stream
                         </h3>
                         <StaffTrainingHistoryClient />
                     </div>

@@ -27,15 +27,18 @@ import {
     RefreshCw,
     Building2,
     Activity,
-    Camera,
+    Camera
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import ImageCropper from '@/components/ui/ImageCropper';
 import { staffService } from '@/lib/integrations/services/staff.service';
 import { ipdService } from '@/lib/integrations/services/ipd.service';
 import type { StaffProfile } from '@/lib/integrations/types';
 import toast from 'react-hot-toast';
 import StaffTrainingHistoryClient from '@/components/staff/StaffTrainingHistoryClient';
 import { History } from 'lucide-react';
+import { useAuthStore } from '@/stores/authStore';
+import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
 
 
 
@@ -56,6 +59,16 @@ export default function NurseProfilePage() {
 
     // Profile Picture Upload State
     const [uploadingPic, setUploadingPic] = useState(false);
+    const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
+
+    // Cropper State
+    const [cropper, setCropper] = useState<{
+        isOpen: boolean;
+        image: string;
+    }>({
+        isOpen: false,
+        image: ''
+    });
 
     const handleProfilePicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -66,24 +79,48 @@ export default function NurseProfilePage() {
             toast.error('Please upload a JPG, PNG, or WEBP image');
             return;
         }
+
         if (file.size > 5 * 1024 * 1024) {
+            setUploadErrors(prev => ({ ...prev, profilePic: "Particular size exceed, please choose below the 5MB" }));
             toast.error('Image must be smaller than 5MB');
             return;
+        } else {
+            setUploadErrors(prev => {
+                const next = { ...prev };
+                delete next.profilePic;
+                return next;
+            });
         }
 
+        // Open Cropper
+        const reader = new FileReader();
+        reader.onload = () => {
+            setCropper({
+                isOpen: true,
+                image: reader.result as string
+            });
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleCropComplete = async (croppedDataUrl: string) => {
         try {
             setUploadingPic(true);
-            // Step 1: Upload to Cloudinary via existing endpoint
+            setCropper({ isOpen: false, image: '' });
+
+            // Convert data URL to File
+            const resBlob = await fetch(croppedDataUrl);
+            const blob = await resBlob.blob();
+            const file = new File([blob], "profile-pic.png", { type: "image/png" });
+
+            // Step 1: Upload to Cloudinary
             const uploadRes = await staffService.uploadDocument(file, `profile_${Date.now()}`);
             if (!uploadRes.success || !uploadRes.url) throw new Error('Upload failed');
 
-            // Step 2: Save image URL to user profile (backend /auth/me reads 'image' field)
+            // Step 2: Save URL
             await staffService.updateProfile({ image: uploadRes.url });
 
-            // Step 3: Update preview in edit modal
-            setEditingData((prev: any) => ({ ...prev, previewImage: uploadRes.url }));
-
-            // Step 4: Update local profile state so avatar shows immediately
+            // Step 3: Local Sync
             if (profile) {
                 setProfile({
                     ...profile,
@@ -94,10 +131,9 @@ export default function NurseProfilePage() {
             toast.success('Profile picture updated!');
             queryClient.invalidateQueries({ queryKey: ['staff-profile', 'my'] });
         } catch (err: any) {
-            toast.error(err.message || 'Failed to upload profile picture');
+            toast.error(err.message || 'Failed to upload cropped image');
         } finally {
             setUploadingPic(false);
-            e.target.value = '';
         }
     };
 
@@ -231,6 +267,22 @@ export default function NurseProfilePage() {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        // 5MB Limit
+        if (file.size > 5 * 1024 * 1024) {
+            setUploadErrors(prev => ({
+                ...prev,
+                [docType]: "Particular size exceed, please choose below the 5MB"
+            }));
+            toast.error('File exceeds 5MB');
+            return;
+        } else {
+            setUploadErrors(prev => {
+                const next = { ...prev };
+                delete next[docType];
+                return next;
+            });
+        }
+
         try {
             setUploadingDoc(docType);
             const fileName = `${docType}_${Date.now()}`;
@@ -245,7 +297,9 @@ export default function NurseProfilePage() {
                         ...profile?.documents,
                         [docType]: {
                             url: uploadResponse.url,
-                            publicId: uploadResponse.publicId
+                            publicId: uploadResponse.publicId,
+                            format: uploadResponse.format || (file.type === 'application/pdf' ? 'pdf' : 'image'),
+                            resource_type: uploadResponse.resource_type || (file.type === 'application/pdf' ? 'raw' : 'image')
                         }
                     }
                 };
@@ -262,7 +316,9 @@ export default function NurseProfilePage() {
                             ...profile.documents,
                             [docType]: {
                                 url: uploadResponse.url,
-                                publicId: uploadResponse.publicId
+                                publicId: uploadResponse.publicId,
+                                format: uploadResponse.format || (file.type === 'application/pdf' ? 'pdf' : 'image'),
+                                resource_type: uploadResponse.resource_type || (file.type === 'application/pdf' ? 'raw' : 'image')
                             }
                         }
                     });
@@ -279,6 +335,31 @@ export default function NurseProfilePage() {
         }
     };
 
+    const handleDeleteDocument = async (docType: string, label: string) => {
+        if (!confirm(`Are you sure you want to delete ${label}?`)) return;
+
+        try {
+            setUploadingDoc(docType);
+            const newDocs = { ...(profile?.documents || {}) } as any;
+            delete newDocs[docType];
+
+            await staffService.updateProfile({ documents: newDocs });
+            toast.success(`${label} deleted successfully`);
+
+            if (profile) {
+                setProfile({
+                    ...profile,
+                    documents: newDocs as any
+                });
+            }
+            queryClient.invalidateQueries({ queryKey: ['staff-profile', 'my'] });
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to delete document');
+        } finally {
+            setUploadingDoc(null);
+        }
+    };
+
     if (loadingProfile || !profile) {
         return (
             <div className="flex h-[80vh] items-center justify-center bg-slate-50">
@@ -290,7 +371,16 @@ export default function NurseProfilePage() {
 
     return (
         <div className="min-h-screen bg-slate-50 pb-20">
-            <div className="max-w-6xl mx-auto space-y-4 sm:space-y-8 p-3 sm:p-6">
+            <div className="max-w-7xl mx-auto space-y-4 sm:space-y-8 p-1 sm:p-6">
+                {cropper.isOpen && (
+                    <ImageCropper
+                        src={cropper.image}
+                        onCrop={handleCropComplete}
+                        onCancel={() => setCropper({ isOpen: false, image: '' })}
+                        aspectRatio={1}
+                        circular={true}
+                    />
+                )}
 
                 {/* 1. HEADER / OVERVIEW CARD */}
                 <div className="bg-white rounded-2xl sm:rounded-[32px] p-4 sm:p-8 border border-slate-200 shadow-sm relative overflow-hidden group">
@@ -411,21 +501,27 @@ export default function NurseProfilePage() {
                             doc={profile.documents?.degreeCertificate}
                             onUpload={(e: any) => handleFileUpload(e, 'degreeCertificate')}
                             onView={(url: string) => setDocViewer({ url, label: 'Degree / Certificate' })}
+                            onDelete={() => handleDeleteDocument('degreeCertificate', 'Degree / Certificate')}
                             isUploading={uploadingDoc === 'degreeCertificate'}
+                            error={uploadErrors.degreeCertificate}
                         />
                         <DocUploadCard
                             label="Nursing Council Reg."
                             doc={profile.documents?.nursingCouncilRegistration}
                             onUpload={(e: any) => handleFileUpload(e, 'nursingCouncilRegistration')}
                             onView={(url: string) => setDocViewer({ url, label: 'Nursing Council Reg.' })}
+                            onDelete={() => handleDeleteDocument('nursingCouncilRegistration', 'Nursing Council Reg.')}
                             isUploading={uploadingDoc === 'nursingCouncilRegistration'}
+                            error={uploadErrors.nursingCouncilRegistration}
                         />
                         <DocUploadCard
                             label="Internship Completion"
                             doc={profile.documents?.internshipCertificate}
                             onUpload={(e: any) => handleFileUpload(e, 'internshipCertificate')}
                             onView={(url: string) => setDocViewer({ url, label: 'Internship Completion' })}
+                            onDelete={() => handleDeleteDocument('internshipCertificate', 'Internship Completion')}
                             isUploading={uploadingDoc === 'internshipCertificate'}
+                            error={uploadErrors.internshipCertificate}
                         />
                     </div>
                 </div>
@@ -458,80 +554,12 @@ export default function NurseProfilePage() {
             </div>
 
             {/* DOCUMENT VIEWER MODAL */}
-            {docViewer && (
-                <div className="fixed inset-0 z-[200] flex flex-col bg-slate-900/90 backdrop-blur-md">
-                    {/* Header */}
-                    <div className="flex items-center justify-between px-6 py-4 bg-white/5 border-b border-white/10 shrink-0">
-                        <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
-                                <FileText size={18} className="text-white" />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-black text-white/50 uppercase tracking-widest">Document Preview</p>
-                                <p className="text-sm font-black text-white">{docViewer.label}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <a
-                                href={docViewer.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2"
-                            >
-                                <UploadCloud size={13} /> Open in Tab
-                            </a>
-                            <button
-                                onClick={() => setDocViewer(null)}
-                                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Viewer Body */}
-                    <div className="flex-1 overflow-auto p-2 sm:p-6 flex items-start justify-center">
-                        {(() => {
-                            const url = docViewer.url;
-                            // Detect image: Cloudinary image resource OR image file extension
-                            const isImage =
-                                url.match(/\.(jpg|jpeg|png|gif|webp)(\?|$)/i) ||
-                                (url.includes('cloudinary.com') && url.includes('/image/upload/'));
-
-                            if (isImage) {
-                                return (
-                                    <div className="max-w-4xl w-full">
-                                        <img
-                                            src={url}
-                                            alt={docViewer.label}
-                                            className="w-full rounded-2xl shadow-2xl border border-white/10 object-contain"
-                                        />
-                                    </div>
-                                );
-                            }
-
-                            // For PDFs and all other files — use Google Docs Viewer
-                            // This bypasses browser download behavior entirely
-                            const googleViewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
-
-                            return (
-                                <div className="w-full max-w-5xl flex flex-col gap-3" style={{ height: 'calc(100vh - 160px)' }}>
-                                    <iframe
-                                        src={googleViewerUrl}
-                                        className="w-full flex-1 rounded-2xl border border-white/10 shadow-2xl bg-white"
-                                        title={docViewer.label}
-                                        style={{ height: 'calc(100vh - 200px)' }}
-                                        allow="fullscreen"
-                                    />
-                                    <p className="text-center text-white/30 text-[10px] font-bold uppercase tracking-widest">
-                                        If the document doesn&apos;t load, click &quot;Open in Tab&quot; above
-                                    </p>
-                                </div>
-                            );
-                        })()}
-                    </div>
-                </div>
-            )}
+            <DocumentViewerModal
+                isOpen={!!docViewer}
+                onClose={() => setDocViewer(null)}
+                url={docViewer?.url || ''}
+                title={docViewer?.label || ''}
+            />
 
             {/* EDIT MODALS */}
             {editSection && (
@@ -575,7 +603,10 @@ export default function NurseProfilePage() {
                                                         onChange={handleProfilePicUpload}
                                                     />
                                                 </label>
-                                                <p className="text-[10px] text-slate-400 mt-1.5 text-center">JPG, PNG or WEBP · max 5MB</p>
+                                                <p className="text-[10px] text-slate-400 mt-1.5 text-center font-bold tracking-tighter uppercase">Only PDF and any type of image only. Max 5MB</p>
+                                                {uploadErrors.profilePic && (
+                                                    <p className="text-[10px] text-rose-500 font-bold uppercase tracking-tighter mt-1 text-center animate-bounce">{uploadErrors.profilePic}</p>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -691,7 +722,7 @@ function SectionCard({ title, icon, children, onEdit }: any) {
     );
 }
 
-function DocUploadCard({ label, doc, onUpload, onView, isUploading }: any) {
+function DocUploadCard({ label, doc, onUpload, onView, onDelete, isUploading, error }: any) {
     const hasDoc = !!doc?.url;
 
     // Extract filename from URL or publicId
@@ -740,22 +771,34 @@ function DocUploadCard({ label, doc, onUpload, onView, isUploading }: any) {
                 </p>
             ) : null}
 
-            <p className="text-xs text-slate-400 font-medium mb-4">{hasDoc ? '✓ Uploaded' : 'Not Uploaded'}</p>
+            <p className="text-xs text-slate-400 font-medium mb-2">{hasDoc ? '✓ Uploaded' : 'Not Uploaded'}</p>
 
-            <div className="flex gap-2 w-full">
-                {hasDoc && (
-                    <button
-                        onClick={handleView}
-                        className="flex-1 py-2 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1"
-                    >
-                        <FileText size={12} /> View
-                    </button>
-                )}
-                <label className={`flex-1 py-2 rounded-lg text-xs font-bold cursor-pointer flex items-center justify-center gap-1 transition-colors ${isUploading ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : hasDoc ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'bg-slate-900 text-white hover:bg-slate-800 w-full'}`}>
-                    {isUploading ? <Loader2 size={14} className="animate-spin" /> : <UploadCloud size={14} />} 
-                    {isUploading ? 'Uploading...' : (hasDoc ? 'Update' : 'Click to upload')}
-                    <input type="file" className="hidden" accept=".pdf,.jpg,.png" onChange={onUpload} disabled={isUploading} />
-                </label>
+            <div className="w-full space-y-2">
+                <div className="flex gap-2 w-full">
+                    {hasDoc && (
+                        <>
+                            <button
+                                onClick={handleView}
+                                className="flex-1 py-2 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1"
+                            >
+                                <FileText size={12} /> View
+                            </button>
+                            <button
+                                onClick={onDelete}
+                                className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition-colors"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                        </>
+                    )}
+                    <label className={`${hasDoc ? 'flex-1' : 'w-full'} py-2 rounded-lg text-xs font-bold cursor-pointer flex items-center justify-center gap-1 transition-colors ${isUploading ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : hasDoc ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'bg-slate-900 text-white hover:bg-slate-800'}`}>
+                        {isUploading ? <Loader2 size={14} className="animate-spin" /> : <UploadCloud size={14} />}
+                        {isUploading ? 'Uploading...' : (hasDoc ? 'Update' : 'Upload Now')}
+                        <input type="file" className="hidden" accept=".pdf,.jpg,.png" onChange={onUpload} disabled={isUploading} />
+                    </label>
+                </div>
+                {!hasDoc && <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Only PDF and any type of image only. Max 5MB</p>}
+                {error && <p className="text-[10px] text-rose-500 font-bold uppercase mt-1 animate-bounce">{error}</p>}
             </div>
         </div>
     );

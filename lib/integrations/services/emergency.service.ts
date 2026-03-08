@@ -18,9 +18,11 @@ const EMERGENCY_ENDPOINTS = {
   // Requests  →  /api/emergency/requests/*
   CREATE_REQUEST: "/emergency/requests",
   CREATE_PATIENT_REQUEST: "/emergency/requests/patient",
+  GET_PATIENT_REQUESTS: "/emergency/requests/patient/my-requests",
   MY_REQUESTS: "/emergency/requests/my-requests",
   HOSPITAL_REQUESTS: "/emergency/requests/hospital",
   HOSPITAL_STATS: "/emergency/requests/hospital/stats",
+  GET_REQUEST_BY_ID: (id: string) => `/emergency/requests/${id}`,
   ACCEPT_REQUEST: (id: string) => `/emergency/requests/${id}/accept`,
   REJECT_REQUEST: (id: string) => `/emergency/requests/${id}/reject`,
   AVAILABLE_HOSPITALS: "/emergency/requests/hospitals",
@@ -101,6 +103,20 @@ class EmergencyService {
       method: "POST",
       body: JSON.stringify(data),
     });
+  }
+
+  /** Get all emergency requests for the current patient */
+  async getPatientEmergencyRequests(): Promise<{
+    requests: EmergencyRequest[];
+  }> {
+    return apiClient(EMERGENCY_ENDPOINTS.GET_PATIENT_REQUESTS);
+  }
+
+  /** Get a single emergency request by ID */
+  async getEmergencyRequestById(
+    requestId: string,
+  ): Promise<{ request: EmergencyRequest }> {
+    return apiClient(EMERGENCY_ENDPOINTS.GET_REQUEST_BY_ID(requestId));
   }
 
   // ─── Emergency Requests (Helpdesk / Hospital) ────────────────────────────────

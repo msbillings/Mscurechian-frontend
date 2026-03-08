@@ -166,9 +166,15 @@ export const generateNurseHourlyRecordHtml = (data: any) => {
                     padding-right: 15px;
                 }
                 .logo-img {
-                    max-width: 160px;
-                    max-height: 110px;
+                    max-width: 100px;
+                    max-height: 70px;
                     object-fit: contain;
+                }
+                @media (min-width: 640px) {
+                    .logo-img {
+                        max-width: 160px;
+                        max-height: 110px;
+                    }
                 }
                 .logo-placeholder {
                     width: 80px;
@@ -197,8 +203,13 @@ export const generateNurseHourlyRecordHtml = (data: any) => {
                     font-weight: 800;
                     color: #1e40af;
                     line-height: 1.1;
-                    font-size: 24px;
+                    font-size: 16px;
                     text-transform: uppercase;
+                }
+                @media (min-width: 640px) {
+                    .hospital-name {
+                        font-size: 24px;
+                    }
                 }
                 .header-row {
                     display: flex;
@@ -236,9 +247,9 @@ export const generateNurseHourlyRecordHtml = (data: any) => {
                     color: #ffffff;
                     display: flex;
                     align-items: center;
-                    padding: 0 30px;
+                    padding: 0 15px;
                     font-weight: 800;
-                    font-size: 12px;
+                    font-size: 10px;
                     clip-path: polygon(0 0, 100% 0, 90% 100%, 0 100%);
                     z-index: 2;
                 }
@@ -250,11 +261,15 @@ export const generateNurseHourlyRecordHtml = (data: any) => {
                     align-items: center;
                     justify-content: center;
                     font-weight: 800;
-                    font-size: 12px;
+                    font-size: 10px;
                     clip-path: polygon(10% 0, 100% 0, 100% 100%, 0 100%);
-                    margin-left: -30px;
+                    margin-left: -20px;
                     z-index: 1;
-                    padding-left: 30px;
+                    padding-left: 20px;
+                }
+                @media (min-width: 640px) {
+                    .slant-phone { padding: 0 30px; font-size: 12px; }
+                    .slant-email { font-size: 12px; margin-left: -30px; padding-left: 30px; }
                 }
                 .footer-info {
                     display: flex;
@@ -424,7 +439,7 @@ export const generateNurseHourlyRecordHtml = (data: any) => {
                                     <td>${v.temperature}°F</td>
                                     <td>${v.respiratoryRate || '--'}</td>
                                     <td>${v.glucose || '--'}</td>
-                                    <td>${v.recordedBy?.name?.split(' ')[0]}</td>
+                                    <td>${v.recordedBy?.name || '--'}</td>
                                     <td>
                                         <span class="status-badge status-${v.status?.toLowerCase() || 'stable'}">
                                             ${v.status || 'Stable'}
@@ -459,7 +474,7 @@ export const generateNurseHourlyRecordHtml = (data: any) => {
                                     <td>${m.dose} • ${m.route}</td>
                                     <td>${format(new Date(m.timestamp), 'dd/MM HH:mm')}</td>
                                     <td>${m.timeSlot}</td>
-                                    <td>${m.administeredBy?.name?.split(' ')[0]}</td>
+                                    <td>${m.administeredBy?.name || '--'}</td>
                                 </tr>
                             `).join('') : '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #94a3b8;">No records.</td></tr>'}
                         </tbody>
@@ -501,7 +516,7 @@ export const generateNurseHourlyRecordHtml = (data: any) => {
                                         ${d.recordedTime}<br/>
                                         <span style="font-size: 7px; color: #94a3b8;">${format(new Date(d.timestamp), 'dd MMM (EEE)')}</span>
                                     </td>
-                                    <td>${d.recordedBy?.name?.split(' ')[0]}</td>
+                                    <td>${d.recordedBy?.name || '--'}</td>
                                     <td>${d.notes || '-'}</td>
                                 </tr>
                             `).join('') : '<tr><td colspan="5" style="text-align: center; padding: 15px; color: #94a3b8;">No dietary intake recorded.</td></tr>'}
