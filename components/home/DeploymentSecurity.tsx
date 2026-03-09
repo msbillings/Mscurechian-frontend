@@ -1,46 +1,54 @@
 'use client';
 
 import React from 'react';
-import { Server, ShieldAlert, ShieldCheck, Database, Cloud, Lock } from 'lucide-react';
+import { ShieldCheck, Database, Lock, Activity } from 'lucide-react';
 import ScrollReveal from '../animations/ScrollReveal';
 
 const DeploymentSecurity = () => {
     const features = [
-       {
-    title:  "Built for 100% NABH Compliance",
-    description: "We follow NABH regulations 100% by deploying the platform on the hospital’s own servers or private cloud. This ensures full control over patient data, system security, availability, and compliance without depending on third-party SaaS platforms.",
-    icon: (
-        <div className="relative">
-            <Cloud className="w-16 h-16 text-slate-300" />
-            <Server className="w-8 h-8 text-slate-700 absolute inset-0 m-auto mt-5" />
-        </div>
-    )
-},
         {
-            title: "Hospital Data Ownership",
-            description: "All patient, clinical, and operational data remains fully owned and controlled by the hospital. No external storage, sharing, or unauthorized access is involved.",
+            title: "Built for 100% NABH Compliance",
+            description: "We follow NABH regulations 100% by deploying the platform on the hospital’s own servers or private cloud. This ensures full control over patient data, system security, availability, and compliance without depending on third-party SaaS platforms.",
             icon: (
-                <div className="relative">
-                    <ShieldAlert className="w-16 h-16 text-slate-300" />
-                    <Database className="w-8 h-8 text-slate-700 absolute inset-0 m-auto" />
+                <div className="relative w-16 h-16 flex items-center justify-center">
+                    <img
+                        src="/assets/NABH.png"
+                        alt="NABH Compliance"
+                        className="w-full h-full object-contain"
+                    />
                 </div>
             )
         },
         {
-            title: "Secure Infrastructure",
-            description: "Built with healthcare-grade security including data encryption, role-based access control, audit logs, and secure deployment practices to protect sensitive medical information.",
+            title: "National Health Authority (NHA) Aligned",
+            description: "Designed in accordance with National Health Authority (NHA) standards, the system ensures ABDM readiness, ABHA ID integration, health record interoperability, and secure, consent-driven digital health information exchange.",
             icon: (
-                <div className="relative">
-                    <ShieldCheck className="w-16 h-16 text-slate-300" />
-                    <Lock className="w-8 h-8 text-slate-700 absolute bottom-0 right-0 -mr-1 -mb-1" />
-                    <ShieldCheck className="w-8 h-8 text-blue-600 absolute bottom-0 right-0 -mr-1 -mb-1 fill-blue-600" />
+                <div className="relative w-16 h-16 flex items-center justify-center">
+                    <img
+                        src="/assets/NHA.png"
+                        alt="NHA Standards"
+                        className="w-full h-full object-contain"
+                    />
+                </div>
+            )
+        },
+        {
+            title: "Ayushman Bharat Digital Mission (ABDM) Enabled",
+            description: "Fully integrated with Ayushman Bharat Digital Mission (ABDM) framework, the system supports ABHA ID creation & verification, consent-based health record sharing, Health Information Exchange (HIE-CM) connectivity, and interoperability across ABDM-registered healthcare facilities.",
+            icon: (
+                <div className="relative w-16 h-16 flex items-center justify-center">
+                    <img
+                        src="/assets/ADMA.png"
+                        alt="ABDM Integration"
+                        className="w-full h-full object-contain"
+                    />
                 </div>
             )
         }
     ];
 
     return (
-        <section className="py-24 bg-white">
+        <section className="py-12 lg:py-24 bg-white mt-0 lg:mt-10">
             <div className="max-w-7xl mx-auto px-6">
                 <div className="grid md:grid-cols-3 gap-8">
                     {features.map((feature, idx) => (

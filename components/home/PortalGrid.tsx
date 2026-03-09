@@ -48,20 +48,21 @@ const servicePortals = [
     path: '/auth/login',
   },
   {
-    title: 'Hospital Admin',
-    desc: 'Complete hospital management, staff oversight, and analytics.',
-    icon: Building2,
-    color: 'indigo',
-    image: '/assets/admin2.jpeg',
+    title: 'Staff Portal',
+    desc: 'Staff attendance, profile management, and internal communications.',
+    icon: Users,
+    color: 'amber',
+    image: '/assets/staff1.jpeg',
     classes: {
-      bg: 'bg-indigo-500/10',
-      text: 'text-indigo-600',
-      border: 'hover:border-indigo-500/50',
-      shadow: 'hover:shadow-indigo-500/20',
-      iconBg: 'bg-indigo-50',
+      bg: 'bg-amber-500/10',
+      text: 'text-amber-600',
+      border: 'hover:border-amber-500/50',
+      shadow: 'hover:shadow-amber-500/20',
+      iconBg: 'bg-amber-50',
     },
     path: '/auth/login',
   },
+  
   {
     title: 'Lab & Diagnostics',
     desc: 'Manage test reports, sample tracking, and diagnostic data.',
@@ -112,49 +113,19 @@ const servicePortals = [
 
 const adminPortals = [
   {
-    title: 'Frontdesk Portal',
-    desc: 'Front desk operations, patient registry, and queue management.',
-    icon: Headset,
-    color: 'orange',
-    image: '/assets/frontdesk.png',
+    title: 'Hospital Admin',
+    desc: 'Complete hospital management, staff oversight, and analytics.',
+    icon: Building2,
+    color: 'indigo',
+    image: '/assets/admin2.jpeg',
     classes: {
-      bg: 'bg-orange-500/10',
-      text: 'text-orange-600',
-      border: 'hover:border-orange-500/50',
-      shadow: 'hover:shadow-orange-500/20',
-      iconBg: 'bg-orange-50',
+      bg: 'bg-indigo-500/10',
+      text: 'text-indigo-600',
+      border: 'hover:border-indigo-500/50',
+      shadow: 'hover:shadow-indigo-500/20',
+      iconBg: 'bg-indigo-50',
     },
     path: '/auth/login',
-  },
-  {
-    title: 'Staff Portal',
-    desc: 'Staff attendance, profile management, and internal communications.',
-    icon: Users,
-    color: 'amber',
-    image: '/assets/staff1.jpeg',
-    classes: {
-      bg: 'bg-amber-500/10',
-      text: 'text-amber-600',
-      border: 'hover:border-amber-500/50',
-      shadow: 'hover:shadow-amber-500/20',
-      iconBg: 'bg-amber-50',
-    },
-    path: '/auth/login',
-  }
-  , {
-    title: 'Nurse Portal',
-    desc: 'Dynamic nursing dashboard for vitals, medication, and ward management.',
-    icon: HeartPulse,
-    color: 'emerald',
-    image: '/assets/nurse.png',
-    classes: {
-      bg: 'bg-emerald-500/10',
-      text: 'text-emerald-600',
-      border: 'hover:border-emerald-500/50',
-      shadow: 'hover:shadow-emerald-500/20',
-      iconBg: 'bg-emerald-50',
-    },
-    path: '/nurse/login',
   },
   {
     title: 'HR Portal',
@@ -170,7 +141,40 @@ const adminPortals = [
       iconBg: 'bg-blue-50',
     },
     path: '/hr/login',
+  },
+  {
+    title: 'Frontdesk Portal',
+    desc: 'Front desk operations, patient registry, and queue management.',
+    icon: Headset,
+    color: 'orange',
+    image: '/assets/frontdesk.png',
+    classes: {
+      bg: 'bg-orange-500/10',
+      text: 'text-orange-600',
+      border: 'hover:border-orange-500/50',
+      shadow: 'hover:shadow-orange-500/20',
+      iconBg: 'bg-orange-50',
+    },
+    path: '/auth/login',
+  },
+
+  
+   {
+    title: 'Nurse Portal',
+    desc: 'Dynamic nursing dashboard for vitals, medication, and ward management.',
+    icon: HeartPulse,
+    color: 'emerald',
+    image: '/assets/nurse.png',
+    classes: {
+      bg: 'bg-emerald-500/10',
+      text: 'text-emerald-600',
+      border: 'hover:border-emerald-500/50',
+      shadow: 'hover:shadow-emerald-500/20',
+      iconBg: 'bg-emerald-50',
+    },
+    path: '/nurse/login',
   }
+  
 ];
 
 const PortalCard = ({ portal, onClick }: { portal: any, onClick: (path: string) => void }) => (
