@@ -12,6 +12,8 @@ import { EmergencyModal } from './EmergencyModal';
 
 type TabType = 'appointments' | 'prescriptions' | 'lab-records' | 'discharge' | 'profile';
 import { useSearchParams } from 'next/navigation';
+import { emergencyService } from '@/lib/integrations/services/emergency.service';
+import { toast } from 'react-hot-toast';
 
 interface DashboardData {
     profile: any;
@@ -36,6 +38,7 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
     const [selectedHospitalId, setSelectedHospitalId] = useState<string>(''); // empty means All Hospitals
     const [isHospitalDropdownOpen, setIsHospitalDropdownOpen] = useState(false);
     const [initialized, setInitialized] = useState(false);
+    const [activeEmergencyId, setActiveEmergencyId] = useState<string | null>(null);
 
     const searchParams = useSearchParams();
     const queryTab = searchParams.get('tab') as TabType;
@@ -60,6 +63,50 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
         }
         fetchDashboardData(selectedHospitalId);
     }, [selectedHospitalId]);
+
+    // Emergency Background Tracking
+    const lastNotifiedStatus = React.useRef<string | null>(null);
+    useEffect(() => {
+        const checkEmergencyStatus = async () => {
+            const activeId = localStorage.getItem('activeEmergencyRequestId');
+            setActiveEmergencyId(activeId);
+            if (!activeId) {
+                lastNotifiedStatus.current = null;
+                return;
+            }
+
+            try {
+                const { request } = await emergencyService.getEmergencyRequestById(activeId);
+
+                if (request.status === 'accepted' && lastNotifiedStatus.current !== 'accepted') {
+                    // One-time notification for acceptance
+                    toast.success(`SIGNAL CAPTURED: ${request.acceptedByHospital?.name || 'Hospital'} is responding!`, {
+                        icon: '🚑',
+                        duration: 8000,
+                        className: 'font-black uppercase tracking-widest text-[10px] bg-emerald-600 text-white'
+                    });
+
+                    try {
+                        const audio = new Audio('https://res.cloudinary.com/dnjxgcl3f/video/upload/v1772986420/alert_mscure.mp3');
+                        audio.play().catch(() => { });
+                    } catch (e) { }
+
+                    lastNotifiedStatus.current = 'accepted';
+                }
+
+                if (request.status === 'completed' || request.status === 'cancelled') {
+                    localStorage.removeItem('activeEmergencyRequestId');
+                    lastNotifiedStatus.current = null;
+                }
+            } catch (error) {
+                console.error("Passive emergency tracking error:", error);
+            }
+        };
+
+        const interval = setInterval(checkEmergencyStatus, 10000);
+        checkEmergencyStatus(); // Initial check
+        return () => clearInterval(interval);
+    }, []);
 
     const fetchHospitals = async () => {
         try {
@@ -221,10 +268,22 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
 
                 <button
                     onClick={() => setIsEmergencyModalOpen(true)}
-                    className="flex items-center justify-center gap-2 px-4 py-2 sm:py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl sm:rounded-2xl font-black text-[9px] sm:text-xs uppercase tracking-widest shadow-lg shadow-red-500/20 active:scale-95 transition-all outline-none animate-pulse"
+                    className={`flex items-center justify-center gap-2 px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl font-black text-[9px] sm:text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-all outline-none ${activeEmergencyId
+                        ? 'bg-emerald-600 hover:bg-emerald-700 animate-pulse'
+                        : 'bg-red-600 hover:bg-red-700 animate-pulse shadow-red-500/20'
+                        }`}
                 >
-                    <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4" />
-                    Emergency
+                    {activeEmergencyId ? (
+                        <>
+                            <Activity className="w-3 h-3 sm:w-4 sm:h-4" />
+                            Track Signal
+                        </>
+                    ) : (
+                        <>
+                            <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4" />
+                            Emergency
+                        </>
+                    )}
                 </button>
             </div>
 

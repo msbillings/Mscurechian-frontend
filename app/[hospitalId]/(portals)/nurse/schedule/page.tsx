@@ -57,7 +57,7 @@ function NurseSchedulePage() {
     }
 
     return (
-        <div className="space-y-4 sm:space-y-8 max-w-7xl mx-auto pb-20 animate-in fade-in duration-500 px-3 sm:px-6 lg:px-8">
+        <div className="space-y-4 sm:space-y-8 max-w-7xl mx-auto pb-20 animate-in fade-in duration-500 px-[1px] sm:px-6 lg:px-8">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-6 text-center sm:text-left pt-2">
                 <div className="space-y-0.5">
@@ -237,34 +237,31 @@ function NurseSchedulePage() {
                                                 `}
                                             >
                                                 {/* Date Number */}
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <span className={`text-[11px] font-black ${isOff ? 'text-slate-300' : 'text-slate-900 opacity-60'}`}>
+                                                <div className="flex justify-between items-start mb-0.5 sm:mb-2">
+                                                    <span className={`text-[9px] sm:text-[11px] font-black ${isOff ? 'text-slate-300' : 'text-slate-900 opacity-60'}`}>
                                                         {day}
                                                     </span>
-                                                    {isToday && (
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-[#818CF8] shadow-[0_0_8px_rgba(129,140,248,0.8)]"></div>
-                                                    )}
                                                 </div>
 
                                                 {/* Cell Content */}
-                                                <div className="h-full flex flex-col justify-start">
+                                                <div className="h-full flex flex-col justify-start overflow-hidden">
                                                     {leaveOnThisDay ? (
-                                                        <div className="mt-1 px-2 py-1.5 bg-[#FFF1F2] text-[#E11D48] rounded-md border border-rose-100/50 shadow-sm animate-in fade-in slide-in-from-top-1">
-                                                            <div className="text-[9px] font-black uppercase tracking-tighter leading-none mb-1">LEAVE</div>
-                                                            <div className="h-[2px] w-full bg-[#FB7185] rounded-full opacity-30"></div>
+                                                        <div className="mt-0.5 px-1 sm:px-2 py-0.5 sm:py-1.5 bg-[#FFF1F2] text-[#E11D48] rounded-md border border-rose-100/50 shadow-sm animate-in fade-in slide-in-from-top-1">
+                                                            <div className="text-[6px] sm:text-[9px] font-black uppercase tracking-tighter leading-none mb-0.5 sm:mb-1">LEAVE</div>
+                                                            <div className="h-[1px] sm:h-[2px] w-full bg-[#FB7185] rounded-full opacity-30"></div>
                                                         </div>
                                                     ) : !isOff ? (
-                                                        <div className="mt-1 px-2.5 py-1.5 bg-[#EFF2FF] text-[#4F46E5] rounded-md border border-indigo-100/50 shadow-sm hover:translate-y-[-1px] transition-transform">
-                                                            <div className="text-[8px] font-black uppercase tracking-tight leading-none mb-1">
+                                                        <div className="mt-0.5 px-1 sm:px-2.5 py-0.5 sm:py-1.5 bg-[#EFF2FF] text-[#4F46E5] rounded-md border border-indigo-100/50 shadow-sm hover:translate-y-[-1px] transition-transform">
+                                                            <div className="text-[6px] sm:text-[8px] font-black uppercase tracking-tight leading-none mb-0.5 sm:mb-1 truncate">
                                                                 {schedule?.shift && schedule.shift.toLowerCase().includes('shift') ? schedule.shift : `${schedule?.shift || 'MORNING'} SHIFT`}
                                                             </div>
-                                                            <div className="text-[7px] font-bold opacity-60 tracking-wider">
+                                                            <div className="text-[5px] sm:text-[7px] font-bold opacity-60 tracking-wider">
                                                                 {schedule?.workingHours?.start || '09:00'}-{schedule?.workingHours?.end || '19:00'}
                                                             </div>
                                                         </div>
                                                     ) : (
                                                         <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
-                                                            <span className="text-[10px] font-black tracking-[0.2em] text-slate-100 uppercase italic opacity-80 transform -rotate-12">
+                                                            <span className="text-[7px] sm:text-[10px] font-black tracking-[0.1em] sm:tracking-[0.2em] text-slate-100 uppercase italic opacity-80 transform -rotate-12">
                                                                 Weekly OFF
                                                             </span>
                                                         </div>

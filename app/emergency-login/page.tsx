@@ -33,18 +33,14 @@ function EmergencyLogin() {
         try {
             const response = await emergencyService.login(identifier, password);
 
-            // ✅ CLEANUP: Clear any stale cookies from other portals
-            document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
-            document.cookie = 'refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
-
-            // Store tokens in sessionStorage
+            // Store tokens in sessionStorage (Primary for client-side)
             sessionStorage.setItem("accessToken", response.tokens.accessToken);
             sessionStorage.setItem("refreshToken", response.tokens.refreshToken);
             sessionStorage.setItem("userRole", "ambulance");
             sessionStorage.setItem("user", JSON.stringify(response.user));
-            sessionStorage.setItem('lastAuthCheck', Date.now().toString()); // ✅ SPEED FIX: Throttle next check
+            sessionStorage.setItem('lastAuthCheck', Date.now().toString());
 
-            // ✅ MULTI-TENANCY: Store hospitalId in sessionStorage and cookie
+            // MULTI-TENANCY: Store hospitalId
             const rawIdVal = (response.user as any).hospital || (response.user as any).hospitalId;
             const hospitalIdStr = (rawIdVal && typeof rawIdVal === 'object') ? (rawIdVal._id || rawIdVal.id) : rawIdVal;
             if (hospitalIdStr) {
@@ -53,15 +49,26 @@ function EmergencyLogin() {
                 document.cookie = `hospitalId=${hStr}; path=/; max-age=86400; SameSite=Lax`;
             }
 
-            // SYNC TO COOKIES: Enable Server Actions and SSR to access tokens
+            // OVERWRITE COOKIES: Atomic update
             document.cookie = `accessToken=${response.tokens.accessToken}; path=/; max-age=86400; SameSite=Lax`;
             document.cookie = `refreshToken=${response.tokens.refreshToken}; path=/; max-age=604800; SameSite=Lax`;
 
             // Show navigation feedback
             setIsNavigating(true);
 
-            // Use replacement for faster handover
-            router.replace("/ambulance");
+            // Add console logs for auth debugging.
+            const token = sessionStorage.getItem("accessToken") ||
+                document.cookie.split('; ').find(row => row.startsWith('accessToken='))?.split('=')[1];
+
+            console.log("🕵️ Auth Check Trace:", {
+                hasSession: !!sessionStorage.getItem("accessToken"),
+                hasCookie: !!document.cookie.split('; ').find(row => row.startsWith('accessToken=')),
+                role: sessionStorage.getItem("userRole")
+            });
+
+            // Redirection: Use location.href for atomic sync across middlewares
+            console.log("🚀 Auth Success. Redirecting to Mission Control...");
+            window.location.href = "/ambulance";
         } catch (err: any) {
             console.error("❌ Login failed:", err);
             setError(err.message || "Login failed. Please check your credentials.");

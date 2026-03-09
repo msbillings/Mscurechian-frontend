@@ -190,10 +190,10 @@ export default function NurseLayout({ children }: { children: React.ReactNode })
           onThemeToggle={toggleTheme}
           actions={<NurseShiftButton />}
           onLogout={() => setIsLogoutModalOpen(true)}
-          className="sticky top-0 z-30"
+          className="sticky top-0 z-50"
           profileHref={getPath('/nurse/profile')}
         />
-        <main className="p-2 sm:p-4 md:p-6 flex-1 overflow-y-auto relative">
+        <main className="p-1.5 sm:p-4 md:p-6 flex-1 overflow-y-auto relative">
           {children}
 
           {/* Global Floating Support Button */}

@@ -423,10 +423,6 @@ function HospitalAdminDashboard() {
               <BellRing className="w-3.5 h-3.5" />
               <span className="text-[9px] font-black uppercase tracking-widest">Reminder Settings</span>
             </button>
-            <div className="px-3 py-1.5 bg-emerald-50 rounded-xl flex items-center gap-2 border border-emerald-100/50">
-              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-              <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Live Flow</span>
-            </div>
           </div>
         </div>
       </div>

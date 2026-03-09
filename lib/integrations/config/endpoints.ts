@@ -343,6 +343,7 @@ export const NURSE_ENDPOINTS = {
     BEDS: "/ipd/beds",
     DETAILS: (id: string) => `/ipd/beds/${id}`,
   },
+  QUICK_NOTES: "/doctors/quick-notes",
 };
 
 // ─── Emergency / Ambulance ──────────────────────────────────────────────────

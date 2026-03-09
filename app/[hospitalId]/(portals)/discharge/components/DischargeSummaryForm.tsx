@@ -724,9 +724,9 @@ export function DischargeSummaryForm() {
 
     return (
         <>
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-8">
                 {/* Patient Demographics */}
-                <Card className="p-6 bg-white rounded-2xl border-white shadow-xl shadow-blue-900/5">
+                <Card className="p-[2px] sm:p-6 bg-white rounded-2xl border-white shadow-xl shadow-blue-900/5">
                     <div className="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
                         <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
                             <User size={20} />
@@ -1072,13 +1072,13 @@ export function DischargeSummaryForm() {
                     </div>
 
                     <div className="space-y-6">
-                        {[  { name: 'reasonForAdmission', label: 'Reason for Admission', placeholder: 'Why was the patient admitted?', limit: 400, rows: 2 },
-                            { name: 'chiefComplaints', label: 'Chief Complaints *', placeholder: 'Main symptoms presented by patient', limit: 400, rows: 2, required: true },
-                            { name: 'historyOfPresentIllness', label: 'History of Present Illness', placeholder: 'Detailed history of current illness', limit: 400, rows: 3 },
-                            { name: 'pastMedicalHistory', label: 'Past Medical History', placeholder: 'Previous medical conditions, surgeries, etc.', limit: 400, rows: 2 },
-                            { name: 'provisionalDiagnosis', label: 'Provisional Diagnosis', placeholder: 'Initial diagnosis at admission', limit: 200, rows: 2 },
-                            { name: 'diagnosis', label: 'Final Diagnosis *', placeholder: 'Confirmed medical diagnosis', limit: 400, rows: 2, required: true },
-                            { name: 'allergyHistory', label: 'Allergy History', placeholder: 'Known allergies', limit: 200, rows: 2 },
+                        {[{ name: 'reasonForAdmission', label: 'Reason for Admission', placeholder: 'Why was the patient admitted?', limit: 400, rows: 2 },
+                        { name: 'chiefComplaints', label: 'Chief Complaints *', placeholder: 'Main symptoms presented by patient', limit: 400, rows: 2, required: true },
+                        { name: 'historyOfPresentIllness', label: 'History of Present Illness', placeholder: 'Detailed history of current illness', limit: 400, rows: 3 },
+                        { name: 'pastMedicalHistory', label: 'Past Medical History', placeholder: 'Previous medical conditions, surgeries, etc.', limit: 400, rows: 2 },
+                        { name: 'provisionalDiagnosis', label: 'Provisional Diagnosis', placeholder: 'Initial diagnosis at admission', limit: 200, rows: 2 },
+                        { name: 'diagnosis', label: 'Final Diagnosis *', placeholder: 'Confirmed medical diagnosis', limit: 400, rows: 2, required: true },
+                        { name: 'allergyHistory', label: 'Allergy History', placeholder: 'Known allergies', limit: 200, rows: 2 },
                         ].map(({ name, label, placeholder, limit, rows, required: req }) => {
                             const val = (formData as any)[name] as string;
                             const errMsg = (errors as any)[name];
@@ -1120,13 +1120,13 @@ export function DischargeSummaryForm() {
                     <div className="space-y-6">
                         {/* Vitals with error messages */}
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-4">
-                            {[  { label: 'Height (cm)', vname: 'vitals.height', ph: '170' },
-                                { label: 'Weight (kg)', vname: 'vitals.weight', ph: '70' },
-                                { label: 'BP', vname: 'vitals.bloodPressure', ph: '120/80' },
-                                { label: 'Pulse', vname: 'vitals.pulse', ph: '72' },
-                                { label: 'Temp (°F)', vname: 'vitals.temperature', ph: '98.6' },
-                                { label: 'SpO2 (%)', vname: 'vitals.spO2', ph: '99' },
-                                { label: 'Glucose', vname: 'vitals.glucose', ph: '100' },
+                            {[{ label: 'Height (cm)', vname: 'vitals.height', ph: '170' },
+                            { label: 'Weight (kg)', vname: 'vitals.weight', ph: '70' },
+                            { label: 'BP', vname: 'vitals.bloodPressure', ph: '120/80' },
+                            { label: 'Pulse', vname: 'vitals.pulse', ph: '72' },
+                            { label: 'Temp (°F)', vname: 'vitals.temperature', ph: '98.6' },
+                            { label: 'SpO2 (%)', vname: 'vitals.spO2', ph: '99' },
+                            { label: 'Glucose', vname: 'vitals.glucose', ph: '100' },
                             ].map(({ label, vname, ph }) => {
                                 const errMsg = (errors as any)[vname];
                                 return (
@@ -1137,12 +1137,12 @@ export function DischargeSummaryForm() {
                                 );
                             })}
                         </div>
-                        {[ { name: 'generalAppearance', label: 'General Appearance', placeholder: 'Physical examination findings', limit: 200, rows: 2 },
-                            { name: 'treatmentGiven', label: 'Treatment Given *', placeholder: 'Summary of all treatments provided', limit: 400, rows: 3, required: true },
-                            { name: 'surgicalProcedures', label: 'Surgical Procedures', placeholder: 'Any surgeries performed', limit: 400, rows: 2 },
-                            { name: 'surgeryNotes', label: 'Surgery Notes', placeholder: 'Detailed surgical notes if applicable', limit: 400, rows: 3 },
-                            { name: 'investigationsPerformed', label: 'Investigations Performed', placeholder: 'Labs, Radiology, etc.', limit: 400, rows: 3 },
-                            { name: 'hospitalCourse', label: 'Hospital Course', placeholder: "Summary of patient's stay and progress", limit: 400, rows: 3 },
+                        {[{ name: 'generalAppearance', label: 'General Appearance', placeholder: 'Physical examination findings', limit: 200, rows: 2 },
+                        { name: 'treatmentGiven', label: 'Treatment Given *', placeholder: 'Summary of all treatments provided', limit: 400, rows: 3, required: true },
+                        { name: 'surgicalProcedures', label: 'Surgical Procedures', placeholder: 'Any surgeries performed', limit: 400, rows: 2 },
+                        { name: 'surgeryNotes', label: 'Surgery Notes', placeholder: 'Detailed surgical notes if applicable', limit: 400, rows: 3 },
+                        { name: 'investigationsPerformed', label: 'Investigations Performed', placeholder: 'Labs, Radiology, etc.', limit: 400, rows: 3 },
+                        { name: 'hospitalCourse', label: 'Hospital Course', placeholder: "Summary of patient's stay and progress", limit: 400, rows: 3 },
                         ].map(({ name, label, placeholder, limit, rows, required: req }) => {
                             const val = (formData as any)[name] as string;
                             const errMsg = (errors as any)[name];
@@ -1201,8 +1201,8 @@ export function DischargeSummaryForm() {
                             />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {[  { name: 'adviceAtDischarge', label: 'Advice at Discharge', placeholder: 'General health advice', limit: 400 },
-                                { name: 'dietInstructions', label: 'Diet Instructions', placeholder: 'Nutritional advice', limit: 400 },
+                            {[{ name: 'adviceAtDischarge', label: 'Advice at Discharge', placeholder: 'General health advice', limit: 400 },
+                            { name: 'dietInstructions', label: 'Diet Instructions', placeholder: 'Nutritional advice', limit: 400 },
                             ].map(({ name, label, placeholder, limit }) => {
                                 const val = (formData as any)[name] as string;
                                 return (
@@ -1217,8 +1217,8 @@ export function DischargeSummaryForm() {
                             })}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {[  { name: 'activityRestrictions', label: 'Activity Restrictions', placeholder: 'Physical activity limitations', limit: 400 },
-                                { name: 'warningSigns', label: 'Warning Signs', placeholder: 'Symptoms requiring immediate attention', limit: 400 },
+                            {[{ name: 'activityRestrictions', label: 'Activity Restrictions', placeholder: 'Physical activity limitations', limit: 400 },
+                            { name: 'warningSigns', label: 'Warning Signs', placeholder: 'Symptoms requiring immediate attention', limit: 400 },
                             ].map(({ name, label, placeholder, limit }) => {
                                 const val = (formData as any)[name] as string;
                                 return (
@@ -1407,7 +1407,7 @@ export function DischargeSummaryForm() {
                 )}
 
                 {/* Footer Actions */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-gray-100 mt-8">
+                <div className="flex flex-row items-center justify-center gap-1.5 sm:gap-4 pt-4 sm:pt-8 border-t border-gray-100 mt-4 sm:mt-8">
                     <Button
                         type="button"
                         onClick={() => {
@@ -1415,35 +1415,38 @@ export function DischargeSummaryForm() {
                             else if (user?.role === 'helpdesk') router.push('/helpdesk/discharge/history');
                             else router.push('/discharge');
                         }}
-                        className="bg-slate-800 text-white hover:bg-slate-900 rounded-xl px-6 py-3.5 font-bold w-full sm:w-auto flex items-center justify-center gap-2 transition-all order-2 sm:order-1"
+                        className="bg-slate-800 text-white hover:bg-slate-900 rounded-lg sm:rounded-xl px-2 sm:px-6 py-2 sm:py-3.5 font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all text-[8px] sm:text-xs w-auto"
                     >
-                        <ArrowLeft size={18} />
-                        Back to Queue
+                        <ArrowLeft size={14} className="sm:w-[18px] sm:h-[18px]" />
+                        <span className="hidden sm:inline">Back to Queue</span>
+                        <span className="sm:hidden">Back</span>
                     </Button>
-                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto order-1 sm:order-2">
-                        <Button
-                            type="button"
-                            onClick={handleReset}
-                            className="bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 rounded-xl px-6 py-3.5 font-bold w-full sm:w-auto flex items-center justify-center gap-2 transition-all"
-                        >
-                            <Trash2 size={18} />
-                            Reset Form
-                        </Button>
-                        <Button
-                            type="submit"
-                            disabled={loading || Object.values(errors).some(e => e !== '')}
-                            className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl px-8 py-3.5 font-black shadow-lg shadow-blue-200 w-full sm:w-auto flex items-center justify-center gap-2 transition-all"
-                        >
-                            {loading ? (
-                                <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : (
-                                <>
-                                    <Save size={18} />
-                                    {isNurse ? 'Prepare Discharge' : 'Commit & Print'}
-                                </>
-                            )}
-                        </Button>
-                    </div>
+
+                    <Button
+                        type="button"
+                        onClick={handleReset}
+                        className="bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 rounded-lg sm:rounded-xl px-2 sm:px-6 py-2 sm:py-3.5 font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all text-[8px] sm:text-xs w-auto"
+                    >
+                        <Trash2 size={14} className="sm:w-[18px] sm:h-[18px]" />
+                        <span className="hidden sm:inline">Reset Form</span>
+                        <span className="sm:hidden">Reset</span>
+                    </Button>
+
+                    <Button
+                        type="submit"
+                        disabled={loading || Object.values(errors).some(e => e !== '')}
+                        className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg sm:rounded-xl px-3 sm:px-8 py-2 sm:py-3.5 font-black shadow-lg shadow-blue-200 flex items-center justify-center gap-1 sm:gap-2 transition-all text-[9px] sm:text-sm w-auto"
+                    >
+                        {loading ? (
+                            <div className="h-3 w-3 sm:h-5 sm:w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                            <>
+                                <Save size={14} className="sm:w-[18px] sm:h-[18px]" />
+                                <span className="hidden sm:inline">{isNurse ? 'Prepare Discharge' : 'Commit & Print'}</span>
+                                <span className="sm:hidden">{isNurse ? 'Prepare' : 'Commit'}</span>
+                            </>
+                        )}
+                    </Button>
                 </div>
             </form>
 

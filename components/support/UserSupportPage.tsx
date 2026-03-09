@@ -50,19 +50,19 @@ export default function UserSupportPage({ basePath, title }: UserSupportPageProp
     }, [loadTickets, router]);
 
     return (
-        <div className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                        <LifeBuoy className="text-blue-600" /> {effectiveTitle}
+        <div className="max-w-7xl mx-auto space-y-1 pb-4 pt-0.5 px-0.5 sm:px-1 animate-in fade-in duration-700">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-1.5 bg-white dark:bg-gray-800 p-1.5 sm:p-2.5 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm transition-all hover:shadow-md">
+                <div className="space-y-0">
+                    <h1 className="text-[10px] sm:text-sm font-black text-gray-900 dark:text-white flex items-center gap-1.5 uppercase tracking-tight">
+                        <LifeBuoy size={12} className="text-blue-600" /> {effectiveTitle}
                     </h1>
-                    <p className="text-gray-500 mt-2 text-sm md:text-base">Raise tickets and track their status directly from here.</p>
+                    <p className="text-gray-500 text-[7px] sm:text-[9px] font-medium uppercase tracking-tighter shrink-0 opacity-70 leading-none">Raise tickets and track their status directly from here.</p>
                 </div>
                 <button
                     onClick={() => setIsCreateModalOpen(true)}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-600/20 transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
+                    className="flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-[8px] sm:text-[10px] font-black uppercase tracking-widest shadow-md shadow-blue-600/10 transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
                 >
-                    <Plus size={20} /> New Ticket
+                    <Plus size={10} /> New Ticket
                 </button>
             </div>
 

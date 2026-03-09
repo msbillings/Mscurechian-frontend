@@ -270,12 +270,13 @@ export default function NurseMedicineReturnPage() {
     };
 
     return (
-        <div className="space-y-6 max-w-[1200px] mx-auto pb-20">
+        <div className="space-y-3 sm:space-y-6 max-w-7xl mx-auto pb-20 p-[1px] sm:p-4">
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Medicine Return</h1>
-                <p className="text-sm text-gray-500 mt-1">
-                    Select a patient to initiate medicine returns
+            <div className="pt-2 sm:pt-4">
+                <h1 className="text-sm sm:text-2xl font-black text-slate-900 tracking-tight uppercase leading-tight">Medicine Return Protocol</h1>
+                <p className="text-slate-500 font-bold flex items-center gap-1.5 text-[8px] sm:text-sm uppercase tracking-widest mt-0.5">
+                    <ClipboardList className="w-2.5 h-2.5 sm:w-4 sm:h-4 text-blue-600" />
+                    Select a patient to initiate clinical medicine returns
                 </p>
             </div>
 
@@ -283,38 +284,38 @@ export default function NurseMedicineReturnPage() {
             {!selectedAdmission ? (
                 <div className="space-y-5">
                     {/* Search and Toggle Row */}
-                    <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-center justify-between bg-white p-1.5 sm:p-2 rounded-xl sm:rounded-2xl border border-slate-200">
                         <div className="relative w-full sm:max-w-md">
-                            <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 sm:w-[15px] sm:h-[15px]" />
                             <input
-                                className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-all"
-                                placeholder="Search patients..."
+                                className="w-full pl-9 pr-8 py-1.5 sm:py-2.5 bg-slate-50 border border-slate-100 rounded-lg sm:rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-all"
+                                placeholder="SEARCH NAME / MRN..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                             />
                             {search && (
                                 <button
                                     onClick={() => setSearch("")}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 text-lg"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 text-lg"
                                 >×</button>
                             )}
                         </div>
 
                         {/* View Switcher Controls */}
-                        <div className="flex bg-white dark:bg-gray-800 p-1 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm shrink-0">
+                        <div className="flex bg-slate-50 p-1 rounded-lg sm:rounded-xl border border-slate-100 gap-1 w-full sm:w-auto">
                             <button
                                 onClick={() => setViewMode("grid")}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === "grid" ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"}`}
+                                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-lg text-[8px] sm:text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === "grid" ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" : "text-slate-400 hover:text-slate-600"}`}
                             >
-                                <LayoutGrid size={14} />
-                                {!search && "Grid"}
+                                <LayoutGrid size={12} className="sm:w-[14px] sm:h-[14px]" />
+                                GRID
                             </button>
                             <button
                                 onClick={() => setViewMode("table")}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === "table" ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"}`}
+                                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-lg text-[8px] sm:text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === "table" ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" : "text-slate-400 hover:text-slate-600"}`}
                             >
-                                <List size={14} />
-                                {!search && "Table"}
+                                <List size={12} className="sm:w-[14px] sm:h-[14px]" />
+                                TABLE
                             </button>
                         </div>
                     </div>
@@ -342,24 +343,24 @@ export default function NurseMedicineReturnPage() {
                                     <button
                                         key={adm._id}
                                         onClick={() => setSelectedAdmission(adm)}
-                                        className="w-full text-left bg-white dark:bg-gray-800 rounded-[28px] border border-gray-100 dark:border-gray-700 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-xl transition-all relative group overflow-hidden flex flex-col pt-6"
+                                        className="w-full text-left bg-white rounded-2xl sm:rounded-[2rem] border border-slate-100 shadow-sm hover:border-blue-300 hover:shadow-xl transition-all relative group overflow-hidden flex flex-col pt-3 sm:pt-6"
                                     >
-                                        <div className="px-6 flex items-start justify-between">
-                                            <div className="flex items-center gap-4 mb-4">
-                                                <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
-                                                    <User size={20} className="text-white" />
+                                        <div className="px-3 sm:px-6 flex items-start justify-between">
+                                            <div className="flex items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
+                                                <div className="w-8 h-8 sm:w-12 sm:h-12 bg-blue-600 rounded-lg sm:rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-200">
+                                                    <User size={14} className="text-white sm:w-[20px] sm:h-[20px]" />
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <p className="font-extrabold text-gray-800 dark:text-white text-base tracking-tight truncate pb-0.5">
+                                                    <p className="font-black text-slate-900 text-[11px] sm:text-base tracking-tight truncate pb-0.5 uppercase">
                                                         {adm.patient?.name || "Unknown"}
                                                     </p>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] font-bold tracking-widest uppercase text-blue-500 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-md">
+                                                    <div className="flex items-center gap-1 sm:gap-2">
+                                                        <span className="text-[7px] sm:text-[10px] font-black tracking-widest uppercase text-blue-600 bg-blue-50 px-1.5 sm:px-2 py-0.5 rounded">
                                                             {adm.admissionId}
                                                         </span>
                                                         {adm.bed?.bedId && (
-                                                            <span className="text-[10px] font-bold tracking-widest uppercase text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                                                <BedDouble size={10} /> {adm.bed.bedId}
+                                                            <span className="text-[7px] sm:text-[10px] font-black tracking-widest uppercase text-slate-400 bg-slate-50 px-1.5 sm:px-2 py-0.5 rounded flex items-center gap-1">
+                                                                <BedDouble size={8} className="sm:w-[10px] sm:h-[10px]" /> {adm.bed.bedId}
                                                             </span>
                                                         )}
                                                     </div>
@@ -368,122 +369,119 @@ export default function NurseMedicineReturnPage() {
                                         </div>
 
                                         {/* Pharmacy Status Strip */}
-                                        <div className="px-6 pb-2">
-                                            <p className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${adm.pharmacyClearanceStatus === "CLEARED" ? "text-green-600" : "text-amber-500"}`}>
+                                        <div className="px-3 sm:px-6 pb-2">
+                                            <p className={`text-[7px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-1 sm:gap-1.5 ${adm.pharmacyClearanceStatus === "CLEARED" ? "text-emerald-500" : "text-amber-500"}`}>
                                                 {adm.pharmacyClearanceStatus === "CLEARED" ? (
-                                                    <><CheckCircle2 size={12} /> Pharmacy Cleared</>
+                                                    <><CheckCircle2 size={10} className="sm:w-[12px] sm:h-[12px]" /> Cleared</>
                                                 ) : (
-                                                    <><Clock size={12} /> Pending Medicine Returns</>
+                                                    <><Clock size={10} className="sm:w-[12px] sm:h-[12px]" /> Pending Returns</>
                                                 )}
                                             </p>
                                         </div>
 
                                         {/* Preview of Medicines List for this Nurse */}
-                                        <div className="mt-2 grow bg-blue-50/50 dark:bg-gray-900/50 p-6 border-t border-gray-50 dark:border-gray-800 relative">
-                                            <div className="flex items-center justify-between mb-3 text-[10px] uppercase tracking-widest font-black text-gray-400">
-                                                <span>Medicines Billed To You</span>
-                                                <span className="bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm">{totalMedicines} Items</span>
+                                        <div className="mt-2 grow bg-slate-50/50 p-3 sm:p-6 border-t border-slate-50 relative">
+                                            <div className="flex items-center justify-between mb-2 sm:mb-3 text-[7px] sm:text-[10px] uppercase tracking-widest font-black text-slate-400">
+                                                <span>Session Brief</span>
+                                                <span className="bg-white px-1 sm:px-2 py-0.5 sm:py-1 rounded shadow-sm text-[6px] sm:text-[9px]">{totalMedicines} Items</span>
                                             </div>
 
                                             {issuances.length > 0 ? (
-                                                <div className="space-y-3">
+                                                <div className="space-y-1.5 sm:space-y-3">
                                                     {issuances.slice(0, 2).map((iss: any, idx: number) => (
-                                                        <div key={idx} className="bg-white dark:bg-gray-800 p-3 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                                                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2 border-b border-gray-50 dark:border-gray-700 pb-1.5">
+                                                        <div key={idx} className="bg-white p-1.5 sm:p-3 rounded-lg sm:rounded-2xl shadow-sm border border-slate-100">
+                                                            <p className="text-[6px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 sm:mb-2 border-b border-slate-50 pb-1 sm:pb-1.5">
                                                                 {new Date(iss.issuedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(iss.issuedAt).toLocaleDateString()}
                                                             </p>
-                                                            <div className="space-y-1.5">
+                                                            <div className="space-y-0.5 sm:space-y-1.5">
                                                                 {iss.items.slice(0, 2).map((item: any, i: number) => (
                                                                     <div key={i} className="flex justify-between items-center">
-                                                                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 truncate pr-2 max-w-[70%]">{item.productName}</span>
-                                                                        <span className="text-[10px] font-black text-blue-600 bg-blue-50 dark:bg-blue-900/40 px-1.5 py-0.5 rounded">{item.issuedQty} QTY</span>
+                                                                        <span className="text-[8px] sm:text-xs font-bold text-slate-700 truncate pr-1 sm:pr-2 max-w-[70%] uppercase">{item.productName}</span>
+                                                                        <span className="text-[7px] sm:text-[10px] font-black text-blue-600 bg-blue-50 px-1 py-0.5 rounded">{item.issuedQty}</span>
                                                                     </div>
                                                                 ))}
                                                                 {iss.items.length > 2 && (
-                                                                    <p className="text-[10px] font-bold text-gray-400 mt-1 italic">+ {iss.items.length - 2} more items</p>
+                                                                    <p className="text-[6px] sm:text-[10px] font-bold text-slate-300 mt-1 italic uppercase">+ {iss.items.length - 2} Items</p>
                                                                 )}
                                                             </div>
                                                         </div>
                                                     ))}
-                                                    {issuances.length > 2 && (
-                                                        <p className="text-xs font-bold text-blue-500 text-center pt-1">+ {issuances.length - 2} more sessions</p>
-                                                    )}
                                                 </div>
                                             ) : (
-                                                <div className="flex flex-col items-center justify-center py-6 opacity-40">
-                                                    <Package size={24} className="mb-2 text-gray-400" />
-                                                    <span className="text-xs font-medium text-gray-500">No medicines explicitly assigned</span>
+                                                <div className="flex flex-col items-center justify-center py-4 sm:py-8 opacity-40">
+                                                    <Package size={18} className="sm:w-[24px] sm:h-[24px] mb-1 sm:mb-2 text-slate-300" />
+                                                    <span className="text-[8px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">No Protocol Assigned</span>
                                                 </div>
                                             )}
                                         </div>
 
                                         {/* Action highlight */}
-                                        <div className="bg-blue-600 dark:bg-blue-700 py-3.5 px-6 opacity-0 group-hover:opacity-100 transition-all flex justify-between items-center absolute bottom-0 left-0 w-full translate-y-full group-hover:translate-y-0">
-                                            <span className="text-xs font-bold text-white uppercase tracking-widest">
-                                                Manage Returns
+                                        <div className="bg-blue-600 py-3 sm:py-3.5 px-4 sm:px-6 opacity-0 group-hover:opacity-100 transition-all flex justify-between items-center absolute bottom-0 left-0 w-full translate-y-full group-hover:translate-y-0">
+                                            <span className="text-[9px] sm:text-xs font-black text-white uppercase tracking-widest">
+                                                Initiate Clinical Return
                                             </span>
-                                            <ArrowLeft size={16} className="rotate-180 text-white" />
+                                            <ArrowLeft size={14} className="rotate-180 text-white sm:w-[16px] sm:h-[16px]" />
                                         </div>
-                                        <div className="h-0 group-hover:h-12 transition-all duration-300 pointer-events-none" />
+                                        <div className="h-0 group-hover:h-10 sm:group-hover:h-12 transition-all duration-300 pointer-events-none" />
                                     </button>
                                 );
                             })}
                         </div>
                     ) : (
                         /* Table View for Patients */
-                        <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <table className="w-full text-left border-collapse">
+                        <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-100 overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 overflow-x-auto custom-scrollbar">
+                            <table className="w-full text-left border-collapse min-w-[700px]">
                                 <thead>
-                                    <tr className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-800">
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Patient Details</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Doctor</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Staff Nurse</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Status</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-right">Action</th>
+                                    <tr className="bg-slate-50 border-b border-slate-100">
+                                        <th className="px-3 sm:px-6 py-2 sm:py-4 text-[7px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Patient Details</th>
+                                        <th className="px-3 sm:px-6 py-2 sm:py-4 text-[7px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Doctor</th>
+                                        <th className="px-3 sm:px-6 py-2 sm:py-4 text-[7px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Staff Nurse</th>
+                                        <th className="px-3 sm:px-6 py-2 sm:py-4 text-[7px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
+                                        <th className="px-3 sm:px-6 py-2 sm:py-4 text-[7px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Action</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                                <tbody className="divide-y divide-slate-50">
                                     {enrichedAdmissions.map((adm: any) => (
-                                        <tr key={adm._id} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors group">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-xl flex items-center justify-center font-bold">
+                                        <tr key={adm._id} className="hover:bg-blue-50/30 transition-colors group">
+                                            <td className="px-3 sm:px-6 py-2 sm:py-4">
+                                                <div className="flex items-center gap-2 sm:gap-3">
+                                                    <div className="w-7 h-7 sm:w-10 sm:h-10 bg-blue-50 text-blue-600 rounded-lg sm:rounded-xl flex items-center justify-center font-bold text-[10px] sm:text-sm">
                                                         {adm.patient?.name?.charAt(0) || "P"}
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-bold text-gray-900 dark:text-white">{adm.patient?.name || "Unknown"}</p>
-                                                        <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">{adm.admissionId}</p>
+                                                        <p className="text-[10px] sm:text-sm font-black text-slate-900 uppercase tracking-tight">{adm.patient?.name || "Unknown"}</p>
+                                                        <p className="text-[7px] sm:text-[10px] font-black text-blue-600 uppercase tracking-widest">{adm.admissionId}</p>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-3 sm:px-6 py-2 sm:py-4 text-[9px] sm:text-xs">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-bold text-gray-600 dark:text-gray-300">
-                                                        {adm.primaryDoctor?.user?.name || adm.primaryDoctor?.name || <span className="text-gray-300 italic">Not assigned</span>}
+                                                    <span className="font-bold text-slate-600 uppercase">
+                                                        {adm.primaryDoctor?.user?.name || adm.primaryDoctor?.name || <span className="text-slate-300 italic">Not assigned</span>}
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-3 sm:px-6 py-2 sm:py-4 text-[9px] sm:text-xs">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-bold text-gray-600 dark:text-gray-300">
-                                                        {adm.assignedNurse?.name || user?.name || <span className="text-gray-300 italic">Unassigned</span>}
+                                                    <span className="font-bold text-slate-600 uppercase">
+                                                        {adm.assignedNurse?.name || user?.name || <span className="text-slate-300 italic">Unassigned</span>}
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${adm.pharmacyClearanceStatus === "CLEARED" ? "bg-green-100 text-green-700" :
-                                                    adm.pharmacyClearanceStatus === "PENDING" ? "bg-amber-100 text-amber-700" :
-                                                        "bg-gray-100 text-gray-500"
+                                            <td className="px-3 sm:px-6 py-2 sm:py-4">
+                                                <span className={`text-[7px] sm:text-[9px] font-black px-1.5 sm:px-2 py-0.5 rounded uppercase tracking-widest ${adm.pharmacyClearanceStatus === "CLEARED" ? "bg-emerald-50 text-emerald-600" :
+                                                    adm.pharmacyClearanceStatus === "PENDING" ? "bg-amber-50 text-amber-600" :
+                                                        "bg-slate-50 text-slate-400"
                                                     }`}>
                                                     {adm.pharmacyClearanceStatus === "CLEARED" ? "Cleared" :
                                                         adm.pharmacyClearanceStatus === "PENDING" ? "Pending" :
                                                             "None"}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-right">
+                                            <td className="px-3 sm:px-6 py-2 sm:py-4 text-right">
                                                 <button
                                                     onClick={() => setSelectedAdmission(adm)}
-                                                    className="px-4 py-2 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-md active:scale-95"
+                                                    className="px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg sm:rounded-xl text-[7px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 hover:scale-105 transition-all shadow-md active:scale-95"
                                                 >
                                                     Open Portal
                                                 </button>
@@ -507,16 +505,16 @@ export default function NurseMedicineReturnPage() {
 
                     <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-3xl overflow-hidden shadow-sm">
                         {/* Selected Patient Header */}
-                        <div className="px-6 py-5 bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 border-b border-blue-100 dark:border-blue-800/30 flex items-center justify-between">
+                        <div className="px-3 sm:px-6 py-2 sm:py-5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
                             <div>
-                                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                                <h2 className="text-[11px] sm:text-lg font-black text-slate-900 uppercase tracking-tight leading-none">
                                     {selectedAdmission.patient?.name}
                                 </h2>
-                                <p className="text-sm text-gray-500 mt-1 flex items-center gap-3">
+                                <p className="text-[7px] sm:text-sm text-slate-400 font-bold mt-0.5 sm:mt-1 flex items-center gap-1.5 sm:gap-3 uppercase tracking-widest">
                                     <span>{selectedAdmission.admissionId}</span>
                                     {selectedAdmission.bed?.bedId && (
-                                        <span className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
-                                            <BedDouble size={14} /> {selectedAdmission.bed.bedId}
+                                        <span className="flex items-center gap-1 text-blue-500">
+                                            <BedDouble size={10} className="sm:w-[14px] sm:h-[14px]" /> {selectedAdmission.bed.bedId}
                                         </span>
                                     )}
                                 </p>
@@ -524,35 +522,27 @@ export default function NurseMedicineReturnPage() {
                         </div>
 
                         {/* Issued Medicines List */}
-                        <div className="p-6">
-                            <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
-                                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                                    <ClipboardList size={16} className="text-blue-500" />
-                                    Billed Medicines
+                        <div className="p-2 sm:p-6">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 mb-3 sm:mb-6">
+                                <h3 className="text-[10px] sm:text-sm font-black text-slate-700 flex items-center gap-1.5 sm:gap-2 uppercase tracking-wide">
+                                    <ClipboardList size={14} className="text-blue-500 sm:w-[16px] sm:h-[16px]" />
+                                    Prescription History
                                 </h3>
 
-                                <div className="flex flex-wrap items-center gap-3">
-                                    {/* Removed View Toggle as requested */}
-
+                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-3">
                                     {hasReturnRequests && (
-                                        <span className="text-[10px] text-yellow-600 font-bold bg-yellow-50 dark:bg-yellow-900/20 px-3 py-1.5 rounded-xl border border-yellow-200 flex items-center gap-1.5">
-                                            <Clock size={12} /> Pending Approval
-                                        </span>
-                                    )}
-
-                                    {(returnJustSubmitted || hasPendingReturn) && !hasReturnRequests && (
-                                        <span className="text-[10px] text-green-600 font-bold bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded-xl border border-green-200 flex items-center gap-1.5">
-                                            <CheckCircle2 size={12} /> Return Request Submitted — Awaiting Pharmacy
+                                        <span className="text-[7px] sm:text-[10px] text-amber-600 font-black bg-amber-50 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-amber-100 flex items-center gap-1 sm:gap-1.5 uppercase tracking-widest">
+                                            <Clock size={10} className="sm:w-[12px] sm:h-[12px]" /> Approval Pending
                                         </span>
                                     )}
 
                                     {canInitiateReturn && (
                                         <button
                                             onClick={() => setIsReturnMode(true)}
-                                            className="text-[10px] bg-orange-50 dark:bg-orange-900/20 border border-orange-200 text-orange-700 px-3 py-1.5 rounded-xl font-bold hover:bg-orange-100 flex items-center gap-1.5 transition-colors shadow-sm uppercase tracking-widest"
+                                            className="text-[7px] sm:text-[10px] bg-blue-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg font-black hover:bg-blue-700 flex items-center gap-1 sm:gap-1.5 transition-colors shadow-lg uppercase tracking-widest"
                                         >
-                                            <RotateCcw size={12} />
-                                            Initiate Returns
+                                            <RotateCcw size={10} className="sm:w-[12px] sm:h-[12px]" />
+                                            Initiate Return
                                         </button>
                                     )}
                                     {isReturnMode && (
@@ -562,9 +552,9 @@ export default function NurseMedicineReturnPage() {
                                                 setReturnQtys({});
                                                 setGlobalReturnReason("");
                                             }}
-                                            className="text-[10px] bg-gray-100 dark:bg-gray-800 border border-gray-200 text-gray-700 px-3 py-1.5 rounded-xl font-bold hover:bg-gray-200 flex items-center gap-1.5 transition-colors shadow-sm uppercase tracking-widest"
+                                            className="text-[7px] sm:text-[10px] bg-slate-200 text-slate-700 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg font-black hover:bg-slate-300 flex items-center gap-1 sm:gap-1.5 transition-colors uppercase tracking-widest"
                                         >
-                                            Cancel
+                                            Abort Cycle
                                         </button>
                                     )}
                                 </div>
@@ -573,73 +563,67 @@ export default function NurseMedicineReturnPage() {
                             {loadingIssuances ? (
                                 <div className="text-center py-10">
                                     <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                                    <p className="text-xs text-gray-400">Loading history...</p>
+                                    <p className="text-[10px] text-slate-400">Loading history...</p>
                                 </div>
                             ) : allItems.length === 0 ? (
-                                <div className="text-center py-10 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
-                                    <Package size={32} className="mx-auto text-gray-300 mb-2" />
-                                    <p className="text-sm font-medium text-gray-500">No medicines have been assigned to you for this patient.</p>
+                                <div className="text-center py-8 sm:py-10 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                                    <Package size={24} className="mx-auto text-slate-300 mb-2 sm:w-[32px] sm:h-[32px]" />
+                                    <p className="text-[9px] sm:text-sm font-black text-slate-400 uppercase tracking-widest">No Issued Narcotics/Meds Found</p>
                                 </div>
                             ) : (
-                                /* Fixed Table View for Medicines (Removed Grid as requested) */
-                                <div className="border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden bg-white dark:bg-gray-800 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                    {/* Consolidated Table */}
-                                    <table className="w-full text-xs">
+                                /* Fixed Table View for Medicines */
+                                <div className="border border-slate-100 rounded-xl sm:rounded-2xl overflow-hidden bg-white animate-in fade-in slide-in-from-bottom-2 duration-300 overflow-x-auto custom-scrollbar">
+                                    <table className="w-full text-xs min-w-[600px]">
                                         <thead>
-                                            <tr className="text-gray-400 uppercase text-[10px] tracking-wider border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                                                <th className="text-left px-5 py-3 font-semibold w-1/4">Medicine</th>
-                                                <th className="text-left px-5 py-3 font-semibold">Issued Detail</th>
-                                                <th className="text-center px-3 py-3 font-semibold text-green-600">Consumed</th>
-                                                <th className="text-center px-3 py-3 font-semibold text-orange-500">Returned</th>
-                                                <th className="text-center px-3 py-3 font-semibold text-blue-500">Left</th>
+                                            <tr className="text-slate-400 uppercase text-[7px] sm:text-[10px] font-black tracking-widest border-b border-slate-50 bg-slate-50/50">
+                                                <th className="text-left px-3 sm:px-5 py-2 sm:py-3 w-1/4">Pharma Detail</th>
+                                                <th className="text-left px-3 sm:px-5 py-2 sm:py-3">Session Meta</th>
+                                                <th className="text-center px-1 sm:px-3 py-2 sm:py-3 text-emerald-600">Administered</th>
+                                                <th className="text-center px-1 sm:px-3 py-2 sm:py-3 text-amber-500">Backlog</th>
+                                                <th className="text-center px-1 sm:px-3 py-2 sm:py-3 text-blue-500">Residual</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
+                                        <tbody className="divide-y divide-slate-50">
                                             {allItems.map((item: any, idx: number) => {
                                                 const issued = item.issuedQty ?? item.qty ?? 0;
                                                 const returned = item.returnedQty ?? 0;
                                                 const isRequested = item.issStatus === 'RETURN_REQUESTED';
 
                                                 return (
-                                                    <tr key={idx} className={`hover:bg-gray-50/50 dark:hover:bg-gray-700/20 ${isRequested ? 'opacity-50' : ''}`}>
-                                                        <td className="px-5 py-4 font-bold text-gray-700 dark:text-gray-200 align-top">
+                                                    <tr key={idx} className={`hover:bg-blue-50/10 transition-colors ${isRequested ? 'opacity-50' : ''}`}>
+                                                        <td className="px-3 sm:px-5 py-2 sm:py-4 font-black text-slate-700 uppercase text-[9px] sm:text-xs">
                                                             {item.productName}
                                                         </td>
-                                                        <td className="px-5 py-4 align-top">
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <span className="text-[10px] font-black tracking-widest bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded uppercase">
+                                                        <td className="px-3 sm:px-5 py-2 sm:py-4">
+                                                            <div className="flex items-center gap-1 sm:gap-2 mb-0.5 sm:mb-1">
+                                                                <span className="text-[7px] sm:text-[10px] font-black tracking-widest bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded uppercase">
                                                                     {issued} QTY
                                                                 </span>
-                                                                <span className="text-xs text-gray-400 font-medium">
+                                                                <span className="text-[7px] sm:text-xs text-slate-400 font-bold uppercase tracking-widest">
                                                                     {new Date(item.issuedAt).toLocaleDateString("en-IN", {
                                                                         day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
                                                                     })}
                                                                 </span>
                                                             </div>
-                                                            {item.nurseName && (
-                                                                <span className="text-[10px] text-teal-600 font-semibold flex items-center gap-1">
-                                                                    <UserCheck size={10} /> {item.nurseName}
-                                                                </span>
-                                                            )}
                                                         </td>
-                                                        <td className="px-3 py-4 text-center align-top">
-                                                            <span className="text-green-600 font-bold bg-green-50/50 dark:bg-green-900/10 px-2 py-1 rounded">
+                                                        <td className="px-1 sm:px-3 py-2 sm:py-4 text-center">
+                                                            <span className="text-emerald-600 font-black bg-emerald-50 text-[8px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
                                                                 {item._consumedQty}
                                                             </span>
                                                         </td>
-                                                        <td className="px-3 py-4 text-center align-top">
+                                                        <td className="px-1 sm:px-3 py-2 sm:py-4 text-center">
                                                             {isRequested ? (
-                                                                <span className="text-[10px] border border-orange-200 text-orange-500 bg-orange-50 rounded px-1.5 py-0.5 font-bold">
-                                                                    PROCESSING
+                                                                <span className="text-[6px] sm:text-[9px] font-black border border-amber-200 text-amber-500 bg-amber-50 px-1 sm:px-1.5 py-0.5 rounded uppercase">
+                                                                    PROC
                                                                 </span>
                                                             ) : (
-                                                                <span className="text-orange-500 font-bold bg-orange-50/50 dark:bg-orange-900/10 px-2 py-1 rounded">
+                                                                <span className="text-amber-500 font-black bg-amber-50 text-[8px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
                                                                     {returned}
                                                                 </span>
                                                             )}
                                                         </td>
-                                                        <td className="px-3 py-4 text-center align-top">
-                                                            <span className={`font-bold px-2 py-1 rounded ${item._leftQty > 0 ? "text-blue-600 bg-blue-50/50" : "text-gray-400 bg-gray-50"}`}>
+                                                        <td className="px-1 sm:px-3 py-2 sm:py-4 text-center">
+                                                            <span className={`font-black text-[8px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded ${item._leftQty > 0 ? "text-blue-600 bg-blue-50" : "text-slate-300 bg-slate-50"}`}>
                                                                 {item._leftQty}
                                                             </span>
                                                         </td>
@@ -651,34 +635,34 @@ export default function NurseMedicineReturnPage() {
 
                                     {/* Unified Return Form Overlay (if mode is active) */}
                                     {isReturnMode && (
-                                        <div className="bg-orange-50/30 dark:bg-orange-900/10 border-t border-orange-100 p-6 animate-in slide-in-from-bottom-5">
-                                            <h4 className="text-xs font-bold text-orange-800 mb-4 uppercase tracking-wider flex items-center gap-2">
-                                                <RotateCcw size={14} /> Returns Configuration
+                                        <div className="bg-slate-50/80 border-t border-slate-100 p-2 sm:p-6 animate-in slide-in-from-bottom-5">
+                                            <h4 className="text-[8px] sm:text-xs font-black text-slate-900 mb-2 sm:mb-4 uppercase tracking-[0.2em] flex items-center gap-1.5 sm:gap-2">
+                                                <RotateCcw size={12} className="sm:w-[14px] sm:h-[14px]" /> Configuration Matrix
                                             </h4>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-6">
                                                 {allItems.filter((i: any) => ((i.issuedQty ?? i.qty ?? 0) - (i.returnedQty ?? 0)) > 0).map((item: any) => {
                                                     const max = item._leftQty;
                                                     const key = `${item.issuanceId}_${item._rawIdx}`;
                                                     const isConsumed = max <= 0;
 
                                                     return (
-                                                        <div key={key} className={`flex items-center gap-3 bg-white dark:bg-gray-800 p-3 rounded-xl border ${isConsumed ? 'border-gray-200 dark:border-gray-700 opacity-60' : 'border-orange-100 dark:border-gray-600'} shadow-sm`}>
+                                                        <div key={key} className={`flex items-center gap-2 sm:gap-3 bg-white p-2 sm:p-3 rounded-xl border ${isConsumed ? 'border-slate-50 opacity-60' : 'border-slate-200'} shadow-sm`}>
                                                             <div className="flex-1 min-w-0">
-                                                                <p className={`text-xs font-bold ${isConsumed ? 'text-gray-400' : 'text-gray-700 dark:text-gray-200'} truncate`}>{item.productName}</p>
-                                                                <p className="text-[10px] text-gray-400 mt-0.5" suppressHydrationWarning>{new Date(item.issuedAt).toLocaleTimeString()}</p>
+                                                                <p className={`text-[9px] sm:text-xs font-black uppercase tracking-tight ${isConsumed ? 'text-slate-300' : 'text-slate-700'} truncate`}>{item.productName}</p>
+                                                                <p className="text-[7px] sm:text-[10px] text-slate-400 font-bold" suppressHydrationWarning>{new Date(item.issuedAt).toLocaleTimeString()}</p>
                                                             </div>
-                                                            <div className="flex items-center gap-2">
+                                                            <div className="flex items-center gap-1.5 sm:gap-2">
                                                                 {isConsumed ? (
-                                                                    <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded border border-gray-200">Fully Consumed</span>
+                                                                    <span className="text-[7px] font-black text-slate-300 bg-slate-50 px-1.5 py-0.5 rounded grayscale">CONSUMED</span>
                                                                 ) : (
                                                                     <>
-                                                                        <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">Max: {max}</span>
+                                                                        <span className="text-[7px] font-black text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">LIMIT: {max}</span>
                                                                         <input
                                                                             type="number" min={0} max={max}
                                                                             value={returnQtys[key] ?? 0}
                                                                             onChange={(e) => handleReturnQtyChange(key, Number(e.target.value))}
-                                                                            className="w-16 bg-white dark:bg-gray-900 border border-orange-200 dark:border-orange-800 rounded-lg px-2 py-1 text-sm font-bold text-center outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                                                                            className="w-10 sm:w-16 bg-white border border-slate-200 rounded px-1.5 py-0.5 sm:py-1 text-[10px] sm:text-sm font-black text-center outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                                                         />
                                                                     </>
                                                                 )}
@@ -688,23 +672,23 @@ export default function NurseMedicineReturnPage() {
                                                 })}
                                             </div>
 
-                                            <div className="max-w-xl">
+                                            <div className="max-w-xl space-y-2 sm:space-y-4">
                                                 <input
                                                     type="text"
-                                                    placeholder="Reason for return (required for pharmacy log)"
+                                                    placeholder="REASON FOR PROTOCOL RETURN..."
                                                     value={globalReturnReason}
                                                     onChange={(e) => setGlobalReturnReason(e.target.value)}
-                                                    className="w-full bg-white dark:bg-gray-800 border border-orange-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900/30 shadow-sm"
+                                                    className="w-full bg-white border border-slate-200 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-[10px] sm:text-sm font-black uppercase tracking-widest outline-none focus:border-blue-500 shadow-sm"
                                                 />
                                                 <button
                                                     onClick={handleSubmitReturn}
                                                     disabled={submitting}
-                                                    className="mt-4 bg-linear-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-md shadow-orange-500/20 w-auto"
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-sm font-black flex items-center justify-center gap-1.5 sm:gap-2 disabled:opacity-50 transition-all shadow-xl w-full sm:w-auto uppercase tracking-widest"
                                                 >
                                                     {submitting ? (
-                                                        <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing Returns...</>
+                                                        <><div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> EXECUTING...</>
                                                     ) : (
-                                                        <><RotateCcw size={14} /> Submit Bulk Return to Pharmacy</>
+                                                        <><RotateCcw size={12} className="sm:w-[14px] sm:h-[14px]" /> COMMIT BULK RETURN</>
                                                     )}
                                                 </button>
                                             </div>

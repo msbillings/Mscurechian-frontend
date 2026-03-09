@@ -389,8 +389,8 @@ export default function VitalsEntryModal({ isOpen, onClose, admissionId, patient
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex  items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300 ">
-            <div className="bg-white w-full max-w-lg  rounded-[1rem] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="bg-white w-full max-w-lg max-h-[85vh] rounded-[1rem] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300 flex flex-col">
                 {/* Header */}
                 <div className="bg-primary-theme px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
                     <div>
@@ -407,7 +407,7 @@ export default function VitalsEntryModal({ isOpen, onClose, admissionId, patient
                 </div>
 
                 {/* FORM */}
-                <form onSubmit={handleSubmit} className="p-3 sm:p-6 space-y-3 sm:space-y-4">
+                <form onSubmit={handleSubmit} className="p-3 sm:p-6 space-y-3 sm:space-y-4 overflow-y-auto flex-1 custom-scrollbar">
                     <div className="grid grid-cols-2 gap-2 sm:gap-4">
                         {/* Heart Rate */}
                         <div className="space-y-0.5 sm:space-y-1">

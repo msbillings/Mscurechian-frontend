@@ -275,7 +275,7 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
     const staffUser = {
         name: user?.name || "Staff Member",
         role: user?.role || "Staff",
-        image: (user as any)?.image ? `${(user as any).image}${(user as any).image.includes('?') ? '&' : '?'}t=${Date.now()}` : ""
+        image: (user as any)?.image || ""
     };
 
     return (
@@ -311,7 +311,7 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
                 />
 
                 {/* Page Content */}
-                <main className="p-6 flex-1 overflow-y-auto">
+                <main className="p-1 sm:p-2.5 flex-1 overflow-y-auto bg-transparent">
                     {children}
                 </main>
             </div>

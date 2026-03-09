@@ -107,7 +107,7 @@ export const staffService = {
   uploadDocument: (file: File | Blob, fileName: string) => {
     const formData = new FormData();
     formData.append('document', file, fileName);
-    return apiClient<{ success: boolean; url: string; publicId: string }>(
+    return apiClient<{ success: boolean; url: string; publicId: string; format?: string; resource_type?: string; }>(
       STAFF_ENDPOINTS.UPLOAD_DOCUMENT,
       {
         method: 'POST',

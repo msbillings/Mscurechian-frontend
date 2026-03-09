@@ -143,6 +143,24 @@ export const NurseService = {
     });
   },
 
+  // ─── Quick Notes (Clinical Note Templates) ──────────────────────────────────
+  getQuickNotes: async (): Promise<any[]> => {
+    return apiClient(NURSE_ENDPOINTS.QUICK_NOTES);
+  },
+
+  addQuickNote: async (data: { text: string }): Promise<any> => {
+    return apiClient(NURSE_ENDPOINTS.QUICK_NOTES, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteQuickNote: async (id: string): Promise<void> => {
+    return apiClient(`${NURSE_ENDPOINTS.QUICK_NOTES}/${id}`, {
+      method: "DELETE",
+    });
+  },
+
   // ─── React Query key helpers ─────────────────────────────────────────────────
   queryKeys: {
     all: () => ["nurse"] as const,

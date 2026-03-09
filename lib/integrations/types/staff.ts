@@ -67,11 +67,11 @@ export interface StaffProfile {
     qualifications?: string[];
   };
   documents?: {
-    degreeCertificate?: { url: string; publicId: string };
-    medicalCouncilRegistration?: { url: string; publicId: string };
-    nursingCouncilRegistration?: { url: string; publicId: string };
-    doctorateCertificate?: { url: string; publicId: string };
-    internshipCertificate?: { url: string; publicId: string };
+    degreeCertificate?: { url: string; publicId: string; name?: string; size?: number };
+    medicalCouncilRegistration?: { url: string; publicId: string; name?: string; size?: number };
+    nursingCouncilRegistration?: { url: string; publicId: string; name?: string; size?: number };
+    doctorateCertificate?: { url: string; publicId: string; name?: string; size?: number };
+    internshipCertificate?: { url: string; publicId: string; name?: string; size?: number };
   };
 }
 
