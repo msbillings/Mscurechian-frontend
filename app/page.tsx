@@ -46,6 +46,7 @@ import LandingBlogs from "@/components/home/LandingBlogs";
 import LandingTestimonials from "@/components/home/LandingTestimonials";
 import ProblemBasedFeatures from "@/components/home/ProblemBasedFeatures";
 import SecurityComplianceNew from "@/components/home/SecurityComplianceNew";
+import Hero from "@/components/home/Hero";
 
 
 export default function Home() {
@@ -154,81 +155,7 @@ export default function Home() {
 
 
                 {/* Hero Section */}
-
-                <section className="relative min-h-0 lg:min-h-[85vh] flex items-center pt-20 pb-4 lg:pb-12 overflow-hidden bg-white">
-                    {/* Centered DNA Background Image */}
-                    <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-full max-w-2xl opacity-[0.05] blur-[1px]">
-                            <img
-                                src="/assets/image.png"
-                                alt="DNA Background"
-                                className="w-full h-auto object-contain"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Vertical Stripe Background Pattern */}
-                    <div className="absolute inset-0 z-0 opacity-[0.02] pointer-events-none"
-                        style={{
-                            backgroundImage: `linear-gradient(to right, #000000 1px, transparent 1px)`,
-                            backgroundSize: '40px 100%'
-                        }}
-                    />
-
-                    <div className="max-w-7xl mx-auto px-6 relative z-10 w-full">
-                        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-8">
-                            {/* Left Side: Content */}
-                            <div className="flex-[1.2] space-y-8 text-center lg:text-left pt-10">
-                                <ScrollReveal distance="30px" duration={800}>
-                                    <div className="space-y-4">
-
-                                        <h1 className="text-2xl md:text-2xl lg:text-3xl font-black text-slate-900 leading-[0.9] tracking-tighter uppercase">
-                                            Hospital Management System
-
-                                        </h1>
-                                        <p className="text-base md:text-lg text-slate-600 font-medium leading-relaxed max-w-2xl mx-auto lg:mx-0 pt-6">
-                                            MSCureChain securely connects hospitals, doctors, labs, pharmacies, and patients on one unified digital platform. AI-powered prescriptions, smart bookings, and integrated records ensure smooth, accurate, and efficient care delivery.
-                                        </p>
-                                    </div>
-                                </ScrollReveal>
-
-                                <ScrollReveal distance="30px" duration={800} delay={200}>
-                                    <div className="flex flex-wrap items-center justify-center lg:justify-start gap-10 pt-6">
-                                        <button
-                                            type="button"
-                                            suppressHydrationWarning
-                                            onClick={() => router.push('/portals')}
-                                            className="px-10 py-5 bg-primary-theme text-white rounded-md font-black text-xs uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all"
-                                        >
-                                            Go for live demo
-                                        </button>
-
-
-                                        <button
-                                            type="button"
-                                            suppressHydrationWarning
-                                            onClick={() => router.push('/contact')}
-                                            className="text-slate-900 font-black text-xs uppercase tracking-[0.2em] border-b-2 border-slate-900 pb-1 hover:text-primary-theme hover:border-primary-theme transition-colors"
-                                        >
-                                            GET STARTED NOW
-                                        </button>
-                                    </div>
-                                </ScrollReveal>
-                            </div>
-
-
-                            <div className="flex-1 relative w-full lg:h-[75vh] flex items-center justify-center lg:justify-end">
-                                <div className="relative w-full max-w-md lg:max-w-sm">
-                                    <img
-                                        src="/assets/doctor1.png"
-                                        alt="Healthcare Professional"
-                                        className="w-full h-auto object-contain filter drop-shadow-[0_20px_50px_rgba(0,0,0,0.1)]"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                <Hero />
                 <DeploymentSecurity />
                 <ProblemBasedFeatures />
                 {/* Voice & Project Information Section */}
