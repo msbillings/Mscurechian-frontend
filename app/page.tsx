@@ -46,6 +46,7 @@ import LandingBlogs from "@/components/home/LandingBlogs";
 import LandingTestimonials from "@/components/home/LandingTestimonials";
 import ProblemBasedFeatures from "@/components/home/ProblemBasedFeatures";
 import SecurityComplianceNew from "@/components/home/SecurityComplianceNew";
+import Hero from "@/components/home/Hero";
 
 
 export default function Home() {
