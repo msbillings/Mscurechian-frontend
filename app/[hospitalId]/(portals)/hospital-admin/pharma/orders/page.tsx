@@ -98,15 +98,15 @@ function HospitalAdminActiveOrdersPage() {
             
             <div className="bg-white dark:bg-gray-800 rounded-4xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-[800px]">
+                    <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full text-left border-collapse min-w-[800px]">
                         <thead className="bg-gray-50/50 dark:bg-gray-900/50 text-[10px] uppercase text-gray-400 font-black tracking-widest">
                             <tr>
-                                <th className="p-8 border-b dark:border-gray-700">Token</th>
-                                <th className="p-8 border-b dark:border-gray-700">Patient Details</th>
-                                <th className="p-8 border-b dark:border-gray-700">Doctor Signature</th>
-                                <th className="p-8 border-b dark:border-gray-700 text-center">SKU Count</th>
-                                <th className="p-8 border-b dark:border-gray-700 text-center">Status</th>
-                                <th className="p-8 border-b dark:border-gray-700 text-right">Fulfillment</th>
+                                <th className="p-3 md:p-8 border-b dark:border-gray-700">Token</th>
+                                <th className="p-3 md:p-8 border-b dark:border-gray-700">Patient Details</th>
+                                <th className="p-3 md:p-8 border-b dark:border-gray-700">Doctor Signature</th>
+                                <th className="p-3 md:p-8 border-b dark:border-gray-700 text-center">SKU Count</th>
+                                <th className="p-3 md:p-8 border-b dark:border-gray-700 text-center">Status</th>
+                                <th className="p-3 md:p-8 border-b dark:border-gray-700 text-right">Fulfillment</th>
                             </tr>
                         </thead>
                         <tbody className="text-sm">
@@ -122,34 +122,34 @@ function HospitalAdminActiveOrdersPage() {
                             ) : (
                                 orders.map((order) => (
                                     <tr key={order._id} className="border-b dark:border-gray-700/50 last:border-0 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 group transition-all">
-                                         <td className="p-8">
+                                         <td className="p-3 md:p-8">
                                             <span className="px-4 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-xl font-black text-xs uppercase tracking-tight shadow-sm">
                                                 #{order.tokenNumber}
                                             </span>
                                         </td>
-                                        <td className="p-8">
+                                        <td className="p-3 md:p-8">
                                             <div className="font-black text-gray-900 dark:text-white uppercase tracking-tight text-sm">{order.patient?.name || 'Unknown Entity'}</div>
                                             <div className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mt-1">
                                                 {order.patient?.age || '-'}Y • {order.patient?.gender || '-'} • {order.patient?.mobile || '-'}
                                             </div>
                                         </td>
-                                        <td className="p-8 text-gray-600 dark:text-gray-300 font-bold uppercase text-[11px] tracking-tight">
+                                        <td className="p-3 md:p-8 text-gray-600 dark:text-gray-300 font-bold uppercase text-[11px] tracking-tight">
                                             {(order.doctor as any)?.user?.name || order.doctor?.name || 'Medical Practitioner'}
                                         </td>
-                                         <td className="p-8 text-center">
+                                         <td className="p-3 md:p-8 text-center">
                                             <span className="text-xs font-black text-gray-900 dark:text-white uppercase">
                                                 {order.medicines?.length || 0} Items
                                             </span>
                                         </td>
-                                        <td className="p-8 text-center">
+                                        <td className="p-3 md:p-8 text-center">
                                              <span className="px-5 py-2 rounded-2xl text-[9px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-950/20 dark:border-blue-900/40">
                                                 {order.status}
                                             </span>
                                         </td>
-                                        <td className="p-8 text-right">
+                                        <td className="p-3 md:p-8 text-right">
                                              <button
                                                 onClick={() => handleProcess(order._id)}
-                                                className="inline-flex items-center gap-3 px-8 py-4 bg-gray-900 dark:bg-gray-100 dark:text-gray-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-gray-200 dark:shadow-none"
+                                                className="inline-flex items-center gap-3 px-4 md:px-8 py-4 bg-gray-900 dark:bg-gray-100 dark:text-gray-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-gray-200 dark:shadow-none"
                                             >
                                                 <FileText size={16} />
                                                 Process Bill
@@ -159,7 +159,7 @@ function HospitalAdminActiveOrdersPage() {
                                 ))
                             )}
                         </tbody>
-                    </table>
+                    </table></div>
                 </div>
             </div>
         </div>

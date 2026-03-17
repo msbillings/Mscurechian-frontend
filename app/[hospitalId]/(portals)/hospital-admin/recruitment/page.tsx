@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { hrService } from "@/lib/integrations/services/hr.service";
+import { useAuthStore } from "@/stores/authStore";
 import {
   Briefcase,
   CheckCircle,
@@ -117,21 +118,21 @@ export default function AdminRecruitmentPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+    <div className="p-2 sm:p-3 md:p-4 space-y-6">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white p-6 sm:p-8 md:p-10 rounded-2xl border border-slate-100 shadow-sm">
         <div>
           <h1 className="text-xl font-black text-slate-900 tracking-tight">Recruitment Registry</h1>
           <p className="text-slate-500 text-xs font-medium">Review and approve recruitment notices from HR.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-6 px-6 py-2 bg-slate-50/50 rounded-xl border border-slate-100">
+          <div className="flex items-center gap-6 px-3 md:px-6 py-2 bg-slate-50/50 rounded-xl border border-slate-100">
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5 text-amber-600 mb-0.5">
                 <Clock size={12} />
                 <span className="text-[8px] font-black uppercase tracking-widest">Pending</span>
               </div>
-              <p className="text-lg font-black text-slate-900 leading-none">
+              <p className="text-sm md:text-lg font-black text-slate-900 leading-none">
                 {recruitments.filter((r: any) => r.status === 'pending_approval').length}
               </p>
             </div>
@@ -143,7 +144,7 @@ export default function AdminRecruitmentPage() {
                 <CheckCircle size={12} />
                 <span className="text-[8px] font-black uppercase tracking-widest">Active</span>
               </div>
-              <p className="text-lg font-black text-slate-900 leading-none">
+              <p className="text-sm md:text-lg font-black text-slate-900 leading-none">
                 {recruitments.filter((r: any) => r.status === 'open').length}
               </p>
             </div>
@@ -155,7 +156,7 @@ export default function AdminRecruitmentPage() {
                 <Users size={12} />
                 <span className="text-[8px] font-black uppercase tracking-widest">Total</span>
               </div>
-              <p className="text-lg font-black text-slate-900 leading-none">
+              <p className="text-sm md:text-lg font-black text-slate-900 leading-none">
                 {recruitments.reduce((acc: number, r: any) => acc + (r.numberOfPositions || 0), 0)}
               </p>
             </div>
@@ -164,7 +165,7 @@ export default function AdminRecruitmentPage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-50">
+        <div className="p-2 md:p-6 border-b border-slate-50">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input
@@ -178,35 +179,35 @@ export default function AdminRecruitmentPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full">
             <thead>
               <tr className="bg-slate-50/50">
-                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Notice Details</th>
-                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Type & Vacancy</th>
-                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Created By</th>
-                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</th>
+                <th className="px-2 md:px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Notice Details</th>
+                <th className="px-2 md:px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Type & Vacancy</th>
+                <th className="px-2 md:px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Created By</th>
+                <th className="px-2 md:px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                <th className="px-2 md:px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filteredRecruitments.length > 0 ? (
                 filteredRecruitments.map((r: any) => (
                   <tr key={r._id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4">
+                    <td className="px-2 md:px-6 py-4">
                       <div className="font-bold text-slate-900">{r.title}</div>
                       <div className="text-xs text-slate-500 font-medium">{r.department}</div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-2 md:px-6 py-4">
                       <div className="text-sm font-semibold text-slate-700">{r.type}</div>
                       <div className="text-[10px] text-indigo-600 font-bold uppercase">{r.numberOfPositions} Openings</div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-2 md:px-6 py-4">
                       <div className="text-sm font-medium text-slate-700">{r.createdBy?.name}</div>
                       <div className="text-[10px] text-slate-400 font-medium">
                         {new Date(r.createdAt).toLocaleDateString()} • {new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-2 md:px-6 py-4">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${r.status === 'pending_approval' ? 'bg-amber-50 text-amber-600 border-amber-100' :
                         r.status === 'open' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                           r.status === 'approved' ? 'bg-blue-50 text-blue-600 border-blue-100' :
@@ -216,7 +217,7 @@ export default function AdminRecruitmentPage() {
                         {r.status.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right space-x-2">
+                    <td className="px-2 md:px-6 py-4 text-right space-x-2">
                       {r.status === 'pending_approval' ? (
                         <>
                           <button
@@ -242,7 +243,7 @@ export default function AdminRecruitmentPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
+                  <td colSpan={5} className="px-2 md:px-6 py-12 text-center text-slate-400">
                     <div className="flex flex-col items-center gap-2">
                       <AlertCircle size={32} className="text-slate-200" />
                       <p className="text-sm font-medium">No recruitment notices found</p>
@@ -251,7 +252,7 @@ export default function AdminRecruitmentPage() {
                 </tr>
               )}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </div>
     </div>

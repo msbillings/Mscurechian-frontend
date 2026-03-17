@@ -412,6 +412,16 @@ export default function AppointmentBooking() {
                 }
             };
 
+            // 1. Create Appointment first (especially for IPD to generate the admissionId linkage)
+            const response = await helpdeskService.createAppointment({
+                ...payload,
+                type: registrationType === 'IPD' ? 'IPD' : appointmentType,
+                amount: registrationType === 'IPD' ? parseFloat(ipdFee) : (selectedDoctor?.consultationFee || 0),
+                paymentStatus: registrationType === 'IPD' ? backendPaymentStatus : payload.paymentStatus
+            });
+            const appointment = response.appointment || response;
+
+            // 2. Then initiate admission if IPD
             if (registrationType === 'IPD') {
                 if (!admissionData.bedId) {
                     toast.error("Please select a bed for IPD admission");
@@ -444,14 +454,6 @@ export default function AppointmentBooking() {
                 });
                 toast.success("IPD Admission Initiated");
             }
-
-            const response = await helpdeskService.createAppointment({
-                ...payload,
-                type: registrationType === 'IPD' ? 'IPD' : appointmentType,
-                amount: registrationType === 'IPD' ? 0 : (selectedDoctor?.consultationFee || 0),
-                paymentStatus: registrationType === 'IPD' ? 'not_required' : payload.paymentStatus
-            });
-            const appointment = response.appointment || response;
 
             if (sendToDoctor && (appointment._id || appointment.id)) {
                 try {
@@ -540,8 +542,12 @@ export default function AppointmentBooking() {
                 },
                 payment: {
                     amount: registrationType === 'IPD' ? parseFloat(ipdFee) : (selectedDoctor?.consultationFee || 0),
+                    totalBillAmount: registrationType === 'IPD' ? parseFloat(ipdFee) : (selectedDoctor?.consultationFee || 0),
+                    totalPaidAmount: registrationType === 'IPD' ? parseFloat(ipdFee) : (selectedDoctor?.consultationFee || 0),
+                    advanceAmount: registrationType === 'IPD' ? parseFloat(ipdFee) : 0,
                     method: paymentMethod.toUpperCase(),
-                    status: (paymentStatus === 'unpaid' ? 'pending' : paymentStatus).toUpperCase()
+                    status: (paymentStatus === 'unpaid' ? 'pending' : paymentStatus).toUpperCase(),
+                    date: new Date().toISOString()
                 },
                 registrationType: registrationType,
                 headerHtml: headerHtml,

@@ -11,12 +11,12 @@ export const PageHeader: React.FC<PageHeaderProps> = ({ icon, title, subtitle, a
   return (
     <div className="flex justify-between items-start mb-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--text-color)' }}>
+        <h1 className="text-lg md:text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--text-color)' }}>
           {icon}
           {title}
         </h1>
         {subtitle && (
-          <p className="text-sm mt-1" style={{ color: 'var(--secondary-color)' }}>
+          <p className="text-xs md:text-sm mt-1" style={{ color: 'var(--secondary-color)' }}>
             {subtitle}
           </p>
         )}

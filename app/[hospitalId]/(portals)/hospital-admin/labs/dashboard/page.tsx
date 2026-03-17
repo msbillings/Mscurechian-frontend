@@ -60,15 +60,15 @@ function HospitalAdminLabDashboard() {
     }
 
     return (
-        <div className="space-y-6 p-6 animate-in fade-in duration-300">
+        <div className="p-2 sm:p-4 md:p-6 space-y-4 md:space-y-6 animate-in fade-in duration-300 bg-slate-50/30 min-h-screen">
             {/* Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white leading-tight">
                         Laboratory Dashboard
                     </h1>
-                    <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
+                    <p className="text-xs md:text-sm text-gray-500 mt-1 flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5 md:w-4 md:h-4" />
                         Last updated: {lastUpdate.toLocaleTimeString()}
                     </p>
                 </div>
@@ -84,12 +84,12 @@ function HospitalAdminLabDashboard() {
                     </button>
 
                     {/* Range Selector */}
-                    <div className="inline-flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                    <div className="inline-flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 overflow-x-auto no-scrollbar">
                         {Object.keys(rangeLabels).map((r) => (
                             <button
                                 key={r}
                                 onClick={() => setRange(r)}
-                                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                className={`px-2.5 md:px-4 py-1.5 md:py-2 rounded-md text-[10px] md:text-sm font-medium transition-all whitespace-nowrap ${
                                     range === r
                                         ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
                                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -103,7 +103,7 @@ function HospitalAdminLabDashboard() {
             </div>
 
             {/* Core Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                 <StatCard
                     title="Total Revenue"
                     value={`₹${stats?.revenue?.toLocaleString() || 0}`}
@@ -133,10 +133,10 @@ function HospitalAdminLabDashboard() {
             {/* Detailed Analytics */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 {/* Payment Breakdown */}
-                <div className="xl:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                <div className="xl:col-span-2 bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center justify-between mb-6">
                         <div>
-                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Payment Breakdown</h2>
+                            <h2 className="text-sm md:text-lg font-bold text-gray-900 dark:text-white">Payment Breakdown</h2>
                             <p className="text-sm text-gray-500 mt-1">Revenue by payment method</p>
                         </div>
                         <Activity className="w-5 h-5 text-emerald-500" />
@@ -162,7 +162,7 @@ function HospitalAdminLabDashboard() {
                 </div>
 
                 {/* Lab Summary */}
-                <div className="bg-primary-theme rounded-xl p-6 text-white">
+                <div className="bg-primary-theme rounded-xl p-3 md:p-6 text-white">
 
                     <h3 className="text-sm font-semibold opacity-90 mb-6">Lab Overview</h3>
                     
@@ -190,8 +190,8 @@ function HospitalAdminLabDashboard() {
 
             {/* Top Tests */}
             {stats?.topTests && stats.topTests.length > 0 && (
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Top Performing Tests</h2>
+                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <h2 className="text-sm md:text-lg font-bold text-gray-900 dark:text-white mb-4">Top Performing Tests</h2>
                     <div className="space-y-3">
                         {stats.topTests.slice(0, 5).map((test, idx) => (
                             <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
@@ -223,7 +223,7 @@ const StatCard = ({ title, value, icon: Icon, color }: any) => {
     };
 
     return (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
+        <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
             <div className="flex items-start justify-between mb-4">
                 <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[color]}`}>
                     <Icon size={20} />
@@ -245,7 +245,7 @@ const PaymentCard = ({ label, amount, color }: any) => {
     };
 
     return (
-        <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
+        <div className="bg-gray-50 dark:bg-gray-900/50 p-2 md:p-4 rounded-lg border border-gray-100 dark:border-gray-700">
             <span className={`inline-block px-2 py-1 rounded text-xs font-semibold mb-3 ${colorClasses[color]}`}>
                 {label}
             </span>
@@ -257,7 +257,7 @@ const PaymentCard = ({ label, amount, color }: any) => {
 const SummaryItem = ({ label, value }: any) => (
     <div className="flex items-center justify-between">
         <span className="text-sm font-medium opacity-90">{label}</span>
-        <span className="text-lg font-bold">{value}</span>
+        <span className="text-sm md:text-lg font-bold">{value}</span>
     </div>
 );
 

@@ -251,6 +251,7 @@ export const DOCTOR_ENDPOINTS = {
   ANNOUNCEMENTS: "/announcements/hospital",
   ANALYTICS: "/doctors/analytics",
   INCOME_STATS: "/doctors/income-stats",
+  PATIENT_HISTORY: (id: string) => `/doctors/patient/${id}/history`,
 };
 
 export const TRANSIT_ENDPOINTS = {

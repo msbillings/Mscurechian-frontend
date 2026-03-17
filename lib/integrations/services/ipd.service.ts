@@ -17,13 +17,13 @@ export const ipdService = {
     type?: string;
     department?: string;
     room?: string;
-  }) => {
+  }, skipCache?: boolean) => {
     const query = new URLSearchParams();
     if (params?.status) query.append("status", params.status);
     if (params?.type) query.append("type", params.type);
     if (params?.department) query.append("department", params.department);
     if (params?.room) query.append("room", params.room);
-    return apiClient<Bed[]>(`${IPD_ENDPOINTS.BEDS}?${query.toString()}`);
+    return apiClient<Bed[]>(`${IPD_ENDPOINTS.BEDS}?${query.toString()}`, { skipCache });
   },
 
   /**
@@ -101,11 +101,11 @@ export const ipdService = {
   /**
    * Get all active IPD admissions (for Monitoring)
    */
-  getActiveAdmissions: (department?: string) => {
+  getActiveAdmissions: (department?: string, skipCache?: boolean) => {
     const query = department
       ? `?department=${encodeURIComponent(department)}`
       : "";
-    return apiClient<any[]>(`${IPD_ENDPOINTS.ADMISSIONS}/active${query}`);
+    return apiClient<any[]>(`${IPD_ENDPOINTS.ADMISSIONS}/active${query}`, { skipCache });
   },
 
   /**
@@ -133,6 +133,18 @@ export const ipdService = {
       IPD_ENDPOINTS.CONFIRM_DISCHARGE(admissionId),
       {
         method: "POST",
+      },
+    ),
+
+  /**
+   * Update admission details
+   */
+  updateAdmissionDetails: (id: string, data: { reason?: string; clinicalNotes?: string }) =>
+    apiClient<{ message: string; admission: IPDAdmission }>(
+      `${IPD_ENDPOINTS.ADMISSIONS}/${id}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(data),
       },
     ),
 

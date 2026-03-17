@@ -52,13 +52,37 @@ const BedsManagement = () => {
     const fetchInitialData = async () => {
         try {
             setLoading(true);
-            const [bedsData, roomsData, deptsData, typesData] = await Promise.all([
+            const [bedsData, roomsData, deptsData, typesData, activeAdmissions] = await Promise.all([
                 ipdService.getBeds(),
                 ipdService.getRooms(),
                 ipdService.getIPDDepartments(),
-                ipdService.getUnitTypes()
+                ipdService.getUnitTypes(),
+                ipdService.getActiveAdmissions()
             ]);
-            setBeds(bedsData);
+
+            // Auto-enrich beds with active admission reason if available
+            const enriched = bedsData.map(bed => {
+                if (bed.status === 'Occupied' && bed.currentOccupancy) {
+                    const admission = activeAdmissions.find(a => a.admissionId === bed.currentOccupancy?.admissionId);
+                    if (admission) {
+                        return {
+                            ...bed,
+                            currentOccupancy: {
+                                ...bed.currentOccupancy,
+                                // Strictly use clinical reason and filter out legacy notes
+                                reason: (admission.reason && admission.reason !== 'not now.') 
+                                    ? admission.reason 
+                                    : (admission.reasonForAdmission !== 'not now.' ? admission.reasonForAdmission : 'No specific reason provided.')
+                            }
+                        };
+                    }
+                }
+                return bed;
+            });
+            console.log("[HospitalAdmin] ENRICHED BEDS COUNT:", enriched.filter(b => b.status === 'Occupied').length);
+            console.log("[HospitalAdmin] SAMPLE OCCUPIED REASON:", enriched.find(b => b.status === 'Occupied' && b.currentOccupancy?.reason)?.currentOccupancy?.reason);
+            
+            setBeds(enriched);
             setRooms(roomsData);
             setDepartments(deptsData);
             setUnitTypes(typesData);
@@ -161,45 +185,47 @@ const BedsManagement = () => {
     const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
-        <div className="p-8 max-w-7xl mx-auto min-h-screen bg-slate-50/50">
+        <div className="p-2 md:p-4 md:p-8 max-w-7xl mx-auto min-h-screen bg-slate-50/50">
             {/* Consolidated Header Area */}
-            <div className="flex flex-col xl:flex-row xl:items-center gap-4 mb-8 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-6 mb-8 bg-white p-2 md:p-4 md:p-6 rounded-3xl border border-slate-100 shadow-sm transition-all duration-300">
                 <div className="flex-shrink-0">
-                    <h1 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                        <BedIcon className="text-primary-theme" size={20} />
+                    <h1 className="text-lg md:text-xl font-black text-slate-900 flex items-center gap-3">
+                        <div className="p-2 bg-primary-theme rounded-xl text-white shadow-lg shadow-teal-200">
+                            <BedIcon size={20} />
+                        </div>
                         BED INVENTORY
                     </h1>
-                    <p className="text-slate-500 font-bold text-[8px] tracking-widest uppercase opacity-70">
+                    <p className="text-slate-500 font-bold text-[10px] md:text-sm tracking-widest mt-1 uppercase opacity-70">
                         Asset Allocation & Clinical Node Management
                     </p>
                 </div>
 
-                {/* Compact Stats */}
-                <div className="flex flex-wrap items-center gap-2 xl:mx-auto">
+                {/* Compact Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 w-full lg:w-auto lg:mx-auto">
                     {[
                         { label: 'Total', value: beds.length, color: 'text-teal-600', bg: 'bg-teal-50' },
                         { label: 'Vacant', value: beds.filter(b => b.status === 'Vacant').length, color: 'text-emerald-600', bg: 'bg-emerald-50' },
                         { label: 'Active', value: beds.filter(b => b.status === 'Occupied').length, color: 'text-rose-600', bg: 'bg-rose-50' },
                         { label: 'Maint', value: beds.filter(b => b.status === 'Cleaning').length, color: 'text-amber-600', bg: 'bg-amber-50' },
                     ].map((stat, i) => (
-                        <div key={i} className="px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100 flex flex-col min-w-[70px]">
-                            <p className={`text-[7px] font-black uppercase tracking-widest ${stat.color}`}>{stat.label}</p>
-                            <p className="text-xs font-black text-slate-900 leading-none">{stat.value}</p>
+                        <div key={i} className="px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center sm:items-start min-w-[80px] shadow-sm">
+                            <p className={`text-[8px] font-black uppercase tracking-widest ${stat.color} mb-0.5`}>{stat.label}</p>
+                            <p className="text-sm font-black text-slate-900 leading-none">{stat.value}</p>
                         </div>
                     ))}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-center gap-2 w-full lg:w-auto">
                     <button
                         onClick={() => setShowImportModal(true)}
-                        className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm"
+                        className="w-full sm:w-auto px-3 md:px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black text-[7px] md:text-[9px] uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-sm"
                     >
                         <Upload size={14} />
                         Sync Data
                     </button>
                     <button
                         onClick={() => setShowAddModal(true)}
-                        className="px-4 py-2 bg-primary-theme text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-primary-theme/80 transition-all flex items-center gap-2 shadow-lg shadow-primary-theme/20"
+                        className="w-full sm:w-auto px-3 md:px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-[7px] md:text-[9px] uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-200"
                     >
                         <Plus size={14} />
                         Deploy Bed
@@ -208,8 +234,8 @@ const BedsManagement = () => {
             </div>
 
             {/* Search & Filters */}
-            <div className="bg-white p-2 rounded-2xl border border-slate-100 shadow-sm mb-8 flex flex-wrap items-center gap-3">
-                <div className="relative flex-1 min-w-[200px]">
+            <div className="bg-white p-2 rounded-2xl border border-slate-100 shadow-sm mb-6 md:mb-8 flex flex-col md:flex-row items-stretch md:items-center gap-3">
+                <div className="relative flex-1">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                     <input
                         type="text"
@@ -219,69 +245,71 @@ const BedsManagement = () => {
                             setSearchTerm(e.target.value);
                             setCurrentPage(1);
                         }}
-                        className="w-full pl-11 pr-4 py-2 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase tracking-widest focus:ring-2 focus:ring-teal-500/20 outline-none transition-all placeholder:text-slate-300"
+                        className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border-none rounded-xl text-[10px] font-bold uppercase tracking-widest focus:ring-2 focus:ring-teal-500/20 outline-none transition-all placeholder:text-slate-300"
                     />
                 </div>
 
-                <select
-                    className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none"
-                    value={filterStatus}
-                    onChange={(e) => {
-                        setFilterStatus(e.target.value);
-                        setCurrentPage(1);
-                    }}
-                >
-                    <option value="">All Status</option>
-                    <option value="Vacant">Vacant</option>
-                    <option value="Occupied">Occupied</option>
-                    <option value="Cleaning">Cleaning</option>
-                </select>
+                <div className="flex flex-wrap items-center gap-2">
+                    <select
+                        className="flex-1 md:flex-none px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none"
+                        value={filterStatus}
+                        onChange={(e) => {
+                            setFilterStatus(e.target.value);
+                            setCurrentPage(1);
+                        }}
+                    >
+                        <option value="">All Status</option>
+                        <option value="Vacant">Vacant</option>
+                        <option value="Occupied">Occupied</option>
+                        <option value="Cleaning">Cleaning</option>
+                    </select>
 
-                <select
-                    className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none"
-                    value={filterType}
-                    onChange={(e) => {
-                        setFilterType(e.target.value);
-                        setCurrentPage(1);
-                    }}
-                >
-                    <option value="">All Types</option>
-                    {unitTypes.map(type => (
-                        <option key={type} value={type}>{type}</option>
-                    ))}
-                </select>
+                    <select
+                        className="flex-1 md:flex-none px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none"
+                        value={filterType}
+                        onChange={(e) => {
+                            setFilterType(e.target.value);
+                            setCurrentPage(1);
+                        }}
+                    >
+                        <option value="">All Types</option>
+                        {unitTypes.map(type => (
+                            <option key={type} value={type}>{type}</option>
+                        ))}
+                    </select>
 
-                <HybridRoomSearch
-                    value={filterRoom}
-                    onSelect={(val: string) => {
-                        setFilterRoom(val);
-                        setCurrentPage(1);
-                    }}
-                    rooms={rooms}
-                    typeFilter={filterType}
-                    className="min-w-[160px]"
-                />
+                    <HybridRoomSearch
+                        value={filterRoom}
+                        onSelect={(val: string) => {
+                            setFilterRoom(val);
+                            setCurrentPage(1);
+                        }}
+                        rooms={rooms}
+                        typeFilter={filterType}
+                        className="flex-1 md:min-w-[160px]"
+                    />
 
-                {/* COMPACT PAGINATION */}
-                {!loading && totalPages > 1 && (
-                    <div className="flex items-center gap-1 border-l border-slate-100 pl-3 py-1 ml-auto md:ml-0">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1}
-                            className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-teal-600 disabled:opacity-20 transition-all"
-                        >
-                            <ChevronLeft size={16} strokeWidth={3} />
-                        </button>
-                        <span className="text-[10px] font-black w-6 text-center text-slate-900">{currentPage}</span>
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages}
-                            className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-teal-600 disabled:opacity-20 transition-all"
-                        >
-                            <ChevronRight size={16} strokeWidth={3} />
-                        </button>
-                    </div>
-                )}
+                    {/* COMPACT PAGINATION */}
+                    {!loading && totalPages > 1 && (
+                        <div className="flex items-center gap-1 border-l border-slate-100 pl-3 py-1 ml-auto shrink-0">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-teal-600 disabled:opacity-20 transition-all"
+                            >
+                                <ChevronLeft size={16} strokeWidth={3} />
+                            </button>
+                            <span className="text-[10px] font-black w-6 text-center text-slate-900">{currentPage}</span>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages}
+                                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-teal-600 disabled:opacity-20 transition-all"
+                            >
+                                <ChevronRight size={16} strokeWidth={3} />
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Content */}
@@ -299,7 +327,7 @@ const BedsManagement = () => {
                     <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">No active bed nodes found</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-4">
                     {paginated.map((bed) => (
                         <div key={bed._id} className="group bg-white rounded-[20px] border border-slate-100 p-3 shadow-sm hover:shadow-xl hover:shadow-teal-200/30 transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-full">
                             <div className="flex flex-col h-full gap-2">
@@ -328,15 +356,20 @@ const BedsManagement = () => {
 
                                 <div className="mt-1">
                                     <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-tight truncate leading-tight">{bed.bedId}</h3>
-                                    <div className="flex items-center gap-1 mt-0.5">
-                                        <span className="text-[7px] font-bold text-slate-400 capitalize truncate">
-                                            {bed.status === 'Occupied' ? bed.currentOccupancy?.patientName : bed.type}
-                                        </span>
-                                    </div>
+                                     <div className="flex flex-col mt-0.5">
+                                         <span className="text-[7px] font-bold text-slate-400 capitalize truncate">
+                                             {bed.status === 'Occupied' ? bed.currentOccupancy?.patientName : bed.type}
+                                         </span>
+                                         {bed.status === 'Occupied' && bed.currentOccupancy?.reason && (
+                                             <span className="text-[6px] font-bold text-teal-600 truncate mt-0.5 max-w-[80px]" title={bed.currentOccupancy.reason}>
+                                                 {bed.currentOccupancy.reason}
+                                             </span>
+                                         )}
+                                     </div>
                                 </div>
 
                                 <div className="mt-auto space-y-1.5 pt-2 border-t border-slate-50">
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                         <div className="flex items-center gap-1 overflow-hidden">
                                             <DoorOpen size={8} className="text-slate-300 shrink-0" />
                                             <span className="text-[7px] font-black text-slate-500 uppercase truncate">R:{bed.room || "?"}</span>
@@ -387,26 +420,26 @@ const BedsManagement = () => {
             {/* Add Modal */}
             {
                 showAddModal && (
-                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6 z-[100] animate-in fade-in duration-300">
+                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 z-[100] animate-in fade-in duration-300">
                         <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                            <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+                            <div className="p-3 md:p-6 border-b border-slate-50 flex items-center justify-between">
                                 <div>
-                                    <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Deploy Node</h2>
+                                    <h2 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight">Deploy Node</h2>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Register new clinical bed unit</p>
                                 </div>
-                                <button onClick={() => setShowAddModal(false)} className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center hover:bg-slate-100 hover:text-slate-900 transition-all">
-                                    <X size={20} />
+                                <button onClick={() => setShowAddModal(false)} className="w-8 h-8 md:w-10 md:h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center hover:bg-slate-100 hover:text-slate-900 transition-all">
+                                    <X size={18} />
                                 </button>
                             </div>
-                            <form onSubmit={handleCreate} className="p-8 space-y-6">
-                                <div className="grid grid-cols-2 gap-4">
+                            <form onSubmit={handleCreate} className="p-3 md:p-6 space-y-3 md:space-y-6 max-h-[70vh] md:max-h-none overflow-y-auto custom-scrollbar">
+                                <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-4">
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Bed ID</label>
                                         <input
                                             required
                                             value={newBed.bedId}
                                             onChange={(e) => setNewBed(prev => ({ ...prev, bedId: e.target.value }))}
-                                            className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
+                                            className="w-full px-3 md:px-6 py-2.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] md:text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
                                             placeholder="E.G. BED-101"
                                         />
                                     </div>
@@ -415,7 +448,7 @@ const BedsManagement = () => {
                                         <select
                                             value={newBed.type}
                                             onChange={(e: any) => setNewBed(prev => ({ ...prev, type: e.target.value, room: "" }))}
-                                            className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
+                                            className="w-full px-3 md:px-6 py-2.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] md:text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
                                         >
                                             <option value="">Select Type</option>
                                             {unitTypes.map(type => (
@@ -424,14 +457,14 @@ const BedsManagement = () => {
                                         </select>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-4">
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-xs">Floor</label>
                                         <input
                                             required
                                             value={newBed.floor}
                                             onChange={(e) => setNewBed(prev => ({ ...prev, floor: e.target.value }))}
-                                            className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
+                                            className="w-full px-3 md:px-6 py-2.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] md:text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
                                             placeholder="E.G 1"
                                         />
                                     </div>
@@ -445,16 +478,17 @@ const BedsManagement = () => {
                                             }}
                                             rooms={rooms}
                                             typeFilter={newBed.type}
+                                            className="py-2.5 md:py-4"
                                         />
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-4">
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-xs">Department</label>
                                         <select
                                             value={newBed.department}
                                             onChange={(e) => setNewBed(prev => ({ ...prev, department: e.target.value }))}
-                                            className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
+                                            className="w-full px-3 md:px-6 py-2.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] md:text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
                                         >
                                             <option value="">Select Dept</option>
                                             {departments.map(d => <option key={d._id} value={d.name}>{d.name}</option>)}
@@ -465,7 +499,7 @@ const BedsManagement = () => {
                                         <input
                                             value={newBed.ward}
                                             onChange={(e) => setNewBed(prev => ({ ...prev, ward: e.target.value }))}
-                                            className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
+                                            className="w-full px-3 md:px-6 py-2.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] md:text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
                                             placeholder="E.G A, B, C"
                                         />
                                     </div>
@@ -476,13 +510,13 @@ const BedsManagement = () => {
                                         type="number"
                                         value={newBed.pricePerDay}
                                         onChange={(e) => setNewBed(prev => ({ ...prev, pricePerDay: Number(e.target.value) }))}
-                                        className="w-full px-6 py-4 bg-teal-50 border border-teal-100 rounded-2xl text-xs font-black focus:border-teal-500 outline-none transition-all"
+                                        className="w-full px-3 md:px-6 py-2.5 md:py-4 bg-teal-50 border border-teal-100 rounded-2xl text-[10px] md:text-xs font-black focus:border-teal-500 outline-none transition-all"
                                         placeholder="0.00"
                                     />
                                 </div>
                                 <button
                                     disabled={submitting}
-                                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all disabled:opacity-50 shadow-xl"
+                                    className="w-full py-3 md:py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-slate-800 transition-all disabled:opacity-50 shadow-xl"
                                 >
                                     {submitting ? "Deploying Node..." : "Authorize Integration"}
                                 </button>
@@ -495,26 +529,26 @@ const BedsManagement = () => {
             {/* Edit Modal */}
             {
                 showEditModal && editingBed && (
-                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6 z-[100] animate-in fade-in duration-300">
+                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 z-[100] animate-in fade-in duration-300">
                         <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                            <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-teal-600 text-white">
+                            <div className="p-3 md:p-6 border-b border-slate-50 flex items-center justify-between bg-teal-600 text-white">
                                 <div>
-                                    <h2 className="text-xl font-black uppercase tracking-tight">Refine Node</h2>
+                                    <h2 className="text-lg md:text-xl font-black uppercase tracking-tight">Refine Node</h2>
                                     <p className="text-[10px] font-bold text-teal-100 uppercase tracking-widest mt-1">Update clinical bed unit</p>
                                 </div>
-                                <button onClick={() => setShowEditModal(false)} className="w-10 h-10 bg-white/10 text-white rounded-xl flex items-center justify-center hover:bg-white/20 transition-all">
-                                    <X size={20} />
+                                <button onClick={() => setShowEditModal(false)} className="w-8 h-8 md:w-10 md:h-10 bg-white/10 text-white rounded-xl flex items-center justify-center hover:bg-white/20 transition-all">
+                                    <X size={18} />
                                 </button>
                             </div>
-                            <form onSubmit={handleUpdate} className="p-8 space-y-6">
-                                <div className="grid grid-cols-2 gap-4">
+                            <form onSubmit={handleUpdate} className="p-3 md:p-6 space-y-3 md:space-y-6 max-h-[70vh] md:max-h-none overflow-y-auto custom-scrollbar">
+                                <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-4">
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Bed ID</label>
                                         <input
                                             required
                                             value={editingBed.bedId}
                                             onChange={(e) => setEditingBed((prev: any) => ({ ...prev, bedId: e.target.value }))}
-                                            className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
+                                            className="w-full px-3 md:px-6 py-2.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] md:text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -522,7 +556,7 @@ const BedsManagement = () => {
                                         <select
                                             value={editingBed.type}
                                             onChange={(e: any) => setEditingBed((prev: any) => ({ ...prev, type: e.target.value, room: "" }))}
-                                            className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
+                                            className="w-full px-3 md:px-6 py-2.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] md:text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
                                         >
                                             <option value="">Select Type</option>
                                             {unitTypes.map(type => (
@@ -531,14 +565,14 @@ const BedsManagement = () => {
                                         </select>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-4">
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-xs">Floor</label>
                                         <input
                                             required
                                             value={editingBed.floor}
                                             onChange={(e) => setEditingBed((prev: any) => ({ ...prev, floor: e.target.value }))}
-                                            className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
+                                            className="w-full px-3 md:px-6 py-2.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] md:text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -551,16 +585,17 @@ const BedsManagement = () => {
                                             }}
                                             rooms={rooms}
                                             typeFilter={editingBed.type}
+                                            className="py-2.5 md:py-4"
                                         />
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-4">
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-xs">Department</label>
                                         <select
                                             value={editingBed.department}
                                             onChange={(e) => setEditingBed((prev: any) => ({ ...prev, department: e.target.value }))}
-                                            className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
+                                            className="w-full px-3 md:px-6 py-2.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] md:text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
                                         >
                                             <option value="">Select Dept</option>
                                             {departments.map(d => <option key={d._id} value={d.name}>{d.name}</option>)}
@@ -571,7 +606,7 @@ const BedsManagement = () => {
                                         <input
                                             value={editingBed.ward}
                                             onChange={(e) => setEditingBed((prev: any) => ({ ...prev, ward: e.target.value }))}
-                                            className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
+                                            className="w-full px-3 md:px-6 py-2.5 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] md:text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
                                         />
                                     </div>
                                 </div>
@@ -581,12 +616,12 @@ const BedsManagement = () => {
                                         type="number"
                                         value={editingBed.pricePerDay}
                                         onChange={(e) => setEditingBed((prev: any) => ({ ...prev, pricePerDay: Number(e.target.value) }))}
-                                        className="w-full px-6 py-4 bg-teal-50 border border-teal-100 rounded-2xl text-xs font-black focus:border-teal-500 outline-none transition-all"
+                                        className="w-full px-3 md:px-6 py-2.5 md:py-4 bg-teal-50 border border-teal-100 rounded-2xl text-[10px] md:text-xs font-black focus:border-teal-500 outline-none transition-all"
                                     />
                                 </div>
                                 <button
                                     disabled={submitting}
-                                    className="w-full py-4 bg-teal-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-teal-700 transition-all disabled:opacity-50 shadow-xl shadow-teal-200"
+                                    className="w-full py-3 md:py-4 bg-teal-600 text-white rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-teal-700 transition-all disabled:opacity-50 shadow-xl shadow-teal-200"
                                 >
                                     {submitting ? "Updating..." : "Save Changes"}
                                 </button>

@@ -34,7 +34,9 @@ const AnalyticsPage = () => {
             if (endDate) url.searchParams.append('endDate', endDate);
             return await apiClient<any>(url.pathname + url.search);
         },
-        placeholderData: (previousData) => previousData, // Standard v5 way to keep previous data
+        staleTime: 60000, // 1 min cache for analytics
+        gcTime: 15 * 60 * 1000,
+        placeholderData: (previousData) => previousData, 
     });
 
     const summary = data?.summary || {};
@@ -51,12 +53,16 @@ const AnalyticsPage = () => {
         }).format(val);
     };
 
-    const getMetricDetails = (stat: any, idx: number) => {
-        const totalBeds = (Number(bedStats.vacant) || 0) + (Number(bedStats.occupied) || 0) + (Number(bedStats.cleaning) || 0) + (Number(bedStats.blocked) || 0);
-        const bedUtilization = totalBeds > 0 ? Math.round((Number(bedStats.occupied) / totalBeds) * 100) : 0;
-        const avgLengthOfStay = summary.ipd?.avgLengthOfStay || 0;
-        const totalRevenue = (summary.appointments?.totalRevenue || 0) + (summary.ipd?.totalRevenue || 0) + (summary.pharmacy?.totalRevenue || 0) + (summary.lab?.totalRevenue || 0);
-        
+    // ✅ PERFORMANCE: Memoize shared calculations
+    const { totalRevenue, totalBeds, bedUtilization, avgLengthOfStay } = React.useMemo(() => {
+        const rev = (summary.appointments?.totalRevenue || 0) + (summary.ipd?.totalRevenue || 0) + (summary.pharmacy?.totalRevenue || 0) + (summary.lab?.totalRevenue || 0);
+        const beds = (Number(bedStats.vacant) || 0) + (Number(bedStats.occupied) || 0) + (Number(bedStats.cleaning) || 0) + (Number(bedStats.blocked) || 0);
+        const util = beds > 0 ? Math.round((Number(bedStats.occupied) / beds) * 100) : 0;
+        const stay = summary.ipd?.avgLengthOfStay || 0;
+        return { totalRevenue: rev, totalBeds: beds, bedUtilization: util, avgLengthOfStay: stay };
+    }, [summary, bedStats]);
+
+    const getMetricDetails = React.useCallback((stat: any, idx: number) => {
         const details = {
             0: {
                 title: 'OPD Revenue Stream',
@@ -100,7 +106,7 @@ const AnalyticsPage = () => {
             }
         };
         return details[idx as keyof typeof details] || details[0];
-    };
+    }, [summary, bedStats, totalRevenue, totalBeds, bedUtilization, avgLengthOfStay]);
 
     const handleExport = async () => {
         setIsExporting(true);
@@ -364,13 +370,13 @@ const AnalyticsPage = () => {
     );
 
     return (
-        <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
+    <div className="p-1 sm:p-1 md:p-1 lg:p-2 space-y-6 md:space-y-8 bg-slate-50/50 min-h-screen">
             {/* Header */}
             <div className="flex flex-col gap-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-3xl font-black text-slate-900">HOSPITAL ANALYTICS</h1>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                            <h1 className="text-lg md:text-xl font-black text-slate-900">HOSPITAL ANALYTICS</h1>
                             {isFetching && (
                                 <div className="flex items-center gap-2 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100">
                                     <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse"></div>
@@ -383,7 +389,7 @@ const AnalyticsPage = () => {
                 </div>
 
                 {/* Controls Bar */}
-                <div className="flex items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-2 md:p-4 shadow-sm">
                     {/* Date Range Filters */}
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
@@ -399,7 +405,7 @@ const AnalyticsPage = () => {
                             />
                         </div>
 
-                        <span className="text-slate-300">—</span>
+                        <span className="text-slate-200">-</span>
 
                         <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-slate-600 uppercase">To</span>
@@ -449,7 +455,7 @@ const AnalyticsPage = () => {
             </div>
 
             {/* Simple Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                 {stats.map((s, i) => {
                     const details = getMetricDetails(s, i);
                     return (
@@ -459,7 +465,7 @@ const AnalyticsPage = () => {
                             onMouseEnter={() => setHoveredCard(i)}
                             onMouseLeave={() => setHoveredCard(null)}
                         >
-                            <Card className="p-6 border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer h-full">
+                            <Card className="p-2 md:p-6 border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer h-full">
                                 <div className="flex items-center gap-4">
                                     <div className={`p-3 rounded-xl ${s.bg}`}>
                                         <s.icon className={`w-6 h-6 ${s.color}`} />
@@ -482,7 +488,7 @@ const AnalyticsPage = () => {
                                             <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-3 mb-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                                             {details.items.map((item: any, idx: number) => (
                                                 <div key={idx} className="flex flex-col p-2.5 rounded-xl bg-slate-50 border border-slate-100">
                                                     <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-1">
@@ -509,9 +515,9 @@ const AnalyticsPage = () => {
             </div>
 
             {/* Simple Revenue Trend */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="p-6 border-slate-200 shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-900 mb-6">Revenue Trend</h3>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <Card className="p-2 md:p-6 border-slate-200 shadow-sm">
+                    <h3 className="text-sm md:text-lg font-bold text-slate-900 mb-6">Revenue Trend</h3>
                     <div className="h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={trends}>
@@ -546,8 +552,8 @@ const AnalyticsPage = () => {
                 </Card>
 
                 {/* Simple Unit Comparison */}
-                <Card className="p-6 border-slate-200 shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-900 mb-6">Unit Performance</h3>
+                <Card className="p-2 md:p-6 border-slate-200 shadow-sm">
+                    <h3 className="text-sm md:text-lg font-bold text-slate-900 mb-6">Unit Performance</h3>
                     <div className="h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={[
@@ -571,11 +577,11 @@ const AnalyticsPage = () => {
                 </Card>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {/* Simple Doctor Table */}
-                <Card className="p-6 border-slate-200 shadow-sm">
+                <Card className="p-2 md:p-6 border-slate-200 shadow-sm">
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-lg font-bold text-slate-900">Doctor Performance</h3>
+                        <h3 className="text-sm md:text-lg font-bold text-slate-900">Doctor Performance</h3>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                             <input
@@ -588,7 +594,7 @@ const AnalyticsPage = () => {
                         </div>
                     </div>
                     <div className="overflow-x-auto max-h-[380px] overflow-y-auto pr-2 custom-scrollbar">
-                        <table className="w-full">
+                        <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full">
                             <thead>
                                 <tr className="text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                                     <th className="pb-3">Doctor</th>
@@ -611,14 +617,14 @@ const AnalyticsPage = () => {
                                     </tr>
                                 )}
                             </tbody>
-                        </table>
+                        </table></div>
                     </div>
                 </Card>
 
                 {/* Right Column: Bed Status & Depts */}
                 <div className="space-y-6">
-                    <Card className="p-6 border-slate-200 shadow-sm">
-                        <h3 className="text-lg font-bold text-slate-900 mb-6">Bed Status</h3>
+                    <Card className="p-2 md:p-6 border-slate-200 shadow-sm">
+                        <h3 className="text-sm md:text-lg font-bold text-slate-900 mb-6">Bed Status</h3>
                         <div className="space-y-4">
                             {[
                                 { label: 'Vacant', count: bedStats.vacant, color: 'bg-emerald-500' },
@@ -659,7 +665,7 @@ const AnalyticsPage = () => {
                         </div>
                     </Card>
 
-                    <Card className="p-6 border-slate-200 shadow-sm">
+                    <Card className="p-2 md:p-6 border-slate-200 shadow-sm">
                         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Top Departments</h3>
                         <div className="space-y-4">
                             {depts.slice(0, 4).map((dept: any, i: number) => (
@@ -680,7 +686,7 @@ const AnalyticsPage = () => {
                         </div>
                     </Card>
 
-                    <Card className="p-6 border-slate-200 shadow-sm">
+                    <Card className="p-2 md:p-6 border-slate-200 shadow-sm">
                         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Billing Overview</h3>
                         <div className="space-y-4">
                             {(data?.paymentDistribution || []).map((p: any, i: number) => (
@@ -698,7 +704,7 @@ const AnalyticsPage = () => {
                         </div>
                     </Card>
 
-                    <Card className="p-6 border-slate-200 shadow-sm">
+                    <Card className="p-2 md:p-6 border-slate-200 shadow-sm">
                         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Total Breakdown</h3>
                         <div className="space-y-4">
                             {[

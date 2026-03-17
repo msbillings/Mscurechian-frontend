@@ -187,71 +187,67 @@ const HospitalsList = () => {
             {filteredHospitals.map((hospital) => (
                 <div key={hospital._id} className="group rounded-2xl border hover:shadow-xl hover:border-blue-500/50 flex flex-col h-full bg-linear-to-b from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50"
                     style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
-                    <div className="p-6 grow">
-                        <div className="flex justify-between items-start mb-6">
-                            <div className="w-14 h-14 bg-blue-500/5 rounded-2xl flex items-center justify-center text-blue-500 border border-blue-500/10 group-hover:scale-110">
-                                <Building2 size={28} />
+                    <div className="p-5 grow">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="w-12 h-12 bg-blue-500/5 rounded-xl flex items-center justify-center text-blue-500 border border-blue-500/10 group-hover:scale-110">
+                                <Building2 size={24} />
                             </div>
-                            <div className="flex flex-col items-end gap-2">
+                            <div className="flex flex-col items-end gap-1.5">
                                 <Badge variant={getStatusVariant(hospital.status || "pending")}>
-                                    <span className="flex items-center gap-1.5 uppercase font-bold text-[10px]">
+                                    <span className="flex items-center gap-1.5 uppercase font-bold text-[8px]">
                                         {(hospital.status || 'pending').toUpperCase()}
                                     </span>
                                 </Badge>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); handleDelete(hospital._id); }}
-                                    className="p-1.5 text-gray-400 hover:text-red-500 bg-gray-50 dark:bg-gray-900 rounded-lg border border-transparent hover:border-red-500/20"
+                                    className="p-1 text-gray-400 hover:text-red-500 bg-gray-50 dark:bg-gray-900 rounded-lg border border-transparent hover:border-red-500/20"
                                     title="Decommission Node"
                                 >
-                                    <Trash2 size={16} />
+                                    <Trash2 size={14} />
                                 </button>
                             </div>
                         </div>
 
-                        <h3 className="text-xl font-bold mb-2 group-hover:text-blue-500 line-clamp-1">{hospital.name}</h3>
-                        <p className="text-xs flex items-start gap-2 mb-6 opacity-60 min-h-[32px] line-clamp-2">
-                            <MapPin size={14} className="shrink-0 mt-0.5 text-blue-500" /> 
+                        <h3 className="text-base font-bold mb-1 group-hover:text-blue-500 line-clamp-1">{hospital.name}</h3>
+                        <p className="text-[10px] flex items-start gap-2 mb-3 opacity-60 min-h-[24px] line-clamp-2">
+                            <MapPin size={10} className="shrink-0 mt-0.5 text-blue-500" /> 
                             {hospital.address}
                         </p>
 
-                        <div className="grid grid-cols-2 gap-4 text-sm mb-6 bg-gray-50/50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                            <div className="space-y-1">
-                                <span className="block text-[10px] uppercase font-bold opacity-30 tracking-widest">Medical Staff</span>
-                                <span className="font-bold text-lg">{hospital.numberOfDoctors || hospital.numDoctors || 0}</span>
-                            </div>
-                            <div className="space-y-1">
-                                <span className="block text-[10px] uppercase font-bold opacity-30 tracking-widest">Trust Index</span>
-                                <div className="flex items-center gap-1 text-lg font-bold text-yellow-500">
-                                    <Star size={16} fill="currentColor" />
+                        <div className="grid grid-cols-2 gap-3 text-xs mb-3 bg-gray-50/50 dark:bg-gray-900/50 p-2.5 rounded-xl border border-gray-100 dark:border-gray-800">
+                            <div className="space-y-0.5">
+                                <span className="block text-[8px] uppercase font-bold opacity-30 tracking-widest">Trust Index</span>
+                                <div className="flex items-center gap-1 text-sm font-bold text-yellow-500">
+                                    <Star size={12} fill="currentColor" />
                                     {hospital.rating || "4.5"}
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="p-6 pt-0 mt-auto flex flex-col gap-3">
-                        <div className="flex gap-3">
+                    <div className="p-4 pt-0 mt-auto flex flex-col gap-2">
+                        <div className="flex gap-2">
                             <button
                                 onClick={() => setSelectedHospital(hospital)}
-                                className="flex-1 bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2 group/btn"
+                                className="flex-1 bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 text-[10px] font-bold py-2 rounded-xl flex items-center justify-center gap-2 group/btn"
                             >
-                                <Eye size={16} className="group-hover/btn:scale-110 text-blue-500" /> Infrastructure
+                                <Eye size={12} className="group-hover/btn:scale-110 text-blue-500" /> Infrastructure
                             </button>
                             <button
                                 onClick={() => handleStatusToggle(hospital._id, hospital.status)}
-                                className={`px-4 rounded-xl text-white shadow-lg active:scale-95 ${
+                                className={`px-2.5 rounded-xl text-white shadow-lg active:scale-95 ${
                                     (hospital.status === 'approved' || hospital.status === 'active') 
                                     ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20' 
                                     : 'bg-green-600 hover:bg-green-700 shadow-green-600/20'
                                 }`}
                                 title={hospital.status === 'approved' ? 'Suspend Access' : 'Approve Network Member'}
                             >
-                                <Activity size={18} />
+                                <Activity size={14} />
                             </button>
                         </div>
                         <Link href={`/admin/hospitals/${hospital._id}`}>
-                            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-transform">
-                                <ShieldCheck size={16} /> Hospital Personnel & Login IDs
+                            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-2 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all">
+                                <ShieldCheck size={12} /> Personnel & Login IDs
                             </button>
                         </Link>
                     </div>
@@ -275,14 +271,14 @@ const HospitalsList = () => {
         maxWidth="max-w-4xl"
       >
         {selectedHospital && (
-          <div className="space-y-8">
-            <div className="flex flex-col md:flex-row items-start gap-6 border-b pb-8" style={{ borderColor: 'var(--border-color)' }}>
-               <div className="w-24 h-24 rounded-3xl bg-blue-500/5 flex items-center justify-center border border-blue-500/10 shrink-0 shadow-sm">
-                  <Building2 className="text-blue-500" size={48} />
+          <div className="space-y-6">
+            <div className="flex flex-col md:flex-row items-start gap-5 border-b pb-6" style={{ borderColor: 'var(--border-color)' }}>
+               <div className="w-20 h-20 rounded-2xl bg-blue-500/5 flex items-center justify-center border border-blue-500/10 shrink-0 shadow-sm">
+                  <Building2 className="text-blue-500" size={40} />
                </div>
-               <div className="pt-2 grow">
+               <div className="pt-1 grow">
                   <div className="flex justify-between items-start">
-                    <h2 className="text-3xl font-bold mb-2">{selectedHospital.name}</h2>
+                    <h2 className="text-2xl font-bold mb-1">{selectedHospital.name}</h2>
                     <Badge variant={getStatusVariant(selectedHospital.status)}>
                         {(selectedHospital.status || 'pending').toUpperCase()}
                     </Badge>
@@ -301,94 +297,78 @@ const HospitalsList = () => {
                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-               <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="space-y-4">
                   <div>
-                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-blue-500 mb-4 flex items-center gap-2">
-                        <ShieldCheck size={14} /> Official Connectivity
+                    <h3 className="text-[9px] font-bold uppercase tracking-widest text-blue-500 mb-3 flex items-center gap-2">
+                        <ShieldCheck size={12} /> Official Connectivity
                     </h3>
-                    <div className="space-y-4 bg-gray-50/50 dark:bg-gray-900/50 p-6 rounded-2xl border border-gray-100 dark:border-gray-800">
-                        <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm text-gray-400">
-                                <Phone size={18} />
+                    <div className="space-y-3 bg-gray-50/50 dark:bg-gray-900/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm text-gray-400">
+                                <Phone size={14} />
                             </div>
                             <div>
-                                <p className="text-[10px] font-bold opacity-30 uppercase tracking-widest">Phone Line</p>
-                                <p className="font-bold">{selectedHospital.phone || 'Not provided'}</p>
+                                <p className="text-[9px] font-bold opacity-30 uppercase tracking-widest">Phone Line</p>
+                                <p className="text-sm font-bold">{selectedHospital.phone || 'Not provided'}</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm text-gray-400">
-                                <Mail size={18} />
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm text-gray-400">
+                                <Mail size={14} />
                             </div>
                             <div>
-                                <p className="text-[10px] font-bold opacity-30 uppercase tracking-widest">Email Node</p>
-                                <p className="font-bold">{selectedHospital.email || 'Not provided'}</p>
+                                <p className="text-[9px] font-bold opacity-30 uppercase tracking-widest">Email Node</p>
+                                <p className="text-sm font-bold">{selectedHospital.email || 'Not provided'}</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm text-gray-400">
-                                <Globe size={18} />
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm text-gray-400">
+                                <Globe size={14} />
                             </div>
                             <div>
-                                <p className="text-[10px] font-bold opacity-30 uppercase tracking-widest">Web Presence</p>
-                                <p className="font-bold text-blue-500 truncate max-w-[200px]">{selectedHospital.website || 'None registered'}</p>
+                                <p className="text-[9px] font-bold opacity-30 uppercase tracking-widest">Web Presence</p>
+                                <p className="text-sm font-bold text-blue-500 truncate max-w-[180px]">{selectedHospital.website || 'None registered'}</p>
                             </div>
                         </div>
                     </div>
                   </div>
                   
                   <div>
-                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-blue-500 mb-4">Operations</h3>
-                    <div className="flex items-center gap-4 bg-gray-50/50 dark:bg-gray-900/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
-                        <Clock size={20} className="text-orange-500" />
+                    <h3 className="text-[9px] font-bold uppercase tracking-widest text-blue-500 mb-3">Operations</h3>
+                    <div className="flex items-center gap-3 bg-gray-50/50 dark:bg-gray-900/50 p-3 rounded-2xl border border-gray-100 dark:border-gray-800">
+                        <Clock size={16} className="text-orange-500" />
                         <div>
-                             <p className="text-[10px] font-bold opacity-30 uppercase tracking-widest">Active Hours</p>
-                             <p className="font-bold">{selectedHospital.operatingHours || "24x7 Emergency Ready"}</p>
+                             <p className="text-[9px] font-bold opacity-30 uppercase tracking-widest">Active Hours</p>
+                             <p className="text-sm font-bold">{selectedHospital.operatingHours || "24x7 Emergency Ready"}</p>
                         </div>
                     </div>
                   </div>
                </div>
 
-               <div className="space-y-6">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-blue-500 mb-4 flex items-center gap-2">
-                        <Activity size={14} /> Capacity Metrics
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                     <div className="bg-blue-500/5 p-6 rounded-2xl border border-blue-500/10 group hover:bg-blue-500/10">
-                        <Bed className="text-blue-500 mb-3" size={24} />
-                        <p className="text-[10px] font-bold opacity-50 uppercase tracking-widest">General Beds</p>
-                        <p className="text-3xl font-bold mt-1">{selectedHospital.numberOfBeds || selectedHospital.totalBeds || 0}</p>
-                     </div>
-                     <div className="bg-red-500/5 p-6 rounded-2xl border border-red-500/10 group hover:bg-red-500/10">
-                        <Activity className="text-red-500 mb-3" size={24} />
-                        <p className="text-[10px] font-bold opacity-50 uppercase tracking-widest">Critical ICU</p>
-                        <p className="text-3xl font-bold mt-1 text-red-500">{selectedHospital.ICUBeds || selectedHospital.icuBeds || 0}</p>
-                     </div>
-                  </div>
-
-                  <div className="p-5 rounded-2xl bg-green-500/5 border border-green-500/10 flex items-center justify-between">
+               <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-green-500/5 border border-green-500/10 flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                          <CheckCircle className="text-green-500" size={20} />
-                          <span className="text-sm font-bold">Ambulance Readiness</span>
+                          <CheckCircle className="text-green-500" size={18} />
+                          <span className="text-xs font-bold">Ambulance Readiness</span>
                       </div>
-                      <span className={`text-xs font-bold px-3 py-1 rounded-full ${selectedHospital.ambulanceAvailability || selectedHospital.ambulanceAvailable ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500 dark:bg-gray-700'}`}>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${selectedHospital.ambulanceAvailability || selectedHospital.ambulanceAvailable ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500 dark:bg-gray-700'}`}>
                           {selectedHospital.ambulanceAvailability || selectedHospital.ambulanceAvailable ? 'READY' : 'N/A'}
                       </span>
                   </div>
 
                   <div>
-                     <p className="text-[10px] font-bold opacity-30 uppercase tracking-widest mb-3">Address Fingerprint</p>
-                     <p className="text-sm italic opacity-70 leading-relaxed dark:text-gray-300">
+                     <p className="text-[9px] font-bold opacity-30 uppercase tracking-widest mb-2">Address Fingerprint</p>
+                     <p className="text-xs italic opacity-70 leading-relaxed dark:text-gray-300">
                         "{selectedHospital.address}"
                      </p>
                   </div>
                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t" style={{ borderColor: 'var(--border-color)' }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
                <div>
-                   <h3 className="text-[10px] font-bold uppercase tracking-widest text-blue-500 mb-4">Network Specialties</h3>
+                   <h3 className="text-[9px] font-bold uppercase tracking-widest text-blue-500 mb-3">Network Specialties</h3>
                    <div className="flex flex-wrap gap-2">
                       {(selectedHospital.specialties || selectedHospital.specialities || []).length > 0 ? 
                         (selectedHospital.specialties || selectedHospital.specialities || []).map((s, i) => (
@@ -401,7 +381,7 @@ const HospitalsList = () => {
                    </div>
                </div>
                <div>
-                   <h3 className="text-[10px] font-bold uppercase tracking-widest text-green-500 mb-4">Patient Services</h3>
+                   <h3 className="text-[9px] font-bold uppercase tracking-widest text-green-500 mb-3">Patient Services</h3>
                    <div className="flex flex-wrap gap-2">
                       {selectedHospital.services && selectedHospital.services.length > 0 ? 
                         selectedHospital.services.map((s, i) => (
@@ -415,11 +395,10 @@ const HospitalsList = () => {
                </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4">
-               <Button variant="ghost" onClick={() => setSelectedHospital(null)} className="px-8">
+            <div className="flex justify-end gap-3 pt-2">
+               <Button variant="ghost" onClick={() => setSelectedHospital(null)} className="px-6 py-2 h-auto text-sm">
                   Dismiss
                </Button>
-               {/* Note: View Details page is currently the overview modal itself. Removing dead link to [id] page as it doesn't exist */}
             </div>
           </div>
         )}

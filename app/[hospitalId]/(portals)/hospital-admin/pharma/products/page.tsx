@@ -220,7 +220,7 @@ const ProductsPage = () => {
     }))).filter(Boolean)];
 
     return (
-        <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
+        <div className="p-3 md:p-8 space-y-8 bg-slate-50/50 min-h-screen">
             {/* Simple Header */}
             <div className="flex justify-between items-center">
                 <div>
@@ -230,19 +230,19 @@ const ProductsPage = () => {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => setIsBulkModalOpen(true)}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all"
+                        className="flex items-center gap-2 px-3 md:px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all"
                     >
                         <FileSpreadsheet size={14} strokeWidth={3} /> Bulk Manifest
                     </button>
                     <button
                         onClick={handleExportExcel}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all"
+                        className="flex items-center gap-2 px-3 md:px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all"
                     >
                         <Download size={14} strokeWidth={3} /> Export Audit
                     </button>
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all shadow-sm"
+                        className="flex items-center gap-2 px-3 md:px-6 py-2.5 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all shadow-sm"
                     >
                         <Plus size={14} strokeWidth={3} /> Onboard SKU
                     </button>
@@ -250,7 +250,7 @@ const ProductsPage = () => {
             </div>
 
             {/* Simple Controller */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
+            <div className="bg-white p-2 md:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
                 <div className="relative flex-1 w-full">
                     <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
                     <input
@@ -289,7 +289,7 @@ const ProductsPage = () => {
                         { label: 'Vendor Origin', value: supplierFilter, setter: setSupplierFilter, options: suppliers },
                         { label: 'Stability Status', value: expiryStatusFilter, setter: setExpiryStatusFilter, options: ['All', 'Expired', 'Expiring Soon (30 days)', 'Expiring in 3 months'] }
                     ].map((filter, i) => (
-                        <div key={i} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div key={i} className="bg-white p-3 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 leading-none">{filter.label}</p>
                             <select
                                 className="w-full bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tight outline-none focus:ring-2 focus:ring-blue-500/10 cursor-pointer appearance-none"

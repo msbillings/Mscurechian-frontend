@@ -457,9 +457,9 @@ export default function HourlyRecordClient() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
             {/* Top Toolbar */}
-            <div className="flex flex-col md:flex-row gap-3 justify-between items-center bg-white p-3 sm:p-5 rounded-[2rem] border border-slate-200 shadow-sm transition-all duration-300">
+            <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center bg-white p-2 md:p-4 rounded-2xl sm:rounded-[2rem] border border-slate-200 shadow-sm transition-all duration-300">
                 <div className="w-full md:w-96 space-y-2" ref={dropdownRef}>
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Select Patient / Admission</label>
                     <div className="relative">
@@ -522,7 +522,7 @@ export default function HourlyRecordClient() {
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+                <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto justify-start xl:justify-end">
                     <div className="flex items-center bg-slate-100/80 p-1 rounded-2xl border border-slate-200">
                         <button
                             onClick={() => setExportFormat('pdf')}
@@ -543,7 +543,7 @@ export default function HourlyRecordClient() {
                     <button
                         onClick={handleDownload}
                         disabled={!selectedAdmissionId}
-                        className="w-full md:w-auto flex items-center justify-center gap-3 px-8 py-3 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 disabled:opacity-50 disabled:shadow-none group"
+                        className="w-full md:w-auto flex items-center justify-center gap-3 px-4 md:px-8 py-3 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 disabled:opacity-50 disabled:shadow-none group"
                     >
                         <Download size={16} className="group-hover:translate-y-0.5 transition-transform" />
                         Download Report
@@ -562,9 +562,9 @@ export default function HourlyRecordClient() {
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                         <div className="xl:col-span-2 space-y-6">
                             {/* Patient Core Info Card */}
-                            <Card className="relative overflow-hidden group border-none shadow-xl bg-white rounded-[2.5rem]">
+                            <Card className="relative overflow-hidden group border-none shadow-xl bg-white rounded-2xl sm:rounded-[2.5rem]">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-700"></div>
-                                <div className="relative z-10 p-4 sm:p-6">
+                                <div className="relative z-10 p-2 md:p-4 sm:p-6 md:p-8">
                                     <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8">
                                         <div className="flex items-center gap-4">
                                             <div className="w-14 h-14 sm:w-16 sm:h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg transform group-hover:rotate-6 transition-transform flex-shrink-0">
@@ -598,8 +598,8 @@ export default function HourlyRecordClient() {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-6 border-t border-slate-100">
-                                        <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-6 border-t border-slate-100">
+                                        <div className="bg-slate-50/50 p-2 md:p-4 rounded-2xl border border-slate-100">
                                             <p className="text-[10px] font-black text-slate-400 uppercase mb-1.5 flex items-center gap-1.5">
                                                 <Stethoscope size={10} className="text-blue-500" />
                                                 Primary Doctor
@@ -608,7 +608,7 @@ export default function HourlyRecordClient() {
                                                 {hourlyData.data.admission.doctorName?.startsWith('Dr.') ? hourlyData.data.admission.doctorName : `Dr. ${hourlyData.data.admission.doctorName}`}
                                             </p>
                                         </div>
-                                        <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                                        <div className="bg-slate-50/50 p-2 md:p-4 rounded-2xl border border-slate-100">
                                             <p className="text-[10px] font-black text-slate-400 uppercase mb-1.5 flex items-center gap-1.5">
                                                 <ClipboardList size={10} className="text-indigo-500" />
                                                 Ward Details
@@ -623,26 +623,26 @@ export default function HourlyRecordClient() {
                                                 ) : 'Clinical Transit'}
                                             </p>
                                         </div>
-                                        <div className="sm:col-span-2 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                                        <div className="sm:col-span-2 bg-slate-50/50 p-2 md:p-4 rounded-2xl border border-slate-100">
                                             <p className="text-[10px] font-black text-slate-400 uppercase mb-2 flex items-center gap-1.5">
                                                 <Activity size={10} className="text-rose-500" />
                                                 Live Vitals Snapshot
                                             </p>
-                                            <div className="flex flex-wrap items-center gap-4">
-                                                <div className="flex items-center gap-2 text-xs font-black text-slate-700">
+                                            <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
+                                                <div className="flex items-center gap-2 text-xs md:text-sm font-black text-slate-700">
                                                     <HeartPulse size={14} className="text-rose-500" />
                                                     {hourlyData.data.vitals?.[hourlyData.data.vitals.length - 1]?.heartRate || '--'}
-                                                    <span className="text-[8px] text-slate-400 uppercase">bpm</span>
+                                                    <span className="text-[8px] md:text-[10px] text-slate-400 uppercase">bpm</span>
                                                 </div>
-                                                <div className="flex items-center gap-2 text-xs font-black text-slate-700">
+                                                <div className="flex items-center gap-2 text-xs md:text-sm font-black text-slate-700">
                                                     <Thermometer size={14} className="text-orange-500" />
                                                     {hourlyData.data.vitals?.[hourlyData.data.vitals.length - 1]?.temperature || '--'}
-                                                    <span className="text-[8px] text-slate-400 uppercase">°F</span>
+                                                    <span className="text-[8px] md:text-[10px] text-slate-400 uppercase">°F</span>
                                                 </div>
-                                                <div className="flex items-center gap-2 text-xs font-black text-slate-700">
+                                                <div className="flex items-center gap-2 text-xs md:text-sm font-black text-slate-700">
                                                     <Droplets size={14} className="text-blue-500" />
                                                     {hourlyData.data.vitals?.[hourlyData.data.vitals.length - 1]?.spO2 || '--'}
-                                                    <span className="text-[8px] text-slate-400 uppercase">%</span>
+                                                    <span className="text-[8px] md:text-[10px] text-slate-400 uppercase">%</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -653,7 +653,7 @@ export default function HourlyRecordClient() {
 
                         <div className="space-y-6">
                             {/* Diet Card */}
-                            <Card className="h-full p-4 sm:p-6 bg-gradient-to-br from-emerald-500 to-teal-600 border-none shadow-xl text-white rounded-[2.5rem] relative overflow-hidden">
+                            <Card className="h-full p-3 md:p-6 md:p-8 bg-gradient-to-br from-emerald-500 to-teal-600 border-none shadow-xl text-white rounded-2xl sm:rounded-[2.5rem] relative overflow-hidden">
                                 <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
                                 <div className="relative z-10 flex flex-col h-full">
                                     <div className="flex justify-between items-center mb-6">
@@ -683,15 +683,15 @@ export default function HourlyRecordClient() {
                     </div>
 
                     {/* Vitals Log */}
-                    <div className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm">
-                        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                    <div className="bg-white rounded-2xl sm:rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm">
+                        <div className="p-2 md:p-4 md:p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50">
                             <div className="flex items-center gap-3">
-                                <div className="p-1.5 bg-blue-50 text-blue-600 rounded-xl">
-                                    <Activity size={18} />
+                                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                                    <Activity size={20} />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Hourly Vitals Observation</h3>
-                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Nurse Monitoring History</p>
+                                    <h3 className="text-sm md:text-base font-black text-slate-900 uppercase tracking-tight">Hourly Vitals Observation</h3>
+                                    <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-tighter">Nurse Monitoring History</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
@@ -724,19 +724,19 @@ export default function HourlyRecordClient() {
                                 )}
                             </div>
                         </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
+                        <div className="overflow-x-auto no-scrollbar">
+                            <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full text-left min-w-[1000px]">
                                 <thead className="bg-slate-50 border-b border-slate-100">
                                     <tr>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date / Time</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Heart Rate</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">BP (Sys/Dia)</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">SpO2</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Temp</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center text-rose-500">Resp. Rate</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Glucose</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Nurse</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                                        <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date / Time</th>
+                                        <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Heart Rate</th>
+                                        <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">BP (Sys/Dia)</th>
+                                        <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">SpO2</th>
+                                        <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Temp</th>
+                                        <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center text-rose-500">Resp. Rate</th>
+                                        <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Glucose</th>
+                                        <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Nurse</th>
+                                        <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
@@ -745,7 +745,7 @@ export default function HourlyRecordClient() {
                                             const isPageRecord = idx >= (currentPage - 1) * itemsPerPage && idx < currentPage * itemsPerPage;
                                             return (
                                                 <tr key={idx} className={`hover:bg-slate-50/50 transition-colors group ${!isPageRecord ? 'hidden-on-ui' : ''}`}>
-                                                    <td className="px-6 py-4">
+                                                    <td className="px-2 md:px-6 py-4">
                                                         <div className="flex items-center gap-2">
                                                             <Clock size={14} className="text-slate-300" />
                                                             <span className="text-xs font-black text-slate-700">{format(new Date(v.timestamp), 'HH:mm')}</span>
@@ -754,18 +754,18 @@ export default function HourlyRecordClient() {
                                                             <span className="text-[10px] font-black text-slate-500 uppercase">{format(new Date(v.timestamp), 'dd MMM (EEE)')}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 text-center">
+                                                    <td className="px-2 md:px-6 py-4 text-center">
                                                         <span className={`text-sm font-black ${v.heartRate > 100 || v.heartRate < 60 ? 'text-rose-500' : 'text-slate-700'}`}>
                                                             {v.heartRate}
                                                         </span>
                                                         <span className="text-[10px] font-bold text-slate-400 ml-1">bpm</span>
                                                     </td>
-                                                    <td className="px-6 py-4 text-center">
+                                                    <td className="px-2 md:px-6 py-4 text-center">
                                                         <span className="text-xs font-black text-slate-700">
                                                             {v.systolicBP}/{v.diastolicBP}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4 text-center">
+                                                    <td className="px-2 md:px-6 py-4 text-center">
                                                         <div className="flex flex-col items-center">
                                                             <span className={`text-sm font-black ${v.spO2 < 94 ? 'text-rose-600 animate-pulse' : 'text-slate-700'}`}>
                                                                 {v.spO2}%
@@ -778,19 +778,19 @@ export default function HourlyRecordClient() {
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 text-center">
+                                                    <td className="px-2 md:px-6 py-4 text-center">
                                                         <span className="text-xs font-bold text-slate-700">{v.temperature}°F</span>
                                                     </td>
-                                                    <td className="px-6 py-4 text-center">
+                                                    <td className="px-2 md:px-6 py-4 text-center">
                                                         <span className="text-xs font-black text-rose-500">{v.respiratoryRate || '--'}</span>
                                                     </td>
-                                                    <td className="px-6 py-4">
+                                                    <td className="px-2 md:px-6 py-4">
                                                         <div className="flex flex-col">
                                                             <span className="text-xs font-bold text-slate-700">{v.glucose || '--'} mg/dL</span>
                                                             <span className="text-[10px] font-black text-slate-400 uppercase">{v.glucoseType}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4">
+                                                    <td className="px-2 md:px-6 py-4">
                                                         <div className="flex items-center gap-2">
                                                             <div className="w-7 h-7 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black uppercase border border-indigo-100">
                                                                 {v.recordedBy?.name?.charAt(0)}
@@ -798,7 +798,7 @@ export default function HourlyRecordClient() {
                                                             <span className="text-xs font-bold text-slate-600">{v.recordedBy?.name}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4">
+                                                    <td className="px-2 md:px-6 py-4">
                                                         <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter border ${v.status === 'Critical' ? 'bg-rose-50 text-rose-600 border-rose-100' :
                                                             v.status === 'Warning' ? 'bg-amber-50 text-amber-600 border-amber-100' :
                                                                 'bg-emerald-50 text-emerald-600 border-emerald-100'
@@ -811,8 +811,8 @@ export default function HourlyRecordClient() {
                                         })
                                     ) : (
                                         <tr>
-                                            <td colSpan={9} className="px-6 py-12 text-center">
-                                                <div className="bg-slate-50 inline-flex p-4 rounded-3xl mb-4">
+                                            <td colSpan={9} className="px-2 md:px-6 py-12 text-center">
+                                                <div className="bg-slate-50 inline-flex p-2 md:p-4 rounded-3xl mb-4">
                                                     <Activity size={32} className="text-slate-300" />
                                                 </div>
                                                 <p className="text-sm font-black text-slate-500 uppercase tracking-widest">No vitals logged yet</p>
@@ -820,14 +820,14 @@ export default function HourlyRecordClient() {
                                         </tr>
                                     )}
                                 </tbody>
-                            </table>
+                            </table></div>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Medication Log */}
                         <div className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm">
-                            <div className="p-6 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
+                            <div className="p-2 md:p-6 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
                                 <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
                                     <Pill size={20} />
                                 </div>
@@ -837,25 +837,25 @@ export default function HourlyRecordClient() {
                                 </div>
                             </div>
                             <div className="overflow-x-auto">
-                                <table className="w-full text-left">
+                                <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full text-left">
                                     <thead className="bg-slate-50 border-b border-slate-100">
                                         <tr>
-                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Drug & Dose</th>
-                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Time & Slot</th>
-                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Nurse</th>
+                                            <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Drug & Dose</th>
+                                            <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Time & Slot</th>
+                                            <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Nurse</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50">
                                         {hourlyData.data.meds.length > 0 ? (
                                             [...hourlyData.data.meds].map((m: any, idx: number) => (
                                                 <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                                                    <td className="px-6 py-4">
+                                                    <td className="px-2 md:px-6 py-4">
                                                         <div className="flex flex-col">
                                                             <span className="text-xs font-black text-slate-800">{m.drugName}</span>
                                                             <span className="text-[10px] font-bold text-slate-500">{m.dose} • {m.route}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4">
+                                                    <td className="px-2 md:px-6 py-4">
                                                         <div className="flex flex-col">
                                                             <span className="text-xs font-black text-slate-700">{format(new Date(m.timestamp), 'HH:mm')}</span>
                                                             <span className={`text-[9px] font-black uppercase tracking-widest ${m.timeSlot === 'Morning' ? 'text-amber-500' :
@@ -863,24 +863,24 @@ export default function HourlyRecordClient() {
                                                                 }`}>{m.timeSlot}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4">
+                                                    <td className="px-2 md:px-6 py-4">
                                                         <span className="text-xs font-bold text-slate-600">{m.administeredBy?.name}</span>
                                                     </td>
                                                 </tr>
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan={3} className="px-6 py-8 text-center text-xs font-bold text-slate-400 uppercase">No Medications Administered</td>
+                                                <td colSpan={3} className="px-2 md:px-6 py-8 text-center text-xs font-bold text-slate-400 uppercase">No Medications Administered</td>
                                             </tr>
                                         )}
                                     </tbody>
-                                </table>
+                                </table></div>
                             </div>
                         </div>
 
                         {/* Diet Log */}
                         <div className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm">
-                            <div className="p-6 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
+                            <div className="p-2 md:p-6 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
                                 <div className="p-2 bg-orange-50 text-orange-600 rounded-xl">
                                     <Utensils size={20} />
                                 </div>
@@ -890,19 +890,19 @@ export default function HourlyRecordClient() {
                                 </div>
                             </div>
                             <div className="overflow-x-auto">
-                                <table className="w-full text-left">
+                                <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full text-left">
                                     <thead className="bg-slate-50 border-b border-slate-100">
                                         <tr>
-                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Items</th>
-                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Category</th>
-                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Time/Nurse</th>
+                                            <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Items</th>
+                                            <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Category</th>
+                                            <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Time/Nurse</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50">
                                         {hourlyData.data.diet?.length > 0 ? (
                                             [...hourlyData.data.diet].map((d: any, idx: number) => (
                                                 <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                                                    <td className="px-6 py-4">
+                                                    <td className="px-2 md:px-6 py-4">
                                                         <div className="flex flex-col">
                                                             <span className="text-xs font-black text-slate-800">
                                                                 {d.items?.map((item: any) => `${item.name || item} ${item.quantity ? `(${item.quantity})` : ''}`).join(', ')}
@@ -915,12 +915,12 @@ export default function HourlyRecordClient() {
                                                             {d.notes && <span className="text-[9px] text-slate-400 italic font-medium">{d.notes}</span>}
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4">
+                                                    <td className="px-2 md:px-6 py-4">
                                                         <span className="px-2 py-0.5 bg-orange-50 text-orange-600 rounded text-[9px] font-black uppercase tracking-widest border border-orange-100">
                                                             {d.category}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4">
+                                                    <td className="px-2 md:px-6 py-4">
                                                         <div className="flex flex-col">
                                                             <span className="text-xs font-black text-slate-700">{d.recordedTime}</span>
                                                             <span className="text-[9px] font-black text-slate-500 uppercase">{format(new Date(d.timestamp), 'dd MMM (EEE)')}</span>
@@ -931,17 +931,17 @@ export default function HourlyRecordClient() {
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan={3} className="px-6 py-8 text-center text-xs font-bold text-slate-400 uppercase">No Diet Logs Recorded</td>
+                                                <td colSpan={3} className="px-2 md:px-6 py-8 text-center text-xs font-bold text-slate-400 uppercase">No Diet Logs Recorded</td>
                                             </tr>
                                         )}
                                     </tbody>
-                                </table>
+                                </table></div>
                             </div>
                         </div>
 
                         {/* Recent Tests */}
                         <div className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm lg:col-span-2">
-                            <div className="p-6 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
+                            <div className="p-2 md:p-6 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
                                 <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
                                     <ClipboardList size={20} />
                                 </div>
@@ -950,7 +950,7 @@ export default function HourlyRecordClient() {
                                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Recent Lab Results</p>
                                 </div>
                             </div>
-                            <div className="p-6">
+                            <div className="p-2 md:p-6">
                                 <div className="space-y-4">
                                     {hourlyData.data.labOrders.length > 0 ? (
                                         <div className="space-y-4">
@@ -1028,11 +1028,11 @@ export default function HourlyRecordClient() {
                     </div>
                 </div>
             ) : (
-                <div className="h-[450px] bg-white rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center p-8">
+                <div className="h-[450px] bg-white rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center p-2 md:p-4 md:p-8">
                     <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6 border border-slate-100 shadow-inner">
                         <Activity size={48} className="text-slate-200" />
                     </div>
-                    <h3 className="text-lg font-black text-slate-400 uppercase tracking-widest">Awaiting Patient Selection</h3>
+                    <h3 className="text-sm md:text-lg font-black text-slate-400 uppercase tracking-widest">Awaiting Patient Selection</h3>
                     <p className="text-xs text-slate-400 font-bold uppercase mt-2 max-w-sm leading-relaxed">
                         Please select an active inpatient from the dropdown above to view and download their consolidated hourly monitoring records.
                     </p>
@@ -1119,22 +1119,22 @@ export default function HourlyRecordClient() {
                 }
             `}</style>
 
-            {/* Print Preview Modal */}
+            {/* RESPONSIVE Print Preview Modal */}
             {showPrintModal && (
-                <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-white w-full max-w-5xl h-[90vh] rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
-                        {/* Modal Header */}
-                        <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-100">
-                                    <FileText size={24} />
+                <div className="fixed inset-0 z-[999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white w-full h-full max-h-[96vh] rounded-3xl sm:max-w-6xl sm:h-[92vh] sm:rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+                        {/* Modal Header - Responsive Padding */}
+                        <div className="px-4 py-3 sm:px-8 sm:py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="p-2 sm:p-3 bg-blue-600 text-white rounded-xl sm:rounded-2xl shadow-lg">
+                                    <FileText size={20} className="sm:w-6 sm:h-6" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Print Preview</h2>
-                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Patient Hourly Monitoring Record</p>
+                                    <h2 className="text-sm sm:text-xl font-black text-slate-900 uppercase tracking-tight">Preview</h2>
+                                    <p className="text-[8px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest">Patient Hourly Monitoring Record</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 sm:gap-3">
                                 <button
                                     onClick={() => {
                                         const iframe = document.getElementById('print-iframe') as HTMLIFrameElement;
@@ -1142,32 +1142,32 @@ export default function HourlyRecordClient() {
                                             iframe.contentWindow.print();
                                         }
                                     }}
-                                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 group"
+                                    className="flex items-center gap-2 px-3 py-2 sm:px-6 sm:py-3 bg-blue-600 text-white rounded-lg sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all group"
                                 >
-                                    <Printer size={16} className="group-hover:rotate-12 transition-transform" />
-                                    Print Document
+                                    <Printer size={14} className="sm:w-4 sm:h-4 group-hover:rotate-12 transition-transform" />
+                                    <span className="hidden xs:inline">Print Document</span>
                                 </button>
                                 <button
                                     onClick={() => setShowPrintModal(false)}
-                                    className="p-3 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-2xl transition-all"
+                                    className="p-2 sm:p-3 hover:bg-slate-200 text-slate-400 hover:text-slate-600 rounded-lg sm:rounded-2xl transition-all"
                                 >
-                                    <X size={24} />
+                                    <X size={20} className="sm:w-6 sm:h-6" />
                                 </button>
                             </div>
                         </div>
 
-                        {/* Modal Content - Iframe for isolation */}
-                        <div className="flex-1 bg-slate-100/50 p-8 overflow-hidden">
+                        {/* Modal Content - Responsive Padding */}
+                        <div className="flex-1 bg-slate-100/50 p-2 sm:p-8 overflow-hidden">
                             <iframe
                                 id="print-iframe"
                                 srcDoc={printHtml}
-                                className="w-full h-full bg-white rounded-3xl shadow-inner border border-slate-200"
+                                className="w-full h-full bg-white sm:rounded-3xl shadow-inner border border-slate-200"
                                 title="Print Preview"
                             />
                         </div>
 
-                        {/* Modal Footer */}
-                        <div className="p-4 bg-white border-t border-slate-100 flex justify-center">
+                        {/* Modal Footer - Hidden on very small screens to save space */}
+                        <div className="hidden sm:flex p-4 bg-white border-t border-slate-100 justify-center">
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">MS CureChain Hospital Management System &bull; Secure Report Gateway</p>
                         </div>
                     </div>

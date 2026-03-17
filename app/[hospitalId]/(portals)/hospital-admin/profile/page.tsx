@@ -52,7 +52,7 @@ function HospitalAdminProfile() {
         hospitalAdminService.getHospital()
       ]);
       
-      const userData = userRes.user || userRes;
+      const userData = (userRes as any).user || userRes;
       setProfile(userData);
       setHospital(hospitalRes.hospital);
       
@@ -97,9 +97,9 @@ function HospitalAdminProfile() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-12">
+    <div className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-6 pb-12 p-3 sm:p-4 md:p-6">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-gray-800 p-3 md:p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
             <User className="text-emerald-600" size={32} />
@@ -127,12 +127,12 @@ function HospitalAdminProfile() {
         {/* Left Column: Personal Profile */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-            <div className="p-1 px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20 flex items-center gap-2">
+            <div className="p-1 px-3 md:px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20 flex items-center gap-2">
               <Shield className="text-emerald-600" size={18} />
               <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase">Account Credentials</h2>
             </div>
             
-            <form onSubmit={handleUpdateProfile} className="p-8 space-y-6">
+            <form onSubmit={handleUpdateProfile} className="p-3 md:p-8 space-y-6">
               <div className="flex flex-col md:flex-row gap-8 items-start md:items-center">
                 <div className="relative group">
                   <div className="w-24 h-24 rounded-3xl bg-primary-theme flex items-center justify-center text-white text-4xl font-black ">
@@ -217,7 +217,7 @@ function HospitalAdminProfile() {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex items-center gap-2 px-6 py-3 bg-primary-theme hover:bg-primary-theme/80 text-white font-bold rounded-xl active:scale-95 transition-all disabled:opacity-50"
+                  className="flex items-center gap-2 px-3 md:px-6 py-3 bg-primary-theme hover:bg-primary-theme/80 text-white font-bold rounded-xl active:scale-95 transition-all disabled:opacity-50"
                 >
                   {isSaving ? (
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -231,12 +231,12 @@ function HospitalAdminProfile() {
           </div>
           
           {/* Recent Activity/System Preferences could go here */}
-          <div className="bg-white rounded-2xl p-6 text-gray-900 dark:text-white overflow-hidden relative">
-            <div className="absolute top-0 right-0 p-8 opacity-10">
+          <div className="bg-white rounded-2xl p-3 md:p-6 text-gray-900 dark:text-white overflow-hidden relative">
+            <div className="absolute top-0 right-0 p-2 md:p-4 md:p-8 opacity-10">
               <Activity size={120} />
             </div>
             <div className="relative z-10">
-              <h3 className="text-lg font-bold mb-2">System Security</h3>
+              <h3 className="text-sm md:text-lg font-bold mb-2">System Security</h3>
               <p className="text-gray-400 text-sm mb-6 max-w-md">Your account is protected by mandatory multi-factor authentication and role-based access control.</p>
               <div className="flex gap-4">
                 <button className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-bold transition-all flex items-center gap-2 border border-white/10">
@@ -253,7 +253,7 @@ function HospitalAdminProfile() {
         {/* Right Column: Hospital Linkage */}
         <div className="space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-            <div className="p-1 px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20 flex items-center justify-between">
+            <div className="p-1 px-3 md:px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Building2 className="text-blue-600" size={18} />
                 <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Associated Hospital</h2>
@@ -261,7 +261,7 @@ function HospitalAdminProfile() {
               <BadgeCheck className="text-blue-500" size={18} />
             </div>
             
-            <div className="p-6 space-y-6">
+            <div className="p-2 md:p-6 space-y-6">
               <div className="text-center">
                 <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100 dark:border-blue-800">
                   <Building2 size={40} className="text-blue-600" />
@@ -306,12 +306,12 @@ function HospitalAdminProfile() {
           </div>
 
           {/* Quick Stats Summary */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-3 md:p-6 overflow-hidden">
              <div className="flex items-center justify-between mb-4">
                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">Managed Inventory</h4>
                <span className="text-[10px] font-bold text-emerald-500">LIVE</span>
              </div>
-             <div className="grid grid-cols-2 gap-4">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800">
                  <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400">{hospital?.roomCount || 0}</p>
                  <p className="text-[10px] font-bold text-indigo-600/60 uppercase">Clinics</p>

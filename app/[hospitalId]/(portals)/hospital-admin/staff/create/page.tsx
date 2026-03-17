@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { hospitalAdminService } from "@/lib/integrations";
 import { User, Briefcase, FileText, Clock, Globe, Eye, EyeOff, ArrowLeft, Activity, Plus, CreditCard, AlertCircle, CheckCircle2 } from "lucide-react";
@@ -60,7 +60,7 @@ function Field({label,name,value,onChange,onBlur,error,touched,type="text",place
 }
 
 export default React.memo(function CreateStaff(){
-  const router=useRouter(),queryClient=useQueryClient();
+  const router=useRouter(), { hospitalId } = useParams(), queryClient=useQueryClient();
   const [shifts,setShifts]=useState<any[]>([]);
   const [availableDepts,setAvailableDepts]=useState<string[]>([]);
   const [formData,setFormData]=useState<FormData>({
@@ -164,7 +164,7 @@ export default React.memo(function CreateStaff(){
       toast.success(`Staff "${formData.name}" created successfully!`,{duration:4000});
       queryClient.invalidateQueries({queryKey:['hospital-admin-staff']});
       queryClient.invalidateQueries({queryKey:['hospital-admin','dashboard']});
-      router.push("/hospital-admin/staff");
+      router.push(`/${hospitalId}/hospital-admin/staff`);
     }catch(err:any){toast.error(err.message||"Failed to create staff",{duration:5000});}
     finally{setLoading(false);}
   };
@@ -173,10 +173,10 @@ export default React.memo(function CreateStaff(){
   const bCls=(n:string,v:string)=>touched[n]&&errors[n]?"border-rose-400 bg-rose-50/30 focus:ring-2 focus:ring-rose-400/20":touched[n]&&!errors[n]&&v?"border-emerald-400 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-400/20":"border-gray-200 dark:border-white/10 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500/20";
 
   return(
-    <div className="max-w-5xl mx-auto pb-12 space-y-6">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-white/5 shadow-sm">
+    <div className="max-w-7xl mx-auto pb-12 space-y-6 p-2 sm:p-6 md:p-8 lg:p-8">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 md:p-6 border border-gray-100 dark:border-white/5 shadow-sm">
         <div className="flex items-center gap-4">
-          <button onClick={()=>router.push('/hospital-admin/staff')} className="p-2 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-all"><ArrowLeft size={16}/></button>
+          <button onClick={()=>router.push(`/${hospitalId}/hospital-admin/staff`)} className="p-2 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-all"><ArrowLeft size={16}/></button>
           <div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Add New Staff Member</h1>
             <p className="text-gray-500 text-xs mt-0.5">Fields marked <span className="text-rose-500">*</span> are required.</p>
@@ -186,7 +186,7 @@ export default React.memo(function CreateStaff(){
 
       <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <Card title="Personal Information" icon={<User className="text-blue-500"/>} padding="p-6">
+          <Card title="Personal Information" icon={<User className="text-blue-500"/>} padding="p-2 md:p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <Field label="Full Name" {...f("name")} required placeholder="e.g. Amit Sharma"/>
               <div className="space-y-1.5">
@@ -215,7 +215,7 @@ export default React.memo(function CreateStaff(){
             </div>
           </Card>
 
-          <Card title="Employment Details" icon={<Briefcase className="text-indigo-500"/>} padding="p-6">
+          <Card title="Employment Details" icon={<Briefcase className="text-indigo-500"/>} padding="p-2 md:p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Department<span className="text-rose-500 ml-0.5">*</span></label>
@@ -234,7 +234,7 @@ export default React.memo(function CreateStaff(){
             </div>
           </Card>
 
-          <Card title="Shift Details" icon={<Clock className="text-amber-500"/>} padding="p-6">
+          <Card title="Shift Details" icon={<Clock className="text-amber-500"/>} padding="p-2 md:p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Active Shift<span className="text-rose-500 ml-0.5">*</span></label>
@@ -242,7 +242,7 @@ export default React.memo(function CreateStaff(){
                   <option value="">Select Shift</option>{shifts.map((s:any)=><option key={s._id} value={s._id}>{s.name} [{s.startTime} - {s.endTime}]</option>)}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[["Start",formData.startTime],["End",formData.endTime]].map(([l,v])=>(
                   <div key={l} className="space-y-1.5"><label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">{l}</label><div className="px-4 py-2 bg-gray-50 dark:bg-white/5 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-400 border border-gray-100 dark:border-white/5">{v}</div></div>
                 ))}
@@ -259,7 +259,7 @@ export default React.memo(function CreateStaff(){
           <Card
             title="Financial & Identity Details"
             icon={<CreditCard className="text-blue-600"/>}
-            padding="p-6"
+            padding="p-2 md:p-6"
             extra={<button type="button" onClick={markFinancialNA} className="text-[9px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-all border border-indigo-100">Mark all as N/A</button>}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -299,7 +299,7 @@ export default React.memo(function CreateStaff(){
         </div>
 
         <div className="space-y-6">
-          <Card title="Emergency Contact" icon={<Activity className="text-rose-500"/>} padding="p-6">
+          <Card title="Emergency Contact" icon={<Activity className="text-rose-500"/>} padding="p-2 md:p-6">
             <div className="space-y-4">
               <div className="space-y-1.5"><label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Full Name</label><input type="text" name="emergencyContactName" value={formData.emergencyContactName} onChange={handleChange} placeholder="Contact person" className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"/></div>
               <div className="space-y-1.5">
@@ -311,7 +311,7 @@ export default React.memo(function CreateStaff(){
             </div>
           </Card>
 
-          <Card title="Qualifications & Certifications" icon={<Globe className="text-indigo-500"/>} padding="p-6">
+          <Card title="Qualifications & Certifications" icon={<Globe className="text-indigo-500"/>} padding="p-2 md:p-6">
             <div className="space-y-6">
               {([{label:"Education / Degrees",temp:tempQ,setT:setTempQ,type:'qualification' as const,items:formData.qualifications,k:'qualifications' as const,ph:"e.g. MBBS, Diploma"},{label:"Certifications",temp:tempC,setT:setTempC,type:'certification' as const,items:formData.certifications,k:'certifications' as const,ph:"e.g. ACLS, BLS"}]).map(({label,temp,setT,type,items,k,ph})=>(
                 <div key={type} className="space-y-3">
@@ -323,7 +323,7 @@ export default React.memo(function CreateStaff(){
             </div>
           </Card>
 
-          <Card title="Skills & Capacities" icon={<FileText className="text-blue-500"/>} padding="p-6">
+          <Card title="Skills & Capacities" icon={<FileText className="text-blue-500"/>} padding="p-2 md:p-6">
             <div className="space-y-3">
               <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Add Skills</label>
               <div className="flex gap-2"><input type="text" value={tempS} onChange={e=>setTempS(e.target.value)} onKeyDown={e=>e.key==='Enter'&&(e.preventDefault(),addItem('skill'))} placeholder="e.g. Data Entry, Phlebotomy" className="flex-1 px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500/10 outline-none"/><button type="button" onClick={()=>addItem('skill')} className="p-2.5 bg-blue-600 text-white rounded-xl active:scale-90 transition-transform"><Plus size={16}/></button></div>
@@ -331,7 +331,7 @@ export default React.memo(function CreateStaff(){
             </div>
           </Card>
 
-          <Card title="System Status" icon={<Activity className="text-blue-500"/>} padding="p-6">
+          <Card title="System Status" icon={<Activity className="text-blue-500"/>} padding="p-2 md:p-6">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Initial Status</label>
               <select name="status" value={formData.status} onChange={handleChange} className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all">
@@ -344,7 +344,7 @@ export default React.memo(function CreateStaff(){
             <button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 py-3.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-blue-500/20">
               {loading?<div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>:<><Plus size={18}/>Create Staff Record</>}
             </button>
-            <button type="button" onClick={()=>router.push("/hospital-admin/staff")} disabled={loading} className="w-full mt-3 py-3 text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors">Cancel Registration</button>
+            <button type="button" onClick={()=>router.push(`/${hospitalId}/hospital-admin/staff`)} disabled={loading} className="w-full mt-3 py-3 text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors">Cancel Registration</button>
           </div>
         </div>
       </form>

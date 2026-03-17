@@ -109,10 +109,10 @@ export default function ReminderConfigModal({ isOpen, onClose }: ReminderConfigM
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-2 md:p-4">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
                 {/* Header */}
-                <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
+                <div className="p-2 md:p-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
                     <div className="flex items-center gap-3">
                         <div className="p-2.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-100">
                             <BellRing size={20} />
@@ -127,7 +127,7 @@ export default function ReminderConfigModal({ isOpen, onClose }: ReminderConfigM
                     </button>
                 </div>
 
-                <div className="p-8 overflow-y-auto space-y-8">
+                <div className="p-3 md:p-8 overflow-y-auto space-y-8">
                     {/* OPD Reminders */}
                     <section>
                         <div className="flex items-center justify-between mb-4">
@@ -137,7 +137,7 @@ export default function ReminderConfigModal({ isOpen, onClose }: ReminderConfigM
                             </div>
                             <Button
                                 onClick={addOpdSlot}
-                                className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-none px-3 py-1.5 rounded-lg flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                                className="bg-blue-50 text-white hover:bg-blue-60 border-none px-3 py-1.5 rounded-lg flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
                             >
                                 <Plus size={14} strokeWidth={3} /> Add Slot
                             </Button>
@@ -146,10 +146,10 @@ export default function ReminderConfigModal({ isOpen, onClose }: ReminderConfigM
                             Set specific times of the day when reminders will be sent (on the day before the visit).
                         </p>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {config.opdReminderSlots.map((slot: any, index: number) => (
-                                <div key={index} className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 group transition-all hover:bg-white hover:shadow-md">
-                                    <div className="flex-1 grid grid-cols-2 gap-2">
+                                <div key={index} className="flex items-center gap-3 p-2 md:p-4 bg-slate-50 rounded-2xl border border-slate-100 group transition-all hover:bg-white hover:shadow-md">
+                                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
                                         <div className="space-y-1">
                                             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Hour (24h)</label>
                                             <input
@@ -206,9 +206,9 @@ export default function ReminderConfigModal({ isOpen, onClose }: ReminderConfigM
                             Configure how many days before the follow-up visit a reminder should be sent.
                         </p>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {config.ipdReminderDays.map((day: number, index: number) => (
-                                <div key={index} className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 group transition-all hover:bg-white hover:shadow-md">
+                                <div key={index} className="flex items-center gap-3 p-2 md:p-4 bg-slate-50 rounded-2xl border border-slate-100 group transition-all hover:bg-white hover:shadow-md">
                                     <div className="flex-1 space-y-1">
                                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Days Before Visit</label>
                                         <input
@@ -238,17 +238,17 @@ export default function ReminderConfigModal({ isOpen, onClose }: ReminderConfigM
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-slate-50 flex justify-end gap-3 bg-slate-50/30">
+                <div className="p-2 md:p-6 border-t border-slate-50 flex justify-end gap-3 bg-slate-50/30">
                     <Button
                         onClick={onClose}
-                        className="border border-slate-200 text-slate-600 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
+                        className="border border-slate-200 text-slate-600 px-3 md:px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
                     >
                         Cancel
                     </Button>
                     <Button
                         onClick={handleSave}
                         disabled={loading}
-                        className="bg-slate-900 text-white hover:bg-slate-800 px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest shadow-xl shadow-slate-200 transition-all flex items-center gap-2"
+                        className="bg-slate-900 text-white hover:bg-slate-800 px-4 md:px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest shadow-xl shadow-slate-200 transition-all flex items-center gap-2"
                     >
                         {loading ? <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div> : <Save size={16} />}
                         Save Settings

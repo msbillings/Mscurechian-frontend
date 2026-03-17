@@ -23,10 +23,9 @@ export interface VerifyOtpRequest {
 }
 
 export interface AuthResponse {
-  tokens: {
-    accessToken: string;
-    refreshToken: string;
-  };
+  accessToken: string;
+  csrfToken: string;
+  sessionId: string;
   user: {
     id: string;
     name: string;
@@ -52,4 +51,9 @@ export interface MeResponse {
   licenseNo?: string;
   address?: string;
   hospital?: string;
+  // Optional bootstrap fields
+  user?: any;
+  accessToken?: string;
+  csrfToken?: string;
+  sessionId?: string;
 }

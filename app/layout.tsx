@@ -96,7 +96,7 @@ export const metadata: Metadata = {
   },
 };
 
-import { Toaster } from 'react-hot-toast';
+import SwipeableToaster from '@/components/ui/SwipeableToaster';
 import FloatingChat from '@/components/chat/FloatingChat';
 import Providers from './providers';
 
@@ -162,7 +162,7 @@ function RootLayout({
         suppressHydrationWarning
       >
         <Providers>
-          <Toaster position="top-center" />
+          <SwipeableToaster />
           {children}
           <FloatingChat />
         </Providers>

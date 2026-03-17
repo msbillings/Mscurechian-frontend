@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
+import { useTenantLink } from "@/hooks/useTenantLink";
 import NotificationCenter from "./NotificationCenter";
 
 interface SharedNavbarProps {
@@ -35,6 +36,7 @@ const SharedNavbar: React.FC<SharedNavbarProps> = ({
 }) => {
     const router = useRouter();
     const { user, logout } = useAuthStore();
+    const { getPath } = useTenantLink();
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -58,7 +60,7 @@ const SharedNavbar: React.FC<SharedNavbarProps> = ({
     };
 
     return (
-        <header className="h-16 flex items-center justify-between px-4 sm:px-6 border-b border-slate-200 fixed top-0 right-0 left-0 lg:left-64 z-20 bg-white/80 backdrop-blur-md transition-all duration-300">
+        <header className="h-16 flex items-center justify-between px-3 sm:px-4 border-b border-slate-200 fixed top-0 right-0 left-0 md:left-16 lg:left-64 z-20 bg-white/80 backdrop-blur-md transition-all duration-300">
             <div className="flex items-center gap-4">
                 <button
                     onClick={onMenuClick}
@@ -76,8 +78,10 @@ const SharedNavbar: React.FC<SharedNavbarProps> = ({
             </div>
 
             {centerActions && (
-                <div className="hidden lg:flex flex-1 justify-center items-center">
-                    {centerActions}
+                <div className="flex flex-1 justify-center items-center">
+                    <div className="scale-75 sm:scale-90 xl:scale-100 origin-center">
+                        {centerActions}
+                    </div>
                 </div>
             )}
 
@@ -131,20 +135,20 @@ const SharedNavbar: React.FC<SharedNavbarProps> = ({
                                 <>
                                     <button
                                         onClick={() => {
-                                            router.push(`/${user?.role}/profile`);
+                                            router.push(getPath(`/${user?.role}/profile`));
                                             setIsProfileDropdownOpen(false);
                                         }}
-                                        className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold transition-all hover:bg-slate-50 rounded-lg group text-slate-600 hover:text-slate-900"
+                                        className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold transition-all hover:bg-slate-50 rounded-xl group text-slate-600 hover:text-slate-900"
                                     >
                                         <User size={16} className="text-slate-400 group-hover:text-indigo-500" />
                                         <span>Official Profile</span>
                                     </button>
                                     <button
                                         onClick={() => {
-                                            router.push(`/${user?.role}/settings`);
+                                            router.push(getPath(`/${user?.role}/settings`));
                                             setIsProfileDropdownOpen(false);
                                         }}
-                                        className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold transition-all hover:bg-slate-50 rounded-lg group text-slate-600 hover:text-slate-900"
+                                        className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold transition-all hover:bg-slate-50 rounded-xl group text-slate-600 hover:text-slate-900"
                                     >
                                         <Settings size={16} className="text-slate-400 group-hover:text-indigo-500" />
                                         <span>Preferences</span>
@@ -172,4 +176,4 @@ const SharedNavbar: React.FC<SharedNavbarProps> = ({
     );
 };
 
-export default SharedNavbar;
+export default React.memo(SharedNavbar);

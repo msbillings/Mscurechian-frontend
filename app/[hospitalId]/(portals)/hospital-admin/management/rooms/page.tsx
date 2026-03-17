@@ -293,30 +293,32 @@ const RoomsManagement = () => {
     const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
-        <div className="p-8 max-w-7xl mx-auto min-h-screen bg-slate-50/50">
+        <div className="p-2 md:p-4 md:p-8 max-w-7xl mx-auto min-h-screen bg-slate-50/50">
             {/* Header Area */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 md:mb-10">
                 <div>
-                    <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                        <DoorOpen className="text-blue-600" size={24} />
+                    <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                        <div className="p-2 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-200">
+                            <DoorOpen size={20} />
+                        </div>
                         ROOM INVENTORY
                     </h1>
-                    <p className="text-slate-500 font-bold text-sm tracking-widest mt-1 uppercase opacity-70">
+                    <p className="text-slate-500 font-bold text-[10px] md:text-sm tracking-widest mt-1 uppercase opacity-70">
                         Facility Mapping & Occupancy Planning
                     </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
                     <button
                         onClick={() => setShowImportModal(true)}
-                        className="px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm"
+                        className="w-full sm:w-auto px-3 md:px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-sm"
                     >
                         <Upload size={16} />
                         Sync Data
                     </button>
                     <button
                         onClick={() => setShowAddModal(true)}
-                        className="px-6 py-3 bg-primary-theme text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary-theme/80 transition-all flex items-center gap-2"
+                        className="w-full sm:w-auto px-3 md:px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-200"
                     >
                         <Plus size={16} />
                         Initialize Room
@@ -325,16 +327,16 @@ const RoomsManagement = () => {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-8 md:mb-10">
                 {[
                     { label: 'Total Capacity', value: rooms.length, color: 'text-blue-600', bg: 'bg-blue-50' },
                     { label: 'ICU Suites', value: rooms.filter(r => r.type === 'ICU').length, color: 'text-rose-600', bg: 'bg-rose-50' },
                     { label: 'General Wards', value: rooms.filter(r => r.type === 'General').length, color: 'text-teal-600', bg: 'bg-teal-50' },
                     { label: 'Private Wings', value: rooms.filter(r => r.type === 'Private').length, color: 'text-amber-600', bg: 'bg-amber-50' },
                 ].map((stat, i) => (
-                    <div key={i} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                        <p className={`text-[8px] font-black uppercase tracking-widest ${stat.color} mb-1`}>{stat.label}</p>
-                        <p className="text-xl font-black text-slate-900">{stat.value}</p>
+                    <div key={i} className="bg-white p-3 md:p-4 rounded-xl md:rounded-2xl border border-slate-100 shadow-sm">
+                        <p className={`text-[7px] md:text-[8px] font-black uppercase tracking-widest ${stat.color} mb-1`}>{stat.label}</p>
+                        <p className="text-sm md:text-xl font-black text-slate-900">{stat.value}</p>
                         <div className={`w-full h-1 ${stat.bg} mt-2 rounded-full overflow-hidden opacity-50`}>
                             <div className={`h-full ${stat.color.replace('text', 'bg')} w-full opacity-30`} />
                         </div>
@@ -343,8 +345,8 @@ const RoomsManagement = () => {
             </div>
 
             {/* Search & Filters */}
-            <div className="bg-white p-2 rounded-2xl border border-slate-100 shadow-sm mb-8 flex flex-wrap items-center gap-3">
-                <div className="relative flex-1 min-w-[200px]">
+            <div className="bg-white p-2 rounded-2xl border border-slate-100 shadow-sm mb-6 md:mb-8 flex flex-col md:flex-row items-stretch md:items-center gap-3">
+                <div className="relative flex-1">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                     <input
                         type="text"
@@ -354,44 +356,46 @@ const RoomsManagement = () => {
                             setSearchTerm(e.target.value);
                             setCurrentPage(1);
                         }}
-                        className="w-full pl-11 pr-4 py-2 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase tracking-widest focus:ring-2 focus:ring-blue-500/20 outline-none transition-all placeholder:text-slate-300"
+                        className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border-none rounded-xl text-[10px] font-bold uppercase tracking-widest focus:ring-2 focus:ring-blue-500/20 outline-none transition-all placeholder:text-slate-300"
                     />
                 </div>
 
-                <select
-                    className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none"
-                    value={filterType}
-                    onChange={(e) => {
-                        setFilterType(e.target.value);
-                        setCurrentPage(1);
-                    }}
-                >
-                    <option value="">All Types</option>
-                    {unitTypes.map(type => (
-                        <option key={type} value={type}>{type}</option>
-                    ))}
-                </select>
+                <div className="flex items-center gap-3">
+                    <select
+                        className="flex-1 md:flex-none px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none"
+                        value={filterType}
+                        onChange={(e) => {
+                            setFilterType(e.target.value);
+                            setCurrentPage(1);
+                        }}
+                    >
+                        <option value="">All Types</option>
+                        {unitTypes.map(type => (
+                            <option key={type} value={type}>{type}</option>
+                        ))}
+                    </select>
 
-                {/* COMPACT PAGINATION */}
-                {!loading && totalPages > 1 && (
-                    <div className="flex items-center gap-1 border-l border-slate-100 pl-3 py-1">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1}
-                            className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 disabled:opacity-20 transition-all"
-                        >
-                            <ChevronLeft size={16} strokeWidth={3} />
-                        </button>
-                        <span className="text-[10px] font-black w-6 text-center text-slate-900">{currentPage}</span>
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages}
-                            className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 disabled:opacity-20 transition-all"
-                        >
-                            <ChevronRight size={16} strokeWidth={3} />
-                        </button>
-                    </div>
-                )}
+                    {/* COMPACT PAGINATION */}
+                    {!loading && totalPages > 1 && (
+                        <div className="flex items-center gap-1 border-l border-slate-100 pl-3 py-1">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 disabled:opacity-20 transition-all"
+                            >
+                                <ChevronLeft size={16} strokeWidth={3} />
+                            </button>
+                            <span className="text-[10px] font-black w-8 text-center text-slate-900">{currentPage}</span>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages}
+                                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 disabled:opacity-20 transition-all"
+                            >
+                                <ChevronRight size={16} strokeWidth={3} />
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Content */}
@@ -409,9 +413,9 @@ const RoomsManagement = () => {
                     <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">No rooms recorded in system</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-2 md:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
                     {paginated.map((room) => (
-                        <div key={room._id} className="group bg-white rounded-[24px] border border-slate-100 p-4 shadow-sm hover:shadow-xl hover:shadow-blue-200/30 transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-full">
+                        <div key={room._id} className="group bg-white rounded-[24px] border border-slate-100 p-2 md:p-4 shadow-sm hover:shadow-xl hover:shadow-blue-200/30 transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-full">
                             <div>
                                 <div className="absolute top-0 right-0 p-3 flex gap-1.5 z-10">
                                     <button
@@ -465,9 +469,9 @@ const RoomsManagement = () => {
 
             {/* Add Modal */}
             {showAddModal && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6 z-[100] animate-in fade-in duration-300">
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 z-[100] animate-in fade-in duration-300">
                     <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                        <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+                        <div className="p-3 md:p-8 border-b border-slate-50 flex items-center justify-between">
                             <div>
                                 <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Initialize Asset</h2>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Register new clinical room node</p>
@@ -493,14 +497,14 @@ const RoomsManagement = () => {
                         </div>
 
                         {isManagingUnitTypes ? (
-                            <div className="p-8 space-y-6 animate-in slide-in-from-right-4 duration-300">
+                            <div className="p-3 md:p-8 space-y-6 animate-in slide-in-from-right-4 duration-300">
                                 <div className="space-y-4 min-h-[300px] flex flex-col">
                                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                                         {pendingUnitAction ? "Configuration Confirmation" : "Unit Types Library"}
                                     </h3>
 
                                     {pendingUnitAction ? (
-                                        <div className="flex-1 flex flex-col items-center justify-center p-6 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 animate-in zoom-in-95 duration-200">
+                                        <div className="flex-1 flex flex-col items-center justify-center p-3 md:p-6 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 animate-in zoom-in-95 duration-200">
                                             <div className={`w-12 h-12 ${pendingUnitAction.type === 'delete' ? 'bg-rose-100 text-rose-600' : 'bg-blue-100 text-blue-600'} rounded-2xl flex items-center justify-center mb-4`}>
                                                 {pendingUnitAction.type === 'delete' ? <Trash2 size={24} /> : <Edit3 size={24} />}
                                             </div>
@@ -581,7 +585,7 @@ const RoomsManagement = () => {
                                                 <button
                                                     onClick={handleAddUnitType}
                                                     disabled={submitting}
-                                                    className="px-6 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-md active:scale-95 disabled:opacity-50"
+                                                    className="px-2 md:px-6 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-md active:scale-95 disabled:opacity-50"
                                                 >
                                                     {submitting && actionType === 'adding' ? "ADDING..." : "ADD"}
                                                 </button>
@@ -597,14 +601,14 @@ const RoomsManagement = () => {
                                 </button>
                             </div>
                         ) : (
-                            <form onSubmit={handleCreate} className="p-8 space-y-6 animate-in slide-in-from-left-4 duration-300">
+                            <form onSubmit={handleCreate} className="p-3 md:p-6 space-y-4 md:space-y-6 max-h-[60vh] md:max-h-none overflow-y-auto custom-scrollbar animate-in slide-in-from-left-4 duration-300">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Room Label/ID</label>
                                     <input
                                         required
                                         value={newRoom.label}
                                         onChange={(e) => setNewRoom(prev => ({ ...prev, label: e.target.value }))}
-                                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold uppercase focus:border-blue-500 outline-none transition-all placeholder:opacity-50"
+                                        className="w-full px-3 md:px-6 py-3 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] md:text-xs font-bold uppercase focus:border-blue-500 outline-none transition-all placeholder:opacity-50"
                                         placeholder="E.G. ICU-1"
                                     />
                                 </div>
@@ -616,7 +620,7 @@ const RoomsManagement = () => {
                                         required
                                         value={newRoom.type}
                                         onChange={(e: any) => setNewRoom(prev => ({ ...prev, type: e.target.value }))}
-                                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold uppercase focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer"
+                                        className="w-full px-3 md:px-6 py-3 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] md:text-xs font-bold uppercase focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer"
                                     >
                                         <option value="" disabled>Select Type</option>
                                         {unitTypes.map(type => (
@@ -626,7 +630,7 @@ const RoomsManagement = () => {
                                 </div>
                                 <button
                                     disabled={submitting}
-                                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all disabled:opacity-50 shadow-xl shadow-slate-200 active:scale-[0.98] duration-200"
+                                    className="w-full py-3 md:py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-slate-800 transition-all disabled:opacity-50 shadow-xl shadow-slate-200 active:scale-[0.98] duration-200"
                                 >
                                     {submitting ? "Deploying..." : "Finalize Registration"}
                                 </button>
@@ -638,11 +642,11 @@ const RoomsManagement = () => {
 
             {/* Edit Modal */}
             {showEditModal && editingRoom && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6 z-[100] animate-in fade-in duration-300">
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 z-[100] animate-in fade-in duration-300">
                     <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                        <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-blue-600 text-white">
+                        <div className="p-3 md:p-6 border-b border-slate-50 flex items-center justify-between bg-blue-600 text-white">
                             <div>
-                                <h2 className="text-xl font-black uppercase tracking-tight">Edit Asset</h2>
+                                <h2 className="text-lg md:text-xl font-black uppercase tracking-tight">Edit Asset</h2>
                                 <p className="text-[10px] font-bold text-blue-100 uppercase tracking-widest mt-1">Update clinical room node</p>
                             </div>
                             <div className="flex gap-2">
@@ -666,35 +670,34 @@ const RoomsManagement = () => {
                         </div>
 
                         {isManagingUnitTypes ? (
-                            <div className="p-8 space-y-6 animate-in slide-in-from-right-4 duration-300">
+                            <div className="p-3 md:p-8 space-y-6 animate-in slide-in-from-right-4 duration-300">
                                 <div className="space-y-4 min-h-[300px] flex flex-col">
-                                    <h3 className="text-[10px] font-black text-white uppercase tracking-widest ml-1">
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                                         {pendingUnitAction ? "Configuration Confirmation" : "Unit Types Library"}
                                     </h3>
 
                                     {pendingUnitAction ? (
-                                        <div className="flex-1 flex flex-col items-center justify-center p-6 bg-white/10 rounded-3xl border-2 border-dashed border-white/20 animate-in zoom-in-95 duration-200">
-                                            <div className={`w-12 h-12 ${pendingUnitAction.type === 'delete' ? 'bg-rose-500' : 'bg-white'} ${pendingUnitAction.type === 'delete' ? 'text-white' : 'text-blue-600'} rounded-2xl flex items-center justify-center mb-4 shadow-lg`}>
+                                        <div className="flex-1 flex flex-col items-center justify-center p-3 md:p-6 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-100 animate-in zoom-in-95 duration-200">
+                                            <div className={`w-12 h-12 ${pendingUnitAction.type === 'delete' ? 'bg-rose-500' : 'bg-blue-600'} text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg`}>
                                                 {pendingUnitAction.type === 'delete' ? <Trash2 size={24} /> : <Edit3 size={24} />}
                                             </div>
-                                            <p className="text-[11px] font-black text-white uppercase tracking-tight text-center mb-2">
+                                            <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight text-center mb-2">
                                                 {pendingUnitAction.type === 'delete' ? `Delete ${pendingUnitAction.oldValue}?` : `Update ${pendingUnitAction.oldValue}?`}
                                             </p>
-                                            <p className="text-[9px] font-bold text-blue-100 uppercase tracking-widest text-center leading-relaxed px-4">
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center leading-relaxed px-4">
                                                 If you {pendingUnitAction.type === 'delete' ? 'delete' : 'update'} "{pendingUnitAction.oldValue}" the related data will {pendingUnitAction.type === 'delete' ? 'delete' : 'update'} if only linked with already old data if new one not need
                                             </p>
-
                                             <div className="flex gap-2 mt-8 w-full">
                                                 <button
                                                     onClick={() => setPendingUnitAction(null)}
-                                                    className="flex-1 py-3 bg-white/10 border border-white/20 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white/20 transition-all"
+                                                    className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all"
                                                 >
                                                     Cancel
                                                 </button>
                                                 <button
                                                     onClick={pendingUnitAction.type === 'delete' ? confirmUnitDelete : confirmUnitUpdate}
                                                     disabled={submitting}
-                                                    className={`flex-1 py-3 ${pendingUnitAction.type === 'delete' ? 'bg-rose-500' : 'bg-white'} ${pendingUnitAction.type === 'delete' ? 'text-white' : 'text-blue-600'} rounded-xl font-black text-[10px] uppercase tracking-widest hover:opacity-90 transition-all shadow-lg active:scale-95 disabled:opacity-50`}
+                                                    className={`flex-1 py-3 ${pendingUnitAction.type === 'delete' ? 'bg-rose-500' : 'bg-blue-600'} text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:opacity-90 transition-all shadow-lg active:scale-95 disabled:opacity-50`}
                                                 >
                                                     {submitting ? "Processing..." : "Confirm"}
                                                 </button>
@@ -704,29 +707,29 @@ const RoomsManagement = () => {
                                         <>
                                             <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar flex-1">
                                                 {unitTypes.map((type, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded-xl group hover:bg-white/10 transition-all border border-transparent hover:border-white/10">
+                                                    <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl group hover:bg-white hover:shadow-md hover:shadow-slate-100 transition-all border border-transparent hover:border-slate-100">
                                                         {editingUnitType?.old === type ? (
                                                             <input
                                                                 autoFocus
                                                                 value={editingUnitType.new}
                                                                 onChange={(e) => setEditingUnitType({ ...editingUnitType, new: e.target.value })}
                                                                 onKeyDown={(e) => e.key === 'Enter' && handleUpdateUnitType()}
-                                                                className="bg-white/10 border border-white/20 rounded-lg px-3 py-1 text-xs font-bold uppercase text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                                                                className="bg-white border border-blue-200 rounded-lg px-3 py-1 text-xs font-bold uppercase text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                                             />
                                                         ) : (
-                                                            <span className="text-xs font-bold text-white uppercase">{type}</span>
+                                                            <span className="text-xs font-bold text-slate-700 uppercase">{type}</span>
                                                         )}
 
                                                         <div className="flex items-center gap-1">
                                                             {editingUnitType?.old === type ? (
-                                                                <button onClick={handleUpdateUnitType} disabled={submitting} className="p-1.5 text-white hover:bg-white/20 rounded-lg disabled:opacity-50">
+                                                                <button onClick={handleUpdateUnitType} disabled={submitting} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50">
                                                                     {submitting && actionType === 'updating' ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
                                                                 </button>
                                                             ) : (
                                                                 <button
                                                                     onClick={() => setEditingUnitType({ old: type, new: type })}
                                                                     disabled={submitting}
-                                                                    className="p-1.5 text-white/40 hover:text-white hover:bg-white/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50"
+                                                                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50"
                                                                 >
                                                                     <Edit3 size={14} />
                                                                 </button>
@@ -734,7 +737,7 @@ const RoomsManagement = () => {
                                                             <button
                                                                 onClick={() => handleDeleteUnitType(type)}
                                                                 disabled={submitting}
-                                                                className="p-1.5 text-white/40 hover:text-rose-400 hover:bg-white/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50"
+                                                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50"
                                                             >
                                                                 {submitting && actionType === 'deleting' ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                                                             </button>
@@ -743,18 +746,18 @@ const RoomsManagement = () => {
                                                 ))}
                                             </div>
 
-                                            <div className="pt-4 border-t border-white/10 flex gap-2">
+                                            <div className="pt-4 border-t border-slate-100 flex gap-2">
                                                 <input
                                                     placeholder="NEW UNIT TYPE NAME..."
                                                     value={newUnitType}
                                                     onChange={(e) => setNewUnitType(e.target.value)}
                                                     onKeyDown={(e) => e.key === 'Enter' && handleAddUnitType()}
-                                                    className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase text-white placeholder:text-white/40 tracking-widest focus:border-white outline-none transition-all"
+                                                    className="flex-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black uppercase text-slate-900 placeholder:text-slate-400 tracking-widest focus:border-blue-500 outline-none transition-all"
                                                 />
                                                 <button
                                                     onClick={handleAddUnitType}
                                                     disabled={submitting}
-                                                    className="px-6 bg-white text-blue-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white/90 transition-all shadow-md active:scale-95 disabled:opacity-50"
+                                                    className="px-2 md:px-6 bg-blue-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md active:scale-95 disabled:opacity-50"
                                                 >
                                                     {submitting && actionType === 'adding' ? "ADDING..." : "ADD"}
                                                 </button>
@@ -764,30 +767,33 @@ const RoomsManagement = () => {
                                 </div>
                                 <button
                                     onClick={() => setIsManagingUnitTypes(false)}
-                                    className="w-full py-4 bg-white/10 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/20 transition-all border border-white/10"
+                                    className="w-full py-4 bg-slate-50 text-slate-400 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all border border-slate-100"
                                 >
                                     Return to Master
                                 </button>
                             </div>
                         ) : (
-                            <form onSubmit={handleUpdate} className="p-8 space-y-6 animate-in slide-in-from-left-4 duration-300">
+                            <form onSubmit={handleUpdate} className="p-3 md:p-8 space-y-6 animate-in slide-in-from-left-4 duration-300">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Room Label/ID</label>
                                     <input
                                         required
                                         value={editingRoom.label}
                                         onChange={(e) => setEditingRoom((prev: any) => ({ ...prev, label: e.target.value }))}
-                                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold uppercase focus:border-blue-500 outline-none transition-all"
+                                        className="w-full px-3 md:px-6 py-3 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] md:text-xs font-bold uppercase focus:border-blue-500 outline-none transition-all"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Unit Type</label>
+                                    <div className="flex items-center justify-between ml-1">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Unit Type</label>
+                                    </div>
                                     <select
                                         required
                                         value={editingRoom.type}
                                         onChange={(e: any) => setEditingRoom((prev: any) => ({ ...prev, type: e.target.value }))}
-                                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold uppercase focus:border-blue-500 outline-none transition-all"
+                                        className="w-full px-3 md:px-6 py-3 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] md:text-xs font-bold uppercase focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer"
                                     >
+                                        <option value="" disabled>Select Type</option>
                                         {unitTypes.map(type => (
                                             <option key={type} value={type}>{type}</option>
                                         ))}
@@ -795,7 +801,7 @@ const RoomsManagement = () => {
                                 </div>
                                 <button
                                     disabled={submitting}
-                                    className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all disabled:opacity-50 shadow-xl shadow-blue-200 active:scale-[0.98] duration-200"
+                                    className="w-full py-3 md:py-4 bg-blue-600 text-white rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-blue-700 transition-all disabled:opacity-50 shadow-xl shadow-blue-200 active:scale-[0.98] duration-200"
                                 >
                                     {submitting ? "Saving..." : "Update Asset"}
                                 </button>

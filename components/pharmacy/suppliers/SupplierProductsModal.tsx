@@ -56,7 +56,7 @@ const SupplierProductsModal: React.FC<SupplierProductsModalProps> = ({ isOpen, o
                             </p>
                         </div>
                     </div>
-                    <button 
+                    <button
                         onClick={onClose}
                         className="p-3 hover:bg-white dark:hover:bg-gray-800 rounded-2xl shadow-sm border border-transparent hover:border-gray-100 dark:hover:border-gray-700"
                     >
@@ -64,7 +64,7 @@ const SupplierProductsModal: React.FC<SupplierProductsModalProps> = ({ isOpen, o
                     </button>
                 </div>
 
-                
+
                 <div className="flex-1 overflow-y-auto p-8">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -94,7 +94,7 @@ const SupplierProductsModal: React.FC<SupplierProductsModalProps> = ({ isOpen, o
                                             </div>
                                             <div className="text-[10px] text-gray-400 font-bold uppercase mt-0.5">
                                                 {product.genericName}
-                                               </div>
+                                            </div>
                                         </div>
                                         <div className="col-span-2 text-center">
                                             <span className="bg-white dark:bg-gray-800 px-3 py-1 rounded-lg border dark:border-gray-700 text-[10px] font-black text-gray-500">
@@ -103,7 +103,7 @@ const SupplierProductsModal: React.FC<SupplierProductsModalProps> = ({ isOpen, o
                                         </div>
                                         <div className="col-span-2 text-center">
                                             <span className="text-sm font-black text-gray-700 dark:text-gray-300">
-                                                {product.currentStock}
+                                                {Number(product.currentStock).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                             </span>
                                         </div>
                                         <div className="col-span-2 text-right">
@@ -125,8 +125,8 @@ const SupplierProductsModal: React.FC<SupplierProductsModalProps> = ({ isOpen, o
 
                 {/* Footer */}
                 <div className="px-10 py-6 border-t dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-between items-center text-gray-400 text-[10px] font-black uppercase tracking-[3px]">
-                   <span>Inventory Summary</span>
-                   <span className="text-indigo-500 underline decoration-2 underline-offset-4">{supplier.name} Vendor List</span>
+                    <span>Inventory Summary</span>
+                    <span className="text-indigo-500 underline decoration-2 underline-offset-4">{supplier.name} Vendor List</span>
                 </div>
             </div>
         </div>

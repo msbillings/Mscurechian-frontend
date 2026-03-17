@@ -427,12 +427,12 @@ export default function HospitalAdminIncidentPage() {
     };
 
     return (
-        <div className="p-8 space-y-10 max-w-7xl mx-auto">
+        <div className="p-3 md:p-8 space-y-10 max-w-7xl mx-auto">
             {/* Header Tier */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div>
-                    <h1 className="text-2xl font-black text-gray-900 dark:text-white  uppercase">Incident Governance</h1>
-                    <p className="text-gray-500 dark:text-gray-400 font-bold mt-2 uppercase tracking-[0.2em] text-[10px] ml-1 flex items-center gap-2">
+                    <h1 className="text-lg md:text-2xl font-black text-gray-900 dark:text-white  uppercase">Incident Governance</h1>
+                    <p className="text-gray-500 dark:text-gray-400 font-bold mt-2 uppercase tracking-[0.2em] text-[8px] md:text-[10px] ml-1 flex items-center gap-2">
                         <ShieldCheck className="w-4 h-4 text-emerald-500" />
                         Institutional Safety Oversight & Response Matrix
                     </p>
@@ -443,7 +443,7 @@ export default function HospitalAdminIncidentPage() {
                     <button
                         onClick={() => setShowExportMenu(!showExportMenu)}
                         disabled={isExporting}
-                        className="flex items-center gap-2 px-6 py-3 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all active:scale-95 disabled:opacity-50 min-w-[160px] justify-between"
+                        className="flex items-center gap-2 px-3 md:px-6 py-3 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all active:scale-95 disabled:opacity-50 min-w-[160px] justify-between"
                     >
                         <span className="flex items-center gap-2">
                             <Download size={16} /> Export
@@ -505,7 +505,7 @@ export default function HospitalAdminIncidentPage() {
             </div>
 
             {/* Advanced Filters Section */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 ml-1">
                         <Calendar size={12} /> Date Range
@@ -576,8 +576,8 @@ export default function HospitalAdminIncidentPage() {
             </div>
 
             {/* Insights / Metrics View */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 group">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 group">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="p-2 bg-gray-900 text-white rounded-lg">
                             <TrendingUp size={16} />
@@ -592,7 +592,7 @@ export default function HospitalAdminIncidentPage() {
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700  group">
+                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700  group">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="p-2 bg-red-600 text-white rounded-lg">
                             <AlertCircle size={16} />
@@ -607,7 +607,7 @@ export default function HospitalAdminIncidentPage() {
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 group">
+                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 group">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="p-2 bg-emerald-600 text-white rounded-lg">
                             <CheckCircle2 size={16} />
@@ -622,7 +622,7 @@ export default function HospitalAdminIncidentPage() {
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 group">
+                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 group">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="p-2 bg-indigo-600 text-white rounded-lg">
                             <Building size={16} />
@@ -639,15 +639,15 @@ export default function HospitalAdminIncidentPage() {
             </div>
 
             {/* Main Interface */}
-            <div className="bg-white dark:bg-gray-800 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 overflow-hidden min-h-[600px] flex flex-col lg:flex-row">
+            <div className="bg-white dark:bg-gray-800 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 overflow-hidden min-h-[500px] flex flex-col lg:flex-row">
 
                 {/* List Side */}
                 <div className={`flex-1 border-r border-gray-100 dark:border-gray-700 flex flex-col ${selectedIncident ? 'hidden lg:flex' : 'flex'}`}>
-                    <div className="p-8 border-b border-gray-100 dark:border-gray-700">
+                    <div className="p-3 md:p-8 border-b border-gray-100 dark:border-gray-700">
                         <h3 className="text-xl font-black uppercase font-semibold">Audit Registry</h3>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[700px] hide-scrollbar">
+                    <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-3 max-h-[700px] hide-scrollbar">
                         {isLoading ? (
                             <div className="flex flex-col items-center justify-center py-20 gap-4">
                                 <Loader2 className="animate-spin text-emerald-500" size={32} />
@@ -663,7 +663,7 @@ export default function HospitalAdminIncidentPage() {
                                 <button
                                     key={incident._id}
                                     onClick={() => setSelectedIncident(incident)}
-                                    className={`w-full text-left p-6 rounded-[1rem] transition-all border-2 ${selectedIncident?._id === incident._id
+                                    className={`w-full text-left p-3 md:p-6 rounded-[1rem] transition-all border-2 ${selectedIncident?._id === incident._id
                                         ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500'
                                         : 'bg-white dark:bg-gray-800/50 border-transparent hover:border-gray-100 dark:hover:border-gray-700'
                                         }`}
@@ -719,7 +719,7 @@ export default function HospitalAdminIncidentPage() {
                     {selectedIncident ? (
                         <div className="flex-1 flex flex-col h-full animate-in fade-in slide-in-from-right-4 duration-500">
                             {/* Detail Header */}
-                            <div className="p-8 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 flex items-center justify-between">
+                            <div className="p-3 md:p-8 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 flex items-center justify-between">
                                 <div className="flex items-center gap-4">
                                     <button onClick={() => setSelectedIncident(null)} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg">
                                         <X size={20} />
@@ -737,21 +737,21 @@ export default function HospitalAdminIncidentPage() {
                                 </div>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-8 space-y-8 hide-scrollbar">
+                            <div className="flex-1 overflow-y-auto p-2 md:p-4 md:p-8 space-y-8 hide-scrollbar">
                                 {/* Core Info Cards */}
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="p-4 bg-white dark:bg-gray-800 rounded-[0.5rem] ">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="p-2 md:p-4 bg-white dark:bg-gray-800 rounded-[0.5rem] ">
                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Incident Type</p>
                                         <p className="text-sm font-bold text-gray-900 dark:text-white uppercase">{selectedIncident.incidentType}</p>
                                     </div>
-                                    <div className="p-4 bg-white dark:bg-gray-800 rounded-[0.5rem] ">
+                                    <div className="p-2 md:p-4 bg-white dark:bg-gray-800 rounded-[0.5rem] ">
                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Department</p>
                                         <p className="text-sm font-bold text-gray-900 dark:text-white uppercase ">{selectedIncident.department}</p>
                                     </div>
                                 </div>
 
                                 {/* Reporter Profile */}
-                                <div className="p-6 bg-white dark:bg-gray-800 rounded-[0.5rem] border border-gray-100 dark:border-gray-700">
+                                <div className="p-2 md:p-6 bg-white dark:bg-gray-800 rounded-[0.5rem] border border-gray-100 dark:border-gray-700">
                                     <div className="flex items-center gap-4 mb-4">
                                         <div className="w-12 h-12 bg-gray-100 dark:bg-gray-900 rounded-2xl flex items-center justify-center text-gray-400 font-black ">
                                             {selectedIncident.reportedBy.name.charAt(0)}
@@ -761,7 +761,7 @@ export default function HospitalAdminIncidentPage() {
                                             <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">{selectedIncident.reportedBy.role}</p>
                                         </div>
                                     </div>
-                                    <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl">
+                                    <div className="mt-4 p-2 md:p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl">
                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Narrative / Description</p>
                                         <p className="text-sm text-gray-700 dark:text-gray-300 font-medium leading-relaxed">{selectedIncident.description}</p>
                                     </div>
@@ -769,14 +769,14 @@ export default function HospitalAdminIncidentPage() {
 
                                 {/* Conditional Data Blocks */}
                                 {(selectedIncident.incidentType === 'Patient Fall' && selectedIncident.patientFallDetails) && (
-                                    <div className="p-6 bg-emerald-50 dark:bg-emerald-500/5 rounded-3xl border border-emerald-100 dark:border-emerald-500/20">
+                                    <div className="p-2 md:p-6 bg-emerald-50 dark:bg-emerald-500/5 rounded-3xl border border-emerald-100 dark:border-emerald-500/20">
                                         <div className="flex items-center gap-3 mb-4">
                                             <div className="p-2 bg-emerald-500 text-white rounded-lg">
                                                 <Building size={16} />
                                             </div>
                                             <h4 className="text-xs font-black uppercase  text-emerald-700 dark:text-emerald-400">Patient Detail Supplement</h4>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
                                                 <p className="text-[8px] font-black text-emerald-600/60 uppercase">Patient Name</p>
                                                 <p className="text-xs font-bold">{selectedIncident.patientFallDetails.patientName}</p>
@@ -794,7 +794,7 @@ export default function HospitalAdminIncidentPage() {
                                 )}
 
                                 {(selectedIncident.incidentType === 'Medication Error' && selectedIncident.medicationErrorDetails) && (
-                                    <div className="p-6 bg-indigo-50 dark:bg-indigo-500/5 rounded-3xl border border-indigo-100 dark:border-indigo-500/20">
+                                    <div className="p-2 md:p-6 bg-indigo-50 dark:bg-indigo-500/5 rounded-3xl border border-indigo-100 dark:border-indigo-500/20">
                                         <div className="flex items-center gap-3 mb-4">
                                             <div className="p-2 bg-indigo-500 text-white rounded-lg">
                                                 <Pill size={16} />
@@ -809,7 +809,7 @@ export default function HospitalAdminIncidentPage() {
                                 )}
 
                                 {(selectedIncident.incidentType === 'Equipment Failure' && selectedIncident.equipmentFailureDetails) && (
-                                    <div className="p-6 bg-amber-50 dark:bg-amber-500/5 rounded-3xl border border-amber-100 dark:border-amber-500/20">
+                                    <div className="p-2 md:p-6 bg-amber-50 dark:bg-amber-500/5 rounded-3xl border border-amber-100 dark:border-amber-500/20">
                                         <div className="flex items-center gap-3 mb-4">
                                             <div className="p-2 bg-amber-500 text-white rounded-lg">
                                                 <Package size={16} />
@@ -833,7 +833,7 @@ export default function HospitalAdminIncidentPage() {
 
                                 {/* Photo Evidence Section */}
                                 {selectedIncident.attachments && selectedIncident.attachments.length > 0 && (
-                                    <div className="p-6 bg-purple-50 dark:bg-purple-500/5 rounded-3xl border border-purple-100 dark:border-purple-500/20">
+                                    <div className="p-2 md:p-6 bg-purple-50 dark:bg-purple-500/5 rounded-3xl border border-purple-100 dark:border-purple-500/20">
                                         <div className="flex items-center gap-3 mb-4">
                                             <div className="p-2 bg-purple-500 text-white rounded-lg">
                                                 <ImageIcon size={16} />
@@ -843,7 +843,7 @@ export default function HospitalAdminIncidentPage() {
                                                 {selectedIncident.attachments.length} {selectedIncident.attachments.length === 1 ? 'Image' : 'Images'}
                                             </span>
                                         </div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-3 gap-3">
                                             {selectedIncident.attachments.map((attachment: any, index: number) => (
                                                 <a
                                                     key={attachment._id || index}
@@ -881,10 +881,10 @@ export default function HospitalAdminIncidentPage() {
 
                                 {/* Admin Response Matrix */}
                                 {selectedIncident.status === 'CLOSED' && selectedIncident.adminResponse ? (
-                                    <div className="p-8 bg-blue-600 rounded-[0.5rem] text-white">
+                                    <div className="p-3 md:p-8 bg-blue-600 rounded-[0.5rem] text-white">
                                         <div className="flex items-center gap-3 mb-6">
                                             <CheckCircle2 size={24} />
-                                            <h3 className="text-lg font-black uppercase">Resolution Finalized</h3>
+                                            <h3 className="text-sm md:text-lg font-black uppercase">Resolution Finalized</h3>
                                         </div>
                                         <div className="space-y-4">
                                             <div>
@@ -902,12 +902,12 @@ export default function HospitalAdminIncidentPage() {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="p-8 bg-white dark:bg-gray-800 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 space-y-6">
+                                    <div className="p-3 md:p-8 bg-white dark:bg-gray-800 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 space-y-6">
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 bg-emerald-500 text-white rounded-lg">
                                                 <MessageSquare size={18} />
                                             </div>
-                                            <h3 className="text-lg font-black uppercase">Governance Action</h3>
+                                            <h3 className="text-sm md:text-lg font-black uppercase">Governance Action</h3>
                                         </div>
 
                                         <div className="space-y-4">

@@ -76,9 +76,18 @@ const getActiveHospitalId = (): string | null => {
 };
 
 const existingRequests = new Map<string, Promise<any>>();
+// 🚀 SECURITY: Access Token is ONLY in memory
+let cachedToken: string | null = null;
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
-let cachedToken: string | null = null;
+
+const getCookie = (name: string): string | null => {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+  return null;
+};
 
 // Export clear cache utility (useful for logout or manual refresh)
 export const clearApiCache = () => {
@@ -110,23 +119,38 @@ const onTokenRefreshed = (token: string) => {
   refreshSubscribers = [];
 };
 
+/**
+ * Update the in-memory access token (used after login or manual refresh)
+ */
+export const setAccessToken = (token: string | null) => {
+  cachedToken = token;
+};
+
+export const getAccessToken = (): string | null => cachedToken;
+
 export async function apiClient<T>(
   path: string,
   options?: RequestInit & { skipCache?: boolean },
 ): Promise<T> {
   const isClient = typeof window !== "undefined";
 
-  if (!cachedToken && isClient) {
-    cachedToken = sessionStorage.getItem("accessToken");
-  }
-  // FORCE REFRESH: Always check session storage if we might be missing it
-  let token =
-    cachedToken || (isClient ? sessionStorage.getItem("accessToken") : null);
+  // 🚀 SECURITY: No more sessionStorage reliance for tokens
+  let token = cachedToken;
 
-  // Sanitize token: Remove surrounding quotes if they exist (common storage artifact)
-  if (token && token.startsWith('"') && token.endsWith('"')) {
-    token = token.slice(1, -1);
+  // MULTI-TENANCY: Identify the hospital context for cookie retrieval
+  const activeHospitalId = getActiveHospitalId();
+
+  // If memory token is missing, try namespaced cookie as a final fallback (Client-side sync)
+  if (!token && isClient) {
+    const atName = activeHospitalId ? `accessToken_${activeHospitalId}` : "accessToken";
+    token = getCookie(atName);
+    
+    // Only fallback to global if NO specific hospital context exists
+    if (!token && !activeHospitalId) {
+      token = getCookie("accessToken");
+    }
   }
+
 
   // Construct headers more robustly
   const headers = new Headers();
@@ -151,9 +175,20 @@ export async function apiClient<T>(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
+  // ✅ ENFORCE SESSION ISOLATION
+  const sessionId = typeof window !== "undefined" ? sessionStorage.getItem("sessionId") : null;
+  if (sessionId) {
+    headers.set("X-Session-Id", sessionId);
+  }
+
+  // ✅ CSRF PROTECTION: Double Submit Cookie (Multi-tenant aware)
+  const ctName = activeHospitalId ? `csrf_token_${activeHospitalId}` : "csrf_token";
+  const csrfToken = getCookie(ctName) || getCookie("csrf_token");
+  if (csrfToken) {
+    headers.set("X-CSRF-Token", csrfToken);
+  }
+
   // ✅ MULTI-TENANCY: Inject X-Hospital-Id header for backend tenant isolation
-  // Backend tenantMiddleware reads this to scope all queries to the correct hospital
-  const activeHospitalId = getActiveHospitalId();
   if (activeHospitalId) {
     headers.set("X-Hospital-Id", activeHospitalId);
   }
@@ -186,6 +221,7 @@ export async function apiClient<T>(
       const res = await fetch(url, {
         ...options,
         headers,
+        credentials: "include", // ✅ CRITICAL: Send HttpOnly cookies for Auth
         cache: "no-store",
       }).catch((fetchError) => {
         // Handle network errors
@@ -211,11 +247,11 @@ export async function apiClient<T>(
       // Handle 401 Unauthorized
       const pathLower = path.toLowerCase();
       const isLoginRequest =
-        pathLower.includes("login") ||
-        pathLower.includes("sign-in") ||
-        pathLower.includes("signin") ||
-        pathLower.includes("auth");
+        pathLower.includes("/login") ||
+        pathLower.includes("/sign-in") ||
+        pathLower.includes("/signin");
       const isRefreshRequest = pathLower.includes("/refresh");
+      const isMeRequest = pathLower.includes("/me");
 
       // Also check if we are physically on a login page to be doubly safe
       const currentPath = isClient
@@ -227,78 +263,56 @@ export async function apiClient<T>(
         currentPath.includes("signin");
 
       if (res.status === 401) {
-        console.log(
-          `[API] 401 on ${path}. isLoginRequest=${isLoginRequest}, isOnLoginPage=${isOnLoginPage}`,
-        );
-      }
+        console.warn(`[API] 🔐 401 Unauthorized on ${path}. isLoginRequest=${isLoginRequest}, isMeRequest=${isMeRequest}`);
 
-      if (
-        res.status === 401 &&
-        isClient &&
-        !isLoginRequest &&
-        !isRefreshRequest &&
-        !isOnLoginPage
-      ) {
-        const refreshToken = sessionStorage.getItem("refreshToken");
-
-        if (refreshToken) {
+        if (isClient && !isLoginRequest && !isRefreshRequest && !isOnLoginPage) {
           if (!isRefreshing) {
+            console.log("[API] 🔄 Token expired or missing. Attempting silent refresh...");
             isRefreshing = true;
             try {
-              const refreshRes = await fetch(
-                `${API_CONFIG.BASE_URL}/auth/refresh`,
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ refreshToken }),
-                },
-              );
+              // ✅ SECURE REFRESH: Relies on HttpOnly refreshToken cookie AND CSRF token
+              const ctName = activeHospitalId ? `csrf_token_${activeHospitalId}` : "csrf_token";
+              const csrfTk = getCookie(ctName) || getCookie("csrf_token");
+              const refreshHeaders: HeadersInit = { "Content-Type": "application/json" };
+              if (csrfTk) {
+                (refreshHeaders as any)["X-CSRF-Token"] = csrfTk;
+              }
+              if (sessionId) {
+                (refreshHeaders as any)["X-Session-Id"] = sessionId;
+              }
+              if (activeHospitalId) {
+                (refreshHeaders as any)["X-Hospital-Id"] = activeHospitalId;
+              }
+
+              const refreshRes = await fetch(`${API_CONFIG.BASE_URL}/auth/refresh`, {
+                method: "POST",
+                headers: refreshHeaders,
+                credentials: "include" // ✅ CRITICAL: MUST SEND COOKIES FOR REFRESH
+              });
 
               if (refreshRes.ok) {
                 const data = await refreshRes.json();
-                sessionStorage.setItem("accessToken", data.tokens.accessToken);
-                sessionStorage.setItem(
-                  "refreshToken",
-                  data.tokens.refreshToken,
-                );
-
-                // Sync cookies for Server Actions
-                import("../actions/auth.actions").then(
-                  ({ syncSessionAction }) => {
-                    syncSessionAction(
-                      data.tokens.accessToken,
-                      data.tokens.refreshToken,
-                    );
-                  },
-                );
-
-                onTokenRefreshed(data.tokens.accessToken);
+                const newToken = data.accessToken;
+                console.log("[API] ✅ Token refresh successful. Resuming pending requests...");
+                cachedToken = newToken;
+                onTokenRefreshed(newToken);
               } else {
+                console.error("[API] ❌ Token refresh failed (Status:", refreshRes.status, ")");
                 throw new Error("Refresh failed");
               }
             } catch (error) {
-              sessionStorage.removeItem("accessToken");
-              sessionStorage.removeItem("refreshToken");
               cachedToken = null;
               window.dispatchEvent(new Event("auth-logout"));
 
-              // Smart role-aware redirect to correct login page
+              // Smart role-aware redirect
               const currentPath = window.location.pathname.toLowerCase();
-              const isLoginPage =
-                currentPath.includes("/login") ||
-                currentPath.includes("sign-in") ||
-                currentPath.includes("signin");
+              const isLoginPage = currentPath.includes("/login") || currentPath.includes("sign-in") || currentPath.includes("signin");
+              
               if (!isLoginPage) {
-                // Determine redirect based on current path context
-                const pathParts = window.location.pathname
-                  .split("/")
-                  .filter(Boolean);
+                const pathParts = window.location.pathname.split("/").filter(Boolean);
                 const firstSegment = pathParts[0] || "";
                 const secondSegment = pathParts[1] || "";
-
-                // Check if we're in a tenant-prefixed portal (/{hospitalId}/lab, etc.)
-                const portalSegment =
-                  pathParts.length >= 2 ? secondSegment : firstSegment;
+                const portalSegment = pathParts.length >= 2 ? secondSegment : firstSegment;
 
                 const roleLoginMap: Record<string, string> = {
                   lab: "/auth/lab/login",
@@ -306,6 +320,7 @@ export async function apiClient<T>(
                   pharmacy: "/auth/pharmacy/login",
                   pharma: "/auth/pharmacy/login",
                   emergency: "/emergency-login",
+                  ambulance: "/emergency-login",
                   discharge: "/auth/login",
                 };
 
@@ -313,9 +328,7 @@ export async function apiClient<T>(
                 window.location.href = redirectTo;
               }
 
-              const sessionError = new Error(
-                "Your session has expired. Please login again.",
-              );
+              const sessionError = new Error("Your session has expired. Please login again.");
               (sessionError as any).isSessionExpired = true;
               throw sessionError;
             } finally {
@@ -326,12 +339,18 @@ export async function apiClient<T>(
           return new Promise<T>((resolve, reject) => {
             subscribeTokenRefresh((newToken) => {
               headers.set("Authorization", `Bearer ${newToken}`);
+              
+              // ✅ RE-EVALUATE CONTEXT: If context was missing, check if bootstrap/refresh restored it
+              if (!headers.has("X-Hospital-Id")) {
+                const retryHospitalId = getActiveHospitalId();
+                if (retryHospitalId) {
+                  headers.set("X-Hospital-Id", retryHospitalId);
+                }
+              }
+
               fetch(url, { ...options, headers })
                 .then((resp) => {
-                  if (!resp.ok)
-                    return resp.json().then((err) => {
-                      throw new Error(err.message || `HTTP ${resp.status}`);
-                    });
+                  if (!resp.ok) return resp.json().then((err) => { throw new Error(err.message || `HTTP ${resp.status}`); });
                   return resp.json();
                 })
                 .then(resolve)
@@ -345,8 +364,11 @@ export async function apiClient<T>(
         const errorData = await res
           .json()
           .catch(() => ({ message: "API Error" }));
-        if (res.status !== 404) {
-          console.error(`API Error [${res.status}] ${path}:`, errorData);
+        
+        const isAuthCheck = path.toLowerCase().includes("/auth/me") || path.toLowerCase().includes("/auth/refresh");
+        
+        if (res.status !== 404 && !(res.status === 401 && isAuthCheck)) {
+          console.error(`[API] ❌ Error [${res.status}] ${path}:`, errorData);
         }
         let errorMessage = errorData.message || `HTTP ${res.status}`;
         if (typeof errorData === "object" && errorData.error) {
@@ -355,13 +377,33 @@ export async function apiClient<T>(
               ? errorData.error
               : errorData.error.message || errorMessage;
         }
+        if (res.status === 401 && isAuthCheck) {
+          return null as any; 
+        }
+
         const error = new Error(errorMessage);
         (error as any).status = res.status;
         (error as any).error = errorData.error || errorData;
         throw error;
       }
 
-      const data = await res.json();
+      // ✅ SAFE JSON PARSE: 204 No Content / 205 Reset Content responses have no body.
+      // Calling .json() on an empty body throws "Unexpected end of JSON input".
+      // e.g. POST /api/auth/logout → 204 (intentionally no body) → skip .json()
+      const hasBody =
+        res.status !== 204 &&
+        res.status !== 205 &&
+        res.headers.get("content-length") !== "0" &&
+        res.headers.get("content-type")?.includes("application/json");
+
+      const data = hasBody ? await res.json() : null;
+
+      // ✅ SESSION CAPTURE: Extract X-Session-Id from headers if present 
+      // (This is primarily for login/refresh to pass the ID to the store)
+      const xSessionId = res.headers.get("X-Session-Id");
+      if (xSessionId && data && typeof data === "object") {
+        data.sessionId = xSessionId;
+      }
 
       // Clear cache on mutations (POST, PUT, DELETE, etc.)
       if (method !== "GET" && isClient) {

@@ -28,7 +28,6 @@ const PUBLIC_PATHS = [
   "/auth",
   "/admin",
   "/patient", // Added back to prevent it being treated as a hospitalId
-  "/ambulance",
   "/about",
   "/blogs",
   "/features",
@@ -49,11 +48,17 @@ const ROUTE_MAP: Record<string, string> = {
   doctor: "/doctor",
   "hospital-admin": "/hospital-admin",
   lab: "/lab/dashboard",
+  "pharma": "/pharmacy/dashboard",
   "pharma-owner": "/pharmacy/dashboard",
+  "pharmacist": "/pharmacy/dashboard",
   "super-admin": "/admin",
   admin: "/admin",
   helpdesk: "/helpdesk",
   nurse: "/nurse",
+  frontdesk: "/frontdesk",
+  hr: "/hr",
+  emergency: "/ambulance",
+  discharge: "/discharge",
 };
 
 /**
@@ -135,17 +140,54 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const accessToken = request.cookies.get("accessToken")?.value;
-  const hospitalIdCookie = request.cookies.get("hospitalId")?.value;
+  // 1.5 IDENTIFY TENANT FROM PATH OR COOKIE
+  const pathParts = pathname.split("/").filter(Boolean);
+  const pathHospitalId = pathParts.length >= 1 && isValidHospitalId(pathParts[0]) ? pathParts[0] : "";
+  const cookieHospitalId = request.cookies.get("hospitalId")?.value || "";
+  
+  // Use path context first, fallback to cookie for discovery on global routes (like /ambulance)
+  const effectiveId = pathHospitalId || cookieHospitalId;
 
-  // 2. DECODE ROLE IF TOKEN EXISTS
+
+  // 2. RESOLVE ACCESS TOKEN (Multi-tenant aware)
+  // 🚨 CRITICAL: We prioritize namespaced cookies. If a hospital context is present,
+  // we MUST NOT fallback to a global cookie to prevent cross-tab session leakage.
+  const atName = effectiveId ? `accessToken_${effectiveId}` : "accessToken";
+  const rtName = effectiveId ? `refreshToken_${effectiveId}` : "refreshToken";
+
+  let accessToken = request.cookies.get(atName)?.value || "";
+  let refreshToken = request.cookies.get(rtName)?.value || "";
+
+  // Only fallback to global if NO hospital context exists (global dashboard discovery)
+  if (!effectiveId && !accessToken) {
+     accessToken = request.cookies.get("accessToken")?.value || "";
+     refreshToken = request.cookies.get("refreshToken")?.value || "";
+  }
+  
+  let currentSessionId = "";
+
+  if (accessToken) {
+    const payload = decodeJwt(accessToken);
+    currentSessionId = payload?.sessionId || "";
+  } else if (refreshToken) {
+    const payload = decodeJwt(refreshToken);
+    currentSessionId = payload?.sessionId || "";
+  }
+
   const payload = accessToken ? decodeJwt(accessToken) : null;
   const userRole = payload?.role?.toLowerCase() || "";
+  const userHospitalId = payload?.hospitalId || payload?.hospital;
+
+  // ✅ DEBUG LOGGING
+  if (pathname.includes("/admin") || pathname.includes("/doctor") || pathname.includes("/hospital-admin") || pathname.includes("/auth")) {
+    console.log(`[Middleware] 📋 Path: ${pathname} | Token: ${!!accessToken} | Session: ${currentSessionId} | Role: ${userRole} | Hosp: ${userHospitalId}`);
+  }
 
   // 3. ENFORCE PATIENT PORTAL RESTRICTIONS
   // Patients should ONLY be on /patient paths. Others should be redirected AWAY.
   if (pathname.startsWith("/patient")) {
-    if (!accessToken) {
+    if (!accessToken && !currentSessionId) {
+      console.log(`[Middleware] 🔐 Redirect to Login (Patient Path): No Token/Session`);
       const loginUrl = new URL("/auth/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
@@ -174,9 +216,9 @@ export function middleware(request: NextRequest) {
   );
 
   if (isLegacyPortalPath) {
-    if (hospitalIdCookie && accessToken) {
+    if (userHospitalId && accessToken) {
       const redirectUrl = new URL(
-        `/${hospitalIdCookie}${pathname}`,
+        `/${userHospitalId}${pathname}`,
         request.url,
       );
       redirectUrl.search = request.nextUrl.search;
@@ -186,12 +228,31 @@ export function middleware(request: NextRequest) {
   }
 
   // 6. TENANT-PREFIXED VALIDATION
-  const pathParts = pathname.split("/").filter(Boolean);
   if (pathParts.length >= 1) {
     const firstSegment = pathParts[0];
 
     if (isValidHospitalId(firstSegment)) {
-      if (!accessToken) {
+      // 🚨 PORTAL REDIRECT: If user visits /[hospitalId]/dashboard or /[hospitalId]/portals,
+      // redirect them specifically to their role's portal.
+      if (
+        (pathParts.length === 2 && (pathParts[1] === "dashboard" || pathParts[1] === "portals")) ||
+        pathParts.length === 1
+      ) {
+        if (userRole && userRole !== "patient") {
+          const portalBase = ROUTE_MAP[userRole] || "/hospital-admin";
+          const target = portalBase.startsWith("/") ? portalBase : `/${portalBase}`;
+          
+          // If the target is already absolute (like /admin), don't prefix with hospitalId
+          const isGlobalPortal = ["/admin", "/patient/dashboard", "/ambulance"].includes(target);
+          const finalRedirect = isGlobalPortal ? target : `/${firstSegment}${target}`;
+          
+          console.log(`[Middleware] 🧭 Routing user ${userRole} from ${pathname} to ${finalRedirect}`);
+          return NextResponse.redirect(new URL(finalRedirect, request.url));
+        }
+      }
+
+      if (!accessToken && !currentSessionId) {
+        console.log(`[Middleware] 🔐 Redirect to Login (Tenant Path): No Token/Session`);
         const loginUrl = new URL("/auth/login", request.url);
         loginUrl.searchParams.set("redirect", pathname);
         return NextResponse.redirect(loginUrl);
@@ -208,21 +269,38 @@ export function middleware(request: NextRequest) {
       }
 
       // 🚨 TENANT MISMATCH PROTECTION
-      if (hospitalIdCookie && hospitalIdCookie !== firstSegment) {
-        if (userRole !== "super-admin") {
-          console.warn(
-            `[Middleware] Tenant mismatch: path=${firstSegment}, cookie=${hospitalIdCookie}. Redirecting...`,
-          );
-          const remainingPath = "/" + pathParts.slice(1).join("/");
-          return NextResponse.redirect(
-            new URL(`/${hospitalIdCookie}${remainingPath}`, request.url),
-          );
-        }
+      // Note: We use the hospitalId from the path primarily now.
+      // If the user has a specific hospitalId in their token, we could validate it here.
+      const userHospitalId = payload?.hospitalId || payload?.hospital;
+      
+      if (userHospitalId && userHospitalId !== firstSegment && userRole !== "super-admin") {
+        console.warn(
+          `[Middleware] Tenant mismatch: path=${firstSegment}, token=${userHospitalId}. Redirecting...`,
+        );
+        const remainingPath = "/" + pathParts.slice(1).join("/");
+        return NextResponse.redirect(
+          new URL(`/${userHospitalId}${remainingPath}`, request.url),
+        );
       }
 
-      const response = NextResponse.next();
+      // Build response and sync hospital context to headers for apiServer
+      const response = NextResponse.next({
+        request: {
+          headers: new Headers(request.headers),
+        },
+      });
+      
       response.headers.set("X-Hospital-Id", firstSegment);
-      return response;
+      // Also set on the request so the current rendering cycle can see it via next/headers
+      response.headers.set("x-hospital-id", firstSegment); 
+      // Note: NextResponse.next with request headers is the way to pass headers to downstream server components in Next.js 13+
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set("X-Hospital-Id", firstSegment);
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      });
     }
   }
 

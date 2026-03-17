@@ -78,7 +78,7 @@ export default function PayrollResolutionPage() {
        <div className="text-center p-12 bg-white rounded-xl shadow-xs border border-gray-100">
           <FileText size={48} className="mx-auto text-gray-200 mb-4" />
           <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest">Manifest Not Found</h2>
-          <button onClick={() => router.back()} className="mt-4 px-6 py-2 bg-gray-900 text-white rounded-lg text-xs font-bold uppercase active:scale-95 transition-all">Back to Registry</button>
+          <button onClick={() => router.back()} className="mt-4 px-3 md:px-6 py-2 bg-gray-900 text-white rounded-lg text-xs font-bold uppercase active:scale-95 transition-all">Back to Registry</button>
        </div>
     </div>
   );
@@ -86,16 +86,16 @@ export default function PayrollResolutionPage() {
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20">
       {/* Action Bar */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-50 print:hidden px-8 py-4 flex items-center justify-between shadow-xs">
+      <div className="bg-white border-b border-gray-100 sticky top-0 z-50 print:hidden px-4 md:px-8 py-4 flex items-center justify-between shadow-xs">
          <div className="flex items-center gap-4">
             <button onClick={() => router.back()} className="p-2 hover:bg-gray-50 rounded-lg transition-all text-gray-400 hover:text-emerald-600"><ArrowLeft size={20} /></button>
             <h1 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Payroll Resolution Protocol</h1>
          </div>
          <div className="flex gap-3">
-            <button onClick={() => router.push(`/${hospitalId}/hospital-admin/payroll/resolution/${id}/edit`)} className="px-6 py-2.5 bg-gray-50 text-gray-700 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-50 hover:text-emerald-600 transition-all border border-gray-100 font-bold">
+            <button onClick={() => router.push(`/${hospitalId}/hospital-admin/payroll/resolution/${id}/edit`)} className="px-2 md:px-6 py-2.5 bg-gray-50 text-gray-700 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-50 hover:text-emerald-600 transition-all border border-gray-100 font-bold">
                <Edit3 size={14} className="inline mr-2" /> Modify Entry
             </button>
-            <button onClick={handlePrint} className="px-8 py-2.5 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 transition-all font-bold">
+            <button onClick={handlePrint} className="px-2 md:px-8 py-2.5 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 transition-all font-bold">
                <Printer size={14} className="inline mr-2" /> Execute Print
             </button>
          </div>
@@ -113,7 +113,7 @@ export default function PayrollResolutionPage() {
              </div>
 
              {/* Employee Info */}
-             <div className="bg-gray-50 dark:bg-white/5 p-6 rounded-xl mb-6 border border-gray-100">
+             <div className="bg-gray-50 dark:bg-white/5 p-3 md:p-6 rounded-xl mb-6 border border-gray-100">
                 <h3 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-4 flex items-center gap-2">
                    <FileText size={14} /> Personnel Entity Information
                 </h3>
@@ -134,29 +134,29 @@ export default function PayrollResolutionPage() {
              </div>
 
              {/* Attendance */}
-             <div className="bg-emerald-50/50 p-6 rounded-xl mb-6 border border-emerald-100">
+             <div className="bg-emerald-50/50 p-3 md:p-6 rounded-xl mb-6 border border-emerald-100">
                 <h3 className="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-4 flex items-center gap-2">
                    <Activity size={14} /> Duty Resolution Details
                 </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-4 gap-6 text-sm">
                    <div className="text-center md:text-left">
                       <p className="font-bold text-gray-400 uppercase text-[9px] mb-1">Cycle Duration</p>
-                      <p className="font-black text-gray-700 text-base">{payroll?.monthDays || 30} Days</p>
+                      <p className="font-black text-gray-700 text-sm md:text-base">{payroll?.monthDays || 30} Days</p>
                    </div>
                    <div className="text-center md:text-left">
                       <p className="font-bold text-gray-400 uppercase text-[9px] mb-1">Duty Recorded</p>
-                      <p className="font-black text-emerald-600 text-base">{payroll?.presentDays || 0} Units</p>
+                      <p className="font-black text-emerald-600 text-sm md:text-base">{payroll?.presentDays || 0} Units</p>
                    </div>
                    <div className="text-center md:text-left">
                       <p className="font-bold text-gray-400 uppercase text-[9px] mb-1">Auth Leaves</p>
-                      <p className="font-black text-amber-600 text-base">{payroll?.leaveDays || 0} Units</p>
+                      <p className="font-black text-amber-600 text-sm md:text-base">{payroll?.leaveDays || 0} Units</p>
                    </div>
                    <div className="text-center md:text-left">
                       <p className="font-bold text-gray-400 uppercase text-[9px] mb-1">Weekly Nodes</p>
-                      <p className="font-black text-gray-700 text-base">{payroll?.weeklyOffDays || 0} Units</p>
+                      <p className="font-black text-gray-700 text-sm md:text-base">{payroll?.weeklyOffDays || 0} Units</p>
                    </div>
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-6 pt-4 border-t border-emerald-100">
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-emerald-100">
                    <div>
                       <p className="font-bold text-gray-400 uppercase text-[9px] mb-1">Absent (LWP)</p>
                       <p className="font-black text-rose-600">{payroll?.absentDays || 0} Units</p>
@@ -169,7 +169,7 @@ export default function PayrollResolutionPage() {
              </div>
 
              {/* Salary Breakdown */}
-             <div className="bg-white p-6 rounded-xl mb-6 border border-gray-100">
+             <div className="bg-white p-3 md:p-6 rounded-xl mb-6 border border-gray-100">
                 <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-widest mb-6 flex items-center gap-2">
                    <DollarSign size={14} className="text-emerald-500" /> Resolution Breakdown
                 </h3>
@@ -194,13 +194,13 @@ export default function PayrollResolutionPage() {
                 <div className="mt-10 pt-8 border-t border-dashed border-gray-200 space-y-3">
                    <div className="flex justify-between items-center px-4">
                       <span className="font-black text-[10px] text-gray-400 uppercase tracking-widest">Gross Institutional Earning:</span>
-                      <span className="font-black text-gray-600 text-lg">₹{payroll?.grossEarning?.toLocaleString() || '0'}</span>
+                      <span className="font-black text-gray-600 text-xs md:text-base md:text-lg">₹{payroll?.grossEarning?.toLocaleString() || '0'}</span>
                    </div>
                    <div className="flex justify-between items-center px-4">
                       <span className="font-black text-[10px] text-gray-400 uppercase tracking-widest">Aggregate Deductions:</span>
-                      <span className="font-black text-rose-600 text-lg">₹{payroll?.totalDeductions?.toLocaleString() || '0'}</span>
+                      <span className="font-black text-rose-600 text-xs md:text-base md:text-lg">₹{payroll?.totalDeductions?.toLocaleString() || '0'}</span>
                    </div>
-                   <div className="flex justify-between items-center bg-emerald-600 p-6 rounded-xl mt-6 shadow-lg shadow-emerald-500/20 text-white">
+                   <div className="flex justify-between items-center bg-emerald-600 p-3 md:p-6 rounded-xl mt-6 shadow-lg shadow-emerald-500/20 text-white">
                       <span className="font-black text-white uppercase tracking-[0.2em] text-sm">Final Net Resolution:</span>
                       <span className="font-black text-white text-3xl">₹{payroll?.netSalary?.toLocaleString() || '0'}</span>
                    </div>

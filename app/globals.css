@@ -200,10 +200,39 @@ body {
   animation: bar-bounce 0.6s ease-in-out;
 }
 
+@keyframes progress-indeterminate {
+  0% { transform: translateX(-100%) scaleX(0.2); }
+  50% { transform: translateX(0%) scaleX(0.5); }
+  100% { transform: translateX(100%) scaleX(0.2); }
+}
+
+.animate-progress-indeterminate {
+  animation: progress-indeterminate 2s infinite linear;
+}
+
 .delay-100 {
   animation-delay: 100ms;
 }
 
 .delay-200 {
   animation-delay: 200ms;
+}
+
+/* Global Responsive Overrides for Mobile */
+@media (max-width: 767px) {
+  /* text-base / text-lg scaling */
+  .text-base { font-size: 0.8125rem !important; line-height: 1.25rem !important; }
+  .text-lg { font-size: 0.875rem !important; line-height: 1.25rem !important; }
+  
+  /* p-6 / p-8 scaling to match p-1 rules (roughly) */
+  .p-6 { padding: 0.5rem !important; } /* p-2 */
+  .p-8 { padding: 0.75rem !important; } /* p-3 */
+  .px-6 { padding-left: 0.25rem !important; padding-right: 0.25rem !important; } /* px-1 */
+  .px-8 { padding-left: 0.5rem !important; padding-right: 0.5rem !important; } /* px-2 */
+  
+  /* Ensure all inputs expand to full width on mobile */
+  input, select, textarea {
+    font-size: 16px !important; /* Prevent iOS zoom */
+    width: 100% !important;
+  }
 }

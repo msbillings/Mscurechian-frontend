@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { useReactToPrint } from 'react-to-print';
 import { useQueryClient } from '@tanstack/react-query';
 import { dischargeService } from '@/lib/integrations/services/discharge.service';
+import { ipdService } from '@/lib/integrations/services/ipd.service';
 import { useDischargeRecord } from '@/lib/hooks/discharge/useDischargeRecord';
 import { PrintableDischargeSummary } from './PrintableDischargeSummary';
 import { useAuthStore } from '@/stores/authStore';
@@ -21,6 +22,7 @@ const INITIAL_FORM_STATE = {
     roomNo: '',
     mrn: '',
     roomType: '',
+    dischargeType: '',
     admissionDate: '',
     dischargeDate: '',
     department: '',
@@ -90,6 +92,7 @@ const SAMPLE_DATA = {
     roomNo: 'ICU-B12',
     mrn: 'MRN-882941',
     roomType: 'Critical Care (ICU)',
+    dischargeType: 'Recovered / Cured',
     admissionDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
     dischargeDate: new Date().toISOString().slice(0, 16),
     department: 'Cardiology',
@@ -184,6 +187,19 @@ export function DischargeSummaryForm() {
     });
 
     const [formData, setFormData] = useState(INITIAL_FORM_STATE);
+    const [unitTypes, setUnitTypes] = useState<any[]>([]); // NEW
+
+    useEffect(() => {
+        const fetchUnitTypes = async () => {
+            try {
+                const types = await ipdService.getUnitTypes();
+                setUnitTypes(types);
+            } catch (error) {
+                console.error("Failed to fetch unit types for discharge form", error);
+            }
+        };
+        fetchUnitTypes();
+    }, []);
 
     useEffect(() => {
         if (!initializedRef.current) {
@@ -441,6 +457,8 @@ export function DischargeSummaryForm() {
                         suggestedDoctorName: response.suggestedDoctorName || '',
                         specialistType: response.specialistType || '',
                         ipdHistory: response.ipdHistory || [],
+                        reasonForAdmission: response.reason || response.reasonForAdmission || '',
+                        chiefComplaints: response.reason || response.chiefComplaints || '', // Fill this too as it is often identical on intake
                         // Auto-fill condition from vitals condition (Nurse's selection) or status
                         conditionAtDischarge: response.vitals?.condition
                             ? (response.vitals.condition.charAt(0).toUpperCase() + response.vitals.condition.slice(1).toLowerCase())
@@ -649,6 +667,13 @@ export function DischargeSummaryForm() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // SAMPLE MODE: Never save to backend — just print/preview
+        if (searchParams.get('mode') === 'sample') {
+            toast.success("Sample preview only — no data saved to backend", { id: 'sample-print-toast', icon: '🖨️' });
+            setTimeout(() => handlePrint(), 300);
+            return;
+        }
 
         const newErrors: Record<string, string> = {};
         const requiredFields = ['patientName', 'mrn', 'diagnosis', 'chiefComplaints', 'treatmentGiven', 'conditionAtDischarge'];
@@ -946,6 +971,22 @@ export function DischargeSummaryForm() {
                             <h2 className="text-lg font-black text-gray-900">Admission Details</h2>
                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Hospitalization and routing</p>
                         </div>
+                        <div className="ml-auto flex bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest gap-1 border border-blue-200">
+                            Stay Duration: {(() => {
+                                if (!formData.admissionDate) return 'N/A';
+                                const startTime = new Date(formData.admissionDate).getTime();
+                                const endTime = formData.dischargeDate ? new Date(formData.dischargeDate).getTime() : new Date().getTime();
+                                const diffInMs = Math.max(0, endTime - startTime);
+                                const hours = Math.floor(diffInMs / (1000 * 60 * 60));
+                                const minutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
+                                if (hours >= 24) {
+                                    const days = Math.floor(hours / 24);
+                                    const remainingHours = hours % 24;
+                                    return `${days} Day${days !== 1 ? 's' : ''}${remainingHours > 0 ? ` ${remainingHours} Hrs` : ''}`;
+                                }
+                                return `${hours} Hrs, ${minutes} Mins`;
+                            })()}
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -972,10 +1013,8 @@ export function DischargeSummaryForm() {
                             onChange={handleChange}
                             className="border-gray-400 font-bold"
                             options={[
-                                { value: 'General Ward', label: 'General Ward' },
-                                { value: 'Private Room', label: 'Private Room' },
-                                { value: 'ICU', label: 'ICU' },
-                                { value: 'Semi-Private', label: 'Semi-Private' }
+                                { value: '', label: 'Select Room Type' },
+                                ...unitTypes.map(ut => ({ value: ut, label: ut }))
                             ]}
                         />
                         <FormInput
@@ -1027,6 +1066,24 @@ export function DischargeSummaryForm() {
                                 { value: 'Emergency', label: 'Emergency' },
                                 { value: 'ICU', label: 'ICU' },
                                 { value: 'Day Care', label: 'Day Care' }
+                            ]}
+                        />
+                        <FormSelect
+                            label="Discharge Type *"
+                            name="dischargeType"
+                            value={formData.dischargeType}
+                            onChange={handleChange}
+                            className="border-gray-400 font-bold"
+                            options={[
+                                { value: '', label: 'Select Discharge Type' },
+                                { value: 'Recovered / Cured', label: 'Recovered / Cured' },
+                                { value: 'Referred to Another Hospital', label: 'Referred to Another Hospital' },
+                                { value: 'Discharged Against Medical Advice (DAMA / LAMA)', label: 'Discharged Against Medical Advice (DAMA / LAMA)' },
+                                { value: 'Absconded / Left Without Notice', label: 'Absconded / Left Without Notice' },
+                                { value: 'Death / Expired', label: 'Death / Expired' },
+                                { value: 'Brought Dead (Dead on Arrival)', label: 'Brought Dead (Dead on Arrival)' },
+                                { value: 'Terminal Discharge (Palliative / End-of-life)', label: 'Terminal Discharge (Palliative / End-of-life)' },
+                                { value: 'DOR (Discharge on request)', label: 'DOR (Discharge on request)' }
                             ]}
                         />
                         <FormInput
@@ -1386,8 +1443,9 @@ export function DischargeSummaryForm() {
                                 options={[
                                     { value: 'Cash', label: 'Cash' },
                                     { value: 'Card', label: 'Card' },
+                                    { value: 'UPI', label: 'UPI' },
                                     { value: 'Insurance', label: 'Insurance' },
-                                    { value: 'UPI', label: 'UPI' }
+                                    { value: 'Bank Transfer', label: 'Bank Transfer' }
                                 ]}
                             />
                             <div className="md:col-span-4">

@@ -278,6 +278,8 @@ export default function NurseDashboard() {
                                             <th className="px-4 sm:px-8 py-3 sm:py-5 text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest">Patient / Bed</th>
                                             <th className="px-4 sm:px-8 py-3 sm:py-5 text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest">Latest BP</th>
                                             <th className="px-4 sm:px-8 py-3 sm:py-5 text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest">Temp</th>
+                                            <th className="px-4 sm:px-8 py-3 sm:py-5 text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest">Pulse</th>
+                                            <th className="px-4 sm:px-8 py-3 sm:py-5 text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest">SpO2</th>
                                             <th className="px-4 sm:px-8 py-3 sm:py-5 text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest">Status</th>
                                         </tr>
                                     </thead>
@@ -297,6 +299,12 @@ export default function NurseDashboard() {
                                                     <td className="px-4 sm:px-8 py-3 sm:py-5 font-bold text-slate-600 text-[10px] sm:text-xs">
                                                         {adm.vitals?.temperature ? `${adm.vitals.temperature}°F` : '--'}
                                                     </td>
+                                                    <td className="px-4 sm:px-8 py-3 sm:py-5 font-bold text-slate-600 text-[10px] sm:text-xs">
+                                                        {adm.vitals?.pulse ? `${adm.vitals.pulse} bpm` : '--'}
+                                                    </td>
+                                                    <td className="px-4 sm:px-8 py-3 sm:py-5 font-bold text-slate-600 text-[10px] sm:text-xs">
+                                                        {adm.vitals?.spO2 ? `${adm.vitals.spO2}%` : '--'}
+                                                    </td>
                                                     <td className="px-4 sm:px-8 py-3 sm:py-5">
                                                         <div className="flex flex-col gap-1">
                                                             <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[7px] sm:text-[8px] font-black uppercase tracking-widest w-fit ${adm.vitals?.status === 'Critical' ? 'bg-rose-50 text-rose-600' :
@@ -314,7 +322,7 @@ export default function NurseDashboard() {
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan={4} className="px-4 sm:px-8 py-6 sm:py-10 text-center text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">No active monitoring data</td>
+                                                <td colSpan={6} className="px-4 sm:px-8 py-6 sm:py-10 text-center text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">No active monitoring data</td>
                                             </tr>
                                         )}
                                     </tbody>

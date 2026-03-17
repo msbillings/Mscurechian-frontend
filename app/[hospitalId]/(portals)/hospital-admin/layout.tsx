@@ -135,6 +135,7 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
   const checkAuth = useAuthStore(state => state.checkAuth);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { getPath } = useTenantLink(); // ✅ MULTI-TENANCY
@@ -156,6 +157,7 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
     if (!isInitialized) return;
 
     if (!isAuthenticated) {
+      console.warn(`[Layout: hospital-admin] 🚫 Not authenticated. Redirecting to login.`);
       router.replace("/auth/login");
       return;
     }
@@ -167,15 +169,25 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
         lab: "/lab/dashboard",
         pharmacy: "/pharmacy/dashboard",
         "pharma-owner": "/pharmacy/dashboard",
+        pharmacist: "/pharmacy/dashboard",
+        pharma: "/pharmacy/dashboard",
         admin: "/admin",
         "super-admin": "/admin",
         patient: "/patient/dashboard",
         doctor: "/doctor",
+        nurse: "/nurse",
+        emergency: "/emergency",
+        hr: "/hr",
+        frontdesk: "/frontdesk"
       };
 
-      router.replace(routeMap[userRole || ""] || "/auth/login");
+      const redirectPath = routeMap[userRole || ""] || "/auth/login";
+      console.warn(`[Layout: hospital-admin] 🔄 Role mismatch (${userRole}). Redirecting to: ${redirectPath}`);
+      router.replace(redirectPath);
+    } else {
+      console.log(`[Layout: hospital-admin] ✅ Access Granted. Role: ${userRole}`);
     }
-  }, [isAuthenticated, isInitialized, userRole]);
+  }, [isAuthenticated, isInitialized, userRole, router]);
 
   /** 📡 Realtime Governance Sync */
   useEffect(() => {
@@ -310,13 +322,20 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
         menuItems={hospitalAdminMenu}
         branding={{ logo: Building2, title: "CureChain", subtitle: "Hospital Admin" }}
         currentPath={pathname}
+        onHoverChange={(expanded) => setIsSidebarHovered(expanded)}
         onMenuItemClick={path => {
           setIsSidebarOpen(false);
           startTransition(() => router.push(getPath(path)));
         }}
       />
 
-      <div className="flex flex-col flex-1 lg:ml-64 min-h-screen">
+      <div className={`flex flex-col flex-1 min-h-screen transition-all duration-300 ${
+        isSidebarOpen
+          ? "ml-0"                   // mobile: drawer overlaps, no margin
+          : isSidebarHovered
+            ? "md:ml-64"             // md hover expanded: shift content right
+            : "md:ml-16 lg:ml-64"   // default: 16 on md, 64 on lg
+      }`}>
 
         <SharedNavbar
           onMenuClick={() => setIsSidebarOpen(true)}
@@ -329,15 +348,14 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
           }
           profileLinks={[
             { label: "Official Profile", path: getPath('/hospital-admin/profile'), icon: User },
-            { label: "System Settings", path: getPath('/hospital-admin/settings'), icon: Settings },
           ]}
           onLogout={() => setIsLogoutModalOpen(true)}
         />
 
-        <main className="relative flex-1 p-4 sm:p-6 mt-16">
+        <main className="relative flex-1 p-1 mt-16 max-w-[100vw] overflow-x-hidden">
           {isPending && (
-            <div className="absolute inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50">
-              <div className="h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            <div className="fixed top-0 left-0 right-0 h-1 bg-primary-theme/20 z-[100] overflow-hidden">
+               <div className="h-full bg-primary-theme animate-progress-indeterminate w-full origin-left shrink-0" />
             </div>
           )}
           {children}

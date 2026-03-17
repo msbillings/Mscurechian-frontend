@@ -62,7 +62,7 @@ function CreateHR() {
 
   return (
     <div className="max-w-3xl mx-auto pb-12 space-y-6">
-      <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex items-center gap-4">
+      <div className="bg-white rounded-2xl p-3 md:p-6 border border-gray-100 shadow-sm flex items-center gap-4">
         <button
           onClick={() => router.back()}
           className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all"
@@ -76,7 +76,7 @@ function CreateHR() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Card title="Personal Information" icon={<User className="text-blue-500" />} padding="p-6">
+        <Card title="Personal Information" icon={<User className="text-blue-500" />} padding="p-2 md:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <FormInput label="Full Name" type="text" name="name" required
               value={formData.name} onChange={handleChange} />
@@ -121,7 +121,7 @@ function CreateHR() {
           </div>
         </Card>
 
-        <Card title="Work Information" icon={<Briefcase className="text-indigo-500" />} padding="p-6">
+        <Card title="Work Information" icon={<Briefcase className="text-indigo-500" />} padding="p-2 md:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <FormInput label="Employee ID" type="text" name="employeeId"
               value={formData.employeeId} onChange={handleChange} />

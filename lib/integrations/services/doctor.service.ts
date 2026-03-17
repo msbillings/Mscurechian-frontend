@@ -211,4 +211,7 @@ export const doctorService = {
       `/helpdesk/patients/search?search=${encodeURIComponent(query)}`,
     );
   },
+
+  getPatientHistory: (id: string, scope: 'hospital' | 'all' = 'hospital') =>
+    apiClient<any>(`${DOCTOR_ENDPOINTS.PATIENT_HISTORY(id)}?scope=${scope}`),
 };

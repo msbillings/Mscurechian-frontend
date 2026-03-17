@@ -195,6 +195,8 @@ export default function Home() {
                                 <ScrollReveal distance="30px" duration={800} delay={200}>
                                     <div className="flex flex-wrap items-center justify-center lg:justify-start gap-10 pt-6">
                                         <button
+                                            type="button"
+                                            suppressHydrationWarning
                                             onClick={() => router.push('/portals')}
                                             className="px-10 py-5 bg-primary-theme text-white rounded-md font-black text-xs uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all"
                                         >
@@ -203,6 +205,8 @@ export default function Home() {
 
 
                                         <button
+                                            type="button"
+                                            suppressHydrationWarning
                                             onClick={() => router.push('/contact')}
                                             className="text-slate-900 font-black text-xs uppercase tracking-[0.2em] border-b-2 border-slate-900 pb-1 hover:text-primary-theme hover:border-primary-theme transition-colors"
                                         >
@@ -738,6 +742,8 @@ export default function Home() {
 
                         <div className="mt-16 text-center">
                             <button
+                                type="button"
+                                suppressHydrationWarning
                                 onClick={() => router.push('/contact')}
                                 className="inline-flex items-center gap-3 bg-primary-theme text-white px-10 py-5 rounded-2xl font-bold shadow-xl shadow-primary-theme/20 hover:scale-105 transition-all active:scale-95"
                             >
@@ -975,6 +981,8 @@ const BedManagementMarvel = () => {
                             {steps.map((_, i) => (
                                 <button
                                     key={i}
+                                    type="button"
+                                    suppressHydrationWarning
                                     onClick={() => setCurrentIndex(i)}
                                     className={`w-1 h-6 transition-all duration-500 rounded-full cursor-pointer ${i === currentIndex ? 'bg-white scale-y-150 shadow-md' : 'bg-white/30 hover:bg-white/50'}`}
                                 />

@@ -85,28 +85,29 @@ const IndicatorDetailModal: React.FC<IndicatorDetailModalProps> = ({ isOpen, onC
     if (!isOpen || !indicator) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 md:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 max-h-[90vh] flex flex-col">
                 {/* Header */}
-                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                    <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-2xl bg-${indicator.color}-100 text-${indicator.color}-600`}>
-                            <TrendingUp size={24} />
+                <div className="p-4 md:p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
+                    <div className="flex items-center gap-3 md:gap-4">
+                        <div className={`p-2.5 md:p-3 rounded-2xl bg-${indicator.color}-100 text-${indicator.color}-600`}>
+                            <TrendingUp size={20} className="md:w-6 md:h-6" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">{indicator.title}</h2>
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{selectedDate.month}/{selectedDate.year} Monitoring</p>
+                            <h2 className="text-sm md:text-xl font-black text-slate-900 uppercase tracking-tight">{indicator.title}</h2>
+                            <p className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest">{selectedDate.month}/{selectedDate.year} Monitoring</p>
                         </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-slate-200 rounded-xl text-slate-400 transition-colors"
+                        className="p-1.5 md:p-2 hover:bg-slate-200 rounded-xl text-slate-400 transition-colors"
                     >
-                        <X size={20} />
+                        <X size={18} className="md:w-5 md:h-5" />
                     </button>
                 </div>
 
-                <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="p-4 md:p-8 overflow-y-auto custom-scrollbar">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
                     {/* Left: Indicator Info */}
                     <div className="lg:col-span-1 space-y-6">
                         <div className="space-y-4">
@@ -257,7 +258,8 @@ const IndicatorDetailModal: React.FC<IndicatorDetailModalProps> = ({ isOpen, onC
                 </div>
             </div>
         </div>
-    );
+    </div>
+);
 };
 
 export default IndicatorDetailModal;

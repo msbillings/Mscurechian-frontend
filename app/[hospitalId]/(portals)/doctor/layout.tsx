@@ -107,6 +107,7 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         if (isInitialized) {
             if (!isAuthenticated) {
+                console.warn(`[Layout: doctor] 🚫 Not authenticated. Redirecting to login.`);
                 router.push('/auth/login');
             } else if (!['doctor', 'hospital-admin', 'super-admin', 'nurse'].includes(user?.role || '')) {
                 // Helpdesk has its own portal — redirect away from doctor portal
@@ -114,9 +115,22 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
                     'helpdesk': '/helpdesk',
                     'staff': '/staff',
                     'lab': '/lab/dashboard',
-                    'patient': '/patient/dashboard'
+                    'patient': '/patient/dashboard',
+                    'pharmacy': '/pharmacy/dashboard',
+                    'pharma-owner': '/pharmacy/dashboard',
+                    'pharmacist': '/pharmacy/dashboard',
+                    'pharma': '/pharmacy/dashboard',
+                    'admin': '/admin',
+                    'super-admin': '/admin',
+                    'emergency': '/emergency',
+                    'hr': '/hr',
+                    'frontdesk': '/frontdesk'
                 };
-                router.push(routeMap[user?.role || ''] || '/auth/login');
+                const redirectPath = routeMap[user?.role || ''] || "/auth/login";
+                console.warn(`[Layout: doctor] 🔄 Role mismatch (${user?.role}). Redirecting to: ${redirectPath}`);
+                router.push(redirectPath);
+            } else {
+                console.log(`[Layout: doctor] ✅ Access Granted. Role: ${user?.role}`);
             }
         }
     }, [isAuthenticated, isInitialized, user?.role, router]);

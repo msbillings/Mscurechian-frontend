@@ -255,7 +255,7 @@ export default function PayrollEditPage() {
   return (
     <div className="max-w-4xl mx-auto py-10 px-4 space-y-6 min-h-screen">
       {/* Identity Action Bar */}
-      <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-xs flex items-center justify-between">
+      <div className="bg-white rounded-xl p-3 md:p-6 border border-gray-100 shadow-xs flex items-center justify-between">
          <div className="flex items-center gap-4">
             <button onClick={() => router.back()} className="p-2 hover:bg-gray-50 rounded-lg transition-all">
               <ArrowLeft size={20} className="text-gray-400" />
@@ -266,25 +266,25 @@ export default function PayrollEditPage() {
             </div>
          </div>
          <div className="flex items-center gap-3">
-            <button onClick={setAllPresent} disabled={saving} className="px-6 py-2.5 bg-emerald-50 text-emerald-600 font-bold text-[10px] uppercase tracking-widest rounded-lg hover:bg-emerald-100 transition-all border border-emerald-100 shadow-xs active:scale-95 disabled:opacity-50">
+            <button onClick={setAllPresent} disabled={saving} className="px-2 md:px-6 py-2.5 bg-emerald-50 text-emerald-600 font-bold text-[10px] uppercase tracking-widest rounded-lg hover:bg-emerald-100 transition-all border border-emerald-100 shadow-xs active:scale-95 disabled:opacity-50">
                <UserCheck size={16} className="inline mr-2" /> {saving ? 'Processing...' : 'Mark All Present'}
             </button>
-            <button onClick={handleSave} disabled={saving} className="px-8 py-2.5 bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-bold text-[10px] uppercase tracking-widest rounded-lg hover:bg-black dark:hover:bg-gray-100 transition-all shadow-lg active:scale-95">
+            <button onClick={handleSave} disabled={saving} className="px-2 md:px-8 py-2.5 bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-bold text-[10px] uppercase tracking-widest rounded-lg hover:bg-black dark:hover:bg-gray-100 transition-all shadow-lg active:scale-95">
               {saving ? 'Syncing...' : <><Save size={16} className="inline mr-2" /> Sync Registry</>}
             </button>
          </div>
       </div>
 
       {/* Logic Driver: Attendance Controller */}
-      <div className="bg-emerald-600 rounded-xl p-8 text-white shadow-xl shadow-emerald-500/10 border border-emerald-500/20">
-         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div className="bg-emerald-600 rounded-xl p-2 md:p-4 md:p-8 text-white shadow-xl shadow-emerald-500/10 border border-emerald-500/20">
+         <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-4 gap-6">
             {[
               { label: 'Month Days', value: formData.monthDays, field: 'monthDays', readOnly: true },
               { label: 'Present', value: formData.presentDays || 0, field: 'presentDays', color: 'bg-emerald-500/20' },
               { label: 'Auth Leaves', value: formData.leaveDays || 0, field: 'leaveDays', color: 'bg-white/10' },
               { label: 'Absents (LWP)', value: formData.absentDays || 0, field: 'absentDays', color: 'bg-rose-500/20' },
             ].map(item => (
-              <div key={item.field} className={`p-4 rounded-xl ${item.color || 'bg-white/10'} border border-white/10 text-center`}>
+              <div key={item.field} className={`p-2 md:p-4 rounded-xl ${item.color || 'bg-white/10'} border border-white/10 text-center`}>
                  <p className="text-[8px] font-black uppercase opacity-60 mb-2 tracking-widest">{item.label}</p>
                  <input 
                    type="number" 
@@ -299,7 +299,7 @@ export default function PayrollEditPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
          {/* Earnings Ledger */}
-         <div className="bg-white rounded-xl p-8 border border-gray-100 shadow-xs space-y-6">
+         <div className="bg-white rounded-xl p-2 md:p-4 md:p-8 border border-gray-100 shadow-xs space-y-6">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
                <DollarSign size={14} className="text-emerald-500" /> Auto-Generated Earnings
             </h3>
@@ -332,7 +332,7 @@ export default function PayrollEditPage() {
          </div>
 
          {/* Deductions Ledger */}
-         <div className="bg-white rounded-xl p-8 border border-gray-100 shadow-xs flex flex-col justify-between">
+         <div className="bg-white rounded-xl p-2 md:p-4 md:p-8 border border-gray-100 shadow-xs flex flex-col justify-between">
             <div className="space-y-6">
                <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
                   <Zap size={14} className="text-rose-500" /> Mandatory Deductions
@@ -361,7 +361,7 @@ export default function PayrollEditPage() {
                </div>
             </div>
 
-            <div className="mt-8 p-6 bg-gray-900 rounded-xl text-white shadow-lg overflow-hidden relative">
+            <div className="mt-8 p-3 md:p-6 bg-gray-900 rounded-xl text-white shadow-lg overflow-hidden relative">
                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full -mr-12 -mt-12 blur-2xl" />
                <div className="flex items-center justify-between mb-2 relative z-10">
                   <p className="text-[10px] font-black uppercase opacity-40 tracking-widest">Net Payable Resolution</p>

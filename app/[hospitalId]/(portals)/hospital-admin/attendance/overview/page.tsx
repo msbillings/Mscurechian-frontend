@@ -96,26 +96,26 @@ function AttendanceOverview() {
   ].filter(d => d.value > 0);
 
   return (
-    <div className="space-y-8 ">
+    <div className="p-2 sm:p-4 md:p-6 xl:p-8 space-y-6 md:space-y-8 ">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Attendance Tracking</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-bold mt-1">Real-time overview of your hospital's workforce presence.</p>
+          <h1 className="text-xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Attendance Tracking</h1>
+          <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 font-bold mt-1">Real-time overview of your hospital's workforce presence.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 shadow-sm">
-            <Download className="w-4 h-4" /> Export Report
+          <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs md:text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 shadow-sm">
+            <Download className="w-4 h-4" /> Export
           </button>
-          <button className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-black hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none">
+          <button className="flex items-center gap-2 px-4 md:px-6 py-2 bg-blue-600 text-white rounded-xl text-xs md:text-sm font-black hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none">
             Update Shift
           </button>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 group hover:border-blue-500">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+        <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 group hover:border-blue-500">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110">
               <Users className="w-6 h-6" />
@@ -131,7 +131,7 @@ function AttendanceOverview() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 group hover:border-emerald-500">
+        <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 group hover:border-emerald-500">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110">
               <CheckCircle2 className="w-6 h-6" />
@@ -147,7 +147,7 @@ function AttendanceOverview() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 group hover:border-amber-500">
+        <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 group hover:border-amber-500">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:scale-110">
               <Clock className="w-6 h-6" />
@@ -163,7 +163,7 @@ function AttendanceOverview() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 group hover:border-indigo-500">
+        <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 group hover:border-indigo-500">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:scale-110">
               <TrendingUp className="w-6 h-6" />
@@ -180,9 +180,9 @@ function AttendanceOverview() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
         {/* Weekly Trend Chart */}
-        <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="lg:col-span-1 xl:col-span-2 bg-white dark:bg-gray-800 p-2 md:p-4 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h3 className="text-xl font-black text-gray-900 dark:text-white">Weekly Presence Flux</h3>
@@ -239,7 +239,7 @@ function AttendanceOverview() {
         </div>
 
         {/* Today's Distribution */}
-        <div className="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 p-2 md:p-4 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700">
           <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">Presence Ratio</h3>
           <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-8">Daily status breakdown</p>
 
@@ -283,8 +283,8 @@ function AttendanceOverview() {
       </div>
 
       {/* Recent Activity Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-        <div className="p-8 border-b border-gray-100 dark:border-gray-700 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-gray-800 rounded-[1.5rem] md:rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div className="p-2 md:p-4 md:p-8 border-b border-gray-100 dark:border-gray-700 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h3 className="text-xl font-black text-gray-900 dark:text-white">Recent Personnel Activity</h3>
             <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-1">Live check-in/out stream</p>
@@ -307,14 +307,14 @@ function AttendanceOverview() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full text-left">
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-700/30">
-                <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Personnel</th>
-                <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
-                <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Check In</th>
-                <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Check Out</th>
-                <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
+                <th className="px-4 md:px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Personnel</th>
+                <th className="px-4 md:px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Status</th>
+                <th className="px-4 md:px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Check In</th>
+                <th className="px-4 md:px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Check Out</th>
+                <th className="px-4 md:px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -331,19 +331,19 @@ function AttendanceOverview() {
                 })
                 .map((record) => (
                   <tr key={record._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/10 group">
-                    <td className="px-8 py-5">
+                    <td className="px-4 md:px-8 py-5">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-sm">
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-xs md:text-sm">
                           {record.staff?.user?.name?.charAt(0)}
                         </div>
                         <div>
-                          <p className="text-sm font-black text-gray-900 dark:text-white leading-none">{record.staff?.user?.name}</p>
-                          <p className="text-[10px] font-bold text-gray-400 uppercase mt-1">{record.staff?.designation || 'Staff'}</p>
+                          <p className="text-xs md:text-sm font-black text-gray-900 dark:text-white leading-none">{record.staff?.user?.name}</p>
+                          <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase mt-1">{record.staff?.designation || 'Staff'}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-8 py-5">
-                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-black uppercase border ${record.status === 'present' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                    <td className="px-4 md:px-8 py-5">
+                      <span className={`inline-flex items-center gap-1 px-2 md:px-3 py-1 rounded-full text-[9px] md:text-[10px] font-black uppercase border ${record.status === 'present' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
                         record.status === 'late' ? 'bg-amber-50 text-amber-700 border-amber-100' :
                           record.status === 'absent' ? 'bg-red-50 text-red-700 border-red-100' :
                             record.status === 'on-leave' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
@@ -356,31 +356,31 @@ function AttendanceOverview() {
                         {record.status}
                       </span>
                     </td>
-                    <td className="px-8 py-5">
+                    <td className="px-4 md:px-8 py-5">
                       {record.status !== 'on-leave' ? (
                         <div className="flex flex-col">
-                          <span className="text-sm font-bold text-gray-900 dark:text-white">
+                          <span className="text-xs md:text-sm font-bold text-gray-900 dark:text-white whitespace-nowrap">
                             {record.checkIn?.time ? new Date(record.checkIn.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                           </span>
-                          <span className="text-[10px] font-bold text-gray-400 mt-0.5">{record.checkIn?.method || 'Portal'}</span>
+                          <span className="text-[9px] md:text-[10px] font-bold text-gray-400 mt-0.5">{record.checkIn?.method || 'Portal'}</span>
                         </div>
                       ) : (
-                        <span className="text-xs font-bold text-gray-400">N/A</span>
+                        <span className="text-[10px] font-bold text-gray-400">N/A</span>
                       )}
                     </td>
-                    <td className="px-8 py-5">
+                    <td className="px-4 md:px-8 py-5">
                       {record.status !== 'on-leave' ? (
                         <div className="flex flex-col">
-                          <span className="text-sm font-bold text-gray-900 dark:text-white">
+                          <span className="text-xs md:text-sm font-bold text-gray-900 dark:text-white whitespace-nowrap">
                             {record.checkOut?.time ? new Date(record.checkOut.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                           </span>
-                          <span className="text-[10px] font-bold text-gray-400 mt-0.5">{record.checkOut?.time ? 'Portal' : 'N/A'}</span>
+                          <span className="text-[9px] md:text-[10px] font-bold text-gray-400 mt-0.5">{record.checkOut?.time ? 'Portal' : 'N/A'}</span>
                         </div>
                       ) : (
-                        <span className="text-xs font-bold text-gray-400">N/A</span>
+                        <span className="text-[10px] font-bold text-gray-400">N/A</span>
                       )}
                     </td>
-                    <td className="px-8 py-5">
+                    <td className="px-4 md:px-8 py-5">
                       <button className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-xl text-gray-400 hover:text-blue-500">
                         <MoreHorizontal className="w-5 h-5" />
                       </button>
@@ -389,13 +389,13 @@ function AttendanceOverview() {
                 ))}
               {recentAttendance.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-8 py-10 text-center">
-                    <p className="text-gray-500 dark:text-gray-400 font-bold italic">No recent activity detected in operational cycles.</p>
+                  <td colSpan={5} className="px-4 md:px-8 py-10 text-center">
+                    <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 font-bold italic">No recent activity detected.</p>
                   </td>
                 </tr>
               )}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </div>
     </div>

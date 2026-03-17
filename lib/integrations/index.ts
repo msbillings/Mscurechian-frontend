@@ -1,4 +1,5 @@
 export * from './services';
+export * from './api';
 export * from './actions/admin.actions';
 export * from './actions/auth.actions';
 export * from './actions/calendar.actions';

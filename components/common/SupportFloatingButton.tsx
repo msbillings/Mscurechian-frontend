@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Headset } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface SupportFloatingButtonProps {
     onClick: () => void;
@@ -10,17 +11,28 @@ interface SupportFloatingButtonProps {
 
 const SupportFloatingButton: React.FC<SupportFloatingButtonProps> = ({ onClick, label = "HELP & SUPPORT" }) => {
     return (
-        <div className="fixed bottom-8 right-8 z-[60] flex items-center justify-center group">
+        <motion.div 
+            drag
+            dragConstraints={{ 
+                left: -window.innerWidth + 100, 
+                right: 0, 
+                top: -window.innerHeight + 100, 
+                bottom: 0 
+            }}
+            whileDrag={{ scale: 1.1, cursor: "grabbing" }}
+            initial={{ x: 0, y: 0 }}
+            className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[100] flex items-center justify-center group touch-none"
+        >
             {/* Rotating Text Outside the Button */}
-            <div className="absolute w-24 h-24 sm:w-28 sm:h-28 animate-[spin_10s_linear_infinite] pointer-events-none">
+            <div className="absolute w-16 h-16 sm:w-28 sm:h-28 animate-[spin_12s_linear_infinite] pointer-events-none origin-center">
                 <svg viewBox="0 0 100 100" className="w-full h-full">
                     <defs>
                         <path
                             id="supportCirclePath"
-                            d="M 50, 50 m -37, 0 a 37,37 0 1,1 74,0 a 37,37 0 1,1 -74,0"
+                            d="M 50, 50 m -35, 0 a 35,35 0 1,1 70,0 a 35,35 0 1,1 -70,0"
                         />
                     </defs>
-                    <text className="text-[8.5px] font-black uppercase tracking-[0.2em] fill-black">
+                    <text className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-[0.2em] fill-black dark:fill-white opacity-60">
                         <textPath xlinkHref="#supportCirclePath">
                             {label} • {label} •
                         </textPath>
@@ -30,7 +42,7 @@ const SupportFloatingButton: React.FC<SupportFloatingButtonProps> = ({ onClick, 
 
             <button
                 onClick={onClick}
-                className="relative w-14 h-14 sm:w-16 sm:h-16 bg-primary-theme rounded-full flex items-center justify-center text-white transform hover:scale-110 active:scale-95 transition-all duration-300 shadow-2xl shadow-primary-theme/40 z-10"
+                className="relative w-10 h-10 sm:w-16 sm:h-16 bg-primary-theme rounded-full flex items-center justify-center text-white transform hover:scale-110 active:scale-95 transition-all duration-300 shadow-2xl shadow-primary-theme/40 z-10"
                 aria-label="Support and Feedback"
             >
                 {/* Background Animation Effect */}
@@ -40,10 +52,10 @@ const SupportFloatingButton: React.FC<SupportFloatingButtonProps> = ({ onClick, 
                 <div className="absolute inset-0 animate-pulse bg-primary-theme/20 rounded-full pointer-events-none" />
 
                 <div className="relative flex flex-col items-center">
-                    <Headset className="w-7 h-7 sm:w-8 sm:h-8 text-white group-hover:rotate-12 transition-transform duration-300" />
+                    <Headset className="w-5 h-5 sm:w-8 sm:h-8 text-white group-hover:rotate-12 transition-transform duration-300" />
                 </div>
             </button>
-        </div>
+        </motion.div>
     );
 };
 

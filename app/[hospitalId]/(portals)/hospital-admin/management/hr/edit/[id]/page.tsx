@@ -92,7 +92,7 @@ function EditHR() {
 
   return (
     <div className="w-full pb-12 space-y-6">
-      <div className="w-full bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex items-center gap-4">
+      <div className="w-full bg-white rounded-2xl p-3 md:p-6 border border-gray-100 shadow-sm flex items-center gap-4">
         <button
           onClick={() => router.back()}
           className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all"
@@ -109,7 +109,7 @@ function EditHR() {
 
         {/* First Column: Personal Information */}
         <div className="col-span-1">
-          <Card title="Personal Information" icon={<User className="text-blue-500" />} padding="p-6">
+          <Card title="Personal Information" icon={<User className="text-blue-500" />} padding="p-2 md:p-6">
             <div className="grid grid-cols-1 gap-5">
               <FormInput label="Full Name" type="text" name="name" required
                 value={formData.name} onChange={handleChange} />
@@ -148,7 +148,7 @@ function EditHR() {
 
         {/* Second Column: Work Information */}
         <div className="col-span-1">
-          <Card title="Work Information" icon={<Briefcase className="text-indigo-500" />} padding="p-6">
+          <Card title="Work Information" icon={<Briefcase className="text-indigo-500" />} padding="p-2 md:p-6">
             <div className="grid grid-cols-1 gap-5">
               <FormInput label="Employee ID" type="text" name="employeeId"
                 value={formData.employeeId} onChange={handleChange} />
@@ -162,7 +162,7 @@ function EditHR() {
 
         {/* Third Column: Security & Actions */}
         <div className="col-span-1 space-y-6">
-          <Card title="Security" icon={<Lock className="text-red-500" />} padding="p-6">
+          <Card title="Security" icon={<Lock className="text-red-500" />} padding="p-2 md:p-6">
             <div className="grid grid-cols-1 gap-5">
               <div className="relative">
                 <FormInput label="Update Password" type={showPassword ? "text" : "password"} name="password"
@@ -178,7 +178,7 @@ function EditHR() {
             </div>
           </Card>
 
-          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col gap-4">
+          <div className="bg-white rounded-2xl p-3 md:p-6 border border-gray-100 shadow-sm flex flex-col gap-4">
             <button
               type="submit"
               disabled={saving}

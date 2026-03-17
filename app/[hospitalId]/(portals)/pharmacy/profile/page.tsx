@@ -28,6 +28,7 @@ import {
     ShieldCheck
 } from 'lucide-react';
 import { PharmacyProfileSkeleton } from '@/components/ui/skeletons';
+import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
 
 /**
  * PharmacyProfile Component
@@ -66,6 +67,9 @@ const PharmacyProfile = () => {
         degreeCertificate: '',
         registrationCertificate: ''
     });
+
+    // Document Viewer State
+    const [docViewer, setDocViewer] = useState<{ url: string; label: string } | null>(null);
 
     // Image/Logo State
     const [logo, setLogo] = useState<string | null>(null);
@@ -470,25 +474,25 @@ const PharmacyProfile = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">Shop / Entity Name</label>
-                                    <input
-                                        name="shopName"
-                                        value={formData.shopName}
-                                        onChange={handleInputChange}
-                                        disabled={!isEditing}
-                                        className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl px-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                        placeholder="ENTER SHOP NAME"
-                                    />
+                                <input
+                                    name="shopName"
+                                    value={formData.shopName}
+                                    onChange={handleInputChange}
+                                    disabled={!isEditing}
+                                    className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl px-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    placeholder="ENTER SHOP NAME"
+                                />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">Owner Name</label>
-                                    <input
-                                        name="name"
-                                        value={formData.name}
-                                        onChange={handleInputChange}
-                                        disabled={!isEditing}
-                                        className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl px-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                        placeholder="FULL LEGAL NAME"
-                                    />
+                                <input
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleInputChange}
+                                    disabled={!isEditing}
+                                    className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl px-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    placeholder="FULL LEGAL NAME"
+                                />
                             </div>
                             <div className="space-y-2 col-span-full">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">Full Service Address</label>
@@ -536,14 +540,14 @@ const PharmacyProfile = () => {
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">Drug License No.</label>
-                                    <input
-                                        name="licenseNo"
-                                        value={formData.licenseNo}
-                                        onChange={handleInputChange}
-                                        disabled={!isEditing}
-                                        className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl px-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500 dark:text-white uppercase transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                        placeholder="DL-00000-00"
-                                    />
+                                <input
+                                    name="licenseNo"
+                                    value={formData.licenseNo}
+                                    onChange={handleInputChange}
+                                    disabled={!isEditing}
+                                    className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl px-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500 dark:text-white uppercase transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    placeholder="DL-00000-00"
+                                />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">Communication Line</label>
@@ -675,7 +679,10 @@ const PharmacyProfile = () => {
                                                         type="button"
                                                         onClick={(e) => {
                                                             e.preventDefault();
-                                                            window.open(formData.documents?.[doc.key as keyof typeof formData.documents]?.url, '_blank');
+                                                            setDocViewer({
+                                                                url: formData.documents?.[doc.key as keyof typeof formData.documents]?.url,
+                                                                label: doc.label
+                                                            });
                                                         }}
                                                         className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                                                         title="View Document"
@@ -698,6 +705,14 @@ const PharmacyProfile = () => {
                     </div>
                 </div>
             </div>
+
+            {/* DOCUMENT VIEWER MODAL */}
+            <DocumentViewerModal
+                isOpen={!!docViewer}
+                onClose={() => setDocViewer(null)}
+                url={docViewer?.url || ''}
+                title={docViewer?.label || ''}
+            />
         </div>
     );
 };

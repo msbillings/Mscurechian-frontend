@@ -20,11 +20,12 @@ import {
 } from 'lucide-react';
 import { Card, Button } from '@/components/admin';
 import { dischargeService } from '@/lib/integrations/services/discharge.service';
-import { PrintableDischargeSummary } from './PrintableDischargeSummary';
-import { useReactToPrint } from 'react-to-print';
-import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
+import ClinicalReceipt from '@/components/helpdesk/ClinicalReceipt';
+import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
+import toast from 'react-hot-toast';
+import { useTenantLink } from '@/hooks/useTenantLink';
 
 interface DischargeHistoryProps {
     basePath: string;
@@ -32,6 +33,7 @@ interface DischargeHistoryProps {
 
 export function DischargeHistory({ basePath }: DischargeHistoryProps) {
     const router = useRouter();
+    const { getPath } = useTenantLink();
     const { user } = useAuthStore();
     const [records, setRecords] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -50,13 +52,20 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
     const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
 
     // Printing state
-    const [printData, setPrintData] = useState<any>(null);
-    const printRef = useRef<HTMLDivElement>(null);
+    const [receiptData, setReceiptData] = useState<any>(null);
+    const [hospitalDetails, setHospitalDetails] = useState<any>({ name: 'Hospital' });
 
-    const handleDirectPrint = useReactToPrint({
-        contentRef: printRef,
-        documentTitle: `Discharge_Summary_${printData?.mrn || 'Record'}`,
-    });
+    useEffect(() => {
+        const fetchHospital = async () => {
+            try {
+                const res = await hospitalAdminService.getHospital();
+                if (res?.hospital) setHospitalDetails(res.hospital);
+            } catch (e) {
+                console.error("Failed to fetch hospital info", e);
+            }
+        };
+        fetchHospital();
+    }, []);
 
     // Debounce search - reduced to 300ms for snappier feel
     useEffect(() => {
@@ -121,13 +130,58 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
     const triggerPrint = async (record: any) => {
         try {
             setLoading(true);
-            // Fetch full record to ensure all details (vitals, diagnosis, etc.) are included for printing
-            const fullRecord = await dischargeService.getRecordById(record._id);
-            setPrintData(fullRecord.data);
-            // Wait for state update to trigger print
-            setTimeout(() => {
-                handleDirectPrint();
-            }, 100);
+            const response = await dischargeService.getRecordById(record._id);
+            const data = response.data;
+
+            setReceiptData({
+                patient: {
+                    name: data.patientName,
+                    mrn: data.mrn,
+                    age: data.age,
+                    gender: data.gender,
+                    mobile: data.phone,
+                    email: data.email,
+                    address: data.address,
+                    emergencyContact: data.attendantName ? `${data.attendantName} (${data.attendantPhone})` : '',
+                    bloodGroup: data.bloodGroup,
+                    dateOfBirth: data.dob,
+                    allergies: data.allergyHistory,
+                    medicalHistory: data.pastMedicalHistory,
+                    symptoms: data.reasonForAdmission,
+                    diagnosis: data.diagnosis,
+                    provisionalDiagnosis: data.provisionalDiagnosis,
+                    treatmentGiven: data.treatmentGiven,
+                    surgicalProcedures: data.surgicalProcedures,
+                    investigationsPerformed: data.investigationsPerformed,
+                    hospitalCourse: data.hospitalCourse,
+                    conditionAtDischarge: data.conditionAtDischarge,
+                    medicationsPrescribed: data.medicationsPrescribed,
+                    adviceAtDischarge: data.adviceAtDischarge,
+                    activityRestrictions: data.activityRestrictions,
+                    dietInstructions: data.dietInstructions,
+                    warningSigns: data.warningSigns,
+                    followUpDate: data.followUpDate,
+                    dischargeType: data.dischargeType || 'Final Discharge',
+                    vitals: data.vitals
+                },
+                appointment: {
+                    type: 'Final Discharge Summary',
+                    doctorName: data.consultants?.[0] || data.primaryDoctor || data.suggestedDoctorName || 'Assigned Physician',
+                    appointmentId: data._id || `DIS-${Date.now()}`,
+                    date: data.admissionDate ? new Date(data.admissionDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB'),
+                    time: data.admissionDate ? new Date(data.admissionDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString(),
+                },
+                payment: {
+                    amount: Math.round(data.totalBillAmount || 0),
+                    status: 'Settled',
+                    method: data.paymentMode || 'Cash',
+                    receiptNumber: data._id,
+                    advanceAmount: Math.round(data.advanceAmount || 0),
+                    remainingPaid: Math.round(data.remainingAmount || (data.totalPaidAmount - data.advanceAmount) || 0),
+                    totalPaidAmount: Math.round(data.totalPaidAmount > data.advanceAmount ? data.totalPaidAmount : (data.advanceAmount + (data.remainingAmount || 0))),
+                    totalBillAmount: Math.round(data.totalBillAmount || 0)
+                }
+            });
         } catch (err: any) {
             toast.error("Failed to fetch full record for printing");
             console.error(err);
@@ -164,87 +218,86 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50/50">
-            <div className="w-full p-[1px] sm:py-4 space-y-2 sm:space-y-5">
+        <div className="min-h-screen bg-slate-50/50">
+            <div className="w-full p-1 sm:p-2 md:p-3 space-y-4 md:space-y-6">
                 {/* CONSOLIDATED HEADER & CONTROLS */}
-                <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2 pt-2">
-                        <div className="flex items-center gap-3">
+                <div className="bg-white p-4 md:p-5 rounded-2xl border border-slate-200 shadow-sm transition-all duration-300">
+                    <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
+                        <div className="flex items-center gap-4">
                             <button
                                 type="button"
                                 suppressHydrationWarning
                                 onClick={() => router.push(basePath)}
-                                className="p-2 bg-slate-100 rounded-xl text-slate-400 hover:text-blue-600 transition-all shadow-sm"
+                                className="p-2.5 bg-slate-50 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all border border-slate-200 shadow-sm"
                                 title="Back to Portal"
                             >
-                                <ArrowLeft size={20} />
+                                <ArrowLeft size={18} />
                             </button>
                             <div>
-                                <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
-                                    Discharge History
+                                <h1 className="text-lg md:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                                    DISCHARGE HISTORY
                                 </h1>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                                <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">
                                     {pagination.total} Committed Summaries
                                 </p>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                            <div className="relative w-full md:w-80 group">
+                        <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
+                            <div className="relative w-full sm:w-80 group">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={16} />
                                 <input
                                     type="text"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    placeholder="SEARCH NAME / MRN..."
+                                    placeholder="Search Name or MRN..."
                                     className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold uppercase tracking-tight outline-none focus:bg-white focus:border-blue-500 shadow-inner transition-all"
                                 />
                             </div>
 
                             {user?.role === 'hospital-admin' && (
-                                <div className="flex items-center gap-2">
-                                    <Link
-                                        href="/hospital-admin/transactions?type=Discharge"
-                                        className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all text-[10px] uppercase tracking-wider shadow-lg shadow-emerald-200"
-                                    >
-                                        <CreditCard size={16} />
-                                        See Transactions
-                                    </Link>
-                                </div>
+                                <Link
+                                    href={getPath("/hospital-admin/transactions?type=Discharge")}
+                                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all text-[10px] uppercase tracking-wider shadow-lg shadow-emerald-200"
+                                >
+                                    <CreditCard size={16} />
+                                    Transactions
+                                </Link>
                             )}
                         </div>
                     </div>
                 </div>
 
                 {/* Statistics Overview */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-100 flex items-center justify-between">
-                        <div>
-                            <p className="text-[10px] font-bold uppercase tracking-wider opacity-70">Total Summaries</p>
-                            <h3 className="text-2xl font-black leading-none mt-1">{pagination.total}</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                    <div className="p-5 bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-2xl shadow-xl shadow-blue-500/10 flex items-center justify-between group overflow-hidden relative">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mt-12 group-hover:scale-110 transition-transform duration-700"></div>
+                        <div className="relative z-10">
+                            <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Total Summaries</p>
+                            <h3 className="text-3xl font-black leading-none mt-2 tracking-tighter">{pagination.total}</h3>
                         </div>
-                        <FileEdit size={24} className="opacity-20" />
+                        <FileEdit size={32} className="opacity-20 relative z-10" />
                     </div>
 
-                    <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm flex items-center justify-between">
+                    <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                                <Filter size={18} />
+                            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                                <Filter size={20} />
                             </div>
                             <div>
-                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">View</p>
-                                <h3 className="text-sm font-black text-blue-600 mt-1 uppercase leading-none">
-                                    {debouncedSearch ? 'Filtered' : 'All Data'}
+                                <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none">View Mode</p>
+                                <h3 className="text-[10px] font-black text-blue-600 mt-1 uppercase leading-none">
+                                    {debouncedSearch ? 'Filtered Results' : 'Comprehensive Data'}
                                 </h3>
                             </div>
                         </div>
 
-                        <div className="flex bg-slate-100 p-1 rounded-xl">
+                        <div className="flex bg-slate-100 p-1 rounded-xl self-start sm:self-center border border-slate-200/50">
                             <button
                                 type="button"
                                 suppressHydrationWarning
                                 onClick={() => setViewMode('grid')}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm border border-slate-200/50' : 'text-slate-400 hover:text-slate-600'}`}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                             >
                                 <LayoutGrid size={12} /> Card
                             </button>
@@ -252,47 +305,47 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
                                 type="button"
                                 suppressHydrationWarning
                                 onClick={() => setViewMode('table')}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm border border-slate-200/50' : 'text-slate-400 hover:text-slate-600'}`}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                             >
                                 <TableIcon size={12} /> Table
                             </button>
                         </div>
                     </div>
 
-                    <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm flex items-center justify-between">
+                    <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:col-span-2 lg:col-span-1">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
-                                <Calendar size={18} />
+                            <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
+                                <Calendar size={20} />
                             </div>
                             <div>
-                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Page Index</p>
-                                <h3 className="text-sm font-black text-slate-900 mt-1 uppercase leading-none">
-                                    {page} of {pagination.totalPages}
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Page Index</p>
+                                <h3 className="text-base font-black text-slate-900 mt-1 uppercase leading-none">
+                                    {page} <span className="text-[10px] text-slate-300 mx-1">/</span> {pagination.totalPages}
                                 </h3>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/50 shadow-inner">
+                        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/50 self-start sm:self-center">
                             <button
                                 type="button"
                                 suppressHydrationWarning
                                 onClick={() => setPage(p => Math.max(1, p - 1))}
                                 disabled={page === 1}
-                                className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-blue-600 disabled:opacity-20 transition-all"
+                                className="p-2 rounded-lg hover:bg-white text-slate-400 hover:text-blue-600 disabled:opacity-20 transition-all"
                             >
-                                <ChevronLeft size={14} />
+                                <ChevronLeft size={16} />
                             </button>
-                            <div className="px-2 py-1 text-[10px] font-black text-blue-600 bg-white rounded shadow-sm min-w-[32px] text-center">
-                                {page}/{pagination.totalPages}
+                            <div className="px-3 py-1 text-[10px] font-black text-blue-600 bg-white rounded shadow-sm min-w-[40px] text-center">
+                                {page}
                             </div>
                             <button
                                 type="button"
                                 suppressHydrationWarning
                                 onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
                                 disabled={page === pagination.totalPages || pagination.totalPages === 0}
-                                className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-blue-600 disabled:opacity-20 transition-all font-black"
+                                className="p-2 rounded-lg hover:bg-white text-slate-400 hover:text-blue-600 disabled:opacity-20 transition-all font-black"
                             >
-                                <ChevronRight size={14} />
+                                <ChevronRight size={16} />
                             </button>
                         </div>
                     </div>
@@ -300,9 +353,9 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
 
                 {/* Content Area */}
                 {viewMode === 'table' ? (
-                    <Card className="rounded-2xl border-slate-200 shadow-xl shadow-blue-900/5 overflow-hidden bg-white">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
+                    <Card className="rounded-2xl border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden bg-white">
+                        <div className="overflow-x-auto no-scrollbar">
+                            <table className="w-full text-left border-collapse min-w-[800px]">
                                 <thead>
                                     <tr className="bg-slate-50 border-b border-slate-200">
                                         <th className="px-2 sm:px-6 py-2 sm:py-4 text-[7px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest">Patient Details</th>
@@ -339,7 +392,7 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
                                                 </td>
                                                 <td className="px-2 sm:px-6 py-2 sm:py-4">
                                                     <div className="flex flex-col items-center gap-1">
-                                                        <span className="px-1 py-0.5 bg-slate-50 border border-slate-100 rounded text-[7px] sm:text-[9px] font-black text-slate-500 uppercase tracking-widest">MRN: {record.mrn}</span>
+                                                        <span className="px-1 py-0.5 bg-slate-50 border border-slate-100 rounded text-[7px] sm:text-[9px] font-black text-slate-500 uppercase tracking-tight">MRN: {record.mrn}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-2 sm:px-6 py-2 sm:py-4">
@@ -403,7 +456,7 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
                         </div>
                     </Card>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                         {loading ? (
                             Array(6).fill(0).map((_, i) => (
                                 <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm animate-pulse space-y-4">
@@ -469,14 +522,16 @@ export function DischargeHistory({ basePath }: DischargeHistoryProps) {
                 )}
             </div>
 
-            {/* Hidden Printable Component */}
-            <div className="hidden">
-                <PrintableDischargeSummary
-                    ref={printRef}
-                    data={printData}
-                    consultants={printData?.consultants || []}
+            {/* Enhanced Receipt Modal */}
+            {receiptData && (
+                <ClinicalReceipt
+                    hospital={hospitalDetails}
+                    patient={receiptData.patient}
+                    appointment={receiptData.appointment}
+                    payment={receiptData.payment}
+                    onClose={() => setReceiptData(null)}
                 />
-            </div>
+            )}
         </div>
     );
 }

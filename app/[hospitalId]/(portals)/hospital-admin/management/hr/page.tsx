@@ -111,21 +111,21 @@ function HospitalAdminHRManagement() {
   }
 
   return (
-    <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
-      <div className="flex justify-between items-center">
+    <div className="p-2 sm:p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8 bg-slate-50/50 min-h-screen">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">HR Management</h1>
-          <p className="text-sm text-slate-500 font-medium mt-1">Manage human resource personnel for your hospital</p>
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">HR Management</h1>
+          <p className="text-xs md:text-sm text-slate-500 font-medium mt-1">Manage human resource personnel for your hospital</p>
         </div>
         <button
           onClick={() => router.push('hr/create')}
-          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 md:px-6 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
         >
           <Plus size={16} strokeWidth={3} /> Add HR Manager
         </button>
       </div>
 
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+      <div className="bg-white p-2 md:p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
           <input
@@ -147,15 +147,15 @@ function HospitalAdminHRManagement() {
           <p className="text-sm text-slate-400 mt-2 font-medium">Add your first HR manager to start managing staff.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {filteredHRs.map((hr) => (
             <div key={hr._id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col group overflow-hidden">
-              <div className="p-6 bg-slate-50 border-b border-slate-100 flex items-center gap-4">
+              <div className="p-2 md:p-6 bg-slate-50 border-b border-slate-100 flex items-center gap-4">
                 <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
                   <Users size={24} strokeWidth={2.5} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-lg font-black text-slate-900 truncate">{hr.name}</h3>
+                  <h3 className="text-sm md:text-lg font-black text-slate-900 truncate">{hr.name}</h3>
                   <div className="flex items-center gap-2 mt-1">
                     <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border ${hr.status === 'inactive' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
                       {hr.status || 'Active'}
@@ -164,7 +164,7 @@ function HospitalAdminHRManagement() {
                 </div>
               </div>
 
-              <div className="p-6 space-y-4 flex-1">
+              <div className="p-2 md:p-6 space-y-4 flex-1">
                 <div className="space-y-2.5">
                   <div className="flex items-center gap-3">
                     <Mail size={12} className="text-slate-400" />

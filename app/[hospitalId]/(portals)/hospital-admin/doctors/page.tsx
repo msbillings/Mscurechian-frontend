@@ -24,10 +24,13 @@ import {
   ShieldOff
 } from "lucide-react";
 import { PageHeader, Card, Button } from "@/components/admin";
+import { RegistrySkeleton } from "@/components/admin/Skeletons";
 import { ConfirmModal } from '@/components/admin/Modal';
+import { useTenantLink } from '@/hooks/useTenantLink';
 
 function HospitalAdminDoctors() {
   const router = useRouter();
+  const { getPath } = useTenantLink();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSpecialty, setFilterSpecialty] = useState("");
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
@@ -45,9 +48,9 @@ function HospitalAdminDoctors() {
         throw error;
       }
     },
-    staleTime: 0,
+    staleTime: 30000,
     gcTime: 15 * 60 * 1000,
-    refetchOnMount: 'always',
+    placeholderData: (previousData) => previousData,
     retry: 1,
   });
 
@@ -140,19 +143,23 @@ function HospitalAdminDoctors() {
   }), [doctors, searchTerm, filterSpecialty]);
 
 
-  if (loading) {
+  if (loading && !doctors.length) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center">
-          <div className="h-12 w-12 border-4 border-gray-200 border-t-blue-600 rounded-full spin mx-auto mb-4"></div>
-          <p style={{ color: 'var(--secondary-color)' }}>Loading doctors...</p>
+      <div className="p-3 md:p-8 space-y-8 bg-slate-50/50 min-h-screen">
+        <div className="flex justify-between items-center mb-8">
+          <div className="space-y-2">
+            <div className="h-8 w-64 bg-slate-200 rounded-xl animate-pulse"></div>
+            <div className="h-4 w-40 bg-slate-100 rounded-lg animate-pulse"></div>
+          </div>
+          <div className="h-10 w-44 bg-slate-200 rounded-xl animate-pulse"></div>
         </div>
+        <RegistrySkeleton gridCol={3} count={6} />
       </div>
     );
   }
 
   return (
-    <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
+    <div className="p-3 md:p-8 space-y-8 bg-slate-50/50 min-h-screen">
       {/* Simple Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -160,15 +167,15 @@ function HospitalAdminDoctors() {
           <p className="text-sm text-slate-500 font-medium mt-1">Registry of {doctors.length} verified medical staff</p>
         </div>
         <button
-          onClick={() => router.push('/hospital-admin/doctors/create')}
-          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all"
+          onClick={() => router.push(getPath('/hospital-admin/doctors/create'))}
+          className="flex items-center gap-2 px-3 md:px-6 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all"
         >
           <Plus size={16} strokeWidth={3} /> Onboard Physician
         </button>
       </div>
 
       {/* Simple Controller */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
+      <div className="bg-white p-2 md:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
         <div className="relative flex-1 w-full">
           <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
           <input
@@ -208,8 +215,8 @@ function HospitalAdminDoctors() {
           {filteredDoctors.map((doctor) => (
             <div key={doctor._id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col group overflow-hidden">
               {/* Pro Header */}
-              <div className="p-6 bg-slate-50 relative border-b border-slate-100">
-                <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+              <div className="p-2 md:p-6 bg-slate-50 relative border-b border-slate-100">
+                <div className="absolute top-0 right-0 p-2 md:p-4 md:p-8 opacity-5 pointer-events-none">
                   <Stethoscope size={80} className="text-slate-900" />
                 </div>
                 <div className="relative z-10 flex items-center gap-4">
@@ -221,7 +228,7 @@ function HospitalAdminDoctors() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-lg font-black text-slate-900 truncate leading-tight">{doctor.name}</h3>
+                    <h3 className="text-sm md:text-lg font-black text-slate-900 truncate leading-tight">{doctor.name}</h3>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-400/10 px-2 py-0.5 rounded border border-blue-400/20">
                         {doctor.doctorId || 'ID_PENDING'}
@@ -236,7 +243,7 @@ function HospitalAdminDoctors() {
               </div>
 
               {/* Pro Body */}
-              <div className="p-6 flex-1 space-y-4">
+              <div className="p-2 md:p-6 flex-1 space-y-4">
                 <div className="flex flex-wrap gap-2 mb-2">
                   {(doctor.specialties || []).slice(0, 2).map((s: string, i: number) => (
                     <span key={i} className="text-[10px] font-black text-slate-500 uppercase tracking-tighter bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
@@ -277,7 +284,7 @@ function HospitalAdminDoctors() {
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center bg-slate-50/50 p-4 rounded-xl mb-4">
+                <div className="flex justify-between items-center bg-slate-50/50 p-2 md:p-4 rounded-xl mb-4">
                   <div className="text-center flex-1 border-r border-slate-100">
                     <p className="text-[10px] font-bold text-slate-400 uppercase mb-0.5">Consultation</p>
                     <p className="text-sm font-black text-slate-900">₹{doctor.consultationFee || '0'}</p>
@@ -292,14 +299,14 @@ function HospitalAdminDoctors() {
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => router.push(`/hospital-admin/doctors/${doctor.doctorProfileId || doctor._id}`)}
+                    onClick={() => router.push(getPath(`/hospital-admin/doctors/${doctor.doctorProfileId || doctor._id}`))}
                     className="flex-1 py-3 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all"
                   >
                     Full Profile
                   </button>
                   <div className="flex gap-1">
                     <button
-                      onClick={() => router.push(`/hospital-admin/doctors/edit/${doctor._id}`)}
+                      onClick={() => router.push(getPath(`/hospital-admin/doctors/edit/${doctor._id}`))}
                       className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-blue-600 transition-all hover:bg-slate-50"
                       title="Edit Profile"
                     >

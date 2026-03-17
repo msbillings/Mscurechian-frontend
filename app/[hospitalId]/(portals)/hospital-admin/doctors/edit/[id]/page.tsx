@@ -477,7 +477,7 @@ function EditDoctor() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 1. Personal Information */}
-        <Card title="Personal Information" icon={<User className="text-blue-500" />} padding="p-6">
+        <Card title="Personal Information" icon={<User className="text-blue-500" />} padding="p-2 md:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <FormInput label="Full Name" type="text" name="name" required
               value={formData.name} onChange={handleChange} placeholder="Dr. John Smith" />
@@ -507,7 +507,7 @@ function EditDoctor() {
         </Card>
 
         {/* 2. Contact Information */}
-        <Card title="Contact Information" icon={<Mail className="text-green-500" />} padding="p-6">
+        <Card title="Contact Information" icon={<Mail className="text-green-500" />} padding="p-2 md:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <FormInput label="Email Address" type="email" name="email" required
               value={formData.email} onChange={handleChange} placeholder="doctor@hospital.com" />
@@ -537,10 +537,10 @@ function EditDoctor() {
         </Card>
 
         {/* 3. Professional & Clinical Details */}
-        <Card title="Professional & Clinical Details" icon={<Briefcase className="text-purple-500" />} padding="p-6">
+        <Card title="Professional & Clinical Details" icon={<Briefcase className="text-purple-500" />} padding="p-2 md:p-6">
           <div className="space-y-6">
             {/* Medical Registration - MANDATORY */}
-            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl border border-yellow-200 dark:border-yellow-800">
+            <div className="p-2 md:p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl border border-yellow-200 dark:border-yellow-800">
               <h4 className="font-semibold text-yellow-800 dark:text-yellow-400 mb-3 flex items-center gap-2">
                 <CreditCard size={18} /> Medical Registration (Mandatory in India)
               </h4>
@@ -644,7 +644,7 @@ function EditDoctor() {
         </Card>
 
         {/* 4. Scheduling, Payroll & Availability */}
-        <Card title="Scheduling & Payroll" icon={<Clock className="text-orange-500" />} padding="p-6">
+        <Card title="Scheduling & Payroll" icon={<Clock className="text-orange-500" />} padding="p-2 md:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="relative">
               <label className="block text-sm font-medium mb-2">Consultation Fee (₹) <span className="text-red-500">*</span></label>
@@ -690,7 +690,7 @@ function EditDoctor() {
 
             <div className="space-y-4">
               {availability.map((slot, index) => (
-                <div key={index} className="p-4 border rounded-xl" style={{ borderColor: 'var(--border-color)' }}>
+                <div key={index} className="p-2 md:p-4 border rounded-xl" style={{ borderColor: 'var(--border-color)' }}>
                   <div className="flex justify-between items-start mb-3">
                     <h5 className="font-medium text-sm">Schedule {index + 1}</h5>
                     {availability.length > 1 && (
@@ -712,7 +712,7 @@ function EditDoctor() {
                     ))}
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-4 gap-3">
                     <div>
                       <label className="block text-xs font-medium mb-1">Start</label>
                       <input type="time" value={slot.startTime}
@@ -748,7 +748,7 @@ function EditDoctor() {
           </div>
         </Card>
         {/* 5. Additional Information */}
-        <Card title="Additional Information" icon={<FileText className="text-indigo-500" />} padding="p-6">
+        <Card title="Additional Information" icon={<FileText className="text-indigo-500" />} padding="p-2 md:p-6">
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">Bio / About</label>
@@ -814,8 +814,8 @@ function EditDoctor() {
             </div>
 
             {/* Languages */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Languages Spoken</label>
+              <div className="pt-4">
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5 ml-1 uppercase tracking-widest opacity-70">Languages Spoken</label>
               <div className="flex gap-2 mb-3">
                 <select value={tempLanguage} onChange={(e) => setTempLanguage(e.target.value)}
                   className="flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -866,12 +866,12 @@ function EditDoctor() {
         {/* Action Buttons */}
         <div className="flex justify-end gap-4 pt-4">
           <Button type="button" variant="secondary" onClick={() => router.push(`/${hospitalId}/hospital-admin/doctors`)}
-            disabled={loading} className="px-8"
+            disabled={loading} className="px-2 md:px-8"
           >
             <ArrowLeft size={16} className="mr-1" /> Back to Doctors List
           </Button>
           <Button type="submit" variant="primary" loading={loading} icon={<Edit size={18} />}
-            className="px-12 py-4 text-lg shadow-lg hover:shadow-xl">
+            className="px-12 py-4 text-xs md:text-base md:text-lg shadow-lg hover:shadow-xl">
             Update Doctor Profile
           </Button>
         </div>

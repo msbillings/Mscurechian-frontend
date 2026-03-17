@@ -104,7 +104,7 @@ const AttendanceRow = React.memo(({
 
   return (
     <tr className="hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors">
-      <td className="py-4 px-6">
+      <td className="py-4 px-3 md:px-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center font-bold text-xs text-gray-400">
             {staffName.charAt(0).toUpperCase()}
@@ -115,21 +115,21 @@ const AttendanceRow = React.memo(({
           </div>
         </div>
       </td>
-      <td className="py-4 px-6 text-sm font-medium text-gray-600 dark:text-gray-400">
+      <td className="py-4 px-3 md:px-6 text-sm font-medium text-gray-600 dark:text-gray-400">
         {new Date(record.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
       </td>
-      <td className="py-4 px-6 text-[11px] font-medium text-emerald-600">
+      <td className="py-4 px-3 md:px-6 text-[11px] font-medium text-emerald-600">
         {record.checkIn?.time ? formatTime(record.checkIn.time) : '--:--'}
       </td>
-      <td className="py-4 px-6 text-[11px] font-medium text-rose-500">
+      <td className="py-4 px-3 md:px-6 text-[11px] font-medium text-rose-500">
         {record.checkOut?.time ? formatTime(record.checkOut.time) : '--:--'}
       </td>
-      <td className="py-4 px-6">
+      <td className="py-4 px-3 md:px-6">
         <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
           {record.workingHours || 0}m
         </span>
       </td>
-      <td className="py-4 px-6">
+      <td className="py-4 px-3 md:px-6">
         {getStatusBadge(record.status)}
       </td>
     </tr>
@@ -170,7 +170,7 @@ const SummaryRow = React.memo(({
 
   return (
     <tr className="hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors">
-      <td className="py-4 px-6">
+      <td className="py-4 px-3 md:px-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
             {data.name?.charAt(0).toUpperCase() || 'S'}
@@ -188,15 +188,15 @@ const SummaryRow = React.memo(({
           </div>
         </div>
       </td>
-      <td className="py-4 px-6">
+      <td className="py-4 px-3 md:px-6">
         <span className="text-xs font-medium text-gray-500">
           {data.designation || 'Staff'}
         </span>
       </td>
-      <td className="py-4 px-6">
+      <td className="py-4 px-3 md:px-6">
         {getStatusBadge(data.todayStatus)}
       </td>
-      <td className="py-4 px-6 text-center">
+      <td className="py-4 px-3 md:px-6 text-center">
         <div className="flex flex-col items-center">
           <div className="flex gap-1 items-baseline">
             <span className="text-sm font-bold text-indigo-600">{data.monthlyAttendedDays}</span>
@@ -208,7 +208,7 @@ const SummaryRow = React.memo(({
           </div>
         </div>
       </td>
-      <td className="py-4 px-6 text-center">
+      <td className="py-4 px-3 md:px-6 text-center">
         <div className="flex flex-col items-center">
           <div className="flex gap-1 items-baseline">
             <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{data.yearlyAttendedDays}</span>
@@ -220,7 +220,7 @@ const SummaryRow = React.memo(({
           </div>
         </div>
       </td>
-      <td className="py-4 px-6 text-right">
+      <td className="py-4 px-3 md:px-6 text-right">
         <div className="flex flex-col text-[11px] font-medium">
           <span className="text-emerald-600">In: {formatTime(data.checkIn)}</span>
           <span className="text-gray-400">Out: {formatTime(data.checkOut)}</span>
@@ -702,7 +702,7 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
         <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
           <button
             onClick={() => setViewMode('summary')}
-            className={`flex items-center gap-2 px-6 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'summary'
+            className={`flex items-center gap-2 px-3 md:px-6 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'summary'
               ? 'bg-white dark:bg-gray-700 text-indigo-600 shadow-sm'
               : 'text-gray-500 hover:text-gray-700'
               }`}
@@ -711,7 +711,7 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
           </button>
           <button
             onClick={() => setViewMode('logs')}
-            className={`flex items-center gap-2 px-6 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'logs'
+            className={`flex items-center gap-2 px-3 md:px-6 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'logs'
               ? 'bg-white dark:bg-gray-700 text-indigo-600 shadow-sm'
               : 'text-gray-500 hover:text-gray-700'
               }`}
@@ -776,28 +776,28 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card padding="p-4" className="mb-6 border-none shadow-sm bg-white dark:bg-gray-900">
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+       {/* Filters */}
+      <Card padding="p-3 md:p-4" className="mb-6 border-none shadow-sm bg-white dark:bg-gray-900">
+        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+          <div className="flex flex-wrap items-center gap-3 md:gap-4 w-full md:w-auto">
             {viewMode === 'logs' && (
-              <div className="flex-1 md:flex-none">
-                <label className="block text-[10px] font-bold text-gray-400 mb-1">Select Date</label>
+              <div className="flex-1 min-w-[140px] md:flex-none">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Select Date</label>
                 <input
                   type="date"
                   value={filterDate}
                   onChange={(e) => setFilterDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 text-sm"
+                  className="w-full px-3 py-2 md:py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 text-xs font-bold font-mono outline-none"
                 />
               </div>
             )}
 
-            <div className="flex-1 md:flex-none">
-              <label className="block text-[10px] font-bold text-gray-400 mb-1">Status Filter</label>
+            <div className="flex-1 min-w-[140px] md:flex-none">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Status Filter</label>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 text-sm"
+                className="w-full px-3 py-2 md:py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 text-xs font-bold outline-none appearance-none cursor-pointer"
               >
                 <option value="">All Statuses</option>
                 <option value="present">Present</option>
@@ -808,16 +808,18 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
               </select>
             </div>
 
-            <div className="flex-1 md:flex-none min-w-[150px]">
-              <label className="block text-[10px] font-bold text-gray-400 mb-1">Staff Member</label>
+            <div className="flex-1 min-w-[140px] md:flex-none">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Staff Member</label>
               <select
                 value={filterStaff}
                 onChange={(e) => setFilterStaff(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 text-sm"
+                className="w-full px-3 py-2 md:py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 text-xs font-bold outline-none appearance-none cursor-pointer"
               >
                 <option value="">All Personnel</option>
-                {staffList.map(s => (
-                  <option key={s._id} value={s.user?._id || s._id}>{s.user?.name || s.name}</option>
+                {staffList.map((s: any) => (
+                  <option key={s.user?._id || s._id} value={s.user?._id || s._id}>
+                    {s.user?.name || s.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -827,11 +829,11 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
             <Button
               variant="primary"
               onClick={() => { setShowExportMenu(!showExportMenu); setShowDateRangePicker(false); }}
-              className="w-full flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg font-bold text-sm bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="w-full flex items-center justify-center gap-2 px-6 py-2.5 md:py-3 rounded-xl font-black text-[10px] uppercase tracking-widest bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 active:scale-95 transition-all"
             >
               <FileSpreadsheet size={16} />
               Generate Report
-              <ChevronDown size={14} className={`transition-transform duration-300 ${showExportMenu ? 'rotate-180' : ''}`} />
+              <ChevronDown size={14} className={`transition-transform duration-200 ${showExportMenu ? 'rotate-180' : ''}`} />
             </Button>
 
             {showExportMenu && (
@@ -872,7 +874,7 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
 
                     {showDateRangePicker && (
                       <div className="px-4 pb-3 space-y-2" onClick={e => e.stopPropagation()}>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           <div>
                             <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">From</label>
                             <input
@@ -924,15 +926,15 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
       <Card padding="p-0" className="overflow-hidden border border-gray-100 dark:border-gray-800 rounded-2xl bg-white dark:bg-gray-900 shadow-sm">
         <div className="overflow-x-auto">
           {viewMode === 'summary' ? (
-            <table className="w-full">
+            <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full">
               <thead>
                 <tr className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
-                  <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Staff Member</th>
-                  <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Designation</th>
-                  <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Today's Pulse</th>
-                  <th className="py-4 px-6 text-center text-xs font-bold text-gray-400">Monthly Stats</th>
-                  <th className="py-4 px-6 text-center text-xs font-bold text-gray-400">Yearly Stats</th>
-                  <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Daily Timing</th>
+                  <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Staff Member</th>
+                  <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Designation</th>
+                  <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Today's Pulse</th>
+                  <th className="py-4 px-3 md:px-6 text-center text-xs font-bold text-gray-400">Monthly Stats</th>
+                  <th className="py-4 px-3 md:px-6 text-center text-xs font-bold text-gray-400">Yearly Stats</th>
+                  <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Daily Timing</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
@@ -953,18 +955,18 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
                     ))
                 )}
               </tbody>
-            </table>
+            </table></div>
           ) : (
             <div className="space-y-4">
-              <table className="w-full">
+              <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full">
                 <thead className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
                   <tr>
-                    <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Staff Unit</th>
-                    <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Date</th>
-                    <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Check-In</th>
-                    <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Check-Out</th>
-                    <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Duration</th>
-                    <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Status</th>
+                    <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Staff Unit</th>
+                    <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Date</th>
+                    <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Check-In</th>
+                    <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Check-Out</th>
+                    <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Duration</th>
+                    <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
@@ -986,19 +988,19 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
                     ))
                   )}
                 </tbody>
-              </table>
+              </table></div>
 
               {/* Pagination */}
               {totalPages > 1 && viewMode === 'logs' && (
-                <div className="flex items-center justify-between p-8 bg-gray-50/30 dark:bg-gray-800/20 border-t border-gray-100 dark:border-gray-800">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 md:p-8 bg-gray-50/30 dark:bg-gray-800/20 border-t border-gray-100 dark:border-gray-800">
                   <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="flex items-center gap-3 px-8 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 hover:text-blue-600 hover:border-blue-200 transition-all disabled:opacity-30 active:scale-95 shadow-sm"
+                    className="w-full sm:w-auto flex items-center justify-center gap-3 px-6 md:px-8 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 hover:text-blue-600 hover:border-blue-200 transition-all disabled:opacity-30 active:scale-95 shadow-sm order-2 sm:order-1"
                   >
                     <ChevronLeft size={16} /> Previous Quadrant
                   </button>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 order-1 sm:order-2">
                     <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">
                       Sector {page} <span className="mx-2 opacity-20">/</span> {totalPages}
                     </span>
@@ -1006,7 +1008,7 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
                   <button
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
-                    className="flex items-center gap-3 px-8 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 hover:text-blue-600 hover:border-blue-200 transition-all disabled:opacity-30 active:scale-95 shadow-sm"
+                    className="w-full sm:w-auto flex items-center justify-center gap-3 px-6 md:px-8 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 hover:text-blue-600 hover:border-blue-200 transition-all disabled:opacity-30 active:scale-95 shadow-sm order-3"
                   >
                     Next Quadrant <ChevronRight size={16} />
                   </button>

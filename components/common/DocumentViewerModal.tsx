@@ -45,14 +45,6 @@ export const DocumentViewerModal = ({ isOpen, onClose, url, title }: DocumentVie
                             </div>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                            <a
-                                href={viewUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hidden sm:flex px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all items-center gap-2 shadow-sm"
-                            >
-                                <UploadCloud size={14} /> <span>Open Original</span>
-                            </a>
                             <button
                                 onClick={onClose}
                                 className="p-2 sm:p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-all active:scale-95 border border-transparent hover:border-gray-200 dark:hover:border-gray-700"

@@ -110,11 +110,11 @@ function HospitalAdminDepartmentMasterPage() {
     }, [filteredDepartments, currentPage]);
 
     return (
-        <div className="space-y-10 ">
+        <div className="p-2 sm:p-6 md:p-8 space-y-6">
             {/* Header Tier */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white uppercase">Department Master</h1>
+                    <h1 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white uppercase">Department Master</h1>
                     <p className="text-gray-500 dark:text-gray-400 font-bold mt-2 uppercase tracking-[0.2em] text-[10px] ml-1 flex items-center gap-2">
                         <Network className="w-3 h-3 text-blue-500" />
                         Strategic Lab Infrastructure & Node Hierarchy
@@ -127,13 +127,13 @@ function HospitalAdminDepartmentMasterPage() {
                 <div className="lg:col-span-4">
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm dark:shadow-none border border-gray-100 dark:border-gray-700 overflow-hidden sticky top-24">
 
-                        <div className="p-8">
+                        <div className="p-3 md:p-8">
                             <div className="flex items-center gap-4 mb-10">
                                 <div className="p-3 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-2xl">
                                     {editingId ? <Edit3 size={24} /> : <Plus size={24} />}
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-thin text-gray-900 dark:text-white uppercase ">
+                                    <h2 className="text-sm md:text-lg font-thin text-gray-900 dark:text-white uppercase ">
                                         {editingId ? 'Modify Node' : 'Initialize Node'}
                                     </h2>
                                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Department registry Entry</p>
@@ -145,7 +145,7 @@ function HospitalAdminDepartmentMasterPage() {
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nomenclature Hub *</label>
                                     {suggestedDepts.length > 0 && !editingId && (
                                         <select
-                                            className="w-full p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-xs font-black dark:text-white appearance-none"
+                                            className="w-full p-2 md:p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-xs font-black dark:text-white appearance-none"
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                             value={formData.name}
                                         >
@@ -158,7 +158,7 @@ function HospitalAdminDepartmentMasterPage() {
                                     <input
                                         type="text"
                                         placeholder="CUSTOM_DEPT_ID..."
-                                        className="w-full p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-black dark:text-white"
+                                        className="w-full p-2 md:p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-black dark:text-white"
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         required
@@ -170,7 +170,7 @@ function HospitalAdminDepartmentMasterPage() {
                                     <textarea
                                         placeholder="OPERATIONAL_PROTOCOL_DETAILS..."
                                         rows={5}
-                                        className="w-full p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold dark:text-white resize-none tracking-tight leading-relaxed"
+                                        className="w-full p-2 md:p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold dark:text-white resize-none tracking-tight leading-relaxed"
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     />
@@ -202,7 +202,7 @@ function HospitalAdminDepartmentMasterPage() {
                 {/* Right: Registry Terminal - Converted to Table */}
                 <div className="lg:col-span-8 space-y-8">
                     {/* Search Control */}
-                    <div className="bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col md:flex-row justify-between items-center gap-8">
+                    <div className="bg-white dark:bg-gray-800 p-2 md:p-4 md:p-8 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col md:flex-row justify-between items-center gap-8">
                         <div className="flex items-center gap-4">
                             <div className="p-3 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-2xl">
                                 <Database size={24} />
@@ -226,19 +226,19 @@ function HospitalAdminDepartmentMasterPage() {
 
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
+                            <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
-                                        <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Department Node</th>
-                                        <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Functional Abstract</th>
-                                        <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Protocols</th>
-                                        <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Operations</th>
+                                        <th className="px-2 md:px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Department Node</th>
+                                        <th className="px-2 md:px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Functional Abstract</th>
+                                        <th className="px-2 md:px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Protocols</th>
+                                        <th className="px-2 md:px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Operations</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
                                     {paginatedDepartments.length === 0 ? (
                                         <tr>
-                                            <td colSpan={4} className="px-8 py-20 text-center">
+                                            <td colSpan={4} className="px-2 md:px-8 py-20 text-center">
                                                 <div className="flex flex-col items-center gap-4 opacity-30">
                                                     <Building2 size={64} className="text-gray-400" />
                                                     <p className="font-black uppercase tracking-[5px] text-xs text-gray-400">Node Database Empty</p>
@@ -252,7 +252,7 @@ function HospitalAdminDepartmentMasterPage() {
                                                 onClick={() => setSelectedDepartment(dept)}
                                                 className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 group cursor-pointer transition-colors"
                                             >
-                                                <td className="px-8 py-6">
+                                                <td className="px-2 md:px-8 py-6">
                                                     <div className="flex items-center gap-4">
                                                         <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center font-black group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                                             {dept.name.charAt(0)}
@@ -260,18 +260,18 @@ function HospitalAdminDepartmentMasterPage() {
                                                         <span className="font-thin text-gray-900 dark:text-white text-[12px] uppercase">{dept.name}</span>
                                                     </div>
                                                 </td>
-                                                <td className="px-8 py-6">
+                                                <td className="px-2 md:px-8 py-6">
                                                     <p className="text-xs text-gray-500 dark:text-gray-400 font-medium line-clamp-1 max-w-[250px]">
                                                         {dept.description || 'No description provided.'}
                                                     </p>
                                                 </td>
-                                                <td className="px-8 py-6">
+                                                <td className="px-2 md:px-8 py-6">
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-sm font-black text-blue-600 dark:text-blue-400">{(dept.testCount || 0).toString().padStart(2, '0')}</span>
                                                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Nodes</span>
                                                     </div>
                                                 </td>
-                                                <td className="px-8 py-6 text-right">
+                                                <td className="px-2 md:px-8 py-6 text-right">
                                                     <div className="flex justify-end gap-2 transition-opacity">
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); setEditingId(dept._id); setFormData({ name: dept.name, description: dept.description || '' }); }}
@@ -293,16 +293,16 @@ function HospitalAdminDepartmentMasterPage() {
                                         ))
                                     )}
                                 </tbody>
-                            </table>
+                            </table></div>
                         </div>
 
                         {/* Pagination */}
                         {totalPages > 1 && (
-                            <div className="p-6 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+                            <div className="p-2 md:p-6 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
                                 <button
                                     disabled={currentPage === 1}
                                     onClick={() => setCurrentPage(p => p - 1)}
-                                    className="px-6 py-3 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 border border-gray-100 dark:border-gray-700 shadow-sm"
+                                    className="px-2 md:px-6 py-3 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 border border-gray-100 dark:border-gray-700 shadow-sm"
                                 >
                                     Previous
                                 </button>
@@ -312,7 +312,7 @@ function HospitalAdminDepartmentMasterPage() {
                                 <button
                                     disabled={currentPage === totalPages}
                                     onClick={() => setCurrentPage(p => p + 1)}
-                                    className="px-6 py-3 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 border border-gray-100 dark:border-gray-700 shadow-sm"
+                                    className="px-2 md:px-6 py-3 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 border border-gray-100 dark:border-gray-700 shadow-sm"
                                 >
                                     Next
                                 </button>
@@ -324,13 +324,13 @@ function HospitalAdminDepartmentMasterPage() {
 
             {/* Department Details Modal */}
             {selectedDepartment && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in" onClick={() => setSelectedDepartment(null)}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in" onClick={() => setSelectedDepartment(null)}>
                     <div
                         className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-md lg:max-w-lg max-h-[80vh] flex flex-col shadow-2xl border border-gray-100 dark:border-gray-700 zoom-in "
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Modal Header */}
-                        <div className="p-8 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50 rounded-t-3xl">
+                        <div className="p-3 md:p-8 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50 rounded-t-3xl">
                             <div className="flex items-center gap-6">
                                 <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-blue-500/20">
                                     {selectedDepartment.name.charAt(0)}
@@ -352,9 +352,9 @@ function HospitalAdminDepartmentMasterPage() {
                         </div>
 
                         {/* Modal Body / Scrollable List */}
-                        <div className="p-8 overflow-y-auto custom-scrollbar flex-1">
+                        <div className="p-3 md:p-8 overflow-y-auto custom-scrollbar flex-1">
                             {selectedDepartment.description && (
-                                <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border border-gray-100 dark:border-gray-700">
+                                <div className="mb-8 p-3 md:p-6 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border border-gray-100 dark:border-gray-700">
                                     <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                                         <Network className="w-3 h-3" />
                                         Functional Abstract
@@ -402,7 +402,7 @@ function HospitalAdminDepartmentMasterPage() {
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-900/30 rounded-b-3xl">
+                        <div className="p-2 md:p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-900/30 rounded-b-3xl">
                             <button
                                 onClick={() => setSelectedDepartment(null)}
                                 className="w-full py-4 bg-gray-900 dark:bg-gray-700 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] hover:bg-black dark:hover:bg-gray-600 shadow-xl shadow-gray-200 dark:shadow-none hover:-translate-y-1"

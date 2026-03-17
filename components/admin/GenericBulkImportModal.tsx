@@ -281,33 +281,33 @@ const GenericBulkImportModal: React.FC<GenericBulkImportModalProps> = ({ isOpen,
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
             <div className="bg-white rounded-[32px] w-full max-w-5xl shadow-2xl overflow-hidden animate-in zoom-in duration-300 border border-slate-100 flex flex-col max-h-[90vh]">
                 {/* Header */}
-                <div className="flex items-center justify-between px-8 py-6 border-b border-slate-50 bg-slate-50/50">
-                    <div>
-                        <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                            <Upload className="w-6 h-6 text-blue-600" />
+                <div className="flex items-center justify-between px-4 md:px-8 py-4 md:py-6 border-b border-slate-50 bg-slate-50/50 shrink-0">
+                    <div className="min-w-0 pr-4">
+                        <h2 className="text-base md:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 md:gap-3 truncate">
+                            <Upload className="w-5 h-5 md:w-6 md:h-6 text-blue-600 shrink-0" />
                             {config.title}
                         </h2>
-                        <p className="text-xs font-bold text-blue-600/60 mt-1 uppercase tracking-widest">{config.description || `Bulk Import ${config.entityName || 'Records'}`}</p>
+                        <p className="text-[9px] md:text-xs font-bold text-blue-600/60 mt-0.5 md:mt-1 uppercase tracking-widest truncate">{config.description || `Bulk Import ${config.entityName || 'Records'}`}</p>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-2xl transition-all group">
-                        <X className="w-6 h-6 text-slate-400 group-hover:text-rose-500 group-hover:rotate-90 transition-all" />
+                    <button onClick={onClose} className="p-1.5 md:p-2 hover:bg-slate-200 rounded-xl md:rounded-2xl transition-all group shrink-0">
+                        <X className="w-5 h-5 md:w-6 md:h-6 text-slate-400 group-hover:text-rose-500 group-hover:rotate-90 transition-all" />
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="p-8 space-y-8 flex-1 overflow-y-auto custom-scrollbar">
+                <div className="p-4 md:p-8 space-y-4 md:space-y-8 flex-1 overflow-y-auto custom-scrollbar">
                     {!file ? (
-                        <div className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4 md:space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                                 <div
-                                    className="p-10 bg-blue-50/50 rounded-[32px] border-2 border-dashed border-blue-200 flex flex-col items-center justify-center text-center space-y-4 hover:bg-blue-50 hover:border-blue-400 transition-all cursor-pointer group"
+                                    className="p-6 md:p-10 bg-blue-50/50 rounded-2xl md:rounded-[32px] border-2 border-dashed border-blue-200 flex flex-col items-center justify-center text-center space-y-3 md:space-y-4 hover:bg-blue-50 hover:border-blue-400 transition-all cursor-pointer group"
                                     onClick={() => fileInputRef.current?.click()}
                                 >
-                                    <div className="p-5 bg-white rounded-2xl shadow-sm group-hover:scale-110 transition-transform">
-                                        <FileSpreadsheet className="w-10 h-10 text-blue-600" />
+                                    <div className="p-4 md:p-5 bg-white rounded-2xl shadow-sm group-hover:scale-110 transition-transform">
+                                        <FileSpreadsheet className="w-8 h-8 md:w-10 md:h-10 text-blue-600" />
                                     </div>
-                                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Select Data Source</h3>
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Upload .XLSX or .CSV file</p>
+                                    <h3 className="text-sm md:text-lg font-black text-slate-900 uppercase tracking-tight">Select Data Source</h3>
+                                    <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest">Upload .XLSX or .CSV file</p>
                                     <input
                                         type="file"
                                         ref={fileInputRef}
@@ -316,29 +316,29 @@ const GenericBulkImportModal: React.FC<GenericBulkImportModalProps> = ({ isOpen,
                                         className="hidden"
                                     />
                                 </div>
-                                <div className="p-10 bg-emerald-50/50 rounded-[32px] border-2 border-emerald-100 flex flex-col justify-center space-y-4">
-                                    <h3 className="text-lg font-black text-emerald-800 flex items-center gap-2 uppercase tracking-tight">
-                                        <Download className="w-6 h-6" />
+                                <div className="p-6 md:p-10 bg-emerald-50/50 rounded-2xl md:rounded-[32px] border-2 border-emerald-100 flex flex-col justify-center space-y-3 md:space-y-4">
+                                    <h3 className="text-sm md:text-lg font-black text-emerald-800 flex items-center gap-2 uppercase tracking-tight">
+                                        <Download size={18} className="md:w-6 md:h-6" />
                                         Template Guide
                                     </h3>
-                                    <p className="text-xs font-bold text-emerald-600/70 uppercase tracking-widest leading-relaxed">
+                                    <p className="text-[10px] md:text-xs font-bold text-emerald-600/70 uppercase tracking-widest leading-relaxed">
                                         Use our verified template structure to ensure seamless node synchronization. Fields with (*) are mandatory.
                                     </p>
                                     <button
                                         onClick={downloadTemplate}
-                                        className="flex items-center justify-center gap-3 px-8 py-4 bg-white text-emerald-600 rounded-2xl font-black text-xs uppercase tracking-widest border border-emerald-100 hover:bg-emerald-50 shadow-sm transition-all active:scale-95"
+                                        className="flex items-center justify-center gap-2 md:gap-3 px-4 md:px-8 py-3 md:py-4 bg-white text-emerald-600 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest border border-emerald-100 hover:bg-emerald-50 shadow-sm transition-all active:scale-95"
                                     >
-                                        <FileSpreadsheet className="w-5 h-5" />
+                                        <FileSpreadsheet size={16} className="md:w-5 md:h-5" />
                                         Download Template
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-[24px] border border-slate-100 p-6 space-y-4 shadow-sm">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Data Structure Protocols</p>
-                                <div className="flex flex-wrap gap-2">
+                            <div className="bg-white rounded-2xl md:rounded-[24px] border border-slate-100 p-4 md:p-6 space-y-3 md:space-y-4 shadow-sm overflow-x-auto no-scrollbar">
+                                <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Data Structure Protocols</p>
+                                <div className="flex flex-wrap gap-1.5 md:gap-2">
                                     {effectiveColumns.map(col => (
-                                        <span key={col.key} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${col.required ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+                                        <span key={col.key} className={`px-2 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl text-[8px] md:text-[10px] font-black uppercase tracking-widest whitespace-nowrap ${col.required ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
                                             {col.label}{col.required && '*'}
                                         </span>
                                     ))}
@@ -450,33 +450,33 @@ const GenericBulkImportModal: React.FC<GenericBulkImportModalProps> = ({ isOpen,
 
                             {/* Results Summary */}
                             {uploadResults && (
-                                <div className={`p-8 rounded-[32px] border-2 animate-in slide-in-from-bottom-4 duration-500 ${uploadResults.errorCount === 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
-                                    <div className="flex items-start gap-6">
-                                        <div className={`p-4 rounded-[20px] ${uploadResults.errorCount === 0 ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white shadow-lg shadow-rose-200'}`}>
+                                <div className={`p-4 md:p-8 rounded-2xl md:rounded-[32px] border-2 animate-in slide-in-from-bottom-4 duration-500 ${uploadResults.errorCount === 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
+                                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-6">
+                                        <div className={`p-4 rounded-xl md:rounded-[20px] shrink-0 ${uploadResults.errorCount === 0 ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white shadow-lg shadow-rose-200'}`}>
                                             {uploadResults.errorCount === 0 ? <CheckCircle2 size={32} /> : <AlertCircle size={32} />}
                                         </div>
-                                        <div className="flex-1 space-y-4">
-                                            <h4 className={`text-xl font-black uppercase tracking-tight ${uploadResults.errorCount === 0 ? 'text-emerald-900' : 'text-rose-900'}`}>
+                                        <div className="flex-1 space-y-4 w-full">
+                                            <h4 className={`text-base md:text-xl font-black uppercase tracking-tight text-center sm:text-left ${uploadResults.errorCount === 0 ? 'text-emerald-900' : 'text-rose-900'}`}>
                                                 {uploadResults.errorCount === 0 ? 'Synchronization Successful' : 'Synchronization Incomplete'}
                                             </h4>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border border-white flex flex-col">
-                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nodes Added</span>
-                                                    <span className="text-2xl font-black text-slate-900">{uploadResults.addedCount}</span>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                                                <div className="bg-white/80 backdrop-blur-sm p-3 md:p-4 rounded-xl md:rounded-2xl border border-white flex flex-col items-center sm:items-start">
+                                                    <span className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Nodes Added</span>
+                                                    <span className="text-xl md:text-2xl font-black text-slate-900">{uploadResults.addedCount}</span>
                                                 </div>
-                                                <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border border-white flex flex-col">
-                                                    <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest">Errors Found</span>
-                                                    <span className="text-2xl font-black text-slate-900">{uploadResults.errorCount}</span>
+                                                <div className="bg-white/80 backdrop-blur-sm p-3 md:p-4 rounded-xl md:rounded-2xl border border-white flex flex-col items-center sm:items-start">
+                                                    <span className="text-[9px] md:text-[10px] font-black text-rose-400 uppercase tracking-widest">Errors Found</span>
+                                                    <span className="text-xl md:text-2xl font-black text-slate-900">{uploadResults.errorCount}</span>
                                                 </div>
                                             </div>
                                             {uploadResults.errors && Array.isArray(uploadResults.errors) && uploadResults.errors.length > 0 && (
-                                                <div className="mt-4 bg-white/40 rounded-2xl p-4 max-h-40 overflow-y-auto custom-scrollbar border border-white/50">
-                                                    <p className="text-[10px] font-black text-rose-700 uppercase tracking-widest mb-3">Failure Logs</p>
+                                                <div className="mt-4 bg-white/40 rounded-xl md:rounded-2xl p-3 md:p-4 max-h-40 overflow-y-auto custom-scrollbar border border-white/50">
+                                                    <p className="text-[9px] md:text-[10px] font-black text-rose-700 uppercase tracking-widest mb-3">Failure Logs</p>
                                                     <ul className="space-y-2">
                                                         {uploadResults.errors.map((err, i) => (
-                                                            <li key={i} className="text-[11px] font-bold text-rose-800 flex items-center justify-between bg-white/60 p-2 rounded-lg">
-                                                                <span>Record #{i + 1}</span>
-                                                                <span className="bg-rose-100 px-3 py-1 rounded-md text-[9px] font-black uppercase">{err?.message || 'Validation Failed'}</span>
+                                                            <li key={i} className="text-[10px] md:text-[11px] font-bold text-rose-800 flex items-center justify-between bg-white/60 p-2 rounded-lg gap-2">
+                                                                <span className="shrink-0">Record #{i + 1}</span>
+                                                                <span className="bg-rose-100 px-2 py-1 rounded-md text-[8px] md:text-[9px] font-black uppercase text-right">{err?.message || 'Validation Failed'}</span>
                                                             </li>
                                                         ))}
                                                     </ul>
@@ -491,10 +491,10 @@ const GenericBulkImportModal: React.FC<GenericBulkImportModalProps> = ({ isOpen,
                 </div>
 
                 {/* Footer */}
-                <div className="px-8 py-6 border-t border-slate-50 bg-slate-50/50 flex items-center justify-end gap-3">
+                <div className="px-4 md:px-8 py-4 md:py-6 border-t border-slate-50 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-end gap-3 shrink-0">
                     <button
                         onClick={onClose}
-                        className="px-8 py-4 rounded-2xl bg-white text-slate-600 font-black text-xs uppercase tracking-widest border border-slate-200 hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
+                        className="w-full sm:w-auto px-6 md:px-8 py-3 md:py-4 rounded-xl md:rounded-2xl bg-white text-slate-600 font-black text-[9px] md:text-xs uppercase tracking-widest border border-slate-200 hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
                     >
                         {uploadResults ? 'Close Inventory' : 'Cancel Operation'}
                     </button>
@@ -502,7 +502,7 @@ const GenericBulkImportModal: React.FC<GenericBulkImportModalProps> = ({ isOpen,
                         <button
                             onClick={handleUpload}
                             disabled={isUploading || isParsing || previewData.length === 0}
-                            className="px-12 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 shadow-xl shadow-slate-200 disabled:opacity-50 flex items-center gap-3 transition-all active:scale-95 group"
+                            className="w-full sm:w-auto px-6 md:px-12 py-3 md:py-4 bg-slate-900 text-white rounded-xl md:rounded-2xl font-black text-[9px] md:text-xs uppercase tracking-widest hover:bg-slate-800 shadow-xl shadow-slate-200 disabled:opacity-50 flex items-center justify-center gap-3 transition-all active:scale-95 group"
                         >
                             {isUploading ? (
                                 <>
@@ -511,7 +511,7 @@ const GenericBulkImportModal: React.FC<GenericBulkImportModalProps> = ({ isOpen,
                                 </>
                             ) : (
                                 <>
-                                    <Upload className="w-5 h-5 group-hover:-translate-y-1 transition-transform" />
+                                    <Upload size={18} className="md:w-5 md:h-5 group-hover:-translate-y-1 transition-transform" />
                                     Authorize {previewData?.length || 0} {config.entityName || 'Nodes'}
                                 </>
                             )}

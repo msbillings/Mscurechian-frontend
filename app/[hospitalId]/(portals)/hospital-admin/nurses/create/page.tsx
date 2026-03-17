@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { hospitalAdminService } from "@/lib/integrations";
 import {
@@ -107,6 +107,7 @@ function Field({ label, name, value, onChange, error, touched, type = "text",
 /* ─────────────────────────── page ──────────────────────────── */
 function CreateNurse() {
   const router = useRouter();
+  const { hospitalId } = useParams();
   const queryClient = useQueryClient();
 
   const [shifts, setShifts] = useState<any[]>([]);
@@ -288,7 +289,7 @@ function CreateNurse() {
       toast.success(`Nurse "${formData.name}" added to registry successfully!`, { duration: 4000 });
       queryClient.invalidateQueries({ queryKey: ['hospital-admin-nurses'] });
       queryClient.invalidateQueries({ queryKey: ['hospital-admin', 'dashboard'] });
-      router.push("/hospital-admin/nurses");
+      router.push(`/${hospitalId}/hospital-admin/nurses`);
     } catch (err: any) {
       toast.error(err.message || "Failed to add nurse to registry", { duration: 5000 });
     } finally { setLoading(false); }
@@ -304,11 +305,11 @@ function CreateNurse() {
 
   /* ────────────────────────── JSX ──────────────────────────── */
   return (
-    <div className="max-w-7xl mx-auto pb-12 space-y-6">
+    <div className="max-w-7xl mx-auto pb-12 space-y-6 p-2 sm:p-6 md:p-8">
       {/* header */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-white/5 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 md:p-6 border border-gray-100 dark:border-white/5 shadow-sm">
         <div className="flex items-center gap-4">
-          <button onClick={() => router.push('/hospital-admin/nurses')}
+          <button onClick={() => router.push(`/${hospitalId}/hospital-admin/nurses`)}
             className="p-2 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-all">
             <ArrowLeft size={16} />
           </button>
@@ -324,7 +325,7 @@ function CreateNurse() {
         <div className="lg:col-span-2 space-y-6">
 
           {/* Personal Info */}
-          <Card title="Personal Information" icon={<User className="text-emerald-500" />} padding="p-6">
+          <Card title="Personal Information" icon={<User className="text-emerald-500" />} padding="p-2 md:p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <Field label="Full Name" {...f("name")} required placeholder="e.g. Priya Sharma" />
 
@@ -389,7 +390,7 @@ function CreateNurse() {
           </Card>
 
           {/* Clinical Employment */}
-          <Card title="Clinical Employment Details" icon={<Briefcase className="text-indigo-500" />} padding="p-6">
+          <Card title="Clinical Employment Details" icon={<Briefcase className="text-indigo-500" />} padding="p-2 md:p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
               {/* ── Assigned Department(s) ── multi-chip picker */}
@@ -461,7 +462,7 @@ function CreateNurse() {
           </Card>
 
           {/* Shift */}
-          <Card title="Clinical Shift Registry" icon={<Clock className="text-amber-500" />} padding="p-6">
+          <Card title="Clinical Shift Registry" icon={<Clock className="text-amber-500" />} padding="p-2 md:p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Active Duty Shift<span className="text-rose-500 ml-0.5">*</span></label>
@@ -471,7 +472,7 @@ function CreateNurse() {
                   {shifts.map((s: any) => <option key={s._id} value={s._id}>{s.name} [{s.startTime} - {s.endTime}]</option>)}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[["Check-in", formData.startTime], ["Check-out", formData.endTime]].map(([lbl, val]) => (
                   <div key={lbl} className="space-y-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">{lbl}</label>
@@ -497,7 +498,7 @@ function CreateNurse() {
           <Card
             title="Financial Disclosure & Bank Registry"
             icon={<CreditCard className="text-emerald-600" />}
-            padding="p-6"
+            padding="p-2 md:p-6"
             extra={<button type="button" onClick={markFinancialNA} className="text-[9px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition-all border border-emerald-100">Mark all as N/A</button>}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -609,7 +610,7 @@ function CreateNurse() {
         {/* RIGHT COLUMN */}
         <div className="space-y-6">
           {/* Emergency Contact */}
-          <Card title="Emergency Contact" icon={<Activity className="text-rose-500" />} padding="p-6">
+          <Card title="Emergency Contact" icon={<Activity className="text-rose-500" />} padding="p-2 md:p-6">
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Full Name</label>
@@ -644,7 +645,7 @@ function CreateNurse() {
           </Card>
 
           {/* Qualifications */}
-          <Card title="Academic Qualifications" icon={<Globe className="text-indigo-500" />} padding="p-6">
+          <Card title="Academic Qualifications" icon={<Globe className="text-indigo-500" />} padding="p-2 md:p-6">
             <div className="space-y-6">
               {[
                 { label: "Nursing Degrees / Diplomas", temp: tempQ, setTemp: setTempQ, type: 'qualification' as const, items: formData.qualifications, key: 'qualifications' as const, placeholder: "e.g. B.Sc Nursing, GNM" },
@@ -673,7 +674,7 @@ function CreateNurse() {
           </Card>
 
           {/* Skills */}
-          <Card title="Clinical Skills & Certs" icon={<FileText className="text-emerald-500" />} padding="p-6">
+          <Card title="Clinical Skills & Certs" icon={<FileText className="text-emerald-500" />} padding="p-2 md:p-6">
             <div className="space-y-3">
               <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Add Specialized Skill</label>
               <div className="flex gap-2">
@@ -695,7 +696,7 @@ function CreateNurse() {
           </Card>
 
           {/* Status */}
-          <Card title="Registry Status" icon={<Activity className="text-emerald-500" />} padding="p-6">
+          <Card title="Registry Status" icon={<Activity className="text-emerald-500" />} padding="p-2 md:p-6">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Duty Status</label>
               <select name="status" value={formData.status} onChange={handleChange}
@@ -712,7 +713,7 @@ function CreateNurse() {
               className="w-full flex items-center justify-center gap-2 py-3.5 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-emerald-500/20">
               {loading ? <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Plus size={18} /> Confirm Registry Addition</>}
             </button>
-            <button type="button" onClick={() => router.push("/hospital-admin/nurses")} disabled={loading}
+            <button type="button" onClick={() => router.push(`/${hospitalId}/hospital-admin/nurses`)} disabled={loading}
               className="w-full mt-3 py-3 text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors">
               Abort Registration
             </button>

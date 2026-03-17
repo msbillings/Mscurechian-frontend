@@ -81,7 +81,7 @@ const SupplierProductsInline = ({ supplierId }: { supplierId: string }) => {
                                 <td className="px-6 py-3 text-xs font-bold text-gray-500/70 dark:text-gray-400/70 uppercase">{p.genericName}</td>
                                 <td className="px-6 py-3 text-center">
                                     <span className={`px-2 py-0.5 rounded text-xs font-black ${p.currentStock <= p.minStockLevel ? 'bg-red-500/10 text-red-600 border border-red-500/20' : 'bg-teal-500/10 text-teal-600 border border-teal-500/20'}`}>
-                                        {p.currentStock}
+                                        {Number(p.currentStock).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                     </span>
                                 </td>
                                 <td className="px-6 py-3 text-right font-black text-teal-600 dark:text-teal-400 text-xs">₹{p.mrp.toFixed(2)}</td>

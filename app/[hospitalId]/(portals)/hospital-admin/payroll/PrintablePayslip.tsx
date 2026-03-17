@@ -90,7 +90,7 @@ export const PrintablePayslip = React.forwardRef<HTMLDivElement, PrintablePaysli
 
       {/* 2. Employee Identity (Bordered Box) */}
       <div className="border border-black p-1 mb-0">
-         <div className="grid grid-cols-2 gap-x-4">
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
             <div className="space-y-[-2px]">
                <InfoRow label="Employee Name" value={u.name || rx.user?.name} />
                <InfoRow label="Father's Name" value={u.fatherName || rx.fatherName} />
@@ -128,7 +128,7 @@ export const PrintablePayslip = React.forwardRef<HTMLDivElement, PrintablePaysli
 
       {/* 3. Attendance Registry (Bordered Box) */}
       <div className="border-x border-b border-black p-1 mb-1">
-         <div className="grid grid-cols-2 gap-x-4">
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
             <div className="space-y-[-2px]">
                <InfoRow label="Month Days" value={rx.monthDays || 30} />
                <InfoRow label="Weekly-Off" value={rx.weeklyOffDays || 0} />
@@ -150,7 +150,7 @@ export const PrintablePayslip = React.forwardRef<HTMLDivElement, PrintablePaysli
 
       {/* 4. Main Financial Table */}
       <div className="border border-black overflow-hidden mb-0">
-         <table className="w-full border-collapse">
+         <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full border-collapse">
             <thead>
                <tr className="border-b border-black font-black bg-white">
                   <th className="border-r border-black p-0 text-left w-[36%]">Earnings</th>
@@ -203,13 +203,13 @@ export const PrintablePayslip = React.forwardRef<HTMLDivElement, PrintablePaysli
                   </td>
                </tr>
             </tbody>
-         </table>
+         </table></div>
       </div>
 
       {/* 5. CTC Section (Exact Model) */}
       <div className="border-x border-b border-black">
          <div className="border-b border-black p-0 font-black uppercase text-[10px]">Employer's Contribution (CTC)</div>
-         <table className="w-full border-collapse">
+         <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full border-collapse">
             <tbody>
                <tr>
                   <td className="border-r border-black p-0 px-0.5 w-[86%]">GROSS EARNING</td>
@@ -237,7 +237,7 @@ export const PrintablePayslip = React.forwardRef<HTMLDivElement, PrintablePaysli
                </tr>
                <tr className="font-black">
                   <td className="p-0 px-0.5" colSpan={2}>
-                     <div className="grid grid-cols-2 gap-x-4">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
                         <div>
                            <div className="flex"><span className="w-12 uppercase">Total CTC</span><span>: Rs. {totalCTC.toLocaleString(undefined, {minimumFractionDigits:2})}</span></div>
                            <div className="flex"><span className="w-12 uppercase">In Words</span><span className="font-bold underline">: Rs. {numberToWords(totalCTC)}</span></div>
@@ -246,7 +246,7 @@ export const PrintablePayslip = React.forwardRef<HTMLDivElement, PrintablePaysli
                   </td>
                </tr>
             </tbody>
-         </table>
+         </table></div>
       </div>
 
       {/* 6. Footer Notes */}

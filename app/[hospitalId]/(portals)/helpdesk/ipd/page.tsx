@@ -17,6 +17,7 @@ import {
     ChevronRight,
     Receipt,
     Clock,
+    ClipboardList,
 } from 'lucide-react';
 import { joinSocketRoom, getSocket } from '@/lib/integrations/api/socket';
 import { useRouter } from 'next/navigation';
@@ -237,12 +238,38 @@ export default function IPDCenter() {
     const fetchBeds = async () => {
         try {
             setLoading(true);
-            const data = await ipdService.getBeds({
-                ...filters,
-                room: filters.room || undefined,
-                type: filters.type || undefined
+            const [bedsData, activeAdmissions] = await Promise.all([
+                ipdService.getBeds({
+                    ...filters,
+                    room: filters.room || undefined,
+                    type: filters.type || undefined
+                }),
+                ipdService.getActiveAdmissions().catch(() => [])
+            ]);
+
+            // Enrich beds with full admission records for exhaustive clinical info (reason, symptoms)
+            const enrichedBeds = bedsData.map(bed => {
+                if (bed.status === 'Occupied' && bed.currentOccupancy) {
+                    const admission = activeAdmissions.find(a => (a.admissionId || a.id || a._id) === bed.currentOccupancy?.admissionId);
+                    if (admission) {
+                        return {
+                            ...bed,
+                            currentOccupancy: {
+                                ...bed.currentOccupancy,
+                                // Strictly use the clinical reason. Strip legacy 'not now.' notes.
+                                reason: (admission.reason && admission.reason !== 'not now.')
+                                    ? admission.reason
+                                    : 'No specific reason provided.'
+                            }
+                        };
+                    }
+                }
+                return bed;
             });
-            setBeds(data);
+
+            console.log("[Helpdesk IPD] ENRICHED BEDS COUNT:", enrichedBeds.filter(b => b.status === 'Occupied').length);
+            console.log("[Helpdesk IPD] SAMPLE OCCUPIED REASON:", enrichedBeds.find(b => b.status === 'Occupied' && b.currentOccupancy?.reason)?.currentOccupancy?.reason);
+            setBeds(enrichedBeds);
         } catch (error: any) {
             toast.error(error.message || "Failed to load beds");
         } finally {
@@ -255,6 +282,39 @@ export default function IPDCenter() {
         try {
             setDetailsLoading(true);
             const data = await ipdService.getBedDetails(id, skipCache);
+            
+            // Enrich with full admission Details for exhaustive clinical information
+            if (data.bed.status === 'Occupied' && data.occupancyDetails?.admissionId) {
+                console.log("[Helpdesk IPD] Fetching Full Admission for ID:", data.occupancyDetails?.admissionId);
+                try {
+                    const fullAdmission = await ipdService.getAdmissionDetails(data.occupancyDetails?.admissionId || '');
+                    console.log("[Helpdesk IPD] Full Admission Detail for Sidebar:", {
+                        id: data.occupancyDetails?.admissionId,
+                        reason: fullAdmission?.reason,
+                        reasonForAdmission: fullAdmission?.reasonForAdmission,
+                        clinicalNotes: fullAdmission?.clinicalNotes
+                    });
+                    if (fullAdmission && data.occupancyDetails) {
+                        const bedFromList = beds.find(b => b._id === id);
+                        const existingReason = bedFromList?.currentOccupancy?.reason;
+                        const currentDetails = data.occupancyDetails;
+
+                        data.occupancyDetails = {
+                            ...currentDetails,
+                            ...fullAdmission,
+                            // Strictly prioritize the 'HEART ATTACK' style reason from the enriched list
+                            reason: existingReason || (fullAdmission.reason && fullAdmission.reason !== 'not now.' ? fullAdmission.reason : 'No specific reason provided.'),
+                            // Preserve UI-specific mapped fields from original bed details
+                            patient: currentDetails.patient,
+                            doctor: currentDetails.doctor
+                        };
+                        console.log("[Helpdesk IPD] SIDEBAR FINAL ENRICHED REASON:", data.occupancyDetails?.reason);
+                    }
+                } catch (admErr) {
+                    console.warn("Failed to fetch full admission details for helpdesk sidebar:", admErr);
+                }
+            }
+            
             setBedDetails(data);
         } catch (error: any) {
             console.error("Bed Details Fetch Error:", error);
@@ -669,10 +729,15 @@ export default function IPDCenter() {
 
                                 <div className="mt-1">
                                     <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-tight truncate leading-tight">{bed.bedId}</h3>
-                                    <div className="flex items-center gap-1 mt-0.5">
+                                    <div className="flex flex-col mt-0.5">
                                         <span className="text-[7px] font-bold text-slate-400 capitalize truncate">
                                             {bed.status === 'Occupied' ? bed.currentOccupancy?.patientName : bed.type}
                                         </span>
+                                        {bed.status === 'Occupied' && bed.currentOccupancy?.reason && (
+                                            <p className="text-[7px] font-bold text-teal-600 line-clamp-1 mt-1 opacity-90 uppercase tracking-tighter" title={bed.currentOccupancy.reason}>
+                                                {bed.currentOccupancy.reason}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -764,6 +829,18 @@ export default function IPDCenter() {
                                                     </p>
                                                     <p className="text-[7px] font-black text-teal-600 uppercase tracking-tighter mt-0.5">
                                                         Stay: {calculateStayDuration(bedDetails.occupancyDetails.admissionDate)}
+                                                    </p>
+                                                </div>
+                                            </section>
+
+                                            <section className="space-y-1.5">
+                                                <div className="flex items-center gap-1.5 text-slate-400">
+                                                    <ClipboardList size={10} className="text-teal-600" />
+                                                    <p className="text-[7px] font-black uppercase tracking-widest">Reason for Admission</p>
+                                                </div>
+                                                <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-left">
+                                                    <p className="text-[10px] font-bold text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-1" title={bedDetails.occupancyDetails.reason}>
+                                                        {bedDetails.occupancyDetails.reason || 'No specific reason provided.'}
                                                     </p>
                                                 </div>
                                             </section>
@@ -1097,55 +1174,10 @@ export default function IPDCenter() {
                             </div>
 
                             <div className="space-y-2">
-                                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Confirm Discharge</h3>
+                                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Send to Nurse</h3>
                                 <p className="text-sm font-bold text-slate-500 leading-relaxed">
-                                    Are you sure you want to discharge <span className="text-slate-900">{bedDetails?.occupancyDetails?.patient?.name}</span>?
+                                    Are you sure you want to send <span className="text-slate-900">{bedDetails?.occupancyDetails?.patient?.name}</span>'s discharge file to the nurse?
                                 </p>
-                            </div>
-
-                            {/* Billing Verification Section */}
-                            <div className="bg-slate-50 border border-slate-100 rounded-3xl p-5 space-y-4">
-                                {billingLoading ? (
-                                    <div className="flex items-center justify-center gap-2 py-4">
-                                        <RefreshCw size={16} className="animate-spin text-teal-600" />
-                                        <p className="text-[10px] font-black uppercase text-slate-400">Verifying Payments...</p>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="text-left bg-white p-3 rounded-2xl border border-slate-100">
-                                                <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1">Advance Paid</p>
-                                                <p className="text-sm font-black text-teal-600">₹{Math.round(billingSummary?.financials?.totalAdvance || 0).toLocaleString()}</p>
-                                            </div>
-                                            <div className="text-left bg-white p-3 rounded-2xl border border-slate-100">
-                                                <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1">Current Balance</p>
-                                                <p className={`text-sm font-black ${Math.round(billingSummary?.financials?.balance || 0) > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                                                    ₹{Math.max(0, Math.round(billingSummary?.financials?.balance || 0)).toLocaleString()}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center justify-center">
-                                            {Math.round(billingSummary?.financials?.balance || 0) > 0 ? (
-                                                <div className="flex items-center gap-2 px-4 py-1.5 bg-rose-100 text-rose-600 rounded-full border border-rose-200">
-                                                    <AlertCircle size={12} />
-                                                    <span className="text-[8px] font-black uppercase tracking-widest">Pending Balance</span>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-2 px-4 py-1.5 bg-emerald-100 text-emerald-600 rounded-full border border-emerald-200">
-                                                    <CheckCircle2 size={12} />
-                                                    <span className="text-[8px] font-black uppercase tracking-widest">Amount Cleared</span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {Math.round(billingSummary?.financials?.balance || 0) > 0 && (
-                                            <p className="text-[8px] font-bold text-rose-500 italic">
-                                                * Patient has an outstanding balance of ₹{Math.round(billingSummary.financials.balance).toLocaleString()}.
-                                            </p>
-                                        )}
-                                    </>
-                                )}
                             </div>
 
                             {/* ✅ Pharmacy Clearance Block Banner */}
@@ -1168,7 +1200,7 @@ export default function IPDCenter() {
                                     >
                                         {pharmacySignoffLoading ? (
                                             <><RefreshCw size={13} className="animate-spin" /> Clearing...</>) : (
-                                            <><CheckCircle2 size={13} /> Clear Pharmacy & Discharge</>)}
+                                            <><CheckCircle2 size={13} /> Clear Pharmacy & Send to Nurse</>)}
                                     </button>
                                 </div>
                             )}
@@ -1192,10 +1224,10 @@ export default function IPDCenter() {
                                     {dischargeLoading ? (
                                         <>
                                             <RefreshCw className="animate-spin" size={16} />
-                                            Discharging...
+                                            Sending...
                                         </>
                                     ) : (
-                                        'Confirm Discharge'
+                                        'Send to Nurse'
                                     )}
                                 </button>
                             </div>

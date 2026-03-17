@@ -66,7 +66,7 @@ const SuppliersPage = () => {
     );
 
     return (
-        <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
+        <div className="p-3 md:p-8 space-y-8 bg-slate-50/50 min-h-screen">
             {/* Simple Header */}
             <div className="flex justify-between items-center">
                 <div>
@@ -85,7 +85,7 @@ const SuppliersPage = () => {
                             setEditingSupplier(null);
                             setIsAddModalOpen(true);
                         }}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all shadow-sm"
+                        className="flex items-center gap-2 px-3 md:px-6 py-2.5 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all shadow-sm"
                     >
                         <Plus size={14} strokeWidth={3} /> Add Vendor
                     </button>
@@ -93,7 +93,7 @@ const SuppliersPage = () => {
             </div>
 
             {/* Simple Controller */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
+            <div className="bg-white p-2 md:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
                 <div className="relative flex-1 w-full">
                     <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
                     <input
@@ -107,7 +107,7 @@ const SuppliersPage = () => {
                 <div className="px-5 py-2 bg-blue-50/50 border border-blue-100 rounded-xl flex items-center gap-4 min-w-[140px]">
                     <div>
                         <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Active Nodes</p>
-                        <p className="text-lg font-black text-slate-900 leading-none italic">{filteredSuppliers.length}</p>
+                        <p className="text-sm md:text-lg font-black text-slate-900 leading-none italic">{filteredSuppliers.length}</p>
                     </div>
                     <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
                         <Truck size={16} strokeWidth={3} />

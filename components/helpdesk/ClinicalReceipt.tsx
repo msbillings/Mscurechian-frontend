@@ -28,14 +28,32 @@ interface ReceiptProps {
     allergies?: string;
     medicalHistory?: string;
     symptoms?: string;
+    diagnosis?: string;
+    provisionalDiagnosis?: string;
+    treatmentGiven?: string;
+    surgicalProcedures?: string;
+    investigationsPerformed?: string;
+    hospitalCourse?: string;
+    conditionAtDischarge?: string;
+    medicationsPrescribed?: string;
+    adviceAtDischarge?: string;
+    activityRestrictions?: string;
+    dietInstructions?: string;
+    warningSigns?: string;
+    followUpDate?: string;
+    dischargeType?: string;
     vitals?: {
       height?: string;
       weight?: string;
       bp?: string;
+      bloodPressure?: string;
       pulse?: string;
       temp?: string;
+      temperature?: string;
       spo2?: string;
+      spO2?: string;
       sugar?: string;
+      glucose?: string;
     };
   };
   appointment: {
@@ -46,6 +64,7 @@ interface ReceiptProps {
     time: string;
     type: string;
     appointmentId: string;
+    stayDuration?: string;
   };
   payment: {
     amount: number;
@@ -54,9 +73,10 @@ interface ReceiptProps {
     receiptNumber?: string;
   };
   onClose: () => void;
+  onConfirm?: () => Promise<void>;
 }
 
-function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment, onClose }: ReceiptProps) {
+function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment, onClose, onConfirm }: ReceiptProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [hospital, setHospital] = React.useState(propHospital);
   const [dataLoaded, setDataLoaded] = React.useState(false);
@@ -94,7 +114,14 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
           dob: patient.dateOfBirth, // crucial mapping
           vitals: patient.vitals ? {
             ...patient.vitals,
-            temperature: patient.vitals.temp
+            temperature: patient.vitals.temperature || patient.vitals.temp,
+            temp: patient.vitals.temp || patient.vitals.temperature,
+            bloodPressure: patient.vitals.bp || patient.vitals.bloodPressure,
+            bp: patient.vitals.bp || patient.vitals.bloodPressure,
+            spO2: patient.vitals.spo2 || patient.vitals.spO2,
+            spo2: patient.vitals.spo2 || patient.vitals.spO2,
+            glucose: patient.vitals.sugar || patient.vitals.glucose,
+            sugar: patient.vitals.sugar || patient.vitals.glucose
           } : undefined
         };
 
@@ -126,7 +153,13 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
             notes: patient.symptoms // Map symptoms to appointment notes as existing receipts do
           },
           payment,
-          registrationType: appointment.type?.toUpperCase().includes('IPD') || appointment.type?.toUpperCase().includes('DISCHARGE') ? 'IPD' : 'OPD',
+          registrationType: ((patient.dischargeType && patient.dischargeType.toUpperCase() !== 'NONE') || 
+            (appointment.type && (appointment.type.toUpperCase().includes('DISCHARGE') || appointment.type.toUpperCase().includes('SETTLEMENT'))) ||
+            (appointment.specialization && appointment.specialization.toUpperCase().includes('DISCHARGE'))) 
+            ? 'DISCHARGE' 
+            : (appointment.specialization?.toUpperCase().includes('IPD') || appointment.type?.toUpperCase().includes('IPD') || appointment.stayDuration) 
+              ? 'IPD' 
+              : 'OPD',
           headerHtml,
           footerHtml,
           returnUrl: '#'
@@ -145,9 +178,25 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
     }
   }, [hospital, patient, appointment, payment]);
 
-  const handlePrint = () => {
-    if (iframeRef.current && iframeRef.current.contentWindow) {
-      iframeRef.current.contentWindow.print();
+  const [isConfirming, setIsConfirming] = React.useState(false);
+
+  const handlePrint = async () => {
+    if (onConfirm) {
+      try {
+        setIsConfirming(true);
+        await onConfirm();
+        if (iframeRef.current && iframeRef.current.contentWindow) {
+          iframeRef.current.contentWindow.print();
+        }
+      } catch (err) {
+        console.error("Confirmation failed", err);
+      } finally {
+        setIsConfirming(false);
+      }
+    } else {
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        iframeRef.current.contentWindow.print();
+      }
     }
   };
 
@@ -165,13 +214,15 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
           <div className="flex gap-3">
             <button
               onClick={handlePrint}
-              className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-bold flex items-center gap-2 shadow-sm active:scale-95 transition-all text-xs uppercase tracking-wider"
+              disabled={isConfirming}
+              className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-bold flex items-center gap-2 shadow-sm active:scale-95 transition-all text-xs uppercase tracking-wider disabled:opacity-50"
             >
-              <Printer size={16} /> Print Receipt
+              <Printer size={16} /> {isConfirming ? 'Processing...' : onConfirm ? 'Confirm & Print' : 'Print Receipt'}
             </button>
             <button
               onClick={onClose}
-              className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg active:scale-95 transition-all"
+              disabled={isConfirming}
+              className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg active:scale-95 transition-all disabled:opacity-50"
             >
               <X size={18} />
             </button>

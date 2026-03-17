@@ -877,9 +877,9 @@ function HospitalStructureView() {
             const h = hRes.hospital;
             return {
                 ...h,
-                numberOfBeds: beds.length || h.numberOfBeds || 0,
+                totalBeds: beds.length || 0,
                 availableBeds: beds.filter(b => b.status === "Vacant").length || 0,
-                medicalStaffCount: staffCounts.total || h.numberOfDoctors || 0
+                medicalStaffCount: staffCounts.total || 0
             };
         }
     });
@@ -896,9 +896,10 @@ function HospitalStructureView() {
     const hospital = hospitalRes;
 
     const occupancyRate = React.useMemo(() => {
-        if (!hospital?.numberOfBeds || hospital.numberOfBeds === 0) return 0;
-        const available = hospital.availableBeds || 0;
-        return Math.min(100, Math.round(((hospital.numberOfBeds - available) / hospital.numberOfBeds) * 100));
+        const total = (hospital as any)?.totalBeds || 0;
+        if (!total) return 0;
+        const available = (hospital as any).availableBeds || 0;
+        return Math.min(100, Math.round(((total - available) / total) * 100));
     }, [hospital]);
 
     if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-slate-300" /></div>;
@@ -928,28 +929,9 @@ function HospitalStructureView() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
                                 <div className="space-y-1">
-                                    <p className="text-5xl sm:text-6xl font-black">{hospital.numberOfBeds || 0}</p>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Inpatient Bed Matrix</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Institutional Operations Active</p>
                                 </div>
 
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                                        <span className="text-slate-400">Occupancy Status</span>
-                                        <span className="text-emerald-400">{occupancyRate}%</span>
-                                    </div>
-                                    <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-1000 ease-out"
-                                            style={{ width: `${occupancyRate}%` }}
-                                        />
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                        <span className="text-[9px] font-bold text-emerald-400/80 uppercase tracking-wider">
-                                            {hospital.availableBeds || 0} Nodes Available
-                                        </span>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -957,7 +939,7 @@ function HospitalStructureView() {
 
                 {/* Quick Stats Grid */}
                 <div className="lg:col-span-12">
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                         <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                             <div className="flex items-center gap-2 mb-3">
                                 <Activity size={14} className="text-rose-500" />
@@ -978,13 +960,6 @@ function HospitalStructureView() {
                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Divisions</span>
                             </div>
                             <p className="text-2xl font-black text-slate-900">{hospitalMeta?.departments?.length || hospital.departmentCount || 0}</p>
-                        </div>
-                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                            <div className="flex items-center gap-2 mb-3">
-                                <Stethoscope size={14} className="text-emerald-500" />
-                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Medical Staff</span>
-                            </div>
-                            <p className="text-2xl font-black text-slate-900">{hospital.medicalStaffCount || hospital.numberOfDoctors || 0}</p>
                         </div>
                     </div>
                 </div>

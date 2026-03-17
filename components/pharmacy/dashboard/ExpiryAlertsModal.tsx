@@ -48,7 +48,7 @@ const ExpiryAlertsModal: React.FC<ExpiryAlertsModalProps> = ({ isOpen, onClose }
                             <p className="text-sm text-gray-500 dark:text-gray-400">Products expiring within the next 30 days</p>
                         </div>
                     </div>
-                    <button 
+                    <button
                         onClick={onClose}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-500"
                     >
@@ -87,7 +87,7 @@ const ExpiryAlertsModal: React.FC<ExpiryAlertsModalProps> = ({ isOpen, onClose }
                                     {products.map((product) => {
                                         const expiry = product.expiryDate ? new Date(product.expiryDate) : null;
                                         const isExpiringThisWeek = expiry ? (expiry.getTime() - new Date().getTime()) < 7 * 24 * 60 * 60 * 1000 : false;
-                                        
+
                                         return (
                                             <tr key={product._id} className="hover:bg-red-50/30 dark:hover:bg-red-950/5 group">
                                                 <td className="px-6 py-4">
@@ -114,7 +114,7 @@ const ExpiryAlertsModal: React.FC<ExpiryAlertsModalProps> = ({ isOpen, onClose }
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
                                                     <div className="text-sm font-bold text-gray-900 dark:text-white">
-                                                        {product.currentStock}
+                                                        {Number(product.currentStock).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -128,7 +128,7 @@ const ExpiryAlertsModal: React.FC<ExpiryAlertsModalProps> = ({ isOpen, onClose }
 
                 {/* Footer */}
                 <div className="p-6 border-t dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/10 flex justify-end">
-                    <button 
+                    <button
                         onClick={onClose}
                         className="px-6 py-2.5 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-bold shadow-lg hover:scale-[1.02] active:scale-95"
                     >

@@ -316,12 +316,12 @@ export default function HelpdeskManagement() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-3 md:p-8 max-w-7xl mx-auto space-y-6">
 
       {/* Header */}
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-800 flex items-center gap-2">
+          <h1 className="text-lg md:text-2xl font-semibold text-slate-800 flex items-center gap-2">
             <Headphones size={24} className="text-blue-500"/> Helpdesk Staff
           </h1>
           <p className="text-sm text-slate-500">Manage support hub personnel and credentials</p>
@@ -378,14 +378,14 @@ export default function HelpdeskManagement() {
       {/* Table */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
-                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">NAME</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">CONTACT</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">LOGIN ID</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">STATUS</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">ACTIONS</th>
+                <th className="px-2 md:px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">NAME</th>
+                <th className="px-2 md:px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">CONTACT</th>
+                <th className="px-2 md:px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">LOGIN ID</th>
+                <th className="px-2 md:px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">STATUS</th>
+                <th className="px-2 md:px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">ACTIONS</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -395,7 +395,7 @@ export default function HelpdeskManagement() {
                 <tr><td colSpan={5} className="py-20 text-center text-slate-400 text-sm italic">No helpdesk accounts found.</td></tr>
               ) : filtered.map(h => (
                 <tr key={h._id} className="hover:bg-slate-50/30 transition-colors">
-                  <td className="px-6 py-4">
+                  <td className="px-2 md:px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm shrink-0">
                         {(h.name || "H").charAt(0).toUpperCase()}
@@ -403,13 +403,13 @@ export default function HelpdeskManagement() {
                       <span className="text-sm font-semibold text-slate-700">{h.name || h.assignedStaff?.user?.name || "—"}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-2 md:px-6 py-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 text-sm text-slate-600"><Phone size={13} className="text-slate-400"/>{h.mobile||"—"}</div>
                       <div className="flex items-center gap-2 text-xs text-slate-400"><Mail size={13} className="text-slate-400"/>{h.email||"—"}</div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-2 md:px-6 py-4">
                     <div className="inline-flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
                       <span className="text-xs font-mono font-bold text-slate-700">{h.loginId||"—"}</span>
                       {h.loginId && (
@@ -420,14 +420,14 @@ export default function HelpdeskManagement() {
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-2 md:px-6 py-4">
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
                       h.status === 'inactive' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'
                     }`}>
                       {h.status || 'ACTIVE'}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-2 md:px-6 py-4">
                     <div className="flex justify-end gap-3">
                       <button type="button" onClick={() => onResetPassword(h)} className="text-orange-400 hover:text-orange-600 transition-colors" title="Reset Password"><KeyRound size={17}/></button>
                       <button type="button" onClick={() => handleEditClick(h)} className="text-blue-400 hover:text-blue-600 transition-colors" title="Edit"><Edit2 size={17}/></button>
@@ -452,7 +452,7 @@ export default function HelpdeskManagement() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </div>
 
@@ -469,12 +469,12 @@ export default function HelpdeskManagement() {
             ))}
           </div>
 
-          <div className="min-h-[320px]">
+          <div className="min-h-[320px] max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar pb-4 ">
 
             {/* ── BASIC ── */}
             {activeTab === "basic" && (
               <div className="space-y-4 animate-in fade-in duration-300">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <IField label="Full Name" name="name" value={formData.name} onChange={v=>set('name',v)} onBlur={()=>blur('name',formData.name)}
                     error={errors.name} touched={touched.name} required placeholder="e.g. Ramesh Kumar"/>
                   <div className="space-y-1.5">
@@ -486,13 +486,13 @@ export default function HelpdeskManagement() {
                     </select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <IField label="Mobile Number" name="mobile" value={formData.mobile} onChange={v=>set('mobile',v)} onBlur={()=>blur('mobile',formData.mobile)}
                     error={errors.mobile} touched={touched.mobile} required type="tel" placeholder="10-digit mobile"/>
                   <IField label="Email Address" name="email" value={formData.email} onChange={v=>set('email',v)} onBlur={()=>blur('email',formData.email)}
                     error={errors.email} touched={touched.email} type="email" placeholder="email@hospital.com"/>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-700">Date of Birth</label>
                     <input type="date" value={formData.dateOfBirth} onChange={e=>set('dateOfBirth',e.target.value)}
@@ -523,13 +523,13 @@ export default function HelpdeskManagement() {
             {/* ── EMPLOYMENT ── */}
             {activeTab === "employment" && (
               <div className="space-y-4 animate-in fade-in duration-300">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <IField label="Designation" name="designation" value={formData.designation} onChange={v=>set('designation',v)} onBlur={()=>blur('designation',formData.designation)}
                     error={errors.designation} touched={touched.designation} required placeholder="e.g. Support Agent"/>
                   <IField label="Employee ID (Internal)" name="employeeId" value={formData.employeeId} onChange={v=>set('employeeId',v)}
                     error={errors.employeeId} touched={touched.employeeId} placeholder="e.g. HELP-001"/>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-700">Joining Date</label>
                     <input type="date" value={formData.joiningDate} onChange={e=>set('joiningDate',e.target.value)}
@@ -558,7 +558,7 @@ export default function HelpdeskManagement() {
                       setFormData(p => ({ ...p, shift: e.target.value, startTime: s?.startTime||"09:00", endTime: s?.endTime||"17:00" }));
                     }}
                     options={[{ label:"Select Work Shift", value:"" }, ...(shifts as any[]).map(s => ({ label:`${s.name} (${s.startTime} - ${s.endTime})`, value:s._id }))]}/>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[["Shift Start",formData.startTime],["Shift End",formData.endTime]].map(([l,v])=>(
                       <div key={l} className="p-3 bg-slate-50 rounded-xl border border-slate-100">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{l}</p>
@@ -593,7 +593,7 @@ export default function HelpdeskManagement() {
                       className="w-full pl-7 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-blue-600 outline-none focus:ring-2 focus:ring-blue-500/10"/>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* PAN */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-700">PAN Number</label>
@@ -649,7 +649,7 @@ export default function HelpdeskManagement() {
             {activeTab === "bank" && (
               <div className="space-y-4 animate-in fade-in duration-300">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bank Account Details</p>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-700">Account Holder Name</label>
                     <input type="text" value={formData.accountName} onChange={e=>set('accountName',e.target.value)}
@@ -669,7 +669,7 @@ export default function HelpdeskManagement() {
                     {!formData.accountNumber && <p className="text-[10px] text-slate-400">Must be 9 to 18 digits</p>}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-700">Bank Name</label>
                     <input type="text" value={formData.bankName} onChange={e=>set('bankName',e.target.value)}
@@ -713,13 +713,13 @@ export default function HelpdeskManagement() {
               {activeTab !== "bank" ? (
                 <button type="button"
                   onClick={() => setActiveTab(TAB_ORDER[TAB_ORDER.indexOf(activeTab as any) + 1])}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95">
+                  className="bg-blue-600 text-white px-3 md:px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95">
                   Next →
                 </button>
               ) : (
                 /* Register button — only on last tab */
                 <button type="submit" disabled={loading}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-60">
+                  className="bg-blue-600 text-white px-3 md:px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-60">
                   {loading ? "Initializing..." : "Register Hub Account"}
                 </button>
               )}
@@ -749,10 +749,10 @@ export default function HelpdeskManagement() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-1">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-2 md:p-4 space-y-1">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Login ID</p>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-base font-mono font-bold text-slate-800 tracking-wider select-all">{createdCreds?.loginId}</span>
+              <span className="text-xs md:text-base font-mono font-bold text-slate-800 tracking-wider select-all">{createdCreds?.loginId}</span>
               <button type="button" onClick={()=>copyToClipboard(createdCreds?.loginId,"Login ID copied!","loginId")}
                 className={`flex items-center gap-1.5 text-xs font-medium border rounded-lg px-3 py-1.5 bg-white transition-all ${copiedField==='loginId'?'text-emerald-600 border-emerald-300 bg-emerald-50':'text-blue-600 hover:text-blue-700 border-blue-200'}`}>
                 {copiedField==='loginId'?<><Check size={13}/>Copied!</>:<><Copy size={13}/>Copy</>}
@@ -760,10 +760,10 @@ export default function HelpdeskManagement() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-1">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-2 md:p-4 space-y-1">
             <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Password (one-time visible)</p>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-base font-mono font-bold text-slate-800 tracking-wider">
+              <span className="text-xs md:text-base font-mono font-bold text-slate-800 tracking-wider">
                 {showPassword ? createdCreds?.password : "••••••••"}
               </span>
               <div className="flex items-center gap-2">
@@ -786,7 +786,7 @@ export default function HelpdeskManagement() {
 
           <div className="flex justify-end pt-1">
             <button type="button" onClick={()=>setIsCredModalOpen(false)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-all">
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 md:px-6 py-2 rounded-lg text-sm font-medium transition-all">
               Done
             </button>
           </div>
@@ -797,7 +797,7 @@ export default function HelpdeskManagement() {
       <Modal isOpen={isEditModalOpen} onClose={()=>setIsEditModalOpen(false)} title="Edit Staff Details" maxWidth="max-w-md">
         <form onSubmit={onUpdateHelpdesk} noValidate className="space-y-4 pt-2">
           <FormInput label="Display Name" value={formData.name} onChange={e=>set('name',e.target.value)} required/>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormInput label="Email" type="email" value={formData.email} onChange={e=>set('email',e.target.value)}/>
             <FormInput label="Mobile" value={formData.mobile} onChange={e=>set('mobile',e.target.value)}/>
           </div>

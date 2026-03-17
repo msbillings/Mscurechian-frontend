@@ -117,12 +117,16 @@ const TermsSection: React.FC<TermsSectionProps> = ({ onAccept, hasAgreed }) => {
 
                         <div className="flex items-center gap-3 w-full sm:w-auto">
                             <button 
+                                type="button"
+                                suppressHydrationWarning
                                 onClick={handleCancel}
                                 className="flex-1 sm:flex-none px-5 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 font-semibold text-sm hover:bg-gray-50 transition-colors shadow-sm"
                             >
                                 Cancel
                             </button>
                             <button 
+                                type="button"
+                                suppressHydrationWarning
                                 disabled={!agreed}
                                 onClick={handleContinue}
                                 className={`flex-1 sm:flex-none px-5 py-2 rounded-lg font-semibold text-sm transition-colors shadow-sm ${

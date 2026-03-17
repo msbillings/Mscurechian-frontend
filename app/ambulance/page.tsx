@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { emergencyService } from "@/lib/integrations/services/emergency.service";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/stores/authStore";
 import {
     EmergencyRequest,
     CreateEmergencyRequestData,
@@ -10,6 +12,7 @@ import { ShieldCheck, Clock, MapPin, Activity, Building2, AlertCircle, Search, I
 import { format } from 'date-fns';
 
 function AmbulanceDashboard() {
+    const router = useRouter();
     const [activeTab, setActiveTab] = useState<"new" | "history">("new");
     const [hospitals, setHospitals] = useState<Hospital[]>([]);
     const [myRequests, setMyRequests] = useState<EmergencyRequest[]>([]);
@@ -51,30 +54,22 @@ function AmbulanceDashboard() {
         targetHospitals: [], // Empty = send to all
     });
 
+    const { isAuthenticated, isInitialized } = useAuthStore();
+
     useEffect(() => {
-        const checkAuth = () => {
-            const token = sessionStorage.getItem("accessToken") ||
-                document.cookie.split('; ').find(row => row.startsWith('accessToken='))?.split('=')[1];
-
-            console.log("🚑 AMBULANCE - AUTH TRACE:", {
-                sessionToken: !!sessionStorage.getItem("accessToken"),
-                cookieToken: !!document.cookie.split('; ').find(row => row.startsWith('accessToken=')),
-                hospitalId: sessionStorage.getItem("activeHospitalId") || document.cookie.split('; ').find(row => row.startsWith('hospitalId='))?.split('=')[1]
-            });
-
-            if (!token) {
-                console.error("❌ No token found! Redirecting...");
-                window.location.href = "/emergency-login";
-                return;
-            }
+        if (isInitialized && !isAuthenticated) {
+            console.error("❌ Auth Failed: Redirecting to login corridor...");
+            if (pollingInterval) clearInterval(pollingInterval);
+            window.location.href = "/emergency-login";
+        } else if (isInitialized && isAuthenticated) {
             loadData();
-        };
-        checkAuth();
-    }, []);
+        }
+    }, [isAuthenticated, isInitialized, router]);
 
     const loadData = async () => {
         const token = sessionStorage.getItem("accessToken");
-        if (!token) return;
+        const role = sessionStorage.getItem("userRole");
+        if (!token || role !== "ambulance") return;
 
         setLoading(true);
         try {
@@ -94,6 +89,16 @@ function AmbulanceDashboard() {
     const startPolling = () => {
         if (pollingInterval) clearInterval(pollingInterval);
         const interval = setInterval(async () => {
+            // Check if we still have a valid session before polling
+            const currentToken = sessionStorage.getItem("accessToken");
+            const currentRole = sessionStorage.getItem("userRole");
+            
+            if (!currentToken || currentRole !== "ambulance") {
+                console.log("🛑 stopping poll - invalid session");
+                if (interval) clearInterval(interval);
+                return;
+            }
+
             try {
                 const requestsData = await emergencyService.getMyRequests();
                 setMyRequests(requestsData.requests);

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { useQuery } from '@tanstack/react-query';
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
 import dynamic from 'next/dynamic';
@@ -61,10 +61,46 @@ function HospitalAdminDashboard() {
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
   const [isBrandingModalOpen, setIsBrandingModalOpen] = useState(false);
 
+  // Fetch doctors for the filter
+  const { data: doctorsData } = useQuery<any>({
+    queryKey: ['hospital-admin', 'doctors-list'],
+    queryFn: async () => {
+      const resp = await hospitalAdminService.getDoctors();
+      return resp;
+    },
+    staleTime: 5 * 60 * 1000, // 5 min cache
+  });
 
-  const getMetricDetails = (label: string) => {
-    const totalStaff = stats.totalDoctors + stats.totalNurses + stats.totalStaff;
-    const attendanceRate = totalStaff > 0 ? Math.round((stats.attendance?.present || 0) / totalStaff * 100) : 0;
+  // Main dashboard data
+  const { data: dashboardData, isLoading, error, refetch, isFetching } = useQuery<any>({
+    queryKey: ['hospital-admin', 'dashboard', range, startDate, endDate, selectedDoctorId],
+    queryFn: async () => {
+      const data = await hospitalAdminService.getDashboard({
+        range,
+        startDate,
+        endDate,
+        doctorId: selectedDoctorId === 'all' ? undefined : selectedDoctorId
+      });
+      return data;
+    },
+    staleTime: 30000, // 30s cache for smoother navigation
+    gcTime: 15 * 60 * 1000,
+    retry: 2,
+    refetchInterval: 30000, // Poll every 30 seconds (balanced for performance)
+    refetchOnWindowFocus: true,
+    placeholderData: (previousData: any) => previousData, 
+  });
+
+  const { hospital = {}, stats = {} } = dashboardData || {};
+
+  // ✅ PERFORMANCE: Memoize shared calculations
+  const { totalStaff, attendanceRate } = useMemo(() => {
+    const total = (stats.totalDoctors || 0) + (stats.totalNurses || 0) + (stats.totalStaff || 0);
+    const rate = total > 0 ? Math.round((stats.attendance?.present || 0) / total * 100) : 0;
+    return { totalStaff: total, attendanceRate: rate };
+  }, [stats]);
+
+  const getMetricDetails = useCallback((label: string) => {
 
     const details: Record<string, { items: { label: string, value: string | number }[], insight: string }> = {
       "Active Doctors": {
@@ -163,41 +199,7 @@ function HospitalAdminDashboard() {
       }
     };
     return details[label] || { items: [], insight: "" };
-  };
-
-  // Fetch doctors for the filter
-  const { data: doctorsData } = useQuery<any>({
-    queryKey: ['hospital-admin', 'doctors-list'],
-    queryFn: async () => {
-      const resp = await hospitalAdminService.getDoctors();
-      return resp;
-    },
-    staleTime: 0,
-  });
-
-  // Main dashboard data
-  const { data: dashboardData, isLoading, error, refetch, isFetching } = useQuery<any>({
-    queryKey: ['hospital-admin', 'dashboard', range, startDate, endDate, selectedDoctorId],
-    queryFn: async () => {
-      const data = await hospitalAdminService.getDashboard({
-        range,
-        startDate,
-        endDate,
-        doctorId: selectedDoctorId === 'all' ? undefined : selectedDoctorId
-      });
-      return data;
-    },
-    staleTime: 5000,
-    gcTime: 5 * 60 * 1000,
-    retry: 2,
-    refetchInterval: 10000, // Poll every 10 seconds for live updates
-    refetchOnWindowFocus: true,
-    placeholderData: (previousData: any) => previousData, // Keep showing old data while fetching new data
-  });
-
-
-
-  const { hospital = {}, stats = {} } = dashboardData || {};
+  }, [stats, attendanceRate, totalStaff]);
 
   // Memoized stat cards with real data
   const primaryStats = useMemo(() => [
@@ -302,7 +304,7 @@ function HospitalAdminDashboard() {
   // Show skeleton on initial load with refined aesthetics
   if (isLoading && !dashboardData) {
     return (
-      <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
+      <div className="p-3 md:p-8 space-y-8 bg-slate-50/50 min-h-screen">
         {/* Header Skeleton */}
         <div className="flex justify-between items-center">
           <div className="space-y-2">
@@ -316,9 +318,9 @@ function HospitalAdminDashboard() {
         </div>
 
         {/* Primary Metrics Skeleton */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 bg-white border border-slate-100 rounded-2xl p-6 space-y-4 shadow-sm">
+            <div key={i} className="h-32 bg-white border border-slate-100 rounded-2xl p-3 md:p-6 space-y-4 shadow-sm">
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 bg-slate-100 rounded-xl animate-pulse"></div>
                 <div className="space-y-2 flex-1">
@@ -332,7 +334,7 @@ function HospitalAdminDashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="h-24 bg-white border border-slate-100 rounded-2xl animate-pulse shadow-sm"></div>
               ))}
@@ -349,17 +351,17 @@ function HospitalAdminDashboard() {
   }
 
   return (
-    <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
+    <div className="p-3 sm:p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-5 md:space-y-6 bg-slate-50/50 min-h-screen">
       {/* Simple Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Dashboard Overview</h1>
+          <h1 className="text-lg md:text-xl font-black text-slate-900 tracking-tight">Dashboard Overview</h1>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mt-1">
             <Building2 className="w-3 h-3" /> {hospital?.name || "Hospital Management System"}
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {/* Range Filter */}
           <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
             {[
@@ -428,7 +430,7 @@ function HospitalAdminDashboard() {
       </div>
 
       {/* Primary Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 relative z-10">
         {primaryStats.map((stat, index) => {
           const details = getMetricDetails(stat.label);
           const isHovered = hoveredCard === stat.label;
@@ -440,7 +442,7 @@ function HospitalAdminDashboard() {
               onMouseLeave={() => setHoveredCard(null)}
             >
               <Link href={stat.href} className="block h-full">
-                <Card className={`p-6 border-slate-200 shadow-sm transition-all h-full bg-white relative z-20 ${isHovered ? 'border-slate-300 ring-2 ring-slate-100' : ''}`}>
+                <Card className={`p-2 md:p-6 border-slate-200 shadow-sm transition-all h-full bg-white relative z-20 ${isHovered ? 'border-slate-300 ring-2 ring-slate-100' : ''}`}>
                   <div className="flex items-center gap-4">
                     <div className={`p-3 rounded-xl transition-colors ${stat.color === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
                       stat.color === 'blue' ? 'bg-blue-50 text-blue-600' :
@@ -491,9 +493,9 @@ function HospitalAdminDashboard() {
       {/* Performance & Operations */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Performance Metrics */}
-        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           {performanceStats.map((stat, index) => (
-            <Card key={index} className="p-6 border-slate-100 shadow-sm bg-white">
+            <Card key={index} className="p-2 md:p-6 border-slate-100 shadow-sm bg-white">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
@@ -518,7 +520,7 @@ function HospitalAdminDashboard() {
 
         {/* Workforce & Attendance */}
         <div className="flex flex-col gap-6">
-          <Card className="p-6 border-slate-200 shadow-sm bg-white">
+          <Card className="p-2 md:p-6 border-slate-200 shadow-sm bg-white">
             <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-4">Workforce Pulse</h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
@@ -551,7 +553,7 @@ function HospitalAdminDashboard() {
             </div>
           </Card>
 
-          <Card className="p-6 border-slate-200 shadow-sm bg-white flex-1 flex flex-col">
+          <Card className="p-2 md:p-6 border-slate-200 shadow-sm bg-white flex-1 flex flex-col">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Attendance Flow</h3>
               <Link href="/hospital-admin/attendance/overview" className="text-emerald-600 hover:text-emerald-700">
@@ -566,14 +568,14 @@ function HospitalAdminDashboard() {
                 centerLabel="Present"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
               <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-center">
                 <p className="text-[9px] font-bold text-slate-400 uppercase">Present</p>
-                <p className="text-base font-black text-slate-900">{stats.attendance?.present || 0}</p>
+                <p className="text-xs md:text-base font-black text-slate-900">{stats.attendance?.present || 0}</p>
               </div>
               <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-center">
                 <p className="text-[9px] font-bold text-slate-400 uppercase">On Leave</p>
-                <p className="text-base font-black text-slate-900">{stats.attendance?.onLeave || 0}</p>
+                <p className="text-xs md:text-base font-black text-slate-900">{stats.attendance?.onLeave || 0}</p>
               </div>
             </div>
           </Card>
@@ -581,7 +583,7 @@ function HospitalAdminDashboard() {
       </div>
 
       {/* Clinical Registry - More Proper Details */}
-      <Card className="p-6 border-slate-200 shadow-sm bg-white rounded-2xl relative">
+      <Card className="p-2 md:p-6 border-slate-200 shadow-sm bg-white rounded-2xl relative">
         {/* Loading Overlay - Subtle and Fast */}
         {isFetching && (
           <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] rounded-2xl z-50 flex items-center justify-center transition-all">
@@ -595,7 +597,7 @@ function HospitalAdminDashboard() {
         <div className="flex flex-col mb-8 gap-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Real-time Clinical Registry</h3>
+              <h3 className="text-xs md:text-base md:text-lg font-black text-slate-900 uppercase tracking-tight">Real-time Clinical Registry</h3>
               <p className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-2 mt-1">
                 <span className="w-1.5 h-1.5 bg-primary-theme rounded-full animate-pulse"></span>
                 In-Flow Monitoring Active • {selectedDoctorId !== 'all' ? `Filtering by Consultant` : 'All Departments'}
@@ -650,8 +652,9 @@ function HospitalAdminDashboard() {
 
         <div className="flex flex-col gap-4">
           {(dashboardData?.liveQueue || []).length > 0 ? (
-            <div className="border border-slate-100 rounded-2xl overflow-hidden bg-slate-50/30">
-              <div className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-slate-100 bg-white/50">
+            <div className="border border-slate-100 rounded-2xl overflow-x-auto bg-slate-50/30">
+              <div className="min-w-[800px]">
+                <div className="grid grid-cols-12 gap-4 px-3 md:px-6 py-4 border-b border-slate-100 bg-white/50">
                 <div className="col-span-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</div>
                 <div className="col-span-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Patient Subject</div>
                 <div className="col-span-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Consultant</div>
@@ -661,7 +664,7 @@ function HospitalAdminDashboard() {
                 {dashboardData.liveQueue.map((item: any, i: number) => (
                   <div
                     key={item._id || i}
-                    className={`grid grid-cols-12 gap-4 px-6 py-5 items-center transition-all hover:bg-white group ${item.status === 'in-progress' ? 'bg-blue-50/30' : 'bg-white/30'
+                    className={`grid grid-cols-12 gap-4 px-3 md:px-6 py-5 items-center transition-all hover:bg-white group ${item.status === 'in-progress' ? 'bg-blue-50/30' : 'bg-white/30'
                       }`}
                   >
                     <div className="col-span-2">
@@ -694,6 +697,7 @@ function HospitalAdminDashboard() {
                     </div>
                   </div>
                 ))}
+              </div>
               </div>
             </div>
           ) : (

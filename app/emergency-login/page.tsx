@@ -31,14 +31,39 @@ function EmergencyLogin() {
         setLoading(true);
 
         try {
-            const response = await emergencyService.login(identifier, password);
+            console.log("🚑 Initiating login for:", identifier);
+            const response = await emergencyService.login(identifier, password) as any;
+            console.log("🚑 Login Response Received:", { 
+                hasTokens: !!response.tokens, 
+                hasAccessTokenRoot: !!response.accessToken,
+                userRole: response.user?.role,
+                keys: Object.keys(response)
+            });
 
-            // Store tokens in sessionStorage (Primary for client-side)
-            sessionStorage.setItem("accessToken", response.tokens.accessToken);
-            sessionStorage.setItem("refreshToken", response.tokens.refreshToken);
+            // Store token in memory (primary for same-tab client-side use)
+            // AND in sessionStorage so apiClient restores it after the page reload
+            // Store token robustly (handle both nested and flat responses)
+            const accessToken = response.accessToken || response.tokens?.accessToken;
+            const refreshToken = response.refreshToken || response.tokens?.refreshToken;
+
+            if (accessToken) {
+                console.log("[Login] 🔑 Token acquired. Persisting to Storage...");
+                const { setAccessToken } = await import('@/lib/integrations');
+                setAccessToken(accessToken);
+                sessionStorage.setItem('accessToken', accessToken);
+                console.log("✅ Token verifying in Storage:", !!sessionStorage.getItem('accessToken'));
+            } else {
+                console.error("[Login] ❌ No access token found in any response field!");
+            }
+
+            if (refreshToken) {
+                sessionStorage.setItem('refreshToken', refreshToken);
+            }
             sessionStorage.setItem("userRole", "ambulance");
             sessionStorage.setItem("user", JSON.stringify(response.user));
             sessionStorage.setItem('lastAuthCheck', Date.now().toString());
+            if (response.sessionId) sessionStorage.setItem("sessionId", response.sessionId);
+            sessionStorage.setItem("tabAuthorized", "true");
 
             // MULTI-TENANCY: Store hospitalId
             const rawIdVal = (response.user as any).hospital || (response.user as any).hospitalId;
@@ -49,20 +74,18 @@ function EmergencyLogin() {
                 document.cookie = `hospitalId=${hStr}; path=/; max-age=86400; SameSite=Lax`;
             }
 
-            // OVERWRITE COOKIES: Atomic update
-            document.cookie = `accessToken=${response.tokens.accessToken}; path=/; max-age=86400; SameSite=Lax`;
-            document.cookie = `refreshToken=${response.tokens.refreshToken}; path=/; max-age=604800; SameSite=Lax`;
+            // Set userRole for middleware and authStore persistence
+            document.cookie = `userRole=ambulance; path=/; max-age=86400; SameSite=Lax`;
+
+            // OVERWRITE COOKIES: Handled securely via HttpOnly on backend
 
             // Show navigation feedback
             setIsNavigating(true);
 
             // Add console logs for auth debugging.
-            const token = sessionStorage.getItem("accessToken") ||
-                document.cookie.split('; ').find(row => row.startsWith('accessToken='))?.split('=')[1];
-
             console.log("🕵️ Auth Check Trace:", {
-                hasSession: !!sessionStorage.getItem("accessToken"),
-                hasCookie: !!document.cookie.split('; ').find(row => row.startsWith('accessToken=')),
+                hasSessionToken: !!sessionStorage.getItem("accessToken"),
+                hasCookieToken: !!document.cookie.split('; ').find(row => row.startsWith('accessToken=')),
                 role: sessionStorage.getItem("userRole")
             });
 
@@ -134,6 +157,7 @@ function EmergencyLogin() {
                                 placeholder="AMB-001 or 9876543210"
                                 maxLength={10}
                                 required
+                                suppressHydrationWarning
                             />
                             <p className="text-[10px] text-muted text-right pr-1 mt-1">{identifier.length}/10</p>
                         </div>
@@ -150,12 +174,14 @@ function EmergencyLogin() {
                                     className="w-full px-4 py-3 bg-gray-50 pr-12 border border-gray-200 rounded-xl text-gray-900 text-base placeholder:text-gray-400 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none"
                                     placeholder="Enter your password"
                                     required
+                                    suppressHydrationWarning
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
                                     aria-label={showPassword ? "Hide password" : "Show password"}
+                                    suppressHydrationWarning
                                 >
                                     {showPassword ? (
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -175,6 +201,7 @@ function EmergencyLogin() {
                             type="submit"
                             disabled={loading || isNavigating}
                             className="w-full bg-linear-to-r from-red-600 to-orange-600 text-white py-3.5 rounded-xl font-bold uppercase tracking-wider text-sm hover:from-red-700 hover:to-orange-700 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg hover:shadow-red-500/30 active:scale-[0.98]"
+                            suppressHydrationWarning
                         >
                             {loading || isNavigating ? (
                                 <span className="flex items-center justify-center gap-2">
@@ -205,6 +232,7 @@ function EmergencyLogin() {
                     <button
                         onClick={() => router.push("/")}
                         className="group inline-flex items-center gap-2 text-gray-500 hover:text-gray-800 text-sm font-bold px-4 py-2 rounded-full hover:bg-white/50"
+                        suppressHydrationWarning
                     >
                         <svg className="w-4 h-4 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />

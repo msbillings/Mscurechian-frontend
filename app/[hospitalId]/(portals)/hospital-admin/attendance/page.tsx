@@ -5,8 +5,9 @@ import { getAttendanceAction, getAttendanceStatsAction } from "@/lib/integration
 import AttendanceClient from "./AttendanceClient";
 import { PageHeader, Card } from "@/components/admin";
 import { Users, Calendar } from "lucide-react";
+import { TableSkeleton } from "@/components/admin/Skeletons";
 
-async function AttendanceData() {
+async function AttendanceData({ hospitalId }: { hospitalId: string }) {
   let attendanceResponse, statsResponse;
   let error = null;
 
@@ -53,10 +54,10 @@ async function AttendanceData() {
               Failed to load attendance data
             </h3>
             <p className="text-gray-600 mb-4">
-              There was an error loading the attendance information. Please try refreshing the page.
+              There was an error loading the attendance information: {error instanceof Error ? error.message : 'Unknown error'}. Please try refreshing the page.
             </p>
             <a
-              href="/hospital-admin/attendance"
+              href={`/${hospitalId}/hospital-admin/attendance`}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-block"
             >
               Refresh Page
@@ -84,20 +85,19 @@ function AttendanceLoading() {
         subtitle="Monitor and manage staff attendance"
       />
 
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center">
-          <div className="h-12 w-12 border-4 border-gray-200 border-t-blue-600 rounded-full spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading attendance data...</p>
-        </div>
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <TableSkeleton rows={10} />
       </div>
     </div>
   );
 }
 
-function HospitalAdminAttendancePage() {
+async function HospitalAdminAttendancePage({ params }: { params: Promise<{ hospitalId: string }> }) {
+  const { hospitalId } = await params;
+  
   return (
     <Suspense fallback={<AttendanceLoading />}>
-      <AttendanceData />
+      <AttendanceData hospitalId={hospitalId} />
     </Suspense>
   );
 }

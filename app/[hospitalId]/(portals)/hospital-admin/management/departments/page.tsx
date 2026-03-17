@@ -130,33 +130,33 @@ const DepartmentsManagement = () => {
     const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
-        <div className="p-8 max-w-7xl mx-auto min-h-screen bg-slate-50/50">
+        <div className="p-2 sm:p-4 md:p-6 lg:p-8 max-w-7xl mx-auto min-h-screen bg-slate-50/50">
             {/* Header Area */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 md:mb-10">
                 <div>
-                    <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                    <h1 className="text-sm md:text-lg md:text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
                         <Building2 className="text-teal-600" size={24} />
                         DEPARTMENTS
                     </h1>
-                    <p className="text-slate-500 font-bold text-sm tracking-widest mt-1 uppercase opacity-70">
+                    <p className="text-slate-500 font-bold text-[10px] md:text-sm tracking-widest mt-1 uppercase opacity-70">
                         IPD Infrastructure & Resource Mapping
                     </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 md:gap-3">
                     <button
                         onClick={() => setShowImportModal(true)}
-                        className="px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm"
+                        className="flex-1 sm:flex-none px-4 md:px-6 py-2.5 md:py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-sm"
                     >
-                        <Upload size={16} />
+                        <Upload size={14} />
                         Bulk Import
                     </button>
                     <button
                         onClick={() => setShowAddModal(true)}
-                        className="px-6 py-3 bg-primary-theme text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary-theme/80 transition-all flex items-center gap-2 shadow-lg shadow-primary-theme/20"
+                        className="flex-1 sm:flex-none px-4 md:px-6 py-2.5 md:py-3 bg-primary-theme text-white rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-primary-theme/80 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary-theme/20"
                     >
-                        <Plus size={16} />
-                        New Department
+                        <Plus size={14} />
+                        New Dept
                     </button>
                 </div>
             </div>
@@ -168,7 +168,7 @@ const DepartmentsManagement = () => {
                     { label: 'Strategic Codes', value: departments.filter(d => d.code).length, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
                     { label: 'System Health', value: '100%', icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
                 ].map((stat, i) => (
-                    <div key={i} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
+                    <div key={i} className="bg-white p-2 md:p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
                         <div className={`w-10 h-10 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center shadow-inner`}>
                             <stat.icon size={18} />
                         </div>
@@ -233,9 +233,9 @@ const DepartmentsManagement = () => {
                     <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">No departments found matching your criteria</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                     {paginated.map((dept) => (
-                        <div key={dept._id} className="group bg-white rounded-[24px] border border-slate-100 p-4 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-full">
+                        <div key={dept._id} className="group bg-white rounded-[24px] border border-slate-100 p-2 md:p-4 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-full">
                             <div>
                                 <div className="absolute top-0 right-0 p-3 flex gap-1.5 z-10">
                                     <button
@@ -286,25 +286,25 @@ const DepartmentsManagement = () => {
 
             {/* Creation Modal */}
             {showAddModal && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6 z-[100] animate-in fade-in duration-300">
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 z-[100] animate-in fade-in duration-300">
                     <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                        <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+                        <div className="p-3 md:p-6 border-b border-slate-50 flex items-center justify-between">
                             <div>
-                                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Deploy New Unit</h2>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Initialize clinical department infrastructure</p>
+                                <h2 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight">Deploy Unit</h2>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Initiate new clinical department node</p>
                             </div>
-                            <button onClick={() => setShowAddModal(false)} className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center hover:bg-slate-100 hover:text-slate-900 transition-all">
-                                <X size={20} />
+                            <button onClick={() => setShowAddModal(false)} className="w-8 h-8 md:w-10 md:h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center hover:bg-slate-100 hover:text-slate-900 transition-all">
+                                <X size={18} />
                             </button>
                         </div>
-                        <form onSubmit={handleCreate} className="p-8 space-y-6">
+                        <form onSubmit={handleCreate} className="p-3 md:p-6 space-y-4 md:space-y-6 max-h-[60vh] md:max-h-none overflow-y-auto custom-scrollbar">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-xs">Department Name</label>
                                 <input
                                     required
                                     value={newDept.name}
                                     onChange={(e) => setNewDept(prev => ({ ...prev, name: e.target.value }))}
-                                    className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
+                                    className="w-full px-3 md:px-6 py-3 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] md:text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
                                     placeholder="E.G. NEUROLOGY"
                                 />
                             </div>
@@ -314,13 +314,13 @@ const DepartmentsManagement = () => {
                                     required
                                     value={newDept.code}
                                     onChange={(e) => setNewDept(prev => ({ ...prev, code: e.target.value }))}
-                                    className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
+                                    className="w-full px-3 md:px-6 py-3 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] md:text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
                                     placeholder="E.G. CARD"
                                 />
                             </div>
                             <button
                                 disabled={submitting}
-                                className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all disabled:opacity-50 shadow-xl"
+                                className="w-full py-3 md:py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-slate-800 transition-all disabled:opacity-50 shadow-xl"
                             >
                                 {submitting ? "Processing..." : "Authorize Creation"}
                             </button>
@@ -331,25 +331,25 @@ const DepartmentsManagement = () => {
 
             {/* Edit Modal */}
             {showEditModal && editingDept && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6 z-[100] animate-in fade-in duration-300">
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 z-[100] animate-in fade-in duration-300">
                     <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                        <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-teal-600 text-white">
+                        <div className="p-3 md:p-6 border-b border-slate-50 flex items-center justify-between bg-teal-600 text-white">
                             <div>
-                                <h2 className="text-xl font-black uppercase tracking-tight">Refine Unit</h2>
+                                <h2 className="text-lg md:text-xl font-black uppercase tracking-tight">Refine Unit</h2>
                                 <p className="text-[10px] font-bold text-teal-100 uppercase tracking-widest mt-1">Update clinical department node</p>
                             </div>
-                            <button onClick={() => setShowEditModal(false)} className="w-10 h-10 bg-white/10 text-white rounded-xl flex items-center justify-center hover:bg-white/20 transition-all">
-                                <X size={20} />
+                            <button onClick={() => setShowEditModal(false)} className="w-8 h-8 md:w-10 md:h-10 bg-white/10 text-white rounded-xl flex items-center justify-center hover:bg-white/20 transition-all">
+                                <X size={18} />
                             </button>
                         </div>
-                        <form onSubmit={handleUpdate} className="p-8 space-y-6">
+                        <form onSubmit={handleUpdate} className="p-3 md:p-6 space-y-4 md:space-y-6 max-h-[60vh] md:max-h-none overflow-y-auto custom-scrollbar">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-xs">Department Name</label>
                                 <input
                                     required
                                     value={editingDept.name}
                                     onChange={(e) => setEditingDept((prev: any) => ({ ...prev, name: e.target.value }))}
-                                    className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
+                                    className="w-full px-3 md:px-6 py-3 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] md:text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -358,12 +358,12 @@ const DepartmentsManagement = () => {
                                     required
                                     value={editingDept.code}
                                     onChange={(e) => setEditingDept((prev: any) => ({ ...prev, code: e.target.value }))}
-                                    className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
+                                    className="w-full px-3 md:px-6 py-3 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] md:text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all"
                                 />
                             </div>
                             <button
                                 disabled={submitting}
-                                className="w-full py-4 bg-teal-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-teal-700 transition-all disabled:opacity-50 shadow-xl shadow-teal-200"
+                                className="w-full py-3 md:py-4 bg-teal-600 text-white rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-teal-700 transition-all disabled:opacity-50 shadow-xl shadow-teal-200"
                             >
                                 {submitting ? "Saving..." : "Update Department"}
                             </button>

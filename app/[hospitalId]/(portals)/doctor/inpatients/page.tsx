@@ -19,7 +19,10 @@ import {
     X,
     LayoutGrid,
     List,
-    Pill
+    Pill,
+    Pencil,
+    Check,
+    ClipboardList
 } from 'lucide-react';
 import { useTenantLink } from '@/hooks/useTenantLink';
 import AddClinicalChargeModal from '@/components/ipd/AddClinicalChargeModal';
@@ -41,6 +44,18 @@ export default function DoctorInpatientsPage() {
     const { user } = useAuthStore();
     const queryClient = useQueryClient();
     const { data: admissions = [], isLoading: loading } = useDoctorInpatients(user?.id, user?.role);
+
+    useEffect(() => {
+        if (admissions.length > 0) {
+            console.log("[DoctorInpatients] Current Inpatients Sample Data:", {
+                id: admissions[0].admissionId || admissions[0]._id,
+                reason: admissions[0].reason,
+                reasonForAdmission: admissions[0].reasonForAdmission,
+                clinicalNotes: admissions[0].clinicalNotes,
+                raw: admissions[0]
+            });
+        }
+    }, [admissions]);
 
     const fetchAdmissions = useCallback(async () => {
         queryClient.invalidateQueries({ queryKey: ['doctor-inpatients'] });
@@ -247,13 +262,14 @@ export default function DoctorInpatientsPage() {
             {/* Content Section */}
             {viewType === 'list' ? (
                 <div className="bg-white dark:bg-[#111] rounded-[0.5rem] border border-gray-200 dark:border-gray-800 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
+                    <div className="overflow-x-auto no-scrollbar">
+                        <table className="w-full text-left min-w-[1000px]">
                             <thead>
                                 <tr className="bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-800">
                                     <th className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-gray-400">Inpatient Details</th>
                                     <th className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-gray-400">Room/Bed</th>
                                     <th className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-gray-400 text-center">Monitoring</th>
+                                    <th className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-gray-400">Reason</th>
                                     <th className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-gray-400">Primary Doctor</th>
                                     <th className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-gray-400">Admission Info</th>
                                     <th className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-gray-400 text-right">Actions</th>
@@ -301,6 +317,11 @@ export default function DoctorInpatientsPage() {
                                                         {monitor.label}
                                                     </span>
                                                 </td>
+                                                 <td className="px-4 py-3 whitespace-nowrap">
+                                                     <div className="w-[180px]">
+                                                         <InpatientReason admission={adm} onSaved={() => fetchAdmissions()} />
+                                                     </div>
+                                                 </td>
                                                 <td className="px-4 py-3 whitespace-nowrap">
                                                     <span className="text-xs font-black text-emerald-600 uppercase">
                                                         {adm.primaryDoctor?.user?.name || adm.primaryDoctor?.name || 'NOT ASSIGNED'}
@@ -543,6 +564,8 @@ function InpatientCard({ adm, onTransfer, onCharge, onLedger, fetchAdmissions, g
                 </div>
             </div>
 
+            <InpatientReason admission={adm} onSaved={() => fetchAdmissions()} />
+
             <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50/50 dark:bg-gray-900/30 rounded-2xl mb-5">
                 <div className="flex flex-col">
                     <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Monitoring</span>
@@ -594,6 +617,81 @@ function SummaryCard({ label, value, sub, color }: any) {
                     <Activity size={18} />
                 </div>
             </div>
+        </div>
+    );
+}
+
+function InpatientReason({ admission, onSaved }: { admission: any, onSaved: () => void }) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [reason, setReason] = useState(admission?.reason || '');
+    const [saving, setSaving] = useState(false);
+
+    const handleSave = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!reason.trim()) return;
+        setSaving(true);
+        try {
+            await ipdService.updateAdmissionDetails(admission._id, { reason });
+            toast.success("Reason updated");
+            setIsEditing(false);
+            onSaved();
+        } catch (error) {
+            toast.error("Failed to update");
+            console.error(error);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="bg-amber-50/50 dark:bg-amber-900/10 rounded-lg p-1.5 border border-amber-100 dark:border-amber-900/30">
+            <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-500">
+                    <ClipboardList size={10} />
+                    <span className="text-[8px] font-black uppercase tracking-widest">Reason for Admission</span>
+                </div>
+                {!isEditing && (
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
+                        className="p-1 text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded-md transition-colors"
+                    >
+                        <Pencil size={10} />
+                    </button>
+                )}
+            </div>
+
+            {isEditing ? (
+                <div className="flex items-start gap-2">
+                    <textarea
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        autoFocus
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full bg-white dark:bg-[#111] border border-amber-200 dark:border-amber-800 rounded-lg p-2 text-[10px] font-bold outline-none focus:border-amber-400 min-h-[10px] resize-none"
+                        placeholder="Enter clinical reason..."
+                    />
+                    <div className="flex flex-col gap-1 shrink-0">
+                        <button
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="p-1.5 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded-md transition-colors disabled:opacity-50"
+                        >
+                            {saving ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />}
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setIsEditing(false); setReason(admission?.reasonForAdmission || admission?.reason || ''); }}
+                            disabled={saving}
+                            className="p-1.5 bg-rose-100 text-rose-700 hover:bg-rose-200 rounded-md transition-colors disabled:opacity-50"
+                        >
+                            <X size={12} />
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <p className="text-[10px] font-bold text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-1" title={admission?.reason}>
+                    {admission?.reason || 'No specific reason provided.'}
+                </p>
+            )}
         </div>
     );
 }

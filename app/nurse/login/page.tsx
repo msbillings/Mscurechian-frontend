@@ -86,18 +86,23 @@ const NurseLoginPage = () => {
                 password: form.password,
             });
 
-            const { tokens, user } = response;
+            const { accessToken, user, sessionId } = response as any;
+
+            if (accessToken) {
+                const { setAccessToken } = await import('@/lib/integrations');
+                setAccessToken(accessToken);
+            }
 
             // Normalize _id → id
             if ((user as any)._id && !(user as any).id) {
                 (user as any).id = (user as any)._id;
             }
 
-            // Store tokens in session + cookies (mirrors authStore.login pattern)
-            sessionStorage.setItem("accessToken", tokens.accessToken);
-            sessionStorage.setItem("refreshToken", tokens.refreshToken);
+            // Store user session (mirrors authStore.login pattern)
             sessionStorage.setItem("user", JSON.stringify(user));
             sessionStorage.setItem("lastAuthCheck", Date.now().toString());
+            if (sessionId) sessionStorage.setItem("sessionId", sessionId);
+            sessionStorage.setItem("tabAuthorized", "true");
 
             // ✅ MULTI-TENANCY: Store hospitalId in sessionStorage and cookie
             const rawId = (user as any).hospital || (user as any).hospitalId;
@@ -108,8 +113,7 @@ const NurseLoginPage = () => {
                 document.cookie = `hospitalId=${hospitalIdStr}; path=/; max-age=86400; SameSite=Lax`;
             }
 
-            document.cookie = `accessToken=${tokens.accessToken}; path=/; max-age=86400; SameSite=Lax`;
-            document.cookie = `refreshToken=${tokens.refreshToken}; path=/; max-age=604800; SameSite=Lax`;
+
 
             // Update store
             setUser(user as any);

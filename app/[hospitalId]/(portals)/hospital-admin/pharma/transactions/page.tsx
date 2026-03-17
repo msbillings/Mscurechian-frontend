@@ -33,7 +33,7 @@ const TransactionRow = React.memo(({
 }) => {
     return (
         <tr className="hover:bg-gray-50/50 dark:hover:bg-gray-700/20 group transition-colors">
-            <td className="px-8 py-5">
+            <td className="px-2 md:px-8 py-5">
                 <span
                     onClick={() => onPrint(bill)}
                     className="font-black text-blue-600 text-[12px] tracking-tight hover:underline cursor-pointer uppercase"
@@ -41,29 +41,29 @@ const TransactionRow = React.memo(({
                     #{bill.invoiceId}
                 </span>
             </td>
-            <td className="px-8 py-5 text-[12px] font-bold text-gray-400 uppercase">
+            <td className="px-2 md:px-8 py-5 text-[12px] font-bold text-gray-400 uppercase">
                 {bill.createdAt ? new Date(bill.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
             </td>
-            <td className="px-8 py-5">
+            <td className="px-2 md:px-8 py-5">
                 <p className="text-[12px] font-black text-gray-700 dark:text-white tracking-tight uppercase truncate max-w-[200px]">
                     {bill.patientName || 'ANONYMOUS ENTITY'}
                 </p>
                 <p className="text-[10px] font-bold text-gray-400 tracking-widest">{bill.customerPhone || '-'}</p>
             </td>
-            <td className="px-8 py-5 text-center">
+            <td className="px-2 md:px-8 py-5 text-center">
                 <span className="px-4 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-2xl text-[9px] font-black uppercase tracking-widest">
                     {bill.paymentSummary.paymentMode || 'CASH'}
                 </span>
             </td>
-            <td className="px-8 py-5 text-right font-black text-gray-900 dark:text-white text-[14px]">
+            <td className="px-2 md:px-8 py-5 text-right font-black text-gray-900 dark:text-white text-[14px]">
                 ₹{Math.round(bill.paymentSummary.grandTotal || 0).toLocaleString()}
             </td>
-            <td className="px-8 py-5 text-center">
+            <td className="px-2 md:px-8 py-5 text-center">
                 <span className={`px-5 py-2 rounded-2xl text-[9px] font-black uppercase tracking-widest ${bill.paymentSummary.status === 'Paid' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
                     {bill.paymentSummary.status}
                 </span>
             </td>
-            <td className="px-8 py-5 text-center">
+            <td className="px-2 md:px-8 py-5 text-center">
                 <div className="flex justify-center gap-4">
                     <button
                         onClick={() => onDelete(bill._id)}
@@ -337,17 +337,17 @@ const TransactionsPage = () => {
     };
 
     return (
-        <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
+        <div className="p-3 md:p-8 space-y-8 bg-slate-50/50 min-h-screen">
             {/* Simple Header */}
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Financial Ledger</h1>
+                    <h1 className="text-lg md:text-xl font-bold text-slate-900 tracking-tight">Financial Ledger</h1>
                     <p className="text-sm text-slate-500 font-medium mt-1 italic tracking-tight">Sales Audit & Institutional Revenue Tracking</p>
                 </div>
                 <button
                     onClick={handleExportExcel}
                     disabled={isExporting}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all disabled:opacity-50 shadow-sm"
+                    className="flex items-center gap-2 px-3 md:px-6 py-2.5 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all disabled:opacity-50 shadow-sm"
                 >
                     <Download size={14} strokeWidth={3} />
                     {isExporting ? 'Exporting...' : 'Export Audit Manifest'}
@@ -355,7 +355,7 @@ const TransactionsPage = () => {
             </div>
 
             {/* Simple Filter Hub */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="bg-white p-2 md:p-4 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="flex flex-col md:flex-row gap-4 items-center">
                     <div className="relative w-full md:w-96">
                         <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
@@ -367,22 +367,22 @@ const TransactionsPage = () => {
                         />
                     </div>
 
-                    <div className="flex items-center gap-4 w-full md:w-auto ml-auto">
-                        <div className="flex items-center gap-2">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Start:</p>
+                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 md:gap-4 w-full md:w-auto ml-auto">
+                        <div className="flex items-center gap-2 flex-1 sm:flex-none">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap ">Start:</p>
                             <input
                                 type="date"
-                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-500/10 transition-all"
+                                className="w-full sm:w-auto bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 sm:py-2 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/10 transition-all"
                                 value={startDate}
                                 onChange={e => setStartDate(e.target.value)}
                                 max={endDate || new Date().toISOString().split('T')[0]}
                             />
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-1 sm:flex-none">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">End:</p>
                             <input
                                 type="date"
-                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-500/10 transition-all"
+                                className="w-full sm:w-auto bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 sm:py-2 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/10 transition-all"
                                 value={endDate}
                                 onChange={e => setEndDate(e.target.value)}
                                 min={startDate}
@@ -396,7 +396,7 @@ const TransactionsPage = () => {
                                     setStartDate('');
                                     setEndDate('');
                                 }}
-                                className="p-2 rounded-xl bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all ml-2"
+                                className="p-2 rounded-xl bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all ml-1 sm:ml-2"
                                 title="Clear Dates"
                             >
                                 <X size={16} />
@@ -409,7 +409,7 @@ const TransactionsPage = () => {
             {/* Clean Logs Container */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden relative">
                 {/* Refined Header */}
-                <div className="flex items-center justify-between px-8 py-4 border-b border-slate-50 bg-slate-50/50">
+                <div className="flex items-center justify-between px-4 md:px-8 py-4 border-b border-slate-50 bg-slate-50/50">
                     <div className="flex items-center gap-3">
                         <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600">
                             <ArrowUpRight size={18} strokeWidth={3} />
@@ -450,29 +450,29 @@ const TransactionsPage = () => {
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full">
                         <thead>
                             <tr className="border-b border-slate-50">
-                                <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">ID Signature</th>
-                                <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Timestamp</th>
-                                <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Entity Entity</th>
-                                <th className="px-8 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Gateway</th>
-                                <th className="px-8 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Quantum</th>
-                                <th className="px-8 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                                <th className="px-8 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Audit</th>
+                                <th className="px-2 md:px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">ID Signature</th>
+                                <th className="px-2 md:px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Timestamp</th>
+                                <th className="px-2 md:px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Entity Entity</th>
+                                <th className="px-2 md:px-8 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Gateway</th>
+                                <th className="px-2 md:px-8 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Quantum</th>
+                                <th className="px-2 md:px-8 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                                <th className="px-2 md:px-8 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Audit</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                             {loading ? (
                                 [...Array(5)].map((_, i) => (
                                     <tr key={i} className="animate-pulse">
-                                        <td colSpan={7} className="px-8 py-6"><div className="h-12 bg-slate-50 rounded-xl w-full"></div></td>
+                                        <td colSpan={7} className="px-2 md:px-8 py-6"><div className="h-12 bg-slate-50 rounded-xl w-full"></div></td>
                                     </tr>
                                 ))
                             ) : bills.length === 0 ? (
                                 <tr>
                                     <td colSpan={7} className="p-20 text-center">
-                                        <p className="text-lg font-black text-slate-200 uppercase tracking-tight italic">Registry Void</p>
+                                        <p className="text-sm md:text-lg font-black text-slate-200 uppercase tracking-tight italic">Registry Void</p>
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">No transaction logs detected in sector.</p>
                                     </td>
                                 </tr>
@@ -487,7 +487,7 @@ const TransactionsPage = () => {
                                 ))
                             )}
                         </tbody>
-                    </table>
+                    </table></div>
                 </div>
             </div>
 

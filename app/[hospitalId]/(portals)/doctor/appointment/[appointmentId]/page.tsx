@@ -7,13 +7,14 @@ import {
   Clock, FileText, Beaker, CheckCircle, Loader2, User, Pause,
   Activity, Calendar, Heart, Thermometer, Droplets, Scale, ArrowsUpFromLine,
   History, Stethoscope, ClipboardList, Send, ArrowLeft, MoreHorizontal,
-  ChevronRight, AlertCircle, Phone, MapPin, Search, Building, Bed
+  ChevronRight, AlertCircle, Phone, MapPin, Search, Building, Bed, Eye
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { doctorService } from '@/lib/integrations/services/doctor.service';
 import { getSocket, joinSocketRoom } from '@/lib/integrations/api/socket';
 import { useAuthStore } from '@/stores/authStore';
 import { useQueryClient } from '@tanstack/react-query';
+import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
 
 interface ConsultationPageProps {
   params: Promise<{
@@ -38,6 +39,8 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
     reports: any[];
   } | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [showFullHistory, setShowFullHistory] = useState(false);
+  const [docViewer, setDocViewer] = useState<{ url: string; label: string } | null>(null);
 
   // Clinical Notes State
   const [diagnosis, setDiagnosis] = useState('');
@@ -112,7 +115,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
       socket.on('lab_order_updated', (data: any) => {
         if (!isActive) return;
         console.log('📡 [Consultation] Lab Order Update Received:', data);
-        
+
         // Refresh only if it's for this appointment or patient
         if (data.appointmentId === currentAppointmentIdRef.current || data.patientId === currentPatientIdRef.current) {
           fetchAppointment(false);
@@ -220,7 +223,10 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
     if (!appointment?.patient?._id) return;
     try {
       setLoadingHistory(true);
-      const data = await doctorService.getPatientDetails(appointment.patient._id);
+      const data = await doctorService.getPatientHistory(
+        appointment.patient._id,
+        showFullHistory ? 'all' : 'hospital'
+      );
 
       // Filter out CURRENT appointment from history
       const visits = (data.history || []).filter((v: any) => v._id !== appointmentId);
@@ -238,10 +244,10 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
   };
 
   useEffect(() => {
-    if (activeTab === 'history' && patientHistory === null) {
+    if (activeTab === 'history') {
       fetchPatientHistory();
     }
-  }, [activeTab, patientHistory, appointment]);
+  }, [activeTab, showFullHistory, appointment]);
 
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
@@ -469,7 +475,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                       <div className="overflow-hidden">
                         <p className="text-[9px] font-bold text-muted-foreground uppercase leading-none mb-1.5 opacity-70">Primary Doctor</p>
                         <p className="text-xs font-black text-gray-900 dark:text-white uppercase leading-none tracking-tight truncate">
-                          {appointment.ipdDetails.primaryDoctor?.startsWith('Dr.') ? appointment.ipdDetails.primaryDoctor : `Dr. ${appointment.ipdDetails.primaryDoctor}`}
+                          {appointment.ipdDetails.primaryDoctor ? (appointment.ipdDetails.primaryDoctor.toLowerCase().startsWith('dr') ? appointment.ipdDetails.primaryDoctor : `Dr. ${appointment.ipdDetails.primaryDoctor}`) : 'Dr. Attending Physician'}
                         </p>
                       </div>
                     </div>
@@ -825,7 +831,28 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
               </div>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {/* History Scoping Toggle */}
+              <div className="flex items-center justify-between p-5 bg-white dark:bg-gray-900 rounded-3xl border border-primary-theme/20 shadow-sm shadow-primary-theme/5">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${showFullHistory ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-400'}`}>
+                    <Building size={24} className={showFullHistory ? 'animate-bounce' : ''} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black uppercase tracking-tight text-foreground">View Full Patient History</h4>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-0.5">
+                      {showFullHistory ? 'Accessing complete medical records across network' : 'Showing records from current facility only'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowFullHistory(!showFullHistory)}
+                  className={`w-14 h-7 rounded-full transition-all relative p-1 ${showFullHistory ? 'bg-amber-500 shadow-lg shadow-amber-500/30' : 'bg-gray-200 dark:bg-gray-800'}`}
+                >
+                  <div className={`w-5 h-5 bg-white rounded-full shadow-md transition-all transform ${showFullHistory ? 'translate-x-7' : 'translate-x-0'}`} />
+                </button>
+              </div>
+
               {/* History Sub-tabs */}
               <div className="flex items-center gap-4 border-b border-border-theme pb-2 mb-6">
                 <button
@@ -875,17 +902,41 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                                 <p className="text-xs font-black text-primary-theme uppercase tracking-widest mb-1">
                                   {new Date(visit.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                                 </p>
-                                <h4 className="text-base font-black text-gray-900 dark:text-white mb-2 uppercase">
+                                <h4 className="text-[13px] font-black text-gray-900 dark:text-white mb-2 uppercase leading-snug">
                                   {visit.reason || visit.symptoms?.join(', ') || 'General Visit'}
                                 </h4>
-                                <div className="flex items-center gap-3">
-                                  <span className="text-[11px] font-bold text-muted-foreground flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800 px-3 py-1 rounded-full">
-                                    <Stethoscope size={14} className="text-primary-theme" />
-                                    {visit.doctorName?.startsWith('Dr.') ? visit.doctorName : `Dr. ${visit.doctorName || 'Attending Physician'}`}
+                                <div className="flex flex-wrap items-center gap-2 mt-2">
+                                  <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 bg-gray-50 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                                    <Clock size={12} className="text-primary-theme" />
+                                    {visit.appointmentTime}
                                   </span>
-                                  <span className="text-[11px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-100 text-emerald-700">
-                                    {visit.status}
+                                  <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 bg-gray-50 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                                    <Stethoscope size={12} className="text-primary-theme" />
+                                    {visit.doctorName ? (visit.doctorName.toLowerCase().startsWith('dr') ? visit.doctorName : `Dr. ${visit.doctorName}`) : 'Dr. Attending Physician'}
                                   </span>
+                                  <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 flex items-center gap-1 border border-blue-100 dark:border-blue-800/50">
+                                    <Building size={10} />
+                                    {visit.hospitalName} • <span className="text-[9px] lowercase font-medium opacity-70 italic">{visit.hospitalAddress}</span>
+                                  </span>
+                                </div>
+
+                                <div className="mt-2 flex flex-wrap items-center gap-3 pt-2 border-t border-gray-50 dark:border-gray-800/50">
+                                  <div className="flex items-center gap-1.5 grayscale opacity-70">
+                                    <span className="text-[9px] font-black uppercase tracking-widest">Fee:</span>
+                                    <span className="text-[10px] font-bold">₹{visit.amount || 0}</span>
+                                  </div>
+                                  <div className="w-px h-2.5 bg-gray-200 dark:bg-gray-700" />
+                                  <div className="flex items-center gap-1.5 grayscale opacity-70">
+                                    <span className="text-[9px] font-black uppercase tracking-widest">Mode:</span>
+                                    <span className="text-[10px] font-bold uppercase">{visit.paymentMethod}</span>
+                                  </div>
+                                  <div className="w-px h-2.5 bg-gray-200 dark:bg-gray-700" />
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[9px] font-black uppercase tracking-widest opacity-60">Status:</span>
+                                    <span className={`text-[10px] font-black uppercase tracking-tighter ${visit.paymentStatus?.toLowerCase() === 'paid' ? 'text-emerald-500' : 'text-amber-500'}`}>
+                                      {visit.paymentStatus}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -907,9 +958,20 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                               <p className="text-xs font-black text-primary-theme uppercase tracking-widest mb-1">
                                 Prescribed on {new Date(pres.date || pres.createdAt).toLocaleDateString()}
                               </p>
-                              <h4 className="text-sm font-bold text-gray-900 dark:text-white">{pres.doctorName?.startsWith('Dr.') ? pres.doctorName : `Dr. ${pres.doctorName}`}</h4>
+                              <div className="flex flex-wrap items-center gap-2 mt-1">
+                                <h4 className="text-[11px] font-bold text-gray-900 dark:text-white uppercase tracking-tight">
+                                  {pres.doctorName ? (pres.doctorName.toLowerCase().startsWith('dr') ? pres.doctorName : `Dr. ${pres.doctorName}`) : 'Dr. Attending Physician'}
+                                </h4>
+                                <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 border border-blue-100">
+                                  {pres.hospitalName} • <span className="lowercase font-medium opacity-70 italic">{pres.hospitalAddress}</span>
+                                </span>
+                                {pres.suggestedPrimaryDoctor && pres.suggestedPrimaryDoctor !== 'N/A' && (
+                                  <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                    Primary: {pres.suggestedPrimaryDoctor.toLowerCase().startsWith('dr') ? pres.suggestedPrimaryDoctor : `Dr. ${pres.suggestedPrimaryDoctor}`}
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <FileText className="text-muted-foreground" size={20} />
                           </div>
                           <div className="space-y-2">
                             {pres.medicines?.map((med: any, i: number) => (
@@ -933,27 +995,70 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                   {historySubTab === 'labs' && (
                     <div className="grid gap-4">
                       {patientHistory.reports.length > 0 ? patientHistory.reports.map((report) => (
-                        <div key={report._id} className="bg-white dark:bg-gray-900 rounded-4xl border border-border-theme shadow-sm p-6 hover:shadow-md transition-all flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center">
-                              <Beaker className="text-purple-600" size={20} />
+                        <div key={report._id} className="bg-white dark:bg-gray-900 rounded-4xl border border-border-theme shadow-sm p-6 hover:shadow-md transition-all flex flex-col gap-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center">
+                                <Beaker className="text-purple-600" size={20} />
+                              </div>
+                              <div>
+                                <p className="text-xs font-black text-primary-theme uppercase tracking-widest mb-0.5">
+                                  {new Date(report.date).toLocaleDateString()}
+                                </p>
+                                <h4 className="text-[13px] font-black text-gray-900 dark:text-white uppercase">{report.name}</h4>
+                                <p className="text-[9px] font-bold text-muted-foreground uppercase">{report.type || 'Diagnostic Report'}</p>
+                                <div className="flex flex-wrap items-center gap-2 mt-1">
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                                    {report.hospitalName} • <span className="lowercase font-medium opacity-70 italic">{report.hospitalAddress}</span>
+                                  </span>
+                                  {report.suggestedPrimaryDoctor && report.suggestedPrimaryDoctor !== 'N/A' && (
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                                      Primary: {report.suggestedPrimaryDoctor.toLowerCase().startsWith('dr') ? report.suggestedPrimaryDoctor : `Dr. ${report.suggestedPrimaryDoctor}`}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-xs font-black text-primary-theme uppercase tracking-widest mb-0.5">
-                                {new Date(report.date).toLocaleDateString()}
-                              </p>
-                              <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase">{report.name}</h4>
-                              <p className="text-[10px] font-bold text-muted-foreground uppercase">{report.type || 'Diagnostic Report'}</p>
-                            </div>
+                            {report.url && (
+                              <button
+                                onClick={() => setDocViewer({ url: report.url, label: report.name })}
+                                className="p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-2xl transition-all text-primary-theme active:scale-90 border border-transparent hover:border-primary-theme/20"
+                              >
+                                <Eye size={20} />
+                              </button>
+                            )}
                           </div>
-                          <a
-                            href={report.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-primary-theme"
-                          >
-                            <Search size={20} />
-                          </a>
+
+                          {/* SYSTEM GENERATED LAB RESULTS */}
+                          {report.results && report.results.length > 0 && (
+                            <div className="mt-2 space-y-3 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-3xl border border-gray-100 dark:border-gray-800">
+                              {report.results.map((res: any, idx: number) => (
+                                <div key={idx} className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-tighter">{res.testName}</p>
+                                    {res.result && (
+                                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${res.isAbnormal ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                                        {res.result}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {res.subTests && res.subTests.length > 0 && (
+                                    <div className="grid grid-cols-2 gap-2 pl-4 border-l-2 border-gray-200 dark:border-gray-700">
+                                      {res.subTests.map((sub: any, sIdx: number) => (
+                                        <div key={sIdx} className="flex flex-col">
+                                          <span className="text-[9px] font-bold text-muted-foreground uppercase">{sub.name}</span>
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-black text-gray-900 dark:text-gray-100">{sub.result}</span>
+                                            {sub.unit && <span className="text-[8px] font-medium text-muted-foreground">{sub.unit}</span>}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )) : (
                         <EmptyHistoryState message="No lab reports found" />
@@ -968,6 +1073,14 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
           )}
         </div>
       </main>
+
+      {/* DOCUMENT VIEWER MODAL */}
+      <DocumentViewerModal
+        isOpen={!!docViewer}
+        onClose={() => setDocViewer(null)}
+        url={docViewer?.url || ''}
+        title={docViewer?.label || ''}
+      />
     </div>
   );
 }

@@ -170,11 +170,11 @@ function AnnouncementManagement() {
   };
 
   return (
-    <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
+    <div className="p-3 md:p-8 space-y-8 bg-slate-50/50 min-h-screen">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-200">
         <div className="flex items-center gap-4">
           <div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Institutional Notice Board</h1>
+            <h1 className="text-lg md:text-xl font-bold text-slate-900 tracking-tight">Institutional Notice Board</h1>
             <p className="text-xs text-slate-500 font-medium italic tracking-tight">Hospital-wide Global Broadcasts & Personnel Awareness</p>
           </div>
           <button
@@ -206,7 +206,7 @@ function AnnouncementManagement() {
 
       {/* Clean Content Registry */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-50 bg-slate-50/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-2 md:p-4 border-b border-slate-50 bg-slate-50/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
             <input
@@ -225,22 +225,22 @@ function AnnouncementManagement() {
               <RefreshCw size={40} className="animate-spin text-slate-200 mx-auto" />
             </div>
           ) : currentItems.length > 0 ? (
-            <table className="w-full text-left">
+            <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100">
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-1/4">Title</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-1/4">Content</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Target</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Priority</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Expiry</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
+                  <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-1/4">Title</th>
+                  <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
+                  <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-1/4">Content</th>
+                  <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Target</th>
+                  <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Priority</th>
+                  <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Expiry</th>
+                  <th className="px-2 md:px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {currentItems.map((announcement) => (
                   <tr key={announcement._id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-6 py-4">
+                    <td className="px-2 md:px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-lg ${announcement.priority === 'high' ? 'bg-rose-50 text-rose-500' :
                           announcement.priority === 'medium' ? 'bg-blue-50 text-blue-500' :
@@ -251,13 +251,13 @@ function AnnouncementManagement() {
                         <span className="font-bold text-slate-900 text-sm">{announcement.title}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-2 md:px-6 py-4">
                       <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
                         <Calendar size={12} strokeWidth={3} />
                         {new Date(announcement.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-2 md:px-6 py-4">
                       <p
                         className="text-xs font-medium text-slate-500 line-clamp-1 cursor-help"
                         title={announcement.content}
@@ -265,7 +265,7 @@ function AnnouncementManagement() {
                         "{announcement.content}"
                       </p>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-2 md:px-6 py-4">
                       <div className="flex flex-wrap gap-1">
                         {announcement.targetRoles.map(role => (
                           <span key={role} className="text-[9px] font-black uppercase tracking-widest bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md border border-slate-200">
@@ -274,7 +274,7 @@ function AnnouncementManagement() {
                         ))}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-2 md:px-6 py-4">
                       <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${announcement.priority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' :
                         announcement.priority === 'medium' ? 'bg-blue-50 text-blue-600 border-blue-100' :
                           'bg-slate-50 text-slate-600 border-slate-100'
@@ -282,7 +282,7 @@ function AnnouncementManagement() {
                         {announcement.priority}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-2 md:px-6 py-4">
                       {announcement.expiryDate ? (
                         <div className="flex flex-col gap-0.5">
                           <span className="text-xs font-bold text-amber-600 flex items-center gap-1.5">
@@ -297,7 +297,7 @@ function AnnouncementManagement() {
                         <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">No Expiry</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-2 md:px-6 py-4 text-right">
                       <button
                         onClick={() => handleDelete(announcement._id)}
                         className="p-2 bg-slate-50 text-slate-400 border border-slate-100 rounded-lg hover:bg-rose-600 hover:text-white transition-all"
@@ -309,13 +309,13 @@ function AnnouncementManagement() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           ) : (
             <div className="p-20 text-center">
               <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
                 <Megaphone className="text-slate-200 w-8 h-8" />
               </div>
-              <h3 className="text-lg font-black text-slate-900 italic">Static Channel</h3>
+              <h3 className="text-sm md:text-lg font-black text-slate-900 italic">Static Channel</h3>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 max-w-[240px] mx-auto">
                 No active broadcasts detected within the current transmission cycle.
               </p>
@@ -325,7 +325,7 @@ function AnnouncementManagement() {
 
         {/* Pagination Controls */}
         {announcements.length > 0 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-50 bg-slate-50/30">
+          <div className="flex items-center justify-between px-3 md:px-6 py-4 border-t border-slate-50 bg-slate-50/30">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
               Showing <span className="text-slate-900">{indexOfFirstItem + 1}</span> to <span className="text-slate-900">{Math.min(indexOfLastItem, announcements.length)}</span> of <span className="text-slate-900">{announcements.length}</span>
             </p>
@@ -366,7 +366,7 @@ function AnnouncementManagement() {
 
       {/* Modern Broadcast Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-slate-900/40 backdrop-blur-sm">
           <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
             <div className="p-5 border-b border-slate-50 flex items-center justify-between">
               <div>
@@ -381,7 +381,7 @@ function AnnouncementManagement() {
               </button>
             </div>
 
-            <form onSubmit={handleCreate} className="p-6 space-y-4">
+            <form onSubmit={handleCreate} className="p-2 md:p-6 space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
               <div className="space-y-3">
                 <div>
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">Notice Headline</label>
@@ -415,7 +415,7 @@ function AnnouncementManagement() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">Target Sector</label>
                     <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
@@ -511,13 +511,13 @@ function AnnouncementManagement() {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmationId && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 overflow-hidden p-6 text-center">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 md:p-6 bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 overflow-hidden p-3 md:p-6 text-center">
             <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle size={24} strokeWidth={3} />
             </div>
 
-            <h3 className="text-lg font-black text-slate-900 italic mb-2">Delete Broadcast</h3>
+            <h3 className="text-sm md:text-lg font-black text-slate-900 italic mb-2">Delete Broadcast</h3>
             <p className="text-xs font-medium text-slate-500 mb-6">
               if you want to delete this broadcast permanently, click on confirm retraction
             </p>

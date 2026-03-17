@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import LogoutConfirmationModal from "@/components/common/LogoutConfirmationModal";
 
 function AmbulanceLayout({
     children,
@@ -11,33 +12,80 @@ function AmbulanceLayout({
     const router = useRouter();
     const [user, setUser] = useState<any>(null);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
     useEffect(() => {
-        // Check auth from sessionStorage (emergency auth uses sessionStorage)
-        const userRole = sessionStorage.getItem("userRole");
-        const userData = sessionStorage.getItem("user");
+        // Fallback to cookies for refresh resilience
+        const getCookie = (name: string) => {
+            if (typeof document === 'undefined') return null;
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop()?.split(';').shift();
+            return null;
+        };
 
-        console.log("🚑 Layout Auth Check:", { userRole, hasUser: !!userData });
+        const sessionRole = sessionStorage.getItem("userRole");
+        const sessionUser = sessionStorage.getItem("user");
+        const sessionToken = sessionStorage.getItem("accessToken");
+        
+        console.log("🚑 Layout Auth Check:", { sessionRole, hasSessionUser: !!sessionUser, hasSessionToken: !!sessionToken });
 
-        if (userRole !== "ambulance") {
-            console.warn("⚠️ Layout: Not ambulance role, redirecting to login");
+        // Multi-tab sync: If we don't have a sessionRole but we have an 'ambulance' cookieRole, 
+        // we might be in a refreshed state. 
+        const cookieRole = getCookie('userRole');
+        const effectiveRole = sessionRole || cookieRole;
+
+        if (effectiveRole !== "ambulance") {
+            console.warn("⚠️ Layout: No ambulance credentials, redirecting to login");
+            // Clear any partial data to prevent loops
+            sessionStorage.removeItem("accessToken");
+            sessionStorage.removeItem("userRole");
             router.push("/emergency-login");
             return;
         }
 
-        if (userData) {
-            setTimeout(() => setUser(JSON.parse(userData)), 0);
+        // Even with the correct role, we need a token
+        const cookieToken = getCookie('accessToken');
+        const hasToken = !!sessionToken || !!cookieToken;
+        
+        console.log("🚑 Layout Token Check:", { hasSessionToken: !!sessionToken, hasCookieToken: !!cookieToken, hasToken });
+
+        if (!hasToken) {
+            console.warn("⚠️ Layout: No token found, redirecting to login");
+            router.push("/emergency-login");
+            return;
+        }
+
+        if (sessionUser) {
+            try {
+                const parsedUser = JSON.parse(sessionUser);
+                console.log("🚑 Layout: Restored user from session", parsedUser.name);
+                setUser(parsedUser);
+            } catch (e) {
+                console.error("🚑 Layout: Failed to parse user from session", e);
+            }
+        } else {
+            console.warn("🚑 Layout: sessionUser key is MISSING from sessionStorage");
         }
     }, [router]);
 
     const handleLogout = () => {
-        const refreshToken = sessionStorage.getItem("refreshToken");
-
         // Clear storage from sessionStorage
         sessionStorage.removeItem("accessToken");
         sessionStorage.removeItem("refreshToken");
         sessionStorage.removeItem("userRole");
         sessionStorage.removeItem("user");
+        sessionStorage.removeItem("tabAuthorized");
+
+        // Clear cookies
+        document.cookie = "userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+        document.cookie = "hospitalId=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+        document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+
+        // Kill active legacy connections to prevent post-logout 401s
+        import('@/lib/integrations/api/socket').then(({ disconnectSocket }) => {
+            disconnectSocket();
+        }).catch(() => {});
 
         router.push("/emergency-login");
     };
@@ -146,7 +194,10 @@ function AmbulanceLayout({
                                     </Link>
                                     <div className="border-t border-gray-100 mt-2 pt-2">
                                         <button
-                                            onClick={handleLogout}
+                                            onClick={() => {
+                                                setShowProfileMenu(false);
+                                                setIsLogoutModalOpen(true);
+                                            }}
                                             className="flex items-center w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 font-bold"
                                         >
                                             <svg
@@ -176,6 +227,13 @@ function AmbulanceLayout({
             <main className="max-w-7xl mx-auto px-1 sm:px-6 lg:px-8 pt-16 sm:pt-20 pb-4">
                 {children}
             </main>
+
+            {/* Logout Confirmation Modal */}
+            <LogoutConfirmationModal
+                isOpen={isLogoutModalOpen}
+                onClose={() => setIsLogoutModalOpen(false)}
+                onConfirm={handleLogout}
+            />
         </div>
     );
 }

@@ -182,7 +182,7 @@ function DoctorDetailPage() {
         {/* Left Column - Profile Overview */}
         <div className="lg:col-span-1 space-y-6">
           {/* Profile Card */}
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm text-center">
+          <div className="bg-white dark:bg-gray-800 p-2 md:p-4 md:p-8 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm text-center">
             {doctor.profilePic ? (
               <img
                 src={doctor.profilePic}
@@ -206,7 +206,7 @@ function DoctorDetailPage() {
           </div>
 
           {/* Contact Information */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Mail size={16} className="text-green-500" /> Contact Information
             </h3>
@@ -284,7 +284,7 @@ function DoctorDetailPage() {
           </div>
 
           {/* Quick Stats */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Briefcase size={16} className="text-blue-500" /> Quick Stats
             </h3>
@@ -317,7 +317,7 @@ function DoctorDetailPage() {
         {/* Right Column - Detailed Information */}
         <div className="lg:col-span-2 space-y-6">
           {/* Professional Details */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <Award size={16} className="text-purple-500" /> Professional Details
             </h3>
@@ -414,7 +414,7 @@ function DoctorDetailPage() {
           </div>
 
           {/* Medical Registration */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden">
             {/* Decorative background element */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-50 dark:bg-yellow-900/10 rounded-bl-[100px] pointer-events-none -mr-16 -mt-16"></div>
 
@@ -464,7 +464,7 @@ function DoctorDetailPage() {
           </div>
 
           {/* Department & Scheduling */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <Building size={16} className="text-indigo-500" /> Department & Scheduling
             </h3>
@@ -489,7 +489,7 @@ function DoctorDetailPage() {
             </div>
 
             {doctor.availability && doctor.availability.length > 0 && (
-              <div className="bg-gray-50 dark:bg-gray-700/20 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+              <div className="bg-gray-50 dark:bg-gray-700/20 p-2 md:p-4 rounded-xl border border-gray-100 dark:border-gray-700">
                 <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
                   <Clock size={14} /> Weekly Schedule
                 </h4>
@@ -525,11 +525,11 @@ function DoctorDetailPage() {
           </div>
 
           {/* System Permissions */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Shield size={16} className="text-red-500" /> System Permissions
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-3 gap-3">
               {Object.entries(doctor.permissions || {
                 canAccessEMR: true,
                 canAccessBilling: false,
@@ -557,7 +557,7 @@ function DoctorDetailPage() {
           </div>
 
           {/* Bio */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <FileText size={16} className="text-blue-500" /> About
             </h3>
@@ -569,7 +569,7 @@ function DoctorDetailPage() {
           {/* Languages & Awards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {doctor.languages && doctor.languages.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+              <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                   <Globe size={16} className="text-blue-500" /> Languages
                 </h3>
@@ -587,7 +587,7 @@ function DoctorDetailPage() {
             )}
 
             {doctor.awards && doctor.awards.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+              <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                   <Award size={16} className="text-amber-500" /> Awards
                 </h3>
@@ -608,14 +608,14 @@ function DoctorDetailPage() {
 
           {/* Signature */}
           {doctor.signature && (
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
               <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <FileText size={16} className="text-purple-500" /> Digital Signature
               </h3>
               <img
                 src={doctor.signature}
                 alt="Doctor's Signature"
-                className="max-w-xs h-auto border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-white"
+                className="max-w-xs h-auto border border-gray-200 dark:border-gray-600 rounded-lg p-2 md:p-4 bg-white"
               />
             </div>
           )}

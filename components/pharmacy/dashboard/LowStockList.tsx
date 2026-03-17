@@ -57,15 +57,15 @@ const LowStockList = () => {
                                 {product.genericName}
                             </span>
                         </div>
-                        
+
                         <div className="flex items-center gap-6">
-                             <div className="text-right">
+                            <div className="text-right">
                                 <div className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Available</div>
                                 <div className={`text-sm font-black ${isCritical ? 'text-red-500' : 'text-teal-600'}`}>
-                                    {product.currentStock} <span className="text-[9px] font-bold text-gray-400">UNIT</span>
+                                    {Number(product.currentStock).toLocaleString(undefined, { maximumFractionDigits: 2 })} <span className="text-[9px] font-bold text-gray-400">UNIT</span>
                                 </div>
                             </div>
-                            
+
                             <div className="text-right">
                                 <div className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Registry Status</div>
                                 <span className={`${isCritical ? 'bg-red-500/10 text-red-600 border-red-500/20' : 'bg-teal-500/10 text-teal-600 border-teal-500/20'} text-[8px] font-black px-2 py-0.5 rounded uppercase border`}>
