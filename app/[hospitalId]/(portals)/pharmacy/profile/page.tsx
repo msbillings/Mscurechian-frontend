@@ -28,6 +28,7 @@ import {
     ShieldCheck
 } from 'lucide-react';
 import { PharmacyProfileSkeleton } from '@/components/ui/skeletons';
+import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
 
 /**
  * PharmacyProfile Component
@@ -71,6 +72,10 @@ const PharmacyProfile = () => {
     const [logo, setLogo] = useState<string | null>(null);
     const [isUploadingLogo, setIsUploadingLogo] = useState(false);
     const [isLogoDropdownOpen, setIsLogoDropdownOpen] = useState(false);
+    
+    // Document Viewer State
+    const [viewerOpen, setViewerOpen] = useState(false);
+    const [viewerData, setViewerData] = useState({ url: '', title: '' });
 
     // LOGO PRESETS
     const LOGO_PRESETS = [
@@ -675,7 +680,11 @@ const PharmacyProfile = () => {
                                                         type="button"
                                                         onClick={(e) => {
                                                             e.preventDefault();
-                                                            window.open(formData.documents?.[doc.key as keyof typeof formData.documents]?.url, '_blank');
+                                                            setViewerData({ 
+                                                                url: formData.documents?.[doc.key as keyof typeof formData.documents]?.url, 
+                                                                title: doc.label 
+                                                            });
+                                                            setViewerOpen(true);
                                                         }}
                                                         className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                                                         title="View Document"
@@ -698,6 +707,12 @@ const PharmacyProfile = () => {
                     </div>
                 </div>
             </div>
+            <DocumentViewerModal 
+                isOpen={viewerOpen}
+                onClose={() => setViewerOpen(false)}
+                url={viewerData.url}
+                title={viewerData.title}
+            />
         </div>
     );
 };
