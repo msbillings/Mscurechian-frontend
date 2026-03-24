@@ -52,7 +52,7 @@ export const AttendanceButton: React.FC<AttendanceButtonProps> = ({ userRole, cl
       toast.success('Checked in successfully!');
       await fetchTodayStatus();
     } catch (error: any) {
-      console.error('Check-in error:', error);
+      console.error('[Attendance] Check-in error:', error);
       toast.error(error.message || 'Failed to check in');
     } finally {
       setChecking(false);
@@ -70,7 +70,7 @@ export const AttendanceButton: React.FC<AttendanceButtonProps> = ({ userRole, cl
       toast.success('Checked out successfully!');
       await fetchTodayStatus();
     } catch (error: any) {
-      console.error('Check-out error:', error);
+      console.error('[Attendance] Check-out error:', error);
       toast.error(error.message || 'Failed to check out');
     } finally {
       setChecking(false);
