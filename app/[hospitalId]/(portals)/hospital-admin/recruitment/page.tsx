@@ -17,6 +17,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuthStore } from '@/stores/authStore';
 
 export default function AdminRecruitmentPage() {
   const { hospitalId } = useParams();
