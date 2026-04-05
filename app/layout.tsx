@@ -101,6 +101,7 @@ import FloatingChat from '@/components/chat/FloatingChat';
 import Providers from './providers';
 import { Suspense } from 'react';
 import { Toaster } from 'react-hot-toast';
+import CookieConsent from '@/components/common/CookieConsent';
 
 function RootLayout({
   children,
@@ -228,6 +229,7 @@ function RootLayout({
           <Toaster position="top-center" />
           {children}
           <FloatingChat />
+          <CookieConsent />
         </Providers>
       </body>
     </html>

@@ -89,10 +89,10 @@ const ManageBlogs = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, forceStatus?: 'draft' | 'published') => {
     e.preventDefault();
     if (!formData.title.trim()) {
-      alert('headline is required to publish.');
+      alert('Headline is required to publish.');
       setActiveTab('content');
       return;
     }
@@ -102,18 +102,24 @@ const ManageBlogs = () => {
       return;
     }
 
+    const payload = { ...formData };
+    if (forceStatus) {
+       payload.status = forceStatus;
+    }
+
     setSubmitting(true);
     try {
       if (editingBlog) {
-        await contentService.updateBlog(editingBlog._id, formData);
+        await contentService.updateBlog(editingBlog._id, payload);
       } else {
-        await contentService.createBlog(formData);
+        await contentService.createBlog(payload);
       }
       setIsModalOpen(false);
       fetchBlogs();
       resetForm();
     } catch (error: any) {
-      alert(error.message || 'Failed to save article');
+      console.error("Submission Error:", error);
+      alert(error.message || 'Failed to save article. Please check your inputs.');
     } finally {
       setSubmitting(false);
     }
@@ -381,17 +387,28 @@ const ManageBlogs = () => {
 
                 <div className="flex items-center gap-4">
                    <button 
+                    type="button"
                     onClick={() => setIsModalOpen(false)}
                     className="px-6 py-3 rounded-xl font-bold text-slate-400 hover:bg-slate-50 uppercase text-[10px] tracking-widest"
                    >
-                     Discard Changes
+                     Discard
                    </button>
                    <button
-                    type="submit"
+                    type="button"
+                    onClick={(e) => handleSubmit(e, 'draft')}
                     disabled={submitting}
-                    className="flex items-center gap-3 bg-primary-theme text-white px-10 py-3.5 rounded-2xl font-black shadow-xl shadow-primary-theme/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+                    className="flex items-center gap-2 bg-slate-100 text-slate-600 px-6 py-3.5 rounded-2xl font-black hover:bg-slate-200 transition-all disabled:opacity-50"
                   >
-                    {submitting ? <Loader2 size={20} className="animate-spin" /> : editingBlog ? 'Sync Updates' : 'Publish Story'}
+                    {submitting && formData.status === 'draft' ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18} />}
+                    Save Draft
+                   </button>
+                   <button
+                    type="button"
+                    onClick={(e) => handleSubmit(e, 'published')}
+                    disabled={submitting}
+                    className="flex items-center gap-3 bg-primary-theme text-white px-8 py-3.5 rounded-2xl font-black shadow-xl shadow-primary-theme/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+                  >
+                    {submitting && formData.status === 'published' ? <Loader2 size={20} className="animate-spin" /> : (editingBlog ? 'Update & Publish' : 'Publish Story')}
                     <ChevronRight size={18} />
                    </button>
                 </div>
