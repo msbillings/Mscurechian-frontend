@@ -3,6 +3,7 @@
  * Optimized data fetching hooks for <1.5s UI load performance
  */
 
+export * from "./useUnifiedDashboard";
 export * from "./useHelpdeskQueries";
 export * from "./useStaffQueries";
 export * from "./usePrefetch";

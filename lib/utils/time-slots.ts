@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Time Slot Calculation Utility
  * Handles internal 5-minute increment logic for hourly container slots.
  */

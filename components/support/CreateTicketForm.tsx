@@ -78,31 +78,36 @@ function CreateTicketForm({ onSuccess, basePath }: CreateTicketFormProps) {
 
     return (
         <>
-            <form onSubmit={handleSubmit} className="space-y-4 md:space-y-8">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-12">
+            <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-10">
                     {/* Left Column: Form Details */}
-                    <div className="space-y-4 md:space-y-6">
-                        <div className="grid grid-cols-1 gap-4 md:gap-6">
-                            <div className="space-y-1.5 md:space-y-3">
-                                <label className="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest ml-1 italic">Category</label>
-                                <select
-                                    className="w-full p-2.5 md:p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-xl md:rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-base md:text-lg font-bold dark:text-white appearance-none transition-all"
-                                    value={formData.category}
-                                    onChange={e => setFormData({ ...formData, category: e.target.value })}
-                                >
-                                    <option value="feedback">Feedback</option>
-                                    <option value="complaint">Complaint</option>
-                                    <option value="bug">Bug Report</option>
-                                    <option value="other">Other</option>
-                                </select>
+                    <div className="space-y-4 sm:space-y-6">
+                        <div className="grid grid-cols-1 gap-4 sm:gap-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest ml-1 italic">Category</label>
+                                <div className="relative">
+                                    <select
+                                        className="w-full p-3 sm:p-4 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl sm:rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base font-bold dark:text-white appearance-none transition-all"
+                                        value={formData.category}
+                                        onChange={e => setFormData({ ...formData, category: e.target.value })}
+                                    >
+                                        <option value="feedback">Feedback</option>
+                                        <option value="complaint">Complaint</option>
+                                        <option value="bug">Bug Report</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                        <Activity size={16} />
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="space-y-1.5 md:space-y-3">
-                                <label className="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest ml-1 italic">Subject</label>
+                            <div className="space-y-2">
+                                <label className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest ml-1 italic">Subject</label>
                                 <input
                                     type="text"
                                     required
-                                    className="w-full p-2.5 md:p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-xl md:rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-base md:text-lg font-bold dark:text-white placeholder:text-gray-300"
+                                    className="w-full p-3 sm:p-4 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl sm:rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base font-bold dark:text-white placeholder:text-gray-300 transition-all"
                                     placeholder="Brief summary of the issue"
                                     value={formData.subject}
                                     onChange={e => setFormData({ ...formData, subject: e.target.value })}
@@ -110,12 +115,12 @@ function CreateTicketForm({ onSuccess, basePath }: CreateTicketFormProps) {
                             </div>
                         </div>
 
-                        <div className="space-y-1.5 md:space-y-3">
-                            <label className="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest ml-1 italic">Message</label>
+                        <div className="space-y-2">
+                            <label className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest ml-1 italic">Message</label>
                             <textarea
                                 required
-                                rows={5}
-                                className="w-full p-2.5 md:p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-xl md:rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-base md:text-lg font-medium dark:text-white resize-none placeholder:text-gray-300"
+                                rows={6}
+                                className="w-full p-3 sm:p-4 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl sm:rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base font-medium dark:text-white resize-none placeholder:text-gray-300 transition-all"
                                 placeholder="Describe your issue in detail..."
                                 value={formData.message}
                                 onChange={e => setFormData({ ...formData, message: e.target.value })}
@@ -125,25 +130,28 @@ function CreateTicketForm({ onSuccess, basePath }: CreateTicketFormProps) {
 
                     {/* Right Column: Attachments and Submit */}
                     <div className="flex flex-col justify-between space-y-8">
-                        <div className="space-y-3 md:space-y-6">
-                            <div className="flex items-center justify-between">
-                                <label className="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest ml-1 italic">Attachments (Optional)</label>
-                                <span className="text-[9px] md:text-[10px] font-bold text-gray-300 uppercase tracking-tighter">MAX 3</span>
+                        <div className="space-y-4 sm:space-y-6">
+                            <div className="flex items-center justify-between px-1">
+                                <label className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest italic">Attachments (Optional)</label>
+                                <span className="text-[9px] sm:text-[10px] font-black text-gray-300 uppercase tracking-widest">MAX 3</span>
                             </div>
-                            <div className="flex flex-wrap gap-4 md:gap-6">
+                            <div className="flex flex-wrap gap-4">
                                 {files.map((file, i) => (
                                     <div key={i} className="relative group">
-                                        <div className="w-20 h-20 md:w-32 md:h-32 bg-gray-50 dark:bg-gray-900 rounded-2xl md:rounded-3xl overflow-hidden flex items-center justify-center border border-gray-100 dark:border-gray-700 shadow-sm">
+                                        <div className="w-24 h-24 sm:w-32 sm:h-32 bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl overflow-hidden flex items-center justify-center border border-gray-100 dark:border-gray-800 shadow-sm transition-transform group-hover:scale-105">
                                             {file.type.startsWith('image/') ? (
                                                 <ImagePreview file={file} />
                                             ) : (
-                                                <span className="text-xs text-gray-500 text-center p-3 break-all">{file.name}</span>
+                                                <div className="flex flex-col items-center gap-2 p-3">
+                                                    <Upload size={20} className="text-gray-300" />
+                                                    <span className="text-[8px] text-gray-500 text-center break-all font-bold uppercase tracking-tight">{file.name}</span>
+                                                </div>
                                             )}
                                         </div>
                                         <button
                                             type="button"
                                             onClick={() => removeFile(i)}
-                                            className="absolute -top-2 -right-2 p-1.5 bg-rose-500 text-white rounded-xl shadow-lg hover:scale-110 active:scale-90 transition-transform"
+                                            className="absolute -top-2 -right-2 p-1.5 bg-rose-500 text-white rounded-xl shadow-lg hover:scale-110 active:scale-90 transition-transform z-10"
                                         >
                                             <X size={14} />
                                         </button>
@@ -151,25 +159,25 @@ function CreateTicketForm({ onSuccess, basePath }: CreateTicketFormProps) {
                                 ))}
 
                                 {files.length < 3 && (
-                                    <label className="w-20 h-20 md:w-32 md:h-32 bg-gray-50/50 dark:bg-gray-900/50 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-2xl md:rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 dark:hover:border-blue-500 dark:hover:bg-blue-500/10 transition-all group">
-                                        <div className="p-1.5 md:p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm mb-1 group-hover:scale-110 transition-transform">
-                                            <Upload size={16} className="text-blue-500" />
+                                    <label className="w-24 h-24 sm:w-32 sm:h-32 bg-gray-50/50 dark:bg-gray-900/50 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 dark:hover:border-blue-500 dark:hover:bg-blue-500/10 transition-all group">
+                                        <div className="p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm mb-2 group-hover:scale-110 transition-transform">
+                                            <Upload size={18} className="text-blue-500" />
                                         </div>
-                                        <span className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">Add Node</span>
+                                        <span className="text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">Add Files</span>
                                         <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
                                     </label>
                                 )}
                             </div>
-                            <p className="text-[9px] md:text-[10px] text-gray-400 italic">Formats: JPG, PNG. (MAX: 3)</p>
+                            <p className="text-[9px] sm:text-[10px] text-gray-400 italic">Supported formats: JPG, PNG. (Max size: 5MB)</p>
                         </div>
 
-                        <div className="pt-2 md:pt-6">
+                        <div className="pt-4 sm:pt-10">
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-3 md:py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl md:rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] md:text-sm shadow-md shadow-blue-500/10 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 transition-all"
+                                className="w-full py-4 sm:py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl sm:rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] sm:text-xs shadow-xl shadow-blue-500/20 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 transition-all hover:gap-5"
                             >
-                                {loading ? <Activity className="w-5 h-5 animate-spin" /> : <><Send size={16} /> Deploy Ticket Hierarchy</>}
+                                {loading ? <Activity className="w-5 h-5 animate-spin" /> : <><Send size={18} /> Deploy Ticket Hierarchy</>}
                             </button>
                         </div>
                     </div>

@@ -1,4 +1,4 @@
-export interface Bed {
+﻿export interface Bed {
     _id: string;
     bedId: string;
     type: string;

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Heart, Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram, Youtube } from 'lucide-react';
 import Link from 'next/link';
 
@@ -166,7 +166,7 @@ const Footer = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
                         <p className="text-sm" style={{ color: 'var(--secondary-color)' }}>
-                            © {currentYear} MS Tech Hive - Hospital Management System. All rights reserved.
+                            Â© {currentYear} MS Tech Hive - Hospital Management System. All rights reserved.
                         </p>
                         <div className="flex space-x-6">
                             <a href="#" className="text-sm hover:text-blue-400 transition-colors duration-200" style={{ color: 'var(--secondary-color)' }}>

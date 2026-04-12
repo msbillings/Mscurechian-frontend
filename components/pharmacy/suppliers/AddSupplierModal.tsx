@@ -235,7 +235,7 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({ isOpen, onClose, on
         }
 
         // Character limits
-        if ((formData.address?.length || 0) > 500) return toast.error('Address exceeds character limit (500)');
+        if (((formData.address as string)?.length || 0) > 500) return toast.error('Address exceeds character limit (500)');
         if ((formData.notes?.length || 0) > 500) return toast.error('Notes exceed character limit (500)');
 
         // Phone validation (10 digits)
@@ -246,12 +246,23 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({ isOpen, onClose, on
 
         setIsLoading(true);
         try {
+            const payload = {
+                ...formData,
+                address: {
+                    street: formData.address as string || '',
+                    landmark: '',
+                    city: '',
+                    state: '',
+                    pincode: ''
+                }
+            };
+
             if (initialData) {
-                await SupplierService.updateSupplier(initialData._id, formData);
-                toast.success('Supplier updated successfully');
+                await SupplierService.updateSupplier(initialData._id, payload as any);
+                toast.success('Vendor profile updated');
             } else {
-                await SupplierService.createSupplier(formData);
-                toast.success('Supplier added successfully');
+                await SupplierService.createSupplier(payload as any);
+                toast.success('New vendor onboarded');
             }
             onSuccess();
             onClose();
@@ -270,7 +281,7 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({ isOpen, onClose, on
                 {/* Header */}
                 <div className="flex items-center justify-between px-8 py-6 border-b dark:border-gray-800">
                     <div>
-                        <h2 className="text-2xl font-black text-gray-800 dark:text-white tracking-tight">
+                        <h2 className="text-lg md:text-xl lg:text-xl font-black text-gray-800 dark:text-white tracking-tight">
                             {initialData ? 'Edit Supplier' : 'Add New Supplier'}
                         </h2>
                         <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-1">Vendor Onboarding Protocol</p>
@@ -295,7 +306,7 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({ isOpen, onClose, on
                                     ) : (
                                         <Scan className="w-4 h-4" />
                                     )}
-                                    <span className="text-[10px] font-black uppercase tracking-widest">
+                                    <span className="text-[9px] md:text-xs font-black uppercase tracking-widest">
                                         {isScanning ? 'Scanning...' : 'Scan visiting card'}
                                     </span>
                                 </button>
@@ -405,7 +416,7 @@ const AddSupplierModal: React.FC<AddSupplierModalProps> = ({ isOpen, onClose, on
                             <textarea
                                 className="w-full bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-xl px-4 py-3 outline-none focus:border-purple-500 font-medium text-sm min-h-[100px] resize-none transition-all"
                                 placeholder="Enter complete office address with city, state, and pincode"
-                                value={formData.address}
+                                value={formData.address as string}
                                 onChange={e => setFormData({ ...formData, address: e.target.value })}
                             />
                         </div>

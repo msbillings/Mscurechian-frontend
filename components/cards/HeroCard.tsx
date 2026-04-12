@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Zap, CheckCircle, Stethoscope, Smartphone, Building, ShieldCheck, Calendar, Brain, Clock, FileText, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 

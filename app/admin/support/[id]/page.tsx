@@ -9,7 +9,7 @@ function AdminTicketDetailPage({ params }: { params: Promise<{ id: string }> }) 
     const resolvedParams = React.use(params);
 
     return (
-        <div className="p-8 max-w-5xl mx-auto">
+        <div className="max-w-7xl mx-auto">
             <TicketDetailView
                 ticketId={resolvedParams.id}
                 isAdmin={true}

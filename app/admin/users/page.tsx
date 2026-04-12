@@ -77,6 +77,14 @@ const UsersList = () => {
     const [selectedUser, setSelectedUser] = useState<any>(null);
     const [editingUser, setEditingUser] = useState<any>(null);
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedRole, setSelectedRole] = useState(role || "");
+    const [hospitals, setHospitals] = useState<any[]>([]);
+    const [selectedHospital, setSelectedHospital] = useState("");
+    const [hospitalSearch, setHospitalSearch] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalUsers, setTotalUsers] = useState(0);
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [isUpdating, setIsUpdating] = useState(false);
 
     const [confirmModal, setConfirmModal] = useState({
@@ -87,15 +95,53 @@ const UsersList = () => {
 
     useEffect(() => {
         if (isAuthenticated) {
+            fetchHospitals();
+        }
+    }, [isAuthenticated]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    useEffect(() => {
+        if (isAuthenticated) {
             fetchUsers();
         }
-    }, [role, isAuthenticated]);
+    }, [selectedRole, isAuthenticated, debouncedSearch, currentPage, selectedHospital]);
+
+    const fetchHospitals = async () => {
+        try {
+            const resp = await adminService.getHospitalsClient();
+            setHospitals(resp || []);
+        } catch (err: any) {
+            console.error("Failed to fetch hospitals");
+        }
+    };
 
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const data = await adminService.getUsersClient(role ? { role } : undefined);
-            setUsers(Array.isArray(data) ? data : []);
+            const resp = await adminService.getUsersClient({
+                role: selectedRole || undefined,
+                page: currentPage,
+                limit: 10,
+                search: debouncedSearch,
+                hospitalId: selectedHospital || undefined
+            });
+            if (resp && resp.users) {
+                setUsers(resp.users);
+                setTotalPages(resp.pagination?.pages || 1);
+                setTotalUsers(resp.pagination?.total || resp.users.length || 0);
+            } else if (Array.isArray(resp)) {
+                setUsers(resp);
+                setTotalPages(1);
+                setTotalUsers(resp.length);
+            } else {
+                setUsers([]);
+                setTotalPages(1);
+                setTotalUsers(0);
+            }
         } catch (err: any) {
             console.error("Failed to fetch users", err);
             toast.error("Failed to fetch user directory.");
@@ -159,15 +205,8 @@ const UsersList = () => {
         }
     };
 
-    const filteredUsers = users.filter((user) => {
-        const term = searchQuery.toLowerCase();
-        return (
-            (user.name?.toLowerCase() || "").includes(term) ||
-            (user.email?.toLowerCase() || "").includes(term) ||
-            (user.doctorId?.toLowerCase() || "").includes(term) ||
-            (user.patientProfileId?.toLowerCase() || "").includes(term)
-        );
-    });
+    // Server-side filtering, use users directly
+    const filteredUsers = users;
 
     const getRoleIcon = (roleName: string) => {
         switch (roleName) {
@@ -179,18 +218,7 @@ const UsersList = () => {
         }
     };
 
-    const headers = ["User Identity", "Role", "Dept / Specialization", "Reach", "Status", "Actions"];
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    <p className="text-sm font-medium opacity-50">Indexing global directory...</p>
-                </div>
-            </div>
-        );
-    }
+    const headers = ["User Identity", "Role", "Reach", "Status", "Actions"];
 
     return (
         <div className="max-w-7xl mx-auto pb-12">
@@ -204,26 +232,121 @@ const UsersList = () => {
                 type="danger"
             />
 
-            <PageHeader
-                title={role ? `${role.charAt(0).toUpperCase() + role.slice(1)}s Directory` : "Network Directory"}
-                subtitle={`Management of ${role || 'all registered'} entities within the CureChain infrastructure`}
-                icon={role ? getRoleIcon(role) : <User className="text-blue-500" />}
-            />
-
-            <div className="mb-6 relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500" size={18} />
-                <input
-                    type="text"
-                    placeholder="Search by identity, email, or system ID..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full border rounded-xl pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-blue-500/20 shadow-sm group-hover:shadow-md"
-                    style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 mb-2 md:mb-6">
+                <PageHeader
+                    title={selectedRole ? `${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}s Directory` : "Network Directory"}
+                    subtitle={`Management of ${selectedRole || 'all registered'} entities within the CureChain infrastructure`}
+                    icon={selectedRole ? getRoleIcon(selectedRole) : <User className="text-blue-500" />}
                 />
             </div>
 
+            <div className="flex flex-col lg:flex-row gap-3 md:gap-4 mb-4 md:mb-6 mx-0">
+                <div className="w-full lg:w-[40%] flex gap-2 md:gap-3 items-center">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Search by name, email or mobile..."
+                            value={searchQuery}
+                            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                            className="w-full border rounded-xl pl-9 md:pl-12 pr-4 py-2.5 md:py-3.5 text-xs md:text-sm outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-all"
+                            style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }}
+                        />
+                    </div>
+                    <div className="shrink-0 flex flex-col items-center justify-center bg-blue-500/5 border rounded-xl px-2.5 py-1.5 md:px-4 md:py-2 min-w-[50px] md:min-w-[80px]" style={{ borderColor: 'var(--border-color)' }}>
+                        <span className="text-[7px] md:text-[9px] uppercase font-bold text-gray-400 tracking-tighter md:tracking-wider leading-none mb-0.5">Total</span>
+                        <span className="text-xs md:text-base font-black text-blue-500 leading-none">{totalUsers}</span>
+                    </div>
+                </div>
+
+                <div className="w-full lg:w-[60%] flex flex-wrap lg:flex-nowrap items-center justify-between gap-2 md:gap-3">
+                    <select
+                        value={selectedRole}
+                        onChange={(e) => { setSelectedRole(e.target.value); setCurrentPage(1); }}
+                        className="flex-1 min-w-[120px] border rounded-xl px-3 py-2 md:py-3 text-xs md:text-sm outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-all appearance-none"
+                        style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }}
+                    >
+                        <option value="">All Roles</option>
+                        <option value="doctor">Doctor</option>
+                        <option value="patient">Patient</option>
+                        <option value="admin">Admin</option>
+                        <option value="hospital-admin">Hospital Admin</option>
+                        <option value="helpdesk">Front Desk</option>
+                        <option value="hr">HR</option>
+                        <option value="nurse">Nurse</option>
+                        <option value="pharma-owner">Pharma</option>
+                        <option value="lab">Lab</option>
+                        <option value="emergency">Emergency</option>
+                    </select>
+
+                    <div className="relative flex-1 min-w-[150px] group">
+                        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" size={14} />
+                        <input
+                            list="hospitals-list-users"
+                            value={hospitalSearch}
+                            onChange={(e) => {
+                                setHospitalSearch(e.target.value);
+                                const h = hospitals.find(h => h.name === e.target.value);
+                                if (h) {
+                                    setSelectedHospital(h._id);
+                                    setCurrentPage(1);
+                                } else if (e.target.value === "") {
+                                    setSelectedHospital("");
+                                    setCurrentPage(1);
+                                }
+                            }}
+                            placeholder="Hospital Filter..."
+                            className="w-full border rounded-xl pl-8 pr-7 py-2 md:py-3 text-[10px] md:text-sm outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-all"
+                            style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }}
+                        />
+                        {hospitalSearch && (
+                            <button
+                                onClick={() => { setHospitalSearch(""); setSelectedHospital(""); setCurrentPage(1); }}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full text-gray-400"
+                            >
+                                <X size={12} />
+                            </button>
+                        )}
+                        <datalist id="hospitals-list-users">
+                            {hospitals.map(h => <option key={h._id} value={h.name} />)}
+                        </datalist>
+                    </div>
+
+                    <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-0.5 md:p-1 shadow-inner border border-gray-200 dark:border-gray-700">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="px-1.5 md:px-3 py-1 text-[9px] md:text-xs font-bold uppercase transition-all hover:bg-white dark:hover:bg-gray-700 rounded-lg disabled:opacity-30 disabled:hover:bg-transparent"
+                            style={{ color: 'var(--text-color)' }}
+                        >
+                            Prev
+                        </button>
+                        <div className="px-1.5 md:px-3 py-1 text-[9px] md:text-xs font-mono text-blue-500 font-bold border-x border-gray-200 dark:border-gray-700">
+                            {currentPage}/{totalPages}
+                        </div>
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="px-1.5 md:px-3 py-1 text-[9px] md:text-xs font-bold uppercase transition-all hover:bg-white dark:hover:bg-gray-700 rounded-lg disabled:opacity-30 disabled:hover:bg-transparent"
+                            style={{ color: 'var(--text-color)' }}
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <Table headers={headers}>
-                {filteredUsers.length > 0 ? (
+                {loading ? (
+                    <tr>
+                        <td colSpan={5} className="py-24 text-center">
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                                <p className="text-sm font-medium opacity-50">Indexing global directory...</p>
+                            </div>
+                        </td>
+                    </tr>
+                ) : filteredUsers.length > 0 ? (
                     filteredUsers.map((user) => (
                         <tr
                             key={user._id}
@@ -245,31 +368,21 @@ const UsersList = () => {
                                         </div>
                                     )}
                                     <div className="max-w-[150px]">
-                                        <div className="font-semibold truncate text-sm">{user.name}</div>
-                                        <div className="text-[10px] opacity-40 font-mono mt-0.5 truncate tracking-tighter">{(user.doctorId || user.patientProfileId || user._id).toUpperCase()}</div>
+                                        <div className="font-semibold truncate text-[11px] md:text-sm leading-none">{user.name}</div>
+                                        <div className="text-[9px] md:text-[10px] opacity-40 font-mono mt-1 truncate tracking-tighter leading-none">{(user.doctorId || user.patientProfileId || user._id).toUpperCase()}</div>
                                     </div>
                                 </div>
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
                                 <Badge variant={getStatusVariant(user.role)}>
-                                    <span className="flex items-center gap-1.5 capitalize text-[10px] font-bold">
-                                        {getRoleIcon(user.role)}
+                                    <span className="capitalize text-[10px] font-bold whitespace-nowrap">
                                         {user.role === 'helpdesk' ? 'Front Desk' : user.role}
                                     </span>
                                 </Badge>
                             </td>
-                            <td className="px-6 py-4 text-sm">
-                                {user.role === 'doctor' && (user.specialties?.length > 0 || user.specialities?.length > 0) ? (
-                                    <span className="text-blue-500 font-medium text-xs">{(user.specialties || user.specialities || []).slice(0, 2).join(", ")}{(user.specialties || user.specialities || []).length > 2 ? '...' : ''}</span>
-                                ) : user.role === 'helpdesk' ? (
-                                    <span className="text-indigo-500 font-medium text-xs truncate max-w-[120px] inline-block">{user.hospitalName || "Active Station"}</span>
-                                ) : (
-                                    <span className="opacity-30 text-xs">-</span>
-                                )}
-                            </td>
-                            <td className="px-6 py-4 text-sm">
-                                <div className="opacity-80 truncate max-w-[150px] text-xs">{user.email || 'N/A'}</div>
-                                <div className="text-[10px] opacity-40 mt-0.5">{user.mobile || 'No Contact'}</div>
+                            <td className="px-6 py-4">
+                                <div className="opacity-80 truncate max-w-[150px] text-[10px] md:text-sm leading-none">{user.email || 'N/A'}</div>
+                                <div className="text-[9px] md:text-[10px] opacity-40 mt-1 leading-none">{user.mobile || 'No Contact'}</div>
                             </td>
                             <td className="px-6 py-4">
                                 <Badge variant={getStatusVariant(user.status || 'active')}>
@@ -298,7 +411,7 @@ const UsersList = () => {
                     ))
                 ) : (
                     <tr>
-                        <td colSpan={6} className="py-24 text-center">
+                        <td colSpan={5} className="py-24 text-center">
                             <User className="mx-auto text-gray-200 mb-4" size={48} />
                             <p className="text-sm font-medium opacity-50">No search results in this sector.</p>
                         </td>
@@ -348,10 +461,10 @@ const UsersList = () => {
                 maxWidth="max-w-4xl"
             >
                 {selectedUser && (
-                    <div className="relative">
+                    <div className="relative max-h-[65vh] overflow-y-auto overflow-x-hidden no-scrollbar pb-4 pr-1">
                         <div className={`absolute -top-6 -left-6 -right-6 h-32 bg-linear-to-r ${getRoleGradient(selectedUser.role)} opacity-50 z-0`}></div>
 
-                        <div className="relative z-10">
+                        <div className="relative z-10 mt-2">
                             <div className="flex flex-col md:flex-row gap-8 items-start mb-8 border-b pb-8" style={{ borderColor: 'var(--border-color)' }}>
                                 <div className="shrink-0">
                                     <div className="relative">
@@ -411,7 +524,13 @@ const UsersList = () => {
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-[10px] uppercase font-bold opacity-30 tracking-widest">Physical Location</span>
-                                            <span className="font-medium text-xs mt-1 opacity-70 leading-relaxed italic">{selectedUser.address || 'Global Access Only'}</span>
+                                            <span className="font-medium text-xs mt-1 opacity-70 leading-relaxed italic">
+                                                {typeof selectedUser.address === 'object' && selectedUser.address !== null ? (
+                                                    `${selectedUser.address.street || ''}, ${selectedUser.address.city || ''}, ${selectedUser.address.state || ''} - ${selectedUser.address.pincode || ''}, ${selectedUser.address.country || ''}`.replace(/^, /, '').replace(/, , /g, ', ')
+                                                ) : (
+                                                    selectedUser.address || 'Global Access Only'
+                                                )}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>

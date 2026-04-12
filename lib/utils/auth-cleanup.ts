@@ -10,14 +10,14 @@ export const clearLegacyAuthData = () => {
       localStorage.removeItem(key);
       cleared = true;
     }
-    if (sessionStorage.getItem(key)) {
-      sessionStorage.removeItem(key);
+    if (localStorage.getItem(key)) {
+      localStorage.removeItem(key);
       cleared = true;
     }
   });
 
   // ✅ PRESERVATION: We do NOT clear 'accessToken' or 'refreshToken' here 
-  // because the current 'secure session model' uses them in sessionStorage for Header-based Auth.
+  // because the current 'secure session model' uses them in localStorage for Header-based Auth.
 
   if (cleared) {
     console.log("[Auth] 🧹 Legacy tokens detected and cleared from local storage. Moving to secure session model.");

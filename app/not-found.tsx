@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import Link from 'next/link';
@@ -18,7 +18,6 @@ export default function NotFound() {
                 <div className="space-y-6">
                     {/* Emergency Code Badge */}
                     <div className="flex items-center gap-2 text-sm font-medium" style={{ color: '#ef4444' }}>
-                        <span className="text-xl">✱</span>
                         <span>EMERGENCY CODE 404</span>
                     </div>
 

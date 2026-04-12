@@ -9,7 +9,7 @@ import { staffService } from '../services/staff.service';
 import type { CheckInRequest, CheckOutRequest, CreateLeaveRequest } from '../types';
 
 /**
- * ⚡ PERFORMANCE-OPTIMIZED STAFF QUERIES
+ * âš¡ PERFORMANCE-OPTIMIZED STAFF QUERIES
  * 
  * Strategy: Cache-First for INSTANT Navigation
  * - Use cache aggressively (staleTime: 5min)
@@ -47,7 +47,7 @@ export const staffKeys = {
 
 // ==================== Dashboard Hook ====================
 /**
- * ⚡ FAST: Shows cached data in <200ms, refreshes in background
+ * âš¡ FAST: Shows cached data in <200ms, refreshes in background
  */
 export const useStaffDashboard = () => {
     return useQuery({
@@ -120,15 +120,28 @@ export const useTodayStatus = () => {
 };
 
 /**
- * Check-in mutation
+ * Check-in mutation with optimistic dashboard update
  */
 export const useCheckIn = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: (data?: CheckInRequest) => staffService.checkIn(data),
-        onSuccess: () => {
-            // Invalidate today's status, attendance, and dashboard
+        onSuccess: (result) => {
+            // ✅ OPTIMISTIC UPDATE: IMMEDIATELY update both dashboard and status
+            if (result?.attendance) {
+                // Update Dashboard Cache
+                queryClient.setQueryData(staffKeys.dashboard(), (old: any) => {
+                    if (!old) return old;
+                    return { ...old, todayAttendance: result.attendance };
+                });
+
+                // Update Today Status Cache (Navbar Sync)
+                queryClient.setQueryData(staffKeys.todayStatus(), {
+                    attendance: result.attendance
+                });
+            }
+            // Invalidate to ensure background sync handles stats calculation
             queryClient.invalidateQueries({ queryKey: staffKeys.todayStatus() });
             queryClient.invalidateQueries({ queryKey: staffKeys.attendance() });
             queryClient.invalidateQueries({ queryKey: staffKeys.attendanceHistory() });
@@ -138,15 +151,27 @@ export const useCheckIn = () => {
 };
 
 /**
- * Check-out mutation
+ * Check-out mutation with optimistic dashboard update
  */
 export const useCheckOut = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: (data?: CheckOutRequest) => staffService.checkOut(data),
-        onSuccess: () => {
-            // Invalidate today's status, attendance, and dashboard
+        onSuccess: (result) => {
+            // ✅ OPTIMISTIC UPDATE: IMMEDIATELY update both dashboard and status
+            if (result?.attendance) {
+                // Update Dashboard Cache
+                queryClient.setQueryData(staffKeys.dashboard(), (old: any) => {
+                    if (!old) return old;
+                    return { ...old, todayAttendance: result.attendance };
+                });
+
+                // Update Today Status Cache (Navbar Sync)
+                queryClient.setQueryData(staffKeys.todayStatus(), {
+                    attendance: result.attendance
+                });
+            }
             queryClient.invalidateQueries({ queryKey: staffKeys.todayStatus() });
             queryClient.invalidateQueries({ queryKey: staffKeys.attendance() });
             queryClient.invalidateQueries({ queryKey: staffKeys.attendanceHistory() });

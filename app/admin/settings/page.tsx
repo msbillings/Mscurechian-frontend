@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import { Settings, Shield, Server, Lock, Globe, Database, ListChecks } from 'lucide-react';

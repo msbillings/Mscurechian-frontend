@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { X, Printer, ExternalLink } from 'lucide-react';
 
 interface DocumentPreviewModalProps {

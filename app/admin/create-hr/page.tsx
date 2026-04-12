@@ -117,7 +117,7 @@ function CreateHRPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto pb-12 p-4">
+    <div className="max-w-7xl mx-auto pb-12">
       <PageHeader
         icon={<ShieldCheck className="text-blue-500" />}
         title="Provision HR Specialist"
@@ -206,6 +206,7 @@ function CreateHRPage() {
                 required
                 value={formData.password}
                 onChange={handleChange}
+                autoComplete="new-password"
               />
               <button
                 type="button"

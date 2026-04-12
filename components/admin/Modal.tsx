@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { X } from "lucide-react";
 
 interface ModalProps {
@@ -7,34 +7,45 @@ interface ModalProps {
   title: React.ReactNode;
   children: React.ReactNode;
   maxWidth?: string;
+  height?: string;
+  padding?: string;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, maxWidth = "max-w-md" }) => {
+export const Modal: React.FC<ModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  title, 
+  children, 
+  maxWidth = "max-w-md",
+  height = "max-h-[90vh]",
+  padding = "p-6 md:p-8"
+}) => {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div
-        className={`rounded-3xl border w-full ${maxWidth} p-8 shadow-2xl shadow-black/20`}
+        className={`rounded-3xl border w-full ${maxWidth} ${height} ${padding} shadow-2xl shadow-black/20 flex flex-col relative overflow-hidden`}
         style={{
           backgroundColor: 'var(--card-bg)',
           borderColor: 'var(--border-color)'
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-6">
-          <div className="text-xl font-bold" style={{ color: 'var(--text-color)' }}>
+        <div className="flex justify-between items-center mb-4 shrink-0">
+          <div className="text-lg md:text-xl font-black italic tracking-tight" style={{ color: 'var(--text-color)' }}>
             {title}
           </div>
           <button
             onClick={onClose}
-            className="hover:opacity-70"
-            style={{ color: 'var(--secondary-color)' }}
+            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 transition-all text-gray-400"
           >
-            <X size={24} />
+            <X size={20} />
           </button>
         </div>
-        {children}
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 -mr-1">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -71,8 +82,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         "bg-blue-600 hover:bg-blue-700";
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title}>
-      <p className="mb-6" style={{ color: 'var(--text-color)' }}>
+    <Modal isOpen={isOpen} onClose={onClose} title={title} height="max-h-[300px]" padding="p-6">
+      <p className="mb-6 text-sm" style={{ color: 'var(--text-color)' }}>
         {message}
       </p>
       <div className="flex justify-end gap-3">

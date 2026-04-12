@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -187,7 +187,7 @@ const TermsPage = () => {
                 
                 {/* Visual context labels */}
                 <div className="flex items-center justify-between px-6 opacity-40 grayscale group hover:grayscale-0 transition-all cursor-default">
-                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">MSCURE® SECURITY</p>
+                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">MSCUREÂ® SECURITY</p>
                     <div className="flex gap-2">
                          <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
                          <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />

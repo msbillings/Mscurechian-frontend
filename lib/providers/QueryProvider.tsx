@@ -9,16 +9,16 @@ export function QueryProvider({ children }: { children: ReactNode }) {
             new QueryClient({
                 defaultOptions: {
                     queries: {
-                        // Cache data for 5 minutes
-                        staleTime: 5 * 60 * 1000,
+                        // Force refetch on every mount
+                        staleTime: 0,
                         // Keep unused data in cache for 10 minutes
                         gcTime: 10 * 60 * 1000,
                         // Refetch on window focus for fresh data
                         refetchOnWindowFocus: true,
                         // Retry failed requests once
                         retry: 1,
-                        // Don't refetch on mount if data is fresh
-                        refetchOnMount: false,
+                        // Always refetch on mount
+                        refetchOnMount: true,
                     },
                     mutations: {
                         // Retry failed mutations once

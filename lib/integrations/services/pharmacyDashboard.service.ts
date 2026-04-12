@@ -73,7 +73,7 @@ export const PharmacyDashboardService = {
         avgBillValue:
           (requestedRange.totalInvoices || 0) > 0
             ? (requestedRange.totalRevenue || 0) /
-              (requestedRange.totalInvoices || 0)
+            (requestedRange.totalInvoices || 0)
             : 0,
         itemsSold: requestedRange.itemsSold || 0,
       },
@@ -107,3 +107,4 @@ export const PharmacyDashboardService = {
     };
   },
 };
+

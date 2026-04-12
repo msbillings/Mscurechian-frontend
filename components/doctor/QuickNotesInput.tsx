@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { addQuickNoteAction } from '@/lib/integrations/actions/doctor.actions';

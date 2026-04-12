@@ -233,10 +233,8 @@ export async function updateDoctorProfileAction(profileData: any): Promise<{ suc
 
     const data = await apiServer(DOCTOR_ENDPOINTS.PROFILE, {
       method: "PUT",
-      body
+      body,
     });
-    revalidatePath('/doctor/profile', 'page');
-    revalidatePath('/doctor', 'layout');
     return { success: true, data };
   } catch (error: any) {
     return { success: false, error: error.message || 'Failed to update profile' };
@@ -247,10 +245,8 @@ export async function uploadDoctorPhotoAction(formData: FormData): Promise<{ suc
   try {
     const data = await apiServer(`${DOCTOR_ENDPOINTS.PROFILE}/photo`, {
       method: "PATCH",
-      body: formData
+      body: formData,
     });
-    revalidatePath('/doctor/profile', 'page');
-    revalidatePath('/doctor', 'layout');
     return { success: true, data };
   } catch (error: any) {
     return { success: false, error: error.message || 'Failed to upload photo' };
@@ -271,5 +267,13 @@ export async function getDoctorInpatientsAction(doctorId?: string): Promise<{ su
   } catch (error: any) {
     console.error(`[getDoctorInpatientsAction] Error:`, error);
     return { success: false, error: error.message || 'Failed to fetch inpatient records' };
+  }
+}
+export async function getPatientHistoryAction(id: string, scope: 'hospital' | 'all' = 'hospital'): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const history = await apiServer<any>(`${DOCTOR_ENDPOINTS.PATIENT_HISTORY(id)}?scope=${scope}`);
+    return { success: true, data: history };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to fetch patient history' };
   }
 }

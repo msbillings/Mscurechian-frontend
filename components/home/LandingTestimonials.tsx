@@ -171,7 +171,7 @@ const LandingTestimonials = () => {
                               {item.name}
                             </h4>
                             <p className="text-[9px] text-primary-theme font-black uppercase tracking-[0.2em] opacity-70">
-                              {item.designation} {item.company && `• ${item.company}`}
+                               {item.designation} {item.company && `• ${item.company}`}
                             </p>
                           </div>
                         </div>

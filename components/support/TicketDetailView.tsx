@@ -144,7 +144,7 @@ function TicketDetailView({ ticketId, isAdmin, onBack }: TicketDetailViewProps) 
                     )}
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-start gap-4 p-5 bg-slate-50 dark:bg-gray-800/50 rounded-2xl border border-slate-100 dark:border-gray-800 shadow-sm relative font-sans">
+                <div className="flex flex-col sm:flex-row items-start gap-4 p-5 bg-transparent rounded-2xl border border-slate-100 dark:border-gray-800 shadow-sm relative font-sans">
                     <div className="w-10 h-10 rounded-xl bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 flex items-center justify-center text-teal-600 shrink-0 shadow-sm">
                         <User size={20} />
                     </div>
@@ -315,7 +315,7 @@ interface ImageViewerProps {
 function ImageViewer({ src, onClose }: ImageViewerProps) {
     if (!src) return null;
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-transparent animate-in fade-in duration-200" onClick={onClose}>
             <div className="relative max-w-5xl max-h-[90vh] w-full p-4 flex items-center justify-center">
                 <button
                     onClick={onClose}

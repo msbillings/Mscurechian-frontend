@@ -270,7 +270,7 @@ export default function MedicalIncidentForm({ onSuccess }: MedicalIncidentFormPr
                     bedNumber: data.bedNumber,
                     roomNumber: data.roomNumber
                 };
-                console.log('👤 [SUBMIT] Patient details:', patientDetails);
+                console.log('🧑‍⚕️ [SUBMIT] Patient details:', patientDetails);
                 formData.append('patientFallDetails', JSON.stringify(patientDetails));
             }
 
@@ -291,7 +291,7 @@ export default function MedicalIncidentForm({ onSuccess }: MedicalIncidentFormPr
                 formData.append('attachments', file);
             });
 
-            console.log('📤 [SUBMIT] Sending to backend...');
+            console.log('📦 [SUBMIT] Sending to backend...');
             await incidentService.reportIncident(formData);
             console.log('✅ [SUBMIT] Success!');
             toast.success('Incident reported successfully');
@@ -330,7 +330,7 @@ export default function MedicalIncidentForm({ onSuccess }: MedicalIncidentFormPr
     return (
         <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div>
-                <h2 className="text-xl md:text-2xl font-black font-semibold uppercase">Medical Incident</h2>
+                <h2 className="text-lg md:text-xl lg:text-xl font-bold uppercase">Medical Incident</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
@@ -413,7 +413,7 @@ export default function MedicalIncidentForm({ onSuccess }: MedicalIncidentFormPr
                                         </optgroup>
                                     )}
                                     {hospitalMeta?.data?.rooms && hospitalMeta.data.rooms.length > 0 && (
-                                        <optgroup label="🛏️ Rooms">
+                                        <optgroup label="🛌 Rooms">
                                             {hospitalMeta.data.rooms.map(room => (
                                                 <option key={room._id} value={room.label}>{room.label} ({room.type})</option>
                                             ))}

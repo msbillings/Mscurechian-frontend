@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { apiServer } from "../api/apiServer";
@@ -130,7 +130,6 @@ export async function updateStaffProfileAction(data: any): Promise<{ success: bo
       method: "PATCH",
       body: data instanceof FormData ? data : JSON.stringify(data),
     });
-    revalidatePath("/staff/profile");
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to update profile" };

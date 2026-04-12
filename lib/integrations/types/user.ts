@@ -1,4 +1,4 @@
-export interface User {
+﻿export interface User {
   id: string;
   _id: string;
   name: string;
@@ -12,6 +12,8 @@ export interface User {
   department?: string;
   address?: string;
   image?: string;
+  avatar?: string;
+  profilePic?: string;
   // Pharmacy/Shop fields
   shopName?: string;
   gstin?: string;

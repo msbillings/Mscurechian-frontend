@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
+import { API_CONFIG } from '@/lib/integrations/config';
 
 export function useVitalsSocket(patientId: string | null, onVitalsUpdate: (vitals: any) => void, doctorId?: string | null) {
     const socketRef = useRef<Socket | null>(null);
@@ -14,9 +15,8 @@ export function useVitalsSocket(patientId: string | null, onVitalsUpdate: (vital
     useEffect(() => {
         if (!patientId) return;
 
-        // Connect to WebSocket server (base URL without /api)
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002/api';
-        const socketUrl = apiUrl.replace('/api', ''); // Remove /api for WebSocket connection
+        // Connect to WebSocket server using dynamic API config
+        const socketUrl = API_CONFIG.WS_URL;
 
         const socket = io(socketUrl, {
             withCredentials: true,
@@ -68,13 +68,13 @@ export function useVitalsSocket(patientId: string | null, onVitalsUpdate: (vital
                         background: '#f59e0b',
                         color: '#fff',
                         fontWeight: 'bold'
-                    }
+                    },
                 });
             }
         });
 
         socket.on('disconnect', () => {
-            console.log('❌ WebSocket disconnected');
+            console.log('âŒ WebSocket disconnected');
         });
 
         socket.on('connect_error', (error) => {

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Edit2, Trash2, Phone, Mail, Package, MapPin, ChevronDown, ChevronUp, Loader2, PackageOpen } from 'lucide-react';
@@ -51,18 +51,18 @@ const SupplierProductsInline = ({ supplierId }: { supplierId: string }) => {
     }
 
     return (
-        <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden mt-2 mb-6 mx-6 md:mx-12 transition-all animate-in fade-in slide-in-from-top-2">
-            <div className="bg-teal-50/10 dark:bg-teal-500/5 px-6 py-3 border-b dark:border-gray-700/50 flex items-center justify-between">
+        <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden mt-2 mb-4 mx-2 sm:mx-6 md:mx-8 xl:mx-12 transition-all animate-in fade-in slide-in-from-top-2">
+            <div className="bg-teal-50/10 dark:bg-teal-500/5 px-4 md:px-6 py-3 border-b dark:border-gray-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                     <Package size={14} className="text-teal-500" />
-                    <span className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Onboarded Inventory</span>
+                    <span className="text-[10px] md:text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Onboarded Inventory</span>
                 </div>
-                <span className="bg-teal-500/10 text-teal-600 dark:text-teal-400 px-2 py-0.5 rounded text-xs font-black uppercase tracking-wider border border-teal-500/20">
+                <span className="bg-teal-500/10 text-teal-600 dark:text-teal-400 px-2 py-0.5 rounded text-[10px] md:text-xs font-black uppercase tracking-wider border border-teal-500/20 self-start sm:self-auto">
                     {products.length} SKUs
                 </span>
             </div>
             <div className="overflow-x-auto">
-                <table className="w-full text-left min-w-[600px]">
+                <table className="w-full text-left min-w-[500px]">
                     <thead>
                         <tr className="bg-gray-50/20 dark:bg-gray-800/10 border-b border-gray-50 dark:border-gray-800/50">
                             <th className="px-6 py-3 text-xs font-black text-gray-400 uppercase tracking-widest center">Product Name</th>
@@ -120,72 +120,81 @@ const SupplierTable: React.FC<SupplierTableProps> = ({ suppliers, onEdit, onDele
             <table className="w-full text-left border-collapse min-w-[1000px]">
                 <thead>
                     <tr className="bg-gray-50 dark:bg-gray-800/50 border-y border-gray-100 dark:border-gray-800">
-                        <th className="px-6 py-4 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight text-center">Supplier Name</th>
-                        <th className="px-6 py-4 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight text-center">Contact Details</th>
-                        <th className="px-6 py-4 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight text-center">Location</th>
-                        <th className="px-6 py-4 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight text-center">Business Info</th>
-                        <th className="px-6 py-4 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight text-center">Actions</th>
+                        <th className="px-4 md:px-6 py-3 md:py-4 text-[11px] md:text-xs font-black text-gray-400 dark:text-gray-300 uppercase tracking-widest text-left">Supplier Name</th>
+                        <th className="px-4 md:px-6 py-3 md:py-4 text-[11px] md:text-xs font-black text-gray-400 dark:text-gray-300 uppercase tracking-widest text-left">Contact Details</th>
+                        <th className="px-4 md:px-6 py-3 md:py-4 text-[11px] md:text-xs font-black text-gray-400 dark:text-gray-300 uppercase tracking-widest text-left">Location</th>
+                        <th className="px-4 md:px-6 py-3 md:py-4 text-[11px] md:text-xs font-black text-gray-400 dark:text-gray-300 uppercase tracking-widest text-center">Business Info</th>
+                        <th className="px-4 md:px-6 py-3 md:py-4 text-[11px] md:text-xs font-black text-gray-400 dark:text-gray-300 uppercase tracking-widest text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                     {suppliers.map((supplier) => (
                         <React.Fragment key={supplier._id}>
-                            <tr className={`hover:bg-gray-50 dark:hover:bg-gray-800/40 group transition-colors ${expandedId === supplier._id ? 'bg-teal-50/20 dark:bg-teal-900/10' : ''}`}>
-                                <td className="px-6 py-5 border-r border-gray-100 dark:border-gray-800">
+                            <tr className={`hover:bg-gray-50 dark:hover:bg-gray-800/40 group transition-colors ${expandedId === supplier._id ? 'bg-teal-50/10 dark:bg-teal-900/10' : ''}`}>
+                                <td className="px-4 md:px-6 py-4 md:py-5 border-r border-gray-100 dark:border-gray-800/50 align-top">
                                     <div
-                                        className="font-bold text-gray-900 dark:text-white group-hover:text-teal-600 text-sm tracking-tight cursor-pointer flex items-center gap-3 uppercase"
+                                        className="font-bold text-gray-900 dark:text-white group-hover:text-teal-600 text-xs md:text-sm tracking-tight cursor-pointer flex items-center gap-3 uppercase"
                                         onClick={() => toggleExpand(supplier._id)}
                                     >
                                         {supplier.name}
                                         {expandedId === supplier._id ? (
-                                            <ChevronUp size={14} className="text-teal-500 transition-transform" />
+                                            <ChevronUp size={14} className="text-teal-500 transition-transform shrink-0" />
                                         ) : (
-                                            <ChevronDown size={14} className="text-gray-300 group-hover:text-teal-400 transition-transform" />
+                                            <ChevronDown size={14} className="text-gray-300 group-hover:text-teal-400 transition-transform shrink-0" />
                                         )}
                                     </div>
-                                    <div className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">
+                                    <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1.5 flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 bg-gray-300 rounded-full" />
                                         ID: {supplier._id.slice(-8).toUpperCase()}
                                     </div>
                                 </td>
-                                <td className="px-6 py-5 border-r border-gray-100 dark:border-gray-800">
-                                    <div className="flex flex-col gap-1">
-                                        <div className="flex items-center gap-2 text-xs font-bold text-gray-700 dark:text-gray-300">
-                                            <Phone size={12} className="text-teal-500" />
+                                <td className="px-4 md:px-6 py-4 md:py-5 border-r border-gray-100 dark:border-gray-800/50 align-top">
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center gap-2.5 text-[11px] md:text-xs font-bold text-gray-700 dark:text-gray-300">
+                                            <div className="p-1 bg-teal-50 text-teal-600 rounded-md">
+                                                <Phone size={12} />
+                                            </div>
                                             {supplier.phone}
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs font-bold text-gray-400 lowercase tracking-wider">
-                                            <Mail size={12} className="shrink-0" />
+                                        <div className="flex items-center gap-2.5 text-[11px] md:text-xs font-bold text-gray-500 lowercase tracking-wider">
+                                            <div className="p-1 bg-gray-50 text-gray-400 rounded-md">
+                                                <Mail size={12} className="shrink-0" />
+                                            </div>
                                             {supplier.email || 'N/A'}
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-6 py-5 border-r border-gray-100 dark:border-gray-800">
-                                    <div className="flex items-start gap-2 text-xs font-medium text-gray-500 dark:text-gray-400 max-w-[200px]">
-                                        <MapPin size={12} className="shrink-0 mt-0.5 text-gray-300" />
-                                        <span className="line-clamp-2 uppercase leading-relaxed">{supplier.address || 'No location provided'}</span>
+                                <td className="px-4 md:px-6 py-4 md:py-5 border-r border-gray-100 dark:border-gray-800/50 align-top">
+                                    <div className="flex items-start gap-2.5 text-[11px] md:text-xs font-bold text-gray-500 dark:text-gray-400 max-w-[200px]">
+                                        <div className="p-1 bg-gray-50 text-gray-400 rounded-md shrink-0">
+                                            <MapPin size={12} />
+                                        </div>
+                                        <span className="line-clamp-3 uppercase leading-relaxed mt-0.5">{supplier.address || 'No location'}</span>
                                     </div>
                                 </td>
-                                <td className="px-6 py-5 border-r border-gray-100 dark:border-gray-800 text-center">
-                                    <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">GSTIN Registry</div>
-                                    <div className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-widest">
+                                <td className="px-4 md:px-6 py-4 md:py-5 border-r border-gray-100 dark:border-gray-800/50 text-center align-top">
+                                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 flex items-center justify-center gap-1.5">
+                                        GSTIN Registry
+                                    </div>
+                                    <div className="text-[11px] md:text-xs font-black text-gray-800 dark:text-gray-200 uppercase tracking-widest bg-gray-50 dark:bg-gray-800 inline-block px-3 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700">
                                         {supplier.gstNumber || 'UNREGISTERED'}
                                     </div>
                                 </td>
-                                <td className="px-6 py-5">
-                                    <div className="flex items-center justify-center gap-3">
+                                <td className="px-4 md:px-6 py-4 md:py-5 align-top">
+                                    <div className="flex items-center justify-center gap-2">
                                         <button
                                             onClick={() => onEdit(supplier)}
-                                            className="text-blue-600 hover:text-blue-800 transition-colors p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
+                                            className="text-blue-600 hover:text-blue-700 transition-colors p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl"
                                             title="Edit Vendor"
                                         >
-                                            <Edit2 size={18} />
+                                            <Edit2 size={16} />
                                         </button>
                                         <button
                                             onClick={() => onDelete(supplier._id, supplier.name)}
-                                            className="text-red-500 hover:text-red-700 transition-colors p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                                            className="text-rose-500 hover:text-rose-600 transition-colors p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl"
                                             title="Terminate Vendor"
                                         >
-                                            <Trash2 size={18} />
+                                            <Trash2 size={16} />
                                         </button>
                                     </div>
                                 </td>

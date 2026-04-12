@@ -145,6 +145,27 @@ export const doctorService = {
   getPrescriptionById: (id: string) =>
     apiClient<any>(DOCTOR_ENDPOINTS.GET_PRESCRIPTION(id)),
 
+  getDermatologyByPrescriptionId: (id: string) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.GET_DERMATOLOGY(id)),
+
+  getCardiologyByPrescriptionId: (id: string) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.GET_CARDIOLOGY(id)),
+
+  getENTByPrescriptionId: (id: string) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.GET_ENT(id)),
+
+  getPedsByPrescriptionId: (id: string) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.GET_PEDIATRICS(id)),
+
+  getGynecologyByPrescriptionId: (id: string) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.GET_GYNECOLOGY(id)),
+
+  getNeurologyByPrescriptionId: (id: string) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.GET_NEUROLOGY(id)),
+
+  getGastroByPrescriptionId: (id: string) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.GET_GASTRO(id)),
+
   getLabTokenById: (id: string) =>
     apiClient<any>(DOCTOR_ENDPOINTS.GET_LAB_TOKEN(id)),
 
@@ -214,4 +235,11 @@ export const doctorService = {
 
   getPatientHistory: (id: string, scope: 'hospital' | 'all' = 'hospital') =>
     apiClient<any>(`${DOCTOR_ENDPOINTS.PATIENT_HISTORY(id)}?scope=${scope}`),
+
+  // ✅ New Profile Update (Client-side)
+  updateProfile: (data: any) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.PROFILE, {
+      method: "PUT",
+      body: data instanceof FormData ? data : JSON.stringify(data),
+    }),
 };

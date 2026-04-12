@@ -9,7 +9,7 @@ import { helpdeskService } from "../services/helpdesk.service";
 import { HelpdeskProfile } from "../types";
 
 /**
- * ⚡ PERFORMANCE-OPTIMIZED HELPDESK QUERIES
+ * âš¡ PERFORMANCE-OPTIMIZED HELPDESK QUERIES
  *
  * Strategy: Cache-First for INSTANT Navigation
  * - Use cache aggressively (staleTime: 5min)
@@ -37,8 +37,8 @@ export const helpdeskKeys = {
   patients: (query?: string, page?: number, limit?: number, type?: string) =>
     [...BASE_KEY, "patients", { query, page, limit, type }] as const,
   patient: (id: string) => [...BASE_KEY, "patient", id] as const,
-  appointments: (page?: number, limit?: number, patientId?: string) =>
-    [...BASE_KEY, "appointments", { page, limit, patientId }] as const,
+  appointments: (page?: number, limit?: number, patientId?: string, startDate?: string, endDate?: string) =>
+    [...BASE_KEY, "appointments", { page, limit, patientId, startDate, endDate }] as const,
   transactions: (
     page?: number,
     limit?: number,
@@ -59,7 +59,7 @@ export const helpdeskKeys = {
 
 // ==================== Dashboard Hook ====================
 /**
- * ⚡ FAST: Shows cached data in <200ms, refreshes in background
+ * âš¡ FAST: Shows cached data in <200ms, refreshes in background
  */
 export const useHelpdeskDashboard = () => {
   return useQuery({
@@ -75,7 +75,7 @@ export const useHelpdeskDashboard = () => {
 
 // ==================== Doctors Hooks ====================
 /**
- * ⚡ FAST: Doctors list cached, instant on navigation
+ * âš¡ FAST: Doctors list cached, instant on navigation
  */
 export const useHelpdeskDoctors = () => {
   return useQuery({
@@ -83,13 +83,13 @@ export const useHelpdeskDoctors = () => {
     queryFn: helpdeskService.getDoctors,
     ...HELPDESK_QUERY_DEFAULTS,
     placeholderData: (previousData) => previousData, // ✅ INSTANT cache display
-    // ❌ NO POLLING
+    // âŒ NO POLLING
   });
 };
 
 // ==================== Patient Search Hook ====================
 /**
- * ⚡ Search patients - no polling, cache search results briefly
+ * âš¡ Search patients - no polling, cache search results briefly
  */
 export const usePatientSearch = (
   query: string,
@@ -111,7 +111,7 @@ export const usePatientSearch = (
 };
 
 /**
- * ⚡ Patients list hook - for use in /helpdesk/patients page
+ * âš¡ Patients list hook - for use in /helpdesk/patients page
  * NO automatic refetching to prevent connection resets on large data
  */
 export const useHelpdeskPatients = (
@@ -197,20 +197,22 @@ export const useUpdatePatient = () => {
 
 // ==================== Appointments Hook ====================
 /**
- * ⚡ Appointments list - cached, no constant polling
+ * âš¡ Appointments list - cached, no constant polling
  */
 export const useAppointments = (
   page?: number,
   limit?: number,
   patientId?: string,
+  startDate?: string,
+  endDate?: string
 ) => {
   return useQuery({
-    queryKey: helpdeskKeys.appointments(page, limit, patientId),
-    queryFn: () => helpdeskService.getAppointments(page, limit, patientId),
+    queryKey: helpdeskKeys.appointments(page, limit, patientId, startDate, endDate),
+    queryFn: () => helpdeskService.getAppointments(page, limit, patientId, startDate, endDate),
     ...HELPDESK_QUERY_DEFAULTS,
-    staleTime: 30 * 1000, // ✅ FIX: 30s - appointments need to be fresh
-    refetchOnMount: true, // ✅ FIX: Always check for new appointments
-    placeholderData: (previousData) => previousData, // ✅ Instant display
+    staleTime: 30 * 1000,
+    refetchOnMount: true,
+    placeholderData: (previousData) => previousData,
   });
 };
 
@@ -322,7 +324,7 @@ export const useTransactions = (
         type,
       ),
     ...HELPDESK_QUERY_DEFAULTS,
-    // ❌ NO POLLING
+    // âŒ NO POLLING
   });
 };
 
@@ -332,7 +334,7 @@ export const useTransits = (params?: any) => {
     queryKey: helpdeskKeys.transits(params),
     queryFn: () => helpdeskService.getTransits(params),
     ...HELPDESK_QUERY_DEFAULTS,
-    // ❌ NO POLLING
+    // âŒ NO POLLING
   });
 };
 

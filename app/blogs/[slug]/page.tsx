@@ -98,63 +98,65 @@ const BlogPostPage = ({ params }: { params: Promise<{ slug: string }> }) => {
 
       <main className="pt-24">
         {/* Balanced Header */}
-        <section className="px-6 pb-10">
-           <div className="max-w-3xl mx-auto">
-              <Link 
-                href="/blogs"
-                className="inline-flex items-center gap-1.5 text-slate-400 hover:text-primary-theme font-black text-[8px] uppercase tracking-widest mb-10 transition-all group"
-              >
-                <ChevronLeft size={10} className="group-hover:-translate-x-1 transition-transform" /> Back to Insights
-              </Link>
+        <section className="px-6 pb-12">
+           <div className="max-w-7xl mx-auto">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                <Link 
+                  href="/blogs"
+                  className="inline-flex items-center gap-1.5 text-slate-400 hover:text-primary-theme font-black text-[7px] md:text-[8px] uppercase tracking-widest transition-all group shrink-0"
+                >
+                  <ChevronLeft size={10} className="group-hover:-translate-x-1 transition-transform" /> Back to Insights
+                </Link>
+
+                <div className="flex items-center gap-3">
+                   <span className="px-2 py-0.5 rounded-md bg-primary-theme/5 border border-primary-theme/10 text-primary-theme text-[6.5px] md:text-[7px] font-black uppercase tracking-widest">
+                      {blog.category}
+                   </span>
+                   <span className="w-1 h-1 rounded-full bg-slate-200" />
+                   <div className="flex items-center gap-1 text-slate-300 text-[6.5px] md:text-[7px] font-black uppercase tracking-widest">
+                      <Clock size={8} className="text-primary-theme" /> {Math.ceil(blog.content.length / 1000) + 2} MIN READ
+                   </div>
+                </div>
+              </div>
 
               <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <div className="flex items-center gap-3 mb-6">
-                   <span className="px-2.5 py-1 rounded-md bg-primary-theme/5 border border-primary-theme/10 text-primary-theme text-[7px] font-black uppercase tracking-widest">
-                      {blog.category}
-                   </span>
-                   <span className="w-1 h-1 rounded-full bg-slate-200" />
-                   <div className="flex items-center gap-1 text-slate-400 text-[7px] font-black uppercase tracking-widest">
-                      <Clock size={8} className="text-primary-theme" /> {Math.ceil(blog.content.length / 1000) + 2} MIN READ
-                   </div>
-                </div>
 
-                <h1 className="text-2xl md:text-4xl font-black text-slate-900 leading-tight tracking-tight mb-8 italic uppercase">
-                  {blog.title}
-                </h1>
+                 <h1 className="text-lg md:text-xl lg:text-xl font-black text-slate-900 leading-tight tracking-tight mb-6 italic uppercase">
+                   {blog.title}
+                 </h1>
 
-                <div className="flex flex-wrap items-center justify-between gap-6 py-6 border-y border-slate-100/60">
+                 <div className="flex flex-wrap items-center justify-between gap-6 py-6 border-y border-slate-100">
                     <div className="flex items-center gap-4">
-                       <div className="w-10 h-10 rounded-xl bg-slate-100 p-0.5 ring-2 ring-slate-50 overflow-hidden">
+                       <div className="w-10 h-10 rounded-xl bg-slate-100 p-0.5 ring-1 ring-slate-100 overflow-hidden">
                          <img 
                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(blog.author)}&background=random`} 
                            alt={blog.author}
-                           className="w-full h-full object-cover rounded-[0.7rem]"
+                           className="w-full h-full object-cover rounded-[0.6rem]"
                          />
                        </div>
                        <div>
-                          <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Contributor</p>
-                          <h4 className="text-sm font-black text-slate-900 leading-none mb-0.5 italic uppercase tracking-tight">{blog.author}</h4>
-                          <p className="text-[8px] font-bold text-primary-theme uppercase tracking-tight">Technical Staff</p>
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Contributor</p>
+                          <h4 className="text-sm md:text-lg font-black text-slate-900 leading-none italic uppercase tracking-tight">{blog.author}</h4>
                        </div>
                     </div>
 
                     <div className="flex items-center gap-6">
-                       <div className="text-right hidden sm:block">
-                          <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Validated</p>
-                          <p className="text-[9px] font-black text-slate-900 uppercase">
-                            {new Date(blog.publishedAt || blog.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                       <div className="text-right hidden md:block">
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Published on</p>
+                          <p className="text-xs font-black text-slate-900 uppercase">
+                            {new Date(blog.publishedAt || blog.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
                           </p>
                        </div>
-                       <div className="flex gap-1.5">
-                         <button className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:text-primary-theme transition-all border border-slate-100/50 hover:bg-white">
-                            <Share2 size={12} />
+                       <div className="flex gap-2">
+                         <button className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:text-primary-theme transition-all border border-slate-100 hover:bg-white hover:shadow-lg">
+                            <Share2 size={14} />
                          </button>
-                         <button className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:text-primary-theme transition-all border border-slate-100/50 hover:bg-white">
-                            <Bookmark size={12} />
+                         <button className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:text-primary-theme transition-all border border-slate-100 hover:bg-white hover:shadow-lg">
+                            <Bookmark size={14} />
                          </button>
                        </div>
                     </div>
@@ -165,26 +167,27 @@ const BlogPostPage = ({ params }: { params: Promise<{ slug: string }> }) => {
 
         {/* Compact Media Section */}
         <section className="px-6 mb-12">
-           <div className="max-w-3xl mx-auto">
+           <div className="max-w-5xl mx-auto">
               <motion.div 
-                initial={{ opacity: 0, scale: 0.99 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="aspect-[16/7] rounded-2xl overflow-hidden shadow-lg relative border border-slate-50"
+                initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="w-full rounded-3xl overflow-hidden shadow-2xl relative border border-slate-100 group"
               >
                  <img 
                    src={blog.featuredImage || 'https://images.unsplash.com/photo-1576091160550-2173dba9697a?auto=format&fit=crop&q=80&w=2000'} 
                    alt={blog.title}
-                   className="w-full h-full object-cover"
+                   className="w-full h-auto block transition-transform duration-1000 group-hover:scale-105"
                  />
               </motion.div>
            </div>
         </section>
 
         {/* Scaled Content Layout */}
-        <section className="px-6 pb-20">
-           <div className="max-w-5xl mx-auto flex flex-col lg:flex-row gap-12">
+        <section className="px-6 pb-24">
+           <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-16">
               
-              <div className="flex-1 lg:max-w-2xl">
+              <div className="flex-1 lg:max-w-4xl">
                  <div className="blog-content prose prose-sm prose-slate max-w-none text-slate-500 font-medium leading-relaxed">
                     <div 
                       className="whitespace-pre-wrap selection:bg-primary-theme/10 first-letter:text-4xl first-letter:font-black first-letter:text-primary-theme first-letter:mr-2 first-letter:float-left first-letter:mt-1.5"
@@ -203,46 +206,46 @@ const BlogPostPage = ({ params }: { params: Promise<{ slug: string }> }) => {
                      </div>
                  )}
 
-                 {/* Compact Contributor Card */}
-                 <div className="mt-12 p-6 bg-slate-900 rounded-2xl relative overflow-hidden group flex flex-col sm:flex-row items-center gap-5">
-                    <div className="w-16 h-16 rounded-xl bg-white/10 p-0.5 shadow-xl shrink-0">
-                       <img 
-                          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(blog.author)}&background=random`} 
-                          alt={blog.author}
-                          className="w-full h-full object-cover rounded-[0.9rem]"
-                        />
-                    </div>
-                    <div className="text-center sm:text-left">
-                       <h5 className="text-base font-black text-white mb-1 italic uppercase tracking-tight">Contributor</h5>
-                       <p className="text-slate-400 text-[10px] font-medium leading-relaxed mb-3">
-                         Clinical systems team at MSCureChain. Specializing in {blog.category} research.
-                       </p>
-                       <Link href="/blogs" className="inline-flex items-center gap-1.5 text-primary-theme font-black text-[8px] uppercase tracking-widest">
-                          Full Library <ArrowRight size={10} />
-                       </Link>
-                    </div>
-                    <Quote className="absolute -bottom-2 -right-2 text-white/5" size={60} />
-                 </div>
+                  {/* Compact Contributor Card */}
+                  <div className="mt-12 p-6 md:p-8 bg-slate-900 rounded-3xl relative overflow-hidden group flex flex-col sm:flex-row items-center gap-6">
+                     <div className="w-16 h-16 rounded-2xl bg-white/10 p-0.5 shadow-2xl shrink-0">
+                        <img 
+                           src={`https://ui-avatars.com/api/?name=${encodeURIComponent(blog.author)}&background=random`} 
+                           alt={blog.author}
+                           className="w-full h-full object-cover rounded-[0.9rem]"
+                         />
+                     </div>
+                     <div className="text-center sm:text-left">
+                        <h5 className="text-lg font-black text-white mb-1 italic uppercase tracking-tight">Contributor</h5>
+                        <p className="text-slate-400 text-xs md:text-sm font-medium leading-relaxed mb-4">
+                          Leading clinical systems researcher and medical technology specialist at MSCureChain network.
+                        </p>
+                        <Link href="/blogs" className="inline-flex items-center gap-2 text-primary-theme font-black text-[10px] uppercase tracking-[0.2em] group-hover:gap-3 transition-all">
+                           VIEW DIRECTORY <ArrowRight size={12} />
+                        </Link>
+                     </div>
+                     <Quote className="absolute -bottom-2 -right-2 text-white/5" size={80} />
+                  </div>
               </div>
 
               {/* Ultra-Minimal Sidebar */}
-              <aside className="lg:w-56 shrink-0 hidden lg:block">
-                 <div className="sticky top-32 space-y-8">
-                    <div className="space-y-3">
-                       <h5 className="text-[7px] font-black uppercase tracking-widest text-slate-400">Distribute Insight</h5>
-                       <div className="flex gap-1.5">
+              <aside className="lg:w-72 shrink-0 hidden lg:block">
+                 <div className="sticky top-32 space-y-12">
+                    <div className="space-y-4">
+                       <h5 className="text-[10px] font-black uppercase tracking-[0.3em] text-cyan-500 overflow-hidden">Distribute Insight</h5>
+                       <div className="flex gap-2">
                           {[Facebook, Twitter, Linkedin, Mail].map((Icon, idx) => (
-                             <button key={idx} className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:text-primary-theme hover:bg-white transition-all border border-slate-100">
-                                <Icon size={12} />
+                             <button key={idx} className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:text-primary-theme hover:bg-white transition-all border border-slate-100 hover:shadow-lg">
+                                <Icon size={16} />
                              </button>
                           ))}
                        </div>
                     </div>
 
-                    <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100">
-                        <h5 className="text-xs font-black text-slate-900 mb-1 italic uppercase tracking-tight">Alerts</h5>
-                        <p className="text-slate-500 text-[9px] font-medium leading-relaxed mb-3">Get clinical updates.</p>
-                        <button className="w-full bg-slate-900 text-white py-2 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-primary-theme transition-all">
+                    <div className="p-8 rounded-[2rem] bg-slate-50 border border-slate-100 shadow-sm">
+                        <h5 className="text-base font-black text-slate-900 mb-2 italic uppercase tracking-tight">Alerts</h5>
+                        <p className="text-slate-500 text-xs font-medium leading-relaxed mb-6">Get clinical updates and breakthroughs delivered daily.</p>
+                        <button className="w-full bg-slate-900 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme transition-all shadow-xl shadow-slate-900/10">
                             Join Team
                         </button>
                     </div>
@@ -252,34 +255,35 @@ const BlogPostPage = ({ params }: { params: Promise<{ slug: string }> }) => {
         </section>
 
         {/* Clean Further Reading Grid */}
-        <section className="px-6 py-16 bg-slate-50/50">
-           <div className="max-w-4xl mx-auto">
-              <div className="flex items-center justify-between mb-10">
+        <section className="px-6 py-24 bg-slate-50/50">
+           <div className="max-w-7xl mx-auto">
+              <div className="flex items-center justify-between mb-12">
                  <div>
-                    <h2 className="text-xl font-black text-slate-900 tracking-tight italic uppercase">Further Records</h2>
+                    <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter italic uppercase">Further Records</h2>
+                    <div className="w-12 h-1 bg-primary-theme mt-2 rounded-full" />
                  </div>
-                 <Link href="/blogs" className="items-center gap-1.5 text-slate-400 hover:text-primary-theme font-black text-[8px] uppercase tracking-widest transition-all inline-flex">
-                    Directory <ArrowRight size={10} />
+                 <Link href="/blogs" className="items-center gap-2 text-slate-400 hover:text-primary-theme font-black text-[10px] uppercase tracking-widest transition-all inline-flex group">
+                    View Library <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                  </Link>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-left">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
                  {relatedBlogs.map((item, idx) => (
                     <motion.div 
                         key={item._id}
-                        initial={{ opacity: 0, y: 10 }}
+                        initial={{ opacity: 0, y: 15 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: idx * 0.1 }}
-                        className="group bg-white rounded-2xl border border-slate-100 p-5 hover:shadow-lg hover:shadow-slate-200/40 transition-all duration-500 flex flex-col"
+                        className="group bg-white rounded-3xl border border-slate-100 p-6 hover:shadow-2xl hover:shadow-slate-200/60 transition-all duration-500 flex flex-col"
                     >
-                        <div className="aspect-video rounded-xl overflow-hidden mb-4">
-                            <img src={item.featuredImage || 'https://images.unsplash.com/photo-1576091160550-2173dba9697a?auto=format&fit=crop&q=80&w=800'} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                        <div className="aspect-video rounded-2xl overflow-hidden mb-6">
+                            <img src={item.featuredImage || 'https://images.unsplash.com/photo-1576091160550-2173dba9697a?auto=format&fit=crop&q=80&w=800'} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                         </div>
-                        <p className="text-[7px] font-black text-primary-theme uppercase tracking-widest mb-1.5">{item.category}</p>
-                        <h4 className="text-xs font-black text-slate-900 mb-3 group-hover:text-primary-theme transition-colors line-clamp-2 italic uppercase leading-none tracking-tight">{item.title}</h4>
-                        <Link href={`/blogs/${item.slug}`} className="mt-auto inline-flex items-center gap-1 text-[7px] font-black text-slate-400 uppercase tracking-widest hover:text-primary-theme transition-colors">
-                            View <ArrowRight size={8} />
+                        <p className="text-[10px] font-black text-primary-theme uppercase tracking-widest mb-2">{item.category}</p>
+                        <h4 className="text-base md:text-lg font-black text-slate-900 mb-4 group-hover:text-primary-theme transition-colors line-clamp-2 italic uppercase leading-tight tracking-tight">{item.title}</h4>
+                        <Link href={`/blogs/${item.slug}`} className="mt-auto inline-flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-primary-theme hover:gap-3 transition-all">
+                            Explore Article <ArrowRight size={12} />
                         </Link>
                     </motion.div>
                  ))}
@@ -292,31 +296,42 @@ const BlogPostPage = ({ params }: { params: Promise<{ slug: string }> }) => {
 
       <style jsx global>{`
         .blog-content p {
-          margin-bottom: 1.25rem;
-          line-height: 1.6;
-          font-size: 0.95rem;
+          margin-bottom: 1.5rem;
+          line-height: 1.7;
+          font-size: 1rem;
+          color: #475569;
+        }
+        @media (max-width: 768px) {
+          .blog-content p {
+            font-size: 0.875rem;
+          }
         }
         .blog-content h2 {
-          font-size: 1.25rem;
+          font-size: 1.5rem;
           font-weight: 900;
           color: #0f172a;
           margin: 2.5rem 0 1.25rem 0;
-          letter-spacing: -0.01em;
+          letter-spacing: -0.02em;
           font-style: italic;
           line-height: 1.2;
           text-transform: uppercase;
         }
+        @media (max-width: 768px) {
+          .blog-content h2 {
+            font-size: 1.25rem;
+          }
+        }
         .blog-content blockquote {
-          border-left: 3px solid #3b82f6;
-          padding: 1.25rem 1.5rem;
+          border-left: 2px solid #3b82f6;
+          padding: 0.75rem 1rem;
           font-style: italic;
           color: #1e293b;
-          margin: 2rem 0;
+          margin: 1.5rem 0;
           font-weight: 700;
-          font-size: 1rem;
-          line-height: 1.4;
+          font-size: 0.9rem;
+          line-height: 1.3;
           background: #f8fafc;
-          border-radius: 0 1rem 1rem 0;
+          border-radius: 0 0.75rem 0.75rem 0;
         }
         .blog-content strong {
           color: #0f172a;

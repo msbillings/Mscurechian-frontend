@@ -12,21 +12,14 @@ import { QueryClient } from '@tanstack/react-query';
 export const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
-            // Data is considered fresh for 30 seconds
-            staleTime: 30 * 1000, // 30 seconds
-
-            // Cache persists for 5 minutes after component unmounts
-            gcTime: 5 * 60 * 1000, // 5 minutes (formerly cacheTime)
-
-            // Only retry once on failure to avoid excessive requests
+            // Data is always considered stale to force re-fetches
+            staleTime: 0,
+            gcTime: 5 * 60 * 1000,
             retry: 1,
-
-            // Don't refetch when user returns to window
-            // (reduces unnecessary API calls)
-            refetchOnWindowFocus: false,
-
-            // Don't refetch on mount if data is still fresh
-            refetchOnMount: false,
+            // Enable refetch on window focus for live updates
+            refetchOnWindowFocus: true,
+            // Always refetch on mount
+            refetchOnMount: true,
 
             // Refetch on reconnect to get latest data
             refetchOnReconnect: true,

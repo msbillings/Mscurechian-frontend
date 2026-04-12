@@ -2,7 +2,7 @@
 
 import React, { memo } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
     LayoutDashboard,
     FileText,
@@ -14,16 +14,33 @@ import {
     TestTube,
     ClipboardList,
 } from "lucide-react";
+import { useTenantLink } from "@/hooks/useTenantLink";
 
 interface SidebarProps {
     isOpen: boolean;
     onClose: () => void;
     activeTestCount?: number;
     onLogout?: () => void;
+    isPending?: boolean;
+    startTransition?: (callback: () => void) => void;
 }
 
-function LabSidebar({ isOpen, onClose, activeTestCount = 0, onLogout }: SidebarProps) {
+function LabSidebar({ isOpen, onClose, activeTestCount = 0, onLogout, isPending, startTransition }: SidebarProps) {
     const pathname = usePathname();
+    const router = useRouter(); // ✅ use standard useRouter from next/navigation
+    const { getPath } = useTenantLink(); // ✅ MULTI-TENANCY
+
+    const handleNavigation = (path: string) => {
+        onClose();
+        if (pathname === path) return;
+        if (startTransition) {
+            startTransition(() => {
+                router.push(path);
+            });
+        } else {
+            router.push(path);
+        }
+    };
 
     return (
         <>
@@ -48,7 +65,7 @@ function LabSidebar({ isOpen, onClose, activeTestCount = 0, onLogout }: SidebarP
             {/* Sidebar */}
             <div
                 className={`
-          fixed left-0 top-0 h-full w-64 text-gray-600 dark:text-gray-300 flex flex-col z-40
+          fixed left-0 top-0 h-full w-56 text-gray-600 dark:text-gray-300 flex flex-col z-40
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           border-r border-border-theme bg-card
@@ -73,13 +90,10 @@ function LabSidebar({ isOpen, onClose, activeTestCount = 0, onLogout }: SidebarP
                 <div className="flex-1 overflow-y-auto py-5 px-3 space-y-1.5 hide-scrollbar">
 
                     {/* Dashboard */}
-                    <Link
-                        href="/lab/dashboard"
-                        prefetch={true}
-                        scroll={false}
-                        onClick={onClose}
+                    <button
+                        onClick={() => handleNavigation(getPath('/lab/dashboard'))}
                         className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-base font-semibold transition-all duration-200 w-full text-left group
-              ${pathname === '/lab/dashboard'
+              ${pathname === getPath('/lab/dashboard')
                                 ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 shadow-sm"
                                 : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                             }`}
@@ -89,19 +103,16 @@ function LabSidebar({ isOpen, onClose, activeTestCount = 0, onLogout }: SidebarP
                             className={`transition-colors duration-200 ${pathname === '/lab/dashboard' ? "text-blue-600 dark:text-blue-400" : "text-gray-400 group-hover:text-blue-500"}`}
                         />
                         Dashboard
-                    </Link>
+                    </button>
 
                     {/* Billing */}
                     
 
                     {/* Transactions */}
-                    <Link
-                        href="/lab/billing/transactions"
-                        prefetch={true}
-                        scroll={false}
-                        onClick={onClose}
+                    <button
+                        onClick={() => handleNavigation(getPath('/lab/billing/transactions'))}
                         className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-base font-semibold transition-all duration-200 w-full text-left group
-              ${pathname === '/lab/billing/transactions'
+              ${pathname === getPath('/lab/billing/transactions')
                                 ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 shadow-sm"
                                 : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                             }`}
@@ -111,7 +122,7 @@ function LabSidebar({ isOpen, onClose, activeTestCount = 0, onLogout }: SidebarP
                             className={`transition-colors duration-200 ${pathname === '/lab/billing/transactions' ? "text-blue-600 dark:text-blue-400" : "text-gray-400 group-hover:text-blue-500"}`}
                         />
                         Transactions
-                    </Link>
+                    </button>
 
                     {/* Section Divider - Lab Test Catalog */}
                     <div className="pt-4 pb-1">
@@ -121,13 +132,10 @@ function LabSidebar({ isOpen, onClose, activeTestCount = 0, onLogout }: SidebarP
                     </div>
 
                     {/* Departments */}
-                    <Link
-                        href="/lab/departments"
-                        prefetch={true}
-                        scroll={false}
-                        onClick={onClose}
+                    <button
+                        onClick={() => handleNavigation(getPath('/lab/departments'))}
                         className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-base font-semibold transition-all duration-200 w-full text-left group
-              ${pathname === '/lab/departments'
+              ${pathname === getPath('/lab/departments')
                                 ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 shadow-sm"
                                 : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                             }`}
@@ -137,16 +145,13 @@ function LabSidebar({ isOpen, onClose, activeTestCount = 0, onLogout }: SidebarP
                             className={`transition-colors duration-200 ${pathname === '/lab/departments' ? "text-blue-600 dark:text-blue-400" : "text-gray-400 group-hover:text-blue-500"}`}
                         />
                         Departments
-                    </Link>
+                    </button>
 
                     {/* Test Master */}
-                    <Link
-                        href="/lab/tests"
-                        prefetch={true}
-                        scroll={false}
-                        onClick={onClose}
+                    <button
+                        onClick={() => handleNavigation(getPath('/lab/tests'))}
                         className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-base font-semibold transition-all duration-200 w-full text-left group
-              ${pathname === '/lab/tests'
+              ${pathname === getPath('/lab/tests')
                                 ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 shadow-sm"
                                 : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                             }`}
@@ -156,32 +161,22 @@ function LabSidebar({ isOpen, onClose, activeTestCount = 0, onLogout }: SidebarP
                             className={`transition-colors duration-200 ${pathname === '/lab/tests' ? "text-blue-600 dark:text-blue-400" : "text-gray-400 group-hover:text-blue-500"}`}
                         />
                         Test Master
-                    </Link>
+                    </button>
 
                 </div>
 
                 {/* Footer - Settings & Logout */}
                 <div className="p-3 space-y-1 border-t border-border-theme">
-                    <Link
-                        href="/lab/settings"
-                        prefetch={true}
-                        scroll={false}
-                        onClick={onClose}
+                    <button
+                        onClick={() => handleNavigation(getPath('/lab/settings'))}
                         className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-base font-semibold transition-all duration-200 group
-                            ${pathname === '/lab/settings'
+                            ${pathname === getPath('/lab/settings')
                                 ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 shadow-sm"
                                 : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                             }`}
                     >
                         <Settings size={20} className={`transition-colors duration-200 ${pathname === '/lab/settings' ? "text-blue-600 dark:text-blue-400" : "text-gray-400 group-hover:rotate-90"}`} />
                         Settings
-                    </Link>
-                    <button
-                        onClick={onLogout}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-base font-semibold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 group"
-                    >
-                        <LogOut size={20} className="group-hover:translate-x-1 transition-transform duration-300" />
-                        Logout
                     </button>
                 </div>
             </div>

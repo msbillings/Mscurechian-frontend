@@ -1,4 +1,4 @@
-export interface Hospital {
+﻿export interface Hospital {
   _id: string;
   hospitalId?: string; // Human readable ID if available
   name: string;

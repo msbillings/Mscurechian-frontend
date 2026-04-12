@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useRef } from 'react';
 import { Cropper, CropperRef } from 'react-advanced-cropper';

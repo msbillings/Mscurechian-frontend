@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from '@/stores/authStore';
 import toast from "react-hot-toast";
@@ -16,6 +16,8 @@ import {
     Briefcase,
     ShieldCheck
 } from "lucide-react";
+import { useTransition } from "react";
+import ProgressBar from "@/components/ui/ProgressBar";
 
 /**
  * ROOT-LEVEL HR LOGIN PAGE
@@ -23,9 +25,19 @@ import {
 const HRLoginPage = () => {
     const { login, logout, isLoading } = useAuthStore();
     const router = useRouter();
+    const [isPending, startTransition] = useTransition();
 
-    // ✅ SPEED FIX: Prefetch dashboard
+    // ✅ SPEED FIX: Prefetch dashboard & AUTO-REDIRECT
     React.useEffect(() => {
+        const isAuth = useAuthStore.getState().isAuthenticated;
+        const user = useAuthStore.getState().user;
+        const rawId = (user as any)?.hospitalId || (user as any)?.hospital;
+        const userHospitalId = (rawId && typeof rawId === 'object') ? ((rawId as any)._id || (rawId as any).id) : rawId;
+
+        if (isAuth && userHospitalId && (user?.role === 'hr' || user?.role === 'admin' || user?.role === 'super-admin' || user?.role === 'hospital-admin')) {
+            router.replace(`/${userHospitalId}/hr`);
+        }
+        
         router.prefetch('/hr');
     }, [router]);
 
@@ -129,9 +141,13 @@ const HRLoginPage = () => {
             const rawIdVal = (user as any).hospitalId || (user as any).hospital;
             const hospitalId = (rawIdVal && typeof rawIdVal === 'object') ? (rawIdVal._id || rawIdVal.id) : rawIdVal;
             if (hospitalId) {
-                router.push(`/${hospitalId}/hr`);
+                startTransition(() => {
+                    router.push(`/${hospitalId}/hr`);
+                });
             } else {
-                router.push('/hr');
+                startTransition(() => {
+                    router.push('/hr');
+                });
             }
         } catch (err: any) {
             const errorMessage = err?.message || err?.response?.data?.message || 'Login failed. Please check your credentials.';
@@ -141,6 +157,9 @@ const HRLoginPage = () => {
 
     return (
         <div className="min-h-screen w-full flex justify-center items-center p-0 sm:p-4 lg:p-8 bg-background">
+            <Suspense fallback={null}>
+                <ProgressBar isPending={isPending} color="primary-theme" />
+            </Suspense>
             <div className="flex w-full max-w-6xl bg-card sm:rounded-[0.5rem] overflow-hidden shadow-2xl border-0 sm:border border-primary-theme/30 min-h-screen sm:min-h-[600px] lg:min-h-[700px]">
 
                 {/* Left Side: Illustration & Branding - Hidden on touch devices/small screens */}
@@ -151,7 +170,7 @@ const HRLoginPage = () => {
                         <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-blue-400/5 rounded-full blur-[80px]" />
                     </div>
 
-                    <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push('/')}>
+                    <div className="flex items-center gap-3 cursor-pointer" onClick={() => startTransition(() => router.push('/'))}>
                         <span className="text-2xl absolute top-15 left-40 max-ms:top-5 max-ms:left-5 font-bold bg-linear-to-r from-primary-theme to-blue-400 bg-clip-text text-transparent">
                             MSCureChain
                         </span>
@@ -183,7 +202,7 @@ const HRLoginPage = () => {
                     {/* Header for mobile only */}
                     <div className="flex lg:hidden items-center gap-2 mb-8 absolute top-6 left-6">
                         <div
-                            onClick={() => router.push('/')}
+                            onClick={() => startTransition(() => router.push('/'))}
                             className="p-2 rounded-xl bg-muted/10 text-muted flex items-center justify-center"
                         >
                             <ArrowLeft size={18} />
@@ -193,7 +212,7 @@ const HRLoginPage = () => {
                     </div>
 
                     <button
-                        onClick={() => router.push('/')}
+                        onClick={() => startTransition(() => router.push('/'))}
                         className="hidden lg:flex absolute top-8 left-8 p-2 rounded-xl hover:bg-muted/10 text-muted items-center gap-2 text-xs font-bold"
                     >
                         <ArrowLeft size={16} /> Back to Home

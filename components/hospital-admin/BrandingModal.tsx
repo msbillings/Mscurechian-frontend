@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Settings, Building2, MapPin, Save, X, RefreshCw, Eye, FileText } from 'lucide-react';

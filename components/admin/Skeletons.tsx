@@ -1,4 +1,4 @@
-
+﻿
 import React from "react";
 
 export const RegistrySkeleton = ({ count = 6, gridCol =3 }: { count?: number; gridCol?: number }) => {

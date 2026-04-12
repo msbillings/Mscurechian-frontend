@@ -60,11 +60,12 @@ export interface HelpdeskDoctor {
   qualifications: string[];
   avatar?: string;
   availability?: any[];
-  department?: string;
   specialty?: string;
   consultationFee?: number;
   maxAppointmentsPerDay?: number;
   consultationDuration?: number;
+  experienceStart?: string | Date;
+  experienceYears?: number;
   user?: {
     _id?: string;
     name?: string;

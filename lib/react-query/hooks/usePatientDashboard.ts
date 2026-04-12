@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+﻿import { useQuery } from '@tanstack/react-query';
 import { patientService } from '@/lib/integrations/services/patient.service';
 
 export function usePatientDashboard() {

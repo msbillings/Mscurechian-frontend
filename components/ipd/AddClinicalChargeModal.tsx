@@ -1,7 +1,7 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Tag, DollarSign, Calendar as CalendarIcon, Loader2, Trash2, History } from 'lucide-react';
+import { X, Plus, Tag, IndianRupee, Calendar as CalendarIcon, Loader2, Trash2, History } from 'lucide-react';
 import { ipdService, hospitalAdminService, ipdIssuanceService } from '@/lib/integrations';
 import toast from 'react-hot-toast';
 
@@ -148,7 +148,7 @@ export default function AddClinicalChargeModal({ isOpen, onClose, admissionId, o
                 {/* Header */}
                 <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
                     <div>
-                        <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
+                        <h2 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
                             <Plus size={20} className="text-teal-600" />
                             Add Clinical Charge
                         </h2>
@@ -245,7 +245,7 @@ export default function AddClinicalChargeModal({ isOpen, onClose, admissionId, o
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Amount (₹)</label>
                             <div className="relative group">
-                                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-600 transition-colors" size={16} />
+                                <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-600 transition-colors" size={16} />
                                 <input
                                     required
                                     type="number"

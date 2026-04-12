@@ -198,10 +198,19 @@ export const helpdeskService = {
    * Get all appointments for the helpdesk
    * @returns List of appointments
    */
-  getAppointments: (page: number = 1, limit: number = 10, patientId?: string) =>
-    apiClient<any>(
-      `${HELPDESK_ENDPOINTS.APPOINTMENTS}?page=${page}&limit=${limit}${patientId ? `&patientId=${patientId}` : ""}`,
-    ),
+  getAppointments: (
+    page: number = 1,
+    limit: number = 10,
+    patientId?: string,
+    startDate?: string,
+    endDate?: string
+  ) => {
+    let query = `${HELPDESK_ENDPOINTS.APPOINTMENTS}?page=${page}&limit=${limit}`;
+    if (patientId) query += `&patientId=${patientId}`;
+    if (startDate) query += `&startDate=${startDate}`;
+    if (endDate) query += `&endDate=${endDate}`;
+    return apiClient<any>(query);
+  },
 
   /**
    * Get all transactions/payments

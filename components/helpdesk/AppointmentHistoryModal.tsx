@@ -83,19 +83,22 @@ export default function AppointmentHistoryModal({
                                     <button
                                         key={apt._id || apt.id}
                                         onClick={() => onSelect(apt)}
-                                        className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl border border-slate-100 hover:border-teal-500/30 hover:bg-teal-50/30 hover:shadow-md transition-all group text-left w-full bg-white"
+                                        className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 p-4 rounded-xl border border-slate-100 hover:border-teal-500/30 hover:bg-teal-50/30 hover:shadow-md transition-all group text-left w-full bg-white sm:h-auto"
                                     >
                                         {/* Date Box */}
-                                        <div className="shrink-0 flex sm:flex-col items-center gap-2 sm:gap-0 min-w-[80px] text-slate-500">
-                                            <div className="text-[10px] font-bold uppercase tracking-widest opacity-60">{apt.appointmentId?.split('-')?.[1] || 'ID'}</div>
-                                            <div className="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-1 rounded-md">{date}</div>
+                                        <div className="shrink-0 flex items-center justify-between sm:flex-col sm:justify-center gap-2 sm:gap-0 min-w-[80px] text-slate-500 border-b sm:border-b-0 pb-2 sm:pb-0 mb-2 sm:mb-0">
+                                            <div className="text-[10px] font-bold uppercase tracking-widest opacity-60">
+                                                {apt.appointmentId?.split('-')?.[1] || 'ID'}
+                                            </div>
+                                            <div className="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-1 rounded-md">
+                                                {date}
+                                            </div>
                                         </div>
 
                                         {/* Info */}
                                         <div className="flex-1 min-w-0 grid grid-cols-2 sm:grid-cols-4 gap-4 items-center w-full">
-
                                             {/* Doctor */}
-                                            <div className="col-span-2 sm:col-span-1">
+                                            <div className="col-span-1">
                                                 <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 flex items-center gap-1">
                                                     <Stethoscope size={9} /> Physican
                                                 </div>
@@ -105,7 +108,7 @@ export default function AppointmentHistoryModal({
                                             </div>
 
                                             {/* Time */}
-                                            <div>
+                                            <div className="col-span-1">
                                                 <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 flex items-center gap-1">
                                                     <Clock size={9} /> Time
                                                 </div>
@@ -115,19 +118,19 @@ export default function AppointmentHistoryModal({
                                             </div>
 
                                             {/* Type */}
-                                            <div>
+                                            <div className="col-span-1">
                                                 <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Type</div>
-                                                <div className={`inline-flex items-center px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${isIPD ? 'bg-rose-100 text-rose-700' : 'bg-teal-100 text-teal-700'
+                                                <div className={`inline-flex items-center px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider w-fit ${isIPD ? 'bg-rose-100 text-rose-700' : 'bg-teal-100 text-teal-700'
                                                     }`}>
                                                     {isIPD ? 'IPD ADMISSION' : 'OPD CONSULT'}
                                                 </div>
                                             </div>
 
                                             {/* Payment */}
-                                            <div className="text-right">
+                                            <div className="col-span-1 text-left sm:text-right">
                                                 <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Payment</div>
                                                 <div className="text-xs font-black text-slate-900">
-                                                    ₹{apt.payment?.amount || apt.amount || 0}
+                                                    ₹ {apt.payment?.amount || apt.amount || 0}
                                                 </div>
                                                 <div className="text-[9px] font-bold text-emerald-600 uppercase">
                                                     {apt.payment?.paymentStatus || apt.paymentStatus || 'Paid'}

@@ -5,7 +5,7 @@ export default function AmbulanceProfile() {
     const [user, setUser] = useState<any>(null);
 
     useEffect(() => {
-        const userData = sessionStorage.getItem("user");
+        const userData = localStorage.getItem("user");
         if (userData) {
             setUser(JSON.parse(userData));
         }

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Clock, LogIn, LogOut, CheckCircle2 } from 'lucide-react';

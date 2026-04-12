@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
@@ -141,7 +141,7 @@ const HospitalsList = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto pb-12">
+    <div className="max-w-7xl mx-auto pb-8 md:pb-12 md:px-0">
       <ConfirmModal
         isOpen={confirmModal.isOpen}
         onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
@@ -153,7 +153,7 @@ const HospitalsList = () => {
         type={confirmModal.type as any}
       />
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 mb-5 md:mb-8">
         <PageHeader
             title="Hospitals Registry"
             subtitle="Central monitoring and management of healthcare network nodes"
@@ -166,14 +166,14 @@ const HospitalsList = () => {
         </Link>
       </div>
 
-      <div className="mb-8 relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500" size={20} />
+      <div className="mb-5 md:mb-8 relative group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500" size={16} />
           <input
             type="text"
             placeholder="Search registry by name, location, or pincode..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full border rounded-2xl pl-12 pr-4 py-4 outline-none focus:ring-2 focus:ring-blue-500/20 shadow-sm group-hover:shadow-md"
+            className="w-full border rounded-xl md:rounded-2xl pl-10 md:pl-12 pr-4 py-2.5 md:py-3.5 text-xs md:text-sm placeholder:text-[10px] md:placeholder:text-sm outline-none focus:ring-2 focus:ring-blue-500/20 shadow-sm group-hover:shadow-md"
             style={{ 
                 backgroundColor: 'var(--card-bg)', 
                 color: 'var(--text-color)', 
@@ -183,11 +183,11 @@ const HospitalsList = () => {
       </div>
 
       {filteredHospitals.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {filteredHospitals.map((hospital) => (
-                <div key={hospital._id} className="group rounded-2xl border hover:shadow-xl hover:border-blue-500/50 flex flex-col h-full bg-linear-to-b from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50"
+                <div key={hospital._id} className="group rounded-xl md:rounded-2xl border hover:shadow-xl hover:border-blue-500/50 flex flex-col h-full bg-linear-to-b from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 overflow-hidden"
                     style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
-                    <div className="p-5 grow">
+                    <div className="p-4 md:p-5 grow">
                         <div className="flex justify-between items-start mb-4">
                             <div className="w-12 h-12 bg-blue-500/5 rounded-xl flex items-center justify-center text-blue-500 border border-blue-500/10 group-hover:scale-110">
                                 <Building2 size={24} />
@@ -271,14 +271,14 @@ const HospitalsList = () => {
         maxWidth="max-w-4xl"
       >
         {selectedHospital && (
-          <div className="space-y-6">
+          <div className="space-y-6 max-h-[65vh] overflow-y-auto overflow-x-hidden no-scrollbar pr-1 pb-4">
             <div className="flex flex-col md:flex-row items-start gap-5 border-b pb-6" style={{ borderColor: 'var(--border-color)' }}>
                <div className="w-20 h-20 rounded-2xl bg-blue-500/5 flex items-center justify-center border border-blue-500/10 shrink-0 shadow-sm">
                   <Building2 className="text-blue-500" size={40} />
                </div>
                <div className="pt-1 grow">
                   <div className="flex justify-between items-start">
-                    <h2 className="text-2xl font-bold mb-1">{selectedHospital.name}</h2>
+                    <h2 className="text-lg md:text-xl lg:text-2xl font-bold mb-1">{selectedHospital.name}</h2>
                     <Badge variant={getStatusVariant(selectedHospital.status)}>
                         {(selectedHospital.status || 'pending').toUpperCase()}
                     </Badge>

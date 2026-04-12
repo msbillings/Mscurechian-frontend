@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -110,13 +110,13 @@ export default function StaffProfileClient() {
     const { data: profileRes, isLoading: profileLoading } = useQuery({
         queryKey: ['staff-profile', 'my'],
         queryFn: getStaffProfileAction,
-        refetchInterval: 2000,
+        refetchInterval: 30000, // 30s is enough for status sync
     });
 
     const { data: dashboardRes, isLoading: dashboardLoading } = useQuery({
         queryKey: ['staff-dashboard', 'my'],
         queryFn: getStaffDashboardAction,
-        refetchInterval: 2000,
+        refetchInterval: 30000, // 30s is enough for stats sync
     });
 
     if (profileLoading || dashboardLoading) {

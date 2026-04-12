@@ -1,5 +1,6 @@
 import { API_CONFIG } from '../config';
 import { getAccessToken } from './apiClient';
+import { useOnlineStore } from '@/stores/onlineStore';
 
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
@@ -31,16 +32,16 @@ export async function emergencyApiClient<T>(
   options?: RequestInit
 ): Promise<T> {
   const isClient = typeof window !== 'undefined';
-  const isAmbulanceContext = isClient && sessionStorage.getItem('userRole') === 'ambulance';
+  const isAmbulanceContext = isClient && localStorage.getItem('userRole') === 'ambulance';
   
   // Priority: 
   // 1. shared in-memory token 
-  // 2. sessionStorage token (if in ambulance context)
+  // 2. localStorage token (if in ambulance context)
   // 3. cookie token (only as last resort, and not if we're in an ambulance context to avoid helpdesk leakage)
   let token = getAccessToken();
   
   if (!token && isClient) {
-    const sessionToken = sessionStorage.getItem('accessToken');
+    const sessionToken = localStorage.getItem('accessToken');
     if (sessionToken) {
       token = sessionToken;
     } else if (!isAmbulanceContext) {
@@ -55,7 +56,10 @@ export async function emergencyApiClient<T>(
     token = token.slice(1, -1);
   }
 
-  console.log('🚑 Emergency API Client:', { path, hasToken: !!token, isAmbulanceContext });
+  console.log('🚨 Emergency API Client:', { path, hasToken: !!token, isAmbulanceContext });
+  
+  // ✅ MULTI-TENANCY: Inject X-Hospital-Id
+  const activeHospitalId = typeof window !== "undefined" ? localStorage.getItem("activeHospitalId") : null;
 
   // Construct headers
   const headers = new Headers();
@@ -76,24 +80,21 @@ export async function emergencyApiClient<T>(
     headers.set('Authorization', `Bearer ${token}`);
     console.log('🔑 Token added to request');
   } else {
-    console.warn('⚠️ No token found for emergency API call');
+    console.warn('⚠️  No token found for emergency API call');
   }
 
-  // ✅ CSRF PROTECTION: Double Submit Cookie (Namespaced for multi-tenancy)
-  const csrfName = activeHospitalId ? `csrf_token_${activeHospitalId}` : "csrf_token";
-  const csrfToken = getCookie(csrfName);
+  // ✅ CSRF PROTECTION: Double Submit Cookie
+  const csrfToken = getCookie("csrf_token");
   if (csrfToken) {
     headers.set("X-CSRF-Token", csrfToken);
   }
 
   // ✅ ENFORCE SESSION ISOLATION
-  const sessionId = typeof window !== "undefined" ? sessionStorage.getItem("sessionId") : null;
+  const sessionId = typeof window !== "undefined" ? localStorage.getItem("sessionId") : null;
   if (sessionId) {
     headers.set("X-Session-Id", sessionId);
   }
 
-  // ✅ MULTI-TENANCY: Inject X-Hospital-Id
-  const activeHospitalId = typeof window !== "undefined" ? sessionStorage.getItem("activeHospitalId") : null;
   if (activeHospitalId) {
     headers.set("X-Hospital-Id", activeHospitalId);
   }
@@ -106,7 +107,10 @@ export async function emergencyApiClient<T>(
       headers,
       credentials: "include",
     }).catch((fetchError) => {
-      console.error(`❌ Network error calling ${path}:`, fetchError);
+      if (isClient && fetchError.message === 'Failed to fetch') {
+        useOnlineStore.getState().setOnline(false);
+      }
+      console.error(`Network error calling ${path}:`, fetchError);
       const networkError = new Error(
         fetchError.message === 'Failed to fetch'
           ? `Cannot connect to server. Please ensure the backend is running at ${API_CONFIG.BASE_URL}`
@@ -116,16 +120,31 @@ export async function emergencyApiClient<T>(
       throw networkError;
     });
 
-    // Handle 401 Unauthorized - use EMERGENCY refresh endpoint
-    if (res.status === 401 && isClient && !path.includes('/auth/login') && !path.includes('/auth/refresh')) {
-        if (!isRefreshing) {
-          isRefreshing = true;
-          console.log('🔄 Refreshing emergency token (from cookie)...');
+    // Handle 401 Unauthorized or 409 Conflict - use EMERGENCY refresh endpoint
+    if ((res.status === 401 || res.status === 409) && isClient && !path.includes('/auth/login') && !path.includes('/auth/refresh')) {
+        
+        // If 409, another request in this tab is already refreshing. 
+        // We just need to wait for it.
+        if (isRefreshing) {
+            console.log('⏳ Another emergency refresh in progress, waiting...');
+            return new Promise<T>((resolve, reject) => {
+              subscribeTokenRefresh((newToken) => {
+                headers.set('Authorization', `Bearer ${newToken}`);
+                fetch(url, { ...options, headers, credentials: "include" })
+                  .then(resp => {
+                    if (!resp.ok) return resp.json().then(err => { throw new Error(err.message || `HTTP ${resp.status}`) });
+                    return resp.json();
+                  })
+                  .then(resolve)
+                  .catch(reject);
+              });
+            });
+        }
 
-          try {
-            // Use EMERGENCY refresh endpoint
-            // Since refreshToken is HttpOnly, we don't need to send it in the body.
-            // credentials: "include" will send the cookie.
+        isRefreshing = true;
+        console.log('🔄 Refreshing emergency token (from cookie)...');
+
+        try {
             const refreshRes = await fetch(`${API_CONFIG.BASE_URL}/emergency/auth/refresh`, {
               method: 'POST',
               headers: { 
@@ -138,51 +157,58 @@ export async function emergencyApiClient<T>(
 
             if (refreshRes.ok) {
               const data = await refreshRes.json();
-              // Standard matching for emergency refresh response format
               const newAccessToken = data.accessToken || (data.tokens && data.tokens.accessToken);
 
               if (newAccessToken) {
-                  sessionStorage.setItem('accessToken', newAccessToken);
-                  // Refresh token is updated via cookie automatically
+                  const { setAccessToken } = await import('./apiClient');
+                  setAccessToken(newAccessToken); // ✅ SYNC with in-memory cache
+                  
+                  localStorage.setItem('accessToken', newAccessToken);
                   if (data.sessionId) {
-                      sessionStorage.setItem('sessionId', data.sessionId);
+                      localStorage.setItem('sessionId', data.sessionId);
                   }
                   
                   console.log('✅ Emergency token refreshed');
                   isRefreshing = false;
                   onTokenRefreshed(newAccessToken);
+                  
+                  // Retry the original request
+                  headers.set('Authorization', `Bearer ${newAccessToken}`);
+                  const retryRes = await fetch(url, { ...options, headers, credentials: "include" });
+                  if (!retryRes.ok) throw new Error('Retry failed');
+                  return retryRes.json();
               } else {
                   throw new Error('No access token in refresh response');
               }
+            } else if (refreshRes.status === 409) {
+                // Backend says another request is rotating. Wait for it.
+                // This is specifically for multi-tab or extremely fast concurrent hits.
+                console.warn('⚠️ Concurrent rotation on backend (409). Waiting for signal...');
+                // We'll reset isRefreshing since we aren't the winner, and wait for the subscriber notify
+                isRefreshing = false;
+                return new Promise<T>((resolve, reject) => {
+                  subscribeTokenRefresh((newToken) => {
+                    headers.set('Authorization', `Bearer ${newToken}`);
+                    fetch(url, { ...options, headers, credentials: "include" })
+                      .then(resp => resp.json())
+                      .then(resolve)
+                      .catch(reject);
+                  });
+                });
             } else {
-              console.error('❌ Emergency token refresh failed');
               throw new Error('Refresh failed');
             }
-          } catch (error) {
+        } catch (error) {
             console.error('❌ Emergency refresh error:', error);
             isRefreshing = false;
-            sessionStorage.removeItem('accessToken');
-            sessionStorage.removeItem('refreshToken');
-            window.dispatchEvent(new Event('auth-logout'));
-            // Redirect to emergency login
-            window.location.href = '/emergency-login';
-            throw new Error('Session expired');
-          }
+            // Only logout if it's truly a 401/expired session, not a network error
+            if (error instanceof Error && error.message.includes('Session expired')) {
+                localStorage.removeItem('accessToken');
+                window.dispatchEvent(new Event('auth-logout'));
+                window.location.href = '/emergency/login';
+            }
+            throw error;
         }
-
-        // Wait for token refresh and retry request
-        return new Promise<T>((resolve, reject) => {
-          subscribeTokenRefresh((newToken) => {
-            headers.set('Authorization', `Bearer ${newToken}`);
-            fetch(url, { ...options, headers, credentials: "include" })
-              .then(resp => {
-                if (!resp.ok) return resp.json().then(err => { throw new Error(err.message || `HTTP ${resp.status}`) });
-                return resp.json();
-              })
-              .then(resolve)
-              .catch(reject);
-          });
-        });
     }
 
     if (!res.ok) {

@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 // Optimized Inter font with display swap and preload
@@ -14,7 +15,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://mscurechain.com'),
+  metadataBase: new URL('https://www.mscurechain.com'),
   title: {
     default: "MSCureChain - Modern Hospital Management System",
     template: "%s | MSCureChain"
@@ -66,7 +67,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://mscurechain.com',
+    url: 'https://www.mscurechain.com',
     siteName: 'MSCureChain',
     title: 'MSCureChain - Modern Hospital Management System',
     description: 'Comprehensive digital healthcare platform providing seamless patient care, appointment booking, electronic health records, and integrated hospital management.',
@@ -88,17 +89,23 @@ export const metadata: Metadata = {
     images: ['/assets/logo.png'],
   },
   verification: {
-    google: 'google-site-verification-code',
+    google: 'googleb74881dd0fd5597a',
   },
   category: 'Healthcare',
   alternates: {
-    canonical: 'https://mscurechain.com',
+    canonical: 'https://www.mscurechain.com',
   },
 };
 
 import SwipeableToaster from '@/components/ui/SwipeableToaster';
 import FloatingChat from '@/components/chat/FloatingChat';
 import Providers from './providers';
+import ProgressBar from '@/components/ui/ProgressBar';
+import { Suspense } from 'react';
+import CookieConsent from '@/components/shared/CookieConsent';
+import OfflineDetector from '@/components/layout/OfflineDetector';
+import OfflineBanner from '@/components/ui/OfflineBanner';
+import MainContentWrapper from '@/components/layout/MainContentWrapper';
 
 function RootLayout({
   children,
@@ -108,10 +115,74 @@ function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Preload logo to prevent duplicate requests */}
-        <link rel="preload" href="/assets/logo.png" as="image" type="image/png" />
-
-        <script
+      </head>
+      <body
+        className={`${inter.variable} font-sans antialiased`}
+        suppressHydrationWarning
+      >
+        {/* JSON-LD Structured Data: SoftwareApplication schema for Google rich results */}
+        <Script
+          id="json-ld"
+          type="application/ld+json"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "MSCureChain",
+              "applicationCategory": "HealthApplication",
+              "operatingSystem": "Web",
+              "url": "https://www.mscurechain.com",
+              "description": "MSCureChain is a comprehensive AI-powered Hospital Management System (HMS) that connects patients, doctors, labs, pharmacies, and administrators on a single secure digital platform.",
+              "offers": {
+                "@type": "Offer",
+                "price": "333",
+                "priceCurrency": "INR",
+                "priceSpecification": {
+                  "@type": "UnitPriceSpecification",
+                  "price": "333",
+                  "priceCurrency": "INR",
+                  "referenceQuantity": {
+                    "@type": "QuantitativeValue",
+                    "value": "1",
+                    "unitCode": "DAY"
+                  }
+                }
+              },
+              "publisher": {
+                "@type": "Organization",
+                "name": "MS Tech Hive",
+                "url": "https://mstechhive.com",
+                "contactPoint": {
+                  "@type": "ContactPoint",
+                  "telephone": "+91-9032223352",
+                  "contactType": "sales",
+                  "email": "info@mstechhive.com"
+                }
+              },
+              "featureList": [
+                "AI-Powered Prescription Generation",
+                "Patient Portal & Health Records",
+                "Doctor Consultation Terminal",
+                "Hospital Administration Dashboard",
+                "Lab & Diagnostics Management",
+                "Pharmacy POS System",
+                "Emergency & EMS Tracking",
+                "Inpatient Bed Management",
+                "Multi-tenant Hospital Architecture",
+                "Role-based Access Control"
+              ],
+              "screenshot": "https://www.mscurechain.com/assets/dashboard.png",
+              "image": "https://www.mscurechain.com/assets/logo.png",
+              "sameAs": [
+                "https://mstechhive.com"
+              ]
+            })
+          }}
+        />
+        <Script
+          id="theme-detector"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
                (function() {
@@ -156,14 +227,18 @@ function RootLayout({
              `,
           }}
         />
-      </head>
-      <body
-        className={`${inter.variable} font-sans antialiased`}
-        suppressHydrationWarning
-      >
+
         <Providers>
+          <OfflineDetector />
+          <OfflineBanner />
+          <Suspense fallback={null}>
+            <ProgressBar />
+          </Suspense>
           <SwipeableToaster />
-          {children}
+          <CookieConsent />
+          <MainContentWrapper>
+            {children}
+          </MainContentWrapper>
           <FloatingChat />
         </Providers>
       </body>
@@ -171,4 +246,4 @@ function RootLayout({
   );
 }
 
-export default React.memo(RootLayout);
+export default RootLayout;

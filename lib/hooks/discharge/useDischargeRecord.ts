@@ -1,4 +1,4 @@
-import { useQuery, UseQueryOptions } from '@tanstack/react-query';
+﻿import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { dischargeService } from '@/lib/integrations/services/discharge.service';
 
 export function useDischargeRecord(

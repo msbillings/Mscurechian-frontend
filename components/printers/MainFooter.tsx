@@ -45,25 +45,31 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails }) => {
             width: '100%',
             fontFamily: "'Segoe UI', Roboto, Arial, sans-serif",
             marginTop: '10px',
+            padding: '0',
             printColorAdjust: 'exact',
             WebkitPrintColorAdjust: 'exact',
         }}>
             {/* ── Contact Slanted Bars ── */}
-            {((details.phone && details.phone !== 'N/A' && details.phone !== 'Phone Number') ||
-                (details.email && details.email !== 'N/A' && details.email !== 'Email Address')) && (
-                    <div style={{ display: 'flex', height: '40px', marginBottom: '15px', position: 'relative' }}>
+                    <div style={{ 
+                        display: 'flex', 
+                        flexWrap: 'wrap',
+                        minHeight: '28px', 
+                        marginBottom: '8px', 
+                        position: 'relative',
+                        gap: '4px' 
+                    }}>
                         {details.phone && details.phone !== 'N/A' && details.phone !== 'Phone Number' && (
                             <div style={{
-                                flex: 1,
+                                flex: '1 1 200px', 
                                 background: '#22c55e',
                                 color: '#ffffff',
                                 display: 'flex',
                                 alignItems: 'center',
-                                padding: '0 40px',
+                                padding: 'clamp(6px, 1vw, 12px) 15px',
                                 fontWeight: 900,
-                                fontSize: '16px',
-                                clipPath: 'polygon(0 0, 100% 0, 90% 100%, 0 100%)',
-                                zIndex: 2
+                                fontSize: 'clamp(10px, 1.8vw, 15px)', 
+                                zIndex: 2,
+                                borderRadius: '4px'
                             }}>
                                 <span style={{ marginRight: '10px' }}>📞</span>
                                 {details.phone}
@@ -72,62 +78,62 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails }) => {
 
                         {details.email && details.email !== 'N/A' && details.email !== 'Email Address' && (
                             <div style={{
-                                flex: 1,
+                                flex: '1 1 200px',
                                 background: '#3b82f6',
                                 color: '#ffffff',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
+                                padding: 'clamp(6px, 1vw, 12px) 15px',
                                 fontWeight: 900,
-                                fontSize: '16px',
-                                clipPath: 'polygon(10% 0, 100% 0, 100% 100%, 0 100%)',
-                                marginLeft: details.phone ? '-40px' : '0',
+                                fontSize: 'clamp(10px, 1.8vw, 15px)',
                                 zIndex: 1,
-                                paddingLeft: details.phone ? '40px' : '0'
+                                borderRadius: '4px'
                             }}>
                                 <span style={{ marginRight: '10px' }}>✉️</span>
                                 {details.email}
                             </div>
                         )}
                     </div>
-                )}
 
             {/* ── Info Wrapper with Border ── */}
             <div style={{
                 display: 'flex',
-                justifyContent: 'space-between',
+                flexWrap: 'nowrap',
+                justifyContent: 'flex-start',
                 alignItems: 'flex-start',
-                marginTop: '10px'
+                marginTop: '5px',
+                gap: '20px',
+                padding: '0'
             }}>
                 {/* Left: T&C / Disclaimers */}
-                <div style={{ flex: 1.5 }}>
+                <div style={{ flex: '1', minWidth: 0 }}>
                     <ul style={{
                         margin: 0,
                         padding: 0,
                         listStyle: 'none',
-                        fontSize: '10px',
-                        color: '#000000', // Changed to BLACK
+                        fontSize: 'clamp(7px, 1.5vw, 9px)',
+                        color: '#000000',
                         fontWeight: 700,
-                        lineHeight: '1.5'
+                        lineHeight: '1.4'
                     }}>
-                        <li>• All results should be co-related clinically</li>
-                        <li>• If results are alarming or unexpected, contact the Helpdesk immediately</li>
-                        <li>• Not valid for medico-legal purposes</li>
-                        <li>• The test with an asterisk(*) are not accredited by NABL</li>
+                        <li>• clinical correlation required</li>
+                        <li>• Contact helpdesk for alarms</li>
+                        <li>• Not for medico-legal use</li>
+                        <li>• * non-NABL accredited</li>
                     </ul>
                 </div>
 
-                {/* Right: Address */}
-                <div style={{ flex: 1.2, textAlign: 'right' }}>
+                {/* Right: Address (Now Left Aligned) */}
+                <div style={{ flex: '1', minWidth: 0, textAlign: 'left' }}>
                     <p style={{
                         margin: 0,
-                        fontSize: '10px',
+                        fontSize: 'clamp(7px, 1.5vw, 10px)',
                         fontWeight: 800,
-                        color: '#000000', // Changed to BLACK
+                        color: '#000000', 
                         textTransform: 'uppercase',
                         lineHeight: '1.4',
-                        maxWidth: '300px',
-                        marginLeft: 'auto'
+                        wordBreak: 'break-word'
                     }}>
                         {details.address}
                     </p>
@@ -137,15 +143,17 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails }) => {
             {/* ── Disclaimer Note ── */}
             <div style={{
                 textAlign: 'center',
-                fontSize: '10px',
+                fontSize: '9px',
                 color: '#000000', // Changed to BLACK
-                marginTop: '15px',
-                paddingTop: '10px',
+                marginTop: '10px',
+                paddingTop: '6px',
                 borderTop: '1px solid #f1f5f9',
                 fontWeight: '500'
             }}>
                 This is a computer generated document and does not require a physical signature.
             </div>
+            {/* Added spacing div */}
+            <div style={{ padding: '0 15px' }}></div>
         </div>
     );
 };

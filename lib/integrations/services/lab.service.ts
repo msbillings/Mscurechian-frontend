@@ -7,8 +7,7 @@
 import { apiClient } from "../api/apiClient";
 import { LAB_ENDPOINTS } from "../config/endpoints";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
+// ─── Types
 export interface LabTest {
   _id: string;
   name: string;
@@ -84,10 +83,10 @@ export interface LabDepartment {
   description?: string;
 }
 
-// ─── Service ──────────────────────────────────────────────────────────────────
+// ─── Service 
 
 export const labService = {
-  // ─── Dashboard ──────────────────────────────────────────────────────────────
+  // ─── Dashboard 
 
   /** GET /lab/dashboard-stats */
   getDashboardStats: async (params?: {
@@ -106,7 +105,7 @@ export const labService = {
     return response.stats || response.data || response;
   },
 
-  // ─── Tests (Catalog) ─────────────────────────────────────────────────────────
+  // ─── Tests (Catalog) 
 
   /** GET /lab/tests */
   getTests: async (params?: {
@@ -166,7 +165,7 @@ export const labService = {
     return apiClient(LAB_ENDPOINTS.TESTS.DESTROY_ALL, { method: "DELETE" });
   },
 
-  // ─── Orders (Workflow) ───────────────────────────────────────────────────────
+  // ─── Orders (Workflow) 
 
   /** GET /lab/orders?status=&page=&limit= */
   getOrders: async (params?: {
@@ -271,7 +270,7 @@ export const labService = {
     return apiClient(LAB_ENDPOINTS.SAMPLES.BY_ID(id), { method: "DELETE" });
   },
 
-  // ─── Invoices / Billing ──────────────────────────────────────────────────────
+  // ─── Invoices / Billing 
 
   /** GET /lab/invoices?page=&limit= */
   getInvoices: async (params?: {
@@ -302,7 +301,7 @@ export const labService = {
     return apiClient(`/lab/invoices/${id}`, { method: "DELETE" });
   },
 
-  // ─── Reports ─────────────────────────────────────────────────────────────────
+  // ─── Reports 
 
   /** GET /lab/reports/:sampleId */
   generateReport: async (sampleId: string): Promise<any> => {
@@ -314,7 +313,7 @@ export const labService = {
     return apiClient(`/lab/reports/${sampleId}/with-billing`);
   },
 
-  // ─── Departments ─────────────────────────────────────────────────────────────
+  // ─── Departments 
 
   /** GET /lab/departments */
   getDepartments: async (): Promise<LabDepartment[]> => {
@@ -352,14 +351,14 @@ export const labService = {
     });
   },
 
-  // ─── Meta ────────────────────────────────────────────────────────────────────
+  // ─── Meta 
 
   /** GET /lab/meta */
   getMetaOptions: async (): Promise<any> => {
     return apiClient(LAB_ENDPOINTS.META);
   },
 
-  // ─── Settings ────────────────────────────────────────────────────────────────
+  // ─── Settings 
 
   /** GET /lab/settings */
   getSettings: async (): Promise<LabSettings> => {
@@ -389,7 +388,7 @@ export const labService = {
     return response.data || response;
   },
 
-  // ─── React Query key helpers ─────────────────────────────────────────────────
+  // ─── React Query key helpers 
   queryKeys: {
     all: () => ["lab"] as const,
     dashboard: () => ["lab", "dashboard"] as const,

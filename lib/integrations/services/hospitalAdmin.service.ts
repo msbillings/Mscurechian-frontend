@@ -21,6 +21,7 @@ export const hospitalAdminService = {
     startDate?: string;
     endDate?: string;
     doctorId?: string;
+    visitType?: string;
   }) => {
     try {
       const queryParams = new URLSearchParams();
@@ -29,6 +30,7 @@ export const hospitalAdminService = {
         queryParams.append("startDate", filters.startDate);
       if (filters?.endDate) queryParams.append("endDate", filters.endDate);
       if (filters?.doctorId) queryParams.append("doctorId", filters.doctorId);
+      if (filters?.visitType) queryParams.append("visitType", filters.visitType);
 
       const url = `${HOSPITAL_ADMIN_ENDPOINTS.DASHBOARD}${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
 
@@ -782,6 +784,30 @@ export const hospitalAdminService = {
 
   // Reminder Configuration
   getReminderConfig: () => apiClient<any>("/hospitals/reminders/config"),
+
+  /** GET /hospital/auth-logs */
+  getAuthLogs: (params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    role?: string;
+    userId?: string;
+  }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append("page", String(params.page));
+    if (params?.limit) query.append("limit", String(params.limit));
+    if (params?.status) query.append("status", params.status);
+    if (params?.role) query.append("role", params.role);
+    if (params?.userId) query.append("userId", params.userId);
+    const qs = query.toString();
+    return apiClient<any>(
+      `${HOSPITAL_ADMIN_ENDPOINTS.AUTH_LOGS}${qs ? `?${qs}` : ""}`,
+    );
+  },
+
+  /** GET /hospital/auth-log-filters */
+  getAuthLogFilters: () => 
+    apiClient<{ success: boolean; data: { roles: string[] } }>(HOSPITAL_ADMIN_ENDPOINTS.AUTH_LOG_FILTERS),
 
   updateReminderConfig: (data: any) =>
     apiClient<any>("/hospitals/reminders/config", {

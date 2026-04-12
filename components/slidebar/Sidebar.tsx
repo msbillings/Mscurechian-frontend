@@ -25,6 +25,7 @@ import { useRouter } from 'next/navigation';
 import { useTenantLink } from '@/hooks/useTenantLink';
 
 export interface SidebarItem {
+    id?: string;
     icon: LucideIcon;
     label: string;
     href: string;
@@ -85,7 +86,7 @@ function Sidebar({
     footer,
     onLogout,
     activeColor = 'blue',
-    width = 'w-64'
+    width = 'w-56'
 }: SidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
@@ -132,7 +133,7 @@ function Sidebar({
                     {/* Scrollable Navigation */}
                     <div className="flex-1 overflow-y-auto py-4">
                         <nav className="space-y-1 px-3">
-                            {items.map((item) => {
+                            {items.map((item, idx) => {
                                 if (item.subItems) {
                                   // For items with subItems, check if any child is active
                                   const isChildActive = item.subItems.some(sub => {
@@ -142,7 +143,7 @@ function Sidebar({
                                   
                                   return (
                                     <CollapsibleMenuItem
-                                      key={item.label}
+                                      key={item.id || `${item.label}-${item.href}-${idx}`}
                                       item={item}
                                       pathname={pathname}
                                       activeColor={activeColor}
@@ -161,7 +162,7 @@ function Sidebar({
                                     : pathname === tenantHref || pathname.startsWith(tenantHref + '/');
                                 return (
                                     <Link
-                                        key={item.href}
+                                        key={item.id || `${item.href}-${item.label}-${idx}`}
                                         href={tenantHref}
                                         onClick={(e) => {
                                             if (item.href === '#logout') {
@@ -240,13 +241,13 @@ function CollapsibleMenuItem({ item, pathname, activeColor, getPath, onClose, is
             </div>
             
             <div className={`pl-6 space-y-1 border-l-2 border-gray-100 dark:border-gray-800 ml-5 overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 opacity-100 mt-1 pb-1' : 'max-h-0 opacity-0 m-0 p-0 border-transparent'}`}>
-              {item.subItems.map((subItem: any) => {
+              {item.subItems.map((subItem: any, sIdx: number) => {
                 const tenantHref = getPath(subItem.href);
                 const isActive = pathname === tenantHref || pathname.startsWith(tenantHref + '/');
                 
                 return (
                   <Link
-                      key={subItem.href}
+                      key={subItem.id || `${subItem.href}-${subItem.label}-${sIdx}`}
                       href={tenantHref}
                       onClick={(e) => {
                           if (window.innerWidth < 1024 && onClose) {

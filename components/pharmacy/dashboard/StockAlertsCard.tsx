@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { AlertTriangle, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 

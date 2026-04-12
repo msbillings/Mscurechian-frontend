@@ -6,7 +6,7 @@ import { Blog, Testimonial, CreateBlogRequest, CreateTestimonialRequest } from "
  * Service for managing landing page content (Blogs & Testimonials)
  */
 export const contentService = {
-  // ─── PUBLIC API ────────────────────────────────────────────────────────────
+  // ─── PUBLIC API ───────────────────────────────────────────────────────────
   
   /**
    * Fetch all published blogs for the landing page
@@ -28,7 +28,7 @@ export const contentService = {
     return response.data;
   },
 
-  // ─── ADMIN API ─────────────────────────────────────────────────────────────
+  // ─── ADMIN API ────────────────────────────────────────────────────────────
 
   /**
    * Fetch all blogs (Admin view)
