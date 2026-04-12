@@ -490,14 +490,7 @@ export default function Home() {
                                                 </li>
                                             ))}
                                         </ul>
-                                        <div className="flex gap-3 sm:gap-4 pt-6 relative w-full">
-                                            <button type="button" suppressHydrationWarning className="flex-1 sm:flex-none bg-white text-primary-theme px-3 py-3 sm:px-10 sm:py-5 rounded-xl font-bold text-[11px] sm:text-sm uppercase hover:bg-white/90 transition-all shadow-xl active:scale-95 hover:scale-105 flex items-center justify-center text-center leading-snug">
-                                                Request a Live Demo
-                                            </button>
-                                            <button type="button" suppressHydrationWarning className="flex-1 sm:flex-none bg-transparent border-2 border-white text-white px-3 py-3 sm:px-10 sm:py-5 rounded-xl font-bold text-[11px] sm:text-sm uppercase hover:bg-white/10 transition-all active:scale-95 flex items-center justify-center text-center leading-snug">
-                                                Talk to an Expert
-                                            </button>
-                                        </div>
+                                     
                                     </div>
                                     <div className="lg:w-[55%] bg-background p-10 lg:p-14 space-y-10 border-l border-border-theme">
                                         <div className="space-y-6">

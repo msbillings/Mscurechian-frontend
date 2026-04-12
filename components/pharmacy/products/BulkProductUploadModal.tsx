@@ -464,18 +464,28 @@ const BulkProductUploadModal: React.FC<BulkProductUploadModalProps> = ({ isOpen,
                             </div>
 
                             {/* Preview Table */}
-                            <div className="border dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm">
-                                <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
-                                    <table className="w-full text-left text-sm">
-                                        <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700">
+                            <div className="border dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm bg-white dark:bg-[#0a0a09]">
+                                <div className="max-h-[350px] overflow-y-auto overflow-x-auto custom-scrollbar">
+                                    <table className="w-full text-left text-[11px] border-collapse">
+                                        <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700 z-10">
                                             <tr>
-                                                <th className="px-4 py-3 font-bold text-gray-500">SKU</th>
-                                                <th className="px-4 py-3 font-bold text-gray-500">Brand Name</th>
-                                                <th className="px-4 py-3 font-bold text-gray-500">Generic Name</th>
-                                                <th className="px-4 py-3 font-bold text-gray-500">Stock</th>
-                                                <th className="px-4 py-3 font-bold text-gray-500">MRP</th>
-                                                <th className="px-4 py-3 font-bold text-gray-500">Expiry Date</th>
-                                                <th className="px-4 py-3 font-bold text-gray-500">Assigned Supplier</th>
+                                                <th className="px-4 py-3 font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">SKU</th>
+                                                <th className="px-4 py-3 font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Brand Name</th>
+                                                <th className="px-4 py-3 font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Generic Name</th>
+                                                <th className="px-4 py-3 font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Display Name</th>
+                                                <th className="px-4 py-3 font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Form</th>
+                                                <th className="px-4 py-3 font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Strength</th>
+                                                <th className="px-4 py-3 font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Schedule</th>
+                                                <th className="px-4 py-3 font-black text-green-600 uppercase tracking-widest whitespace-nowrap">MRP (Sell)</th>
+                                                <th className="px-4 py-3 font-black text-orange-600 uppercase tracking-widest whitespace-nowrap">Cost (Buy)</th>
+                                                <th className="px-4 py-3 font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">GST %</th>
+                                                <th className="px-4 py-3 font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">HSN</th>
+                                                <th className="px-4 py-3 font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Batch</th>
+                                                <th className="px-4 py-3 font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Expiry</th>
+                                                <th className="px-4 py-3 font-black text-teal-600 uppercase tracking-widest whitespace-nowrap">Stock</th>
+                                                <th className="px-4 py-3 font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Min Stock</th>
+                                                <th className="px-4 py-3 font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Unit/Pack</th>
+                                                <th className="px-4 py-3 font-black text-indigo-400 uppercase tracking-widest whitespace-nowrap">Supplier</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y dark:divide-gray-800">
@@ -485,26 +495,36 @@ const BulkProductUploadModal: React.FC<BulkProductUploadModalProps> = ({ isOpen,
                                                     ? expiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
                                                     : null;
                                                 return (
-                                                    <tr key={i} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                                                        <td className="px-4 py-3 font-bold text-gray-700 dark:text-gray-300">{p.sku}</td>
-                                                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{p.brandName}</td>
-                                                        <td className="px-4 py-3 text-gray-500">{p.genericName}</td>
-                                                        <td className="px-4 py-3 font-bold text-teal-600">{p.currentStock}</td>
-                                                        <td className="px-4 py-3 font-bold text-indigo-600">₹{p.mrp}</td>
-                                                        <td className="px-4 py-3">
+                                                    <tr key={i} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 border-b dark:border-gray-800 last:border-0">
+                                                        <td className="px-4 py-3 font-black text-gray-900 dark:text-white whitespace-nowrap uppercase">{p.sku}</td>
+                                                        <td className="px-4 py-3 font-black text-gray-800 dark:text-gray-200 whitespace-nowrap">{p.brandName}</td>
+                                                        <td className="px-4 py-3 font-bold text-gray-500 whitespace-nowrap">{p.genericName}</td>
+                                                        <td className="px-4 py-3 font-medium text-gray-400 whitespace-nowrap italic">{p.name || '--'}</td>
+                                                        <td className="px-4 py-3 font-bold text-gray-600 whitespace-nowrap">{p.form}</td>
+                                                        <td className="px-4 py-3 font-bold text-gray-600 whitespace-nowrap">{p.strength}</td>
+                                                        <td className="px-4 py-3 font-black text-[9px] uppercase whitespace-nowrap tracking-tighter opacity-70">{p.schedule}</td>
+                                                        <td className="px-4 py-3 font-black text-green-600 whitespace-nowrap bg-green-50/10">₹{p.mrp}</td>
+                                                        <td className="px-4 py-3 font-black text-orange-600 whitespace-nowrap bg-orange-50/10">₹{p.unitCost || '--'}</td>
+                                                        <td className="px-4 py-3 font-bold text-gray-500 whitespace-nowrap">{p.gst}%</td>
+                                                        <td className="px-4 py-3 font-medium text-gray-400 whitespace-nowrap">{p.hsnCode || '--'}</td>
+                                                        <td className="px-4 py-3 font-bold text-indigo-500 whitespace-nowrap uppercase">{p.batchNumber || '--'}</td>
+                                                        <td className="px-4 py-3 whitespace-nowrap">
                                                             {expiryLabel ? (
-                                                                <span className="px-2.5 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-bold">
+                                                                <span className="px-2.5 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-lg text-[9px] font-black uppercase tracking-tight whitespace-nowrap">
                                                                     {expiryLabel}
                                                                 </span>
                                                             ) : (
-                                                                <span className="px-2.5 py-1 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-lg text-[10px] font-black uppercase tracking-wide">
+                                                                <span className="px-2.5 py-1 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-lg text-[8px] font-black uppercase tracking-wide whitespace-nowrap">
                                                                     Missing
                                                                 </span>
                                                             )}
                                                         </td>
-                                                        <td className="px-4 py-3">
-                                                            <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-tight">
-                                                                {suppliers.find(s => s._id === selectedSupplierId)?.name || 'N/A'}
+                                                        <td className="px-4 py-3 font-black text-teal-600 whitespace-nowrap bg-teal-50/10">{p.currentStock}</td>
+                                                        <td className="px-4 py-3 font-bold text-gray-500 whitespace-nowrap">{p.minStockLevel || '--'}</td>
+                                                        <td className="px-4 py-3 font-bold text-gray-500 whitespace-nowrap">{p.unitsPerPack || 1}</td>
+                                                        <td className="px-4 py-3 whitespace-nowrap">
+                                                            <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 rounded-lg text-[9px] font-black uppercase tracking-tight">
+                                                                {suppliers.find(s => s._id === p.supplier)?.name || 'N/A'}
                                                             </span>
                                                         </td>
                                                     </tr>

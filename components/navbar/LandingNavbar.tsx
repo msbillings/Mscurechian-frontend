@@ -101,13 +101,13 @@ function LandingNavbar({ variant = 'home', title, onProtectedClick }: LandingNav
             <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
                 {/* Logo Section */}
                 <div
-                    className="flex items-center gap-2 group cursor-pointer"
+                    className="flex items-center gap-2 lg:gap-3 group cursor-pointer"
                     onClick={() => router.push('/')}
                 >
-                    <div className="w-10 h-10 bg-primary-theme/10 rounded-xl flex items-center justify-center group-hover:scale-110">
-                        <img src="/assets/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
+                    <div className="flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+                        <img src="/assets/logo.png" alt="Logo" className="w-12 h-12 sm:w-14 sm:h-14 object-contain" />
                     </div>
-                    <span className="text-xl font-bold bg-linear-to-r from-primary-theme to-blue-400 bg-clip-text text-transparent">
+                    <span className="text-2xl font-bold bg-linear-to-r from-primary-theme to-blue-400 bg-clip-text text-transparent tracking-tight">
                         MSCureChain
                     </span>
                 </div>

@@ -80,11 +80,46 @@ export default function IPDIssuancePage() {
     });
 
     // Derive selected admission from URL or manual state
-    const selectedAdmission = useMemo(() => {
+    const foundInActive = useMemo(() => {
         const id = urlAdmissionId || manualSelectionId;
-        if (!id || admissions.length === 0) return null;
+        if (!id) return null;
         return (admissions as any[]).find((a: any) => a.admissionId === id) || null;
     }, [urlAdmissionId, manualSelectionId, admissions]);
+
+    // Fallback: if admissionId is in URL but NOT in active admissions (e.g. discharged),
+    // fetch the admission details directly so the correct patient's history is shown
+    const { data: fallbackAdmissionRaw } = useQuery({
+        queryKey: ["ipd", "admission-detail", urlAdmissionId],
+        queryFn: () => ipdService.getAdmissionDetails(urlAdmissionId!),
+        enabled: !!urlAdmissionId && !loadingAdmissions && !foundInActive,
+    });
+
+    // Normalize the flattened getAdmissionDetails response into the nested shape the component expects
+    const fallbackAdmission = useMemo(() => {
+        const raw = fallbackAdmissionRaw as any;
+        if (!raw) return null;
+        // If the API already returns nested shape (has patient as an object), use it directly
+        if (raw.patient && typeof raw.patient === "object") return raw;
+        // Otherwise, normalize the flattened discharge-summary style response
+        return {
+            _id: raw._id,
+            admissionId: raw.admissionId,
+            status: raw.status || "DISCHARGED",
+            pharmacyClearanceStatus: raw.pharmacyClearanceStatus,
+            patient: {
+                _id: raw.patientId || raw._id,
+                name: raw.patientName || "",
+                mobile: raw.phone || raw.mobile || "",
+                mrn: raw.mrn || "",
+            },
+            primaryDoctor: raw.primaryDoctor
+                ? { user: { name: raw.primaryDoctor } }
+                : undefined,
+            bed: { bedId: raw.bedNo || "", type: raw.roomType || "" },
+        };
+    }, [fallbackAdmissionRaw]);
+
+    const selectedAdmission = foundInActive || fallbackAdmission || null;
 
     const filteredAdmissions = (admissions as IPDPatient[]).filter((a) => {
         if (!patientSearch.trim()) return true;

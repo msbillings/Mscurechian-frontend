@@ -88,11 +88,16 @@ function PatientDetailsPage() {
     const currentMedications = React.useMemo(() => {
         const medsMap = new Map();
         issuances.forEach(issuance => {
+            if (!issuance) return;
             issuance.items?.forEach((item: any) => {
-                const key = (item.productId?._id || item.productId || item.medicineName).toString();
+                if (!item) return;
+                const rawKey = item.productId?._id || item.productId || item.medicineName;
+                if (!rawKey) return;
+
+                const key = rawKey.toString();
                 if (!medsMap.has(key)) {
                     medsMap.set(key, {
-                        name: item.medicineName,
+                        name: item.medicineName || 'Unknown Medicine',
                         issued: 0,
                         returned: 0
                     });

@@ -75,6 +75,10 @@ const PharmacyProfile = () => {
     const [logo, setLogo] = useState<string | null>(null);
     const [isUploadingLogo, setIsUploadingLogo] = useState(false);
     const [isLogoDropdownOpen, setIsLogoDropdownOpen] = useState(false);
+    
+    // Document Viewer State
+    const [viewerOpen, setViewerOpen] = useState(false);
+    const [viewerData, setViewerData] = useState({ url: '', title: '' });
 
     // LOGO PRESETS
     const LOGO_PRESETS = [
@@ -679,10 +683,18 @@ const PharmacyProfile = () => {
                                                         type="button"
                                                         onClick={(e) => {
                                                             e.preventDefault();
+<<<<<<< HEAD
                                                             setDocViewer({
                                                                 url: formData.documents?.[doc.key as keyof typeof formData.documents]?.url,
                                                                 label: doc.label
                                                             });
+=======
+                                                            setViewerData({ 
+                                                                url: formData.documents?.[doc.key as keyof typeof formData.documents]?.url, 
+                                                                title: doc.label 
+                                                            });
+                                                            setViewerOpen(true);
+>>>>>>> 2734bd84ab4906e248cccc4d3f6781d58174c366
                                                         }}
                                                         className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                                                         title="View Document"
@@ -705,6 +717,7 @@ const PharmacyProfile = () => {
                     </div>
                 </div>
             </div>
+<<<<<<< HEAD
 
             {/* DOCUMENT VIEWER MODAL */}
             <DocumentViewerModal
@@ -712,6 +725,13 @@ const PharmacyProfile = () => {
                 onClose={() => setDocViewer(null)}
                 url={docViewer?.url || ''}
                 title={docViewer?.label || ''}
+=======
+            <DocumentViewerModal 
+                isOpen={viewerOpen}
+                onClose={() => setViewerOpen(false)}
+                url={viewerData.url}
+                title={viewerData.title}
+>>>>>>> 2734bd84ab4906e248cccc4d3f6781d58174c366
             />
         </div>
     );
