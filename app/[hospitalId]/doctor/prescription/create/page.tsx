@@ -219,6 +219,7 @@ interface PrescriptionForm {
     orthoData?: {
         joint: string;
         side: string;
+        symptoms: string[];
         pain: { score: number; type: string; };
         rom: string;
         exam: { swelling: string; tenderness: string; deformity: string; spasm: string; };
@@ -570,6 +571,7 @@ const INITIAL_FORM: PrescriptionForm = {
     orthoData: {
         joint: '',
         side: '',
+        symptoms: [],
         pain: { score: 0, type: '' },
         rom: '',
         exam: { swelling: '', tenderness: '', deformity: '', spasm: '' },
@@ -968,6 +970,8 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                 const cardioSpec = specs.find((s: string) => s.toUpperCase().includes('CARDIO'));
                 const hemaSpec = specs.find((s: string) => s.toUpperCase().includes('HEMA'));
                 const endoSpec = specs.find((s: string) => s.toUpperCase().includes('ENDOCRIN'));
+                const orthoSpec = specs.find((s: string) => s.toUpperCase().includes('ORTHO'));
+                const ophthaSpec = specs.find((s: string) => s.toUpperCase().includes('OPHTHA') || s.toUpperCase().includes('EYE'));
                 
                 if (cardioSpec) {
                     setActiveSpecialty(cardioSpec);
@@ -975,6 +979,10 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                     setActiveSpecialty(hemaSpec);
                 } else if (endoSpec) {
                     setActiveSpecialty(endoSpec);
+                } else if (orthoSpec) {
+                    setActiveSpecialty(orthoSpec);
+                } else if (ophthaSpec) {
+                    setActiveSpecialty(ophthaSpec);
                 } else if (specs.length > 0) {
                     setActiveSpecialty(specs[0]);
                 }
@@ -1278,14 +1286,13 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                     }
                     .container {
                         width: 210mm;
-                        height: 296mm;
+                        min-height: 296mm;
                         margin: 0 auto;
                         padding: 10mm 15mm 10mm 25mm;
                         box-sizing: border-box;
                         display: flex;
                         flex-direction: column;
                         background: white;
-                        overflow: hidden;
                     }
                     .content { flex: 1; }
                     .header-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; }
@@ -1327,7 +1334,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         <div class="header-row">
                             <h1 class="title">Rx Prescription</h1>
                             <div class="doctor-info">
-                                <p class="doctor-name">Dr. ${formData.doctorName}</p>
+                                <p class="doctor-name">${formData.doctorName}</p>
                                 <p class="doctor-spec">${formData.doctorSpecialization || 'Medical Practitioner'}</p>
                             </div>
                         </div>
@@ -1351,10 +1358,20 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             </div>
                         </div>
 
-                        ${formData.diagnosis ? `
-                        <div style="margin-bottom: 20px; background: #eff6ff; padding: 10px 15px; border-radius: 8px;">
-                            <span class="info-label">Diagnosis / Impressions:</span>
-                            <div style="font-size: 13px; font-weight: 700; color: #1e40af; margin-top: 2px;">${formData.diagnosis}</div>
+                        ${formData.symptoms || formData.diagnosis ? `
+                        <div style="margin-bottom: 25px; padding: 15px; border: 1.5px solid #e2e8f0; border-radius: 12px; background: #f8fafc;">
+                            ${formData.symptoms ? `
+                            <div style="margin-bottom: 12px;">
+                                <span class="info-label" style="color: #64748b; font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">Chief Complaints / Symptoms</span>
+                                <div style="font-size: 12px; font-weight: 700; color: #334155;">${formData.symptoms}</div>
+                            </div>
+                            ` : ''}
+                            ${formData.diagnosis ? `
+                            <div style="${formData.symptoms ? 'border-top: 1px dashed #e2e8f0; padding-top: 10px; margin-top: 10px;' : ''}">
+                                <span class="info-label" style="color: #1e40af; font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">Diagnosis / Impressions</span>
+                                <div style="font-size: 13px; font-weight: 800; color: #1e40af;">${formData.diagnosis}</div>
+                            </div>
+                            ` : ''}
                         </div>
                         ` : ''}
 
@@ -1593,7 +1610,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                 </div>
                             </div>
 
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px dashed #fecdd3; padding-top: 12px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px dashed #fecdd3; padding-top: 12px; margin-bottom: 12px;">
                                 <div>
                                     <div style="font-size: 8px; font-weight: 800; color: #be123c; text-transform: uppercase; margin-bottom: 5px;">Development & Growth</div>
                                     <div style="font-size: 11px; font-weight: 700; color: #334155;">Milestones: <span style="color: #e11d48;">${peds.milestones || 'Appropriate'}</span></div>
@@ -1605,6 +1622,12 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                     ${peds.dueVaccines?.length ? `<div style="font-size: 9px; font-weight: 600; color: #e11d48; margin-top: 2px;">Due: ${peds.dueVaccines.join(', ')}</div>` : ''}
                                 </div>
                             </div>
+
+                            ${peds.symptoms?.length ? `
+                            <div style="margin-bottom: 12px;">
+                                <span style="font-size: 8px; color: #9f1239; font-weight: 800; text-transform: uppercase;">Presenting Symptoms: </span>
+                                <span style="font-size: 11px; font-weight: 700; color: #1e293b;">${peds.symptoms.join(', ')}</span>
+                            </div>` : ''}
 
                             ${peds.redFlags?.length ? `
                             <div style="margin-top: 12px; background: #fff; border: 1.5px solid #fda4af; padding: 8px 12px; border-radius: 8px;">
@@ -1943,7 +1966,6 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         </div>`;
                         })() : ''}
 
-                        })() : ''}
 
                         ${(activeSpecialty.toUpperCase().includes('ORTHO')) && formData.orthoData && formData.orthoData.joint ? (() => {
                             const o = formData.orthoData;
@@ -1963,6 +1985,12 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                 <span style="font-size:10px;font-weight:900;text-transform:uppercase;color:#9a3412;letter-spacing:1px;">Orthopedic Examination</span>
                                 <span style="font-size:11px;font-weight:900;color:#c2410c;background:#ffedd5;padding:4px 12px;border-radius:6px;">${o.side} ${o.joint}</span>
                             </div>
+
+                            ${o.symptoms?.length ? `
+                            <div style="margin-bottom: 12px;">
+                                <span style="font-size: 8px; color: #9a3412; font-weight: 800; text-transform: uppercase;">Affected Area Symptoms: </span>
+                                <span style="font-size: 11px; font-weight: 700; color: #1e293b;">${o.symptoms.join(', ')}</span>
+                            </div>` : ''}
                             
                             <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:20px;margin-bottom:15px;">
                                 <div style="background:#fff;padding:12px;border-radius:12px;border:1px solid #fed7aa;">
@@ -2337,14 +2365,13 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                     }
                     .container {
                         width: 210mm;
-                        height: 296mm;
+                        min-height: 296mm;
                         margin: 0 auto;
                         padding: 10mm 15mm 10mm 25mm;
                         box-sizing: border-box;
                         display: flex;
                         flex-direction: column;
                         background: white;
-                        overflow: hidden;
                     }
                     .content { flex: 1; }
                     .title { color: #1e40af; margin: 20px 0; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; }
@@ -2379,7 +2406,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             </div>
                             <div class="info-group" style="text-align: right;">
                                 <span class="info-label">Doctor</span>
-                                <span class="info-value">DR. ${formData.doctorName}</span>
+                                <span class="info-value">${formData.doctorName}</span>
                                 <span style="font-size: 11px; color: #64748b;">Date: ${new Date().toLocaleDateString('en-GB')}</span>
                             </div>
                         </div>
@@ -2524,14 +2551,14 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                 cardiologyData: activeSpecialty.toUpperCase().includes('CARDIO') ? formData.cardiologyData : undefined,
                 dermatologyData: activeSpecialty.toUpperCase().includes('DERMA') ? formData.dermatologyData : undefined,
                 entData: activeSpecialty.toUpperCase().includes('ENT') && !activeSpecialty.toUpperCase().includes('DENT') && !activeSpecialty.toUpperCase().includes('GASTRO') ? formData.entData : undefined,
-                pediatricData: activeSpecialty.toUpperCase().includes('PEDIATRI') ? formData.pediatricData : undefined,
-                gynaecData: (activeSpecialty.toUpperCase().includes('GYNAE') || activeSpecialty.toUpperCase().includes('GYNE') || activeSpecialty.toUpperCase().includes('OBST')) ? formData.gynaecData : undefined,
-                neuroData: (activeSpecialty.toUpperCase().includes('NEURO')) ? formData.neuroData : undefined,
-                gastroData: (activeSpecialty.toUpperCase().includes('GASTRO')) ? formData.gastroData : undefined,
-                nephroData:  (activeSpecialty.toUpperCase().includes('NEPHRO'))  ? formData.nephroData  : undefined,
-                ophthaData:  (activeSpecialty.toUpperCase().includes('OPHTHAL') || activeSpecialty.toUpperCase().includes('EYE')) ? formData.ophthaData : undefined,
-                orthoData:   (activeSpecialty.toUpperCase().includes('ORTHO'))   ? formData.orthoData   : undefined,
-                pulmoData:   (activeSpecialty.toUpperCase().includes('PULMO'))   ? formData.pulmoData   : undefined,
+                pediatricsData: activeSpecialty.toUpperCase().includes('PEDIATRI') ? formData.pediatricData : undefined,
+                gynecologyData: (activeSpecialty.toUpperCase().includes('GYNAE') || activeSpecialty.toUpperCase().includes('GYNE') || activeSpecialty.toUpperCase().includes('OBST')) ? formData.gynaecData : undefined,
+                neurologyData: (activeSpecialty.toUpperCase().includes('NEURO')) ? formData.neuroData : undefined,
+                gastroenterologyData: (activeSpecialty.toUpperCase().includes('GASTRO')) ? formData.gastroData : undefined,
+                nephrologyData:  (activeSpecialty.toUpperCase().includes('NEPHRO') || activeSpecialty.toUpperCase().includes('URO')) ? formData.nephroData : undefined,
+                ophthalmologyData:  (activeSpecialty.toUpperCase().includes('OPHTHAL') || activeSpecialty.toUpperCase().includes('EYE')) ? formData.ophthaData : undefined,
+                orthopedicData:   (activeSpecialty.toUpperCase().includes('ORTHO'))   ? formData.orthoData   : undefined,
+                pulmonologyData:   (activeSpecialty.toUpperCase().includes('PULMO'))   ? formData.pulmoData   : undefined,
                 psychiatryData: (activeSpecialty.toUpperCase().includes('PSYCH')) ? formData.psychiatryData : undefined,
                 endocrinologyData: (activeSpecialty.toUpperCase().includes('ENDOCRIN')) ? formData.endocrinologyData : undefined,
                 hematologyData: (activeSpecialty.toUpperCase().includes('HEMA')) ? formData.hematologyData : undefined,
@@ -2792,6 +2819,22 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             if (spec.includes('HEMA')) return <HematologyModule formData={formData} setFormData={setFormData} />;
                             if (spec.includes('ONCO')) return <OncologyModule formData={formData} setFormData={setFormData} />;
                             if (spec.includes('DENT')) return <DentistryModule formData={formData} setFormData={setFormData} />;
+                            if (spec === 'GENERAL') return (
+                                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 bg-teal-500/10 rounded-xl flex items-center justify-center">
+                                            <Stethoscope size={20} className="text-teal-600 animate-pulse" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-[12px] font-black uppercase tracking-[0.15em] leading-none mb-1 text-slate-700">General Assessment</h2>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Common clinical evaluation</p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white border border-slate-200 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.1em] text-teal-600">
+                                        Active Module: General
+                                    </div>
+                                </div>
+                            );
                             return null;
                         })()}
                     </div>
@@ -2976,11 +3019,16 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                                     value={med.quantity}
                                                     onChange={(e) => updateMedicine(idx, 'quantity', e.target.value)}
                                                     placeholder="Qty"
-                                                    className={`w-full px-3 py-2 bg-white border ${med.error ? 'border-rose-500 focus:ring-rose-500/10' : 'border-slate-200 focus:border-teal-500'} rounded-lg text-xs font-bold focus:outline-none focus:ring-2`}
+                                                    className={`w-full px-3 py-2 bg-white border ${med.error ? 'border-rose-500 ring-2 ring-rose-500/10' : 'border-slate-200 focus:border-teal-500'} rounded-lg text-xs font-bold focus:outline-none focus:ring-2`}
                                                 />
                                                 {med.error && (
-                                                    <div className="absolute -top-6 left-0 text-[8px] font-black text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded shadow-sm z-50 whitespace-nowrap">
+                                                    <div className="text-[9px] font-black text-rose-500 bg-rose-50 px-1.5 py-0.5 mt-1 rounded shadow-xs whitespace-nowrap animate-in fade-in slide-in-from-top-1">
                                                         {med.error}
+                                                    </div>
+                                                )}
+                                                {med.availableUnits !== undefined && !med.error && (
+                                                    <div className="text-[8px] font-bold text-slate-400 mt-1 px-1">
+                                                        Stk: {med.availableUnits}
                                                     </div>
                                                 )}
                                             </div>
@@ -3031,8 +3079,8 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                     </div>
                                 </div>
                                 {med.availableUnits !== undefined && (
-                                    <div className="pt-1 flex justify-between items-center px-4 mt-1 border-t border-slate-50">
-                                        <span className="text-[8px] font-bold text-slate-400">Stk: {med.availableUnits}</span>
+                                    <div className="pt-1 flex justify-end items-center px-4 mt-1 border-t border-slate-50">
+                                        {/* Stk info moved to Qty field column */}
                                         {med.pricePerUnit && (
                                             <span className="text-[8px] font-bold text-teal-600">Total: ₹{(med.pricePerUnit * (parseInt(med.quantity) || 0)).toFixed(2)}</span>
                                         )}
@@ -3194,16 +3242,33 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         </div>
                         <div>
                             <h2 className="text-2xl font-bold text-slate-900 mb-2">Prescription Ready!</h2>
-                            <p className="text-slate-500 text-sm">The prescription has been saved and formatted for printing.</p>
+                            <p className="text-slate-500 text-sm mb-4">The prescription has been saved and formatted for printing.</p>
+                            
+                            {(formData.symptoms || formData.diagnosis) && (
+                                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-left space-y-3 mb-6">
+                                    {formData.symptoms && (
+                                        <div>
+                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">Symptoms Recorded</span>
+                                            <p className="text-xs font-bold text-slate-700 line-clamp-2">{formData.symptoms}</p>
+                                        </div>
+                                    )}
+                                    {formData.diagnosis && (
+                                        <div className={formData.symptoms ? "pt-3 border-t border-slate-200/60" : ""}>
+                                            <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest block mb-1">Final Diagnosis</span>
+                                            <p className="text-xs font-black text-teal-700 bg-teal-50 px-2 py-1 rounded-md inline-block">{formData.diagnosis}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
-                        <div className="flex justify-center pt-4">
+                        <div className="flex justify-center pt-2">
                             <button
                                 onClick={() => handlePrintDocument('prescription')}
-                                className="flex flex-col items-center justify-center gap-3 p-6 rounded-2xl bg-teal-50 border-2 border-teal-100 text-teal-700 hover:bg-teal-100 hover:border-teal-200 group w-48 transition-all active:scale-95"
+                                className="flex flex-col items-center justify-center gap-3 p-6 rounded-2xl bg-teal-50 border-2 border-teal-100 text-teal-700 hover:bg-teal-100 hover:border-teal-200 group w-48 transition-all active:scale-95 shadow-sm"
                             >
-                                <Printer size={32} className="group-hover:scale-110 transition-transform" />
-                                <span className="font-bold text-sm">Print Prescription</span>
+                                <Printer size={32} className="group-hover:scale-110 transition-transform text-teal-600" />
+                                <span className="font-bold text-sm tracking-tight">Print Prescription</span>
                             </button>
                         </div>
                         <button

@@ -21,7 +21,7 @@ export const OncologyModule: React.FC<OncologyModuleProps> = ({ formData, setFor
     if (!formData.oncologyData) return null;
 
     const data = formData.oncologyData;
-    const { body, diagnosis, site, ecog, biomarkers, tnm, treatment, labs, toxicity } = data;
+    const { body, diagnosis, site, ecog, biomarkers, tnm, treatment, labs, toxicity, symptoms } = data;
 
     // BSA Calculation: sqrt((height * weight) / 3600)
     useEffect(() => {
@@ -235,6 +235,8 @@ export const OncologyModule: React.FC<OncologyModuleProps> = ({ formData, setFor
                         </div>
                     </div>
 
+                    </div>
+
                     {/* C. Toxicities */}
                     <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
                          <h3 className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-400 mb-4">Toxicity Monitoring (Grade ≥2)</h3>
@@ -251,6 +253,27 @@ export const OncologyModule: React.FC<OncologyModuleProps> = ({ formData, setFor
                                     }`}
                                 >
                                     {t}
+                                </button>
+                            ))}
+                         </div>
+                    </div>
+
+                    {/* D. Patient Symptoms */}
+                    <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+                         <h3 className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-400 mb-4">Patient Reported Symptoms</h3>
+                         <div className="flex flex-wrap gap-1.5">
+                            {["Pain", "Fatigue", "Anorexia", "Weight loss", "Dyspnea", "Cough", "Bone pain", "Headache"].map(s => (
+                                <button
+                                    key={s}
+                                    type="button"
+                                    onClick={() => toggleArrayItem('symptoms', s)}
+                                    className={`px-3 py-2 rounded-xl text-[10px] font-black border transition-all ${
+                                        data.symptoms?.includes(s)
+                                            ? 'bg-indigo-600 border-indigo-500 text-white shadow-md'
+                                            : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100'
+                                    }`}
+                                >
+                                    {s}
                                 </button>
                             ))}
                          </div>
@@ -384,6 +407,5 @@ export const OncologyModule: React.FC<OncologyModuleProps> = ({ formData, setFor
 
                 </div>
             </div>
-        </div>
     );
 };

@@ -1,5 +1,5 @@
 export const COMMON_SPECIALTIES = [
-    "Cardiology", "Dermatology", "Pediatrics", "Orthopedic Surgery", "Endocrinology", "Gastroenterology",
+    "Orthopedics", "Cardiology", "Dermatology", "Pediatrics", "Orthopedic Surgery", "Endocrinology", "Gastroenterology",
     "Neurology", "Psychiatry", "Oncology", "Ophthalmology", "ENT (Otolaryngology)", "Pulmonology",
     "Nephrology", "Rheumatology", "Hematology", "Urology", "Gynecology & Obstetrics", "Internal Medicine",
     "General Surgery", "Plastic Surgery", "Neurosurgery", "Anesthesiology", "Radiology", "Pathology",

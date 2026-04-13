@@ -394,10 +394,7 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
                                                 {field === 'sph' ? 'SPH' : field === 'cyl' ? 'CYL' : 'Axis (°)'}
                                             </label>
                                             <input
-                                                type="number"
-                                                step={field === 'axis' ? '1' : '0.25'}
-                                                min={field === 'axis' ? '0' : undefined}
-                                                max={field === 'axis' ? '180' : undefined}
+                                                type="text"
                                                 placeholder={field === 'axis' ? '0–180' : field === 'sph' ? '+/-' : 'CYL'}
                                                 value={o.refraction?.[eye]?.[field] || ''}
                                                 onChange={e => updateDeep('refraction', eye, field, e.target.value)}
@@ -435,7 +432,7 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
                                         {eye === 'od' ? '🔵 OD Right' : '🟢 OS Left'}
                                     </label>
                                     <input
-                                        type="number" min="0" max="80" placeholder="16"
+                                        type="text" placeholder="16"
                                         value={o.iop?.[eye] || ''}
                                         onChange={e => updateNested('iop', eye, e.target.value)}
                                         className={`w-full border rounded-lg p-2.5 text-xl font-black text-center outline-none focus:ring-2 ${

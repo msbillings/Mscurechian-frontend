@@ -166,6 +166,30 @@ export const doctorService = {
   getGastroByPrescriptionId: (id: string) =>
     apiClient<any>(DOCTOR_ENDPOINTS.GET_GASTRO(id)),
 
+  getOrthopedicByPrescriptionId: (id: string) =>
+    apiClient<any>(`/doctor/prescriptions/${id}/orthopedic`),
+
+  getOncologyByPrescriptionId: (id: string) =>
+    apiClient<any>(`/doctor/prescriptions/${id}/oncology`),
+
+  getPulmonologyByPrescriptionId: (id: string) =>
+    apiClient<any>(`/doctor/prescriptions/${id}/pulmonology`),
+
+  getEndocrinologyByPrescriptionId: (id: string) =>
+    apiClient<any>(`/doctor/prescriptions/${id}/endocrinology`),
+
+  getPsychiatryByPrescriptionId: (id: string) =>
+    apiClient<any>(`/doctor/prescriptions/${id}/psychiatry`),
+
+  getHematologyByPrescriptionId: (id: string) =>
+    apiClient<any>(`/doctor/prescriptions/${id}/hematology`),
+
+  getOphthalmologyByPrescriptionId: (id: string) =>
+    apiClient<any>(`/doctor/prescriptions/${id}/ophthalmology`),
+
+  getDentistryByPrescriptionId: (id: string) =>
+    apiClient<any>(`/doctor/prescriptions/${id}/dentistry`),
+
   getLabTokenById: (id: string) =>
     apiClient<any>(DOCTOR_ENDPOINTS.GET_LAB_TOKEN(id)),
 

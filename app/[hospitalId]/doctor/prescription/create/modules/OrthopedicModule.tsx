@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import {
     Activity, AlertTriangle, ShieldAlert, Info, Zap,
-    Target, ThumbsUp, ClipboardList, Move, Thermometer
+    Target, ThumbsUp, ClipboardList, Move, Thermometer,
+    FlaskConical
 } from 'lucide-react';
 
 interface OrthopedicModuleProps {
@@ -34,28 +35,34 @@ const SPECIAL_TESTS = [
 const XRAY_FINDINGS = ['Normal', 'Fracture', 'Degenerative changes'] as const;
 const MRI_FINDINGS  = ['Normal', 'Ligament tear', 'Disc prolapse'] as const;
 const DIAGNOSES     = ['Osteoarthritis', 'Rheumatoid Arthritis', 'Fracture', 'Ligament Injury', 'Spondylosis', 'Disc Prolapse'] as const;
+const ORTHO_SYMPTOMS = ['Acute Pain', 'Joint Swelling', 'Stiffness', 'Inability to bear weight', 'Locking', 'Numbness', 'Weakness', 'Instability'] as const;
 
 export const OrthopedicModule: React.FC<OrthopedicModuleProps> = ({ formData, setFormData }) => {
     const [alerts, setAlerts] = useState<AlertEntry[]>([]);
 
-    if (!formData.orthopedicData) return null;
-    const o = formData.orthopedicData;
+    if (!formData.orthoData) return null;
+    const o = formData.orthoData;
 
     // ── Updater helpers ───────────────────────────────────────────────────────
     const update = (field: string, value: any) =>
-        setFormData((prev: any) => ({ ...prev, orthopedicData: { ...prev.orthopedicData, [field]: value } }));
+        setFormData((prev: any) => ({ ...prev, orthoData: { ...prev.orthoData, [field]: value } }));
 
     const updateNested = (key: string, sub: string, value: any) =>
         setFormData((prev: any) => ({
-            ...prev, orthopedicData: {
-                ...prev.orthopedicData,
-                [key]: { ...prev.orthopedicData?.[key], [sub]: value },
+            ...prev, orthoData: {
+                ...prev.orthoData,
+                [key]: { ...prev.orthoData?.[key], [sub]: value },
             },
         }));
 
     const toggleSpecialTest = (test: string) => {
         const curr: string[] = o.specialTests || [];
         update('specialTests', curr.includes(test) ? curr.filter((t: string) => t !== test) : [...curr, test]);
+    };
+
+    const toggleSymptom = (sym: string) => {
+        const curr: string[] = o.symptoms || [];
+        update('symptoms', curr.includes(sym) ? curr.filter((s: string) => s !== sym) : [...curr, sym]);
     };
 
     // ── Clinical Validation Engine (Orthopedics) ──────────────────────────────
@@ -205,6 +212,21 @@ export const OrthopedicModule: React.FC<OrthopedicModuleProps> = ({ formData, se
                     </div>
                 </div>
             </div>
+
+            {/* SYMPTOMS ────────────────────────────────────────────────── */}
+            {sectionCard(
+                <>
+                    {sectionHeader(<Info size={17} />, 'Complaints / Symptoms', false, 'Select all that apply')}
+                    <div className="flex flex-wrap gap-2">
+                        {ORTHO_SYMPTOMS.map(s => (
+                            <button key={s} type="button"
+                                onClick={() => toggleSymptom(s)}
+                                className={btnPill(o.symptoms?.includes(s), 'orange')}
+                            >{s}</button>
+                        ))}
+                    </div>
+                </>
+            )}
 
             {/* ── A. REGION & SIDE ────────────────────────────────────── */}
             {sectionCard(
@@ -478,4 +500,4 @@ export const OrthopedicModule: React.FC<OrthopedicModuleProps> = ({ formData, se
         </div>
     );
 };
-import { FlaskConical } from 'lucide-react';
+
