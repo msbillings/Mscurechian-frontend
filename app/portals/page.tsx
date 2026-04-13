@@ -177,43 +177,82 @@ function PortalsPage() {
             <main className="flex-grow py-24 px-6">
                 <div className="max-w-7xl mx-auto">
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {portals.map((portal, idx) => (
-                            <div key={idx} className="group p-8 bg-card border  rounded-[0.5rem] border-primary-theme/50 shadow-sm hover:shadow-2xl hoverShadow-primary-theme/5 flex flex-col">
-                                <div className={`w-14 h-14 ${portal.bg} rounded-2xl flex items-center justify-center ${portal.color} mb-6 group-hover:scale-110`}>
-                                    <portal.icon size={28} />
-                                </div>
-                                <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tight uppercase leading-none">{portal.title}</h3>
-                                <p className="text-slate-500 font-medium leading-relaxed mb-8 flex-1">
-                                    {portal.desc}
-                                </p>
-                                <div className="space-y-3 pt-6 border-t border-border">
-                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Key Functionalities:</div>
-                                    {portal.features.slice(0, 3).map((feature, fIdx) => (
-                                        <div key={fIdx} className="flex items-center gap-3 text-sm font-bold text-slate-700">
-                                            <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
-                                                <CheckCircle2 size={12} className="text-emerald-500" />
+                        {portals.map((portal, idx) => {
+                            const Icon = portal.icon;
+                            return (
+                                <div key={idx} className="group flex flex-col bg-white border border-slate-200 rounded-[1.5rem] shadow-sm hover:shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                                    
+                                    {/* Thematic Header Area */}
+                                    <div className={`p-6 sm:p-8 ${portal.bg} border-b border-black/5 relative`}>
+                                        <div className="flex justify-between items-start mb-6">
+                                            <div className={`w-14 h-14 bg-white rounded-[1rem] flex items-center justify-center ${portal.color} shadow-sm border border-black/5`}>
+                                                <Icon size={26} strokeWidth={2.5} />
                                             </div>
-                                            {feature}
                                         </div>
-                                    ))}
-                                    {portal.features.length > 3 && (
-                                        <button
-                                            onClick={() => handleProtectedClick(`/about/${portal.slug}`)}
-                                            className="mt-2 text-primary-theme text-[10px] font-black uppercase tracking-widest hover:underline flex items-center gap-1"
-                                        >
-                                            See More <ArrowRight size={10} />
-                                        </button>
-                                    )}
+                                        <h3 className="text-2xl font-bold text-slate-900 tracking-tight leading-tight">
+                                            {portal.title}
+                                        </h3>
+                                    </div>
+
+                                    {/* Content & Action Area */}
+                                    <div className="p-6 sm:p-8 flex flex-col flex-1 justify-between bg-white">
+                                        <div>
+                                            <p className="text-slate-600 text-[15px] font-medium leading-relaxed mb-6">
+                                                {portal.desc}
+                                            </p>
+                                            
+                                            <div className="space-y-4">
+                                                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                                                    Capabilities
+                                                </div>
+                                                <div className="space-y-3">
+                                                    {portal.features.slice(0, 3).map((feature, fIdx) => (
+                                                        <div key={fIdx} className="flex items-start gap-3">
+                                                            <CheckCircle2 size={16} className={`shrink-0 ${portal.color} mt-0.5`} />
+                                                            <span className="text-[14px] font-medium text-slate-700 leading-snug">
+                                                                {feature}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                    {portal.features.length > 3 && (
+                                                        <button
+                                                            onClick={() => handleProtectedClick(`/about/${portal.slug}`)}
+                                                            className={`mt-2 ${portal.color} text-[13px] font-bold hover:underline flex items-center gap-1.5 group/link`}
+                                                        >
+                                                            See all features <ArrowRight size={14} className="group-hover/link:translate-x-1 transition-transform" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-8 pt-6 border-t border-slate-100">
+                                            <button
+                                                onClick={() => handleProtectedClick(portal.loginUrl || '/auth/login')}
+                                                className="relative w-full py-3 bg-white text-slate-700 border border-slate-200 hover:border-slate-300 rounded-[1rem] font-bold text-[14px] flex items-center justify-between px-5 group/btn transition-all duration-500 shadow-sm hover:shadow-md active:scale-95 overflow-hidden"
+                                            >
+                                                {/* Gentle hover backdrop */}
+                                                <div className="absolute inset-0 bg-slate-50 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                                                
+                                                <span className="relative z-10 transition-transform duration-300 group-hover/btn:translate-x-1">
+                                                    Enter Portal
+                                                </span>
+                                                
+                                                {/* Animated Circle Container */}
+                                                <div className={`relative z-10 w-8 h-8 rounded-full ${portal.bg} flex items-center justify-center transition-all duration-300 group-hover/btn:w-10 group-hover/btn:shadow-sm border border-transparent group-hover/btn:bg-white group-hover/btn:border-slate-200 overflow-hidden`}>
+                                                    {/* Incoming Arrow */}
+                                                    <ArrowRight size={16} className={`absolute ${portal.color} -translate-x-6 opacity-0 group-hover/btn:translate-x-0 group-hover/btn:opacity-100 transition-all duration-300 ease-out`} />
+                                                    
+                                                    {/* Outgoing Chevron */}
+                                                    <ChevronRight size={16} className={`absolute ${portal.color} translate-x-0 opacity-100 group-hover/btn:translate-x-6 group-hover/btn:opacity-0 transition-all duration-300 ease-out`} />
+                                                </div>
+                                            </button>
+                                        </div>
+                                    </div>
+
                                 </div>
-                                <button
-                                    onClick={() => handleProtectedClick(portal.loginUrl || '/auth/login')}
-                                    className="mt-8 w-full py-3 bg-slate-50 hover:bg-primary-theme hover:text-white text-slate-900 border border-primary-theme/40 rounded-xl font-bold flex items-center justify-center gap-2 group/btn"
-                                >
-                                    Access Portal
-                                    <ChevronRight size={16} className="group-hover/btn:translate-x-1" />
-                                </button>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     {/* Clinical Unified Workspace Section */}
