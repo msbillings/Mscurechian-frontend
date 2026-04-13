@@ -1,4 +1,4 @@
-import { INCIDENT_ENDPOINTS } from "../config/endpoints";
+﻿import { INCIDENT_ENDPOINTS } from "../config/endpoints";
 import { apiClient } from "../api/apiClient";
 import { Incident } from "../types/incident";
 

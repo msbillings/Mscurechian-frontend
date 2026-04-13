@@ -8,18 +8,26 @@ const HOSPITAL_ID_PATTERN =
   ":hospitalId([a-f0-9]{24}|[a-z0-9][a-z0-9-]{2,58}[a-z0-9])";
 
 const nextConfig: NextConfig = {
-  // ✅ Enable React Compiler for better performance
+  // ✅ Production optimizations
+  compress: true, // Enable gzip compression
+
   experimental: {
     reactCompiler: true,
-    optimizePackageImports: ["lucide-react", "recharts"], // Only import what's used
+    optimizePackageImports: [
+      "lucide-react", "recharts", "date-fns",
+      "@tanstack/react-query", "zod", "react-hook-form"
+    ], // Only import what's used
     // ✅ Increase Server Actions body size limit (for profile uploads, etc.)
     serverActions: {
       bodySizeLimit: "5mb",
     },
   },
 
-  // ✅ Production optimizations
-  compress: true, // Enable gzip compression
+  // ✅ Use explicit root to avoid "multiple lockfiles" warnings (Next.js 15+ top-level key)
+  turbopack: {
+    // ✅ Root path must be absolute to avoid warnings
+    root: process.cwd(),
+  },
 
   // ✅ Image optimization
   images: {
@@ -35,11 +43,7 @@ const nextConfig: NextConfig = {
   // ✅ Strict mode for better error detection
   reactStrictMode: true,
 
-  eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
-    ignoreDuringBuilds: true,
-  },
+
   typescript: {
     // !! WARN !!
     // Dangerously allow production builds to successfully complete even if

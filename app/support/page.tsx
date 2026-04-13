@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import SelectionChat from '@/components/chat/SelectionChat';
@@ -22,7 +22,7 @@ function SupportPage() {
 
                 {/* Hero Section */}
                 <div className="text-center space-y-4">
-                    <h1 className="text-4xl md:text-5xl font-black text-slate-900 uppercase tracking-tight">
+                    <h1 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight">
                         Support Center
                     </h1>
                     <p className="text-slate-500 text-lg max-w-2xl mx-auto font-medium">

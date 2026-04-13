@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Calculates the duration between an admission date and the current time.
  * Returns a formatted string like "2 Days 5 Hours" or "0 Days 45 Mins".
  */

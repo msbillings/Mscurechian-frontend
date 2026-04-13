@@ -16,6 +16,8 @@ import {
     ChevronRight,
     Beaker
 } from "lucide-react";
+import { useTransition } from "react";
+import ProgressBar from "@/components/ui/ProgressBar";
 
 /**
  * ROOT-LEVEL LAB LOGIN PAGE
@@ -24,9 +26,20 @@ import {
 const LabLoginPage = () => {
     const { setUser } = useAuthStore();
     const router = useRouter();
+    const [isPending, startTransition] = useTransition();
 
-    // ✅ SPEED FIX: Prefetch dashboard
+    // ✅ SPEED FIX: Prefetch dashboard & AUTO-REDIRECT
     React.useEffect(() => {
+        // Only redirect if fully initialized and authenticated
+        const isAuth = useAuthStore.getState().isAuthenticated;
+        const user = useAuthStore.getState().user;
+        const rawId = (user as any)?.hospital || (user as any)?.hospitalId;
+        const userHospitalId = (rawId && typeof rawId === 'object') ? ((rawId as any)._id || (rawId as any).id) : rawId;
+
+        if (isAuth && userHospitalId && user?.role === 'lab') {
+            router.replace(`/${userHospitalId}/lab/dashboard`);
+        }
+        
         router.prefetch('/lab/dashboard');
     }, [router]);
 
@@ -96,26 +109,25 @@ const LabLoginPage = () => {
                 setAccessToken(accessToken);
             }
 
-            // Normalize _id → id
+            // Normalize _id â†’ id
             if ((user as any)._id && !(user as any).id) {
                 (user as any).id = (user as any)._id;
             }
 
             // Store user session (mirrors authStore.login pattern)
-            sessionStorage.setItem("user", JSON.stringify(user));
-            sessionStorage.setItem("lastAuthCheck", Date.now().toString());
-            if (sessionId) sessionStorage.setItem("sessionId", sessionId);
-            sessionStorage.setItem("tabAuthorized", "true");
+            localStorage.setItem("user", JSON.stringify(user));
+            localStorage.setItem("lastAuthCheck", Date.now().toString());
+            if (sessionId) localStorage.setItem("sessionId", sessionId);
+            localStorage.setItem("tabAuthorized", "true");
 
-            // ✅ MULTI-TENANCY: Store hospitalId in sessionStorage and cookie
+            // hospitalId cookie for server actions discovery
             const rawId = (user as any).hospital || (user as any).hospitalId;
             const userHospitalIdStr = (rawId && typeof rawId === 'object') ? (rawId._id || rawId.id) : rawId;
             if (userHospitalIdStr) {
                 const hospitalIdStr = userHospitalIdStr.toString();
-                sessionStorage.setItem("activeHospitalId", hospitalIdStr);
-                document.cookie = `hospitalId=${hospitalIdStr}; path=/; max-age=86400; SameSite=Lax`;
+                localStorage.setItem("activeHospitalId", hospitalIdStr);
+                document.cookie = `hospitalId=${hospitalIdStr}; path=/; max-age=604800; SameSite=Lax`;
             }
-
 
             // Update store
             setUser(user as any);
@@ -134,9 +146,13 @@ const LabLoginPage = () => {
             const rawIdVal = (user as any).hospital || (user as any).hospitalId;
             const userHospitalId = (rawIdVal && typeof rawIdVal === 'object') ? (rawIdVal._id || rawIdVal.id) : rawIdVal;
             if (userHospitalId) {
-                router.replace(`/${userHospitalId}/lab/dashboard`);
+                startTransition(() => {
+                    router.replace(`/${userHospitalId}/lab/dashboard`);
+                });
             } else {
-                router.replace('/lab/dashboard');
+                startTransition(() => {
+                    router.replace('/lab/dashboard');
+                });
             }
         } catch (err: any) {
             const errorMessage = err?.message || err?.response?.data?.message || 'Login failed. Please check your credentials.';
@@ -148,6 +164,7 @@ const LabLoginPage = () => {
 
     return (
         <div className="min-h-screen w-full flex justify-center items-center p-0 sm:p-4 lg:p-8 bg-background">
+            <ProgressBar isPending={isPending} color="#e11d48" />
             <div className="flex w-full max-w-6xl bg-card sm:rounded-lg overflow-hidden shadow-2xl border-0 sm:border border-primary-theme/30 min-h-screen sm:min-h-[600px] lg:min-h-[700px]">
 
                 {/* Left Side: Illustration & Branding */}
@@ -157,7 +174,7 @@ const LabLoginPage = () => {
                         <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-blue-400/5 rounded-full blur-[80px]" />
                     </div>
 
-                    <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push('/')}>
+                    <div className="flex items-center gap-3 cursor-pointer" onClick={() => startTransition(() => router.push('/'))}>
                         <div className="w-10 h-10 bg-primary-theme/10 rounded-xl flex items-center justify-center p-2">
                             <Beaker size={24} className="text-primary-theme" />
                         </div>
@@ -192,7 +209,7 @@ const LabLoginPage = () => {
                     {/* Header for mobile only */}
                     <div className="flex lg:hidden items-center gap-2 mb-8 absolute top-6 left-6">
                         <div
-                            onClick={() => router.push('/')}
+                            onClick={() => startTransition(() => router.push('/'))}
                             className="p-2 rounded-xl bg-muted/10 text-muted flex items-center justify-center"
                         >
                             <ArrowLeft size={18} />
@@ -202,7 +219,7 @@ const LabLoginPage = () => {
                     </div>
 
                     <button
-                        onClick={() => router.push('/')}
+                        onClick={() => startTransition(() => router.push('/'))}
                         className="hidden lg:flex absolute top-8 left-8 p-2 rounded-xl hover:bg-muted/10 text-muted items-center gap-2 text-xs font-bold"
                     >
                         <ArrowLeft size={16} /> Back to Home

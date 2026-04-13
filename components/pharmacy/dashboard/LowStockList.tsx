@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState } from 'react';
 import { ProductService } from '@/lib/integrations/services/product.service';
@@ -48,21 +48,21 @@ const LowStockList = () => {
             {products.map((product) => {
                 const isCritical = product.currentStock <= product.minStockLevel;
                 return (
-                    <div key={product._id} className="flex items-center justify-between p-4 hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-all group">
+                    <div key={product._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 md:p-4 hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-all group gap-3 sm:gap-0">
                         <div className="flex flex-col">
-                            <span className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight group-hover:text-teal-600 transition-colors">
+                            <span className="text-[11px] md:text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight group-hover:text-teal-600 transition-colors">
                                 {product.brandName}
                             </span>
-                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
+                            <span className="text-[8px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
                                 {product.genericName}
                             </span>
                         </div>
 
-                        <div className="flex items-center gap-6">
-                            <div className="text-right">
+                        <div className="flex items-center justify-between sm:justify-end gap-4 md:gap-6 border-t sm:border-none border-gray-100 dark:border-gray-800 pt-2 sm:pt-0 mt-1 sm:mt-0 w-full sm:w-auto">
+                            <div className="text-left sm:text-right">
                                 <div className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Available</div>
-                                <div className={`text-sm font-black ${isCritical ? 'text-red-500' : 'text-teal-600'}`}>
-                                    {Number(product.currentStock).toLocaleString(undefined, { maximumFractionDigits: 2 })} <span className="text-[9px] font-bold text-gray-400">UNIT</span>
+                                <div className={`text-xs md:text-sm font-black ${isCritical ? 'text-red-500' : 'text-teal-600'}`}>
+                                    {Number(product.currentStock).toLocaleString(undefined, { maximumFractionDigits: 2 })} <span className="text-[8px] md:text-[9px] font-bold text-gray-400">UNIT</span>
                                 </div>
                             </div>
 

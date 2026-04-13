@@ -126,12 +126,12 @@ const ResultPrintView = forwardRef<HTMLDivElement, ResultPrintViewProps>(({ samp
                 </thead>
                 <tbody className="text-gray-800">
                     {sample.tests.map((test, index) => (
-                        <React.Fragment key={index}>
+                        <React.Fragment key={`${test.testName}-${index}`}>
                             <tr className="border-b border-gray-200">
                                 <td className="py-3 px-2 font-bold text-gray-900 bg-gray-50/30">{test.testName}</td>
                                 <td className={`py-3 px-2 font-black ${test.isAbnormal ? 'text-red-600' : ''}`}>
                                     {test.resultValue || '-'}
-                                    {test.isAbnormal && <span className="text-red-600 ml-1 text-[10px] bg-red-50 border border-red-200 px-1 rounded">▲ Abnormal</span>}
+                                    {test.isAbnormal && <span className="text-red-600 ml-1 text-[10px] bg-red-50 border border-red-200 px-1 rounded">â–² Abnormal</span>}
                                 </td>
                                 <td className="py-3 px-2">{test.unit || '-'}</td>
                                 <td className="py-3 px-2 text-xs">{getDisplayRange(test)}</td>

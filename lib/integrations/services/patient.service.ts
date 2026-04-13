@@ -1,4 +1,4 @@
-import { PATIENT_ENDPOINTS } from "../config";
+﻿import { PATIENT_ENDPOINTS } from "../config";
 import { apiClient } from "../api";
 import type {
   PatientProfile,

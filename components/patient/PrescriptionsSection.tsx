@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { Pill, Calendar, User, Download, Building2, X, CheckCircle2, ChevronRight, Stethoscope, Clock, FileText, Info } from 'lucide-react';
 import { Card } from '@/components/admin';
 import { format } from 'date-fns';
+import { formatFrequency } from '@/lib/frequencyUtils';
+
 
 interface Medicine {
     name: string;
     dosage: string;
-    frequency: string;
+    frequency: any;
     duration: string;
     instructions?: string;
 }
@@ -56,19 +58,6 @@ export default function PrescriptionsSection({
     patientEmail = ''
 }: PrescriptionsSectionProps) {
     const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null);
-
-    const formatFrequency = (freq: string) => {
-        if (!freq) return '';
-        const parts = freq.split('-');
-        if (parts.length !== 3) return freq;
-
-        const times = [];
-        if (parts[0] !== '0') times.push('Morning');
-        if (parts[1] !== '0') times.push('Afternoon');
-        if (parts[2] !== '0') times.push('Night');
-
-        return times.length > 0 ? times.join(', ') : 'As needed';
-    };
 
     const handleDownloadPDF = async (prescription: Prescription) => {
         try {

@@ -1,14 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import {
-    getEmergencyPersonnelAction,
-    createEmergencyPersonnelAction,
-    deleteEmergencyPersonnelAction,
-    updateEmergencyPersonnelAction
-} from "@/lib/integrations/actions/admin.actions";
-import { Ambulance, Eye, EyeOff, Edit, Trash2, X, Building2, Lock, Car } from "lucide-react";
+
+import { adminService } from "@/lib/integrations/services/admin.service";
+import { Ambulance, Eye, EyeOff, Edit, Trash2, X, Building2, Car } from "lucide-react";
 import toast from "react-hot-toast";
 import { PageHeader, Card, FormInput, Button } from "@/components/admin";
 
@@ -17,13 +12,11 @@ interface EmergencyData {
     email: string;
     mobile: string;
     password: string;
-    employeeId: string;
     vehicleNumber: string;
     driverLicense?: string;
 }
 
 export default function CreateEmergency() {
-    const router = useRouter();
 
     // Creation Form State
     const [formData, setFormData] = useState<EmergencyData>({
@@ -31,7 +24,6 @@ export default function CreateEmergency() {
         email: "",
         mobile: "",
         password: "",
-        employeeId: "",
         vehicleNumber: "",
         driverLicense: ""
     });
@@ -55,7 +47,7 @@ export default function CreateEmergency() {
     const fetchStaff = async () => {
         try {
             setLoadingStaff(true);
-            const data = await getEmergencyPersonnelAction();
+            const data = await adminService.getEmergencyUsersClient();
             setExistingStaff(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error(error);
@@ -75,7 +67,7 @@ export default function CreateEmergency() {
     };
 
     const validateForm = (): boolean => {
-        if (!formData.name || !formData.email || !formData.mobile || !formData.password || !formData.employeeId || !formData.vehicleNumber) {
+        if (!formData.name || !formData.email || !formData.mobile || !formData.password || !formData.vehicleNumber) {
             toast.error("Please fill all Required details.");
             return false;
         }
@@ -93,17 +85,13 @@ export default function CreateEmergency() {
         setLoading(true);
 
         try {
-            const result = await createEmergencyPersonnelAction(formData);
-
-            if (!result.success) {
-                throw new Error(result.error || 'Failed to create personnel');
-            }
+            await adminService.createEmergencyUserClient(formData);
 
             toast.success(`Ambulance Personnel created successfully!`);
 
             setFormData({
                 name: "", email: "", mobile: "", password: "",
-                employeeId: "", vehicleNumber: "", driverLicense: ""
+                vehicleNumber: "", driverLicense: ""
             });
             fetchStaff();
 
@@ -118,7 +106,7 @@ export default function CreateEmergency() {
         if (!confirm("Are you sure you want to delete this Personnel?")) return;
         const toastId = toast.loading("Deleting...");
         try {
-            await deleteEmergencyPersonnelAction(id);
+            await adminService.deleteEmergencyUserClient(id);
             toast.success("Deleted successfully", { id: toastId });
             fetchStaff();
         } catch (error: any) {
@@ -133,7 +121,6 @@ export default function CreateEmergency() {
             email: staff.email,
             mobile: staff.mobile,
             password: "",
-            employeeId: staff.employeeId,
             vehicleNumber: staff.vehicleNumber,
             driverLicense: staff.driverLicense
         });
@@ -148,7 +135,7 @@ export default function CreateEmergency() {
         if (!payload.password) delete payload.password;
 
         try {
-            await updateEmergencyPersonnelAction(editingStaff._id, payload);
+            await adminService.updateEmergencyUserClient(editingStaff._id, payload);
             toast.success("Updated successfully", { id: toastId });
             setEditingStaff(null);
             fetchStaff();
@@ -158,7 +145,7 @@ export default function CreateEmergency() {
     };
 
     return (
-        <div className="max-w-[1600px] mx-auto pb-12 px-4">
+        <div className="max-w-[1600px] mx-auto pb-12">
             <PageHeader
                 icon={<Ambulance className="text-red-500" />}
                 title="Create Ambulance Personnel"
@@ -189,9 +176,6 @@ export default function CreateEmergency() {
                                             </div>
                                             <div>
                                                 <h3 className="font-bold text-lg" style={{ color: 'var(--text-color)' }}>{staff.name}</h3>
-                                                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                                                    ID: {staff.employeeId}
-                                                </span>
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
@@ -242,14 +226,7 @@ export default function CreateEmergency() {
                                         onChange={handleChange}
                                         placeholder="Name"
                                     />
-                                    <FormInput
-                                        label="Employee ID (Unique)"
-                                        name="employeeId"
-                                        required
-                                        value={formData.employeeId}
-                                        onChange={handleChange}
-                                        placeholder="EMP-001"
-                                    />
+
                                     <FormInput
                                         label="Vehicle Number"
                                         name="vehicleNumber"
@@ -292,11 +269,12 @@ export default function CreateEmergency() {
                                             value={formData.password}
                                             onChange={handleChange}
                                             placeholder="Password"
+                                            autoComplete="new-password"
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-10 text-gray-500 hover:text-red-500"
+                                            className="absolute right-3 top-9 text-gray-500 hover:text-red-500"
                                         >
                                             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                                         </button>
@@ -338,11 +316,6 @@ export default function CreateEmergency() {
                                 onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
                             />
                             <FormInput
-                                label="Employee ID"
-                                value={editForm.employeeId || ""}
-                                onChange={(e) => setEditForm(prev => ({ ...prev, employeeId: e.target.value }))}
-                            />
-                            <FormInput
                                 label="Vehicle Number"
                                 value={editForm.vehicleNumber || ""}
                                 onChange={(e) => setEditForm(prev => ({ ...prev, vehicleNumber: e.target.value }))}
@@ -365,11 +338,12 @@ export default function CreateEmergency() {
                                     value={editForm.password || ""}
                                     onChange={(e) => setEditForm(prev => ({ ...prev, password: e.target.value }))}
                                     placeholder="Type to change password..."
+                                    autoComplete="new-password"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowEditPassword(!showEditPassword)}
-                                    className="absolute right-3 top-10 text-gray-500 hover:text-red-500"
+                                    className="absolute right-3 top-9 text-gray-500 hover:text-red-500"
                                 >
                                     {showEditPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                                 </button>

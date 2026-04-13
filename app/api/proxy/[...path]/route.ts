@@ -68,9 +68,10 @@ async function handler(
       resHeaders.set(key, value);
     });
 
-    const responseBody = await backendRes.arrayBuffer();
-
-    return new NextResponse(responseBody, {
+    // Phase 4: Direct Streaming
+    // Bypass the server-side memory buffer. Stream the response directly to the browser.
+    // This dramatically improves Time-To-First-Byte (TTFB) and reduces Next.js memory usage.
+    return new NextResponse(backendRes.body, {
       status: backendRes.status,
       statusText: backendRes.statusText,
       headers: resHeaders,

@@ -97,15 +97,15 @@ export const metadata: Metadata = {
   },
 };
 
-<<<<<<< HEAD
 import SwipeableToaster from '@/components/ui/SwipeableToaster';
-=======
->>>>>>> 2734bd84ab4906e248cccc4d3f6781d58174c366
 import FloatingChat from '@/components/chat/FloatingChat';
 import Providers from './providers';
+import ProgressBar from '@/components/ui/ProgressBar';
 import { Suspense } from 'react';
-import { Toaster } from 'react-hot-toast';
-import CookieConsent from '@/components/common/CookieConsent';
+import CookieConsent from '@/components/shared/CookieConsent';
+import OfflineDetector from '@/components/layout/OfflineDetector';
+import OfflineBanner from '@/components/ui/OfflineBanner';
+import MainContentWrapper from '@/components/layout/MainContentWrapper';
 
 function RootLayout({
   children,
@@ -115,12 +115,6 @@ function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="preload" href="/assets/logo.png" as="image" type="image/png" />
-      </head>
-      <body
-        className={`${inter.variable} font-sans antialiased`}
-        suppressHydrationWarning
-      >
         {/* JSON-LD Structured Data: SoftwareApplication schema for Google rich results */}
         <Script
           id="json-ld"
@@ -228,26 +222,28 @@ function RootLayout({
              `,
           }}
         />
-<<<<<<< HEAD
       </head>
       <body
         className={`${inter.variable} font-sans antialiased`}
         suppressHydrationWarning
       >
-        <Providers>
-          <SwipeableToaster />
-=======
 
-       <Providers>
-          <Toaster position="top-center" />
->>>>>>> 2734bd84ab4906e248cccc4d3f6781d58174c366
-          {children}
-          <FloatingChat />
+        <Providers>
+          <OfflineDetector />
+          <OfflineBanner />
+          <Suspense fallback={null}>
+            <ProgressBar />
+          </Suspense>
+          <SwipeableToaster />
           <CookieConsent />
+          <MainContentWrapper>
+            {children}
+          </MainContentWrapper>
+          <FloatingChat />
         </Providers>
       </body>
     </html>
   );
 }
 
-export default React.memo(RootLayout);
+export default RootLayout;

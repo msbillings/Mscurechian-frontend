@@ -8,7 +8,7 @@
 import { apiClient } from "../api/apiClient";
 import { PHARMACY_ENDPOINTS } from "../config/endpoints";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────
 
 export interface PharmacyProduct {
   _id: string;
@@ -106,7 +106,7 @@ export interface PharmacyDashboardStats {
   topProducts: Array<{ name: string; quantity: number; revenue: number }>;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────────────────
 
 const normalizeDashboardResponse = (response: any): PharmacyDashboardStats => {
   const data = response.data || {};
@@ -152,7 +152,7 @@ const normalizeDashboardResponse = (response: any): PharmacyDashboardStats => {
   };
 };
 
-// ─── Service ──────────────────────────────────────────────────────────────────
+// ─── Service ────────────────────────────────────────────────────────────
 
 export const pharmacyService = {
   // ─── Dashboard & Reports ─────────────────────────────────────────────────────
@@ -335,7 +335,7 @@ export const pharmacyService = {
     return apiClient("/pharmacy/products/export");
   },
 
-  // ─── Suppliers ───────────────────────────────────────────────────────────────
+  // ─── Suppliers ─────────────────────────────────────────────────────────────
 
   /** GET /pharmacy/suppliers */
   getSuppliers: async (): Promise<PharmacySupplier[]> => {
@@ -387,7 +387,7 @@ export const pharmacyService = {
     });
   },
 
-  // ─── Billing / Invoices ──────────────────────────────────────────────────────
+  // ─── Billing / Invoices ───────────────────────────────────────────────────────
 
   /** GET /pharmacy/invoices?page=&limit= */
   getInvoices: async (params?: {
@@ -449,7 +449,7 @@ export const pharmacyService = {
     return apiClient("/pharmacy/invoices/export");
   },
 
-  // ─── Orders ──────────────────────────────────────────────────────────────────
+  // ─── Orders ──────────────────────────────────────────────────────────────
 
   /** GET /pharmacy/orders/hospital/:hospitalId?page=&limit=&status= */
   getHospitalOrders: async (
@@ -484,7 +484,7 @@ export const pharmacyService = {
     return apiClient(`/pharmacy/orders/${id}`, { method: "DELETE" });
   },
 
-  // ─── Documents ───────────────────────────────────────────────────────────────
+  // ─── Documents ─────────────────────────────────────────────────────────────
 
   /** POST /pharmacy/upload-document */
   uploadDocument: async (
@@ -501,7 +501,7 @@ export const pharmacyService = {
     return response.data || response;
   },
 
-  // ─── React Query key helpers ─────────────────────────────────────────────────
+  // ─── React Query key helpers ──────────────────────────────────────────────────
   queryKeys: {
     all: () => ["pharmacy"] as const,
     dashboard: (params?: any) => ["pharmacy", "dashboard", params] as const,
@@ -530,7 +530,7 @@ export const pharmacyService = {
   },
 };
 
-// ─── IPD Medicine Issuance Service ──────────────────────────────────────────
+// ─── IPD Medicine Issuance Service ───────────────────────────────────────────
 export const ipdIssuanceService = {
   /** POST /pharmacy/ipd-issuance — Pharmacist issues medicines to IPD patient */
   issueForIPD: async (data: {

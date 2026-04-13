@@ -9,10 +9,13 @@ interface DoctorStatsCardsProps {
         pendingReports: number;
         activeInpatients: number;
         consultationsValue: number;
+        dynamicLabel?: string;
     };
+    visitTypeFilter: 'all' | 'opd' | 'ipd';
+    onTypeChange: (type: 'all' | 'opd' | 'ipd') => void;
 }
 
-function DoctorStatsCards({ stats }: DoctorStatsCardsProps) {
+function DoctorStatsCards({ stats, visitTypeFilter, onTypeChange }: DoctorStatsCardsProps) {
     const cards = [
         {
             label: 'Total Patients',
@@ -32,40 +35,81 @@ function DoctorStatsCards({ stats }: DoctorStatsCardsProps) {
             subValue: 'Currently admitted'
         },
         {
-            label: 'Active Queue',
+            label: 'Current Queue',
+            dateRange: stats.dynamicLabel && stats.dynamicLabel !== "Today's" ? stats.dynamicLabel : 'Today',
             value: stats.totalPendingQueue ?? stats.appointmentsToday,
             icon: TrendingUp,
             color: 'bg-indigo-500',
             lightColor: 'bg-indigo-50 dark:bg-indigo-900/20',
             textColor: 'text-indigo-600 dark:text-indigo-400',
-            subValue: 'Total pending'
+            subValue: 'Total pending',
+            hasFilter: true
         },
         {
-            label: 'Today\'s Schedule',
+            label: 'Full Schedule',
+            dateRange: stats.dynamicLabel && stats.dynamicLabel !== "Today's" ? stats.dynamicLabel : 'Today',
             value: stats.appointmentsToday,
             icon: Calendar,
             color: 'bg-emerald-500',
             lightColor: 'bg-emerald-50 dark:bg-emerald-900/20',
             textColor: 'text-emerald-600 dark:text-emerald-400',
-            subValue: 'Scheduled for today'
+            subValue: 'Scheduled appointments',
+            hasFilter: true
         }
     ];
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-sm:gap-3">
-            {cards.map((card, index) => (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-3 xl:gap-5">
+            {cards.map((card: any, index) => (
                 <div
                     key={index}
-                    className="bg-card dark:bg-card p-6 max-sm:p-4 rounded-2xl shadow-sm border border-border-theme dark:border-border-theme hover:shadow-md"
+                    className="bg-card dark:bg-card p-3 sm:p-4 lg:p-3 xl:p-4 rounded-xl sm:rounded-2xl shadow-sm border border-border-theme dark:border-border-theme hover:shadow-md transition-all h-full flex flex-col justify-between group overflow-hidden"
                 >
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <p className="text-sm max-sm:text-[11px] font-medium text-muted dark:text-muted">{card.label}</p>
-                            <h3 className="text-2xl max-sm:text-lg font-black text-foreground dark:text-foreground mt-1">{card.value}</h3>
+                    <div className="flex items-start justify-between gap-1 sm:gap-2 mb-2">
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-tight truncate">{card.label}</p>
+                            {card.dateRange && (
+                                <p className="text-[8px] sm:text-[9px] font-black text-primary-theme/60 uppercase tracking-tighter mt-0.5 break-words line-clamp-2 max-w-[90%] leading-none">
+                                    {card.dateRange}
+                                </p>
+                            )}
                         </div>
-                        <div className={`p-3 max-sm:p-2 rounded-xl ${card.lightColor}`}>
-                            <card.icon className={`w-6 h-6 max-sm:w-5 max-sm:h-5 ${card.textColor}`} />
+                        <div className={`p-1.5 sm:p-2 rounded-lg ${card.lightColor} shrink-0 group-hover:scale-110 transition-transform`}>
+                            <card.icon className={`w-3.5 h-3.5 sm:w-5 sm:h-5 ${card.textColor}`} />
                         </div>
+                    </div>
+
+                    <div className="mt-auto space-y-2">
+                        <div className="flex items-end justify-between gap-2">
+                            <h3 className="text-base sm:text-xl xl:text-2xl font-black text-foreground tabular-nums leading-none">
+                                {card.value}
+                            </h3>
+
+                            {card.hasFilter && (
+                                <div className="flex items-center p-0.5 bg-secondary-theme rounded-lg border border-border-theme shadow-inner scale-90 sm:scale-100 origin-bottom-right">
+                                    {(['all', 'opd', 'ipd'] as const).map((type) => (
+                                        <button
+                                            key={type}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onTypeChange(type);
+                                            }}
+                                            className={`px-1 sm:px-1.5 py-0.5 text-[7px] sm:text-[8px] font-black uppercase rounded-md transition-all ${visitTypeFilter === type
+                                                ? 'bg-primary-theme text-primary-theme-foreground shadow-sm ring-1 ring-white/10'
+                                                : 'text-muted hover:text-foreground'
+                                                }`}
+                                        >
+                                            {type}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Status label hidden on very small cards to prevent overflow */}
+                        <p className="hidden sm:block text-[8px] xl:text-[9px] font-bold text-muted/60 uppercase tracking-widest truncate">
+                            {card.subValue || 'Live Update'}
+                        </p>
                     </div>
                 </div>
             ))}

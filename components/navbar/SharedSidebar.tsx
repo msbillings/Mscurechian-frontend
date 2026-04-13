@@ -1,18 +1,21 @@
 'use client';
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
     ChevronDown,
     X
 } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useParams } from "next/navigation";
 import { useTenantLink } from "@/hooks/useTenantLink";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/integrations";
 
-interface MenuItem {
+export interface MenuItem {
     icon: any;
     label: string;
     path?: string;
     subItems?: { label: string; path: string }[];
+    badge?: string;
 }
 
 interface SharedSidebarProps {
@@ -42,6 +45,50 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
     const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
     const [isHovered, setIsHovered] = useState(false);
     const { getPath } = useTenantLink();
+    const params = useParams();
+    const hospitalId = params?.hospitalId as string;
+
+    // Determine if we should show the dynamic hospital name
+    // Exclude Super Admin, Patient Portal, and Emergency portals
+    const isExcluded = useMemo(() => {
+        const sub = branding.subtitle?.toLowerCase() || "";
+        return sub.includes("super admin") || 
+               sub.includes("patient") || 
+               sub.includes("emergency");
+    }, [branding.subtitle]);
+
+    const { data: dynamicHospitalName, isLoading: isBrandingLoading } = useQuery({
+        queryKey: ["sidebar-hospital-branding", hospitalId],
+        queryFn: async () => {
+            if (!hospitalId || isExcluded) return null;
+            try {
+                // Correct path for apiClient is /auth/... NOT /api/auth/...
+                // The BASE_URL already contains the /api prefix
+                const data = await apiClient<{ valid: boolean; hospitalName?: string }>(
+                    `/auth/verify-hospital/${hospitalId}`
+                );
+                return data?.hospitalName || null;
+            } catch (err) {
+                console.error("[Sidebar] Failed to fetch hospital branding:", err);
+                return null;
+            }
+        },
+        enabled: !!hospitalId && !isExcluded,
+        staleTime: 1000 * 60 * 30, // 30 minutes cache
+        retry: 2,
+    });
+
+    const displayTitle = useMemo(() => {
+        // If it's an excluded portal (Admin/Patient/Emergency) or no hospital context, stay with standard branding
+        if (!hospitalId || isExcluded) return branding.title;
+        
+        // While loading, show a subtle placeholder
+        if (isBrandingLoading) return "...";
+        
+        // If we found a name, use it. 
+        // If NO name found but we HAVE a hospitalId, still DO NOT show "CureChain" as requested.
+        return dynamicHospitalName || "HOSPITAL PORTAL";
+    }, [hospitalId, isExcluded, dynamicHospitalName, isBrandingLoading, branding.title]);
 
     const toggleMenu = (label: string) => {
         setExpandedMenus((prev) => ({
@@ -61,15 +108,11 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
     }, [onHoverChange]);
 
     const handleCollapse = useCallback(() => {
-        // On mobile: close the drawer
-        // On md: collapse the hover-expanded sidebar
         setIsHovered(false);
         onHoverChange?.(false);
         onClose();
     }, [onClose, onHoverChange]);
 
-    // Sidebar is "expanded" if: mobile drawer is open, OR on md it's being hovered, OR on lg+ always
-    // We control width & label visibility via isOpen (mobile) and isHovered (md)
     const isExpanded = isOpen || isHovered;
 
     const BrandingIcon = branding.logo;
@@ -84,55 +127,45 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
                 />
             )}
 
-            {/* Backdrop for md hover-expanded sidebar — semi-transparent, clickable to collapse */}
-            {isHovered && !isOpen && (
-                <div
-                    className="hidden md:block lg:hidden fixed inset-0 bg-slate-900/10 z-30"
-                    onClick={handleCollapse}
-                />
-            )}
-
             {/* Sidebar */}
             <aside
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
                 className={`
-                    fixed left-0 top-0 h-full flex flex-col z-40
+                    fixed md:sticky left-0 top-0 h-screen flex flex-col z-40
                     transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]
                     border-r border-slate-200 bg-white shadow-xl lg:shadow-none
                     ${isOpen
-                        ? "translate-x-0 w-64"                            // mobile: full drawer
-                        : isHovered
-                            ? "translate-x-0 md:translate-x-0 w-64"      // md hover: expanded
-                            : "-translate-x-full md:translate-x-0 md:w-16 lg:w-64" // default
+                        ? "translate-x-0 w-72"                            // mobile drawer
+                        : "-translate-x-full md:translate-x-0 md:w-16 lg:w-[260px]" // default
                     }
                 `}
             >
                 {/* Brand */}
-                <div className="h-16 flex items-center px-3 border-b border-slate-100 justify-between overflow-hidden shrink-0">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-8 h-8 shrink-0 bg-primary-theme rounded-lg flex items-center justify-center shadow-lg shadow-primary-theme-200">
-                            <BrandingIcon className="text-white" size={18} />
+                <div className="h-16 flex items-center px-4 border-b border-slate-100 justify-between overflow-hidden shrink-0 gap-4">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="w-9 h-9 shrink-0 bg-primary-theme rounded-xl flex items-center justify-center shadow-lg shadow-primary-theme-200 transition-transform duration-300 hover:scale-105 active:scale-95">
+                            <BrandingIcon className="text-white" size={19} />
                         </div>
-                        {/* Title: hidden when collapsed on md */}
                         <div
                             className={`
-                                min-w-0 overflow-hidden transition-all duration-300
-                                ${isExpanded ? "opacity-100 max-w-[160px]" : "opacity-0 max-w-0 lg:opacity-100 lg:max-w-[160px]"}
+                                min-w-0 overflow-hidden transition-all duration-500
+                                ${isExpanded ? "opacity-100 max-w-[200px] translate-x-0" : "opacity-0 max-w-0 lg:opacity-100 lg:max-w-[200px] -translate-x-2 lg:translate-x-0"}
                             `}
                         >
-                            <h1 className="text-sm font-black text-slate-900 leading-none uppercase tracking-tighter whitespace-nowrap">
-                                {branding.title}
+                            <h1 className="text-[14px] font-black text-slate-900 leading-tight tracking-tight whitespace-nowrap overflow-hidden text-ellipsis drop-shadow-xs" 
+                                title={displayTitle}>
+                                {displayTitle}
                             </h1>
                             {branding.subtitle && (
-                                <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-[0.2em] whitespace-nowrap">
+                                <p className="text-[8.5px] font-bold text-slate-400 mt-0.5 uppercase tracking-[0.2em] whitespace-nowrap">
                                     {branding.subtitle}
                                 </p>
                             )}
                         </div>
                     </div>
 
-                    {/* X button — visible when expanded (mobile open OR md hovered) but hidden on lg */}
+                    {/* X button for mobile/hover close */}
                     <button
                         onClick={handleCollapse}
                         className={`
@@ -145,21 +178,19 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
                 </div>
 
                 {/* Scrollable menu area */}
-                <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5 custom-scrollbar overflow-x-hidden">
-                    {menuItems.map((item) => {
+                <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1 custom-scrollbar overflow-x-hidden">
+                    {menuItems.map((item, index) => {
                         const hasSubItems = item.subItems && item.subItems.length > 0;
                         const isAutoExpanded = item.subItems?.some(s => currentPath === getPath(s.path));
                         const isMenuExpanded = expandedMenus[item.label] ?? isAutoExpanded;
 
                         const isActive = item.path
-                            ? (item.path.split('/').length <= 2
-                                ? currentPath.endsWith(item.path)
-                                : currentPath === getPath(item.path) || currentPath.includes(getPath(item.path) + '/'))
-                            : item.subItems?.some((s) => currentPath.endsWith(s.path));
+                            ? currentPath === getPath(item.path)
+                            : item.subItems?.some((s) => currentPath === getPath(s.path));
                         const IconComponent = item.icon;
 
                         return (
-                            <div key={item.label} className="space-y-0.5">
+                            <div key={`${item.label}-${item.path || index}`} className="space-y-1">
                                 <button
                                     onClick={() => {
                                         if (hasSubItems) {
@@ -170,7 +201,7 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
                                     }}
                                     title={item.label}
                                     className={`
-                                        flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-bold
+                                        flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold
                                         transition-all duration-200 w-full text-left group/btn
                                         ${isActive
                                             ? "bg-primary-theme-50 text-primary-theme shadow-sm border border-primary-theme-100/50"
@@ -178,7 +209,7 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
                                         }
                                     `}
                                 >
-                                    <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="flex items-center gap-3 min-w-0 py-0.5">
                                         <IconComponent
                                             size={18}
                                             className={`transition-colors duration-200 shrink-0 ${isActive
@@ -186,21 +217,35 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
                                                 : "text-slate-400 group-hover/btn:text-primary-theme"
                                                 }`}
                                         />
-                                        {/* Label: hidden when icon-only on md */}
                                         <span
                                             className={`
-                                                uppercase tracking-widest whitespace-nowrap transition-all duration-300 overflow-hidden
-                                                ${isExpanded ? "opacity-100 max-w-[150px]" : "opacity-0 max-w-0 lg:opacity-100 lg:max-w-[150px]"}
+                                                uppercase tracking-widest whitespace-nowrap transition-all duration-300 overflow-hidden shrink-0
+                                                ${isExpanded ? "opacity-100 max-w-[200px]" : "opacity-0 max-w-0 lg:opacity-100 lg:max-w-[200px]"}
                                             `}
                                         >
                                             {item.label}
                                         </span>
+                                        {item.badge && (
+                                            <span
+                                                className={`
+                                                    ml-auto px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase
+                                                    transition-all duration-300 shrink-0
+                                                    ${isActive
+                                                        ? "bg-primary-theme text-white"
+                                                        : "bg-slate-200 text-slate-600"
+                                                    }
+                                                    ${isExpanded ? "opacity-100 scale-100" : "opacity-0 scale-0 lg:opacity-100 lg:scale-100"}
+                                                `}
+                                            >
+                                                {item.badge}
+                                            </span>
+                                        )}
                                     </div>
 
                                     {hasSubItems && (
                                         <div
                                             className={`
-                                                transition-all duration-300 shrink-0
+                                                transition-all duration-300 shrink-0 ml-2
                                                 ${isMenuExpanded ? "rotate-180" : ""}
                                                 ${isExpanded ? "opacity-100" : "opacity-0 lg:opacity-100"}
                                             `}
@@ -210,22 +255,22 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
                                     )}
                                 </button>
 
-                                {/* Sub Items — show when expanded and menu is toggled open */}
-                                {hasSubItems && (isMenuExpanded || isAutoExpanded) && (isExpanded || /* always on lg */true) && (
+                                {/* Sub Items */}
+                                {hasSubItems && (isMenuExpanded || isAutoExpanded) && (isExpanded || true) && (
                                     <div
                                         className={`
-                                            ml-3 pl-3 border-l-2 border-slate-100 space-y-0.5 mt-0.5
+                                            ml-4 pl-4 border-l-2 border-slate-100 space-y-1 mt-1
                                             animate-in slide-in-from-top-2 duration-200
                                             ${isExpanded ? "block" : "hidden lg:block"}
                                         `}
                                     >
-                                        {item.subItems?.map((sub) => (
+                                        {item.subItems?.map((sub, subIndex) => (
                                             <button
-                                                key={sub.path}
+                                                key={sub.path || `sub-${subIndex}`}
                                                 onClick={() => onMenuItemClick(sub.path)}
                                                 className={`
-                                                    w-full text-left px-3 py-1.5 rounded-lg text-[10px] font-black
-                                                    uppercase tracking-widest transition-all
+                                                    w-full text-left px-3 py-2 rounded-lg text-[10px] font-black
+                                                    uppercase tracking-widest transition-all whitespace-nowrap
                                                     ${currentPath === getPath(sub.path)
                                                         ? "text-primary-theme bg-primary-theme-50"
                                                         : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
@@ -243,15 +288,15 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
                 </nav>
 
                 {/* Footer */}
-                <div className="p-2 border-t border-slate-100 overflow-hidden shrink-0">
-                    <div className="bg-slate-50 p-2 rounded-2xl flex items-center gap-2 border border-slate-200/50 overflow-hidden">
+                <div className="p-3 border-t border-slate-100 overflow-hidden shrink-0">
+                    <div className="bg-slate-50 p-2.5 rounded-2xl flex items-center gap-3 border border-slate-200/50 overflow-hidden">
                         <div className="w-8 h-8 rounded-lg bg-white shadow-sm shrink-0 flex items-center justify-center text-primary-theme font-bold text-xs border border-primary-theme-100">
                             SYS
                         </div>
                         <div
                             className={`
                                 transition-all duration-300 min-w-0 overflow-hidden
-                                ${isExpanded ? "opacity-100 max-w-[160px]" : "opacity-0 max-w-0 lg:opacity-100 lg:max-w-[160px]"}
+                                ${isExpanded ? "opacity-100 max-w-[180px]" : "opacity-0 max-w-0 lg:opacity-100 lg:max-w-[180px]"}
                             `}
                         >
                             <p className="text-[10px] font-black text-slate-900 uppercase tracking-tighter whitespace-nowrap">System Node</p>

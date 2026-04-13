@@ -659,7 +659,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
         @media print {
           @page {
             size: A4;
-            margin: 8mm 10mm;
+            margin: 6mm 8mm;
           }
           body {
             margin: 0 !important;
@@ -670,18 +670,17 @@ export const generateClinicalReceiptHtml = (data: any) => {
         body {
           font-family: 'Inter', sans-serif;
           color: #1e293b;
-          line-height: 1.4;
+          line-height: 1.3;
           margin: 0;
-          padding: 10px;
+          padding: 4px;
           background: white;
-          font-size: 11px;
+          font-size: 10px;
         }
         .receipt-container {
           width: 100%;
           margin: 0 auto;
-          display: flex;
-          flex-direction: column;
-          min-height: 235mm;
+          display: block;
+          min-height: auto;
         }
         ${headerHtml
       ? ""
@@ -718,13 +717,13 @@ export const generateClinicalReceiptHtml = (data: any) => {
           display: flex;
           justify-content: space-between;
           align-items: flex-end;
-          margin-bottom: 12px;
-          padding: 6px 12px;
+          margin-bottom: 8px;
+          padding: 4px 10px;
           background-color: #f8fafc;
-          border-radius: 8px;
+          border-radius: 6px;
         }
         .bill-title {
-          font-size: 16px;
+          font-size: 14px;
           font-weight: 800;
           text-transform: uppercase;
           color: #1e40af;
@@ -743,27 +742,27 @@ export const generateClinicalReceiptHtml = (data: any) => {
           color: #475569;
         }
         .section {
-          margin-bottom: 8px;
+          margin-bottom: 5px;
         }
         .section-header {
-          font-size: 10px;
+          font-size: 9px;
           font-weight: 800;
           text-transform: uppercase;
-          margin-bottom: 6px;
+          margin-bottom: 4px;
           border-bottom: 2px solid #e2e8f0;
           padding-bottom: 2px;
           color: #334155;
-          letter-spacing: 1px;
+          letter-spacing: 0.8px;
         }
         .data-grid {
           width: 100%;
           border-collapse: collapse;
-          margin-bottom: 15px;
+          margin-bottom: 8px;
         }
         .data-grid td {
-          padding: 5px 10px;
+          padding: 3px 8px;
           border: 1px solid #f1f5f9;
-          font-size: 10px;
+          font-size: 9.5px;
           vertical-align: top;
         }
         .data-grid .label {
@@ -785,9 +784,9 @@ export const generateClinicalReceiptHtml = (data: any) => {
         }
         .vitals-grid th, .vitals-grid td {
           border: 1px solid #f1f5f9;
-          padding: 4px 8px;
+          padding: 3px 6px;
           text-align: left;
-          font-size: 10px;
+          font-size: 9.5px;
         }
         .vitals-grid th {
           background-color: #f8fafc;
@@ -801,11 +800,11 @@ export const generateClinicalReceiptHtml = (data: any) => {
           color: #1e293b;
         }
         .clinical-box {
-          padding: 10px 15px;
+          padding: 6px 12px;
           background-color: #f0f9ff;
           border-left: 4px solid #0ea5e9;
           border-radius: 4px;
-          margin-bottom: 10px;
+          margin-bottom: 6px;
         }
         .payment-table {
           width: 100%;
@@ -827,33 +826,35 @@ export const generateClinicalReceiptHtml = (data: any) => {
         }
         .total-row td {
           font-weight: 900;
-          font-size: 14px;
+          font-size: 12px;
           background-color: #f8fafc;
           border-top: 2px solid #1e293b !important;
         }
         .payment-footer {
-          margin-top: 15px;
-          font-size: 10px;
+          margin-top: 10px;
+          font-size: 9.5px;
           font-weight: 700;
           display: flex;
           justify-content: space-between;
-          padding: 10px;
+          padding: 8px;
           background-color: #f8fafc;
-          border-radius: 8px;
+          border-radius: 6px;
         }
         .status-paid {
           color: #059669;
           text-transform: uppercase;
         }
         .footer {
-          margin-top: auto;
-          padding-top: 20px;
+          margin-top: 12px;
+          padding-top: 8px;
           border-top: 2px solid #1e293b;
-          font-size: 10px;
+          font-size: 9.5px;
           color: #64748b;
           display: flex;
+          flex-wrap: wrap;
           justify-content: space-between;
           align-items: flex-end;
+          gap: 10px;
         }
         .signatory-box {
           text-align: center;
@@ -870,8 +871,8 @@ export const generateClinicalReceiptHtml = (data: any) => {
           color: #1e293b;
         }
         .footer-wrapper {
-          margin-top: auto;
-          padding-top: 10px;
+          margin-top: 8px;
+          padding-top: 5px;
         }
         .no-print {
           display: block;
@@ -898,13 +899,13 @@ export const generateClinicalReceiptHtml = (data: any) => {
       <script>
         window.onafterprint = function() {
           setTimeout(() => {
-            window.location.replace('${data.returnUrl || "/helpdesk"}');
+            window.close();
           }, 500);
         };
       </script>
       <div class="no-print" style="position: sticky; top: 0; background: white; padding: 10px; z-index: 1000; border-bottom: 2px solid #0f172a;">
-         <button onclick="window.location.replace('${data.returnUrl || "/helpdesk"}')" class="return-btn" style="width: 100%; max-width: 400px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em;">
-            ← BACK TO HOSPITAL DASHBOARD
+         <button onclick="window.close()" class="return-btn" style="width: 100%; max-width: 400px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em;">
+            &#8592; CLOSE RECEIPT
          </button>
       </div>
       <div class="receipt-container">
@@ -1154,7 +1155,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
             <thead>
               <tr>
                 <th>Description</th>
-                <th style="text-align: right;">Amount (₹)</th>
+                <th style="text-align: right;">Amount (Rupees)</th>
               </tr>
             </thead>
             <tbody>
@@ -1688,7 +1689,7 @@ export const generateLabTokenHtml = (data: any) => {
                       <td style="font-weight: bold;">${test.name}</td>
                       <td>${test.category}</td>
                       <td style="font-style: italic; color: #6b7280;">${test.instructions || "Standard"}</td>
-                      <td style="text-align: right; font-weight: 600;">₹${(parseFloat(String(test.price || test.testPrice || test.amount || test.test?.price || test.testId?.price || 0)) || 0).toFixed(2)}</td>
+                      <td style="text-align: right; font-weight: 600;">Rupees ${(parseFloat(String(test.price || test.testPrice || test.amount || test.test?.price || test.testId?.price || 0)) || 0).toFixed(2)}</td>
                     </tr>
                   `,
       )
@@ -1723,7 +1724,7 @@ export const generateLabTokenHtml = (data: any) => {
 };
 
 export const generateQualityReportHtml = (data: any) => {
-  const { metrics, trends, month, year, hospital, targets } = data;
+  const { metrics, trends, month, year, hospital, targets, headerHtml, footerHtml } = data;
   const T = targets || {
     opdWaitingTime: 30,
     bedOccupancyMin: 80,
@@ -1794,9 +1795,12 @@ export const generateQualityReportHtml = (data: any) => {
       };
     </script>
     <body onload="window.print();">
-      <div class="header">
+      ${headerHtml || `<div class="header">
         <h1 class="title">${hospital?.name || "CureChain Hospital"}</h1>
-        <div class="subtitle">NABH Quality Indicator Audit Report</div>
+      </div>`}
+
+      <div style="text-align: center; margin-top: 10px; margin-bottom: 20px;">
+        <div style="font-size: 16px; font-weight: 800; color: #0f172a; text-transform: uppercase;">NABH QUALITY INDICATOR AUDIT REPORT</div>
       </div>
 
       <div class="meta-grid">
@@ -1852,7 +1856,7 @@ export const generateQualityReportHtml = (data: any) => {
             <td><strong>Bed Occupancy Rate</strong><br><span style="color:#64748b; font-size:8px">Utilized vs Available Beds</span></td>
             <td>${T.bedOccupancyMin}-${T.bedOccupancyMax}%</td>
             <td style="font-weight:700">${indicators.bedOccupancyRate || 0}%</td>
-            <td><span class="status-text ${indicators.bedOccupancyRate >= T.bedOccupancyMin && indicators.bedOccupancyRate <= T.bedOccupancyMax ? "success" : "danger"}">${indicators.bedOccupancyRate >= T.bedOccupancyMin && indicators.bedOccupancyRate <= T.bedOccupancyMax ? "OPTIMAL" : indicators.bedOccupancyRate < T.bedOccupancyMin ? "LOW" : "HIGH"}</span></td>
+            <td>${(() => { const v = indicators.bedOccupancyRate || 0; const ok = v >= T.bedOccupancyMin && v <= T.bedOccupancyMax; const cls = ok ? 'success' : 'danger'; const lbl = ok ? 'COMPLIANT' : (v < T.bedOccupancyMin ? 'LOW OCCUPANCY' : 'NON-COMPLIANT'); return `<span class="status-text ${cls}">${lbl}</span>`; })()}</td>
           </tr>
           <tr>
             <td><strong>Avg Length of Stay (ALOS)</strong><br><span style="color:#64748b; font-size:8px">Admission to Discharge</span></td>
@@ -1864,13 +1868,17 @@ export const generateQualityReportHtml = (data: any) => {
             <td><strong>Billing TAT</strong><br><span style="color:#64748b; font-size:8px">Discharge Advice to Settlement</span></td>
             <td>&lt; ${T.billingTat} min</td>
             <td style="font-weight:700">${indicators.billingTat || 0} min</td>
-            <td><span class="status-text ${indicators.billingTat < T.billingTat ? "success" : "danger"}">${indicators.billingTat < T.billingTat ? "COMPLIANT" : "NON-COMPLIANT"}</span></td>
+            <td>${(() => {
+              const v = indicators.billingTat;
+              if (v === undefined || v === null || v === 0) return `<span class="status-text warning">NO DATA</span>`;
+              return `<span class="status-text ${v < T.billingTat ? "success" : "danger"}">${v < T.billingTat ? "COMPLIANT" : "NON-COMPLIANT"}</span>`;
+            })()}</td>
           </tr>
           <tr>
-            <td><strong>Infection Rate</strong><br><span style="color:#64748b; font-size:8px">${useRawIncidents ? "Total reported incidents" : "HCAI per 1000 Patient Days"}</span></td>
-            <td>&lt; ${useRawIncidents ? `${T.incidentCountMax} /mo` : `${T.incidentRateMax}‰`}</td>
-            <td style="font-weight:700">${useRawIncidents ? metrics?.rawCounts?.totalIncidents || 0 : indicators.incidentRate || 0}${useRawIncidents ? "" : "‰"}</td>
-            <td><span class="status-text ${useRawIncidents ? metrics?.rawCounts?.totalIncidents < T.incidentCountMax : indicators.incidentRate < T.incidentRateMax ? "success" : "danger"}">${useRawIncidents ? metrics?.rawCounts?.totalIncidents < T.incidentCountMax : indicators.incidentRate < T.incidentRateMax ? "COMPLIANT" : "NON-COMPLIANT"}</span></td>
+            <td><strong>Incident Rate</strong><br><span style="color:#64748b; font-size:8px">${useRawIncidents ? "Total reported incidents this month" : "Per 1000 Patient Days"}</span></td>
+            <td>&lt; ${useRawIncidents ? `${T.incidentCountMax} /mo` : `${T.incidentRateMax}\u2030`}</td>
+            <td style="font-weight:700">${useRawIncidents ? metrics?.rawCounts?.totalIncidents || 0 : indicators.incidentRate || 0}${useRawIncidents ? "" : "\u2030"}</td>
+            <td>${(() => { const compliant = useRawIncidents ? (metrics?.rawCounts?.totalIncidents || 0) < T.incidentCountMax : (indicators.incidentRate || 0) < T.incidentRateMax; return `<span class="status-text ${compliant ? 'success' : 'danger'}">${compliant ? 'COMPLIANT' : 'NON-COMPLIANT'}</span>`; })()}</td>
           </tr>
           <tr>
             <td><strong>Readmission Rate</strong><br><span style="color:#64748b; font-size:8px">Same Diagnosis within 30 days</span></td>
@@ -1915,9 +1923,9 @@ export const generateQualityReportHtml = (data: any) => {
         <div class="sign-line">Medical Superintendent</div>
       </div>
 
-      <div class="footer">
+      ${footerHtml || `<div class="footer">
         CureChain Hospital Management System | Generated on ${new Date().toLocaleString()}
-      </div>
+      </div>`}
     </body>
     </html>
   `;

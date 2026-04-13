@@ -49,9 +49,8 @@ function CreateHospital() {
         }
 
         if (name === "name") {
-            // Assume "Hospital Name" should be characters/spaces only as requested
-            // Note: Hospital names often have numbers, but user strictly requested "characters only"
-            if (/^[a-zA-Z\s]*$/.test(value)) {
+            // "it take characters only" - let's be a bit more flexible for punctuation (dots, apostrophes) etc.
+            if (/^[a-zA-Z\s.'&-]*$/.test(value)) {
                 setFormData(prev => ({ ...prev, [name]: value }));
             }
             return;
@@ -116,6 +115,7 @@ function CreateHospital() {
         }
 
         setLoading(true);
+        const loadingToast = toast.loading("Creating hospital...");
 
         try {
             // Compute full address string
@@ -152,13 +152,25 @@ function CreateHospital() {
             // Add location only if both lat and lng are provided
             if (formData.location.lat && formData.location.lng) {
                 payload.location = {
-                    lat: formData.location.lat,
-                    lng: formData.location.lng
+                    lat: parseFloat(formData.location.lat.toString()) || 0,
+                    lng: parseFloat(formData.location.lng.toString()) || 0
                 };
             }
 
+            console.log("[CreateHospital] Submitting payload:", payload);
             const result = await adminService.createHospitalClient(payload);
-            const hospitalId = result?.hospitalId || "Unknown ID";
+            
+            toast.dismiss(loadingToast);
+            console.log("[CreateHospital] Success result:", result);
+
+            // Robustly extract hospitalId from multiple possible field names/formats
+            const resData = result as any;
+            const hospitalId = 
+                resData?.hospitalId || 
+                (typeof resData?._id === 'string' ? resData._id : resData?._id?.$oid) || 
+                resData?.id || 
+                "ID stored in db";
+
             toast.success(`Hospital created successfully! ID: ${hospitalId}`, { duration: 5000 });
 
             // Reset form
@@ -176,6 +188,7 @@ function CreateHospital() {
                 location: { lat: "", lng: "" }, specialities: [], services: []
             });
         } catch (err: any) {
+            toast.dismiss(loadingToast);
             console.error("Create hospital error:", err);
             // Show detailed error message from backend
             const errorMessage = err.message || err.error || "Failed to create hospital";

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState, Suspense } from "react";
 import { Trash2, User, Activity, Edit3, Search, ShieldCheck } from "lucide-react";
@@ -57,7 +57,8 @@ function AdminsList() {
   const fetchAdmins = async () => {
     try {
       const data = await adminService.getUsersClient({ role: 'admin' });
-      setAdmins(data);
+      const parsedArray = Array.isArray(data) ? data : (data as any).users || [];
+      setAdmins(parsedArray);
     } catch (err: any) {
       console.error("Failed to fetch admins", err);
       toast.error("Failed to fetch admins");

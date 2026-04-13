@@ -1,4 +1,4 @@
-import { NOTIFICATION_ENDPOINTS } from '../config';
+﻿import { NOTIFICATION_ENDPOINTS } from '../config';
 import { apiClient } from '../api';
 
 export interface AppNotification {

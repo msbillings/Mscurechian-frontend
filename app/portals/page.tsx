@@ -19,9 +19,12 @@ import {
 import LandingNavbar from "@/components/navbar/LandingNavbar";
 import Footer from "@/components/footer/Footer";
 import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import ProgressBar from "@/components/ui/ProgressBar";
 
 function PortalsPage() {
     const router = useRouter();
+    const [isPending, startTransition] = useTransition();
     const [hasAgreed, setHasAgreed] = useState(false);
 
     useEffect(() => {
@@ -33,9 +36,17 @@ function PortalsPage() {
 
     const handleProtectedClick = (path: string) => {
         if (hasAgreed) {
-            router.push(path);
+            startTransition(() => {
+                router.push(path);
+            });
         } else {
-            router.push('/#terms-section');
+            // Store the intended portal URL so TermsSection can redirect back after acceptance
+            sessionStorage.setItem('mscurechain_pending_portal', path);
+            startTransition(() => {
+                // Use ?scrollTo=terms param (not hash) so browser won't auto-jump,
+                // allowing the landing page to do its own smooth animated scroll
+                router.push('/?scrollTo=terms');
+            });
         }
     };
     // Theme logic removed - handled by LandingNavbar
@@ -118,7 +129,7 @@ function PortalsPage() {
             features: ["Critical care documentation", " Incident Logging", "Live Trauma Feed", "Discharge Instructions", "Discharge Instructions"],
             color: "text-slate-900",
             bg: "bg-slate-100",
-            loginUrl: "/emergency-login"
+            loginUrl: "/emergency/login"
         },
         {
             title: "Nurse Portal",
@@ -144,6 +155,7 @@ function PortalsPage() {
 
     return (
         <div className="min-h-screen bg-background text-foreground font-sans flex flex-col">
+            <ProgressBar isPending={isPending} color="primary-theme" />
             <LandingNavbar variant="home" />
 
             {/* Hero Section */}

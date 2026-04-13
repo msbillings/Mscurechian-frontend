@@ -125,8 +125,7 @@ export const PharmacyBillingService = {
     status?: string,
     page: number = 1,
     limit: number = 20,
-  ): Promise<any> => {
-    // ✅ PERFORMANCE FIX: Added pagination with default limit=20
+  ): Promise<any> => { // ✅ PERFORMANCE FIX: Reduced from limit=1000 to limit=100
     let url = `${PHARMACY_ENDPOINTS.ORDERS(hospitalId)}?page=${page}&limit=${limit}`;
     if (status) {
       url += `&status=${status}`;

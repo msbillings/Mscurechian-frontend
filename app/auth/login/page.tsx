@@ -9,8 +9,10 @@ import {
   ArrowLeft, Cookie, CheckCircle2, XCircle,
   ShieldCheck, Timer, ShieldX,
 } from "lucide-react";
+import { useTransition } from "react";
+import ProgressBar from "@/components/ui/ProgressBar";
 
-// ─── Lockout Helpers ──────────────────────────────────────────────────────────
+// ─── Lockout Helpers ─────────────────────────────────────────────────────────
 const LOCKOUT_KEY = "msc_login_lockout";
 // Remove hardcoded 15m duration — now controlled progressively by backend (1, 5, 10, 30 mins)
 
@@ -45,67 +47,9 @@ const getLockoutSecsRemaining = (identifier: string): number => {
   } catch (_) { return 0; }
 };
 
-// ─── Cookie Consent ───────────────────────────────────────────────────────────
-const COOKIE_CONSENT_KEY = "msc_cookie_consent";
 
-function CookieConsentModal({ onAccept, onDecline }: { onAccept: () => void; onDecline: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-card w-full max-w-lg rounded-2xl shadow-2xl border border-border overflow-hidden">
-        <div className="h-1 w-full bg-gradient-to-r from-primary-theme via-blue-400 to-primary-theme" />
-        <div className="p-6 sm:p-8 space-y-5">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-primary-theme/10 flex items-center justify-center shrink-0">
-              <Cookie size={24} className="text-primary-theme" />
-            </div>
-            <div>
-              <h2 className="text-lg font-black tracking-tight">We Use Cookies 🍪</h2>
-              <p className="text-muted text-sm mt-1 leading-relaxed">
-                MSCureChain uses essential cookies for secure authentication and session management.
-              </p>
-            </div>
-          </div>
-          <div className="bg-muted/5 border border-border/50 rounded-xl p-4 space-y-2 text-xs text-muted">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 size={14} className="text-green-500 shrink-0" />
-              <span><strong className="text-foreground">Auth cookies</strong> — Secure HttpOnly refresh tokens</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 size={14} className="text-green-500 shrink-0" />
-              <span><strong className="text-foreground">Hospital context</strong> — Auto-resolved from your account</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <XCircle size={14} className="text-red-400 shrink-0" />
-              <span>No tracking, advertising, or third-party analytics cookies</span>
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              id="cookie-accept-btn"
-              onClick={onAccept}
-              className="flex-1 bg-primary-theme hover:opacity-90 active:scale-[0.98] py-3 rounded-xl text-white font-bold text-sm tracking-wide shadow-lg shadow-primary-theme/20 transition-all flex items-center justify-center gap-2"
-            >
-              <CheckCircle2 size={16} /> Accept Essential Cookies
-            </button>
-            <button
-              id="cookie-decline-btn"
-              onClick={onDecline}
-              className="sm:px-6 bg-muted/10 hover:bg-muted/20 active:scale-[0.98] py-3 rounded-xl text-muted text-sm font-bold border border-border/50 transition-all"
-            >
-              Decline
-            </button>
-          </div>
-          <p className="text-[10px] text-muted/60 text-center">
-            By using MSCureChain, you agree to our{" "}
-            <Link href="/about" className="underline hover:text-primary-theme">Privacy Policy</Link>.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
 
-// ─── Lockout Banner (replaces Sign In button) ─────────────────────────────────
+// ─── Lockout Banner (replaces Sign In button) ───────────────────────────────────
 function LockoutBanner({ secondsLeft }: { secondsLeft: number }) {
   return (
     <div className="rounded-2xl border border-red-500/30 overflow-hidden" style={{ background: 'rgba(239,68,68,0.04)' }}>
@@ -135,35 +79,15 @@ function LockoutBanner({ secondsLeft }: { secondsLeft: number }) {
   );
 }
 
-// ─── Main Login Form ──────────────────────────────────────────────────────────
+// ─── Main Login Form ───────────────────────────────────────────────────────────
 const LoginForm = () => {
   const { login, isAuthenticated, user, isInitialized, isLoading, isTabAuthorized } = useAuthStore();
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get('redirect');
 
-  // ── Cookie consent ────────────────────────────────────────────────────────
-  const [showCookieModal, setShowCookieModal] = useState(false);
   const [cookiesAccepted, setCookiesAccepted] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
-    if (!consent) setShowCookieModal(true);
-    else setCookiesAccepted(consent === 'accepted');
-  }, []);
-
-  const handleCookieAccept = useCallback(() => {
-    localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted');
-    setCookiesAccepted(true);
-    setShowCookieModal(false);
-  }, []);
-
-  const handleCookieDecline = useCallback(() => {
-    localStorage.setItem(COOKIE_CONSENT_KEY, 'declined');
-    setCookiesAccepted(false);
-    setShowCookieModal(false);
-  }, []);
 
   // ── Lockout countdown ─────────────────────────────────────────────────────
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
@@ -186,7 +110,7 @@ const LoginForm = () => {
 
   useEffect(() => () => { if (countdownRef.current) clearInterval(countdownRef.current); }, []);
 
-  // ── Credentials form ──────────────────────────────────────────────────────
+  // ── Credentials form ─────────────────────────────────────────────────────────
   const [form, setForm] = useState({ identifier: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -198,7 +122,7 @@ const LoginForm = () => {
   const [fpLoading, setFpLoading] = useState(false);
   const [fpServerMsg, setFpServerMsg] = useState('');
 
-  // ── Check lockout whenever identifier changes ──────────────────────────────
+  // ── Check lockout whenever identifier changes ───────────────────────────────
   useEffect(() => {
     const secs = getLockoutSecsRemaining(form.identifier);
     if (secs > 0) {
@@ -215,7 +139,7 @@ const LoginForm = () => {
 
   const isLocked = lockoutSeconds > 0;
 
-  // ── Redirect guard (tab-isolated) ────────────────────────────────────────
+  // ── Redirect guard (tab-isolated) ───────────────────────────────────────────
   useEffect(() => {
     if (isInitialized && isAuthenticated && user && isTabAuthorized && !isNavigating) {
       const role = user.role?.toLowerCase() || '';
@@ -228,10 +152,25 @@ const LoginForm = () => {
           'doctor': 'doctor', 'hospital-admin': 'hospital-admin',
           'helpdesk': 'helpdesk', 'frontdesk': 'frontdesk', 'staff': 'staff', 'nurse': 'nurse',
           'pharma': 'pharmacy/dashboard', 'pharma-owner': 'pharmacy/dashboard', 'pharmacist': 'pharmacy/dashboard',
-          'lab': 'lab/dashboard', 'emergency': '/ambulance', 'hr': 'hr', 'discharge': 'discharge',
+          'lab': 'lab/dashboard', 'emergency': '/ambulance', 'ambulance': '/ambulance',
+          'hr': 'hr', 'discharge': 'discharge',
         };
         const portal = rolePathMap[role] || 'hospital-admin';
-        target = portal.startsWith('/') ? portal : (hosp ? `/${hosp}/${portal}` : `/${portal}`);
+        
+        // ✅ SECURITY: Prevent patients from accessing staff portals, even via redirect
+        if (role === 'patient' && target && !target.includes('/patient')) {
+          console.log("[Auth] 🛡️ Blocking patient redirect to staff portal:", target);
+          target = '/patient/dashboard';
+        } else {
+          target = target || (portal.startsWith('/') ? portal : (hosp ? `/${hosp}/${portal}` : `/${portal}`));
+        }
+
+        // ✅ SYNC: Sanitize "global" prefix from redirect paths to avoid 404 loops
+        if (target && target.startsWith('/global')) {
+          console.log("[Auth] 🧹 Sanitizing global redirect path:", target);
+          target = target.replace(/^\/global/, '');
+          if (!target.startsWith('/')) target = '/' + target;
+        }
       }
       if (target && target !== window.location.pathname) {
         setIsNavigating(true);
@@ -241,7 +180,7 @@ const LoginForm = () => {
     }
   }, [isInitialized, isAuthenticated, user, isTabAuthorized, redirectPath, router, isNavigating]);
 
-  // ── Validation ────────────────────────────────────────────────────────────
+  // ── Validation ─────────────────────────────────────────────────────────────
   const validate = () => {
     const err: Record<string, string> = {};
     if (!form.identifier.trim()) err.identifier = 'Enter mobile number or doctor ID.';
@@ -252,7 +191,7 @@ const LoginForm = () => {
     return Object.keys(err).length === 0;
   };
 
-  // ── Input handlers ────────────────────────────────────────────────────────
+  // ── Input handlers ───────────────────────────────────────────────────────
   const handleIdentifierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (errors.identifier) setErrors({ ...errors, identifier: '' });
@@ -267,7 +206,7 @@ const LoginForm = () => {
     setForm({ ...form, password: e.target.value });
   };
 
-  // ── Submit ────────────────────────────────────────────────────────────────
+  // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLocked) return; // Belt-and-suspenders: form guard
@@ -282,7 +221,7 @@ const LoginForm = () => {
       const ALLOWED_ROLES = [
         'admin', 'super-admin', 'doctor', 'hospital-admin',
         'helpdesk', 'frontdesk', 'staff', 'patient',
-        'nurse', 'pharma', 'lab', 'emergency', 'hr', 'pharma-owner', 'pharmacist', 'discharge',
+        'nurse', 'pharma', 'lab', 'emergency', 'ambulance', 'hr', 'pharma-owner', 'pharmacist', 'discharge',
       ];
       const role = freshUser?.role?.toLowerCase() || '';
       if (freshUser && !ALLOWED_ROLES.includes(role)) {
@@ -298,15 +237,49 @@ const LoginForm = () => {
         'doctor': 'doctor', 'hospital-admin': 'hospital-admin',
         'helpdesk': 'helpdesk', 'frontdesk': 'frontdesk', 'staff': 'staff', 'nurse': 'nurse',
         'pharma': 'pharmacy/dashboard', 'pharma-owner': 'pharmacy/dashboard', 'pharmacist': 'pharmacy/dashboard',
-        'lab': 'lab/dashboard', 'emergency': '/ambulance', 'hr': 'hr', 'discharge': 'discharge',
+        'lab': 'lab/dashboard', 'emergency': '/ambulance', 'ambulance': '/ambulance', 'hr': 'hr', 'discharge': 'discharge',
       };
       const portal = rolePathMap[role] || 'hospital-admin';
-      const finalPath = redirectPath
-        ? decodeURIComponent(redirectPath)
-        : portal.startsWith('/') ? portal : (hosp ? `/${hosp}/${portal}` : `/${portal}`);
 
-      const label = portal.split('/')[0].split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-      setDashboardName(`${label} Portal`);
+      let finalPath = redirectPath ? decodeURIComponent(redirectPath) : null;
+      
+      // ✅ SECURITY: Prevent patients from accessing staff portals, even via redirect
+      if (role === 'patient' && finalPath && !finalPath.includes('/patient')) {
+        console.log("[Auth] 🛡️ Blocking patient redirect to staff portal:", finalPath);
+        finalPath = '/patient/dashboard';
+      } else if (!finalPath) {
+        finalPath = portal.startsWith('/') ? portal : (hosp ? `/${hosp}/${portal}` : `/${portal}`);
+      }
+
+      // ✅ SYNC: Sanitize "global" prefix from redirect paths
+      if (finalPath && finalPath.startsWith('/global')) {
+        console.log("[Auth] 🧹 Sanitizing global final path:", finalPath);
+        finalPath = finalPath.replace(/^\/global/, '');
+        if (!finalPath.startsWith('/')) finalPath = '/' + finalPath;
+      }
+
+      const roleDisplayMap: Record<string, string> = {
+        'super-admin': 'Super Admin',
+        'admin': 'Admin',
+        'patient': 'Patient',
+        'doctor': 'Doctor',
+        'hospital-admin': 'Hospital Admin',
+        'helpdesk': 'Helpdesk',
+        'frontdesk': 'Front Desk',
+        'staff': 'Staff',
+        'nurse': 'Nurse',
+        'pharma': 'Pharmacy',
+        'pharma-owner': 'Pharmacy',
+        'pharmacist': 'Pharmacy',
+        'lab': 'Lab',
+        'emergency': 'Emergency',
+        'ambulance': 'Ambulance',
+        'hr': 'HR',
+        'discharge': 'Discharge',
+      };
+      
+      const roleLabel = roleDisplayMap[role] || 'Portal';
+      setDashboardName(roleLabel);
       setIsNavigating(true);
       router.replace(finalPath);
       setTimeout(() => { if (typeof window !== 'undefined' && window.location.pathname === '/auth/login') window.location.href = finalPath; }, 2500);
@@ -369,13 +342,12 @@ const LoginForm = () => {
     finally { setFpLoading(false); }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen w-full flex justify-center items-center p-0 sm:p-4 lg:p-8 bg-background">
+    <>
+      <ProgressBar isPending={isPending} color="primary-theme" />
 
-      {showCookieModal && (
-        <CookieConsentModal onAccept={handleCookieAccept} onDecline={handleCookieDecline} />
-      )}
+
 
       <div className="flex w-full max-w-6xl bg-card sm:rounded-[0.5rem] overflow-hidden shadow-2xl border-0 sm:border border-primary-theme/30 min-h-screen sm:min-h-[600px] lg:min-h-[700px]">
 
@@ -385,7 +357,7 @@ const LoginForm = () => {
             <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-primary-theme/5 rounded-full blur-[100px]" />
             <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-blue-400/5 rounded-full blur-[80px]" />
           </div>
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push('/')}>
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => startTransition(() => router.push('/'))}>
             <span className="text-2xl absolute top-15 left-40 font-bold bg-linear-to-r from-primary-theme to-blue-400 bg-clip-text text-transparent">
               MSCureChain
             </span>
@@ -411,14 +383,14 @@ const LoginForm = () => {
         <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-10 lg:p-16 relative bg-card">
 
           <div className="flex lg:hidden items-center gap-2 mb-8 absolute top-6 left-6">
-            <div onClick={() => router.push('/')} className="p-2 rounded-xl bg-muted/10 text-muted flex items-center justify-center cursor-pointer">
+            <div onClick={() => startTransition(() => router.push('/'))} className="p-2 rounded-xl bg-muted/10 text-muted flex items-center justify-center cursor-pointer">
               <ArrowLeft size={18} />
             </div>
             <img src="/assets/logo.png" alt="Logo" className="w-6 h-6 object-contain" />
             <span className="text-sm font-black tracking-tighter text-primary-theme uppercase">MSCureChain</span>
           </div>
 
-          <button onClick={() => router.push('/')} className="hidden lg:flex absolute top-8 left-8 p-2 rounded-xl hover:bg-muted/10 text-muted items-center gap-2 text-xs font-bold">
+          <button onClick={() => startTransition(() => router.push('/'))} className="hidden lg:flex absolute top-8 left-8 p-2 rounded-xl hover:bg-muted/10 text-muted items-center gap-2 text-xs font-bold">
             <ArrowLeft size={16} /> Back to Home
           </button>
 
@@ -427,7 +399,9 @@ const LoginForm = () => {
               <>
                 <div className="text-center lg:text-left space-y-2">
                   <h1 className="text-3xl font-black tracking-tight">Login Portal</h1>
-                  <p className="text-muted text-sm">Welcome back! Please enter your credentials.</p>
+                  <p className="text-muted text-[10px] sm:text-xs">
+                    Staff: Use Password • Patients: Use Date of Birth (DDMMYYYY)
+                  </p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
@@ -471,7 +445,7 @@ const LoginForm = () => {
                         id="password-input"
                         type={showPassword ? "text" : "password"}
                         className="w-full bg-transparent outline-none placeholder:text-muted/50 text-foreground font-medium text-sm"
-                        placeholder="••••••••"
+                        placeholder="Password or DOB (DDMMYYYY)"
                         value={form.password}
                         onChange={handlePasswordChange}
                         autoComplete="new-password"
@@ -569,18 +543,22 @@ const LoginForm = () => {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
-const LoginPage = () => (
-  <Suspense fallback={
-    <div className="min-h-screen w-full flex justify-center items-center bg-background">
-      <Loader2 className="animate-spin text-primary-theme" size={40} />
+const LoginPage = () => {
+  return (
+    <div className="min-h-screen w-full flex justify-center items-center p-0 sm:p-4 lg:p-8 bg-background">
+      <Suspense fallback={
+        <div className="flex h-full w-full justify-center items-center">
+          <Loader2 className="animate-spin text-primary-theme" size={40} />
+        </div>
+      }>
+        <LoginForm />
+      </Suspense>
     </div>
-  }>
-    <LoginForm />
-  </Suspense>
-);
+  );
+};
 
 export default LoginPage;

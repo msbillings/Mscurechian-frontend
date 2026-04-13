@@ -1,4 +1,4 @@
-import { Department } from './department';
+﻿import { Department } from './department';
 
 export interface NormalRange {
     min?: number | string;

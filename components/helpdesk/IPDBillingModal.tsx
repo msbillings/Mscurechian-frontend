@@ -235,7 +235,6 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                         // Pharmacy medicine bill — ONLY from pharmacy issuances (category "Pharmacy", positive amounts)
                                         const pharmaTotal = Math.round(catBreakdown['Pharmacy'] || 0);
 
-                                        // Other charges: Nursing, OT, Admission, Lab, Misc etc. — everything except Pharmacy
                                         const otherExtra = Math.round(
                                             Object.entries(catBreakdown)
                                                 .filter(([cat]) => cat !== 'Pharmacy')
@@ -298,7 +297,7 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                     <Row
                                                         label="Bed Charges"
                                                         sub={`${summary?.bedCharges?.items?.length || 0} bed(s) @ daily rate`}
-                                                        amount={`₹${bedTotal.toLocaleString()}`}
+                                                        amount={`₹ ${bedTotal.toLocaleString()}`}
                                                         bg="bg-blue-50/50"
                                                         color="text-blue-800"
                                                     />
@@ -306,7 +305,7 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                     <Row
                                                         label="Pharmacy Medicine Bill"
                                                         sub="IPD medicine issuances only"
-                                                        amount={`₹${pharmaTotal.toLocaleString()}`}
+                                                        amount={`₹ ${pharmaTotal.toLocaleString()}`}
                                                         bg="bg-violet-50/50"
                                                         color="text-violet-800"
                                                     />
@@ -315,13 +314,13 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                         <Row
                                                             label="Other Charges"
                                                             sub={otherExtraCats.join(', ') || 'Nursing, OT, Lab, Misc'}
-                                                            amount={`₹${otherExtra.toLocaleString()}`}
+                                                            amount={`₹ ${otherExtra.toLocaleString()}`}
                                                             bg="bg-orange-50/50"
                                                             color="text-orange-800"
                                                         />
                                                     )}
 
-                                                    <SubTotal label="Total Amount" amount={`₹${totalAmount.toLocaleString()}`} />
+                                                    <SubTotal label="Total Amount" amount={`₹ ${totalAmount.toLocaleString()}`} />
 
                                                     {/* ── DEDUCTIONS ── */}
                                                     {returnCredits > 0 && (
@@ -330,13 +329,13 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                             <Row
                                                                 label="(−) Returned Medicines"
                                                                 sub="medicine return credit"
-                                                                amount={`− ₹${returnCredits.toLocaleString()}`}
+                                                                amount={`₹ ${returnCredits.toLocaleString()}`}
                                                                 bg="bg-rose-50/50"
                                                                 color="text-rose-600"
                                                             />
                                                             <SubTotal
                                                                 label="Net Bill After Returns"
-                                                                amount={`₹${netAfterReturn.toLocaleString()}`}
+                                                                amount={`₹ ${netAfterReturn.toLocaleString()}`}
                                                                 bg="bg-slate-100"
                                                             />
                                                         </>
@@ -347,13 +346,13 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                             {returnCredits === 0 && <Divider label="Deductions" />}
                                                             <Row
                                                                 label="(−) Discount / Adjustment"
-                                                                amount={`− ₹${discount.toLocaleString()}`}
+                                                                amount={`₹ ${discount.toLocaleString()}`}
                                                                 bg="bg-emerald-50/50"
                                                                 color="text-emerald-700"
                                                             />
                                                             <SubTotal
                                                                 label="After Discount"
-                                                                amount={`₹${afterDiscount.toLocaleString()}`}
+                                                                amount={`₹ ${afterDiscount.toLocaleString()}`}
                                                                 bg="bg-slate-100"
                                                             />
                                                         </>
@@ -364,7 +363,7 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                     <Row
                                                         label="(−) Advance Paid"
                                                         sub="all recorded payments incl. admission"
-                                                        amount={`− ₹${totalAdvance.toLocaleString()}`}
+                                                        amount={`₹ ${totalAdvance.toLocaleString()}`}
                                                         bg="bg-teal-50/50"
                                                         color="text-teal-700"
                                                     />
@@ -382,12 +381,12 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                                 {overpaid > 0 ? 'Overpaid — Refund Due' : finalBill === 0 ? '✓ Fully Settled' : 'Final Patient Bill'}
                                                             </p>
                                                             {overpaid > 0 && (
-                                                                <p className="text-[7px] font-bold text-emerald-500 mt-0.5">Return ₹{overpaid.toLocaleString()} to patient</p>
+                                                                <p className="text-[7px] font-bold text-emerald-500 mt-0.5">Return ₹ {overpaid.toLocaleString()} to patient</p>
                                                             )}
                                                         </div>
                                                         <p className={`text-3xl font-black tracking-tight ${overpaid > 0 || finalBill === 0 ? 'text-emerald-600' : 'text-rose-600'
                                                             }`}>
-                                                            ₹{(overpaid > 0 ? overpaid : finalBill).toLocaleString()}
+                                                            ₹ {(overpaid > 0 ? overpaid : finalBill).toLocaleString()}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -509,10 +508,10 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                     <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center shadow-md"><BedIcon size={18} /></div>
                                                     <div>
                                                         <p className="text-[10px] font-black text-slate-900 uppercase">{item.bedId || "Unknown Bed"} • {item.type}</p>
-                                                        <p className="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{item.days < 1 ? `${Math.round(item.days * 24)}h` : item.days === 1 ? '1 Day' : `${Math.ceil(item.days)} Days`} @ ₹{item.rate}/day</p>
+                                                        <p className="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{item.days < 1 ? `${Math.round(item.days * 24)}h` : item.days === 1 ? '1 Day' : `${Math.ceil(item.days)} Days`} @ ₹ {item.rate}/day</p>
                                                     </div>
                                                 </div>
-                                                <p className="font-black text-slate-900">₹{item.charge.toLocaleString()}</p>
+                                                <p className="font-black text-slate-900">₹ {item.charge.toLocaleString()}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -534,13 +533,13 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                         <div>
                                                             <div className="flex items-center gap-1.5">
                                                                 <p className="text-[9px] font-black text-slate-900 uppercase">{item.description}</p>
-                                                                <span className="px-1 py-0.5 bg-slate-100 text-slate-400 rounded-md text-[5.5px] font-black uppercase">{item.category}</span>
+                                                                <span className="px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-md text-[5.5px] font-black uppercase">{item.category}</span>
                                                             </div>
                                                             <p className="text-[7px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">{format(new Date(item.date), 'dd MMM yyyy, hh:mm a')}</p>
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className={`text-[10px] font-black ${item.status === 'Reversed' ? 'text-slate-300 line-through' : 'text-slate-900'}`}>₹{item.amount.toLocaleString()}</p>
+                                                        <p className={`text-[10px] font-black ${item.status === 'Reversed' ? 'text-slate-300 line-through' : 'text-slate-900'}`}>₹ {item.amount.toLocaleString()}</p>
                                                         {item.status === 'Reversed' && <p className="text-[5px] font-black text-rose-500 uppercase tracking-widest">Reversed</p>}
                                                     </div>
                                                 </div>
@@ -646,7 +645,7 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                     </div>
                                                     <div>
                                                         <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest">Payment Summary</p>
-                                                        <p className="text-xs font-bold text-emerald-700 mt-1">Total advance of ₹{summary?.financials?.totalAdvance.toLocaleString()} recorded across all transactions.</p>
+                                                        <p className="text-xs font-bold text-emerald-700 mt-1">Total advance of ₹ {summary?.financials?.totalAdvance.toLocaleString()} recorded across all transactions.</p>
                                                     </div>
                                                 </div>
                                                 {summary?.advances?.map((adv: any, i: number) => (
@@ -669,7 +668,7 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                         </div>
                                                         <div className="text-right">
                                                             <p className={`font-black ${adv.transactionType === 'Refund' ? 'text-rose-600' : adv.transactionType === 'Settlement' ? 'text-blue-600' : 'text-emerald-600'}`}>
-                                                                {adv.transactionType === 'Refund' ? '-' : '+'}₹{adv.amount.toLocaleString()}
+                                                                {adv.transactionType === 'Refund' ? '-' : '+'}₹ {adv.amount.toLocaleString()}
                                                             </p>
                                                             <p className="text-[6px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Processed</p>
                                                         </div>

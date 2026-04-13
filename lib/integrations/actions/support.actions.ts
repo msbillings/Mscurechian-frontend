@@ -1,4 +1,4 @@
-'use server';
+﻿'use server';
 
 import { SUPPORT_ENDPOINTS } from '../config/endpoints';
 import { SupportTicket } from '../types/support';

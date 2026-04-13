@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { NurseService, NursePatient, NurseTask } from '@/lib/integrations/services/nurse.service';
 
 /**

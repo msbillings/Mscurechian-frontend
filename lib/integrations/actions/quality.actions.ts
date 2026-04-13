@@ -1,4 +1,4 @@
-import { qualityService } from '../services/quality.service';
+﻿import { qualityService } from '../services/quality.service';
 
 export const getQualityIndicatorsAction = async () => {
     return await qualityService.getIndicators();

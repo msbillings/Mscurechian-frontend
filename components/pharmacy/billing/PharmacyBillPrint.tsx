@@ -1,5 +1,6 @@
 import React from 'react';
 import { PharmacyBill } from '@/lib/integrations/types/pharmacyBilling';
+import { formatFrequency } from '@/lib/frequencyUtils';
 import MainHeader from '@/components/printers/MainHeader';
 import MainFooter from '@/components/printers/MainFooter';
 
@@ -409,7 +410,14 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
                         return (
                             <tr key={idx}>
                                 <td style={styles.td}>{idx + 1}</td>
-                                <td style={{ ...styles.td, ...styles.tdLeft }}>{itemName}</td>
+                                <td style={{ ...styles.td, ...styles.tdLeft }}>
+                                    <div style={{ fontWeight: 800 }}>{itemName}</div>
+                                    {item.frequency && (
+                                        <div style={{ fontSize: '7px', color: '#64748b', fontWeight: 600, marginTop: '2px', fontStyle: 'italic' }}>
+                                            Freq: {formatFrequency(item.frequency)}
+                                        </div>
+                                    )}
+                                </td>
                                 <td style={styles.td}>{batch}</td>
                                 <td style={styles.td}>{expiry}</td>
                                 <td style={styles.td}>{hsn}</td>

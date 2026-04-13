@@ -1,4 +1,4 @@
-import { USER_ENDPOINTS } from "../config";
+﻿import { USER_ENDPOINTS } from "../config";
 import { apiClient } from "../api";
 import type { User } from "../types";
 
@@ -31,10 +31,10 @@ export const userService = {
   // Profile
   getProfile: () => apiClient<User>(USER_ENDPOINTS.PROFILE),
 
-  updateProfile: (data: Partial<User>) =>
+  updateProfile: (data: Partial<User> | FormData) =>
     apiClient<User>(USER_ENDPOINTS.UPDATE_PROFILE, {
       method: "PUT",
-      body: JSON.stringify(data),
+      body: data instanceof FormData ? data : JSON.stringify(data),
     }),
 
   // Attendance - Check-in/Check-out for staff/doctor

@@ -1,4 +1,4 @@
-export interface SubTestResult {
+﻿export interface SubTestResult {
     name: string;
     result?: string;
     unit?: string;

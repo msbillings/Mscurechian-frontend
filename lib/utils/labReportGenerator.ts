@@ -1,4 +1,4 @@
-import { LabSample, SampleTestResult } from '../integrations/types/labSample';
+﻿import { LabSample, SampleTestResult } from '../integrations/types/labSample';
 
 export interface ReportTemplateData {
     labName: string;

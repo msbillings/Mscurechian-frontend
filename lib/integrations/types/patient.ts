@@ -1,4 +1,4 @@
-export interface PatientProfile {
+﻿export interface PatientProfile {
     _id: string;
     user: {
         _id: string;

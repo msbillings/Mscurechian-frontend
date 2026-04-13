@@ -23,8 +23,7 @@ export const adminService = {
   // Expose for custom/emergency calls
   apiClient,
 
-  // ─── Dashboard & Analytics ───────────────────────────────────────────────────
-
+  // ─── Dashboard & Analytics 
   /** GET /super-admin/stats */
   getDashboardClient: () =>
     apiClient<DashboardStats>(ADMIN_ENDPOINTS.DASHBOARD),
@@ -43,8 +42,31 @@ export const adminService = {
     return apiClient<any>(`${ADMIN_ENDPOINTS.ANALYTICS}${qs ? `?${qs}` : ""}`);
   },
 
-  // ─── Profile ─────────────────────────────────────────────────────────────────
+  /** GET /super-admin/auth-logs */
+  getAuthLogsClient: (params?: {
+    page?: number;
+    limit?: number;
+    hospital?: string;
+    role?: string;
+    status?: string;
+    grouped?: boolean;
+  }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append("page", String(params.page));
+    if (params?.limit) query.append("limit", String(params.limit));
+    if (params?.hospital) query.append("hospital", params.hospital);
+    if (params?.role) query.append("role", params.role);
+    if (params?.status) query.append("status", params.status);
+    if (params?.grouped) query.append("grouped", "true");
+    const qs = query.toString();
+    return apiClient<any>(`${ADMIN_ENDPOINTS.AUTH_LOGS}${qs ? `?${qs}` : ""}`);
+  },
 
+  /** GET /super-admin/auth-log-filters */
+  getAuthLogFiltersClient: () => 
+    apiClient<{ success: boolean; data: { roles: string[]; hospitals: Array<{ _id: string; name: string }> } }>(ADMIN_ENDPOINTS.AUTH_LOG_FILTERS),
+
+  // ─── Profile 
   /** GET /super-admin/profile */
   getAdminProfileClient: () => apiClient<any>(ADMIN_ENDPOINTS.PROFILE),
 
@@ -55,8 +77,7 @@ export const adminService = {
       body: JSON.stringify(data),
     }),
 
-  // ─── Broadcast ───────────────────────────────────────────────────────────────
-
+  // ─── Broadcast 
   /** POST /super-admin/broadcast */
   broadcastClient: (data: BroadcastRequest) =>
     apiClient<any>(ADMIN_ENDPOINTS.BROADCAST, {
@@ -64,20 +85,23 @@ export const adminService = {
       body: JSON.stringify(data),
     }),
 
-  // ─── User Management ─────────────────────────────────────────────────────────
-
+  // ─── User Management 
   /** GET /super-admin/users?role= */
   getUsersClient: (params?: {
     role?: string;
     page?: number;
     limit?: number;
+    search?: string;
+    hospitalId?: string;
   }) => {
     const query = new URLSearchParams();
     if (params?.role) query.append("role", params.role);
     if (params?.page) query.append("page", String(params.page));
     if (params?.limit) query.append("limit", String(params.limit));
+    if (params?.search) query.append("search", params.search);
+    if (params?.hospitalId) query.append("hospitalId", params.hospitalId);
     const qs = query.toString();
-    return apiClient<any[]>(`${ADMIN_ENDPOINTS.USERS}${qs ? `?${qs}` : ""}`);
+    return apiClient<any>(`${ADMIN_ENDPOINTS.USERS}${qs ? `?${qs}` : ""}`);
   },
 
   /** POST /super-admin/users */
@@ -98,7 +122,7 @@ export const adminService = {
   deleteUserClient: (id: string) =>
     apiClient<void>(ADMIN_ENDPOINTS.DELETE_USER(id), { method: "DELETE" }),
 
-  // ─── HR Management ─────────────────────────────────────────────────────────────
+  // ─── HR Management 
 
   /** GET /super-admin/hr-users */
   getHRUsersClient: () => apiClient<any[]>(ADMIN_ENDPOINTS.HR_USERS),
@@ -109,13 +133,13 @@ export const adminService = {
       method: "POST",
     }),
 
-  // ─── Role-specific user shortcuts ────────────────────────────────────────────
+  // ─── Role-specific user shortcuts 
 
   getDoctorsClient: () => apiClient<Doctor[]>(ADMIN_ENDPOINTS.DOCTORS),
   getPatientsClient: () => apiClient<Patient[]>(ADMIN_ENDPOINTS.PATIENTS),
   getHelpdesksClient: () => apiClient<Helpdesk[]>(ADMIN_ENDPOINTS.HELPDESKS),
 
-  // ─── Hospital Admin Creation ──────────────────────────────────────────────────
+  // ─── Hospital Admin Creation 
 
   /** POST /super-admin/create-hospital-admin */
   createAdminClient: (data: CreateAdminRequest) =>
@@ -156,7 +180,7 @@ export const adminService = {
       body: JSON.stringify({ ...data, role: "lab" }),
     }),
 
-  // ─── Hospital Management ──────────────────────────────────────────────────────
+  // ─── Hospital Management
 
   /** GET /super-admin/hospitals */
   getHospitalsClient: () => apiClient<Hospital[]>(ADMIN_ENDPOINTS.HOSPITALS),
@@ -218,7 +242,7 @@ export const adminService = {
   deleteHospitalClient: (id: string) =>
     apiClient<void>(ADMIN_ENDPOINTS.DELETE_HOSPITAL(id), { method: "DELETE" }),
 
-  // ─── Ambulance Personnel ──────────────────────────────────────────────────────
+  // ─── Ambulance Personnel 
 
   /** GET /super-admin/emergency-users */
   getEmergencyUsersClient: () =>
@@ -244,7 +268,7 @@ export const adminService = {
       method: "DELETE",
     }),
 
-  // ─── Legacy / Misc ────────────────────────────────────────────────────────────
+  // ─── Legacy / Misc 
 
   assignDoctorClient: (data: AssignDoctorRequest) =>
     apiClient<any>(ADMIN_ENDPOINTS.ASSIGN_DOCTOR, {
@@ -265,7 +289,7 @@ export const adminService = {
   getSupportRequestsClient: () =>
     apiClient<SupportTicket[]>(ADMIN_ENDPOINTS.SUPPORT_REQUESTS),
 
-  // ─── Leave Management ─────────────────────────────────────────────────────────
+  // ─── Leave Management 
 
   requestLeaveClient: (data: any) =>
     apiClient<any>("/leaves/request", {
@@ -286,3 +310,4 @@ export const adminService = {
 
   getMyLeavesClient: () => apiClient<{ leaves: any[] }>("/leaves/my"),
 };
+

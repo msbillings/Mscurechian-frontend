@@ -95,7 +95,7 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose,
         const initSocket = async () => {
             try {
                 const { getSocket, subscribeToSocket, unsubscribeFromSocket } = await import('@/lib/integrations/api/socket');
-                const userData = sessionStorage.getItem('user') || localStorage.getItem('user');
+                const userData = localStorage.getItem('user') || localStorage.getItem('user');
                 if (!userData) return;
 
                 const user = JSON.parse(userData);

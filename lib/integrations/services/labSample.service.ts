@@ -58,6 +58,12 @@ export const LabSampleService = {
         });
     },
 
+    notifyDoctor: async (id: string): Promise<{ message: string }> => {
+        return apiClient<{ message: string }>(`/lab/orders/${id}/notify-doctor`, {
+            method: 'POST'
+        });
+    },
+
     // ✅ Query key helpers for React Query
     queryKeys: {
         all: () => ['lab', 'samples'] as const,
@@ -68,3 +74,4 @@ export const LabSampleService = {
         detail: (id: string) => ['lab', 'samples', 'detail', id] as const,
     }
 };
+

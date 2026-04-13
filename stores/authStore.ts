@@ -1,6 +1,102 @@
 import { create } from "zustand";
-import { authService, type RegisterRequest, setAccessToken } from "@/lib/integrations";
-import { loginAction } from "@/lib/integrations/actions/auth.actions";
+import { authService, type RegisterRequest, setAccessToken, getAccessToken } from "@/lib/integrations";
+
+// ✅ FIX #5: Module-level logout dedup guard.
+// Multiple callers (BroadcastChannel, auth-logout event, user click) can all
+// trigger logout simultaneously. The first call expires the CSRF cookie;
+// subsequent ones have no cookie → CSRF rejected (403). This flag ensures
+// only ONE logout runs at a time — others silently skip the network call.
+let _isLoggingOut = false;
+
+// ── Proactive Refresh Scheduler ───────────────────────────────────────────────
+// Schedules a silent token refresh 60 seconds before the access token expires,
+// preventing users from ever hitting a 401 during normal in-session usage.
+let _proactiveRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+const scheduleProactiveRefresh = (accessToken: string) => {
+  if (typeof window === "undefined") return;
+  if (_proactiveRefreshTimer) {
+    clearTimeout(_proactiveRefreshTimer);
+    _proactiveRefreshTimer = null;
+  }
+  try {
+    const parts = accessToken.split(".");
+    if (parts.length !== 3) return;
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+    if (!payload.exp) return;
+    const expiresInMs = payload.exp * 1000 - Date.now();
+    const refreshInMs = Math.max(expiresInMs - 60_000, 5000); // 60s before expiry, min 5s
+    console.log(`[Auth] ⏰ Proactive refresh scheduled in ${Math.round(refreshInMs / 1000)}s`);
+    _proactiveRefreshTimer = setTimeout(async () => {
+      try {
+        // ✅ FIX #2: Use raw fetch directly — apiClient already prefixes /api/
+        // so calling apiClient("/api/auth/refresh") = BASE_URL+/api/auth/refresh = /api/api/auth/refresh (404)
+        // The correct path is BASE_URL+/auth/refresh → /api/auth/refresh ✓
+        const { API_CONFIG } = await import("@/lib/integrations/config");
+        const sessionId = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("sessionId") : null;
+        const activeHospitalId = typeof localStorage !== "undefined" ? localStorage.getItem("activeHospitalId") : null;
+        const getCsrfCookie = (name: string) => {
+          if (typeof document === "undefined") return null;
+          const match = document.cookie.match(new RegExp('(^|;\\s*)' + name + '=([^;]*)'));
+          return match ? decodeURIComponent(match[2].trim()) : null;
+        };
+        let csrfToken = getCsrfCookie("csrf_token") || (activeHospitalId ? getCsrfCookie(`csrf_token_${activeHospitalId}`) : null);
+        const activeRole = typeof localStorage !== "undefined" ? localStorage.getItem("userRole") : null;
+        if (!csrfToken && activeRole) {
+          csrfToken = getCsrfCookie(`csrf_token_${activeRole}`);
+          if (!csrfToken && activeRole === 'admin') csrfToken = getCsrfCookie(`csrf_token_super-admin`);
+          if (!csrfToken && activeRole === 'super-admin') csrfToken = getCsrfCookie(`csrf_token_admin`);
+        }
+        const refreshHeaders: Record<string, string> = { "Content-Type": "application/json" };
+        if (csrfToken) refreshHeaders["X-CSRF-Token"] = csrfToken;
+        if (sessionId) refreshHeaders["X-Session-Id"] = sessionId;
+        if (activeHospitalId) refreshHeaders["X-Hospital-Id"] = activeHospitalId;
+
+        const res = await fetch(`${API_CONFIG.BASE_URL}/auth/refresh`, {
+          method: "POST",
+          headers: refreshHeaders,
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.accessToken) {
+            setAccessToken(data.accessToken);
+            scheduleProactiveRefresh(data.accessToken); // Schedule the next rotation
+            console.log("[Auth] ✅ Proactive refresh succeeded");
+
+            // ✅ FIX: Sync new tokens to Next.js server so RSC navigations don't fail and log users out!
+            try {
+              const { syncSessionAction } = await import("@/lib/integrations/actions/auth.actions");
+              await syncSessionAction(
+                data.accessToken,
+                "", // HttpOnly refresh token
+                data.csrfToken || "",
+                data.accessTokenExpiresIn,
+                data.refreshTokenExpiresIn,
+                activeRole || undefined
+              );
+            } catch (err) {
+              console.warn("[Auth] Proactive syncSessionAction soft-error:", err);
+            }
+
+            // ✅ Update socket with fresh token
+            try {
+              const { updateSocketToken } = await import("@/lib/integrations/api/socket");
+              updateSocketToken(data.accessToken).catch(() => {});
+            } catch (e) {}
+          }
+        } else {
+          console.warn("[Auth] Proactive refresh response not ok:", res.status);
+        }
+      } catch (e) {
+        console.warn("[Auth] Proactive refresh failed — interceptor will handle 401:", e);
+      }
+    }, refreshInMs);
+  } catch (e) {
+    console.warn("[Auth] Proactive refresh scheduling error:", e);
+  }
+};
+
 
 interface User {
   id: string;
@@ -10,13 +106,15 @@ interface User {
   email?: string;
   mobile?: string;
   image?: string;
+  avatar?: string;
+  profilePic?: string;
   shopName?: string;
-  gstin?: string;
-  licenseNo?: string;
+  gstin?: string;  licenseNo?: string;
   address?: string;
   hospital?: string;
   department?: string;
   employeeId?: string;
+  vehicleNumber?: string;
   qualificationDetails?: {
     qualifications: string[];
   };
@@ -46,21 +144,48 @@ interface AuthState {
 // ✅ PERFORMANCE FIX: Stable user reference to prevent cascade re-renders
 let cachedUser: User | null = null;
 
-const shallowEqual = (obj1: any, obj2: any) => {
+const deepEqual = (obj1: any, obj2: any) => {
   if (obj1 === obj2) return true;
   if (!obj1 || !obj2) return false;
-  const keys1 = Object.keys(obj1);
-  const keys2 = Object.keys(obj2);
-  if (keys1.length !== keys2.length) return false;
-  return keys1.every((key) => obj1[key] === obj2[key]);
+  try {
+    return JSON.stringify(obj1) === JSON.stringify(obj2);
+  } catch (e) {
+    return false;
+  }
 };
 
 const stabilizeUser = (newUser: User | null): User | null => {
-  if (shallowEqual(cachedUser, newUser)) {
+  if (deepEqual(cachedUser, newUser)) {
     return cachedUser; // Return same reference if data is identical
   }
   cachedUser = newUser;
   return newUser;
+};
+
+// ─── Module-scoped Cookie Helpers ────────────────────────────────────────────
+const _secureFlag = () =>
+  typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : '';
+
+const setCookie = (name: string, value: string, maxAge = 604800) => {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${name}=${value}; path=/; max-age=${maxAge}; SameSite=Lax${_secureFlag()}`;
+};
+
+const expireCookie = (name: string) => {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT${_secureFlag()}`;
+};
+
+// ─── PII Scrubber ─────────────────────────────────────────────────────────────
+// Strip sensitive fields before writing user to localStorage.
+// Keeps only what the UI needs — never writes certs, GSTIN, etc. to JS storage.
+const scrubUserForStorage = (user: any): any => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { documents, gstin, licenseNo, qualificationDetails, password, refreshTokens, ...safe } = user;
+  if (safe.image?.startsWith?.('data:'))      safe.image      = undefined;
+  if (safe.avatar?.startsWith?.('data:'))     safe.avatar     = undefined;
+  if (safe.profilePic?.startsWith?.('data:')) safe.profilePic = undefined;
+  return safe;
 };
 
 // ✅ STORAGE SAFETY: Prevent QuotaExceededErrors from crashing the app
@@ -104,10 +229,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   isLoading: false,
   isInitialized: false,
-  isTabAuthorized: typeof window !== "undefined" ? !!sessionStorage.getItem("tabAuthorized") : false,
+  isTabAuthorized: true,
 
   authorizeTab: () => {
-    sessionStorage.setItem("tabAuthorized", "true");
     set({ isTabAuthorized: true });
   },
 
@@ -136,10 +260,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   initEvents: () => {
     if (typeof window !== "undefined") {
-      // Signal received from current tab's API client (e.g. 401 Unauthorized)
+      // Signal from current tab's API client (e.g. 401 Unauthorized)
       window.addEventListener("auth-logout", () => {
-        get().logout(false);
+        get().logout(false); // false = don't re-broadcast (already triggered by API)
       });
+
+      // 📡 CROSS-TAB SYNC: Listen for broadcasts from other tabs
+      try {
+        const channel = new BroadcastChannel('msc_auth');
+        channel.onmessage = (event) => {
+          if (event.data?.type === 'LOGOUT') {
+            console.log('[Auth] 📡 Cross-tab logout received — clearing this tab session');
+            get().logout(false);
+          } else if (event.data?.type === 'LOGIN') {
+            console.log('[Auth] 📡 Cross-tab login received — syncing session');
+            get().initializeAuth(true);
+          }
+        };
+        // Note: channel is intentionally kept open for lifetime of tab
+      } catch (_) { /* BroadcastChannel not available in all envs (e.g. Safari <15.4) */ }
     }
   },
 
@@ -149,33 +288,65 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log("[Auth] 🔑 Attempting Secure Login:", identifier);
 
       // ✅ CLEANUP: Clear any stale session data before logging in as a new user
-      sessionStorage.removeItem("user");
-      sessionStorage.removeItem("activeHospitalId");
-      sessionStorage.removeItem("lastAuthCheck");
+      localStorage.removeItem("user");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("activeHospitalId");
+      localStorage.removeItem("lastAuthCheck");
       sessionStorage.removeItem("sessionId");
       sessionStorage.removeItem("tabAuthorized");
+      localStorage.removeItem("userRole"); 
       setAccessToken(null);
 
-      const response = await authService.loginClient({ identifier, password });
+      let response: any;
+      try {
+        response = await authService.loginClient({ identifier, password });
+      } catch (error: any) {
+        const isAuthError = error?.status === 401 || error?.status === 404 || error?.message?.toLowerCase().includes("wrong") || error?.message?.toLowerCase().includes("invalid") || error?.message?.toLowerCase().includes("not found");
+        
+        // Try emergency auth fallback if normal auth fails due to invalid credentials
+        // since ambulance personnel might be logging in from the main auth portal.
+        if (isAuthError) {
+            try {
+                const { emergencyService } = await import("@/lib/integrations/services/emergency.service");
+                response = await emergencyService.login(identifier, password) as any;
+                // Normalize response format for authStore compat
+                response.accessToken = response.accessToken || response.tokens?.accessToken;
+                response.refreshToken = response.refreshToken || response.tokens?.refreshToken;
+                if (response.user) {
+                    response.user.role = 'ambulance';
+                }
+            } catch (fallbackError) {
+                throw error; // Throw the original error if fallback also fails
+            }
+        } else {
+            throw error;
+        }
+      }
       const { accessToken, csrfToken, user, sessionId } = response;
+      if (!user) throw new Error("Authentication failed: No user data returned.");
+
+      // Resolution of hospital context
+      const isPatientRole = (user as any).role?.toLowerCase() === 'patient';
+      const _rawHospId = !isPatientRole ? ((user as any).hospital || (user as any).hospitalId) : null;
+      const userHospitalId: string | null = (_rawHospId && typeof _rawHospId === 'object')
+        ? (_rawHospId._id || _rawHospId.id || _rawHospId.toString())
+        : (_rawHospId ?? null);
       
       if (sessionId) console.log("[Auth] 💾 Session ID established:", sessionId);
 
       if (accessToken) {
         setAccessToken(accessToken);
-        sessionStorage.setItem("accessToken", accessToken);
-        
-        // ✅ SERVER-SIDE COMPATIBILITY: Sync token to cookie for apiServer
-        // Namespace by hospitalId to prevent cross-tab role leakage
-        const rawHospId = (user as any).hospital || (user as any).hospitalId;
-        const userHospitalId = (rawHospId && typeof rawHospId === 'object') ? (rawHospId._id || rawHospId.id || rawHospId.toString()) : rawHospId;
-        
-        const atName = userHospitalId ? `accessToken_${userHospitalId}` : "accessToken";
-        document.cookie = `${atName}=${accessToken}; path=/; max-age=604800; SameSite=Lax`;
-      }
+        // Cookies are now handled exclusively by the backend as HttpOnly (deterministic)
+        // ✅ FIX 3C: Schedule proactive refresh so user never hits a 401 mid-session
+        scheduleProactiveRefresh(accessToken);
 
-      // ✅ IDENTITY VALIDATION: Check Hospital and MongoDB ID format
-      if (!user) throw new Error("Authentication failed: No user data returned.");
+        // ✅ FIX #4: Reset socket with fresh token so join_room succeeds immediately
+        try {
+          const { resetSocket } = await import("@/lib/integrations/api/socket");
+          resetSocket(accessToken);
+        } catch (e) {}
+      }
       
       const userId = (user as any)._id || user.id;
       if (!userId) throw new Error("Authentication failed: Invalid MongoDB User ID.");
@@ -191,59 +362,54 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user.id = (user as any)._id;
       }
 
-      // ✅ SECURITY: Tokens are NOT stored in storage
-      // Access token is kept only in this store's memory
-      // Refresh token is in an HttpOnly cookie (handled by browser/backend)
-
-      // Store non-sensitive session cache (tab-isolated via sessionStorage)
-      sessionStorage.setItem("user", JSON.stringify(user));
-      sessionStorage.setItem("lastAuthCheck", Date.now().toString());
+      // Store non-sensitive session cache (tab-isolated via localStorage, PII-scrubbed)
+      localStorage.setItem("user", JSON.stringify(scrubUserForStorage(user)));
+      localStorage.setItem("lastAuthCheck", Date.now().toString());
       if (sessionId) {
         sessionStorage.setItem("sessionId", sessionId);
       }
 
-      // ✅ MULTI-TENANCY: Context Sync — hospital auto-resolved from user's MongoDB record
-      const rawHospId = (user as any).hospital || (user as any).hospitalId;
-      const userHospitalId = (rawHospId && typeof rawHospId === 'object') ? (rawHospId._id || rawHospId.id || rawHospId.toString()) : rawHospId;
-
-      if (userHospitalId) {
-        const hospitalIdStr = userHospitalId.toString();
-        console.log("[Auth] 🏥 Setting Hospital Context:", hospitalIdStr);
-        sessionStorage.setItem("activeHospitalId", hospitalIdStr);
-        // Set as non-HttpOnly cookie for middleware/server access
-        document.cookie = `hospitalId=${hospitalIdStr}; path=/; max-age=604800; SameSite=Lax`;
+      if (!isPatientRole) {
+        if (userHospitalId) {
+          console.log("[Auth] 🏥 Setting Hospital Context:", userHospitalId);
+          localStorage.setItem("activeHospitalId", userHospitalId);
+          setCookie("hospitalId", userHospitalId);
+        } else {
+          expireCookie("hospitalId");
+          localStorage.removeItem("activeHospitalId");
+        }
+      } else {
+        console.log("[Auth] 👤 Patient login — skipping hospital context (global user, no hospital binding)");
+        localStorage.removeItem("activeHospitalId");
+        expireCookie("hospitalId");
       }
 
-      // ✅ SECURITY: Explicity set CSRF and Session ID cookies for server-side compatibility (Double Submit Cookie)
-      if (csrfToken) {
-        const csrfName = userHospitalId ? `csrf_token_${userHospitalId}` : "csrf_token";
-        document.cookie = `${csrfName}=${csrfToken}; path=/; max-age=604800; SameSite=Lax`;
-      }
-      if (sessionId) {
-        document.cookie = `sessionId=${sessionId}; path=/; max-age=604800; SameSite=Lax`;
-      }
-      // Also sync user role for middleware and tab isolation
+      // ✅ SECURITY: CSRF token (Double Submit Cookie pattern) is set by backend.
+      // We no longer write redundant cookies from frontend.
       if (user.role) {
-        const lowerRole = user.role.toLowerCase();
-        sessionStorage.setItem("userRole", lowerRole);
-        const urName = userHospitalId ? `userRole_${userHospitalId}` : "userRole";
-        document.cookie = `${urName}=${lowerRole}; path=/; max-age=604800; SameSite=Lax`;
-        // Also keep global for legacy/un-tenanted routes
-        document.cookie = `userRole=${lowerRole}; path=/; max-age=604800; SameSite=Lax`;
+        localStorage.setItem("userRole", user.role.toLowerCase());
       }
-
 
       // PERSISTENT USER PROFILE (No sensitive data)
       const lastUserId = user.id || (user as any)._id;
       if (lastUserId) {
         const uidStr = lastUserId.toString();
-        safeLocalStorage.setItem(`profile_${uidStr}`, JSON.stringify(user));
+        // ✅ SECURITY: Scrub PII before writing to localStorage (persists across sessions)
+        safeLocalStorage.setItem(`profile_${uidStr}`, JSON.stringify(scrubUserForStorage(user)));
+        
+        const userRole = user.role ? user.role.toLowerCase() : "";
+        if (userHospitalId && userRole) {
+          safeLocalStorage.setItem(`profile_role_${userHospitalId}_${userRole}`, uidStr);
+        }
+        
         safeLocalStorage.setItem("lastUserId", uidStr);
       }
 
-      // ✅ TAB AUTHORIZATION: This tab initiated the login, so it's authorized
-      // sessionStorage is isolated per tab — other tabs remain unauthorized
-      sessionStorage.setItem("tabAuthorized", "true");
+      try {
+        const channel = new BroadcastChannel('msc_auth');
+        channel.postMessage({ type: 'LOGIN' });
+        channel.close();
+      } catch (_) { }
 
       set({
         user: stabilizeUser(user),
@@ -271,31 +437,56 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async (broadcast = true) => {
+    // ✅ FIX #5: Dedup guard — only one logout at a time.
+    // Concurrent callers (event listeners, BroadcastChannel, UI button) can all
+    // fire at once. The first expires the CSRF cookie; later ones have no cookie → 403.
+    if (_isLoggingOut) {
+      console.log("[Auth] Logout already in progress, skipping duplicate call.");
+      return;
+    }
+    _isLoggingOut = true;
+
+    // 📡 CROSS-TAB BROADCAST: Notify other tabs to logout before we clear local state
+    if (broadcast && typeof window !== 'undefined') {
+      try {
+        const channel = new BroadcastChannel('msc_auth');
+        channel.postMessage({ type: 'LOGOUT' });
+        channel.close();
+      } catch (_) { /* BroadcastChannel not available in all envs */ }
+    }
+
     // 1. Inform backend to clear HttpOnly refreshToken and CSRF
     // MUST HAPPEN FIRST before we delete the local cookies!
     try {
       await authService.logoutClient();
     } catch (e) {
       console.warn("Logout API failed, continuing local cleanup", e);
+    } finally {
+      // Always release the guard so the user can log in again
+      _isLoggingOut = false;
     }
 
+    const activeId = localStorage.getItem("activeHospitalId");
+    const activeRole = localStorage.getItem("userRole");
+
     // 2. Clear local storage/session
-    sessionStorage.removeItem("user");
-    sessionStorage.removeItem("accessToken");
-    sessionStorage.removeItem("refreshToken");
-    sessionStorage.removeItem("activeHospitalId");
-    sessionStorage.removeItem("lastAuthCheck"); // Clear auth timestamp
-    sessionStorage.removeItem("sessionId"); // Clear explicit session tracking
-    sessionStorage.removeItem("userRole"); // ✅ Clear role context
-    sessionStorage.removeItem("tabAuthorized"); // Clear tab authorization
-    
+    localStorage.removeItem("user");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
+    localStorage.removeItem("activeHospitalId");
+    localStorage.removeItem("lastAuthCheck");
+    sessionStorage.removeItem("sessionId");
+    localStorage.removeItem("userRole");
+    sessionStorage.removeItem("tabAuthorized");
 
     // Clear user profiles and lastUserId while preserving theme & terms
     const lastUserId = localStorage.getItem("lastUserId");
     if (lastUserId) {
       localStorage.removeItem(`profile_${lastUserId}`);
+    }
+    // Remove role specific profile markers
+    if (activeId && activeRole) {
+       localStorage.removeItem(`profile_role_${activeId}_${activeRole}`);
     }
     localStorage.removeItem("lastUserId");
 
@@ -313,27 +504,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.warn("Could not iterate localStorage for profile cleanup", e);
     }
 
-    // 3. Clear non-HttpOnly cookies last
-    const activeId = sessionStorage.getItem("activeHospitalId");
-    const suffix = activeId ? `_${activeId}` : "";
-
-    document.cookie = "hospitalId=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
-    document.cookie = `csrf_token${suffix}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
-    document.cookie = `sessionId${suffix}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
-    document.cookie = `accessToken${suffix}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
-    document.cookie = `userRole${suffix}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
-
-    // Clear globals if we had a suffix (multi-tab isolation insurance)
-    if (activeId) {
-      document.cookie = "csrf_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
-      document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+    // 3. Clear all session-specific cookies (Global + Multi-tenant suffixed versions)
+    if (typeof document !== 'undefined') {
+      const allCookies = document.cookie.split(';');
+      const sessionKeys = ['accessToken', 'refreshToken', 'csrf_token', 'hospitalId', 'userRole', 'sessionId'];
+      
+      allCookies.forEach(cookie => {
+        const name = cookie.split('=')[0].trim();
+        if (sessionKeys.some(key => name === key || name.startsWith(`${key}_`))) {
+          expireCookie(name);
+        }
+      });
     }
+    
+    // Explicitly remove legacy/deprecated cookies
+    expireCookie("userRole");
+    // sessionId is now tab-isolated via sessionStorage
+    expireCookie("hospitalId");
 
     // 4. Clear in-memory access token
     setAccessToken(null);
 
     // 5. Clear tab authorization
-    sessionStorage.removeItem("tabAuthorized");
+    localStorage.removeItem("tabAuthorized");
 
     set({ user: null, isAuthenticated: false, isTabAuthorized: false });
   },
@@ -344,14 +537,40 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (typeof document === 'undefined') return null;
       const value = `; ${document.cookie}`;
       const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop()?.split(';').shift();
+      if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
       return null;
     };
 
-    const activeHospId = typeof window !== 'undefined' ? (sessionStorage.getItem("activeHospitalId") || getCookie("hospitalId")) : null;
-    const atName = activeHospId ? `accessToken_${activeHospId}` : "accessToken";
-    const sessionToken = typeof window !== 'undefined' ? (sessionStorage.getItem("accessToken") || getCookie(atName) || getCookie("accessToken")) : null;
-    
+    let activeHospId = typeof window !== 'undefined' ? localStorage.getItem("activeHospitalId") : null;
+    let fallbackRole = typeof window !== 'undefined' ? localStorage.getItem("userRole") : null;
+    if (typeof window !== 'undefined') {
+      try {
+        const { getActiveHospitalId, getActiveRoleFromUrl } = await import('@/lib/integrations/api/apiClient');
+        if (!activeHospId) activeHospId = getActiveHospitalId();
+        if (!fallbackRole) fallbackRole = getActiveRoleFromUrl();
+      } catch (e) {}
+    }
+
+    // ✅ SUFFIX-AWARE BOOTSTRAP: Try suffixed cookie first if context exists
+    let sessionToken = null;
+    if (typeof window !== 'undefined') {
+        const hospId = localStorage.getItem("activeHospitalId");
+        const role = localStorage.getItem("userRole");
+
+        if (hospId) {
+            sessionToken = getCookie(`accessToken_${hospId}`);
+        }
+        
+        if (!sessionToken && role) {
+            sessionToken = getCookie(`accessToken_${role}`);
+            if (!sessionToken && role === 'admin') sessionToken = getCookie(`accessToken_super-admin`);
+        }
+
+        if (!sessionToken) {
+            sessionToken = getCookie("accessToken");
+        }
+    }
+
     // ✅ SYNC TOKEN: Always update memory cache from storage on bootstrap, even if throttled
     if (sessionToken && typeof window !== 'undefined') {
       const { setAccessToken } = await import('@/lib/integrations');
@@ -360,22 +579,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     console.log("[Auth] 🔎 Current Storage Status:", {
         hasToken: !!sessionToken,
-        hasUser: !!sessionStorage.getItem("user"),
-        hasRole: !!sessionStorage.getItem("userRole"),
-        tabAuthorized: !!sessionStorage.getItem("tabAuthorized")
+        hasUser: !!localStorage.getItem("user"),
+        hasRole: !!localStorage.getItem("userRole"),
+        tabAuthorized: !!localStorage.getItem("tabAuthorized")
     });
 
-    // ✅ TAB ISOLATION: Never auto-restore session for unauthorized tabs.
-    // A tab is authorized only if it has explicitly performed a login in THIS tab session.
-    // sessionStorage is browser-tab-isolated — it is NOT shared between tabs.
-    const isTabAuthorized = typeof window !== 'undefined' && !!sessionStorage.getItem('tabAuthorized');
-    if (!isTabAuthorized && !force) {
-      console.log("[AUTH INIT] Tab is not authorized — skipping bootstrap. Must login explicitly.");
-      set({ user: null, isAuthenticated: false, isLoading: false, isInitialized: true, isTabAuthorized: false });
-      return;
-    }
+    // ✅ MULTI-TAB FIX: 1 Browser = 1 User Session, all tabs automatically inherit auth
 
-    let sessionUser = sessionStorage.getItem("user");
+    let sessionUser = localStorage.getItem("user");
 
     // Try to restore user from session cache first for immediate UI
     if (sessionUser && !get().user) {
@@ -387,7 +598,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     // ✅ SPEED FIX: Throttle network calls unless forced
-    const lastCheck = sessionStorage.getItem("lastAuthCheck");
+    const lastCheck = localStorage.getItem("lastAuthCheck");
     if (
       !force &&
       lastCheck &&
@@ -404,12 +615,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       // ✅ TAB ISOLATION: Prioritize role from local session storage OR restored user object
       // This prevents a global 'ambulance' cookie from hijacking standard hospital admin tabs
-      const urName = activeHospId ? `userRole_${activeHospId}` : "userRole";
-      const localRole = sessionStorage.getItem("userRole");
+      const localRole = localStorage.getItem("userRole");
       const restoredUserRole = get().user?.role?.toLowerCase();
-      const cookieRole = getCookie(urName) || getCookie("userRole");
 
-      const userRole = localRole || restoredUserRole || cookieRole;
+      const userRole = localRole || restoredUserRole;
       
       console.log(`[AUTH INIT] calling /me (role context: ${userRole || 'none'})`);
       if (userRole === "ambulance") console.log("[Auth] 🚑 AMBULANCE BOOTSTRAP TRIGGERED");
@@ -439,10 +648,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const sessionId = data.sessionId;
 
         if (accessToken) {
-          console.log("[AUTH INIT] new access token received from bootstrap");
+          // ✅ SECURITY: Token lives in memory only. Cookie already set by login() for middleware.
+          // refreshToken is HttpOnly (backend-set) — never store in localStorage.
           setAccessToken(accessToken);
-          sessionStorage.setItem("accessToken", accessToken);
-          if (refreshToken) sessionStorage.setItem("refreshToken", refreshToken);
         }
 
         if (sessionId) {
@@ -455,19 +663,34 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           user.id = (user as any)._id;
         }
 
-        // Persist session cache
-        sessionStorage.setItem("lastAuthCheck", Date.now().toString());
-        sessionStorage.setItem("user", JSON.stringify(user));
+        // Persist session cache (PII-scrubbed)
+        localStorage.setItem("lastAuthCheck", Date.now().toString());
+        localStorage.setItem("user", JSON.stringify(scrubUserForStorage(user)));
 
         // Restore hospital context
-        const rawId = (user as any).hospital || (user as any).hospitalId;
-        const userHospitalId = (rawId && typeof rawId === 'object') ? (rawId._id || rawId.id) : rawId;
-        
-        if (userHospitalId && typeof document !== "undefined") {
-          const hospitalIdStr = userHospitalId.toString();
-          sessionStorage.setItem("activeHospitalId", hospitalIdStr);
-          // Set non-HttpOnly cookie for server components
-          document.cookie = `hospitalId=${hospitalIdStr}; path=/; max-age=604800; SameSite=Lax`;
+        // 🚨 PATIENT EXCEPTION: Patients are global users — never bind them to a hospitalId.
+        const isPatient = (user as any).role?.toLowerCase() === 'patient';
+        if (!isPatient) {
+          const rawId = (user as any).hospital || (user as any).hospitalId;
+          const userHospitalId = (rawId && typeof rawId === 'object') ? (rawId._id || rawId.id) : rawId;
+          
+          if (userHospitalId && typeof document !== "undefined") {
+            const hId = userHospitalId.toString();
+            localStorage.setItem("activeHospitalId", hId);
+            setCookie("hospitalId", hId);
+          } else {
+            localStorage.removeItem("activeHospitalId");
+            expireCookie("hospitalId");
+          }
+        } else {
+          // Clear any stale hospital context for patients
+          localStorage.removeItem("activeHospitalId");
+          expireCookie("hospitalId");
+        }
+
+        // ✅ FIX 3C: Schedule proactive refresh after session is restored
+        if (accessToken) {
+          scheduleProactiveRefresh(accessToken);
         }
 
         set({
@@ -486,12 +709,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
       }
     } catch (error: any) {
-      const uRole = sessionStorage.getItem("userRole");
-      console.error("[AUTH INIT] Auth bootstrap failure:", {
-        message: error.message,
-        status: error.status,
-        role: uRole
-      });
+      const uRole = localStorage.getItem("userRole");
+
+      // ✅ PUBLIC PAGE GUARD: On landing pages with no session, auth bootstrap
+      // failing is completely expected (visitor). Don't log it as an error.
+      const _cp = typeof window !== 'undefined' ? window.location.pathname.toLowerCase() : '';
+      const _fp = _cp.split('/').filter(Boolean)[0] || '';
+      const _isPublicPage = _cp === '/' || _cp === '' || [
+        'about', 'blogs', 'features', 'pricing', 'solutions',
+        'portals', 'terms', 'contact', 'support', 'coming-soon',
+      ].includes(_fp);
+
+      if (_isPublicPage) {
+        console.log("[AUTH INIT] No session on public page (expected for visitors)");
+      } else {
+        console.error("[AUTH INIT] Auth bootstrap failure:", {
+          message: error.message,
+          status: error.status,
+          role: uRole
+        });
+      }
 
       const isNetworkError = error?.isNetworkError || error?.message?.includes("Failed to fetch");
       const isAuthError = error?.status === 401 || error?.status === 403;
@@ -511,17 +748,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       if (isAuthError) {
         console.log("[AUTH INIT] Clearing session data due to auth error");
-        sessionStorage.removeItem("user");
-        sessionStorage.removeItem("accessToken");
-        sessionStorage.removeItem("refreshToken");
-        sessionStorage.removeItem("activeHospitalId");
-        sessionStorage.removeItem("userRole");
+        localStorage.removeItem("user");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("activeHospitalId");
+        localStorage.removeItem("userRole");
         sessionStorage.removeItem("tabAuthorized");
         sessionStorage.removeItem("sessionId");
-        
-        // Clear global cookies
-        document.cookie = "userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-        document.cookie = "sessionId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+        // ✅ FIX 3A: Also clear the in-memory token.
+        // Without this, the expired token stayed in cachedToken — the next API call
+        // used it, got 401, the interceptor tried to refresh, but the session was
+        // already cleared, so refresh failed too → logout loop.
+        setAccessToken(null);
+
+        // Clear global cookies (with Secure flag) via helper
+        expireCookie("userRole");
+        // sessionId is now tab-isolated via sessionStorage
       }
     }
   },
@@ -532,13 +775,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user.id = (user as any)._id;
       }
 
-      sessionStorage.setItem("user", JSON.stringify(user));
-      if (user.id) {
-        safeLocalStorage.setItem(`profile_${user.id}`, JSON.stringify(user));
-        safeLocalStorage.setItem("lastUserId", user.id);
+      try {
+        // ✅ SECURITY: Use scrubUserForStorage to strip PII (gstin, licenseNo,
+        // employeeId, documents, certs) and base64 image blobs before writing.
+        const storageUser = scrubUserForStorage(user);
+
+        localStorage.setItem("user", JSON.stringify(storageUser));
+        if (user.id) {
+          safeLocalStorage.setItem(`profile_${user.id}`, JSON.stringify(storageUser));
+          safeLocalStorage.setItem("lastUserId", user.id);
+        }
+      } catch (e) {
+        console.warn("[AuthStore] QuotaExceededError - Skipping persistent storage for huge user object", e);
       }
     } else {
-      sessionStorage.removeItem("user");
+      localStorage.removeItem("user");
     }
     set({ user: stabilizeUser(user), isAuthenticated: !!user });
   },

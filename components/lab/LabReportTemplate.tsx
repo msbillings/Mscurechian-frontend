@@ -39,7 +39,7 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
 
         // Helper: Determine if test has result data
         const hasTestResults = (test: any) => {
-            // Check if there are configured resultParameters with values
+            // 1. Check if there are configured resultParameters with values
             if ((test as any).resultParameters && (test as any).resultParameters.length > 0) {
                 const hasParamValues = test.subTests?.some((st: any) =>
                     st.result !== undefined && st.result !== null && st.result !== ''
@@ -47,8 +47,15 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                 if (hasParamValues) return true;
             }
 
-            // Fallback: Check for top-level result value (legacy tests)
-            if (test.resultValue && test.resultValue.toString().trim()) return true;
+            // 2. Check if there are ANY sub-tests with results (for ad-hoc or unconfigured tests)
+            const hasAnySubTestResults = test.subTests?.some((st: any) =>
+                st.result !== undefined && st.result !== null && st.result !== ''
+            );
+            if (hasAnySubTestResults) return true;
+
+            // 3. Fallback: Check for top-level result value (legacy tests)
+            const mainResult = test.result || test.resultValue;
+            if (mainResult && mainResult.toString().trim() !== '') return true;
 
             return false;
         };
@@ -144,13 +151,13 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                     `
                 }} />
 
-                <div className="print-content bg-white" style={{
+                <div className="print-content bg-white lab-report-responsive-container" style={{
                     fontFamily: '"Segoe UI", Arial, sans-serif',
                     background: '#ffffff',
                     width: '100%',
+                    maxWidth: '210mm',
                     minHeight: '297mm',
                     margin: '0 auto',
-                    padding: '26px',
                     border: '3px solid #000',
                     boxShadow: 'inset 0 0 0 1px #000',
                     position: 'relative',
@@ -159,6 +166,70 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                     display: 'flex',
                     flexDirection: 'column'
                 }}>
+                    <style>
+                        {`
+                        .lab-report-responsive-container {
+                            padding: 12px;
+                            max-width: 100% !important;
+                            min-height: auto !important;
+                            border-width: 1px !important;
+                        }
+                        .lab-patient-grid {
+                            display: grid;
+                            grid-template-columns: 1fr;
+                            gap: 10px;
+                            margin: 15px 0;
+                            font-size: 11px;
+                        }
+                        .lab-test-title {
+                            font-size: 16px !important;
+                            margin: 12px 0 8px !important;
+                        }
+                        .lab-test-table {
+                            font-size: 11px !important;
+                        }
+                        .lab-test-table th, .lab-test-table td {
+                            padding: 5px 6px !important;
+                        }
+                        @media (min-width: 800px) {
+                            .lab-report-responsive-container {
+                                padding: 26px;
+                                max-width: 210mm !important;
+                                min-height: 297mm !important;
+                                border-width: 3px !important;
+                            }
+                            .lab-patient-grid {
+                                grid-template-columns: 1fr 1fr;
+                                margin: 25px 0;
+                                font-size: 14px;
+                                gap: 15px;
+                            }
+                            .lab-test-title {
+                                font-size: 22px !important;
+                                margin: 25px 0 15px !important;
+                            }
+                            .lab-test-table {
+                                font-size: 14px !important;
+                            }
+                            .lab-test-table th, .lab-test-table td {
+                                padding: 8px 10px !important;
+                            }
+                        }
+                        @media print {
+                            .lab-report-responsive-container {
+                                padding: 26px !important;
+                                width: 210mm !important;
+                                max-width: 210mm !important;
+                                min-height: 297mm !important;
+                                border-width: 3px !important;
+                            }
+                            .lab-patient-grid {
+                                grid-template-columns: 1fr 1fr !important;
+                                font-size: 14px !important;
+                            }
+                        }
+                        `}
+                    </style>
                     <div style={{ flexGrow: 1 }}>
                         {/* Watermark */}
                         <div className="watermark" style={{
@@ -166,10 +237,10 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                             top: '50%',
                             left: '50%',
                             transform: 'translate(-50%, -50%) rotate(-35deg)',
-                            fontSize: '60px',
-                            color: 'rgba(0, 0, 0, 0.08)',
+                            fontSize: '40px',
+                            color: 'rgba(0, 0, 0, 0.05)',
                             fontWeight: 700,
-                            letterSpacing: '6px',
+                            letterSpacing: '4px',
                             whiteSpace: 'nowrap',
                             pointerEvents: 'none',
                             zIndex: 0,
@@ -184,20 +255,13 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                         </div>
 
                         {/* Patient Details */}
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            margin: '25px 0',
-                            fontSize: '14px',
-                            position: 'relative',
-                            zIndex: 1
-                        }}>
-                            <div style={{ width: '48%', lineHeight: 1.6 }}>
+                        <div className="lab-patient-grid" style={{ position: 'relative', zIndex: 1 }}>
+                            <div style={{ lineHeight: 1.6 }}>
                                 <strong>Patient Name:</strong> {sample.patientDetails.name}<br />
                                 <strong>Age / Sex:</strong> {sample.patientDetails.age} Years / {sample.patientDetails.gender}<br />
                                 <strong>Patient ID:</strong> {sample.sampleId}
                             </div>
-                            <div style={{ width: '48%', lineHeight: 1.6 }}>
+                            <div style={{ lineHeight: 1.6 }}>
                                 <strong>Sample Collected At:</strong> {formatDate(sample.collectionDate)} {formatTime(sample.collectionDate)}<br />
                                 <strong>Referred By:</strong> {sample.patientDetails.refDoctor || sample.referredBy || 'Self'}<br />
                                 <strong>Report Date:</strong> {formatDate(sample.reportDate)}
@@ -224,12 +288,12 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                                 : [];
 
                             // 3. Fallback: Check for main result
-                            const hasMainResult = (!validParams.length && !adhocSubTests.length) && test.resultValue && test.resultValue.toString().trim() !== '';
-
+                            const mainRes = (test as any).result || test.resultValue;
+                            const hasMainResult = (!validParams.length && !adhocSubTests.length) && mainRes && mainRes.toString().trim() !== '';
 
                             return (
                                 <div key={testIdx} className="test-section" style={{ marginBottom: '30px' }}>
-                                    <h2 style={{
+                                    <h2 className="lab-test-title" style={{
                                         textAlign: 'center',
                                         margin: '25px 0 15px',
                                         fontSize: '22px',
@@ -238,7 +302,7 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                                         position: 'relative',
                                         zIndex: 1
                                     }}>{test.testName}</h2>
-                                    <table style={{
+                                    <table className="lab-test-table" style={{
                                         width: '100%',
                                         borderCollapse: 'collapse',
                                         fontSize: '14px',
@@ -279,7 +343,7 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                                             {validParams.length === 0 && adhocSubTests.length === 0 && hasMainResult && (
                                                 <tr>
                                                     <td style={{ border: '1px solid #d0d0d0', padding: '8px 10px', color: '#000' }}>{test.testName}</td>
-                                                    <td style={{ border: '1px solid #d0d0d0', padding: '8px 10px', color: '#000', fontWeight: 'bold' }}>{test.resultValue}</td>
+                                                    <td style={{ border: '1px solid #d0d0d0', padding: '8px 10px', color: '#000', fontWeight: 'bold' }}>{(test as any).result || test.resultValue}</td>
                                                     <td style={{ border: '1px solid #d0d0d0', padding: '8px 10px', color: '#000' }}>{test.unit || '-'}</td>
                                                 </tr>
                                             )}

@@ -1,8 +1,8 @@
-'use client';
+﻿'use client';
 
-import { Edit2, Loader2 } from 'lucide-react';
-import { useRouter, useParams } from 'next/navigation';
-import { useState } from 'react';
+import { Edit2 } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
 
 interface StaffProfileHeaderProps {
     profile: any;
@@ -17,15 +17,8 @@ export default function StaffProfileHeader({
     staffDesignation,
     staffExperience
 }: StaffProfileHeaderProps) {
-    const router = useRouter();
     const params = useParams();
     const hospitalId = params?.hospitalId as string;
-    const [navigating, setNavigating] = useState(false);
-
-    const handleEditClick = () => {
-        setNavigating(true);
-        router.push(`/${hospitalId}/staff/profile/edit`);
-    };
 
     return (
         <div className="px-0.5 sm:px-2 relative flex flex-col md:flex-row gap-2 sm:gap-4 md:items-center">
@@ -46,26 +39,16 @@ export default function StaffProfileHeader({
                 <div className="flex items-center justify-center md:justify-start gap-1 mb-0">
                     <h1 className="text-xs sm:text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight leading-none">{staffName}</h1>
                 </div>
-                <p className="text-[8px] sm:text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5 mb-1 opacity-70 border-b border-gray-100 dark:border-gray-800/30 pb-1 inline-block">{staffDesignation} <span className="text-indigo-500 mx-1">·</span> {staffExperience} INDUCTION</p>
+                <p className="text-[8px] sm:text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5 mb-1 opacity-70 border-b border-gray-100 dark:border-gray-800/30 pb-1 inline-block">{staffDesignation} <span className="text-indigo-500 mx-1">Â·</span> {staffExperience} INDUCTION</p>
             </div>
             <div className="flex justify-center shrink-0">
-                <button
-                    onClick={handleEditClick}
-                    disabled={navigating}
+                <Link
+                    href={`/${hospitalId}/staff/profile/edit`}
                     className="px-2 py-1 bg-gray-900 dark:bg-white text-white dark:text-black font-black uppercase tracking-widest rounded-md flex items-center gap-1 shadow-sm hover:opacity-90 active:scale-95 text-[8px] sm:text-[9px] min-w-[80px]"
                 >
-                    {navigating ? (
-                        <>
-                            <Loader2 size={10} className="animate-spin" />
-                            <span>...</span>
-                        </>
-                    ) : (
-                        <>
-                            <Edit2 size={10} />
-                            <span>Edit Index</span>
-                        </>
-                    )}
-                </button>
+                    <Edit2 size={10} />
+                    <span>Edit Index</span>
+                </Link>
             </div>
         </div>
     );

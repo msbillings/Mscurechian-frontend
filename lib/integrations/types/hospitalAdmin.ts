@@ -9,6 +9,9 @@ export interface HospitalAdminDashboard {
     totalAppointments: number;
     todayAppointments: number;
     revenue?: number;
+    monthlyRevenue?: number;
+    ipdRevenue?: number;
+    opdRevenue?: number;
     attendance?: {
       present: number;
       late: number;

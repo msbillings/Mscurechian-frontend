@@ -620,7 +620,7 @@ export const generatePatientHourlyRecordHtml = (data: any) => {
                                         <td>${date}</td>
                                         <td style="text-align: left;">${testName}</td>
                                         <td ${!hasResult ? 'style="color: #94a3b8; font-style: italic;"' : ''}>${order.status || (hasResult ? 'Completed' : 'Pending')}</td>
-                                        <td><strong>${hasResult ? test.resultValue : '-'}</strong></td>
+                                        <td><strong>${hasResult ? test.resultValue : '-'}</td>
                                         <td>${test.unit || '-'}</td>
                                     </tr>
                                 `;

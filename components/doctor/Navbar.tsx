@@ -11,6 +11,10 @@ import {
 } from "lucide-react";
 import NotificationCenter from "@/components/navbar/NotificationCenter";
 import LogoutModal from "@/components/auth/LogoutModal";
+import ProgressBar from "@/components/ui/ProgressBar";
+import { useTransition } from "react";
+import { PrefetchLink } from "@/components/ui/PrefetchLink";
+import { usePrefetchDashboard } from "@/lib/integrations/hooks/useUnifiedDashboard";
 
 interface NavbarProps {
   onMenuClick: () => void;
@@ -23,6 +27,9 @@ function Navbar({ onMenuClick }: NavbarProps) {
 
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  const prefetchDashboard = usePrefetchDashboard('doctor');
 
   const handleLogout = useCallback(async () => {
     await logout();
@@ -30,8 +37,10 @@ function Navbar({ onMenuClick }: NavbarProps) {
   }, [logout, router]);
 
   const navigateTo = useCallback((path: string) => {
-    router.push(path);
-    setIsProfileDropdownOpen(false);
+    startTransition(() => {
+      router.push(path);
+      setIsProfileDropdownOpen(false);
+    });
   }, [router]);
 
   return (
@@ -44,6 +53,7 @@ function Navbar({ onMenuClick }: NavbarProps) {
       />
 
       <header className="h-16 flex items-center justify-between px-4 sm:px-6 border-b border-border-theme sticky top-0 z-30 bg-card/80 backdrop-blur-md">
+        <ProgressBar isPending={isPending} color="emerald" />
         <button
           onClick={onMenuClick}
           className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-700 dark:text-gray-200"
@@ -89,20 +99,22 @@ function Navbar({ onMenuClick }: NavbarProps) {
                 }}
               >
                 <div className="p-1">
-                  <button
-                    onClick={() => navigateTo("/doctor/profile")}
+                  <PrefetchLink
+                    href="/doctor/profile"
+                    onClick={() => setIsProfileDropdownOpen(false)}
                     className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg group"
                   >
                     <User size={16} className="text-gray-400 group-hover:text-emerald-500" />
                     <span>My Profile</span>
-                  </button>
-                  <button
-                    onClick={() => navigateTo("/doctor/support")}
+                  </PrefetchLink>
+                  <PrefetchLink
+                    href="/doctor/support"
+                    onClick={() => setIsProfileDropdownOpen(false)}
                     className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg group"
                   >
                     <Settings size={16} className="text-gray-400 group-hover:text-emerald-500" />
                     <span>Support & Feedback</span>
-                  </button>
+                  </PrefetchLink>
 
                   <div className="h-px bg-gray-100 dark:bg-gray-800 my-1 mx-2" />
 

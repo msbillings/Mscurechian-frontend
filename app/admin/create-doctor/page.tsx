@@ -147,7 +147,7 @@ function CreateDoctor() {
   const today = new Date().toISOString().split("T")[0];
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       <PageHeader
         title="Add New Doctor"
         subtitle="Provision a new healthcare professional account"
@@ -209,11 +209,12 @@ function CreateDoctor() {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Secure password"
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-10 text-gray-400 hover:text-blue-500"
+                  className="absolute right-3 top-9 text-gray-400 hover:text-blue-500"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>

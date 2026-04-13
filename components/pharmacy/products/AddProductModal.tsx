@@ -7,7 +7,7 @@ import {
     Calendar,
     Box,
     Building2,
-    DollarSign,
+    IndianRupee,
     Pill
 } from 'lucide-react';
 import { PharmacyProduct, PharmacyProductPayload } from '@/lib/integrations/types/product';
@@ -120,25 +120,25 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onSu
         }
     };
 
-    const inputClasses = "w-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all outline-none";
-    const labelClasses = "text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5 block";
+    const inputClasses = "w-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg md:rounded-xl px-3 md:px-4 py-2 md:py-2.5 text-[11px] md:text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all outline-none";
+    const labelClasses = "text-[10px] md:text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 md:mb-1.5 block";
 
     return (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-3 md:p-4">
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
-            <div className="relative bg-white dark:bg-gray-900 w-full max-w-xl rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-800 flex flex-col max-h-[85vh]">
+            <div className="relative bg-white dark:bg-gray-900 w-full max-w-xl rounded-xl md:rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-800 flex flex-col max-h-[85vh] sm:max-h-[90vh]">
                 {/* Fixed Header */}
-                <div className="px-6 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                <div className="px-5 md:px-6 py-3 md:py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between">
+                    <h2 className="text-base md:text-lg font-bold text-gray-900 dark:text-white">
                         {initialData ? 'Edit Medicine' : 'Add New Medicine'}
                     </h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                        <X size={20} className="text-gray-400" />
+                    <button onClick={onClose} className="p-1.5 md:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                        <X size={18} className="md:w-5 md:h-5 text-gray-400" />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 md:space-y-6">
                     {/* Basic Info */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="md:col-span-2">
@@ -191,15 +191,15 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onSu
                             <div>
                                 <label className={labelClasses}>Price (MRP)</label>
                                 <div className="relative">
-                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                                    <input type="number" name="mrp" value={formData.mrp} onChange={handleChange} required step="0.01" className={`${inputClasses} pl-9`} />
+                                    <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                    <input type="number" name="mrp" value={formData.mrp} onChange={handleChange} required step="0.01" className={`${inputClasses} !pl-9`} />
                                 </div>
                             </div>
                             <div>
                                 <label className={labelClasses}>Unit Cost</label>
                                 <div className="relative">
-                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                                    <input type="number" name="unitCost" value={formData.unitCost || 0} onChange={handleChange} step="0.01" className={`${inputClasses} pl-9`} />
+                                    <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                    <input type="number" name="unitCost" value={formData.unitCost || 0} onChange={handleChange} step="0.01" className={`${inputClasses} !pl-9`} />
                                 </div>
                             </div>
                             <div>

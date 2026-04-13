@@ -100,7 +100,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Sidebar */}
       <div
         className={`
-          fixed left-0 top-0 h-full w-64 text-gray-600 dark:text-gray-300 flex flex-col z-40
+          fixed left-0 top-0 h-full w-56 text-gray-600 dark:text-gray-300 flex flex-col z-40
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           border-r border-border-theme bg-card

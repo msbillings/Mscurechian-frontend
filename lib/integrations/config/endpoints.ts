@@ -41,6 +41,8 @@ export const ADMIN_ENDPOINTS = {
   ANALYTICS: "/super-admin/analytics",
   BROADCAST: "/super-admin/broadcast",
   PROFILE: "/super-admin/profile",
+  AUTH_LOGS: "/super-admin/auth-logs",
+  AUTH_LOG_FILTERS: "/super-admin/auth-log-filters",
 
   // User Management
   USERS: "/super-admin/users",
@@ -203,6 +205,8 @@ export const HOSPITAL_ADMIN_ENDPOINTS = {
   UPDATE_HR: (id: string) => `/hospital/hrs/${id}`,
   DELETE_HR: (id: string) => `/hospital/hrs/${id}`,
   DISCHARGE_STAFF: "/hospital/users?role=DISCHARGE",
+  AUTH_LOGS: "/hospital/auth-logs",
+  AUTH_LOG_FILTERS: "/hospital/auth-log-filters",
 };
 
 export const HELPDESK_ENDPOINTS = {
@@ -245,6 +249,13 @@ export const DOCTOR_ENDPOINTS = {
   SEND_TO_HELPDESK: "/doctor/send-to-helpdesk",
   GET_PRESCRIPTION: (id: string) => `/doctor/prescriptions/${id}`,
   GET_LAB_TOKEN: (id: string) => `/doctor/lab-tokens/${id}`,
+  GET_DERMATOLOGY: (id: string) => `/doctor/prescriptions/${id}/dermatology`,
+  GET_CARDIOLOGY: (id: string) => `/doctor/prescriptions/${id}/cardiology`,
+  GET_ENT: (id: string) => `/doctor/prescriptions/${id}/ent`,
+  GET_PEDIATRICS: (id: string) => `/doctor/prescriptions/${id}/pediatrics`,
+  GET_GYNECOLOGY: (id: string) => `/doctor/prescriptions/${id}/gynecology`,
+  GET_NEUROLOGY: (id: string) => `/doctor/prescriptions/${id}/neurology`,
+  GET_GASTRO: (id: string) => `/doctor/prescriptions/${id}/gastroenterology`,
   UPLOAD_PHOTO: "/doctors/upload-photo",
   SEARCH_MEDICINES: "/doctor/medicines/search",
   CREATE_PHARMACY_TOKEN: "/doctor/pharmacy-tokens",
@@ -349,14 +360,14 @@ export const NURSE_ENDPOINTS = {
 
 // ─── Emergency / Ambulance ──────────────────────────────────────────────────
 export const EMERGENCY_ENDPOINTS = {
-  // Auth  →  /api/emergency/auth/*
+  // Auth  â†’  /api/emergency/auth/*
   AUTH: {
     LOGIN: "/emergency/auth/login",
     LOGOUT: "/emergency/auth/logout",
     REFRESH: "/emergency/auth/refresh",
     ME: "/emergency/auth/me",
   },
-  // Requests  →  /api/emergency/requests/*
+  // Requests  â†’  /api/emergency/requests/*
   REQUESTS: {
     BASE: "/emergency/requests",
     PATIENT: "/emergency/requests/patient",

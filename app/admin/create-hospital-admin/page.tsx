@@ -14,8 +14,6 @@ interface FormData {
   mobile: string;
   password: string;
   hospitalId: string;
-  employeeId: string;
-  department: string;
 }
 
 function CreateHospitalAdmin() {
@@ -27,9 +25,7 @@ function CreateHospitalAdmin() {
     email: "",
     mobile: "",
     password: "",
-    hospitalId: "",
-    employeeId: "",
-    department: ""
+    hospitalId: ""
   });
 
   // UI State
@@ -128,7 +124,7 @@ function CreateHospitalAdmin() {
   };
 
   const resetForm = () => {
-    setFormData({ name: "", email: "", mobile: "", password: "", hospitalId: "", employeeId: "", department: "" });
+    setFormData({ name: "", email: "", mobile: "", password: "", hospitalId: "" });
     setSearchQuery("");
   };
 
@@ -147,9 +143,7 @@ function CreateHospitalAdmin() {
         email: formData.email,
         mobile: formData.mobile,
         password: formData.password,
-        hospitalId: formData.hospitalId,
-        employeeId: formData.employeeId,
-        department: formData.department
+        hospitalId: formData.hospitalId
       });
 
       if (!adminResult.success) {
@@ -251,7 +245,7 @@ function CreateHospitalAdmin() {
                   ✓ Selected: {selectedHospital.name}
                 </div>
                 <div className="text-xs mt-1" style={{ color: 'var(--secondary-color)' }}>
-                  {selectedHospital.hospitalId} • {selectedHospital.address}
+                  {selectedHospital.hospitalId} 🏥{selectedHospital.address}
                 </div>
               </div>
             )}
@@ -291,24 +285,6 @@ function CreateHospitalAdmin() {
               placeholder="10-digit mobile"
             />
 
-            <FormInput
-              label="Employee ID (Optional)"
-              type="text"
-              name="employeeId"
-              value={formData.employeeId}
-              onChange={handleChange}
-              placeholder="Enter employee ID"
-            />
-
-            <FormInput
-              label="Department (Optional)"
-              type="text"
-              name="department"
-              value={formData.department}
-              onChange={handleChange}
-              placeholder="Enter department"
-            />
-
             <div className="relative">
               <FormInput
                 label="Password"
@@ -318,11 +294,12 @@ function CreateHospitalAdmin() {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Enter password"
+                autoComplete="new-password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-10 text-gray-500 hover:text-blue-500"
+                className="absolute right-3 top-9 text-gray-500 hover:text-blue-500"
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>

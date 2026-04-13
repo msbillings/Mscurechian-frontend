@@ -1,4 +1,4 @@
-import { useQuery, UseQueryOptions } from '@tanstack/react-query';
+﻿import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { emergencyService } from '@/lib/integrations/services/emergency.service';
 import { EmergencyRequest } from '@/lib/integrations/types/emergency';
 

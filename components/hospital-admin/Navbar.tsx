@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import NotificationCenter from "@/components/navbar/NotificationCenter";
 import LogoutModal from "@/components/auth/LogoutModal";
+import { PrefetchLink } from "@/components/ui/PrefetchLink";
+import { usePrefetchDashboard } from "@/lib/integrations/hooks/useUnifiedDashboard";
 
 interface NavbarProps {
   onMenuClick: () => void;
@@ -23,6 +25,8 @@ function Navbar({ onMenuClick }: NavbarProps) {
 
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  const prefetchDashboard = usePrefetchDashboard('hospital-admin');
 
   const handleLogout = useCallback(async () => {
     await logout();
@@ -89,20 +93,22 @@ function Navbar({ onMenuClick }: NavbarProps) {
                 }}
               >
                 <div className="p-1">
-                  <button
-                    onClick={() => navigateTo("/hospital-admin/profile")}
+                  <PrefetchLink
+                    href="/hospital-admin/profile"
+                    onClick={() => setIsProfileDropdownOpen(false)}
                     className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg group"
                   >
                     <User size={16} className="text-gray-400 group-hover:text-blue-500" />
                     <span>My Profile</span>
-                  </button>
-                  <button
-                    onClick={() => navigateTo("/hospital-admin/settings")}
+                  </PrefetchLink>
+                  <PrefetchLink
+                    href="/hospital-admin/settings"
+                    onClick={() => setIsProfileDropdownOpen(false)}
                     className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg group"
                   >
                     <Settings size={16} className="text-gray-400 group-hover:text-blue-500" />
                     <span>Settings</span>
-                  </button>
+                  </PrefetchLink>
 
                   <div className="h-px bg-gray-100 dark:bg-gray-800 my-1 mx-2" />
 

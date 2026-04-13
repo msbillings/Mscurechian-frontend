@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Prefetch Hook - Preload data on hover for instant navigation
  * Reduces perceived latency by fetching data BEFORE user clicks
  */
@@ -11,7 +11,7 @@ import { helpdeskService } from '../services/helpdesk.service';
 import { staffService } from '../services/staff.service';
 
 /**
- * ⚡ PREFETCH HOOK - Zero-latency navigation
+ * âš¡ PREFETCH HOOK - Zero-latency navigation
  * 
  * Usage: Call prefetch functions on link hover (onMouseEnter)
  * When user clicks, data is already in cache = instant load!

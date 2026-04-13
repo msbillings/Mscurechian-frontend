@@ -9,13 +9,13 @@ import {
 
 // ─── Endpoint Map (mirrors backend emergencyAuthRoutes + emergencyRequestRoutes) ───
 const EMERGENCY_ENDPOINTS = {
-  // Auth  →  /api/emergency/auth/*
+  // Auth  â†’  /api/emergency/auth/*
   LOGIN: "/emergency/auth/login",
   LOGOUT: "/emergency/auth/logout",
   REFRESH: "/emergency/auth/refresh",
   ME: "/emergency/auth/me",
 
-  // Requests  →  /api/emergency/requests/*
+  // Requests  â†’  /api/emergency/requests/*
   CREATE_REQUEST: "/emergency/requests",
   CREATE_PATIENT_REQUEST: "/emergency/requests/patient",
   GET_PATIENT_REQUESTS: "/emergency/requests/patient/my-requests",
@@ -29,8 +29,7 @@ const EMERGENCY_ENDPOINTS = {
 } as const;
 
 class EmergencyService {
-  // ─── Auth ───────────────────────────────────────────────────────────────────
-
+  // ─── Auth 
   async login(
     identifier: string,
     password: string,
@@ -62,7 +61,7 @@ class EmergencyService {
     return emergencyApiClient(EMERGENCY_ENDPOINTS.ME);
   }
 
-  // ─── Emergency Requests (Ambulance Personnel) ────────────────────────────────
+  // ─── Emergency Requests (Ambulance Personnel) 
 
   /** Create an emergency request (ambulance personnel) */
   async createEmergencyRequest(data: CreateEmergencyRequestData): Promise<{
@@ -85,7 +84,7 @@ class EmergencyService {
     return emergencyApiClient(EMERGENCY_ENDPOINTS.AVAILABLE_HOSPITALS);
   }
 
-  // ─── Emergency Requests (Patient) ────────────────────────────────────────────
+  // ─── Emergency Requests (Patient) 
 
   /** Create an emergency request as a patient (uses standard auth token) */
   async createPatientEmergencyRequest(data: {
@@ -119,7 +118,7 @@ class EmergencyService {
     return apiClient(EMERGENCY_ENDPOINTS.GET_REQUEST_BY_ID(requestId));
   }
 
-  // ─── Emergency Requests (Helpdesk / Hospital) ────────────────────────────────
+  // ─── Emergency Requests (Helpdesk / Hospital) 
 
   /** Get all emergency requests for the hospital (helpdesk view) */
   async getHospitalEmergencyRequests(params?: {

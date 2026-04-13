@@ -16,7 +16,7 @@ export const SupplierService = {
       ...s,
       address:
         s.address && typeof s.address === "object"
-          ? `${s.address.street || ""}, ${s.address.city || ""}, ${s.address.state || ""} - ${s.address.pincode || ""}`
+          ? `${s.address.street || ""}${s.address.landmark ? `, ${s.address.landmark}` : ""}, ${s.address.city || ""}, ${s.address.state || ""} - ${s.address.pincode || ""}`
               .replace(/^, |, , /g, "")
               .trim()
           : s.address,

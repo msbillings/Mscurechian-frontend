@@ -1,6 +1,7 @@
 import React from 'react';
 import MainHeader from '../printers/MainHeader';
 import MainFooter from '../printers/MainFooter';
+import { formatFrequency } from '@/lib/frequencyUtils';
 
 // Common interfaces
 interface Medicine {
@@ -19,27 +20,24 @@ interface PrescriptionDocumentProps {
     hospital?: any;
 }
 
-const calculateQty = (freqStr: string, durationStr: string) => {
+const calculateQty = (freqStr: any, durationStr: any) => {
     if (!freqStr || !durationStr) return '-';
-
     let freq = 1;
     let days = 1;
-
-    const f = freqStr.toLowerCase();
+    const f = String(freqStr).toLowerCase();
     if (f.includes("6 hrs")) freq = 4;
     else if (f.includes("8 hrs")) freq = 3;
     else if (f.includes("12 hrs") || f.includes("twice")) freq = 2;
     else if (f.includes("thrice")) freq = 3;
     else if (f.includes("once")) freq = 1;
 
-    const d = durationStr.toLowerCase();
+    const d = String(durationStr).toLowerCase();
     const dMatch = d.match(/(\d+)/);
     if (dMatch) {
         days = parseInt(dMatch[1]);
         if (d.includes("week")) days *= 7;
         if (d.includes("month")) days *= 30;
     }
-
     return freq * days;
 };
 
@@ -85,31 +83,79 @@ export const PrescriptionDocument: React.FC<PrescriptionDocumentProps> = ({
     const displayDate = new Date(rx.prescriptionDate || rx.createdAt || new Date()).toLocaleDateString('en-GB');
 
     return (
-        <div className="relative font-sans print-prescription-document"
+        <div className="relative font-sans print-prescription-document prescription-responsive-container"
             style={{
-                width: '210mm',
-                height: '296mm',
+                width: '100%',
+                maxWidth: '210mm',
+                height: 'auto',
+                minHeight: '296mm',
                 margin: '0 auto',
-                padding: '10mm 15mm 10mm 20mm',
                 boxSizing: 'border-box',
                 backgroundColor: 'white',
                 color: '#000',
                 display: 'flex',
                 flexDirection: 'column',
-                overflow: 'hidden'
+                overflow: 'visible'
             }}>
 
             <style>
                 {`
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
                 
+                .prescription-responsive-container {
+                    padding: 5mm;
+                }
+
+                @media (min-width: 640px) {
+                    .prescription-responsive-container {
+                        padding: 10mm 15mm 10mm 20mm;
+                    }
+                }
+
                 @media print {
                     @page { size: A4; margin: 0; }
                     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    .prescription-responsive-container {
+                        padding: 10mm 15mm 10mm 20mm !important;
+                        width: 210mm !important;
+                        height: 296mm !important;
+                    }
                 }
 
                 .print-prescription-document {
                     font-family: 'Inter', 'Segoe UI', Roboto, sans-serif !important;
+                }
+
+                .rx-info-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 10px;
+                    margin-bottom: 20px;
+                    padding-bottom: 12px;
+                    border-bottom: 1px solid #eee;
+                }
+
+                @media (min-width: 640px) {
+                    .rx-info-grid {
+                        grid-template-columns: repeat(4, 1fr);
+                        gap: 15px;
+                    }
+                    .rx-advice-grid {
+                        display: grid !important;
+                        grid-template-columns: 1fr 1fr !important;
+                        gap: 30px !important;
+                    }
+                }
+
+                @media print {
+                    .rx-info-grid {
+                        grid-template-columns: repeat(4, 1fr) !important;
+                    }
+                    .rx-advice-grid {
+                        display: grid !important;
+                        grid-template-columns: 1fr 1fr !important;
+                        gap: 30px !important;
+                    }
                 }
                 `}
             </style>
@@ -127,7 +173,7 @@ export const PrescriptionDocument: React.FC<PrescriptionDocumentProps> = ({
 
             <div style={{ flex: '1' }}>
                 {/* Info Row */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', marginBottom: '20px', paddingBottom: '12px', borderBottom: '1px solid #eee' }}>
+                <div className="rx-info-grid">
                     <div>
                         <span style={{ display: 'block', fontSize: '8px', fontWeight: '700', textTransform: 'uppercase', color: '#777', marginBottom: '2px', letterSpacing: '0.5px' }}>Patient Name</span>
                         <span style={{ fontSize: '11px', fontWeight: '600' }}>{patientName?.toUpperCase()}</span>
@@ -171,10 +217,18 @@ export const PrescriptionDocument: React.FC<PrescriptionDocumentProps> = ({
                                     <td style={{ padding: '8px 0', verticalAlign: 'top' }}>
                                         <div style={{ fontSize: '11px', fontWeight: '700' }}>{med.name}</div>
                                     </td>
-                                    <td style={{ padding: '8px 0', verticalAlign: 'top', fontSize: '10px', color: '#444' }}>{med.dosage}</td>
-                                    <td style={{ padding: '8px 0', verticalAlign: 'top', fontSize: '10px', color: '#444' }}>{med.frequency}</td>
+                                    <td style={{ padding: '8px 0', verticalAlign: 'top', fontSize: '10px', color: '#444' }}>
+                                        {typeof med.dosage === 'object' && med.dosage !== null 
+                                            ? `${(med.dosage as any).morning || 0}-${(med.dosage as any).afternoon || 0}-${(med.dosage as any).evening || 0}-${(med.dosage as any).night || 0}` 
+                                            : med.dosage}
+                                    </td>
+                                    <td style={{ padding: '8px 0', verticalAlign: 'top', fontSize: '10px', color: '#444' }}>
+                                        {formatFrequency(med.frequency)}
+                                    </td>
                                     <td style={{ padding: '8px 0', verticalAlign: 'top', fontSize: '10px', color: '#444' }}>{med.duration}</td>
-                                    <td style={{ padding: '8px 0', textAlign: 'right', verticalAlign: 'top', fontSize: '10px', color: '#444' }}>{calculateQty(med.frequency, med.duration)}</td>
+                                    <td style={{ padding: '8px 0', textAlign: 'right', verticalAlign: 'top', fontSize: '10px', color: '#444' }}>
+                                        {calculateQty(typeof med.frequency === 'object' && med.frequency !== null ? '1-1-1' : med.frequency, med.duration)}
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -182,7 +236,7 @@ export const PrescriptionDocument: React.FC<PrescriptionDocumentProps> = ({
                 </div>
 
                 {/* Advice Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '20px' }} className="rx-advice-grid">
                     {(rx.advice || rx.dietAdvice?.length > 0) && (
                         <div>
                             <h3 style={{ fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', color: '#000', borderBottom: '1px solid #000', paddingBottom: '4px', marginBottom: '8px', letterSpacing: '0.5px' }}>Dietary & Lifestyle Advice</h3>
@@ -209,7 +263,7 @@ export const PrescriptionDocument: React.FC<PrescriptionDocumentProps> = ({
                 {rx.avoid?.length > 0 && (
                     <div style={{ marginBottom: '20px' }}>
                         <h3 style={{ fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', color: '#dc2626', borderBottom: '1px solid #dc2626', paddingBottom: '4px', marginBottom: '8px', letterSpacing: '0.5px' }}>Contraindications / Things to Avoid</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
                             {rx.avoid?.map((item: string, idx: number) => (
                                 <div key={idx} style={{ fontSize: '10px', color: '#dc2626', fontWeight: '600', paddingLeft: '10px', position: 'relative' }}>• {item}</div>
                             ))}
