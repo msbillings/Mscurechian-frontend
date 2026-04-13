@@ -96,8 +96,6 @@ export const OncologyModule: React.FC<OncologyModuleProps> = ({ formData, setFor
         updateField(field, next);
     };
 
-
-
     const hasDanger = alerts.some(a => a.type === 'danger');
 
     return (

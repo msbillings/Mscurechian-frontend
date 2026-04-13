@@ -550,9 +550,13 @@ export default async function middleware(request: NextRequest) {
         const value = nameValue.slice(eqIdx + 1).trim();
         if (!name) return;
 
+        const host = request.headers.get("host") || "";
+        const isLocal = host.includes("localhost") || host.includes("127.0.0.1");
+        const secureFlag = process.env.NODE_ENV === "production" && !isLocal;
+
         const options: any = {
           path: "/",
-          secure: process.env.NODE_ENV === "production",
+          secure: secureFlag,
           sameSite: "lax" as const,
         };
 
@@ -570,7 +574,7 @@ export default async function middleware(request: NextRequest) {
         // Enforce correct security attributes per cookie type if omitted by backend
         if (name === "refreshToken" || name.startsWith("refreshToken_")) {
           options.httpOnly = true;
-          if (!options.sameSite) options.sameSite = "strict";
+          if (!options.sameSite) options.sameSite = "lax"; // Changed from strict for port compatibility
           if (!options.maxAge) options.maxAge = 7 * 24 * 60 * 60;
         } else if (name.startsWith("csrf_token")) {
           options.httpOnly = false;

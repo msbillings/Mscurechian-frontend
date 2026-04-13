@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 /**
  * MongoDB ObjectId pattern: exactly 24 hex characters
@@ -11,6 +12,11 @@ const nextConfig: NextConfig = {
   // ✅ Production optimizations
   compress: true, // Enable gzip compression
 
+  // ✅ Explicitly set the workspace root to this project directory
+  // This prevents Next.js from inferring incorrect roots due to lockfiles in parent dirs
+  outputFileTracingRoot: path.resolve(__dirname),
+
+  // ✅ Enable React Compiler for better performance
   experimental: {
     reactCompiler: true,
     optimizePackageImports: [

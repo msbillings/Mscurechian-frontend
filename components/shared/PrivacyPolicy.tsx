@@ -4,24 +4,23 @@ import React from "react";
 import { XCircle } from "lucide-react";
 
 export default function PrivacyPolicyModal({ onClose }: { onClose: () => void }) {
-  const points = [
-    "Identity Verification: We store your name, mobile number, and email to securely verify your identity for login.",
-    "Role-Based Access: Access to patient records and hospital tools is strictly determined by your assigned role (Doctor, Nurse, Admin, etc.).",
-    "Hospital Context: Your data is isolated to specific hospitals you are associated with to prevent unauthorized cross-hospital data access.",
-    "Security Measures: We store passwords in a secure, non-readable format and use temporary sessions to keep your account safe.",
-    "Multi-Tenancy Isolation: Each healthcare provider's data is logically separated, ensuring your information is never mixed with other facilities.",
-    "Patient Record Keeping: We maintain medical history, vitals, and treatment plans solely for providing healthcare services.",
-    "Audit Logs: For safety and accountability, we track when and what medical information is being accessed or modified by staff members.",
-    "Session Management: We use cookies to keep you signed in so you don't have to re-enter your details on every page.",
-    "Emergency Response: In urgent situations, your location and contact details may be shared with emergency services like ambulances.",
-    "Regulatory Compliance: We keep records of clinical activities, pharmacy licenses, and employee IDs for reporting and legal healthcare requirements.",
-    "Pharmacy & Lab Management: Details like shop names and license numbers are handled specifically for pharmacy and lab operations.",
-    "Incident Tracking: We record vital alerts and escalations to ensure timely response to clinical emergencies.",
-    "Data Retention: Information is kept only as long as necessary for clinical care or as required by healthcare regulations.",
-    "Communication: We send essential updates like OTPs or security alerts to your registered mobile or email.",
-    "User Consent: We track when you agree to our terms to ensure we have your permission to process your data for healthcare purposes."
-  ];
-
+ const points = [
+  "Identity Information: We collect basic details like your name, phone number, and email to create and manage your account.",
+  "Secure Login: Your login credentials are protected using secure methods to prevent unauthorized access.",
+  "Role-Based Access: Your access to data and features depends on your role (Doctor, Nurse, Admin, etc.).",
+  "Hospital Access: You can only view and manage data related to the hospitals you are assigned to.",
+  "Patient Records: We store medical information such as history, vitals, and treatments to support healthcare services.",
+  "Data Usage: Your information is used only for healthcare operations and system functionality.",
+  "Activity Logs: We record actions like viewing or updating records to ensure accountability and system safety.",
+  "Data Security: We use standard security practices to protect your data from unauthorized access or misuse.",
+  "Session Management: We use essential cookies to keep you signed in and ensure smooth system usage.",
+  "No Advertising Use: Your data is not used for advertisements or third-party marketing tracking.",
+  "Emergency Access: In critical situations, relevant data may be accessed to provide timely medical care.",
+  "System Communication: We may send important messages such as OTPs and security alerts to your registered contact details.",
+  "Data Retention: Your data is stored only as long as required for healthcare services and legal obligations.",
+  "Legal Compliance: We handle your data in accordance with applicable healthcare laws and regulations.",
+  "User Consent: By using the system, you agree to how your data is collected and used as described."
+];
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
       <div className="bg-card w-full max-w-2xl rounded-3xl shadow-2xl border border-border overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300">

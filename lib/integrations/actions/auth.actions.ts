@@ -31,6 +31,11 @@ export async function loginAction(data: LoginRequest): Promise<AuthResponse> {
     const hospitalSuffix = effectiveId ? `_${effectiveId}` : "";
     const roleSuffix = role ? `_${role}` : "";
 
+    const nextHeaders = await import('next/headers').then(m => m.headers());
+    const host = (await nextHeaders).get('host');
+    const isLocal = !host || host.includes('localhost') || host.includes('127.0.0.1');
+    const secureFlag = process.env.NODE_ENV === 'production' && !isLocal;
+
     // ✅ ACCESS TOKEN: Dynamic TTL from backend .env (fallback 15m)
     const ACCESS_TOKEN_MAX_AGE = accessTokenExpiresIn || 30 * 60; // default 1800s
     if (accessToken) {
@@ -38,7 +43,7 @@ export async function loginAction(data: LoginRequest): Promise<AuthResponse> {
         path: '/',
         maxAge: ACCESS_TOKEN_MAX_AGE,
         httpOnly: false, // Readable by JS for Authorization header fallback
-        secure: process.env.NODE_ENV === 'production',
+        secure: secureFlag,
         sameSite: 'lax',
       });
       if (hospitalSuffix) {
@@ -46,7 +51,7 @@ export async function loginAction(data: LoginRequest): Promise<AuthResponse> {
           path: '/',
           maxAge: ACCESS_TOKEN_MAX_AGE,
           httpOnly: false,
-          secure: process.env.NODE_ENV === 'production',
+          secure: secureFlag,
           sameSite: 'lax',
         });
       }
@@ -55,7 +60,7 @@ export async function loginAction(data: LoginRequest): Promise<AuthResponse> {
           path: '/',
           maxAge: ACCESS_TOKEN_MAX_AGE,
           httpOnly: false,
-          secure: process.env.NODE_ENV === 'production',
+          secure: secureFlag,
           sameSite: 'lax',
         });
       }
@@ -67,8 +72,8 @@ export async function loginAction(data: LoginRequest): Promise<AuthResponse> {
         path: '/',
         maxAge: REFRESH_TOKEN_MAX_AGE,
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        secure: secureFlag,
+        sameSite: 'lax', // Changed from strict for better multi-port dev stability
       });
     }
 
@@ -77,7 +82,7 @@ export async function loginAction(data: LoginRequest): Promise<AuthResponse> {
         path: '/',
         maxAge: REFRESH_TOKEN_MAX_AGE,
         httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
+        secure: secureFlag,
         sameSite: 'lax',
       });
       if (hospitalSuffix) {
@@ -85,7 +90,7 @@ export async function loginAction(data: LoginRequest): Promise<AuthResponse> {
           path: '/',
           maxAge: REFRESH_TOKEN_MAX_AGE,
           httpOnly: false,
-          secure: process.env.NODE_ENV === 'production',
+          secure: secureFlag,
           sameSite: 'lax',
         });
       }
@@ -94,7 +99,7 @@ export async function loginAction(data: LoginRequest): Promise<AuthResponse> {
           path: '/',
           maxAge: REFRESH_TOKEN_MAX_AGE,
           httpOnly: false,
-          secure: process.env.NODE_ENV === 'production',
+          secure: secureFlag,
           sameSite: 'lax',
         });
       }
@@ -150,13 +155,17 @@ export async function syncSessionAction(
 
   // ✅ ACCESS TOKEN: Dynamic TTL from backend .env
   const ACCESS_TOKEN_MAX_AGE = accessExpiry || 30 * 60; // fallback 1800s
+  
+  const host = (await nextHeaders).get('host');
+  const isLocal = !host || host.includes('localhost') || host.includes('127.0.0.1');
+  const secureFlag = process.env.NODE_ENV === 'production' && !isLocal;
 
   if (accessToken) {
     cookieStore.set('accessToken', accessToken, {
       path: '/',
       maxAge: ACCESS_TOKEN_MAX_AGE,
       httpOnly: false, // Must be readable by client for Authorization header fallback
-      secure: process.env.NODE_ENV === 'production',
+      secure: secureFlag,
       sameSite: 'lax',
     });
     if (hospitalSuffix) {
@@ -164,7 +173,7 @@ export async function syncSessionAction(
         path: '/',
         maxAge: ACCESS_TOKEN_MAX_AGE,
         httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
+        secure: secureFlag,
         sameSite: 'lax',
       });
     }
@@ -173,7 +182,7 @@ export async function syncSessionAction(
         path: '/',
         maxAge: ACCESS_TOKEN_MAX_AGE,
         httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
+        secure: secureFlag,
         sameSite: 'lax',
       });
     }
@@ -187,8 +196,8 @@ export async function syncSessionAction(
       path: '/',
       maxAge: REFRESH_TOKEN_MAX_AGE,
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: secureFlag,
+      sameSite: 'lax',
     });
   }
 
@@ -197,7 +206,7 @@ export async function syncSessionAction(
       path: '/',
       maxAge: REFRESH_TOKEN_MAX_AGE, // CSRF token lifetime = refresh token lifetime
       httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
+      secure: secureFlag,
       sameSite: 'lax',
     });
     if (hospitalSuffix) {
@@ -205,7 +214,7 @@ export async function syncSessionAction(
         path: '/',
         maxAge: REFRESH_TOKEN_MAX_AGE,
         httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
+        secure: secureFlag,
         sameSite: 'lax',
       });
     }
@@ -214,7 +223,7 @@ export async function syncSessionAction(
         path: '/',
         maxAge: REFRESH_TOKEN_MAX_AGE,
         httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
+        secure: secureFlag,
         sameSite: 'lax',
       });
     }

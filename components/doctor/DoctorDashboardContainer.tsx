@@ -120,19 +120,6 @@ function DoctorDashboardContainer({
                         <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 uppercase tracking-tight">
                             Welcome, {doctorName.startsWith('Dr.') ? doctorName : `Dr. ${doctorName}`}
                         </h1>
-                        <div className="flex items-center gap-1.5 sm:gap-2">
-                            <div className={`relative flex h-2 w-2 sm:h-2.5 sm:w-2.5 ${isUpdating ? 'animate-pulse' : ''}`}>
-                                <span className={`absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 ${isUpdating ? 'animate-ping' : ''}`}></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-emerald-500"></span>
-                            </div>
-                            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider hidden sm:inline">Live</span>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3 mt-1">
-                        <p className="text-[7px] sm:text-[10px] font-medium text-slate-500 uppercase tracking-widest mt-1">Your clinical control center</p>
-                        <span className="text-[8px] sm:text-[9px] text-muted italic">
-                            Sync: {new Date(lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
                     </div>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3">
@@ -263,7 +250,6 @@ function DoctorDashboardContainer({
                                     <p className="text-[10px] sm:text-xs text-muted font-medium">Progress overview</p>
                                 </div>
                             </div>
-                            <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 text-[9px] sm:text-[10px] font-bold rounded-full uppercase">Live</span>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3 sm:gap-4">

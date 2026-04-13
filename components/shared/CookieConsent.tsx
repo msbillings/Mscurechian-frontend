@@ -43,8 +43,7 @@ export default function CookieConsent() {
             </div>
             
             <p className="text-[10px] sm:text-[11px] text-muted leading-relaxed">
-              To give you a safe, smooth, and personalized experience where we keep you signed in, 
-              remember your settings (hospital, role), improve performance & usability, and ensure no ads or third-party tracking.
+             We use cookies to ensure the platform functions properly (e.g., secure login and session management), remember your preferences (such as hospital and role), and improve system performance.With your consent, we may also use analytics cookies to understand usage and enhance the experience. We do not use cookies for advertising purposes.You can accept all cookies, reject non-essential ones, or manage your preferences at any time. For more details, see our Privacy Policy.
             </p>
 
             <div className="flex items-center gap-2 sm:gap-3">
