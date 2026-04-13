@@ -6,7 +6,7 @@ on:
  workflow_dispatch: 
 
 env:
-  IMAGE_REPO: ${{ secrets.ECR_REPOSITORY }}
+  IMAGE_REPO: ${{ secrets.ECR_REPOSITORY_DEV }}
   AWS_REGION: ${{ secrets.AWS_REGION }}
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
 
@@ -45,14 +45,14 @@ jobs:
       - name: Validate required secrets and set IMAGE
         run: |
           set -e
-          if [ -z "${{ secrets.AWS_ACCOUNT_ID }}" ] || [ -z "${{ secrets.AWS_REGION }}" ] || [ -z "${{ secrets.ECR_REPOSITORY }}" ]; then
-            echo "::error::Missing required secrets. Ensure AWS_ACCOUNT_ID, AWS_REGION and ECR_REPOSITORY are set."
+          if [ -z "${{ secrets.AWS_ACCOUNT_ID }}" ] || [ -z "${{ secrets.AWS_REGION }}" ] || [ -z "${{ secrets.ECR_REPOSITORY_DEV }}" ]; then
+            echo "::error::Missing required secrets. Ensure AWS_ACCOUNT_ID, AWS_REGION and ECR_REPOSITORY_DEV are set."
             echo "AWS_ACCOUNT_ID='${{ secrets.AWS_ACCOUNT_ID }}'"
             echo "AWS_REGION='${{ secrets.AWS_REGION }}'"
-            echo "ECR_REPOSITORY='${{ secrets.ECR_REPOSITORY }}'"
+            echo "ECR_REPOSITORY_DEV='${{ secrets.ECR_REPOSITORY_DEV }}'"
             exit 1
           fi
-          IMAGE="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}"
+          IMAGE="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_DEV }}:${{ github.sha }}"
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV
         shell: bash
 
@@ -103,20 +103,20 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Wait for image env
-        run: echo "IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}" >> $GITHUB_ENV
+        run: echo "IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_DEV }}:${{ github.sha }}" >> $GITHUB_ENV
 
       - name: Deploy via SSH to EC2
         uses: appleboy/ssh-action@v0.1.8
         with:
-          host: ${{ secrets.EC2_HOST }}
+          host: ${{ secrets.EC2_HOST_DEV }}
           username: ${{ secrets.EC2_USER }}
           port: ${{ secrets.EC2_SSH_PORT || '22' }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.EC2_SSH_KEY_DEV }}
           timeout: 30s
           script: |
             set -e
             
-            IMAGE="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}"
+            IMAGE="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY_DEV }}:${{ github.sha }}"
             
             echo "Deploying image: $IMAGE"
             
