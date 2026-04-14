@@ -152,7 +152,7 @@ export const NeurologyModule: React.FC<NeurologyModuleProps> = ({ formData, setF
             active
                 ? danger
                     ? 'bg-red-600 text-white border-red-600 shadow-md'
-                    : 'bg-slate-800 text-white border-slate-800 shadow-md'
+                    : 'bg-violet-600 text-white border-violet-600 shadow-md'
                 : danger
                     ? 'bg-red-50 text-red-400 border-red-200 hover:bg-red-100'
                     : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
@@ -493,7 +493,7 @@ export const NeurologyModule: React.FC<NeurologyModuleProps> = ({ formData, setF
                                     active
                                         ? isDanger
                                             ? 'bg-red-600 text-white border-red-600 shadow-md'
-                                            : 'bg-slate-800 text-white border-slate-800 shadow-md'
+                                            : 'bg-violet-600 text-white border-violet-600 shadow-md'
                                         : isDanger
                                             ? 'bg-red-50 text-red-400 border-red-200 hover:bg-red-100'
                                             : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
@@ -520,7 +520,7 @@ export const NeurologyModule: React.FC<NeurologyModuleProps> = ({ formData, setF
                                 n.onset === o
                                     ? o === 'Sudden' ? 'bg-red-600 text-white shadow-md'
                                     : o === 'Gradual' ? 'bg-amber-500 text-white shadow-md'
-                                    : 'bg-slate-700 text-white shadow-md'
+                                    : 'bg-violet-600 text-white shadow-md'
                                     : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
                             }`}
                         >
@@ -578,22 +578,22 @@ export const NeurologyModule: React.FC<NeurologyModuleProps> = ({ formData, setF
 
             {/* ── Patient Summary (Plain Language) ────────────────────────── */}
             {((n.symptoms || []).length > 0 || gcsValid) && (
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 text-white">
+                <div className="bg-violet-50 border border-violet-100 rounded-2xl p-5 text-violet-900 mt-6 shadow-sm">
                     <div className="flex items-center gap-2 mb-3">
                         <Info size={16} />
-                        <h3 className="text-[11px] font-black uppercase tracking-widest">Brain Condition Summary (Patient-Friendly)</h3>
+                        <h3 className="text-[11px] font-black uppercase tracking-widest text-violet-700">Brain Condition Summary (Patient-Friendly)</h3>
                     </div>
-                    <div className="space-y-1.5 text-sm font-medium text-slate-300">
+                    <div className="space-y-1.5 text-sm font-medium text-violet-800">
                         {gcsValid && (
                             <p>🧠 Consciousness level: <span className={`font-black ${gcsColor}`}>
                                 {gcsTotal >= 13 ? 'Good (Mild / Normal)' : gcsTotal >= 9 ? 'Moderate impairment' : 'Severely impaired — needs urgent care'}
                             </span></p>
                         )}
                         {(n.symptoms || []).length > 0 && (
-                            <p>📋 Current complaints: <span className="text-white font-bold">{(n.symptoms || []).join(', ')}</span></p>
+                            <p>📋 Current complaints: <span className="text-violet-900 font-bold">{(n.symptoms || []).join(', ')}</span></p>
                         )}
                         {n.onset && (
-                            <p>⏱ Onset: <span className={`font-bold ${n.onset === 'Sudden' ? 'text-red-400' : 'text-white'}`}>{n.onset}</span></p>
+                            <p>⏱ Onset: <span className={`font-bold ${n.onset === 'Sudden' ? 'text-red-600' : 'text-violet-900'}`}>{n.onset}</span></p>
                         )}
                         {n.motorPower && (parseInt(n.motorPower.ru) < 5 || parseInt(n.motorPower.lu) < 5 || parseInt(n.motorPower.rl) < 5 || parseInt(n.motorPower.ll) < 5) && (
                             <p>💪 Muscle weakness detected: <span className="text-amber-400 font-bold">One or more limbs affected</span></p>

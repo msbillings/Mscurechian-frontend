@@ -755,11 +755,11 @@ export const NephrologyModule: React.FC<NephrologyModuleProps> = ({ formData, se
 
             {/* ── Pharma Warning Banner ─────────────────────────────────── */}
             {(creat > 1.5 || egfr < 60 || k > 5.5) ? (
-                <div className="bg-red-700 rounded-2xl p-4 text-white flex items-start gap-3">
+                <div className="bg-red-600 rounded-2xl p-4 text-white flex items-start gap-3 shadow-lg">
                     <ShieldAlert size={20} className="shrink-0 mt-0.5" />
                     <div>
                         <p className="text-[11px] font-black uppercase tracking-widest mb-1">💊 Pharma Warning — Renal Impairment</p>
-                        <p className="text-[10px] font-bold text-red-200">
+                        <p className="text-[10px] font-bold text-red-50">
                             {creat > 1.5 && 'Dose adjustment required for renally-cleared medications. '}
                             {(egfr < 60) && 'AVOID NSAIDs (Ibuprofen, Diclofenac, Naproxen), nephrotoxic antibiotics (Aminoglycosides), contrast agents. '}
                             {k > 5.5 && 'K+ ELEVATED — AVOID potassium-sparing diuretics, ACE inhibitors, ARBs, potassium supplements.'}
@@ -780,23 +780,23 @@ export const NephrologyModule: React.FC<NephrologyModuleProps> = ({ formData, se
 
             {/* ── Patient-Friendly Summary ──────────────────────────────── */}
             {(creat > 0 || uo > 0 || ckdStage) && (
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 text-white">
+                <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 text-indigo-900 mt-6 shadow-sm">
                     <div className="flex items-center gap-2 mb-3">
-                        <Info size={16} />
-                        <h3 className="text-[11px] font-black uppercase tracking-widest">Kidney Summary (Patient-Friendly)</h3>
+                        <Info size={16} className="text-indigo-600" />
+                        <h3 className="text-[11px] font-black uppercase tracking-widest text-indigo-700">Kidney Summary (Patient-Friendly)</h3>
                     </div>
-                    <div className="space-y-1.5 text-sm font-medium text-slate-300">
+                    <div className="space-y-1.5 text-sm font-medium text-indigo-800">
                         {ckdStage && (
-                            <p>🫁 Kidney stage: <span className={`font-bold ${ckdStage === 'Stage 5' ? 'text-red-400' : ckdStage === 'Stage 4' ? 'text-orange-400' : ckdStage === 'Stage 3' ? 'text-amber-400' : 'text-emerald-400'}`}>CKD {ckdStage}</span></p>
+                            <p>🫁 Kidney stage: <span className={`font-bold ${ckdStage === 'Stage 5' ? 'text-red-600' : ckdStage === 'Stage 4' ? 'text-orange-600' : ckdStage === 'Stage 3' ? 'text-amber-600' : 'text-emerald-600'}`}>CKD {ckdStage}</span></p>
                         )}
                         {creat > 1.5 && (
-                            <p>🧪 Kidney function: <span className={`font-bold ${creat > 5 ? 'text-red-400' : 'text-amber-400'}`}>{creat > 5 ? 'Severely reduced' : 'Reduced'}</span></p>
+                            <p>🧪 Kidney function: <span className={`font-bold ${creat > 5 ? 'text-red-600' : 'text-amber-600'}`}>{creat > 5 ? 'Severely reduced' : 'Reduced'}</span></p>
                         )}
                         {uo > 0 && uo < 400 && (
-                            <p>🚽 Urine output: <span className="font-bold text-amber-400">{uo < 100 ? 'Almost absent (Anuria)' : 'Reduced (Oliguria)'}</span></p>
+                            <p>🚽 Urine output: <span className="font-bold text-amber-600">{uo < 100 ? 'Almost absent (Anuria)' : 'Reduced (Oliguria)'}</span></p>
                         )}
                         {n.edema && n.edema !== 'None' && (
-                            <p>🦵 Swelling: <span className="font-bold text-amber-400">Present ({n.edema})</span></p>
+                            <p>🦵 Swelling: <span className="font-bold text-amber-600">Present ({n.edema})</span></p>
                         )}
                         {k > 5.5 && (
                             <p>⚡ Potassium level: <span className="font-bold text-red-400">High — medication caution required</span></p>

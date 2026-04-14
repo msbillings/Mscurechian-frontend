@@ -214,8 +214,8 @@ export const CardiologyModule: React.FC<CardiologyModuleProps> = ({ formData, se
                                             type="button"
                                             onClick={() => updateField('nyhaClass', c)}
                                             className={`py-2 rounded-lg text-[10px] font-black border transition-all ${data.nyhaClass === c
-                                                ? 'bg-slate-900 border-slate-900 text-white'
-                                                : 'bg-white border-slate-200 text-slate-400'
+                                                ? 'bg-rose-600 border-rose-600 text-white shadow-md'
+                                                : 'bg-white border-slate-200 text-slate-400 hover:border-rose-300'
                                             }`}
                                         >
                                             {c}
@@ -234,8 +234,8 @@ export const CardiologyModule: React.FC<CardiologyModuleProps> = ({ formData, se
                                     key={r}
                                     onClick={() => toggleArrayField('riskFactors', r)}
                                     className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${data.riskFactors?.includes(r)
-                                        ? 'bg-slate-900 text-white border-slate-900'
-                                        : 'bg-slate-50 text-slate-500 border-slate-100'
+                                        ? 'bg-rose-600 text-white border-rose-600 shadow-md'
+                                        : 'bg-slate-50 text-slate-500 border-slate-100 ring-1 ring-slate-100 hover:border-rose-200'
                                     }`}
                                 >
                                     <span className="text-[10px] font-bold uppercase">{r}</span>

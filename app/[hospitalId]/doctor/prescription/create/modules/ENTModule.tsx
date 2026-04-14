@@ -47,7 +47,7 @@ const Pill: React.FC<PillProps> = ({ label, active, onClick, color = 'sky', disa
         sky:   active ? 'bg-sky-500 text-white border-sky-500 shadow-sm shadow-sky-200' : 'bg-white border-slate-200 text-slate-500 hover:border-sky-300',
         rose:  active ? 'bg-rose-500 text-white border-rose-500 shadow-sm shadow-rose-200' : 'bg-white border-slate-200 text-slate-500 hover:border-rose-300',
         amber: active ? 'bg-amber-500 text-white border-amber-500 shadow-sm shadow-amber-200' : 'bg-white border-slate-200 text-slate-500 hover:border-amber-300',
-        slate: active ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-400',
+        slate: active ? 'bg-violet-600 text-white border-violet-600 shadow-md' : 'bg-white border-slate-200 text-slate-500 hover:border-violet-400',
     };
     return (
         <button
@@ -595,7 +595,7 @@ export const ENTModule: React.FC<ENTModuleProps> = ({ formData, setFormData }) =
                                             onClick={() => updateNested('lymphNodes', 'mobility', ent.lymphNodes?.mobility === opt ? '' : opt)}
                                             className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase border-2 transition-all ${
                                                 ent.lymphNodes?.mobility === opt
-                                                    ? opt === 'Fixed' ? 'bg-slate-900 border-slate-900 text-white' : 'bg-slate-700 border-slate-700 text-white'
+                                                    ? opt === 'Fixed' ? 'bg-rose-700 border-rose-700 text-white shadow-md' : 'bg-violet-600 border-violet-600 text-white shadow-md'
                                                     : 'bg-white border-slate-200 text-slate-400'
                                             }`}
                                         >

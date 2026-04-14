@@ -241,7 +241,7 @@ export const EndocrinologyModule = ({ formData, setFormData }: any) => {
                                                 onClick={() => updateNested('diabetes', 'treatment', { ...(e.diabetes?.treatment || {}), type: t })}
                                                 className={`flex-1 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${
                                                     e.diabetes?.treatment?.type === t
-                                                        ? 'bg-slate-800 text-white'
+                                                        ? 'bg-teal-600 text-white shadow-md'
                                                         : 'bg-white text-slate-600 border border-slate-100'
                                                 }`}
                                             >

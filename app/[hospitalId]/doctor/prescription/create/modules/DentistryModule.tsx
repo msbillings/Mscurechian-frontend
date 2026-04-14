@@ -505,7 +505,7 @@ export const DentistryModule: React.FC<DentistryModuleProps> = ({ formData, setF
                                 <button 
                                     onClick={() => updateExtra(item.id, !d.extraOral?.[item.id])}
                                     className={`px-5 py-1.5 rounded-xl text-[9px] font-black uppercase transition-all ${
-                                        d.extraOral?.[item.id] ? 'bg-slate-800 text-white' : 'bg-white text-slate-400 border border-slate-200'
+                                        d.extraOral?.[item.id] ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-slate-400 border border-slate-200'
                                     }`}
                                 >{d.extraOral?.[item.id] ? 'Present' : 'Not Noted'}</button>
                             </div>
@@ -557,7 +557,7 @@ export const DentistryModule: React.FC<DentistryModuleProps> = ({ formData, setF
                                         onClick={() => updateSystemic('diabetesControl', status)}
                                         className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${
                                             d.systemicRisks?.diabetesControl === status 
-                                                ? status === 'Uncontrolled' ? 'bg-red-600 text-white shadow-md' : 'bg-slate-800 text-white shadow-md'
+                                                ? status === 'Uncontrolled' ? 'bg-red-600 text-white shadow-md' : 'bg-blue-600 text-white shadow-md'
                                                 : 'bg-white/40 text-slate-400 border border-slate-200'
                                         }`}
                                     >{status}</button>

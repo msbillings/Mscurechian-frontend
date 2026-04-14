@@ -713,11 +713,11 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
 
             {/* ── Pharma Warning Banner ─────────────────────────────────── */}
             {(o.diagnosis === 'Glaucoma' || iopOD > 21 || iopOS > 21 || o.slitLamp?.cornea === 'Ulcer') ? (
-                <div className="bg-blue-700 rounded-2xl p-4 text-white flex items-start gap-3">
+                <div className="bg-lime-600 rounded-2xl p-4 text-white flex items-start gap-3 shadow-lg">
                     <ShieldAlert size={20} className="shrink-0 mt-0.5" />
                     <div>
                         <p className="text-[11px] font-black uppercase tracking-widest mb-1">💊 Pharma Warning</p>
-                        <p className="text-[10px] font-bold text-blue-200">
+                        <p className="text-[10px] font-bold text-lime-50">
                             {(o.diagnosis === 'Glaucoma' || (iopOD > 21 || iopOS > 21)) && 'Ensure compliance with anti-glaucoma drops (Timolol/Latanoprost). Follow-up IOP in 4 weeks. '}
                             {o.slitLamp?.cornea === 'Ulcer' && 'Complete full antibiotic course. Do NOT use steroids until infection is excluded by culture.'}
                             {syms.includes('Redness') && syms.includes('Discharge') && 'Complete antibiotic course. Avoid touching eyes. Hand hygiene essential.'}
@@ -725,37 +725,37 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
                     </div>
                 </div>
             ) : (
-                <div className="bg-blue-700/10 border border-blue-200 rounded-2xl p-4 flex items-start gap-3">
-                    <ThumbsUp size={18} className="text-blue-600 shrink-0 mt-0.5" />
+                <div className="bg-lime-50 border border-lime-200 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
+                    <ThumbsUp size={18} className="text-lime-600 shrink-0 mt-0.5" />
                     <div>
-                        <p className="text-[11px] font-black uppercase tracking-widest text-blue-700 mb-1">💊 Eye Care Reminder</p>
-                        <p className="text-[10px] font-bold text-blue-700">Use eye drops as prescribed. Avoid rubbing eyes. Wear protective eyewear. Follow-up as scheduled.</p>
+                        <p className="text-[11px] font-black uppercase tracking-widest text-lime-700 mb-1">💊 Eye Care Reminder</p>
+                        <p className="text-[10px] font-bold text-lime-700">Use eye drops as prescribed. Avoid rubbing eyes. Wear protective eyewear. Follow-up as scheduled.</p>
                     </div>
                 </div>
             )}
 
             {/* ── Patient-Friendly Summary ──────────────────────────────── */}
             {(o.vision?.od?.unaided || o.vision?.os?.unaided || o.diagnosis) && (
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 text-white">
+                <div className="bg-lime-50 border border-lime-100 rounded-2xl p-5 text-lime-900 mt-6 shadow-sm">
                     <div className="flex items-center gap-2 mb-3">
-                        <Info size={16} />
-                        <h3 className="text-[11px] font-black uppercase tracking-widest">Eye Summary (Patient-Friendly)</h3>
+                        <Info size={16} className="text-lime-600" />
+                        <h3 className="text-[11px] font-black uppercase tracking-widest text-lime-700">Eye Summary (Patient-Friendly)</h3>
                     </div>
-                    <div className="space-y-1.5 text-sm font-medium text-slate-300">
+                    <div className="space-y-1.5 text-sm font-medium text-lime-800">
                         {o.vision?.od?.unaided && (
-                            <p>👁️ Right eye vision: <span className={`font-bold ${visionSeverity(o.vision.od.unaided) === 'severe' ? 'text-red-400' : visionSeverity(o.vision.od.unaided) === 'moderate' ? 'text-amber-400' : 'text-emerald-400'}`}>{o.vision.od.unaided}{o.vision?.od?.corrected ? ` (improves to ${o.vision.od.corrected} with glasses)` : ''}</span></p>
+                            <p>👁️ Right eye vision: <span className={`font-bold ${visionSeverity(o.vision.od.unaided) === 'severe' ? 'text-red-600' : visionSeverity(o.vision.od.unaided) === 'moderate' ? 'text-amber-600' : 'text-emerald-600'}`}>{o.vision.od.unaided}{o.vision?.od?.corrected ? ` (improves to ${o.vision.od.corrected} with glasses)` : ''}</span></p>
                         )}
                         {o.vision?.os?.unaided && (
-                            <p>👁️ Left eye vision: <span className={`font-bold ${visionSeverity(o.vision.os.unaided) === 'severe' ? 'text-red-400' : visionSeverity(o.vision.os.unaided) === 'moderate' ? 'text-amber-400' : 'text-emerald-400'}`}>{o.vision.os.unaided}{o.vision?.os?.corrected ? ` (improves to ${o.vision.os.corrected} with glasses)` : ''}</span></p>
+                            <p>👁️ Left eye vision: <span className={`font-bold ${visionSeverity(o.vision.os.unaided) === 'severe' ? 'text-red-600' : visionSeverity(o.vision.os.unaided) === 'moderate' ? 'text-amber-400' : 'text-emerald-400'}`}>{o.vision.os.unaided}{o.vision?.os?.corrected ? ` (improves to ${o.vision.os.corrected} with glasses)` : ''}</span></p>
                         )}
                         {(iopOD > 21 || iopOS > 21) && (
-                            <p>📈 Eye pressure: <span className="font-bold text-amber-400">Elevated — follow-up required</span></p>
+                            <p>📈 Eye pressure: <span className="font-bold text-amber-600">Elevated — follow-up required</span></p>
                         )}
                         {o.slitLamp?.lens && o.slitLamp.lens !== 'Clear' && (
-                            <p>🔬 Lens: <span className="font-bold text-amber-400">{o.slitLamp.lens} detected</span></p>
+                            <p>🔬 Lens: <span className="font-bold text-amber-600">{o.slitLamp.lens} detected</span></p>
                         )}
                         {o.diagnosis && (
-                            <p>🩺 Doctor&apos;s assessment: <span className="text-white font-bold">{o.diagnosis}</span></p>
+                            <p>🩺 Doctor&apos;s assessment: <span className="text-lime-900 font-bold">{o.diagnosis}</span></p>
                         )}
                         <p className="mt-2 text-blue-300 font-bold text-xs">
                             📌 Advice: Use all eye drops as prescribed. Do not rub your eyes. Wear sunglasses outdoors. Return immediately if vision suddenly worsens.
@@ -763,7 +763,6 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
                     </div>
                 </div>
             )}
-
         </div>
     );
 };

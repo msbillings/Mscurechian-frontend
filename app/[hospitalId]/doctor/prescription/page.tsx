@@ -32,7 +32,8 @@ import {
     Eye,
     Wind,
     Beaker,
-    ShieldAlert
+    ShieldAlert,
+    Scan
 } from 'lucide-react';
 import { CardiologyModule } from './create/modules/CardiologyModule';
 import { DermatologyModule, DermatologyData, INITIAL_DERMATOLOGY_DATA } from './create/modules/DermatologyModule';
@@ -59,6 +60,8 @@ import MainHeader from '@/components/printers/MainHeader';
 import MainFooter from '@/components/printers/MainFooter';
 import { OncologyModule } from './create/modules/OncologyModule';
 import { DentistryModule } from './create/modules/DentistryModule';
+import { UrologyModule } from './create/modules/UrologyModule';
+import { RadiologyModule } from './create/modules/RadiologyModule';
 
 // --- Types ---
 interface Medicine {
@@ -279,6 +282,36 @@ interface PrescriptionForm {
         procedure: string;
         notes: string;
     };
+    urologyData?: {
+        symptoms: string[];
+        ipss: { score: string; };
+        urine: { pusCells: string; rbc: string; protein: string; nitrite: boolean; };
+        renal: { creatinine: string; urea: string; };
+        stone: { size: string; location: string; };
+        prostate: { size: string; consistency: string; nodules: boolean; };
+        pvr: string;
+        catheter: { present: boolean; type: string; duration: string; reason: string; };
+        diagnosis: string;
+        notes: string;
+    };
+    radiologyOrder?: {
+        priority: string;
+        modality: string;
+        bodyPart: string;
+        protocol: string;
+        contrast: {
+            requested: boolean;
+            type: string;
+            creatinine: string;
+            allergy: boolean;
+        };
+        safety: {
+            pregnancy: boolean;
+            implants: boolean;
+        };
+        clinicalIndication: string;
+        notes: string;
+    };
 }
 
 const INITIAL_FORM: PrescriptionForm = {
@@ -478,6 +511,36 @@ const INITIAL_FORM: PrescriptionForm = {
             diabetesControl: 'N/A'
         },
         procedure: '',
+        notes: ''
+    },
+    urologyData: {
+        symptoms: [],
+        ipss: { score: '' },
+        urine: { pusCells: '', rbc: '', protein: 'Nil', nitrite: false },
+        renal: { creatinine: '', urea: '' },
+        stone: { size: '', location: 'None' },
+        prostate: { size: 'Normal', consistency: 'Fibroadenomatous', nodules: false },
+        pvr: '',
+        catheter: { present: false, type: '', duration: '', reason: '' },
+        diagnosis: '',
+        notes: ''
+    },
+    radiologyOrder: {
+        priority: 'Routine',
+        modality: '',
+        bodyPart: '',
+        protocol: '',
+        contrast: {
+            requested: false,
+            type: '',
+            creatinine: '',
+            allergy: false
+        },
+        safety: {
+            pregnancy: false,
+            implants: false
+        },
+        clinicalIndication: '',
         notes: ''
     }
 };
@@ -1619,6 +1682,137 @@ function CreatePrescriptionPage() {
                     </div>`;
                     })()}
 
+                    ${activeSpecialty.toUpperCase().includes('URO') && formData.urologyData ? (() => {
+                            const u = formData.urologyData;
+                            const ipss = parseInt(u.ipss?.score) || 0;
+                            const creat = parseFloat(u.renal?.creatinine) || 0;
+                            const pvr = parseFloat(u.pvr) || 0;
+                            const stone = u.stone || {};
+                            const pros = u.prostate || {};
+                            
+                            const cat = ipss <= 7 ? 'Mild' : ipss <= 19 ? 'Moderate' : 'Severe';
+                            const assessments: string[] = [];
+                            if (ipss > 19) assessments.push('Severe LUTS symptomatic');
+                            if (creat > 1.5) assessments.push('Renal Impairment noted');
+                            if (pvr > 100) assessments.push('Urinary Retention / Obstructed Flow');
+                            if ((parseInt(u.urine?.rbc) || 0) > 0 || (u.symptoms || []).includes('Hematuria')) assessments.push('Hematuria — Evaluation required');
+
+                            return `
+                        <div style="margin-bottom:25px;padding:18px;border:2px solid #e0f2fe;border-radius:16px;background:#f0f9ff;page-break-inside:avoid;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid #bae6fd;margin-bottom:14px;padding-bottom:8px;">
+                                <span style="font-size:10px;font-weight:900;text-transform:uppercase;color:#0369a1;letter-spacing:1px;">Urology Evaluation</span>
+                                <span style="font-size:11px;font-weight:900;color:#0369a1;background:#e0f2fe;padding:4px 12px;border-radius:6px;">IPSS: ${ipss} (${cat})</span>
+                            </div>
+
+                            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-bottom:12px;">
+                                <div>
+                                    <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;">Creatinine</span>
+                                    <span style="font-size:14px;font-weight:800;color:${creat > 1.5 ? '#dc2626' : '#16a34a'};">${u.renal?.creatinine || '--'} <small style="font-size:8px;">mg/dL</small></span>
+                                </div>
+                                <div>
+                                    <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;">PVR Volume</span>
+                                    <span style="font-size:14px;font-weight:800;color:${pvr > 100 ? '#dc2626' : '#1e293b'};">${u.pvr || '--'} <small style="font-size:8px;">ml</small></span>
+                                </div>
+                                <div>
+                                    <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;">Urea</span>
+                                    <span style="font-size:14px;font-weight:800;color:#1e293b;">${u.renal?.urea || '--'}</span>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom:10px;">
+                                <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:4px;">Clinical Symptoms (LUTS)</span>
+                                <div style="font-size:10px;font-weight:700;color:#334155;">${(u.symptoms || []).join(' • ') || 'No symptoms reported'}</div>
+                            </div>
+
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:10px;">
+                                <div>
+                                    <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:4px;">Prostate Findings</span>
+                                    <div style="font-size:10px;font-weight:700;color:#334155;">
+                                        Size: ${pros.size || 'Normal'} | ${pros.consistency || 'Normal'} ${pros.nodules ? '| Nodules Present' : ''}
+                                    </div>
+                                </div>
+                                <div>
+                                    <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:4px;">Urine Analysis</span>
+                                    <div style="font-size:10px;font-weight:700;color:#334155;">
+                                        Pus: ${u.urine?.pusCells || '0'} | RBC: ${u.urine?.rbc || '0'} | Pro: ${u.urine?.protein || 'Nil'} ${u.urine?.nitrite ? '| Nitrite+' : ''}
+                                    </div>
+                                </div>
+                            </div>
+
+                            ${stone.size ? `
+                            <div style="margin-bottom:10px;background:#fff;padding:8px;border-radius:10px;border:1px dashed #bae6fd;">
+                                <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;">Calculus Details: </span>
+                                <span style="font-size:11px;font-weight:800;color:#1e293b;">${stone.size}mm at ${stone.location}</span>
+                            </div>` : ''}
+
+                            ${assessments.length > 0 ? `
+                            <div style="background:#fff;border:1.5px solid #bae6fd;border-radius:10px;padding:10px 14px;margin-top:10px;">
+                                <span style="font-size:8px;font-weight:900;color:#0369a1;text-transform:uppercase;display:block;margin-bottom:5px;">Urological Impressions</span>
+                                ${assessments.map(a => `<div style="font-size:10px;font-weight:800;color:${a.includes('Hematuria') || a.includes('Severe') ? '#dc2626' : '#334155'};margin-bottom:2px;">&rarr; ${a}</div>`).join('')}
+                            </div>` : ''}
+
+                            ${u.diagnosis ? `
+                            <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #bae6fd;">
+                                <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;">Assessment: </span>
+                                <span style="font-size:11px;font-weight:900;color:#0369a1;">${u.diagnosis}</span>
+                            </div>` : ''}
+                        </div>`;
+                        })() : ''}
+
+                        ${activeSpecialty.toUpperCase().includes('RADIO') && formData.radiologyOrder ? (() => {
+                            const r = formData.radiologyOrder;
+                            const isHighCreat = (parseFloat(r.contrast?.creatinine) || 0) > 1.5;
+                            
+                            return `
+                        <div style="margin-bottom:25px;padding:20px;border:2px solid #e0e7ff;border-radius:20px;background:#f8faff;page-break-inside:avoid;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid #c7d2fe;margin-bottom:15px;padding-bottom:10px;">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <span style="font-size:11px;font-weight:900;text-transform:uppercase;color:#4338ca;letter-spacing:1.5px;">Radiology Requisition</span>
+                                </div>
+                                <span style="font-size:10px;font-weight:900;color:${r.priority === 'Emergency' ? '#dc2626' : '#4338ca'};background:${r.priority === 'Emergency' ? '#fef2f2' : '#e0e7ff'};padding:5px 15px;border-radius:8px;border:1px solid ${r.priority === 'Emergency' ? '#fecaca' : '#c7d2fe'};">
+                                    ${r.priority.toUpperCase()}
+                                </span>
+                            </div>
+
+                            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:15px;">
+                                <div>
+                                    <span style="font-size:8px;color:#6366f1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:4px;">Modality & Body Part</span>
+                                    <span style="font-size:15px;font-weight:900;color:#1e1b4b;">${r.modality} ${r.bodyPart}</span>
+                                    <div style="font-size:10px;font-weight:700;color:#4338ca;margin-top:2px;">Protocol: ${r.protocol || 'Standard'}</div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <span style="font-size:8px;color:#6366f1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:4px;">Safety Status</span>
+                                    <div style="display:flex;justify-content:flex-end;gap:5px;">
+                                        ${r.safety?.pregnancy ? '<span style="font-size:8px;font-weight:900;background:#fef2f2;color:#dc2626;padding:2px 6px;border-radius:4px;border:1px solid #fecaca;">PREGNANT</span>' : ''}
+                                        ${r.safety?.implants ? '<span style="font-size:8px;font-weight:900;background:#fef2f2;color:#dc2626;padding:2px 6px;border-radius:4px;border:1px solid #fecaca;">IMPLANTS+</span>' : ''}
+                                        ${!r.safety?.pregnancy && !r.safety?.implants ? '<span style="font-size:8px;font-weight:900;background:#f0fdf4;color:#16a34a;padding:2px 6px;border-radius:4px;border:1px solid #bbf7d0;">SAFETY CLEARED</span>' : ''}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom:15px;padding:12px;background:#fff;border-radius:12px;border:1.5px solid #e0e7ff;">
+                                <span style="font-size:8px;color:#6366f1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:6px;">Clinical Indication</span>
+                                <div style="font-size:11px;font-weight:700;color:#1e293b;line-height:1.4;">${r.clinicalIndication || 'No clinical justification provided.'}</div>
+                            </div>
+
+                            ${r.contrast?.requested ? `
+                            <div style="padding:15px;background:#fff;border-radius:15px;border:1.5px solid #fde68a;margin-bottom:12px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                                    <span style="font-size:9px;font-weight:900;color:#92400e;text-transform:uppercase;">Contrast Study Information</span>
+                                    <span style="font-size:10px;font-weight:900;color:${isHighCreat ? '#dc2626' : '#16a34a'};">Creatinine: ${r.contrast.creatinine || 'N/A'} mg/dL</span>
+                                </div>
+                                <div style="font-size:10px;font-weight:700;color:#92400e;">
+                                    Type: ${r.contrast.type || 'Standard'} ${r.contrast.allergy ? ' | <span style="color:#dc2626;">ALLERGY HISTORY+</span>' : ''}
+                                </div>
+                            </div>` : ''}
+
+                            ${r.notes ? `
+                            <div style="font-size:10px;font-style:italic;color:#64748b;padding-top:10px;border-top:1px dashed #c7d2fe;">
+                                <strong>Notes:</strong> ${r.notes}
+                            </div>` : ''}
+                        </div>`;
+                        })() : ''}
+
                     ${(() => {
                         const isENT = activeSpecialty.toUpperCase().includes('ENT') && !activeSpecialty.toUpperCase().includes('DENT') && !activeSpecialty.toUpperCase().includes('GASTRO');
                         const e = formData.entData;
@@ -2222,6 +2416,8 @@ function CreatePrescriptionPage() {
                                     if (name.includes('PULMO')) return <Wind size={10} />;
                                     if (name.includes('GASTRO')) return <Activity size={10} />;
                                     if (name.includes('NEPHRO')) return <Beaker size={10} />;
+                                    if (name.includes('URO')) return <Activity size={10} />;
+                                    if (name.includes('RADIO')) return <Scan size={10} />;
                                     if (name.includes('PSYCH')) return <Activity size={10} />;
                                     if (name.includes('ENDOCRIN')) return <Activity size={10} />;
                                     if (name.includes('HEMA')) return <FlaskConical size={10} />;
@@ -2268,7 +2464,9 @@ function CreatePrescriptionPage() {
                             if (spec.includes('GYNAE') || spec.includes('GYNE') || spec.includes('OBST')) return <GynecologyModule formData={formData} setFormData={setFormData} />;
                             if (spec.includes('NEURO')) return <NeurologyModule formData={formData} setFormData={setFormData} />;
                             if (spec.includes('PULMO') || spec.includes('CHEST')) return <PulmonologyModule formData={formData} setFormData={setFormData} />;
-                            if (spec.includes('NEPHRO') || spec.includes('URO')) return <NephrologyModule formData={formData} setFormData={setFormData} />;
+                            if (spec.includes('NEPHRO')) return <NephrologyModule formData={formData} setFormData={setFormData} />;
+                            if (spec.includes('URO')) return <UrologyModule formData={formData} setFormData={setFormData} />;
+                            if (spec.includes('RADIO')) return <RadiologyModule formData={formData} setFormData={setFormData} />;
                             if (spec.includes('PSYCH')) return <PsychiatryModule formData={formData} setFormData={setFormData} />;
                             if (spec.includes('ENDOCRIN')) return <EndocrinologyModule formData={formData} setFormData={setFormData} />;
                             if (spec.includes('HEMA')) return <HematologyModule formData={formData} setFormData={setFormData} />;

@@ -420,7 +420,7 @@ export const GynecologyModule: React.FC<GynecologyModuleProps> = ({ formData, se
                                     active
                                         ? isDanger
                                             ? 'bg-red-600 text-white border-red-600 shadow-md'
-                                            : 'bg-slate-800 text-white border-slate-800 shadow-md'
+                                            : 'bg-pink-600 text-white border-pink-600 shadow-md'
                                         : isDanger
                                             ? 'bg-red-50 text-red-400 border-red-200 hover:bg-red-100'
                                             : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
@@ -606,14 +606,14 @@ export const GynecologyModule: React.FC<GynecologyModuleProps> = ({ formData, se
 
             {/* ── Patient-Friendly Summary ─────────────────────────────────── */}
             {(g.pregnant === 'Yes' || (g.symptoms || []).length > 0) && (
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 text-white">
+                <div className="bg-pink-50 border border-pink-100 rounded-2xl p-5 text-pink-900 mt-6 shadow-sm">
                     <div className="flex items-center gap-2 mb-3">
                         <Info size={16} />
-                        <h3 className="text-[11px] font-black uppercase tracking-widest">Patient Summary (Plain Language)</h3>
+                        <h3 className="text-[11px] font-black uppercase tracking-widest text-pink-700">Patient Summary (Plain Language)</h3>
                     </div>
-                    <div className="space-y-1.5 text-sm font-medium text-slate-300">
+                    <div className="space-y-1.5 text-sm font-medium text-pink-800">
                         {g.pregnant === 'Yes' && g.gestationalAge && (
-                            <p>🤰 Pregnancy: <span className="text-white font-bold">{g.gestationalAge} weeks</span></p>
+                            <p>🤰 Pregnancy: <span className="text-pink-900 font-bold">{g.gestationalAge} weeks</span></p>
                         )}
                         {g.obstetricExam?.fetalHeartRate && (
                             <p>💓 Baby heartbeat: <span className={`font-bold ${
@@ -628,7 +628,7 @@ export const GynecologyModule: React.FC<GynecologyModuleProps> = ({ formData, se
                             </span></p>
                         )}
                         {(g.symptoms || []).length > 0 && (
-                            <p>📋 Current complaints: <span className="text-white font-bold">{(g.symptoms || []).join(', ')}</span></p>
+                            <p>📋 Current complaints: <span className="text-pink-900 font-bold">{(g.symptoms || []).join(', ')}</span></p>
                         )}
                         <p className="text-indigo-300 text-xs font-bold mt-2">📌 Advice: Regular antenatal checkups recommended.</p>
                     </div>

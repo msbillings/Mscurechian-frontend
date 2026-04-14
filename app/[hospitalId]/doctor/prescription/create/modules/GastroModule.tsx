@@ -728,13 +728,13 @@ export const GastroModule: React.FC<GastroModuleProps> = ({ formData, setFormDat
 
             {/* ── Pharma Warning Banner ────────────────────────────────────── */}
             {hasRedFlag ? (
-                <div className="bg-red-700 rounded-2xl p-4 text-white flex items-start gap-3">
+                <div className="bg-red-600 rounded-2xl p-4 text-white flex items-start gap-3 shadow-lg">
                     <ShieldAlert size={20} className="shrink-0 mt-0.5" />
                     <div>
                         <p className="text-[11px] font-black uppercase tracking-widest mb-1">
                             💊 Pharma Warning — GI Bleeding Suspected
                         </p>
-                        <p className="text-[10px] font-bold text-red-200">
+                        <p className="text-[10px] font-bold text-red-50">
                             AVOID all NSAIDs (Aspirin, Ibuprofen, Diclofenac, Naproxen). Use IV PPI.
                             Take prescribed medicines strictly as directed.
                         </p>
@@ -757,32 +757,32 @@ export const GastroModule: React.FC<GastroModuleProps> = ({ formData, setFormDat
 
             {/* ── Patient-Friendly Summary ─────────────────────────────────── */}
             {(syms.length > 0 || g.bowelHabits || g.diagnosis) && (
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 text-white">
+                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 text-emerald-900 mt-6 shadow-sm">
                     <div className="flex items-center gap-2 mb-3">
-                        <Info size={16} />
-                        <h3 className="text-[11px] font-black uppercase tracking-widest">
+                        <Info size={16} className="text-emerald-600" />
+                        <h3 className="text-[11px] font-black uppercase tracking-widest text-emerald-700">
                             Digestive Condition Summary (Patient-Friendly)
                         </h3>
                     </div>
-                    <div className="space-y-1.5 text-sm font-medium text-slate-300">
+                    <div className="space-y-1.5 text-sm font-medium text-emerald-800">
                         {syms.length > 0 && (
-                            <p>🤒 Complaints: <span className="text-white font-bold">{syms.join(', ')}</span></p>
+                            <p>🤒 Complaints: <span className="text-emerald-900 font-bold">{syms.join(', ')}</span></p>
                         )}
                         {g.bowelHabits && (
                             <p>🚽 Bowel pattern: <span className={`font-bold ${
-                                g.bowelHabits === 'Normal' ? 'text-emerald-400' : 'text-amber-400'
+                                g.bowelHabits === 'Normal' ? 'text-emerald-600' : 'text-amber-600'
                             }`}>{g.bowelHabits}</span></p>
                         )}
                         {g.painLocation && g.painType && (
-                            <p>😣 Pain: <span className="text-white font-bold">{g.painLocation} — {g.painType}</span></p>
+                            <p>😣 Pain: <span className="text-emerald-900 font-bold">{g.painLocation} — {g.painType}</span></p>
                         )}
                         {g.liver?.status === 'Enlarged' && (
-                            <p>🫀 Liver: <span className="text-amber-400 font-bold">
+                            <p>🫀 Liver: <span className="text-amber-600 font-bold">
                                 Enlarged{g.liver?.size ? ` (${g.liver.size} cm)` : ''}
                             </span></p>
                         )}
                         {g.diagnosis && (
-                            <p>🩺 Doctor&apos;s assessment: <span className="text-white font-bold">{g.diagnosis}</span></p>
+                            <p>🩺 Doctor&apos;s assessment: <span className="text-emerald-900 font-bold">{g.diagnosis}</span></p>
                         )}
                         {hasRedFlag && (
                             <p className="text-red-400 font-black mt-2">
