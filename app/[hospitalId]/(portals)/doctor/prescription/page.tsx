@@ -30,8 +30,12 @@ import { doctorService } from '@/lib/integrations/services/doctor.service';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 import medicineData from '@/medicine.json';
 import { renderToStaticMarkup } from 'react-dom/server';
-import MainHeader from '@/components/printers/MainHeader';
 import MainFooter from '@/components/printers/MainFooter';
+import { PediatricsModule } from './create/modules/PediatricsModule';
+import { OphthalmologyModule } from './create/modules/OphthalmologyModule';
+import { GeneralSurgeryModule } from './create/modules/GeneralSurgeryModule';
+import { Baby, Eye, Zap } from 'lucide-react';
+import MainHeader from '@/components/printers/MainHeader';
 
 // --- Types ---
 interface Medicine {
@@ -70,6 +74,10 @@ interface PrescriptionForm {
     subtotal: number;
     tax: number;
     total: number;
+    notes: string;
+    pediatricData?: any;
+    ophthaData?: any;
+    surgeryData?: any;
 }
 
 const INITIAL_FORM: PrescriptionForm = {
@@ -89,9 +97,48 @@ const INITIAL_FORM: PrescriptionForm = {
     avoid: [],
     doctorName: '',
     doctorSpecialization: '',
+    total: 0,
     subtotal: 0,
     tax: 0,
-    total: 0
+    notes: '',
+    pediatricData: {
+        weight: '',
+        height: '',
+        headCircumference: '',
+        temperature: '98.6',
+        heartRate: '',
+        respRate: '',
+        growth: { weightForAge: '', heightForAge: '' },
+        milestones: '',
+        milestoneNotes: '',
+        immunizationStatus: '',
+        dueVaccines: [],
+        symptoms: [],
+        redFlags: [],
+        notes: ''
+    },
+    ophthaData: {
+        vision: { od: { unaided: '', corrected: '' }, os: { unaided: '', corrected: '' } },
+        refraction: { od: { sph: '', cyl: '', axis: '' }, os: { sph: '', cyl: '', axis: '' } },
+        iop: { od: '', os: '' },
+        pupils: '',
+        symptoms: [],
+        slitLamp: { conjunctiva: '', cornea: '', anteriorChamber: '', lens: '' },
+        fundus: { retina: '', opticDisc: '', macula: '' },
+        diagnosis: '',
+        notes: ''
+    },
+    surgeryData: {
+        surgeryType: '',
+        procedurePlanned: '',
+        indication: '',
+        physicalExam: { abdomen: '', thorax: '', limbs: '', others: '' },
+        vitals: {},
+        systemicReview: { cvs: '', rs: '', cns: '', git: '' },
+        preOpChecklist: { npoStatus: false, consentSigned: false, investigationsDone: false, bloodCrossMatched: false },
+        diagnosis: '',
+        notes: ''
+    }
 };
 
 function CreatePrescriptionPage() {
@@ -99,7 +146,9 @@ function CreatePrescriptionPage() {
     const searchParams = useSearchParams();
     const appointmentId = searchParams.get('appointmentId');
     const patientId = searchParams.get('patientId');
+    const admissionId = searchParams.get('admissionId');
 
+    const [activeModule, setActiveModule] = useState<'NONE' | 'PEDS' | 'OPHTHA' | 'SURGERY'>('NONE');
     const [mode, setMode] = useState<'AI' | 'SELF'>('SELF');
     const [formData, setFormData] = useState<PrescriptionForm>(INITIAL_FORM);
     const [selectedPatientId, setSelectedPatientId] = useState<string | null>(patientId);
@@ -250,6 +299,15 @@ function CreatePrescriptionPage() {
             }));
         }
     }, [doctorProfile]);
+
+    useEffect(() => {
+        if (formData.doctorSpecialization) {
+            const spec = formData.doctorSpecialization.toLowerCase();
+            if (spec.includes('pedia')) setActiveModule('PEDS');
+            else if (spec.includes('ophthal')) setActiveModule('OPHTHA');
+            else if (spec.includes('surger')) setActiveModule('SURGERY');
+        }
+    }, [formData.doctorSpecialization]);
 
     // -- Medicine Search Logic --
     const handleMedicineSearch = (query: string, index: number) => {
@@ -516,6 +574,71 @@ function CreatePrescriptionPage() {
         toast.success("Form cleared");
     };
 
+    const executeSubmit = async (sendToPharmaFlag: boolean, showSuccessModal: boolean) => {
+        try {
+            setIsSaving(true);
+            setShowPharmaConfirm(false);
+
+            await doctorService.createPrescription({
+                appointmentId: appointmentId || undefined,
+                patientId: selectedPatientId || undefined, // Pass selectedPatientId for direct prescriptions
+                admissionId: admissionId || undefined,
+                diagnosis: formData.diagnosis,
+                symptoms: formData.symptoms.split(',').map(s => s.trim()),
+                medicines: formData.medicines.map(m => ({
+                    drug: (m as any).productId,
+                    name: m.name,
+                    dosage: m.dosage,
+                    frequency: m.freq,
+                    duration: m.duration,
+                    quantity: m.quantity,
+                    price: m.price
+                })),
+                advice: formData.followUp,
+                followUpDate: formData.followUpDate,
+                dietAdvice: formData.dietAdvice,
+                suggestedTests: formData.suggestedTests,
+                avoid: formData.avoid,
+                notes: formData.notes,
+                aiGenerated: mode === 'AI',
+                age: formData.age,
+                gender: formData.gender,
+                sendToPharma: sendToPharmaFlag,
+                // Specialty Data
+                pediatricData: activeModule === 'PEDS' ? formData.pediatricData : undefined,
+                ophthaData: activeModule === 'OPHTHA' ? formData.ophthaData : undefined,
+                surgeryData: activeModule === 'SURGERY' ? formData.surgeryData : undefined,
+            });
+
+            // Re-use current styled generation logic
+            const prescriptionHtml = generatePrescriptionHTML();
+            const billingHtml = generateBillingHTML();
+
+            // Save HTML for printing
+            setGeneratedHtml({
+                prescription: prescriptionHtml,
+                billing: billingHtml
+            });
+
+            setIsSubmitted(true);
+
+            if (showSuccessModal) {
+                setShowSuccess(true);
+            }
+
+            if (sendToPharmaFlag) {
+                toast.success("Prescription Saved & Sent to Pharmacy Successfully!");
+            } else {
+                toast.success("Prescription Saved Successfully!");
+            }
+
+        } catch (error: any) {
+            toast.error(error.message || "Failed to save prescription");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const handleSendToPharma = async () => {
         if (!appointmentId && !selectedPatientId) return toast.error("Appointment ID or Patient ID is required");
         if (!formData.patientName) return toast.error("Patient Name is required");
@@ -557,65 +680,6 @@ function CreatePrescriptionPage() {
     const confirmSaveWithoutPharma = () => {
         setShowNoPharmaWarn(false);
         executeSubmit(false, true);
-    };
-
-    const executeSubmit = async (sendToPharmaFlag: boolean, showSuccessModal: boolean) => {
-        try {
-            setIsSaving(true);
-            setShowPharmaConfirm(false);
-
-            await doctorService.createPrescription({
-                appointmentId: appointmentId || undefined,
-                patientId: selectedPatientId || undefined, // Pass selectedPatientId for direct prescriptions
-                diagnosis: formData.diagnosis,
-                symptoms: formData.symptoms.split(',').map(s => s.trim()),
-                medicines: formData.medicines.map(m => ({
-                    drug: (m as any).productId,
-                    name: m.name,
-                    dosage: m.dosage,
-                    frequency: m.freq,
-                    duration: m.duration,
-                    quantity: m.quantity,
-                    price: m.price
-                })),
-                advice: formData.followUp,
-                followUpDate: formData.followUpDate,
-                dietAdvice: formData.dietAdvice,
-                suggestedTests: formData.suggestedTests,
-                avoid: formData.avoid,
-                aiGenerated: mode === 'AI',
-                age: formData.age,
-                gender: formData.gender,
-                sendToPharma: sendToPharmaFlag
-            });
-
-            // Re-use current styled generation logic
-            const prescriptionHtml = generatePrescriptionHTML();
-            const billingHtml = generateBillingHTML();
-
-            // Save HTML for printing
-            setGeneratedHtml({
-                prescription: prescriptionHtml,
-                billing: billingHtml
-            });
-
-            setIsSubmitted(true);
-
-            if (showSuccessModal) {
-                setShowSuccess(true);
-            }
-
-            if (sendToPharmaFlag) {
-                toast.success("Prescription Saved & Sent to Pharmacy Successfully!");
-            } else {
-                toast.success("Prescription Saved Successfully!");
-            }
-
-        } catch (error: any) {
-            toast.error(error.message || "Failed to save prescription");
-        } finally {
-            setIsSaving(false);
-        }
     };
 
     const handleSendToLab = async () => {
@@ -700,18 +764,20 @@ function CreatePrescriptionPage() {
 
                     .container {
                         width: 210mm;
-                        height: 296mm;
+                        min-height: 296mm;
                         margin: 0 auto;
                         padding: 10mm 15mm 10mm 25mm;
                         position: relative;
                         box-sizing: border-box;
                         display: flex;
                         flex-direction: column;
-                        overflow: hidden;
                     }
 
                     /* Prescription Specific */
-                    .doc-info { text-align: right; margin-bottom: 20px; }
+                    .header-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; }
+                    .title { color: #1e40af; margin: 0; font-size: 16px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; line-height: 1; }
+
+                    .doc-info { text-align: right; }
                     .doc-name { font-size: 14px; font-weight: 800; color: #1e40af; margin: 0; }
                     .doc-spec { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #64748b; margin: 2px 0 0; }
 
@@ -756,9 +822,12 @@ function CreatePrescriptionPage() {
                 <div class="container">
                     ${headerHtml}
 
-                    <div class="doc-info">
-                        <p class="doc-name">Dr. ${formData.doctorName}</p>
-                        <p class="doc-spec">${formData.doctorSpecialization || 'Medical Practitioner'}</p>
+                    <div class="header-row">
+                        <h1 class="title">Rx Prescription</h1>
+                        <div class="doc-info">
+                            <p class="doc-name">Dr. ${formData.doctorName}</p>
+                            <p class="doc-spec">${formData.doctorSpecialization || 'Medical Practitioner'}</p>
+                        </div>
                     </div>
 
                     <div class="patient-info">
@@ -780,10 +849,132 @@ function CreatePrescriptionPage() {
                         </div>
                     </div>
 
-                    ${formData.diagnosis ? `
-                    <div style="margin-bottom: 25px;">
-                        <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #94a3b8;">Diagnosis:</span>
-                        <span style="font-size: 13px; font-weight: 800; color: #1e40af; margin-left:8px;">${formData.diagnosis}</span>
+                    ${formData.diagnosis || formData.symptoms ? `
+                    <div style="margin-bottom: 25px; padding: 15px; border: 1px solid #f1f5f9; border-radius: 12px; background: #fff;">
+                        <div class="section-label">Clinical Assessment</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            ${formData.symptoms ? `
+                            <div>
+                                <span class="info-label">Symptoms</span>
+                                <div style="font-size: 11px; color: #1e293b; font-weight: 500;">${formData.symptoms}</div>
+                            </div>` : ''}
+                            ${formData.diagnosis ? `
+                            <div>
+                                <span class="info-label">Diagnosis</span>
+                                <div style="font-size: 11px; color: #1e40af; font-weight: 700;">${formData.diagnosis}</div>
+                            </div>` : ''}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    ${(formData.pediatricData?.weight || formData.pediatricData?.height || formData.pediatricData?.milestones) ? `
+                    <div style="margin-top: 20px; border: 1px solid #bae6fd; border-radius: 12px; overflow: hidden;">
+                        <div style="background: #f0f9ff; padding: 10px 15px; border-bottom: 1px solid #bae6fd;">
+                            <span style="font-size: 10px; font-weight: 800; color: #0369a1; text-transform: uppercase;">Pediatric Assessment</span>
+                        </div>
+                        <div style="padding: 15px;">
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px;">
+                                <div><span class="info-label">Weight</span><div class="info-val">${formData.pediatricData.weight || '--'} kg</div></div>
+                                <div><span class="info-label">Height</span><div class="info-val">${formData.pediatricData.height || '--'} cm</div></div>
+                                <div><span class="info-label">Temp</span><div class="info-val">${formData.pediatricData.temperature || '98.6'} °F</div></div>
+                                <div><span class="info-label">HC</span><div class="info-val">${formData.pediatricData.headCircumference || '--'} cm</div></div>
+                                <div><span class="info-label">HR</span><div class="info-val">${formData.pediatricData.heartRate || '--'} bpm</div></div>
+                                <div><span class="info-label">RR</span><div class="info-val">${formData.pediatricData.respRate || '--'} /min</div></div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px dashed #e2e8f0; padding-top: 12px;">
+                                <div>
+                                    <span class="info-label">Development & Growth</span>
+                                    <p style="font-size: 11px; margin: 2px 0;">Milestones: <b>${formData.pediatricData.milestones || 'N/A'}</b></p>
+                                    <p style="font-size: 10px; margin: 2px 0; color: #64748b;">Wt for Age: ${formData.pediatricData.growth?.weightForAge || '--'} | Ht for Age: ${formData.pediatricData.growth?.heightForAge || '--'}</p>
+                                    ${formData.pediatricData.milestoneNotes ? `<p style="font-size: 10px; margin: 2px 0; font-style: italic;">Notes: ${formData.pediatricData.milestoneNotes}</p>` : ''}
+                                </div>
+                                <div>
+                                    <span class="info-label">Immunization & Safety</span>
+                                    <p style="font-size: 11px; margin: 2px 0;">Status: <b>${formData.pediatricData.immunizationStatus || 'N/A'}</b></p>
+                                    ${formData.pediatricData.dueVaccines?.length > 0 ? `<p style="font-size: 10px; margin: 2px 0; color: #ef4444;">Due: ${formData.pediatricData.dueVaccines.join(', ')}</p>` : ''}
+                                    ${formData.pediatricData.redFlags?.length > 0 ? `<p style="font-size: 10px; margin: 2px 0; color: #ef4444; font-weight: 800;">⚠️ Red Flags: ${formData.pediatricData.redFlags.join(', ')}</p>` : ''}
+                                </div>
+                            </div>
+                            ${formData.pediatricData.symptoms?.length > 0 ? `<p style="font-size: 10px; margin: 8px 0 0; color: #475569;"><b>Specific Symptoms:</b> ${formData.pediatricData.symptoms.join(', ')}</p>` : ''}
+                            ${formData.pediatricData.notes ? `<p style="font-size: 11px; margin: 8px 0 0; border-top: 1px solid #f1f5f9; padding-top: 5px;"><b>Notes:</b> ${formData.pediatricData.notes}</p>` : ''}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    ${(formData.ophthaData?.vision?.od?.unaided || formData.ophthaData?.vision?.os?.unaided || formData.ophthaData?.iop?.od || formData.ophthaData?.diagnosis) ? `
+                    <div style="margin-top: 20px; border: 1px solid #e0e7ff; border-radius: 12px; overflow: hidden;">
+                        <div style="background: #f5f3ff; padding: 10px 15px; border-bottom: 1px solid #e0e7ff;">
+                            <span style="font-size: 10px; font-weight: 800; color: #4338ca; text-transform: uppercase;">Ophthalmology Examination</span>
+                        </div>
+                        <div style="padding: 15px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px;">
+                                <div>
+                                    <span class="info-label">Vision (OD/OS)</span>
+                                    <p style="font-size: 11px; margin: 2px 0; font-weight: 700;">OD: ${formData.ophthaData.vision?.od?.unaided || '--'} ${formData.ophthaData.vision?.od?.corrected ? `(Corr: ${formData.ophthaData.vision.od.corrected})` : ''}</p>
+                                    <p style="font-size: 11px; margin: 2px 0; font-weight: 700;">OS: ${formData.ophthaData.vision?.os?.unaided || '--'} ${formData.ophthaData.vision?.os?.corrected ? `(Corr: ${formData.ophthaData.vision.os.corrected})` : ''}</p>
+                                    
+                                    <div style="margin-top: 8px;">
+                                        <span class="info-label" style="font-size: 7px;">Refraction Details</span>
+                                        <p style="font-size: 10px; margin: 0;">OD: ${formData.ophthaData.refraction?.od?.sph || '0'} / ${formData.ophthaData.refraction?.od?.cyl || '0'} x ${formData.ophthaData.refraction?.od?.axis || '0'}°</p>
+                                        <p style="font-size: 10px; margin: 0;">OS: ${formData.ophthaData.refraction?.os?.sph || '0'} / ${formData.ophthaData.refraction?.os?.cyl || '0'} x ${formData.ophthaData.refraction?.os?.axis || '0'}°</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="info-label">Clinical Measures</span>
+                                    <p style="font-size: 11px; margin: 2px 0;">IOP: RE <b>${formData.ophthaData.iop?.od || '--'}</b> | LE <b>${formData.ophthaData.iop?.os || '--'}</b> mmHg</p>
+                                    <p style="font-size: 11px; margin: 2px 0;">Pupils: <b>${formData.ophthaData.pupils || 'Normal'}</b></p>
+                                    
+                                    <div style="margin-top: 8px;">
+                                        <span class="info-label" style="font-size: 7px;">Slit Lamp Findings</span>
+                                        <p style="font-size: 9px; margin: 0;">Cornea: ${formData.ophthaData.slitLamp?.cornea || 'Clear'} | Lens: ${formData.ophthaData.slitLamp?.lens || 'Clear'}</p>
+                                        <p style="font-size: 9px; margin: 0;">Ant Chamber: ${formData.ophthaData.slitLamp?.anteriorChamber || 'Normal'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="border-top: 1px dashed #e2e8f0; padding-top: 10px; font-size: 10px;">
+                                <b>Fundus:</b> Disc: ${formData.ophthaData.fundus?.opticDisc || 'Normal'} | Retina: ${formData.ophthaData.fundus?.retina || 'Normal'} | Macula: ${formData.ophthaData.fundus?.macula || 'Normal'}
+                                ${formData.ophthaData.symptoms?.length > 0 ? `<p style="margin: 4px 0 0;"><b>Ocular Symptoms:</b> ${formData.ophthaData.symptoms.join(', ')}</p>` : ''}
+                                ${formData.ophthaData.diagnosis ? `<p style="margin: 4px 0 0; font-weight: 800; color: #4338ca;">Specialized Dx: ${formData.ophthaData.diagnosis}</p>` : ''}
+                                ${formData.ophthaData.notes ? `<p style="margin: 4px 0 0; font-style: italic;">Note: ${formData.ophthaData.notes}</p>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    ${(formData.surgeryData?.procedurePlanned || formData.surgeryData?.indication || formData.surgeryData?.diagnosis) ? `
+                    <div style="margin-top: 20px; border: 1px solid #fecaca; border-radius: 12px; overflow: hidden;">
+                        <div style="background: #fef2f2; padding: 10px 15px; border-bottom: 1px solid #fecaca;">
+                            <span style="font-size: 10px; font-weight: 800; color: #b91c1c; text-transform: uppercase;">Surgical Assessment & Planning</span>
+                        </div>
+                        <div style="padding: 15px;">
+                            <div style="margin-bottom: 15px;">
+                                <div class="info-val" style="font-size: 14px; color: #b91c1c;">${formData.surgeryData.procedurePlanned || 'Procedure Planned'}</div>
+                                <div style="font-size: 11px; color: #475569;">Type: <b>${formData.surgeryData.surgeryType}</b> | Indication: ${formData.surgeryData.indication}</div>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px dashed #fecaca; padding-top: 12px; margin-bottom: 12px;">
+                                <div>
+                                    <span class="info-label">Physical Examination</span>
+                                    <p style="font-size: 10px; margin: 2px 0;">Abd: ${formData.surgeryData.physicalExam?.abdomen || 'NAD'} | Thorax: ${formData.surgeryData.physicalExam?.thorax || 'NAD'}</p>
+                                    <p style="font-size: 10px; margin: 2px 0;">Limbs: ${formData.surgeryData.physicalExam?.limbs || 'NAD'} | Others: ${formData.surgeryData.physicalExam?.others || 'NAD'}</p>
+                                </div>
+                                <div>
+                                    <span class="info-label">Systemic Review</span>
+                                    <p style="font-size: 10px; margin: 2px 0;">CVS: ${formData.surgeryData.systemicReview?.cvs || 'NAD'} | RS: ${formData.surgeryData.systemicReview?.rs || 'NAD'}</p>
+                                    <p style="font-size: 10px; margin: 2px 0;">CNS: ${formData.surgeryData.systemicReview?.cns || 'NAD'} | GIT: ${formData.surgeryData.systemicReview?.git || 'NAD'}</p>
+                                </div>
+                            </div>
+                            
+                            <div style="background: #fff; border: 1px solid #fecaca; border-radius: 8px; padding: 8px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px;">
+                                <div style="font-size: 9px; font-weight: 700;">NPO: ${formData.surgeryData.preOpChecklist?.npoStatus ? '✅ YES' : '❌ NO'}</div>
+                                <div style="font-size: 9px; font-weight: 700;">Consent: ${formData.surgeryData.preOpChecklist?.consentSigned ? '✅ SIGNED' : '❌ PENDING'}</div>
+                                <div style="font-size: 9px; font-weight: 700;">Labs: ${formData.surgeryData.preOpChecklist?.investigationsDone ? '✅ OK' : '❌ PENDING'}</div>
+                                <div style="font-size: 9px; font-weight: 700;">Cross-match: ${formData.surgeryData.preOpChecklist?.bloodCrossMatched ? '✅ DONE' : '❌ N/A'}</div>
+                            </div>
+                            
+                            ${formData.surgeryData.diagnosis ? `<p style="font-size: 11px; margin: 8px 0 0; font-weight: 800; color: #b91c1c;">Specialty Dx: ${formData.surgeryData.diagnosis}</p>` : ''}
+                            ${formData.surgeryData.notes ? `<p style="font-size: 11px; margin: 4px 0 0; font-style: italic;">Note: ${formData.surgeryData.notes}</p>` : ''}
+                        </div>
                     </div>
                     ` : ''}
 
@@ -799,18 +990,34 @@ function CreatePrescriptionPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            ${formData.medicines.map(med => `
+                            ${formData.medicines.map(med => {
+                                const f = med.freq || '';
+                                let timing = '';
+                                if (f.includes('-')) {
+                                    const p = f.split('-');
+                                    const t = [];
+                                    if (p[0] !== '0') t.push('Morning');
+                                    if (p[1] !== '0') t.push('Afternoon');
+                                    if (p[2] !== '0') t.push('Night');
+                                    if (p[3] && p[3] !== '0') t.push('Late Night');
+                                    timing = t.length > 0 ? `<div style="font-size: 8px; color: #1e40af; font-weight: 800; margin-top: 2px;">${t.join('-')}</div>` : '';
+                                }
+                                return `
                             <tr>
                                 <td>
                                     <div class="med-name">${med.name}</div>
                                     <div class="med-meta">${med.form || ''}</div>
                                 </td>
                                 <td class="med-meta">${med.dosage}</td>
-                                <td class="med-meta" style="color: #1e40af; font-weight: 800;">${med.freq}</td>
+                                <td class="med-meta" style="color: #1e40af; font-weight: 800;">
+                                    <div>${med.freq}</div>
+                                    ${timing}
+                                </td>
                                 <td class="med-meta">${med.duration}</td>
                                 <td class="med-meta" style="font-weight: 800;">${med.quantity}</td>
                             </tr>
-                            `).join('')}
+                            `;
+                            }).join('')}
                         </tbody>
                     </table>
 
@@ -1141,6 +1348,32 @@ function CreatePrescriptionPage() {
                     </div>
                 </div>
 
+                {/* Clinical Modules Selection */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-2 flex items-center justify-center gap-2 shadow-sm overflow-x-auto">
+                    {[
+                        { id: 'NONE', label: 'Standard Rx', icon: FileText, color: 'text-slate-600', bg: 'bg-slate-50' },
+                        { id: 'PEDS', label: 'Pediatrics', icon: Baby, color: 'text-sky-600', bg: 'bg-sky-50' },
+                        { id: 'OPHTHA', label: 'Ophthalmology', icon: Eye, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                        { id: 'SURGERY', label: 'General Surgery', icon: Zap, color: 'text-rose-600', bg: 'bg-rose-50' },
+                    ].map((mod) => (
+                        <button
+                            key={mod.id}
+                            onClick={() => setActiveModule(mod.id as any)}
+                            className={`flex items-center gap-2.5 px-6 py-3 rounded-xl transition-all whitespace-nowrap ${activeModule === mod.id ? `${mod.bg} ring-1 ring-${mod.color.split('-')[1]}-200` : 'hover:bg-slate-50'}`}
+                        >
+                            <mod.icon size={18} className={activeModule === mod.id ? mod.color : 'text-slate-400'} />
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${activeModule === mod.id ? 'text-slate-900' : 'text-slate-500'}`}>{mod.label}</span>
+                        </button>
+                    ))}
+                </div>
+
+                {/* Rendering Modules */}
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {activeModule === 'PEDS' && <PediatricsModule formData={formData} setFormData={setFormData} />}
+                    {activeModule === 'OPHTHA' && <OphthalmologyModule formData={formData} setFormData={setFormData} />}
+                    {activeModule === 'SURGERY' && <GeneralSurgeryModule formData={formData} setFormData={setFormData} />}
+                </div>
+
                 {/* Clinical Notes Card */}
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                     <div className="flex items-center gap-2 mb-6 pb-2 border-b border-slate-100">
@@ -1454,7 +1687,13 @@ function CreatePrescriptionPage() {
                         disabled={isSaving || isSending || sentToPharma}
                         className={`px-8 py-3 rounded-xl font-bold uppercase text-xs tracking-wider transition-all active:scale-95 flex items-center gap-2 ${sentToPharma ? 'bg-emerald-100 text-emerald-700 shadow-none' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700'}`}
                     >
-                        {isSending ? <Loader2 className="animate-spin" size={16} /> : (sentToPharma ? <CheckCircle2 size={16} /> : <Pill size={16} />)}
+                        {isSending ? (
+                            <Loader2 className="animate-spin" size={16} />
+                        ) : sentToPharma ? (
+                            <CheckCircle2 size={16} />
+                        ) : (
+                            <Pill size={16} />
+                        )}
                         {sentToPharma ? 'Sent to Pharma' : 'Send to Pharma'}
                     </button>
                     <button
