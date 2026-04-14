@@ -219,6 +219,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         const symptoms = Array.isArray(apt.symptoms) ? apt.symptoms.join(', ') : (apt.symptoms || '');
                         const diagnosis = apt.reason || symptoms;
 
+                        const v = apt.vitals || {};
                         setFormData(prev => ({
                             ...prev,
                             patientName,
@@ -226,7 +227,26 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             gender: gender,
                             mrn,
                             symptoms,
-                            diagnosis
+                            diagnosis,
+                            pediatricData: {
+                                ...prev.pediatricData,
+                                weight: v.weight || prev.pediatricData.weight,
+                                height: v.height || prev.pediatricData.height,
+                                temperature: v.temperature || prev.pediatricData.temperature,
+                                heartRate: v.pulse || prev.pediatricData.heartRate,
+                                respRate: v.respRate || prev.pediatricData.respRate,
+                            },
+                            surgeryData: {
+                                ...prev.surgeryData,
+                                vitals: {
+                                    ...prev.surgeryData.vitals,
+                                    bp: v.bloodPressure || '',
+                                    hr: v.pulse || '',
+                                    heartRate: v.pulse || '',
+                                    temperature: v.temperature || '',
+                                    spo2: v.spO2 || '',
+                                }
+                            }
                         }));
                     } else {
                         toast.error(res.error || "Failed to load appointment details");
@@ -249,10 +269,29 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                     if (p) {
                         setFormData(prev => ({
                             ...prev,
-                            patientName: p.name || '',
-                            age: String(p.age || ''),
-                            gender: p.gender || 'Male',
+                            patientName: p.name || p.user?.name || '',
+                            age: String(p.age || p.user?.age || ''),
+                            gender: p.gender || p.user?.gender || 'Male',
                             mrn: p.mrn || '',
+                            pediatricData: {
+                                ...prev.pediatricData,
+                                weight: p.weight || prev.pediatricData.weight,
+                                height: p.height || prev.pediatricData.height,
+                                temperature: p.temperature || prev.pediatricData.temperature,
+                                heartRate: p.pulse || prev.pediatricData.heartRate,
+                                respRate: p.respRate || prev.pediatricData.respRate,
+                            },
+                            surgeryData: {
+                                ...prev.surgeryData,
+                                vitals: {
+                                    ...prev.surgeryData.vitals,
+                                    bp: p.bloodPressure || '',
+                                    hr: p.pulse || '',
+                                    heartRate: p.pulse || '',
+                                    temperature: p.temperature || '',
+                                    spo2: p.spO2 || '',
+                                }
+                            }
                         }));
                     }
                 } catch (err) {
