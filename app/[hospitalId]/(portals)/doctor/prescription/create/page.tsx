@@ -25,7 +25,10 @@ import {
     AlertCircle,
     CheckCircle2,
     X,
-    FlaskConical
+    FlaskConical,
+    Baby,
+    Eye,
+    Zap
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -33,6 +36,9 @@ import { getAppointmentDetailsAction, getDoctorProfileAction } from '@/lib/integ
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 import medicineData from '@/medicine.json';
 import { doctorService } from '@/lib/integrations/services/doctor.service';
+import { PediatricsModule } from './modules/PediatricsModule';
+import { OphthalmologyModule } from './modules/OphthalmologyModule';
+import { GeneralSurgeryModule } from './modules/GeneralSurgeryModule';
 
 // --- Types ---
 interface Medicine {
@@ -72,6 +78,10 @@ interface PrescriptionForm {
     subtotal: number;
     tax: number;
     total: number;
+    notes: string;
+    pediatricData?: any;
+    ophthaData?: any;
+    surgeryData?: any;
 }
 
 const INITIAL_FORM: PrescriptionForm = {
@@ -93,7 +103,46 @@ const INITIAL_FORM: PrescriptionForm = {
     doctorSpecialization: '',
     subtotal: 0,
     tax: 0,
-    total: 0
+    total: 0,
+    pediatricData: {
+        weight: '',
+        height: '',
+        headCircumference: '',
+        temperature: '98.6',
+        heartRate: '',
+        respRate: '',
+        growth: { weightForAge: '', heightForAge: '' },
+        milestones: '',
+        milestoneNotes: '',
+        immunizationStatus: '',
+        dueVaccines: [],
+        symptoms: [],
+        redFlags: [],
+        notes: ''
+    },
+    ophthaData: {
+        vision: { od: { unaided: '', corrected: '' }, os: { unaided: '', corrected: '' } },
+        refraction: { od: { sph: '', cyl: '', axis: '' }, os: { sph: '', cyl: '', axis: '' } },
+        iop: { od: '', os: '' },
+        pupils: '',
+        symptoms: [],
+        slitLamp: { conjunctiva: '', cornea: '', anteriorChamber: '', lens: '' },
+        fundus: { retina: '', opticDisc: '', macula: '' },
+        diagnosis: '',
+        notes: ''
+    },
+    surgeryData: {
+        surgeryType: '',
+        procedurePlanned: '',
+        indication: '',
+        physicalExam: { abdomen: '', thorax: '', limbs: '', others: '' },
+        vitals: {},
+        systemicReview: { cvs: '', rs: '', cns: '', git: '' },
+        preOpChecklist: { npoStatus: false, consentSigned: false, investigationsDone: false, bloodCrossMatched: false },
+        diagnosis: '',
+        notes: ''
+    },
+    notes: ''
 };
 
 function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: string }> }) {
@@ -138,8 +187,19 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
     // Success State
     const [showSuccess, setShowSuccess] = useState(false);
     const [generatedHtml, setGeneratedHtml] = useState<{ prescription: string, billing: string } | null>(null);
-    // const [hospitalData, setHospitalData] = useState<any>(null); // Removed, replaced by useQuery
-    // const [hospitalBranding, setHospitalBranding] = useState<any>(null); // Removed, replaced by useQuery
+
+    // Module Toggles
+    const [activeModule, setActiveModule] = useState<'NONE' | 'PEDS' | 'OPHTHA' | 'SURGERY'>('NONE');
+
+    // Auto-detect specialist module
+    useEffect(() => {
+        if (formData.doctorSpecialization) {
+            const spec = formData.doctorSpecialization.toLowerCase();
+            if (spec.includes('pedia')) setActiveModule('PEDS');
+            else if (spec.includes('ophthal')) setActiveModule('OPHTHA');
+            else if (spec.includes('surger')) setActiveModule('SURGERY');
+        }
+    }, [formData.doctorSpecialization]);
 
 
     // -- Fetch Appointment Details if ID present --
@@ -535,18 +595,17 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                     }
                     .container {
                         width: 210mm;
-                        height: 296mm;
+                        min-height: 296mm;
                         margin: 0 auto;
                         padding: 10mm 15mm 10mm 25mm;
                         box-sizing: border-box;
                         display: flex;
                         flex-direction: column;
                         background: white;
-                        overflow: hidden;
                     }
                     .content { flex: 1; }
                     .header-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; }
-                    .title { color: #1e40af; margin: 0; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; }
+                    .title { color: #1e40af; margin: 0; font-size: 16px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; line-height: 1; }
                     .doctor-info { text-align: right; }
                     .doctor-name { font-size: 14px; font-weight: 800; color: #1e293b; margin: 0; }
                     .doctor-spec { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin: 2px 0 0; }
@@ -584,7 +643,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         <div class="header-row">
                             <h1 class="title">Rx Prescription</h1>
                             <div class="doctor-info">
-                                <p class="doctor-name">Dr. ${formData.doctorName}</p>
+                                <p class="doctor-name">${formData.doctorName}</p>
                                 <p class="doctor-spec">${formData.doctorSpecialization || 'Medical Practitioner'}</p>
                             </div>
                         </div>
@@ -608,12 +667,122 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             </div>
                         </div>
 
+                        ${(formData.pediatricData?.weight || formData.pediatricData?.height || formData.pediatricData?.milestones) ? `
+                        <div style="margin-bottom: 20px; padding: 15px; background: #f0f9ff; border-radius: 12px; border: 1.5px solid #bae6fd;">
+                            <div style="font-size: 10px; font-weight: 900; color: #0369a1; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid #bae6fd; padding-bottom: 5px;">Pediatric Assessment</div>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px;">
+                                <div style="font-size: 10px; color: #475569;">Weight: <b>${formData.pediatricData.weight || '--'} kg</b></div>
+                                <div style="font-size: 10px; color: #475569;">Height: <b>${formData.pediatricData.height || '--'} cm</b></div>
+                                <div style="font-size: 10px; color: #475569;">Temp: <b>${formData.pediatricData.temperature || '98.6'} °F</b></div>
+                                <div style="font-size: 10px; color: #475569;">HC: <b>${formData.pediatricData.headCircumference || '--'} cm</b></div>
+                                <div style="font-size: 10px; color: #475569;">HR: <b>${formData.pediatricData.heartRate || '--'} bpm</b></div>
+                                <div style="font-size: 10px; color: #475569;">RR: <b>${formData.pediatricData.respRate || '--'} /min</b></div>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; border-top: 1px dashed #bae6fd; padding-top: 10px;">
+                                <div>
+                                    <div style="font-size: 9px; font-weight: 800; color: #0369a1; text-transform: uppercase; margin-bottom: 4px;">Development & Growth</div>
+                                    <div style="font-size: 10px; color: #475569;">Milestones: <b>${formData.pediatricData.milestones || 'N/A'}</b></div>
+                                    ${formData.pediatricData.milestoneNotes ? `<div style="font-size: 9px; color: #64748b; font-style: italic;">Notes: ${formData.pediatricData.milestoneNotes}</div>` : ''}
+                                    <div style="font-size: 10px; color: #475569; margin-top: 4px;">Weight for Age: <b>${formData.pediatricData.growth?.weightForAge || 'N/A'}</b></div>
+                                    <div style="font-size: 10px; color: #475569;">Height for Age: <b>${formData.pediatricData.growth?.heightForAge || 'N/A'}</b></div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 9px; font-weight: 800; color: #0369a1; text-transform: uppercase; margin-bottom: 4px;">Immunization & Safety</div>
+                                    <div style="font-size: 10px; color: #475569;">Status: <b>${formData.pediatricData.immunizationStatus || 'N/A'}</b></div>
+                                    ${formData.pediatricData.dueVaccines?.length > 0 ? `<div style="font-size: 9px; color: #e11d48;">Due: ${formData.pediatricData.dueVaccines.join(', ')}</div>` : ''}
+                                    ${formData.pediatricData.redFlags?.length > 0 ? `<div style="font-size: 9px; color: #e11d48; font-weight: 800; margin-top: 4px;">⚠️ Red Flags: ${formData.pediatricData.redFlags.join(', ')}</div>` : ''}
+                                </div>
+                            </div>
+
+                            ${formData.pediatricData.symptoms?.length > 0 ? `
+                            <div style="margin-top: 10px; font-size: 10px; color: #475569;">
+                                <b>Specific Symptoms:</b> ${formData.pediatricData.symptoms.join(', ')}
+                            </div>` : ''}
+                            
+                            ${formData.pediatricData.notes ? `<div style="font-size: 10px; color: #475569; margin-top: 8px; border-top: 1px solid #bae6fd; padding-top: 5px;"><b>Additional Notes:</b> ${formData.pediatricData.notes}</div>` : ''}
+                        </div>
+                        ` : ''}
+
+                        ${(formData.ophthaData?.vision?.od?.unaided || formData.ophthaData?.vision?.os?.unaided || formData.ophthaData?.iop?.od || formData.ophthaData?.diagnosis) ? `
+                        <div style="margin-bottom: 20px; padding: 15px; background: #f5f3ff; border-radius: 12px; border: 1.5px solid #ddd6fe;">
+                            <div style="font-size: 10px; font-weight: 900; color: #5b21b6; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid #ddd6fe; padding-bottom: 5px;">Ophthalmology Findings</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div>
+                                    <div style="font-size: 9px; color: #6d28d9; font-weight: 800; text-transform: uppercase; margin-bottom: 4px;">Vision (OD/OS)</div>
+                                    <div style="font-size: 11px; font-weight: 700;">OD: ${formData.ophthaData.vision?.od?.unaided || '--'} ${formData.ophthaData.vision?.od?.corrected ? `(Corr: ${formData.ophthaData.vision.od.corrected})` : ''}</div>
+                                    <div style="font-size: 11px; font-weight: 700;">OS: ${formData.ophthaData.vision?.os?.unaided || '--'} ${formData.ophthaData.vision?.os?.corrected ? `(Corr: ${formData.ophthaData.vision.os.corrected})` : ''}</div>
+                                    
+                                    <div style="margin-top: 8px;">
+                                        <div style="font-size: 8px; color: #94a3b8; font-weight: 800; text-transform: uppercase;">Refraction</div>
+                                        <div style="font-size: 10px;">OD: ${formData.ophthaData.refraction?.od?.sph || '0'} / ${formData.ophthaData.refraction?.od?.cyl || '0'} x ${formData.ophthaData.refraction?.od?.axis || '0'}°</div>
+                                        <div style="font-size: 10px;">OS: ${formData.ophthaData.refraction?.os?.sph || '0'} / ${formData.ophthaData.refraction?.os?.cyl || '0'} x ${formData.ophthaData.refraction?.os?.axis || '0'}°</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 9px; color: #6d28d9; font-weight: 800; text-transform: uppercase; margin-bottom: 4px;">Pressure & Exam</div>
+                                    <div style="font-size: 10px;">IOP: <b>OD ${formData.ophthaData.iop?.od || '--'}</b> | <b>OS ${formData.ophthaData.iop?.os || '--'}</b> mmHg</div>
+                                    <div style="font-size: 10px;">Pupils: <b>${formData.ophthaData.pupils || 'Normal'}</b></div>
+                                    
+                                    <div style="margin-top: 8px;">
+                                        <div style="font-size: 8px; color: #94a3b8; font-weight: 800; text-transform: uppercase;">Slit Lamp</div>
+                                        <div style="font-size: 9px;">Cornea: ${formData.ophthaData.slitLamp?.cornea || 'Clear'} | Lens: ${formData.ophthaData.slitLamp?.lens || 'Clear'}</div>
+                                        <div style="font-size: 9px;">AC: ${formData.ophthaData.slitLamp?.anteriorChamber || 'Normal'} | Conj: ${formData.ophthaData.slitLamp?.conjunctiva || 'Normal'}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr; gap: 5px; border-top: 1px dashed #ddd6fe; padding-top: 8px;">
+                                <div style="font-size: 9px; color: #475569;"><b>Fundus:</b> Disc: ${formData.ophthaData.fundus?.opticDisc || 'Normal'} | Retina: ${formData.ophthaData.fundus?.retina || 'Normal'} | Macula: ${formData.ophthaData.fundus?.macula || 'Normal'}</div>
+                                ${formData.ophthaData.symptoms?.length > 0 ? `<div style="font-size: 9px; color: #475569;"><b>Ocular Symptoms:</b> ${formData.ophthaData.symptoms.join(', ')}</div>` : ''}
+                                ${formData.ophthaData.diagnosis ? `<div style="font-size: 11px; font-weight: 800; color: #5b21b6; margin-top: 4px;">Specialty Dx: ${formData.ophthaData.diagnosis}</div>` : ''}
+                            </div>
+                            
+                            ${formData.ophthaData.notes ? `<div style="font-size: 10px; color: #475569; margin-top: 8px; font-style: italic;">Note: ${formData.ophthaData.notes}</div>` : ''}
+                        </div>
+                        ` : ''}
+
+                        ${(formData.surgeryData?.procedurePlanned || formData.surgeryData?.indication || formData.surgeryData?.diagnosis) ? `
+                        <div style="margin-bottom: 20px; padding: 15px; background: #fff1f2; border-radius: 12px; border: 1.5px solid #fecdd3;">
+                            <div style="font-size: 10px; font-weight: 900; color: #be123c; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid #fecdd3; padding-bottom: 5px;">General Surgery Evaluation</div>
+                            <div style="font-size: 13px; font-weight: 900; color: #9f1239; margin-bottom: 5px;">${formData.surgeryData.procedurePlanned || 'No Procedure Specified'}</div>
+                            <div style="font-size: 10px; color: #475569; margin-bottom: 10px;">Type: <b>${formData.surgeryData.surgeryType || 'N/A'}</b> | Indication: ${formData.surgeryData.indication || 'N/A'}</div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; border-top: 1px dashed #fecdd3; padding-top: 10px;">
+                                <div>
+                                    <div style="font-size: 9px; font-weight: 800; color: #be123c; text-transform: uppercase; margin-bottom: 4px;">Physical Exam</div>
+                                    <div style="font-size: 9px;">Abd: ${formData.surgeryData.physicalExam?.abdomen || 'NAD'} | Thorax: ${formData.surgeryData.physicalExam?.thorax || 'NAD'}</div>
+                                    <div style="font-size: 9px;">Limbs: ${formData.surgeryData.physicalExam?.limbs || 'NAD'} | Others: ${formData.surgeryData.physicalExam?.others || 'NAD'}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 9px; font-weight: 800; color: #be123c; text-transform: uppercase; margin-bottom: 4px;">Systemic Review</div>
+                                    <div style="font-size: 9px;">CVS: ${formData.surgeryData.systemicReview?.cvs || 'NAD'} | RS: ${formData.surgeryData.systemicReview?.rs || 'NAD'}</div>
+                                    <div style="font-size: 9px;">CNS: ${formData.surgeryData.systemicReview?.cns || 'NAD'} | GIT: ${formData.surgeryData.systemicReview?.git || 'NAD'}</div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 10px; padding: 8px; background: #fff; border-radius: 8px; border: 1px solid #fecdd3;">
+                                <div style="font-size: 8px; font-weight: 800; color: #be123c; text-transform: uppercase; margin-bottom: 4px;">Pre-Op Checklist</div>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; font-size: 9px; font-weight: 700;">
+                                    <div>NPO: ${formData.surgeryData.preOpChecklist?.npoStatus ? '✅ YES' : '❌ NO'}</div>
+                                    <div>Consent: ${formData.surgeryData.preOpChecklist?.consentSigned ? '✅ SIGNED' : '❌ PENDING'}</div>
+                                    <div>Investigations: ${formData.surgeryData.preOpChecklist?.investigationsDone ? '✅ DONE' : '❌ PENDING'}</div>
+                                    <div>Cross-match: ${formData.surgeryData.preOpChecklist?.bloodCrossMatched ? '✅ DONE' : '❌ PENDING'}</div>
+                                </div>
+                            </div>
+
+                            ${formData.surgeryData.diagnosis ? `<div style="font-size: 11px; font-weight: 800; color: #be123c; margin-top: 8px;">Specialty Dx: ${formData.surgeryData.diagnosis}</div>` : ''}
+                            ${formData.surgeryData.notes ? `<div style="font-size: 10px; color: #475569; margin-top: 5px; font-style: italic;">Note: ${formData.surgeryData.notes}</div>` : ''}
+                        </div>
+                        ` : ''}
+
                         ${formData.diagnosis ? `
                         <div style="margin-bottom: 20px; background: #eff6ff; padding: 10px 15px; border-radius: 8px;">
                             <span class="info-label">Diagnosis / Impressions:</span>
                             <div style="font-size: 13px; font-weight: 700; color: #1e40af; margin-top: 2px;">${formData.diagnosis}</div>
                         </div>
                         ` : ''}
+
 
                         <div class="section-title">Medications & Dosage</div>
                         <table>
@@ -627,15 +796,31 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                 </tr>
                             </thead>
                             <tbody>
-                                ${formData.medicines.map(med => `
+                                ${formData.medicines.map(med => {
+                                    const f = med.freq || '';
+                                    let timing = '';
+                                    if (f.includes('-')) {
+                                        const p = f.split('-');
+                                        const t = [];
+                                        if (p[0] !== '0') t.push('Morning');
+                                        if (p[1] !== '0') t.push('Afternoon');
+                                        if (p[2] !== '0') t.push('Night');
+                                        if (p[3] && p[3] !== '0') t.push('Late Night');
+                                        timing = t.length > 0 ? `<div style="font-size: 8px; color: #64748b; font-weight: 700; margin-top: 2px;">${t.join('-')}</div>` : '';
+                                    }
+                                    return `
                                 <tr>
                                     <td class="med-name">${med.name}</td>
                                     <td style="font-weight: 600;">${med.dosage}</td>
-                                    <td style="font-weight: 600; color: #475569;">${med.freq}</td>
+                                    <td style="font-weight: 600; color: #475569;">
+                                        <div>${med.freq}</div>
+                                        ${timing}
+                                    </td>
                                     <td style="font-weight: 600;">${med.duration}</td>
                                     <td style="font-weight: 800; text-align: right;">${med.quantity}</td>
                                 </tr>
-                                `).join('')}
+                                `;
+                                }).join('')}
                             </tbody>
                         </table>
 
@@ -760,7 +945,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             </div>
                             <div class="info-group" style="text-align: right;">
                                 <span class="info-label">Doctor</span>
-                                <span class="info-value">DR. ${formData.doctorName}</span>
+                                <span class="info-value">${formData.doctorName}</span>
                                 <span style="font-size: 11px; color: #64748b;">Date: ${new Date().toLocaleDateString('en-GB')}</span>
                             </div>
                         </div>
@@ -896,11 +1081,14 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                 followUpDate: formData.followUpDate,
                 dietAdvice: formData.dietAdvice,
                 suggestedTests: formData.suggestedTests,
-                avoid: formData.avoid,
-                aiGenerated: mode === 'AI',
+                notes: formData.notes,
                 age: formData.age,
                 gender: formData.gender,
-                sendToPharma: sendToPharmaFlag
+                sendToPharma: sendToPharmaFlag,
+                // Specialty Data
+                pediatricData: activeModule === 'PEDS' ? formData.pediatricData : undefined,
+                ophthaData: activeModule === 'OPHTHA' ? formData.ophthaData : undefined,
+                surgeryData: activeModule === 'SURGERY' ? formData.surgeryData : undefined,
             });
 
             // Re-use current styled generation logic
@@ -1055,6 +1243,32 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             />
                         </div>
                     </div>
+                </div>
+
+                {/* Clinical Modules Selection */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-2 flex items-center justify-center gap-2 shadow-sm overflow-x-auto">
+                    {[
+                        { id: 'NONE', label: 'Standard Rx', icon: FileText, color: 'text-slate-600', bg: 'bg-slate-50' },
+                        { id: 'PEDS', label: 'Pediatrics', icon: Baby, color: 'text-sky-600', bg: 'bg-sky-50' },
+                        { id: 'OPHTHA', label: 'Ophthalmology', icon: Eye, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                        { id: 'SURGERY', label: 'General Surgery', icon: Zap, color: 'text-rose-600', bg: 'bg-rose-50' },
+                    ].map((mod) => (
+                        <button
+                            key={mod.id}
+                            onClick={() => setActiveModule(mod.id as any)}
+                            className={`flex items-center gap-2.5 px-6 py-3 rounded-xl transition-all whitespace-nowrap ${activeModule === mod.id ? `${mod.bg} ring-1 ring-${mod.color.split('-')[1]}-200` : 'hover:bg-slate-50'}`}
+                        >
+                            <mod.icon size={18} className={activeModule === mod.id ? mod.color : 'text-slate-400'} />
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${activeModule === mod.id ? 'text-slate-900' : 'text-slate-500'}`}>{mod.label}</span>
+                        </button>
+                    ))}
+                </div>
+
+                {/* Rendering Modules */}
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {activeModule === 'PEDS' && <PediatricsModule formData={formData} setFormData={setFormData} />}
+                    {activeModule === 'OPHTHA' && <OphthalmologyModule formData={formData} setFormData={setFormData} />}
+                    {activeModule === 'SURGERY' && <GeneralSurgeryModule formData={formData} setFormData={setFormData} />}
                 </div>
 
                 {/* Clinical Notes Card */}
@@ -1494,9 +1708,6 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                     </div>
                 </div>
             )}
-
-
-
 
         </div>
     );
