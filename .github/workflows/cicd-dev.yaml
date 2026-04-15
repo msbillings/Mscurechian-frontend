@@ -1,6 +1,8 @@
 name: ci cd dev deployment
 
 on:
+ push:
+   branches: feature_branch
  workflow_dispatch:  
 
 env:
