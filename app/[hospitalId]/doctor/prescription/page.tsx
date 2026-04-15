@@ -862,7 +862,6 @@ function CreatePrescriptionPage() {
                     setActiveSpecialty(specs[0]);
                 }
             }
-
             setFormData(prev => ({
                 ...prev,
                 doctorName: doctorProfile.user?.name || doctorProfile.name || prev.doctorName,

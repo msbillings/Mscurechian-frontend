@@ -3898,5 +3898,4 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
         </div>
     );
 }
-
 export default React.memo(CreatePrescriptionPage);
