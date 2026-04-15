@@ -1,4 +1,4 @@
-import { DischargeBillingProcess } from "@/app/[hospitalId]/discharge/components/DischargeBillingProcess";
+import { DischargeBillingProcess } from "@/app/[hospitalId]/(portals)/discharge/components/DischargeBillingProcess";
 
 export default function HelpdeskDischargeProcessPage() {
     return (

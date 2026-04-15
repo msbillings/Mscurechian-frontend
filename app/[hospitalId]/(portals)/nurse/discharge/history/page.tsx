@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import DischargeHistory from '@/app/[hospitalId]/discharge/components/DischargeHistory';
+import DischargeHistory from '@/app/[hospitalId]/(portals)/discharge/components/DischargeHistory';
 
 export default function NurseDischargeHistoryPage() {
     return (

@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 import NotificationCenter from "@/components/navbar/NotificationCenter";
-import HelpdeskQuickActions from "@/app/[hospitalId]/helpdesk/components/HelpdeskQuickActions";
+import HelpdeskQuickActions from "@/app/[hospitalId]/(portals)/helpdesk/components/HelpdeskQuickActions";
 import ProgressBar from "@/components/ui/ProgressBar";
 import { useTenantLink } from "@/hooks/useTenantLink";
 import { PrefetchLink } from "@/components/ui/PrefetchLink";
