@@ -29,42 +29,37 @@ export const calculateStayDuration = (admissionDate: string | Date): string => {
  * Handles UTC to Local conversion automatically.
  */
 export const formatLocalTime = (dateInput: string | Date | undefined, fallback?: string): string => {
-    // 1. If fallback is already a formatted time (e.g. "10:39 AM"), return it immediately.
-    // This is the most reliable way to show the time specifically saved during booking.
+    // console.log("[formatLocalTime] Input:", { dateInput, fallback });
+
+    if (!dateInput && !fallback) return "N/A";
+
     const isFormattedTime = (s: string) => /^\d{1,2}:\d{2}(?:\s*[AP]M)?$/i.test(s);
-    if (fallback && isFormattedTime(fallback)) {
-        return fallback;
-    }
-
-    // 2. If dateInput itself looks like a formatted time, return it.
-    if (typeof dateInput === 'string' && isFormattedTime(dateInput)) {
-        return dateInput;
-    }
-
-    if (!dateInput) return fallback || 'N/A';
-    
-    // 3. Ignore date-only strings.
-    if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
-        return fallback || 'N/A';
-    }
 
     try {
-        const date = new Date(dateInput);
-        if (isNaN(date.getTime())) return fallback || String(dateInput);
-        
-        // 4. Handle "midnight" edge cases for date-only ISO strings.
-        const timeStr = date.toISOString();
-        if (timeStr.includes('T00:00:00') && typeof dateInput === 'string' && !dateInput.includes(':')) {
-            return fallback || 'N/A';
+        // If we have a full timestamp (ISO or Date object), try converting it to local first.
+        if (dateInput) {
+            const date = new Date(dateInput);
+            if (!isNaN(date.getTime())) {
+                const localStr = date.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                });
+                // If it's just midnight (from a date-only string), and we have a fallback, use fallback.
+                if (localStr === "12:00 AM" && fallback && isFormattedTime(fallback)) {
+                   return fallback;
+                }
+                return localStr;
+            }
         }
 
-        // 5. Use toLocaleTimeString which handles the visitor's local timezone.
-        return date.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        });
+        // Fallback to the provided time string if it's already formatted.
+        if (fallback && isFormattedTime(fallback)) return fallback;
+        if (typeof dateInput === 'string' && isFormattedTime(dateInput)) return dateInput;
+
+        return fallback || "N/A";
     } catch (e) {
-        return fallback || String(dateInput);
+        console.error("[formatLocalTime] Error:", e);
+        return fallback || "N/A";
     }
 };

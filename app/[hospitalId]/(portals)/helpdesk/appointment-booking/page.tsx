@@ -297,6 +297,43 @@ export default function AppointmentBooking() {
     }, [selectedPatient]);
 
     useEffect(() => {
+        const checkExistingAppointment = async () => {
+            if (!selectedPatient || !selectedDoctor) return;
+            try {
+                // We use the dashboard/appointments endpoint to check for today's active bookings
+                const hospitalId = profile?.hospital?._id;
+                if (!hospitalId) return;
+
+                const patientId = selectedPatient.id || selectedPatient._id;
+                const appointments = await helpdeskService.getAppointments(1, 50, patientId, selectedDoctor._id);
+
+                const today = new Date().toISOString().split('T')[0];
+
+                const existing = (appointments.data || []).find((apt: any) => {
+                    const aptPatientId = apt.patient?._id || apt.patient?.id || apt.patient;
+                    const aptDate = new Date(apt.date).toISOString().split('T')[0];
+                    const activeStatuses = ['pending', 'confirmed', 'in-progress', 'waiting', 'Booked'];
+                    
+                    return aptPatientId === patientId && 
+                           aptDate === today && 
+                           activeStatuses.includes(apt.status);
+                });
+
+                if (existing) {
+                    toast(`Attention: ${selectedPatient.name} already has a ${existing.status} appointment with Dr. ${selectedDoctor.user?.name || selectedDoctor.name} today.`, {
+                        icon: '⚠️',
+                        duration: 6000,
+                    });
+                }
+            } catch (err) {
+                console.warn("[CHECK] Failed to verify existing appointments:", err);
+            }
+        };
+
+        checkExistingAppointment();
+    }, [selectedPatient?.id, selectedPatient?._id, selectedDoctor?._id, profile?.hospital]);
+
+    useEffect(() => {
         if (selectedPatient?.activeAdmission && registrationType === 'IPD') {
             setRegistrationType('OPD');
             toast.error(`Patient is already admitted (${selectedPatient.activeAdmission.admissionId}). Switching to OPD mode.`, {
@@ -371,10 +408,17 @@ export default function AppointmentBooking() {
             toast.error("Please correct the highlighted errors and fill all required fields.");
             return;
         }
-
         try {
             setSubmitting(true);
             const backendPaymentStatus = paymentStatus === 'unpaid' ? 'pending' : 'paid';
+
+            // PRE-OPEN BLANK WINDOW: This is CRITICAL.
+            // Browsers block window.open if it occurs too long after the user click.
+            // By opening it immediately, we preserve the user-trust state even if the API takes 50 seconds.
+            const printWindow = window.open('about:blank', '_blank');
+            if (printWindow) {
+               printWindow.document.write('<html><head><title>Generating Receipt...</title><style>body{display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#666;}</style></head><body><div><p>Processing your booking, please wait...</p></div></body></html>');
+            }
 
             const payload = {
                 patientId: selectedPatient?._id || selectedPatient?.id,
@@ -382,8 +426,8 @@ export default function AppointmentBooking() {
                 date: selectedDate,
                 time: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
                 timeSlot: bookingMode === 'slot' ? selectedSlot : "General Queue",
-                startTime: bookingMode === 'slot' ? selectedSlot : "",
-                endTime: bookingMode === 'slot' ? selectedSlot : "",
+                startTime: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                endTime: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
                 type: appointmentType,
                 notes: notes,
                 paymentMethod: paymentMethod,
@@ -442,20 +486,6 @@ export default function AppointmentBooking() {
                     paymentStatus: backendPaymentStatus
                 });
                 toast.success("IPD Admission Initiated");
-            }
-
-            const response = await helpdeskService.createAppointment({
-                ...payload,
-                type: registrationType === 'IPD' ? 'IPD' : appointmentType,
-                amount: registrationType === 'IPD' ? 0 : (selectedDoctor?.consultationFee || 0),
-                paymentStatus: registrationType === 'IPD' ? 'not_required' : payload.paymentStatus
-            });
-            const appointment = response.appointment || response;
-
-            if (sendToDoctor && (appointment._id || appointment.id)) {
-                try {
-                    await helpdeskService.updateAppointmentStatus(appointment._id || appointment.id, 'confirmed');
-                } catch (e) { }
             }
 
             // 1. Fetch Hospital Branding
@@ -535,7 +565,7 @@ export default function AppointmentBooking() {
                     time: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
                     type: appointmentType.toUpperCase(),
                     notes: notes,
-                    appointmentId: appointment.appointmentId || appointment.id || appointment._id || 'APT-' + Math.random().toString(36).substr(2, 9).toUpperCase()
+                    appointmentId: 'PENDING'
                 },
                 payment: {
                     amount: registrationType === 'IPD' ? parseFloat(ipdFee) : (selectedDoctor?.consultationFee || 0),
@@ -548,17 +578,102 @@ export default function AppointmentBooking() {
                 returnUrl: '/helpdesk'
             };
 
-            const printWindow = window.open('', '_blank');
+            console.time("BookingFullProcess");
+            let appointment: any;
+            try {
+                if (registrationType === 'IPD') {
+                    const selectedBed = beds.find(b => b._id === admissionData.bedId);
+                    const finalAdmissionType = (selectedBed?.type || admissionData.roomType || 'GENERAL').toUpperCase();
+
+                    await ipdService.initiateAdmission({
+                        patientId: selectedPatient?._id || selectedPatient?.id,
+                        doctorId: selectedDoctor?._id,
+                        bedId: admissionData.bedId,
+                        admissionType: finalAdmissionType,
+                        diet: admissionData.diet,
+                        clinicalNotes: admissionData.clinicalNotes,
+                        reason: notes,
+                        vitals: {
+                            height: vitals.height,
+                            weight: vitals.weight,
+                            bloodPressure: vitals.bp,
+                            temperature: vitals.temperature,
+                            pulse: vitals.pulse,
+                            spO2: vitals.spo2,
+                            glucose: vitals.glucose
+                        },
+                        amount: parseFloat(ipdFee),
+                        paymentMethod: paymentMethod,
+                        paymentStatus: backendPaymentStatus
+                    });
+
+                    const regPayload = {
+                        ...payload,
+                        ...admissionData,
+                        name: selectedPatient.name,
+                        mobile: selectedPatient.mobile,
+                        age: selectedPatient.age,
+                        gender: selectedPatient.gender,
+                        dob: selectedPatient.dob,
+                        type: 'IPD',
+                        visitType: 'IPD'
+                    };
+                    console.log("[DEBUG] Calling registerPatient API...");
+                    const regResponse = await helpdeskService.registerPatient(regPayload as any);
+                    if (regResponse.success === false) throw new Error(regResponse.message || "Registration failed");
+                    appointment = (regResponse as any).appointment || regResponse;
+                } else {
+                    console.log("[DEBUG] Calling createAppointment API...");
+                    const bookResponse = await helpdeskService.createAppointment({
+                        ...payload,
+                        type: appointmentType,
+                        amount: selectedDoctor?.consultationFee || 0,
+                        paymentStatus: payload.paymentStatus
+                    });
+                    if (bookResponse.success === false) throw new Error(bookResponse.message || "Booking failed");
+                    appointment = bookResponse.appointment || bookResponse;
+                }
+            } catch (apiErr: any) {
+                if (printWindow) printWindow.close();
+                throw apiErr;
+            }
+            console.timeEnd("BookingFullProcess");
+
+            if (sendToDoctor && (appointment._id || appointment.id)) {
+                try {
+                    await helpdeskService.updateAppointmentStatus(appointment._id || appointment.id, 'confirmed');
+                } catch (e) { }
+            }
+
+            // Update receiptData with the actual appointment ID if returned
+            const finalReceiptData = {
+                ...receiptData,
+                appointment: {
+                    ...receiptData.appointment,
+                    appointmentId: appointment.appointmentId || appointment.id || appointment._id || 'APT-' + Math.random().toString(36).substr(2, 9).toUpperCase()
+                }
+            };
+
+            console.log("[DEBUG] Finalizing print window content...");
             if (printWindow) {
-                printWindow.document.write(generateClinicalReceiptHtml(receiptData));
-                printWindow.document.close();
-                toast.success("Booking Indexed & Receipt Generated");
+                try {
+                   printWindow.document.open();
+                   printWindow.document.write(generateClinicalReceiptHtml(finalReceiptData));
+                   printWindow.document.close();
+                   toast.success("Booking Indexed & Receipt Generated");
+                } catch(e) { 
+                    console.error("Print write error:", e);
+                    toast.error("Failed to write to print window.");
+                }
                 router.push('/helpdesk');
             } else {
+                console.warn("[DEBUG] Popup blocked.");
+                toast.error("Popup blocked! Receipt could not be opened.");
                 toast.success("Booking Indexed successfully");
                 router.push('/helpdesk');
             }
         } catch (error: any) {
+            console.error("[DEBUG] Booking logic error:", error);
             toast.error(error.message || "Execution failure during booking");
         } finally {
             setSubmitting(false);
