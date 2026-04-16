@@ -198,9 +198,9 @@ export const helpdeskService = {
    * Get all appointments for the helpdesk
    * @returns List of appointments
    */
-  getAppointments: (page: number = 1, limit: number = 10, patientId?: string) =>
+  getAppointments: (page: number = 1, limit: number = 10, patientId?: string, doctorId?: string) =>
     apiClient<any>(
-      `${HELPDESK_ENDPOINTS.APPOINTMENTS}?page=${page}&limit=${limit}${patientId ? `&patientId=${patientId}` : ""}`,
+      `${HELPDESK_ENDPOINTS.APPOINTMENTS}?page=${page}&limit=${limit}${patientId ? `&patientId=${patientId}` : ""}${doctorId ? `&doctorId=${doctorId}` : ""}`,
     ),
 
   /**
