@@ -548,7 +548,7 @@ export default function AppointmentBooking() {
                 returnUrl: '/helpdesk'
             };
 
-            const printWindow = window.open('', '_self');
+            const printWindow = window.open('', '_blank');
             if (printWindow) {
                 printWindow.document.write(generateClinicalReceiptHtml(receiptData));
                 printWindow.document.close();
