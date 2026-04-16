@@ -101,11 +101,25 @@ export default function PatientRegistration() {
                 age--;
             }
 
-            if (age >= 0) {
+            if (age >= 0 && age.toString() !== formData.age) {
                 setFormData(prev => ({ ...prev, age: age.toString() }));
             }
         }
     }, [formData.dob]);
+
+    // Auto-calculate DOB from Age (Reverse process)
+    useEffect(() => {
+        // Only calculate if age is entered and dob is not yet set or being cleared
+        // This avoids overlapping with the DOB -> Age effect
+        if (formData.age && !formData.dob) {
+            const ageNum = parseInt(formData.age);
+            if (!isNaN(ageNum) && ageNum >= 0 && ageNum <= 125) {
+                const birthYear = new Date().getFullYear() - ageNum;
+                const dob = `${birthYear}-01-01`; // Default to Jan 1st of the year
+                setFormData(prev => ({ ...prev, dob }));
+            }
+        }
+    }, [formData.age]);
 
     // Auto-set gender based on honorific
     useEffect(() => {
@@ -182,7 +196,17 @@ export default function PatientRegistration() {
             processedValue = value.slice(0, 100);
         }
 
-        setFormData(prev => ({ ...prev, [name]: processedValue }));
+        if (name === 'dob' && value) {
+            // When DOB changes, we may want to clear age to allow re-calculation
+            // but the useEffect handles it. We just need to make sure we don't block it.
+        }
+
+        if (name === 'age' && value) {
+            // When Age changes, we clear DOB to trigger the reverse calculation useEffect
+            setFormData(prev => ({ ...prev, [name]: processedValue, dob: '' }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: processedValue }));
+        }
 
         if (touched[name]) {
             const error = validateField(name, processedValue);
@@ -325,7 +349,7 @@ export default function PatientRegistration() {
                                 </div>
                                 <div className="md:col-span-2">
                                     <FormInput label="Age" required={!formData.dob} error={touched.age ? errors.age : ''} component={
-                                        <input name="age" type="number" value={formData.age} onChange={handleChange} onBlur={() => handleBlur('age')} placeholder="Age" readOnly className={`w-full px-3 py-2 rounded-xl bg-slate-100 border ${errors.age && touched.age ? 'border-rose-500' : 'border-slate-200'} cursor-not-allowed text-sm font-bold transition-all opacity-70`} />
+                                        <input name="age" type="number" value={formData.age} onChange={handleChange} onBlur={() => handleBlur('age')} placeholder="Age" className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${errors.age && touched.age ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold transition-all`} />
                                     } />
                                 </div>
                                 <div className="md:col-span-3">

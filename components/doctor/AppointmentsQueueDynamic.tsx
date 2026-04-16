@@ -6,6 +6,7 @@ import { Calendar, Clock, User, CheckCircle2, Loader2, Trash2 } from 'lucide-rea
 import { doctorService } from '@/lib/integrations/services/doctor.service';
 import { toast } from 'react-hot-toast';
 import { useAuthStore } from '@/stores/authStore';
+import { formatLocalTime } from '@/lib/utils/date-utils';
 
 interface Appointment {
   id: string;
@@ -252,7 +253,9 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration }: Queue
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-sm font-bold text-foreground">{apt.time}</p>
+                        <p className="text-sm font-bold text-foreground">
+                          {formatLocalTime(apt.createdAt, apt.time)}
+                        </p>
                         <p className="text-xs text-muted">~{consultationDuration || 15}min</p>
                       </div>
                       <button
@@ -293,7 +296,9 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration }: Queue
                         <p className="text-[9px] text-muted font-bold truncate">{apt.type}</p>
                       </div>
                       <div className="col-span-3 text-center">
-                        <p className="text-[10px] font-black text-foreground">{apt.time}</p>
+                        <p className="text-[10px] font-black text-foreground">
+                          {formatLocalTime(apt.createdAt, apt.time)}
+                        </p>
                         <p className="text-[8px] text-muted font-bold">~{consultationDuration || 15}min</p>
                       </div>
                       <div className="col-span-3 text-right">
