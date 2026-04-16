@@ -119,8 +119,8 @@ export default function AppointmentBooking() {
     const validateVital = (field: string, value: string) => {
         let error = '';
         const num = Number(value);
-        if (!value && field !== 'glucose' && field !== 'height' && field !== 'weight') {
-            return 'Required';
+        if (!value) {
+            return '';
         }
 
         switch (field) {
@@ -350,8 +350,6 @@ export default function AppointmentBooking() {
     const isBookingValid = () => {
         if (!selectedPatient || !selectedDoctor) return false;
 
-        const requiredVitals = ['bp', 'temperature', 'pulse', 'spo2'];
-        const hasEmptyRequired = requiredVitals.some(v => !vitals[v as keyof typeof vitals]);
         const hasVitalErrors = Object.values(vitalsErrors).some(err => !!err);
 
         const hasNotesLimit = notes.length > 400;
@@ -363,7 +361,7 @@ export default function AppointmentBooking() {
             if (admissionData.diet.length > 250 || admissionData.clinicalNotes.length > 400) return false;
         }
 
-        return !hasEmptyRequired && !hasVitalErrors && !hasNotesLimit && !hasEmptyNotes && !hasAdmissionErrors;
+        return !hasVitalErrors && !hasNotesLimit && !hasEmptyNotes && !hasAdmissionErrors;
     };
 
     const handleBooking = async () => {
@@ -382,6 +380,7 @@ export default function AppointmentBooking() {
                 patientId: selectedPatient?._id || selectedPatient?.id,
                 doctorId: selectedDoctor?._id,
                 date: selectedDate,
+                time: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
                 timeSlot: bookingMode === 'slot' ? selectedSlot : "General Queue",
                 startTime: bookingMode === 'slot' ? selectedSlot : "",
                 endTime: bookingMode === 'slot' ? selectedSlot : "",

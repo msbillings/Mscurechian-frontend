@@ -28,6 +28,7 @@ import {
 } from "@/lib/integrations/hooks";
 import { HelpdeskDashboardSkeleton } from "@/components/ui/skeletons";
 import { useAuthStore } from "@/stores/authStore";
+import { formatLocalTime } from "@/lib/utils/date-utils";
 
 function HelpdeskDashboard() {
   const [activeTab, setActiveTab] = useState('active');
@@ -545,7 +546,7 @@ function HelpdeskDashboard() {
 
                         <div className="col-span-1 flex justify-center">
                           <span className="text-[9px] font-black uppercase tracking-tight text-slate-400">
-                            {apt.time || "N/A"}
+                            {formatLocalTime(apt.createdAt, apt.time || "N/A")}
                           </span>
                         </div>
 
