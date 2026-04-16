@@ -29,17 +29,21 @@ export const calculateStayDuration = (admissionDate: string | Date): string => {
  * Handles UTC to Local conversion automatically.
  */
 export const formatLocalTime = (dateInput: string | Date | undefined, fallback?: string): string => {
-    // If we have a fallback that already looks like a formatted time (e.g. "10:39 AM" or "10:39"), prefer it
+    // 1. If fallback is already a formatted time (e.g. "10:39 AM"), return it immediately.
+    // This is the most reliable way to show the time specifically saved during booking.
     const isFormattedTime = (s: string) => /^\d{1,2}:\d{2}(?:\s*[AP]M)?$/i.test(s);
-    
     if (fallback && isFormattedTime(fallback)) {
         return fallback;
     }
 
+    // 2. If dateInput itself looks like a formatted time, return it.
+    if (typeof dateInput === 'string' && isFormattedTime(dateInput)) {
+        return dateInput;
+    }
+
     if (!dateInput) return fallback || 'N/A';
     
-    // Ignore date-only strings (e.g., "2026-04-16") as they would parse to UTC midnight 
-    // and show as "05:30 AM" in IST. We prefer the fallback (original time string) in this case.
+    // 3. Ignore date-only strings.
     if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
         return fallback || 'N/A';
     }
@@ -48,12 +52,13 @@ export const formatLocalTime = (dateInput: string | Date | undefined, fallback?:
         const date = new Date(dateInput);
         if (isNaN(date.getTime())) return fallback || String(dateInput);
         
-        // Ensure we are not returning midnight if the input was potentially date-only but didn't match the regex
-        const timeStr = date instanceof Date ? date.toISOString() : String(dateInput);
-        if (typeof timeStr === 'string' && timeStr.includes('T00:00:00') && typeof dateInput === 'string' && !dateInput.includes(':')) {
+        // 4. Handle "midnight" edge cases for date-only ISO strings.
+        const timeStr = date.toISOString();
+        if (timeStr.includes('T00:00:00') && typeof dateInput === 'string' && !dateInput.includes(':')) {
             return fallback || 'N/A';
         }
 
+        // 5. Use toLocaleTimeString which handles the visitor's local timezone.
         return date.toLocaleTimeString('en-US', {
             hour: '2-digit',
             minute: '2-digit',

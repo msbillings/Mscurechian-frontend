@@ -254,7 +254,7 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration }: Queue
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-sm font-bold text-foreground">
-                          {formatLocalTime(apt.createdAt, apt.time)}
+                          {apt.time || formatLocalTime(apt.createdAt)}
                         </p>
                         <p className="text-xs text-muted">~{consultationDuration || 15}min</p>
                       </div>
@@ -297,7 +297,7 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration }: Queue
                       </div>
                       <div className="col-span-3 text-center">
                         <p className="text-[10px] font-black text-foreground">
-                          {formatLocalTime(apt.createdAt, apt.time)}
+                          {apt.time || formatLocalTime(apt.createdAt)}
                         </p>
                         <p className="text-[8px] text-muted font-bold">~{consultationDuration || 15}min</p>
                       </div>

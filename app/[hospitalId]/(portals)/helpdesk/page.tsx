@@ -546,7 +546,7 @@ function HelpdeskDashboard() {
 
                         <div className="col-span-1 flex justify-center">
                           <span className="text-[9px] font-black uppercase tracking-tight text-slate-400">
-                            {formatLocalTime(apt.createdAt, apt.time || "N/A")}
+                            {apt.time || formatLocalTime(apt.createdAt)}
                           </span>
                         </div>
 
