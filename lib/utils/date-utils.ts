@@ -29,6 +29,13 @@ export const calculateStayDuration = (admissionDate: string | Date): string => {
  * Handles UTC to Local conversion automatically.
  */
 export const formatLocalTime = (dateInput: string | Date | undefined, fallback?: string): string => {
+    // If we have a fallback that already looks like a formatted time (e.g. "10:39 AM" or "10:39"), prefer it
+    const isFormattedTime = (s: string) => /^\d{1,2}:\d{2}(?:\s*[AP]M)?$/i.test(s);
+    
+    if (fallback && isFormattedTime(fallback)) {
+        return fallback;
+    }
+
     if (!dateInput) return fallback || 'N/A';
     
     // Ignore date-only strings (e.g., "2026-04-16") as they would parse to UTC midnight 
@@ -42,8 +49,8 @@ export const formatLocalTime = (dateInput: string | Date | undefined, fallback?:
         if (isNaN(date.getTime())) return fallback || String(dateInput);
         
         // Ensure we are not returning midnight if the input was potentially date-only but didn't match the regex
-        const timeStr = date.toISOString();
-        if (timeStr.endsWith('T00:00:00.000Z') && typeof dateInput === 'string' && !dateInput.includes(':')) {
+        const timeStr = date instanceof Date ? date.toISOString() : String(dateInput);
+        if (typeof timeStr === 'string' && timeStr.includes('T00:00:00') && typeof dateInput === 'string' && !dateInput.includes(':')) {
             return fallback || 'N/A';
         }
 
