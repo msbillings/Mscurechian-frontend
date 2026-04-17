@@ -151,7 +151,7 @@ export const DermatologyModule: React.FC<DermatologyModuleProps> = ({ formData, 
                     {/* Lesion Type */}
                     <div>
                         <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5">
-                            Lesion Type <span className="text-red-400">*</span>
+                            Lesion Type
                         </label>
                         <select
                             value={derm.lesionType}
@@ -203,7 +203,7 @@ export const DermatologyModule: React.FC<DermatologyModuleProps> = ({ formData, 
                     {/* Body Location multi-select chips */}
                     <div>
                         <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">
-                            Body Location <span className="text-red-400">*</span>
+                            Body Location
                             <span className="ml-2 text-amber-500 normal-case">(select all that apply)</span>
                         </label>
                         <div className="flex flex-wrap gap-2">
@@ -400,7 +400,7 @@ export const DermatologyModule: React.FC<DermatologyModuleProps> = ({ formData, 
                     {/* Duration */}
                     <div>
                         <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5">
-                            Duration <span className="text-red-400">*</span>
+                            Duration
                         </label>
                         <input
                             type="text"

@@ -217,6 +217,40 @@ export const PrintableDischargeSummary = React.forwardRef<HTMLDivElement, { data
                         </div>
                     </div>
 
+                    {/* Bed Info & Transfer History */}
+                    {data.bedHistory && data.bedHistory.length > 0 && (
+                        <div className="mb-6 relative z-10 break-inside-avoid shadow-sm rounded-lg overflow-hidden border border-gray-100">
+                            <h3 className="font-bold mb-1 border-b border-gray-200 pb-1 px-2 bg-gray-50 text-[12px] uppercase tracking-tight">Bed Occupancy & Transfer History</h3>
+                            <table className="vitals-table text-[10px]">
+                                <thead className="bg-gray-100/50">
+                                    <tr>
+                                        <th className="border border-gray-200 p-2 text-left font-bold w-[25%] uppercase tracking-wider">Ward / Room</th>
+                                        <th className="border border-gray-200 p-2 text-left font-bold w-[15%] uppercase tracking-wider">Bed ID</th>
+                                        <th className="border border-gray-200 p-2 text-left font-bold w-[35%] uppercase tracking-wider">Duration (From - To)</th>
+                                        <th className="border border-gray-200 p-2 text-right font-bold w-[25%] uppercase tracking-wider">Daily Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {data.bedHistory.map((bh: any, idx: number) => (
+                                        <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}>
+                                            <td className="border border-gray-200 p-2 font-medium">{bh.ward} {bh.room && `/ R-${bh.room}`}</td>
+                                            <td className="border border-gray-200 p-2 font-bold text-blue-800">{bh.bed}</td>
+                                            <td className="border border-gray-200 p-2 text-[9px]">
+                                                <span className="font-bold">{new Date(bh.startDate).toLocaleDateString()}</span>
+                                                <span className="text-gray-400 mx-1">to</span>
+                                                <span className={bh.endDate === 'Current' ? 'text-emerald-700 font-bold' : 'font-bold'}>
+                                                    {bh.endDate === 'Current' ? 'Active Status' : new Date(bh.endDate).toLocaleDateString()}
+                                                </span>
+                                            </td>
+                                            <td className="border border-gray-200 p-2 text-right font-bold text-slate-700">₹{bh.rate?.toLocaleString() || '0'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+
                     {/* 4. Vitals Section (Table Format) */}
                     {data.vitals && (
                         <div className="mb-6 break-inside-avoid relative z-10">
@@ -317,11 +351,11 @@ export const PrintableDischargeSummary = React.forwardRef<HTMLDivElement, { data
 
                             <div className="flex border-b border-r border-gray-100 p-2 bg-slate-50/50">
                                 <span className="font-bold w-48 shrink-0 text-blue-800">Total Paid Amount</span>
-                                <span className="font-bold text-blue-900">: ₹{data.totalPaidAmount?.toLocaleString() || (data.advanceAmount + (data.remainingAmount || 0))?.toLocaleString() || '0.00'}</span>
+                                <span className="font-bold text-blue-900">: ₹{Math.round(data.totalPaidAmount || (data.advanceAmount + (data.remainingAmount || 0))).toLocaleString() || '0'}</span>
                             </div>
                             <div className="flex border-b border-gray-100 p-2 pl-3 bg-slate-50/50">
                                 <span className="font-bold w-48 shrink-0 text-black">Total Bill Amount</span>
-                                <span className="font-bold">: ₹{data.totalBillAmount?.toLocaleString() || '0.00'}</span>
+                                <span className="font-bold">: ₹{Math.round(data.totalBillAmount || 0).toLocaleString() || '0'}</span>
                             </div>
                         </div>
                     </div>

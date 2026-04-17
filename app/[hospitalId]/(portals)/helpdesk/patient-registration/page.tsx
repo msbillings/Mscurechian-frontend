@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     UserPlus,
@@ -19,10 +19,11 @@ import {
     Calendar,
     Droplets,
     Heart,
-    Clock
+    Clock,
+    SpellCheck
 } from "lucide-react";
-import { helpdeskService, ipdService } from "@/lib/integrations";
-import { HelpdeskDoctor, Bed } from "@/lib/integrations/types";
+import { helpdeskService, ipdService, spellCheckService } from "@/lib/integrations";
+import type { HelpdeskDoctor, Bed, SpellMatch, SpellState, SpellPopupState } from "@/lib/integrations/types";
 import toast from "react-hot-toast";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -31,6 +32,69 @@ interface FieldError {
     [key: string]: string;
 }
 
+// Spell-check eligible text fields (types imported from @/lib/integrations)
+const SPELL_FIELDS: (keyof typeof INITIAL_FORM)[] = ["name", "address", "allergies", "medicalHistory"];
+
+const INITIAL_FORM = {
+    honorific: 'Mr',
+    name: '',
+    age: '',
+    dob: '',
+    gender: 'male',
+    address: '',
+    mobile: '',
+    patientEmail: '',
+    emergencyContact: '',
+    bloodGroup: 'Unknown',
+    allergies: '',
+    medicalHistory: '',
+    registrationType: 'OPD' as 'OPD' | 'IPD'
+};
+
+// checkSpelling is now handled by spellCheckService.check() from @/lib/integrations
+
+// ── Underline renderer ─────────────────────────────────────────────────────
+function HighlightedText({
+    text,
+    matches,
+    onMatchClick,
+    fieldName,
+}: {
+    text: string;
+    matches: SpellMatch[];
+    onMatchClick: (field: string, idx: number, e: React.MouseEvent) => void;
+    fieldName: string;
+}) {
+    if (!matches.length || !text) return null;
+
+    const sorted = [...matches].sort((a, b) => a.offset - b.offset);
+    const parts: React.ReactNode[] = [];
+    let cursor = 0;
+
+    sorted.forEach((m, i) => {
+        const start = m.offset;
+        const end = m.offset + m.length;
+        if (start < cursor) return;
+        if (start > cursor) parts.push(<span key={`t-${i}`}>{text.slice(cursor, start)}</span>);
+        parts.push(
+            <span
+                key={`e-${i}`}
+                onClick={(e) => onMatchClick(fieldName, i, e)}
+                className="spell-error"
+                title={m.message}
+            >
+                {text.slice(start, end)}
+            </span>
+        );
+        cursor = end;
+    });
+
+    if (cursor < text.length) parts.push(<span key="tail">{text.slice(cursor)}</span>);
+
+    return <>{parts}</>;
+}
+
+// ── Main component ─────────────────────────────────────────────────────────
 export default function PatientRegistration() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -38,21 +102,7 @@ export default function PatientRegistration() {
     const [errors, setErrors] = useState<FieldError>({});
     const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
 
-    const [formData, setFormData] = useState({
-        honorific: 'Mr',
-        name: '',
-        age: '',
-        dob: '',
-        gender: 'male',
-        address: '',
-        mobile: '',
-        patientEmail: '',
-        emergencyContact: '',
-        bloodGroup: 'Unknown',
-        allergies: '',
-        medicalHistory: '',
-        registrationType: 'OPD' as 'OPD' | 'IPD'
-    });
+    const [formData, setFormData] = useState(INITIAL_FORM);
 
     const [doctors, setDoctors] = useState<HelpdeskDoctor[]>([]);
     const [beds, setBeds] = useState<Bed[]>([]);
@@ -60,14 +110,63 @@ export default function PatientRegistration() {
     const [selectedDept, setSelectedDept] = useState<string>('');
     const [loadingInitial, setLoadingInitial] = useState(true);
 
+    // ── Spell-check state (types from @/lib/integrations) ─────────────────
+    const [spellErrors, setSpellErrors] = useState<SpellState>({});
+    const [checking, setChecking] = useState<{ [k: string]: boolean }>({});
+    const [popup, setPopup] = useState<SpellPopupState>(null);
+    const spellTimers = useRef<{ [k: string]: ReturnType<typeof setTimeout> }>({});
+    const popupRef = useRef<HTMLDivElement>(null);
+
+    // Close popup on outside click
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
+                setPopup(null);
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+
+    // Debounced spell check — delegates to spellCheckService (lib/integrations)
+    const triggerSpellCheck = useCallback((field: string, value: string) => {
+        if (spellTimers.current[field]) clearTimeout(spellTimers.current[field]);
+        spellTimers.current[field] = setTimeout(async () => {
+            if (!value.trim() || value.trim().length < 3) {
+                setSpellErrors(prev => ({ ...prev, [field]: [] }));
+                return;
+            }
+            setChecking(prev => ({ ...prev, [field]: true }));
+            const matches = await spellCheckService.check(value);
+            setSpellErrors(prev => ({ ...prev, [field]: matches }));
+            setChecking(prev => ({ ...prev, [field]: false }));
+        }, 800);
+    }, []);
+
+    // Apply suggestion — correction logic delegated to spellCheckService
+    const applySuggestion = useCallback((field: string, matchIdx: number, suggestion: string) => {
+        const matches: SpellMatch[] = spellErrors[field] || [];
+        const match = matches[matchIdx];
+        if (!match) return;
+
+        const currentValue = (formData as any)[field] as string;
+        const newValue = spellCheckService.applyCorrection(currentValue, match, suggestion);
+
+        setFormData(prev => ({ ...prev, [field]: newValue }));
+        setPopup(null);
+        triggerSpellCheck(field, newValue);
+    }, [spellErrors, formData, triggerSpellCheck]);
+
+    // Popup position handler
+    const handleMatchClick = useCallback((field: string, matchIndex: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const rect = (e.target as HTMLElement).getBoundingClientRect();
+        setPopup({ field, matchIndex, x: rect.left, y: rect.bottom + window.scrollY + 4 });
+    }, []);
+
     useEffect(() => {
         const initialType = searchParams.get('type') as 'OPD' | 'IPD' || 'OPD';
-        const initialBed = searchParams.get('bedId') || '';
-
-        setFormData(prev => ({
-            ...prev,
-            registrationType: initialType
-        }));
+        setFormData(prev => ({ ...prev, registrationType: initialType }));
 
         const loadInit = async () => {
             try {
@@ -77,10 +176,9 @@ export default function PatientRegistration() {
                 ]);
                 setDoctors(docsData);
                 setBeds(bedsData);
-
-                const depts = Array.from(new Set(docsData.map(d => d.department).filter(Boolean)));
+                const depts = Array.from(new Set(docsData.map(d => d.specialty).filter(Boolean)));
                 setDepartments(depts as string[]);
-            } catch (e) {
+            } catch {
                 toast.error("Failed to load initial data");
             } finally {
                 setLoadingInitial(false);
@@ -89,31 +187,20 @@ export default function PatientRegistration() {
         loadInit();
     }, [searchParams]);
 
-    // Auto-calculate age from DOB
     useEffect(() => {
         if (formData.dob) {
             const birthDate = new Date(formData.dob);
             const today = new Date();
             let age = today.getFullYear() - birthDate.getFullYear();
             const monthDiff = today.getMonth() - birthDate.getMonth();
-
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                age--;
-            }
-
-            if (age >= 0) {
-                setFormData(prev => ({ ...prev, age: age.toString() }));
-            }
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
+            if (age >= 0) setFormData(prev => ({ ...prev, age: age.toString() }));
         }
     }, [formData.dob]);
 
-    // Auto-set gender based on honorific
     useEffect(() => {
-        if (formData.honorific === 'Mr') {
-            setFormData(prev => ({ ...prev, gender: 'male' }));
-        } else if (formData.honorific === 'Mrs' || formData.honorific === 'Ms') {
-            setFormData(prev => ({ ...prev, gender: 'female' }));
-        }
+        if (formData.honorific === 'Mr') setFormData(prev => ({ ...prev, gender: 'male' }));
+        else if (formData.honorific === 'Mrs' || formData.honorific === 'Ms') setFormData(prev => ({ ...prev, gender: 'female' }));
     }, [formData.honorific]);
 
     const validateField = (name: string, value: string): string => {
@@ -143,7 +230,7 @@ export default function PatientRegistration() {
                 return '';
             case 'age':
                 if (!trimmed && !formData.dob) return 'Age Required';
-                if (!trimmed) return ''; // Let auto-fill handle it
+                if (!trimmed) return '';
                 const ageNum = Number(trimmed);
                 if (isNaN(ageNum) || ageNum < 0 || ageNum > 125) return 'Age must be between 0-125';
                 return '';
@@ -182,11 +269,26 @@ export default function PatientRegistration() {
             processedValue = value.slice(0, 100);
         }
 
-        setFormData(prev => ({ ...prev, [name]: processedValue }));
+        if (name === 'age') {
+            const ageNum = parseInt(processedValue);
+            if (!isNaN(ageNum) && ageNum >= 0 && ageNum <= 125) {
+                const birthYear = new Date().getFullYear() - ageNum;
+                setFormData(prev => ({ ...prev, age: processedValue, dob: `${birthYear}-01-01` }));
+            } else {
+                setFormData(prev => ({ ...prev, age: processedValue }));
+            }
+        } else {
+            setFormData(prev => ({ ...prev, [name]: processedValue }));
+        }
 
         if (touched[name]) {
             const error = validateField(name, processedValue);
             setErrors(prev => ({ ...prev, [name]: error }));
+        }
+
+        // Spell-check eligible fields
+        if ((SPELL_FIELDS as string[]).includes(name)) {
+            triggerSpellCheck(name, processedValue);
         }
     };
 
@@ -199,25 +301,22 @@ export default function PatientRegistration() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validate all fields
         const newErrors: FieldError = {};
         let hasError = false;
-
         ['name', 'mobile', 'address', 'age', 'dob'].forEach(field => {
             const err = validateField(field, (formData as any)[field]);
-            if (err) {
-                newErrors[field] = err;
-                hasError = true;
-            }
+            if (err) { newErrors[field] = err; hasError = true; }
         });
 
         setErrors(newErrors);
-        setTouched({
-            name: true, mobile: true, address: true, age: true, dob: true
-        });
+        setTouched({ name: true, mobile: true, address: true, age: true, dob: true });
 
-        if (hasError) {
-            toast.error("Please fix form errors");
+        if (hasError) { toast.error("Please fix form errors"); return; }
+
+        // Warn if spell errors remain
+        const totalSpellIssues = Object.values(spellErrors).reduce((s, a) => s + a.length, 0);
+        if (totalSpellIssues > 0) {
+            toast.error(`⚠️ ${totalSpellIssues} spelling issue(s) detected. Please review before submitting.`);
             return;
         }
 
@@ -233,7 +332,6 @@ export default function PatientRegistration() {
             };
 
             const res = await helpdeskService.registerPatient(registrationData as any);
-
             toast.success(`Successfully Registered: ${res.patient.mrn}`);
             setTimeout(() => {
                 router.push(`/helpdesk/appointment-booking?patientId=${res.patient.id}&type=${formData.registrationType}`);
@@ -245,12 +343,107 @@ export default function PatientRegistration() {
         }
     };
 
-    const filteredDoctors = selectedDept
-        ? doctors.filter(d => d.department === selectedDept)
-        : doctors;
+    // ── Total spell issue count ────────────────────────────────────────────
+    const totalSpellIssues = Object.values(spellErrors).reduce((s, a) => s + a.length, 0);
+    const anyChecking = Object.values(checking).some(Boolean);
+
+    // ── Helper: spell error count badge for a field ────────────────────────
+    const SpellBadge = ({ field }: { field: string }) => {
+        const count = (spellErrors[field] || []).length;
+        const isChecking = checking[field];
+        if (isChecking) return <Loader2 size={10} className="animate-spin text-teal-400 absolute top-2 right-2" />;
+        if (count === 0) return null;
+        return (
+            <span className="absolute top-1.5 right-2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase leading-none z-10">
+                {count} spell
+            </span>
+        );
+    };
 
     return (
         <div className="space-y-4 animate-in fade-in duration-500 pb-12">
+            {/* Spell-check popup */}
+            <AnimatePresence>
+                {popup && (() => {
+                    const matches = spellErrors[popup.field] || [];
+                    const match = matches[popup.matchIndex];
+                    if (!match) return null;
+                    const suggestions = match.replacements.slice(0, 4);
+                    return (
+                        <motion.div
+                            ref={popupRef}
+                            key="spell-popup"
+                            initial={{ opacity: 0, scale: 0.92, y: -4 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            transition={{ duration: 0.15 }}
+                            className="fixed z-[9999] bg-white border border-slate-200 rounded-2xl shadow-2xl p-3 min-w-[200px] max-w-[260px]"
+                            style={{ left: Math.min(popup.x, window.innerWidth - 270), top: popup.y }}
+                        >
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+                                <SpellCheck size={10} className="text-amber-500" /> Spelling Suggestion
+                            </p>
+                            <p className="text-[10px] text-slate-600 font-medium mb-2 leading-snug">{match.message}</p>
+                            {suggestions.length > 0 ? (
+                                <div className="flex flex-wrap gap-1.5">
+                                    {suggestions.map((s, i) => (
+                                        <button
+                                            key={i}
+                                            type="button"
+                                            onClick={() => applySuggestion(popup.field, popup.matchIndex, s.value)}
+                                            className="px-2.5 py-1 bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-700 text-[11px] font-bold rounded-lg transition-all"
+                                        >
+                                            {s.value}
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-[10px] text-slate-400 italic">No suggestions available</p>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => setPopup(null)}
+                                className="mt-2 text-[9px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest w-full text-right"
+                            >
+                                Dismiss
+                            </button>
+                        </motion.div>
+                    );
+                })()}
+            </AnimatePresence>
+
+            {/* CSS for squiggly underline */}
+            <style>{`
+                .spell-error {
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='3'%3E%3Cpath d='M0 2.5 Q1.5 0 3 2.5 Q4.5 5 6 2.5' stroke='%23f59e0b' stroke-width='1' fill='none'/%3E%3C/svg%3E");
+                    background-repeat: repeat-x;
+                    background-position: bottom;
+                    background-size: 6px 3px;
+                    cursor: pointer;
+                    border-radius: 1px;
+                }
+                .spell-error:hover { background-color: rgba(245, 158, 11, 0.08); }
+                .spell-overlay {
+                    position: absolute;
+                    inset: 0;
+                    pointer-events: none;
+                    padding: 8px 12px;
+                    font-size: 0.875rem;
+                    font-weight: 700;
+                    line-height: 1.5;
+                    color: transparent;
+                    white-space: pre-wrap;
+                    word-break: break-word;
+                    overflow: hidden;
+                    border-radius: 0.75rem;
+                    z-index: 2;
+                }
+                .spell-overlay span.spell-error { pointer-events: auto; color: transparent; }
+                @keyframes glow {
+                    0%, 100% { text-shadow: 0 0 5px rgba(13,148,136,.5), 0 0 10px rgba(13,148,136,.3); opacity: 1; }
+                    50%       { text-shadow: 0 0 10px rgba(13,148,136,.8), 0 0 20px rgba(13,148,136,.5); opacity: .8; }
+                }
+            `}</style>
 
             {/* HEADER */}
             <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-3 border-b border-slate-200 pb-3 max-w-full mx-auto">
@@ -259,21 +452,35 @@ export default function PatientRegistration() {
                         <ArrowLeft size={18} />
                     </Link>
                     <div>
-                        <h1 className="text-lg lg:text-xl font-bold text-slate-900 tracking-tight">
-                            Patient Registration
-                        </h1>
+                        <h1 className="text-lg lg:text-xl font-bold text-slate-900 tracking-tight">Patient Registration</h1>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Reception / Patient Admission • Registry Manifest</p>
                     </div>
                 </div>
 
-                {/* GLOWING MESSAGE - CENTERED */}
                 <div className="hidden md:flex justify-center">
                     <p className="text-xs font-bold text-teal-600 uppercase tracking-widest" style={{ animation: 'glow 2s ease-in-out infinite' }}>
                         ✨ Your data is storing continuously
                     </p>
                 </div>
 
-                <div className="hidden md:flex justify-end gap-2 text-slate-400">
+                <div className="hidden md:flex justify-end gap-2 items-center text-slate-400">
+                    {/* Spell-check status badge */}
+                    {anyChecking ? (
+                        <div className="flex items-center gap-1.5 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100">
+                            <Loader2 size={12} className="animate-spin text-amber-500" />
+                            <span className="text-[10px] font-bold uppercase tracking-tight text-amber-600">Checking spelling…</span>
+                        </div>
+                    ) : totalSpellIssues > 0 ? (
+                        <div className="flex items-center gap-1.5 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100">
+                            <SpellCheck size={12} className="text-amber-500" />
+                            <span className="text-[10px] font-bold uppercase tracking-tight text-amber-600">{totalSpellIssues} spelling issue{totalSpellIssues > 1 ? 's' : ''}</span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">
+                            <SpellCheck size={12} className="text-emerald-500" />
+                            <span className="text-[10px] font-bold uppercase tracking-tight text-emerald-600">Spell OK</span>
+                        </div>
+                    )}
                     <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
                         <Clock size={14} className="text-teal-500" />
                         <span className="text-[10px] font-bold uppercase tracking-tight text-slate-500">
@@ -285,10 +492,7 @@ export default function PatientRegistration() {
 
             <div className="max-w-full mx-auto">
                 <form onSubmit={handleSubmit} className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-3 sm:p-6">
-
                     <div className="space-y-5">
-                        {/* REGISTRATION TYPE TOGGLE */}
-
 
                         {/* PERSONAL INFORMATION SECTION */}
                         <section className="space-y-4">
@@ -310,7 +514,17 @@ export default function PatientRegistration() {
                                 </div>
                                 <div className="md:col-span-5">
                                     <FormInput label="Full Name" required error={touched.name ? errors.name : ''} component={
-                                        <input name="name" value={formData.name} onChange={handleChange} onBlur={() => handleBlur('name')} placeholder="Name" className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${errors.name && touched.name ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold transition-all`} />
+                                        <SpellCheckedInput
+                                            name="name"
+                                            value={formData.name}
+                                            onChange={handleChange}
+                                            onBlur={() => handleBlur('name')}
+                                            placeholder="Name"
+                                            hasError={!!(errors.name && touched.name)}
+                                            spellMatches={spellErrors['name'] || []}
+                                            isChecking={checking['name']}
+                                            onMatchClick={handleMatchClick}
+                                        />
                                     } />
                                 </div>
                                 <div className="md:col-span-5">
@@ -325,7 +539,7 @@ export default function PatientRegistration() {
                                 </div>
                                 <div className="md:col-span-2">
                                     <FormInput label="Age" required={!formData.dob} error={touched.age ? errors.age : ''} component={
-                                        <input name="age" type="number" value={formData.age} onChange={handleChange} onBlur={() => handleBlur('age')} placeholder="Age" readOnly className={`w-full px-3 py-2 rounded-xl bg-slate-100 border ${errors.age && touched.age ? 'border-rose-500' : 'border-slate-200'} cursor-not-allowed text-sm font-bold transition-all opacity-70`} />
+                                        <input name="age" type="number" value={formData.age} onChange={handleChange} onBlur={() => handleBlur('age')} placeholder="Age" className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${errors.age && touched.age ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold transition-all`} />
                                     } />
                                 </div>
                                 <div className="md:col-span-3">
@@ -353,12 +567,18 @@ export default function PatientRegistration() {
                                     <h2 className="text-xs font-bold text-slate-900 uppercase tracking-widest">Address Details</h2>
                                 </div>
                                 <FormInput label="Residential Address" required error={touched.address ? errors.address : ''} component={
-                                    <div className="relative">
-                                        <textarea name="address" value={formData.address} onChange={handleChange} onBlur={() => handleBlur('address')} rows={2} placeholder="Full address" className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${errors.address && touched.address ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold resize-none transition-all`} />
-                                        <div className="absolute bottom-2 right-3 text-[9px] font-bold text-slate-400 pointer-events-none uppercase">
-                                            {formData.address.length}/300
-                                        </div>
-                                    </div>
+                                    <SpellCheckedTextarea
+                                        name="address"
+                                        value={formData.address}
+                                        onChange={handleChange}
+                                        onBlur={() => handleBlur('address')}
+                                        placeholder="Full address"
+                                        maxLength={300}
+                                        hasError={!!(errors.address && touched.address)}
+                                        spellMatches={spellErrors['address'] || []}
+                                        isChecking={checking['address']}
+                                        onMatchClick={handleMatchClick}
+                                    />
                                 } />
                             </div>
                             <div className="md:col-span-4 space-y-4">
@@ -382,12 +602,7 @@ export default function PatientRegistration() {
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                                 <div className="md:col-span-3">
                                     <FormInput label="Blood Group" component={
-                                        <select
-                                            name="bloodGroup"
-                                            value={formData.bloodGroup}
-                                            onChange={handleChange}
-                                            className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-teal-500 focus:bg-white outline-none text-sm font-bold transition-all"
-                                        >
+                                        <select name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-teal-500 focus:bg-white outline-none text-sm font-bold transition-all">
                                             <option value="Unknown">Unknown</option>
                                             <option value="O+">O+</option>
                                             <option value="O-">O-</option>
@@ -403,42 +618,41 @@ export default function PatientRegistration() {
 
                                 <div className="md:col-span-4">
                                     <FormInput label="Previous Allergies" error={touched.allergies ? errors.allergies : ''} component={
-                                        <div className="relative">
-                                            <input
-                                                name="allergies"
-                                                value={formData.allergies}
-                                                onChange={handleChange}
-                                                onBlur={() => handleBlur('allergies')}
-                                                placeholder="Known allergies..."
-                                                className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${errors.allergies && touched.allergies ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold transition-all`}
-                                            />
-                                            <div className="absolute top-1/2 -translate-y-1/2 right-3 text-[9px] font-bold text-slate-300 pointer-events-none uppercase">
-                                                {formData.allergies.length}/200
-                                            </div>
-                                        </div>
+                                        <SpellCheckedInput
+                                            name="allergies"
+                                            value={formData.allergies}
+                                            onChange={handleChange}
+                                            onBlur={() => handleBlur('allergies')}
+                                            placeholder="Known allergies..."
+                                            maxLength={200}
+                                            hasError={!!(errors.allergies && touched.allergies)}
+                                            spellMatches={spellErrors['allergies'] || []}
+                                            isChecking={checking['allergies']}
+                                            onMatchClick={handleMatchClick}
+                                            showCounter
+                                        />
                                     } />
                                 </div>
 
                                 <div className="md:col-span-5">
                                     <FormInput label="Health Issues / History" error={touched.medicalHistory ? errors.medicalHistory : ''} component={
-                                        <div className="relative">
-                                            <textarea
-                                                name="medicalHistory"
-                                                value={formData.medicalHistory}
-                                                onChange={handleChange}
-                                                onBlur={() => handleBlur('medicalHistory')}
-                                                rows={2}
-                                                placeholder="Conditions..."
-                                                className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${errors.medicalHistory && touched.medicalHistory ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold resize-none transition-all`}
-                                            />
-                                            <div className="absolute bottom-2 right-3 text-[9px] font-bold text-slate-400 pointer-events-none uppercase">
-                                                {formData.medicalHistory.length}/400
-                                            </div>
-                                        </div>
+                                        <SpellCheckedTextarea
+                                            name="medicalHistory"
+                                            value={formData.medicalHistory}
+                                            onChange={handleChange}
+                                            onBlur={() => handleBlur('medicalHistory')}
+                                            placeholder="Conditions..."
+                                            maxLength={400}
+                                            hasError={!!(errors.medicalHistory && touched.medicalHistory)}
+                                            spellMatches={spellErrors['medicalHistory'] || []}
+                                            isChecking={checking['medicalHistory']}
+                                            onMatchClick={handleMatchClick}
+                                        />
                                     } />
                                 </div>
                             </div>
                         </section>
+
 
                         {/* SUBMIT BUTTON */}
                         <div className="pt-6 flex justify-end gap-3">
@@ -461,23 +675,147 @@ export default function PatientRegistration() {
                     </div>
                 </form>
             </div>
-
-            <style jsx global>{`
-                @keyframes glow {
-                    0%, 100% {
-                        text-shadow: 0 0 5px rgba(13, 148, 136, 0.5), 0 0 10px rgba(13, 148, 136, 0.3);
-                        opacity: 1;
-                    }
-                    50% {
-                        text-shadow: 0 0 10px rgba(13, 148, 136, 0.8), 0 0 20px rgba(13, 148, 136, 0.5);
-                        opacity: 0.8;
-                    }
-                }
-            `}</style>
         </div>
     );
 }
 
+// ── SpellCheckedInput ──────────────────────────────────────────────────────
+interface SpellInputProps {
+    name: string;
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onBlur: () => void;
+    placeholder?: string;
+    maxLength?: number;
+    hasError: boolean;
+    spellMatches: SpellMatch[];
+    isChecking?: boolean;
+    onMatchClick: (field: string, idx: number, e: React.MouseEvent) => void;
+    showCounter?: boolean;
+}
+
+function SpellCheckedInput({ name, value, onChange, onBlur, placeholder, maxLength, hasError, spellMatches, isChecking, onMatchClick, showCounter }: SpellInputProps) {
+    const borderClass = hasError ? 'border-rose-500' : spellMatches.length ? 'border-amber-300' : 'border-slate-200';
+    return (
+        <div className="relative">
+            <input
+                name={name}
+                value={value}
+                onChange={onChange}
+                onBlur={onBlur}
+                placeholder={placeholder}
+                maxLength={maxLength}
+                className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${borderClass} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold transition-all`}
+                autoComplete="off"
+                spellCheck={false}
+            />
+            {isChecking && (
+                <div className="absolute top-1/2 -translate-y-1/2 right-3 flex items-center gap-1">
+                    <Loader2 size={11} className="animate-spin text-teal-400" />
+                </div>
+            )}
+            {!isChecking && spellMatches.length > 0 && (
+                <div className="absolute top-1/2 -translate-y-1/2 right-3">
+                    <span className="bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
+                        {spellMatches.length}✦
+                    </span>
+                </div>
+            )}
+            {showCounter && maxLength && (
+                <div className="absolute bottom-2 right-8 text-[9px] font-bold text-slate-300 pointer-events-none uppercase">
+                    {value.length}/{maxLength}
+                </div>
+            )}
+            {/* Spell error list below field */}
+            {spellMatches.length > 0 && (
+                <div className="mt-1 space-y-0.5">
+                    {spellMatches.slice(0, 3).map((m, i) => {
+                        const wrong = value.slice(m.offset, m.offset + m.length);
+                        const suggestion = m.replacements[0]?.value;
+                        return (
+                            <button
+                                key={i}
+                                type="button"
+                                onClick={(e) => onMatchClick(name, i, e)}
+                                className="flex items-center gap-1.5 text-[9px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-lg w-full text-left transition-all"
+                            >
+                                <SpellCheck size={9} className="flex-shrink-0" />
+                                <span className="line-through text-rose-500">{wrong}</span>
+                                {suggestion && <><span className="text-slate-400">→</span><span className="text-teal-600">{suggestion}</span></>}
+                                <span className="ml-auto text-slate-300 uppercase">click to fix</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ── SpellCheckedTextarea ───────────────────────────────────────────────────
+interface SpellTextareaProps {
+    name: string;
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+    onBlur: () => void;
+    placeholder?: string;
+    maxLength?: number;
+    hasError: boolean;
+    spellMatches: SpellMatch[];
+    isChecking?: boolean;
+    onMatchClick: (field: string, idx: number, e: React.MouseEvent) => void;
+}
+
+function SpellCheckedTextarea({ name, value, onChange, onBlur, placeholder, maxLength, hasError, spellMatches, isChecking, onMatchClick }: SpellTextareaProps) {
+    const borderClass = hasError ? 'border-rose-500' : spellMatches.length ? 'border-amber-300' : 'border-slate-200';
+    return (
+        <div className="relative">
+            <textarea
+                name={name}
+                value={value}
+                onChange={onChange}
+                onBlur={onBlur}
+                rows={2}
+                placeholder={placeholder}
+                maxLength={maxLength}
+                className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${borderClass} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold resize-none transition-all`}
+                spellCheck={false}
+                autoComplete="off"
+            />
+            <div className="absolute bottom-2 right-3 text-[9px] font-bold text-slate-400 pointer-events-none uppercase flex items-center gap-1.5">
+                {isChecking && <Loader2 size={9} className="animate-spin text-teal-400" />}
+                {!isChecking && spellMatches.length > 0 && (
+                    <span className="bg-amber-500 text-white text-[8px] font-black px-1 py-0.5 rounded-full">{spellMatches.length}✦</span>
+                )}
+                {maxLength && <span>{value.length}/{maxLength}</span>}
+            </div>
+            {/* Spell error list below textarea */}
+            {spellMatches.length > 0 && (
+                <div className="mt-1 space-y-0.5">
+                    {spellMatches.slice(0, 3).map((m, i) => {
+                        const wrong = value.slice(m.offset, m.offset + m.length);
+                        const suggestion = m.replacements[0]?.value;
+                        return (
+                            <button
+                                key={i}
+                                type="button"
+                                onClick={(e) => onMatchClick(name, i, e)}
+                                className="flex items-center gap-1.5 text-[9px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-lg w-full text-left transition-all"
+                            >
+                                <SpellCheck size={9} className="flex-shrink-0" />
+                                <span className="line-through text-rose-500">{wrong}</span>
+                                {suggestion && <><span className="text-slate-400">→</span><span className="text-teal-600">{suggestion}</span></>}
+                                <span className="ml-auto text-slate-300 uppercase">click to fix</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ── FormInput ──────────────────────────────────────────────────────────────
 function FormInput({ label, required, component, error }: any) {
     return (
         <div className="space-y-1.5 flex flex-col">

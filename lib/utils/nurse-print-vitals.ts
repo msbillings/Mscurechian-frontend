@@ -397,6 +397,42 @@ export const generateNurseHourlyRecordHtml = (data: any) => {
                     <span class="info-value" style="color: #059669;">${admission.status}</span>
                 </div>
             </div>
+            
+            ${admission.bedHistory && admission.bedHistory.length > 0 ? `
+            <div class="section no-break">
+                <div class="section-header">
+                    <h2>Bed Assignment & Transfer History</h2>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Ward / Room</th>
+                                <th>Bed ID</th>
+                                <th>Assigned</th>
+                                <th>Released</th>
+                                <th>Daily Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${admission.bedHistory.map((bh: any) => `
+                                <tr>
+                                    <td><strong>${bh.ward}</strong><br/><span style="font-size: 8px;">Room: ${bh.room}</span></td>
+                                    <td><strong style="color: #1e40af;">${bh.bed}</strong></td>
+                                    <td>${format(new Date(bh.startDate), 'dd/MM HH:mm')}</td>
+                                    <td>
+                                        ${bh.endDate === 'Current' 
+                                            ? '<span style="color: #059669; font-weight: 800;">ACTIVE</span>' 
+                                            : format(new Date(bh.endDate), 'dd/MM HH:mm')}
+                                    </td>
+                                    <td>₹${bh.rate}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            ` : ''}
 
             <div class="section no-break">
                 <div class="section-header">

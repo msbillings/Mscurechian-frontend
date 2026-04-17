@@ -278,7 +278,7 @@ export default function PatientsPage() {
                     amount: Number(appt.payment?.amount || appt.amount || 0),
                     method: appt.payment?.paymentMethod || appt.paymentMethod || 'cash',
                     status: appt.payment?.paymentStatus || appt.paymentStatus || 'not_required',
-                    receiptNumber: appt.payment?.transactionId || appt.transactionId || `REC-${Date.now().toString().slice(-6)}`
+                    receiptNumber: appt.payment?.transactionId || appt.transactionId || appt.appointmentId || `REC-${Date.now().toString().slice(-6)}`
                 }
             };
 

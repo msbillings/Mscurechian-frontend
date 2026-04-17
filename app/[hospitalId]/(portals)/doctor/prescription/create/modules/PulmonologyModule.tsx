@@ -62,11 +62,6 @@ export const PulmonologyModule: React.FC<PulmonologyModuleProps> = ({ formData, 
         const syms = p.symptoms || [];
         const sounds = p.auscultation?.sounds || [];
 
-        // 1. Mandatory Fields
-        if (!rr)   newAlerts.push({ type: 'error', message: '❗ Respiratory Rate is required.' });
-        if (!spo2) newAlerts.push({ type: 'error', message: '❗ SpO2 level is required.' });
-        if (!syms.length) newAlerts.push({ type: 'error', message: '❗ At least one symptom must be selected.' });
-
         // 2. SpO2 Hypoxia Logic
         if (spo2 > 0) {
             if (spo2 < 90) {

@@ -27,7 +27,7 @@ const FooterPrint: React.FC = () => {
     const phones = settings.phone ? settings.phone.split(',').map(p => p.trim()) : [];
 
     return (
-        <div style={{ width: '100%', fontFamily: 'Arial, sans-serif', marginTop: '24px' }} className="lab-footer-container">
+        <div style={{ width: '100%', fontFamily: 'Arial, sans-serif', marginTop: '10px', paddingBottom: '10px' }} className="lab-footer-container">
             <style>
                 {`
                 @media screen and (max-width: 640px) {
@@ -78,7 +78,7 @@ const FooterPrint: React.FC = () => {
                     gap: '8px',
                     backgroundColor: '#15803d',
                     color: '#ffffff',
-                    padding: '8px 20px',
+                    padding: '10px 20px',
                     fontSize: '14px',
                     fontWeight: 'bold',
                     width: '50%',
@@ -99,7 +99,7 @@ const FooterPrint: React.FC = () => {
                     gap: '8px',
                     backgroundColor: '#1e3a8a',
                     color: '#ffffff',
-                    padding: '8px 20px',
+                    padding: '10px 20px',
                     fontSize: '14px',
                     fontWeight: 'bold',
                     flex: 1,

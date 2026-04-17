@@ -323,7 +323,7 @@ export default function DoctorInpatientsPage() {
                                                         {monitor.label}
                                                     </span>
                                                 </td>
-                                                <td className="px-4 py-3 whitespace-nowrap">
+                                                <td className="px-4 py-3">
                                                     <div className="w-[180px]">
                                                         <InpatientReason admission={adm} onSaved={() => fetchAdmissions()} />
                                                     </div>
@@ -559,7 +559,7 @@ function InpatientCard({ adm, onTransfer, onCharge, onLedger, fetchAdmissions, g
                     </div>
                 </Link>
                 <div className="flex-1 min-w-0 pt-1">
-                    <h3 className="text-[13px] font-black text-gray-900 dark:text-white uppercase truncate tracking-tight">{adm.patient?.name}</h3>
+                    <h3 className="text-[13px] font-black text-gray-900 dark:text-white uppercase tracking-tight">{adm.patient?.name}</h3>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">MRN: {adm.patient?.mrn || 'N/A'}</p>
                     <div className="flex items-center gap-2 mt-2">
                         <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded uppercase">{adm.bed?.bedId}</span>
@@ -613,14 +613,14 @@ function SummaryCard({ label, value, sub, color, icon }: any) {
         <div className="bg-white dark:bg-[#111] p-2.5 sm:p-4 md:p-5 rounded-xl sm:rounded-2xl md:rounded-[1.5rem] border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between group gap-2 sm:gap-0">
             <div className="space-y-0.5 w-full">
                 <div className="flex items-center justify-between w-full">
-                    <p className="text-[7px] sm:text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-0.5 sm:mb-1 truncate pr-1">{label}</p>
+                    <p className="text-[7px] sm:text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-0.5 sm:mb-1 pr-1">{label}</p>
                     <div className={`w-6 h-6 rounded-lg flex shrink-0 items-center justify-center transition-all group-hover:scale-110 shadow-inner ${colorClasses[color]} block sm:hidden`}>
                         {icon}
                     </div>
                 </div>
                 <div className="flex flex-col xl:flex-row xl:items-baseline gap-0.5 xl:gap-2">
                     <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tighter leading-none">{value}</h3>
-                    <p className="text-[6px] sm:text-[8px] md:text-[9px] font-bold text-gray-500 uppercase tracking-tight truncate">{sub}</p>
+                    <p className="text-[6px] sm:text-[8px] md:text-[9px] font-bold text-gray-500 uppercase tracking-tight">{sub}</p>
                 </div>
             </div>
             <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl shrink-0 items-center justify-center transition-all group-hover:scale-110 shadow-inner ${colorClasses[color]} hidden sm:flex`}>
@@ -697,7 +697,7 @@ function InpatientReason({ admission, onSaved }: { admission: any, onSaved: () =
                     </div>
                 </div>
             ) : (
-                <p className="text-[10px] font-bold text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-1" title={admission?.reason}>
+                <p className="text-[10px] font-bold text-gray-700 dark:text-gray-300 leading-relaxed break-words overflow-hidden" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }} title={admission?.reason}>
                     {admission?.reason || 'No specific reason provided.'}
                 </p>
             )}

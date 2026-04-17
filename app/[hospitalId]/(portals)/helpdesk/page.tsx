@@ -479,7 +479,7 @@ function HelpdeskDashboard() {
                                 <div className="px-1.5 sm:px-3 py-1 sm:py-2 bg-white border border-slate-200 rounded-lg flex items-center gap-1">
                                     <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
                                     <span className="text-[8px] sm:text-[10px] font-black text-slate-600 uppercase tracking-widest tabular-nums">
-                                        {todayAttendance?.checkIn?.time ? new Date(todayAttendance.checkIn.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                        {todayAttendance?.checkIn?.time ? new Date(todayAttendance.checkIn.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : '--:--'}
                                     </span>
                                 </div>
                                 <button

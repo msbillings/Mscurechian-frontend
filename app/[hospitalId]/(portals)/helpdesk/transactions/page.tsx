@@ -465,7 +465,15 @@ export default function TransactionsPage() {
                                                     </div>
                                                     <div className="min-w-0">
                                                         <p className="text-sm font-bold text-slate-900 uppercase tracking-tight truncate max-w-[200px]">{patientName}</p>
-                                                        <p className="text-xs text-rose-600 font-bold uppercase tracking-widest mt-1">{tx.patientMRN && tx.patientMRN !== 'Resolving...' ? `#${tx.patientMRN}` : `#${tx._id?.slice(-8) || "REF-ID"}`}</p>
+                                                        <p className={`text-[10px] font-black uppercase tracking-[0.1em] mt-1 px-2 py-0.5 rounded-md inline-block border ${
+                                                            tx.referenceId?.transactionId?.startsWith('OPD') || tx.referenceId?.transactionId?.startsWith('APT')
+                                                            ? 'bg-teal-50 text-teal-600 border-teal-100/50'
+                                                            : tx.referenceId?.transactionId?.startsWith('IPD') || tx.referenceId?.admissionId
+                                                                ? 'bg-rose-50 text-rose-600 border-rose-100/50'
+                                                                : 'bg-slate-50 text-slate-500 border-slate-100'
+                                                        }`}>
+                                                            {tx.transactionId || tx.receiptNumber || tx.invoiceNumber || tx.referenceId?.appointmentId || tx.referenceId?.transactionId || tx.referenceId?.admissionId || (tx.patientMRN && tx.patientMRN !== 'Resolving...' ? `#${tx.patientMRN}` : "—")}
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </td>

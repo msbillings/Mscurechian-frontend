@@ -211,6 +211,13 @@ function LabBillingPage() {
     };
 
     const handleGenerateBill = async (shouldPrint: boolean = true) => {
+        // ── Duplicate prevention: bail if invoice already generated ──
+        if (generatedBill) {
+            toast('Invoice already generated. Use "Save Bill" to finish.', { icon: 'ℹ️' });
+            if (shouldPrint) setTimeout(() => handlePrint(), 300);
+            return;
+        }
+
         if (!patient.name || !patient.mobile || selectedTests.length === 0) {
             toast.error('Fill patient details and select tests');
             return;
@@ -222,7 +229,7 @@ function LabBillingPage() {
                 const res = await LabSampleService.finalizeOrder(sampleId, {
                     totalAmount: finalAmount,
                     items: selectedTests,
-                    patientDetails: patient // Pass updated patient details
+                    patientDetails: patient
                 });
                 await LabSampleService.payOrder(sampleId, {
                     paymentMode: paymentMode || 'Cash',
@@ -494,11 +501,20 @@ function LabBillingPage() {
                             <div className="pt-2 space-y-3">
                                 <button
                                     onClick={() => handleGenerateBill(true)}
-                                    disabled={loading || selectedTests.length === 0}
-                                    className="w-full py-3 bg-primary-theme hover:bg-primary-theme/80 text-white rounded-xl font-semibold shadow-lg shadow-indigo-100 dark:shadow-none transition-all disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
+                                    disabled={loading || selectedTests.length === 0 || !!generatedBill}
+                                    className={`w-full py-3 text-white rounded-xl font-semibold shadow-lg transition-all flex items-center justify-center gap-2 ${
+                                        generatedBill
+                                            ? 'bg-green-600 cursor-not-allowed opacity-90 shadow-green-100 dark:shadow-none'
+                                            : 'bg-primary-theme hover:bg-primary-theme/80 disabled:opacity-50 disabled:shadow-none shadow-indigo-100 dark:shadow-none'
+                                    }`}
                                 >
-                                    {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Printer size={18} />}
-                                    {loading ? 'Processing...' : 'Generate Invoice'}
+                                    {loading
+                                        ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        : generatedBill
+                                            ? <Check size={18} />
+                                            : <Printer size={18} />
+                                    }
+                                    {loading ? 'Processing...' : generatedBill ? 'Invoice Generated' : 'Generate Invoice'}
                                 </button>
                                 {generatedBill && (
                                     <button

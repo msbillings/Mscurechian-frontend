@@ -59,7 +59,7 @@ export const mapFrequency = (freq: any): Frequency => {
 
         // Handle custom
         if (freq.custom) {
-            newFreq.custom.interval = Number(freq.custom.interval) || 8;
+            newFreq.custom.interval = freq.custom.interval !== undefined && freq.custom.interval !== null ? Number(freq.custom.interval) : 8;
             newFreq.custom.timing = freq.custom.timing || freq.foodTiming || 'after';
         }
         

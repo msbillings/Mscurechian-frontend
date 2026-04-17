@@ -453,6 +453,42 @@ export const generatePatientHourlyRecordHtml = (data: any) => {
                         </div>
                     </div>
 
+                    ${admission.bedHistory && admission.bedHistory.length > 0 ? `
+                    <div class="section no-break">
+                        <div class="section-header-title">BED OCCUPANCY HISTORY</div>
+                        <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>S.No</th>
+                                    <th>Ward / Room</th>
+                                    <th>Bed ID</th>
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+                                    <th>Daily Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${admission.bedHistory.map((bh: any, idx: number) => `
+                                    <tr>
+                                        <td>${idx + 1}</td>
+                                        <td><strong>${bh.ward}</strong> / ${bh.room}</td>
+                                        <td><strong style="color: #1e40af;">${bh.bed}</strong></td>
+                                        <td>${format(new Date(bh.startDate), 'dd MMM yyyy, HH:mm')}</td>
+                                        <td>
+                                            ${bh.endDate === 'Current' 
+                                                ? '<span style="color: #059669; font-weight: 800;">ACTIVE</span>' 
+                                                : format(new Date(bh.endDate), 'dd MMM yyyy, HH:mm')}
+                                        </td>
+                                        <td>₹${bh.rate}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                    ` : ''}
+
                     <div class="section no-break">
                         <div class="section-header-title" style="margin-bottom: 5px;">Prescribed Diet Plan</div>
                         <div class="diet-card">

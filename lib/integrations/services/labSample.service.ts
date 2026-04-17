@@ -11,6 +11,17 @@ export const LabSampleService = {
         return response.data || [];
     },
 
+    // ✅ Lightweight count-only fetcher — always bypasses cache for accurate real-time counts
+    getPendingCount: async (): Promise<number> => {
+        const response: any = await apiClient(
+            `${LAB_ENDPOINTS.SAMPLES.BASE}?status=Pending&page=1&limit=500`,
+            { skipCache: true }
+        );
+        // Use server's total field if available, else count the returned array
+        if (typeof response?.total === 'number') return response.total;
+        return Array.isArray(response?.data) ? response.data.length : 0;
+    },
+
     getSamplesPaginated: async (page: number = 1, limit: number = 10, status: string = 'All Samples'): Promise<{ samples: LabSample[], totalPages: number, currentPage: number, totalSamples: number }> => {
         const response: any = await apiClient(`${LAB_ENDPOINTS.SAMPLES.BASE}?status=${status}&page=${page}&limit=${limit}`);
         return {

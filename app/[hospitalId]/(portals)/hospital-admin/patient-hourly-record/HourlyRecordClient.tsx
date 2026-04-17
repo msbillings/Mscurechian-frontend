@@ -604,7 +604,7 @@ export default function HourlyRecordClient() {
                                                 <Stethoscope size={10} className="text-blue-500" />
                                                 Primary Doctor
                                             </p>
-                                            <p className="text-xs font-black text-slate-700 truncate">
+                                            <p className="text-xs font-black text-slate-700">
                                                 {hourlyData.data.admission.doctorName?.startsWith('Dr.') ? hourlyData.data.admission.doctorName : `Dr. ${hourlyData.data.admission.doctorName}`}
                                             </p>
                                         </div>
@@ -615,7 +615,7 @@ export default function HourlyRecordClient() {
                                             </p>
                                             <p className="text-xs font-black text-slate-700">
                                                 {hourlyData.data.admission.wardName ? (
-                                                    <span className="truncate block">
+                                                    <span className="block">
                                                         {hourlyData.data.admission.wardName}
                                                         {hourlyData.data.admission.roomName && `/${hourlyData.data.admission.roomName}`}
                                                         {hourlyData.data.admission.bedName && `/${hourlyData.data.admission.bedName}`}
@@ -681,6 +681,75 @@ export default function HourlyRecordClient() {
                             </Card>
                         </div>
                     </div>
+
+                    {/* Bed Transfer History */}
+                    {hourlyData.data.admission.bedHistory && hourlyData.data.admission.bedHistory.length > 1 && (
+                        <div className="bg-white rounded-2xl sm:rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm">
+                            <div className="p-2 md:p-4 md:p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                                        <ClipboardList size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm md:text-base font-black text-slate-900 uppercase tracking-tight">Bed Occupancy History</h3>
+                                        <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-tighter">Room & Bed Movements Tracking</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase">
+                                    Total Transfers: <span className="text-indigo-600 text-sm">{hourlyData.data.admission.bedHistory.length - 1}</span>
+                                </div>
+                            </div>
+                            <div className="overflow-x-auto no-scrollbar">
+                                <table className="w-full text-left min-w-[800px]">
+                                    <thead className="bg-slate-50 border-b border-slate-100">
+                                        <tr>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Ward / Category</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Room No</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Bed ID</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Start Date</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">End Date</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Base Rate</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {hourlyData.data.admission.bedHistory.map((bh: any, idx: number) => (
+                                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                                                <td className="px-6 py-4">
+                                                    <span className="text-xs font-black text-slate-700 uppercase">{bh.ward}</span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className="text-xs font-bold text-slate-600">{bh.room}</span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-lg border border-blue-100 uppercase tracking-wider">{bh.bed}</span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs font-bold text-slate-700">{format(new Date(bh.startDate), 'dd MMM yyyy')}</span>
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase">{format(new Date(bh.startDate), 'HH:mm')}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {bh.endDate === 'Current' ? (
+                                                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100 uppercase tracking-widest">Active Now</span>
+                                                    ) : (
+                                                        <div className="flex flex-col">
+                                                            <span className="text-xs font-bold text-slate-700">{format(new Date(bh.endDate), 'dd MMM yyyy')}</span>
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase">{format(new Date(bh.endDate), 'HH:mm')}</span>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <span className="text-xs font-black text-slate-900">₹{bh.rate?.toLocaleString()}</span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
 
                     {/* Vitals Log */}
                     <div className="bg-white rounded-2xl sm:rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm">

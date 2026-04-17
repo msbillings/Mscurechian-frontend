@@ -103,9 +103,7 @@ export const NephrologyModule: React.FC<NephrologyModuleProps> = ({ formData, se
         const syms: string[] = n.symptoms || [];
 
         // Required fields
-        if (!n.creatinine) newAlerts.push({ type: 'error', message: '❗ Serum Creatinine is required.' });
-        if (!n.egfr)       newAlerts.push({ type: 'error', message: '❗ eGFR is required.' });
-        if (!n.urineOutput) newAlerts.push({ type: 'error', message: '❗ Urine Output is required.' });
+
 
         // 1. Creatinine
         if (creat > 5) {
@@ -237,7 +235,6 @@ export const NephrologyModule: React.FC<NephrologyModuleProps> = ({ formData, se
         <div className="flex items-center gap-2 mb-4">
             <div className="text-indigo-700">{icon}</div>
             <h3 className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-700">{title}</h3>
-            {required && <span className="ml-auto text-[9px] font-bold text-red-400 uppercase tracking-wider">Required</span>}
             {note && !required && <span className="ml-auto text-[9px] font-bold text-slate-400">{note}</span>}
         </div>
     );
@@ -291,12 +288,12 @@ export const NephrologyModule: React.FC<NephrologyModuleProps> = ({ formData, se
             {/* ── A. RENAL FUNCTION (simplified) ────────────────────────── */}
             {sectionCard(
                 <>
-                    {sectionHeader(<FlaskConical size={17} />, 'A. Renal Function Tests', true)}
+                    {sectionHeader(<FlaskConical size={17} />, 'A. Renal Function Tests')}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {/* Creatinine */}
                         <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 text-center">
                             <label className="block text-[9px] font-black uppercase tracking-widest mb-2 text-slate-500">
-                                Serum Creatinine <span className="text-red-400">*</span>
+                                Serum Creatinine
                             </label>
                             <input
                                 type="number" step="0.01"
@@ -316,7 +313,7 @@ export const NephrologyModule: React.FC<NephrologyModuleProps> = ({ formData, se
                         {/* Urea */}
                         <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 text-center">
                             <label className="block text-[9px] font-black uppercase tracking-widest mb-2 text-slate-500">
-                                Blood Urea <span className="text-red-400">*</span>
+                                Blood Urea
                             </label>
                             <input
                                 type="number"
@@ -334,7 +331,7 @@ export const NephrologyModule: React.FC<NephrologyModuleProps> = ({ formData, se
                         {/* eGFR */}
                         <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 text-center">
                             <label className="block text-[9px] font-black uppercase tracking-widest mb-2 text-slate-500">
-                                eGFR <span className="text-red-400">*</span>
+                                eGFR
                             </label>
                             <input
                                 type="number"
@@ -428,7 +425,7 @@ export const NephrologyModule: React.FC<NephrologyModuleProps> = ({ formData, se
             {/* ── C. URINE OUTPUT ───────────────────────────────────────── */}
             {sectionCard(
                 <>
-                    {sectionHeader(<Droplets size={17} />, 'C. Urine Output', true)}
+                    {sectionHeader(<Droplets size={17} />, 'C. Urine Output')}
                     <div className="max-w-xs">
                         <div className={`rounded-xl p-4 border text-center ${uo > 0 && uo < 100 ? 'bg-red-50 border-red-300' : uo >= 100 && uo < 400 ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-100'}`}>
                             <input

@@ -475,37 +475,6 @@ export const NeurologyModule: React.FC<NeurologyModuleProps> = ({ formData, setF
                 </div>
             </div>
 
-            {/* ── H. SYMPTOMS ─────────────────────────────────────────────── */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-                <div className="flex items-center gap-2 mb-4 text-slate-700">
-                    <ClipboardList size={17} />
-                    <h3 className="text-[11px] font-black uppercase tracking-[0.1em]">Presenting Symptoms</h3>
-                    <span className="ml-auto text-[9px] font-bold text-slate-400">REQUIRED — select all that apply</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    {['Headache', 'Seizures', 'Weakness', 'Numbness', 'Loss of consciousness', 'Speech difficulty', 'Vomiting'].map(sym => {
-                        const active = (n.symptoms || []).includes(sym);
-                        const isDanger = redFlagSymptoms.includes(sym);
-                        return (
-                            <button key={sym} type="button"
-                                onClick={() => toggleSymptom(sym)}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
-                                    active
-                                        ? isDanger
-                                            ? 'bg-red-600 text-white border-red-600 shadow-md'
-                                            : 'bg-violet-600 text-white border-violet-600 shadow-md'
-                                        : isDanger
-                                            ? 'bg-red-50 text-red-400 border-red-200 hover:bg-red-100'
-                                            : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
-                                }`}
-                            >
-                                {isDanger && '🔴 '}{sym}
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
             {/* ── I. ONSET ────────────────────────────────────────────────── */}
             <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
                 <div className="flex items-center gap-2 mb-4 text-slate-700">

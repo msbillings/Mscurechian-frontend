@@ -92,12 +92,7 @@ const PharmacyLayout = ({ children }: { children: React.ReactNode }) => {
 
     const pharmacyMenuItems: any[] = [
         { icon: LayoutDashboard, label: "Dashboard", path: "/pharmacy/dashboard" },
-        { 
-            icon: ShoppingBag, 
-            label: "Active Orders", 
-            path: "/pharmacy/orders",
-            badge: activeOrdersCountData?.count && activeOrdersCountData.count > 0 ? activeOrdersCountData.count.toString() : undefined
-        },
+        
         { icon: PlusCircle, label: "Create Invoice", path: "/pharmacy/billing" },
         { icon: ArrowLeftRight, label: "IPD Issuance", path: "/pharmacy/ipd-issuance" },
         { icon: RotateCcw, label: "Medicine Returns", path: "/pharmacy/medicine-return" },

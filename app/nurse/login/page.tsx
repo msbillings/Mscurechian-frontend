@@ -32,6 +32,7 @@ const NurseLoginPage = () => {
         const userHospitalId = (rawId && typeof rawId === 'object') ? ((rawId as any)._id || (rawId as any).id) : rawId;
 
         if (isAuth && userHospitalId && user?.role === 'nurse') {
+            setIsNavigating(true);
             router.replace(`/${userHospitalId}/nurse`);
         }
         

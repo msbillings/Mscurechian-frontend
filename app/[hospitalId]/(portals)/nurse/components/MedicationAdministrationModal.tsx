@@ -35,7 +35,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
     const [dietForm, setDietForm] = useState({
         category: 'Morning',
         recordedDate: new Date().toISOString().split('T')[0],
-        recordedTime: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+        recordedTime: new Date().toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit' }),
         notes: ''
     });
 
@@ -165,7 +165,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
             setDietForm({
                 ...dietForm,
                 notes: '',
-                recordedTime: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+                recordedTime: new Date().toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit' }),
             });
             await fetchData(true);
             onSuccess?.();
@@ -303,7 +303,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                                                 <div>
                                                     <p className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{rec.drugName}</p>
                                                     <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
-                                                        {new Date(rec.timestamp).toLocaleDateString()} at {new Date(rec.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {rec.timeSlot}
+                                                        {new Date(rec.timestamp).toLocaleDateString()} at {new Date(rec.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })} • {rec.timeSlot}
                                                     </p>
                                                 </div>
                                             </div>
@@ -445,7 +445,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                                                                                 <div className="flex flex-col items-end gap-1">
                                                                                     {nextDose && (
                                                                                         <span className={`text-[7px] font-black uppercase tracking-widest ${isDue ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`}>
-                                                                                            {isDue ? 'Due Now' : `Next: ${nextDose.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                                                                                            {isDue ? 'Due Now' : `Next: ${nextDose.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}`}
                                                                                         </span>
                                                                                     )}
                                                                                     <div className="relative group">

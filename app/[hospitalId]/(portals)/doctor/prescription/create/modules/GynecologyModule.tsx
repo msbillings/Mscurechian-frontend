@@ -50,12 +50,7 @@ export const GynecologyModule: React.FC<GynecologyModuleProps> = ({ formData, se
 
         // 2. Pregnancy status requirements
         if (g.pregnant === 'Yes') {
-            if (!g.gestationalAge) {
-                newAlerts.push({ type: 'error', message: 'Gestational age is REQUIRED when patient is pregnant.' });
-            }
-            if (!g.edd) {
-                newAlerts.push({ type: 'error', message: 'EDD (Expected Date of Delivery) is REQUIRED when patient is pregnant.' });
-            }
+
         }
 
         // 3. Gestational age validation
@@ -249,7 +244,7 @@ export const GynecologyModule: React.FC<GynecologyModuleProps> = ({ formData, se
                     {/* LMP */}
                     <div className="space-y-1.5">
                         <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                            LMP Date <span className="text-rose-500">*</span>
+                            LMP Date
                         </label>
                         <input
                             type="date"
@@ -303,7 +298,7 @@ export const GynecologyModule: React.FC<GynecologyModuleProps> = ({ formData, se
                     {/* Pregnancy Status */}
                     <div className="space-y-1.5">
                         <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                            Pregnancy Status <span className="text-rose-500">*</span>
+                            Pregnancy Status
                         </label>
                         <div className="bg-slate-50 p-1.5 rounded-2xl flex flex-col gap-1 border-2 border-slate-100">
                             {['Yes', 'No', 'Suspected'].map(status => (
@@ -366,12 +361,11 @@ export const GynecologyModule: React.FC<GynecologyModuleProps> = ({ formData, se
                     <div className="flex items-center gap-2 mb-4 text-rose-700">
                         <Calendar size={17} />
                         <h3 className="text-[11px] font-black uppercase tracking-[0.1em]">Pregnancy Details</h3>
-                        <span className="ml-auto bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">Required</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                Gestational Age (weeks) <span className="text-rose-500">*</span>
+                                Gestational Age (weeks)
                             </label>
                             <input
                                 type="number" min={1} max={42}
@@ -386,7 +380,7 @@ export const GynecologyModule: React.FC<GynecologyModuleProps> = ({ formData, se
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                EDD (Expected Date of Delivery) <span className="text-rose-500">*</span>
+                                EDD (Expected Date of Delivery)
                             </label>
                             <input
                                 type="date"

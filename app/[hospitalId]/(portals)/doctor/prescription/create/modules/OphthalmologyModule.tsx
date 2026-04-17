@@ -92,11 +92,6 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
         const iopOS = parseFloat(o.iop?.os) || 0;
         const maxIOP = Math.max(iopOD, iopOS);
 
-        // Required fields
-        if (!o.vision?.od?.unaided) newAlerts.push({ type: 'error', message: '❗ OD (Right Eye) unaided vision is required.' });
-        if (!o.vision?.os?.unaided) newAlerts.push({ type: 'error', message: '❗ OS (Left Eye) unaided vision is required.' });
-        if (!syms.length)           newAlerts.push({ type: 'error', message: '❗ At least one symptom must be documented.' });
-
         // 1. Sudden Vision Loss — EMERGENCY
         if (syms.includes('Sudden Vision Loss')) {
             newAlerts.push({ type: 'emergency', message: '🚨 OPHTHALMIC EMERGENCY — Sudden Vision Loss. Immediate assessment required. Rule out CRAO, retinal detachment, vitreous haemorrhage.' });
@@ -220,12 +215,11 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
     const sectionCard = (children: React.ReactNode, borderColor = 'border-slate-200') =>
         <div className={`bg-white rounded-2xl border ${borderColor} p-5 shadow-sm`}>{children}</div>;
 
-    const sectionHeader = (icon: React.ReactNode, title: string, required = false, note?: string) => (
+    const sectionHeader = (icon: React.ReactNode, title: string, note?: string) => (
         <div className="flex items-center gap-2 mb-4">
             <div className="text-blue-700">{icon}</div>
             <h3 className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-700">{title}</h3>
-            {required && <span className="ml-auto text-[9px] font-bold text-red-400 uppercase tracking-wider">Required</span>}
-            {note && !required && <span className="ml-auto text-[9px] font-bold text-slate-400">{note}</span>}
+            {note && <span className="ml-auto text-[9px] font-bold text-slate-400">{note}</span>}
         </div>
     );
 
@@ -351,7 +345,7 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
             {/* ── A. VISUAL ACUITY ──────────────────────────────────────── */}
             {sectionCard(
                 <>
-                    {sectionHeader(<Eye size={17} />, 'A. Visual Acuity', true, 'OD = Right Eye | OS = Left Eye')}
+                    {sectionHeader(<Eye size={17} />, 'A. Visual Acuity', 'OD = Right Eye | OS = Left Eye')}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <VisionRow eye="od" label="🔵 OD — Right Eye (Oculus Dexter)" />
                         <VisionRow eye="os" label="🟢 OS — Left Eye (Oculus Sinister)" />
@@ -380,7 +374,7 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
             {/* ── B. REFRACTION ─────────────────────────────────────────── */}
             {sectionCard(
                 <>
-                    {sectionHeader(<Target size={17} />, 'B. Refraction', false, 'SPH / CYL / Axis')}
+                    {sectionHeader(<Target size={17} />, 'B. Refraction', 'SPH / CYL / Axis')}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {(['od', 'os'] as const).map(eye => (
                             <div key={eye} className="bg-slate-50 rounded-xl p-4 border border-slate-100">
@@ -420,7 +414,7 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
             {/* ── C. IOP ────────────────────────────────────────────────── */}
             {sectionCard(
                 <>
-                    {sectionHeader(<Activity size={17} />, 'C. Intraocular Pressure (IOP)', false, 'Normal: 10–21 mmHg')}
+                    {sectionHeader(<Activity size={17} />, 'C. Intraocular Pressure (IOP)', 'Normal: 10–21 mmHg')}
                     <div className="grid grid-cols-2 gap-4">
                         {(['od', 'os'] as const).map(eye => {
                             const val = parseFloat(o.iop?.[eye]) || 0;
@@ -483,7 +477,7 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
             {/* ── E. SYMPTOMS ───────────────────────────────────────────── */}
             {sectionCard(
                 <>
-                    {sectionHeader(<ClipboardList size={17} />, 'E. Symptoms', true, 'select all that apply')}
+                    {sectionHeader(<ClipboardList size={17} />, 'E. Symptoms', 'select all that apply')}
                     <div className="flex flex-wrap gap-2">
                         {SYMPTOMS.map(sym => {
                             const isEmergency = EMERGENCY_SYMS.includes(sym);
@@ -671,7 +665,7 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
             {/* ── H. DIAGNOSIS ──────────────────────────────────────────── */}
             {sectionCard(
                 <>
-                    {sectionHeader(<FlaskConical size={17} />, 'H. Ophthalmic Diagnosis', false, 'select one')}
+                    {sectionHeader(<FlaskConical size={17} />, 'H. Ophthalmic Diagnosis', 'select one')}
                     {autoSuggest && (
                         <div className="mb-3 flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2">
                             <Info size={14} className="text-blue-500 shrink-0" />

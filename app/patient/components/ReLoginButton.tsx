@@ -1,9 +1,11 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
-import { LogOut, ArrowRight } from 'lucide-react';
+import LogoutModal from '@/components/auth/LogoutModal';
+import { useState } from 'react';
+import { ArrowRight, LogOut } from 'lucide-react';
 
 export default function ReLoginButton() {
     const { logout } = useAuthStore();

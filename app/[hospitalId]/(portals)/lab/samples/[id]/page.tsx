@@ -65,6 +65,112 @@ export default function LabResultEntryPage() {
     const handlePrint = useReactToPrint({
         contentRef: printRef,
         documentTitle: `Lab_Report_${sample?.sampleId || 'Unknown'}`,
+        pageStyle: `
+            @page {
+                size: A4;
+                margin: 8mm;
+            }
+            @media print {
+                html, body {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    width: 100% !important;
+                    background: #fff !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+                /* Make ALL content visible — react-to-print hides body by default */
+                body > * { visibility: visible !important; }
+                * { visibility: visible !important; box-sizing: border-box !important; }
+
+                /* Full-page border box */
+                .print-content {
+                    display: flex !important;
+                    flex-direction: column !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    min-height: 281mm !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    border: 3px solid #000 !important;
+                    box-sizing: border-box !important;
+                    position: relative !important;
+                    overflow: visible !important;
+                    page-break-inside: auto !important;
+                    background: #fff !important;
+                }
+
+                /* Body area grows → pushes footer down */
+                .report-body {
+                    flex: 1 1 auto !important;
+                    padding: 16px 20px !important;
+                    box-sizing: border-box !important;
+                    position: relative !important;
+                    overflow: visible !important;
+                }
+
+                /* Footer inside border, always at page bottom */
+                .lab-print-footer {
+                    flex-shrink: 0 !important;
+                    margin-top: auto !important;
+                    position: relative !important;
+                    bottom: auto !important;
+                    left: auto !important;
+                    right: auto !important;
+                    width: 100% !important;
+                    box-sizing: border-box !important;
+                }
+
+                .lab-patient-grid {
+                    display: grid !important;
+                    grid-template-columns: 1fr 1fr !important;
+                    gap: 15px !important;
+                    margin: 16px 0 !important;
+                    font-size: 12px !important;
+                }
+
+                .lab-test-title {
+                    font-size: 18px !important;
+                    text-align: center !important;
+                    border-bottom: 2px solid #ddd !important;
+                    padding-bottom: 5px !important;
+                    margin: 16px 0 10px !important;
+                }
+
+                .lab-test-table {
+                    width: 100% !important;
+                    table-layout: fixed !important;
+                    border-collapse: collapse !important;
+                    font-size: 12px !important;
+                }
+                .lab-test-table th, .lab-test-table td {
+                    border: 1px solid #d0d0d0 !important;
+                    padding: 7px 10px !important;
+                    text-align: left !important;
+                    vertical-align: top !important;
+                    word-wrap: break-word !important;
+                }
+                .lab-test-table th {
+                    background: rgba(242,246,251,0.8) !important;
+                    font-weight: 600 !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+                .lab-test-table th:nth-child(1), .lab-test-table td:nth-child(1) { width: 40% !important; }
+                .lab-test-table th:nth-child(2), .lab-test-table td:nth-child(2) { width: 35% !important; }
+                .lab-test-table th:nth-child(3), .lab-test-table td:nth-child(3) { width: 25% !important; }
+
+                .test-section {
+                    page-break-inside: avoid !important;
+                    margin-bottom: 24px !important;
+                }
+
+                table { page-break-inside: auto !important; }
+                tr    { page-break-inside: avoid !important; page-break-after: auto !important; }
+                thead { display: table-header-group !important; }
+                tfoot { display: table-footer-group !important; }
+            }
+        `,
     });
 
     const handleDownload = async () => {
@@ -76,31 +182,181 @@ export default function LabResultEntryPage() {
 
         const toastId = toast.loading('Generating PDF...');
         try {
+            // ── Dimensions ──────────────────────────────────────────────────
+            // Print uses @page { margin: 8mm }
+            //   → A4 printable area = 210 - 16 = 194mm wide, 297 - 16 = 281mm tall
+            // At 96dpi: 1mm = 3.7795px
+            // 194mm × 3.7795 ≈ 733px   ← capture width
+            // 281mm × 3.7795 ≈ 1063px  ← minimum height (1 full page)
+            // ────────────────────────────────────────────────────────────────
+            const PX_PER_MM = 3.7795;
+            const CONTENT_W_PX = Math.round(194 * PX_PER_MM); // 733px
+            const MIN_H_PX    = Math.round(281 * PX_PER_MM);  // 1063px
+
+            // The SAME CSS rules used in useReactToPrint pageStyle
+            // (no @media print wrapper — canvas runs in screen mode)
+            const CAPTURE_CSS = `
+                * { box-sizing: border-box !important; font-family: "Segoe UI", Arial, sans-serif !important; }
+
+                .print-content {
+                    display: flex !important;
+                    flex-direction: column !important;
+                    width: ${CONTENT_W_PX}px !important;
+                    max-width: ${CONTENT_W_PX}px !important;
+                    min-height: ${MIN_H_PX}px !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    border: 3px solid #000 !important;
+                    box-sizing: border-box !important;
+                    position: relative !important;
+                    overflow: visible !important;
+                    background: #fff !important;
+                    color: #000 !important;
+                }
+
+                .report-body {
+                    flex: 1 1 auto !important;
+                    padding: 16px 20px !important;
+                    box-sizing: border-box !important;
+                    position: relative !important;
+                    overflow: visible !important;
+                }
+
+                .lab-print-footer {
+                    flex-shrink: 0 !important;
+                    margin-top: auto !important;
+                    position: relative !important;
+                    bottom: auto !important;
+                    left: auto !important;
+                    right: auto !important;
+                    width: 100% !important;
+                    box-sizing: border-box !important;
+                }
+
+                .lab-patient-grid {
+                    display: grid !important;
+                    grid-template-columns: 1fr 1fr !important;
+                    gap: 15px !important;
+                    margin: 16px 0 !important;
+                    font-size: 12px !important;
+                    width: 100% !important;
+                }
+
+                .lab-test-title {
+                    font-size: 18px !important;
+                    text-align: center !important;
+                    border-bottom: 2px solid #ddd !important;
+                    padding-bottom: 5px !important;
+                    margin: 16px 0 10px !important;
+                }
+
+                .lab-test-table {
+                    width: 100% !important;
+                    table-layout: fixed !important;
+                    border-collapse: collapse !important;
+                    font-size: 12px !important;
+                }
+                .lab-test-table th, .lab-test-table td {
+                    border: 1px solid #d0d0d0 !important;
+                    padding: 7px 10px !important;
+                    text-align: left !important;
+                    vertical-align: top !important;
+                    word-wrap: break-word !important;
+                }
+                .lab-test-table th {
+                    background: rgba(242,246,251,0.8) !important;
+                    font-weight: 600 !important;
+                }
+                .lab-test-table th:nth-child(1), .lab-test-table td:nth-child(1) { width: 40% !important; }
+                .lab-test-table th:nth-child(2), .lab-test-table td:nth-child(2) { width: 35% !important; }
+                .lab-test-table th:nth-child(3), .lab-test-table td:nth-child(3) { width: 25% !important; }
+
+                .test-section { margin-bottom: 24px !important; }
+
+                table { page-break-inside: auto; width: 100% !important; }
+                tr    { page-break-inside: avoid; }
+                thead { display: table-header-group; }
+                tfoot { display: table-footer-group; }
+            `;
+
             const canvas = await html2canvas(element, {
-                scale: 3, // Increased for better quality
-                logging: false,
+                scale: 2,
                 useCORS: true,
-                backgroundColor: '#ffffff',
                 allowTaint: true,
-                imageTimeout: 0,
-                windowWidth: element.scrollWidth,
-                windowHeight: element.scrollHeight
+                backgroundColor: '#ffffff',
+                logging: false,
+                imageTimeout: 15000,
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: CONTENT_W_PX,
+                onclone: (_clonedDoc: Document, clonedElement: HTMLElement) => {
+                    // 1. Remove Tailwind / global CSS with lab()/oklch() colors
+                    _clonedDoc.querySelectorAll('link[rel="stylesheet"]').forEach(el => el.remove());
+                    _clonedDoc.querySelectorAll('head style, body > style').forEach(el => {
+                        if (el.textContent?.includes('lab(') || el.textContent?.includes('oklch(')) {
+                            el.remove();
+                        }
+                    });
+
+                    // 2. Inject the same CSS rules as useReactToPrint pageStyle
+                    const styleEl = _clonedDoc.createElement('style');
+                    styleEl.textContent = CAPTURE_CSS;
+                    _clonedDoc.head.appendChild(styleEl);
+
+                    // 3. Constrain outer wrapper to content width (no extra whitespace)
+                    clonedElement.style.cssText = `
+                        width: ${CONTENT_W_PX}px !important;
+                        max-width: ${CONTENT_W_PX}px !important;
+                        min-width: ${CONTENT_W_PX}px !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        background: #ffffff !important;
+                        overflow: visible !important;
+                        height: auto !important;
+                    `;
+                }
             });
-            const imgData = canvas.toDataURL('image/png');
+
+            // ── Build PDF — margin:8mm matches print's @page{margin:8mm} ──
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const margin = 5; // 5mm margin (User preferred previous width)
+            const PAGE_W = pdf.internal.pageSize.getWidth();   // 210mm
+            const PAGE_H = pdf.internal.pageSize.getHeight();  // 297mm
+            const MARGIN = 8; // mm — same as @page margin
 
-            const imgWidth = pdfWidth - (margin * 2);
-            const imgHeight = pdfHeight - (margin * 2); // Force fit to height to ensure bottom border is visible
+            const usableW = PAGE_W - MARGIN * 2; // 194mm
+            const usableH = PAGE_H - MARGIN * 2; // 281mm
 
-            pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
+            // canvas.width = CONTENT_W_PX * scale = 733 * 2 = 1466px → fits 194mm
+            const pxPerMm = canvas.width / usableW;
+            const totalImgH = canvas.height / pxPerMm;
+            // Subtract 1mm to prevent rounding overflow from creating a blank second page
+            const totalPages = Math.max(1, Math.ceil((totalImgH - 1) / usableH));
+
+            for (let page = 0; page < totalPages; page++) {
+                if (page > 0) pdf.addPage();
+
+                const srcY = Math.round(page * usableH * pxPerMm);
+                const srcH = Math.min(Math.round(usableH * pxPerMm), canvas.height - srcY);
+                if (srcH <= 0) break;
+
+                const pageCanvas = document.createElement('canvas');
+                pageCanvas.width = canvas.width;
+                pageCanvas.height = srcH;
+                const ctx = pageCanvas.getContext('2d')!;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+                ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
+
+                const imgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+                pdf.addImage(imgData, 'JPEG', MARGIN, MARGIN, usableW, srcH / pxPerMm);
+            }
+
             pdf.save(`Lab_Report_${sample?.sampleId || 'download'}.pdf`);
-            toast.success('PDF Downloaded', { id: toastId });
+            toast.success('PDF Downloaded Successfully!', { id: toastId });
+
         } catch (error) {
             console.error('PDF generation failed:', error);
-            toast.error('Failed to generate PDF', { id: toastId });
+            toast.error('Failed to generate PDF. Please try again.', { id: toastId });
         }
     };
 
@@ -267,7 +523,7 @@ export default function LabResultEntryPage() {
                                 onClick={handleDownload}
                                 className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-[10px] sm:text-xs md:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all shadow-sm active:scale-95"
                             >
-                                <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> PDF
+                                <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Download Report
                             </button>
                             {/* Show Send to Doctor for doctor-referred tests */}
                             {(sample.referredBy || !sample.isWalkIn) && (
@@ -275,7 +531,7 @@ export default function LabResultEntryPage() {
                                     onClick={handleNotifyDoctor}
                                     className="col-span-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-[10px] sm:text-xs md:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all shadow-sm active:scale-95"
                                 >
-                                    <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Notify
+                                    <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Notify Doctor
                                 </button>
                             )}
                             <button
@@ -415,7 +671,7 @@ export default function LabResultEntryPage() {
                         className="w-full sm:w-auto px-4 sm:px-8 py-3 sm:py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl font-bold text-xs sm:text-sm uppercase tracking-widest shadow-xl shadow-blue-100 dark:shadow-none hover:translate-y-[-2px] active:translate-y-[0px] transition-all flex items-center justify-center gap-2"
                     >
                         <Send size={16} className="sm:w-5 sm:h-5" />
-                        Send to Doctor
+                        Notify Doctor
                     </button>
                 )}
             </div>

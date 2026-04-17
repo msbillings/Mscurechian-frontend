@@ -1,4 +1,4 @@
-﻿export interface SubTestResult {
+export interface SubTestResult {
     name: string;
     result?: string;
     unit?: string;
@@ -41,6 +41,11 @@ export interface LabSample {
         mobile: string;
         refDoctor: string;
         patientId?: string;
+        bedInfo?: {
+            bedId: string;
+            room: string;
+            type: string;
+        };
     };
     sampleType: string;
     tests: SampleTestResult[];

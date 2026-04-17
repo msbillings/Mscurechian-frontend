@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useEffect, useState, useTransition } from 'react';
+import React, { useEffect, useState, useTransition, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { LabSample } from '@/lib/integrations/types/labSample';
 import { LabSampleService } from '@/lib/integrations/services/labSample.service';
 import { FlaskConical, RefreshCw, User, TestTube, Clock, CheckCircle2, FileText, AlertCircle, PlayCircle, ChevronLeft, ChevronRight, Receipt, Printer } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { invalidateCachePattern } from '@/lib/integrations/api/apiClient';
+import { invalidateCachePattern, clearApiCache } from '@/lib/integrations/api/apiClient';
+import { getSocket } from '@/lib/integrations/api/socket';
 
 
 
@@ -41,58 +42,82 @@ export default function SampleCollectionPage() {
     const itemsPerPage = 15;
 
 
-    useEffect(() => {
-        // Use cache by default for performance. Cache is invalidated on actions.
-        fetchSamples(false);
-
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                // Determine if we need to refresh. For now rely on cache TTL or specific invalidations.
-                fetchSamples(false);
-            }
-        };
-
-        const handleRefresh = () => fetchSamples(true, true);
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        window.addEventListener('refresh-lab-data', handleRefresh);
-
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-            window.removeEventListener('refresh-lab-data', handleRefresh);
-        };
-    }, []);
-
-    const fetchSamples = async (silent = false, skipCache = false) => {
+    const fetchSamples = useCallback(async (silent = false, skipCache = false) => {
         if (!silent) setLoading(true);
         try {
-            // Fetch samples by status - using standard frontend status names that backend maps
             const [pending, processing, completed] = await Promise.all([
-                LabSampleService.getSamples('Pending', skipCache),        // Backend maps to 'prescribed'
-                LabSampleService.getSamples('In Processing', skipCache), // Backend maps to ['sample_collected', 'processing']
-                LabSampleService.getSamples('Completed', skipCache)       // Backend maps to 'completed'
+                LabSampleService.getSamples('Pending', skipCache),
+                LabSampleService.getSamples('In Processing', skipCache),
+                LabSampleService.getSamples('Completed', skipCache)
             ]);
 
             setPendingSamples(pending.sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime()));
-
-            setReadySamples(processing.sort((a, b) => {
-                const dateA = new Date(a.collectionDate || a.createdAt || '').getTime();
-                const dateB = new Date(b.collectionDate || b.createdAt || '').getTime();
-                return dateB - dateA;
-            }));
-
-            setCollectedSamples(completed.sort((a, b) => {
-                const dateA = new Date(a.reportDate || a.collectionDate || a.createdAt || '').getTime();
-                const dateB = new Date(b.reportDate || b.collectionDate || b.createdAt || '').getTime();
-                return dateB - dateA;
-            }));
-
+            setReadySamples(processing.sort((a, b) => new Date(b.collectionDate || b.createdAt || '').getTime() - new Date(a.collectionDate || a.createdAt || '').getTime()));
+            setCollectedSamples(completed.sort((a, b) => new Date(b.reportDate || b.collectionDate || b.createdAt || '').getTime() - new Date(a.reportDate || a.collectionDate || a.createdAt || '').getTime()));
         } catch (error) {
             console.error(error);
             if (!silent) toast.error('Failed to load samples');
         } finally {
             if (!silent) setLoading(false);
         }
-    };
+    }, []);
+
+    // ── Real-time: trigger a cache-busted refresh after a short delay ──
+    const triggerLiveRefresh = useCallback(() => {
+        // First pass — fast write (500ms)
+        setTimeout(() => {
+            clearApiCache();
+            fetchSamples(true, true);
+        }, 500);
+        // Second pass — slower writes / network lag (2s)
+        setTimeout(() => {
+            clearApiCache();
+            fetchSamples(true, true);
+        }, 2000);
+    }, [fetchSamples]);
+
+    useEffect(() => {
+        fetchSamples(false);
+
+        // ── Socket listeners ──
+        let socketInstance: any = null;
+        getSocket().then(socket => {
+            if (!socket) return;
+            socketInstance = socket;
+
+            const handleUpdate = () => {
+                console.log('📡 [SamplesPage] Real-time event → refreshing list...');
+                triggerLiveRefresh();
+            };
+
+            socket.on('new_lab_order',       handleUpdate);
+            socket.on('sample_collected',    handleUpdate);
+            socket.on('lab_order_updated',   handleUpdate);
+            socket.on('lab_refresh_forced',  handleUpdate);
+            socket.on('payment_status_changed', handleUpdate);
+        });
+
+        // ── Existing listeners ──
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') fetchSamples(true, false);
+        };
+        const handleRefresh = () => fetchSamples(true, true);
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('refresh-lab-data', handleRefresh);
+
+        return () => {
+            if (socketInstance) {
+                socketInstance.off('new_lab_order');
+                socketInstance.off('sample_collected');
+                socketInstance.off('lab_order_updated');
+                socketInstance.off('lab_refresh_forced');
+                socketInstance.off('payment_status_changed');
+            }
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('refresh-lab-data', handleRefresh);
+        };
+    }, [fetchSamples, triggerLiveRefresh]);
 
     const handleCollect = async (id: string) => {
         try {
@@ -179,7 +204,14 @@ export default function SampleCollectionPage() {
                             <div className="p-2.5 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
                                 <FlaskConical className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                             </div>
-                            <h1 className="text-lg md:text-xl lg:text-xl font-semibold text-gray-900 dark:text-white">Lab Samples</h1>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-lg md:text-xl lg:text-xl font-semibold text-gray-900 dark:text-white">Lab Samples</h1>
+                                {pendingSamples.length > 0 && (
+                                    <span className="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full shadow-sm">
+                                        {pendingSamples.length}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                         <p className="text-xs md:text-sm lg:text-base text-gray-600 dark:text-gray-400">Manage sample collection and result entry</p>
                     </div>
@@ -301,7 +333,14 @@ export default function SampleCollectionPage() {
                                                 </div>
                                                 <div>
                                                     <div className="font-medium text-gray-900 dark:text-white">{sample.patientDetails.name}</div>
-                                                    <div className="text-xs text-gray-500">{sample.patientDetails.age}Y • {sample.patientDetails.gender}</div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {sample.patientDetails.age}Y • {sample.patientDetails.gender}
+                                                        {sample.patientDetails.bedInfo && (
+                                                            <span className="ml-2 text-emerald-600 font-bold uppercase tracking-tighter">
+                                                                • {sample.patientDetails.bedInfo.bedId} ({sample.patientDetails.bedInfo.room})
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
@@ -422,7 +461,14 @@ export default function SampleCollectionPage() {
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <div className="text-xs text-gray-500">{sample.patientDetails.age}Y • {sample.patientDetails.gender}</div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {sample.patientDetails.age}Y • {sample.patientDetails.gender}
+                                                        {sample.patientDetails.bedInfo && (
+                                                            <span className="ml-2 text-emerald-600 font-bold uppercase tracking-tighter">
+                                                                • {sample.patientDetails.bedInfo.bedId} ({sample.patientDetails.bedInfo.room})
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
@@ -554,5 +600,3 @@ export default function SampleCollectionPage() {
         </div>
     );
 }
-
-

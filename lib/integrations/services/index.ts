@@ -1,4 +1,5 @@
 export * from "./auth.service";
+export * from "./spellcheck.service";
 export * from "./user.service";
 export * from "./admin.service";
 export * from "./hospitalAdmin.service";

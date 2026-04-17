@@ -74,23 +74,12 @@ export const GastroModule: React.FC<GastroModuleProps> = ({ formData, setFormDat
         update('symptoms', curr.includes(sym) ? curr.filter((s: string) => s !== sym) : [...curr, sym]);
     };
 
-    // ── Real-time Clinical Validation Engine ──────────────────────────────────
-    useEffect(() => {
-        const newAlerts: AlertEntry[] = [];
-        const syms: string[] = g.symptoms || [];
-        const liverEnlarged = g.liver?.status === 'Enlarged';
-        const liverSize     = parseFloat(g.liver?.size) || 0;
-
-        // ── Required field reminders ─────────────────────────────────────────
-        if (!syms.length) {
-            newAlerts.push({ type: 'error', message: 'Symptoms are required — please select at least one.' });
-        }
-        if (!g.bowelHabits) {
-            newAlerts.push({ type: 'error', message: 'Bowel habits are required.' });
-        }
-        if (!g.tenderness) {
-            newAlerts.push({ type: 'error', message: 'Tenderness must be documented.' });
-        }
+        // ── Real-time Clinical Validation Engine ──────────────────────────────────
+        useEffect(() => {
+            const newAlerts: AlertEntry[] = [];
+            const syms: string[] = g.symptoms || [];
+            const liverEnlarged = g.liver?.status === 'Enlarged';
+            const liverSize     = parseFloat(g.liver?.size) || 0;
 
         // ── Rule 1 — Bowel sounds absent → obstruction ───────────────────────
         if (g.bowelSounds === 'Absent') {
@@ -338,11 +327,6 @@ export const GastroModule: React.FC<GastroModuleProps> = ({ formData, setFormDat
                             );
                         })}
                     </div>
-                    {syms.length === 0 && (
-                        <p className="mt-2 text-[10px] font-black text-red-500">
-                            ↑ At least one symptom must be recorded
-                        </p>
-                    )}
                 </>,
                 'border-emerald-100',
             )}
@@ -525,7 +509,7 @@ export const GastroModule: React.FC<GastroModuleProps> = ({ formData, setFormDat
                         {/* Tenderness — dropdown (REQUIRED) */}
                         <div>
                             <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">
-                                Tenderness (Palpation) <span className="text-red-400">*</span>
+                                Tenderness (Palpation)
                             </label>
                             <div className="flex flex-wrap gap-2">
                                 {TENDERNESS.map(t => (

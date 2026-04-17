@@ -55,6 +55,7 @@ import { UrologyModule } from './modules/UrologyModule';
 import { RadiologyModule } from './modules/RadiologyModule';
 import { GeneralSurgeryModule } from './modules/GeneralSurgeryModule';
 import { ClinicalAlertPanel } from './components/ClinicalAlertPanel';
+import PrescriptionPreviewModal from './components/PrescriptionPreviewModal';
 import { evaluateClinicalRules } from '@/lib/clinical/ClinicalEngine';
 import { ClinicalAlert } from '@/lib/clinical/ClinicalRules';
 import toast from 'react-hot-toast';
@@ -110,9 +111,18 @@ interface PrescriptionForm {
         bpSystolic: string;
         bpDiastolic: string;
         heartRate: string;
-        ecgFindings: string;
-        heartSounds: string;
+        rhythm: string;
         riskLevel: 'Low' | 'Moderate' | 'High';
+        nyhaClass: string;
+        riskFactors: string[];
+        ecgType: string;
+        ecgLeads: string[];
+        ecgNotes: string;
+        s1: string;
+        s2: string;
+        murmur: 'None' | 'Present';
+        murmurType: string;
+        notes: string;
     };
     psychiatryData?: {
         complaints: string[];
@@ -478,9 +488,18 @@ const INITIAL_FORM: PrescriptionForm = {
         bpSystolic: '',
         bpDiastolic: '',
         heartRate: '',
-        ecgFindings: '',
-        heartSounds: 'Normal S1, S2',
-        riskLevel: 'Low'
+        rhythm: 'Regular',
+        riskLevel: 'Low',
+        nyhaClass: '',
+        riskFactors: [],
+        ecgType: 'Normal',
+        ecgLeads: [],
+        ecgNotes: '',
+        s1: 'Normal',
+        s2: 'Normal',
+        murmur: 'None',
+        murmurType: '',
+        notes: ''
     },
     psychiatryData: {
         complaints: [],
@@ -868,11 +887,15 @@ const FrequencySelector = ({ value, onChange }: { value: Frequency, onChange: (v
                     <div className="flex items-center gap-1 shrink-0">
                         <span className="text-[7px] font-black text-slate-400 uppercase">Every</span>
                         <input
-                            type="number"
-                            min="1"
-                            max="24"
-                            value={freq.custom?.interval || 8}
-                            onChange={(e) => setCustomInterval(Number(e.target.value))}
+                            type="text"
+                            value={freq.custom?.interval === 0 ? '' : (freq.custom?.interval || '')}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '' || /^\d+$/.test(val)) {
+                                    setCustomInterval(val === '' ? 0 : parseInt(val));
+                                }
+                            }}
+                            placeholder="8"
                             className="w-8 h-6 bg-slate-50 border border-slate-200 rounded text-[9px] font-black text-center focus:outline-none focus:ring-1 focus:ring-teal-500"
                         />
                         <span className="text-[7px] font-black text-slate-400 uppercase">Hrs</span>
@@ -902,7 +925,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
     const patientId = searchParams.get('patientId');
     const admissionId = searchParams.get('admissionId');
 
-    const [mode, setMode] = useState<'AI' | 'SELF'>('SELF');
+
     const [formData, setFormData] = useState<PrescriptionForm>(INITIAL_FORM);
     const [loading, setLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -1469,8 +1492,8 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
             logo: hospitalBranding?.logo
         };
 
-        const headerHtml = renderToStaticMarkup(<MainHeader initialDetails={initialHospitalDetails} />);
-        const footerHtml = renderToStaticMarkup(<MainFooter initialDetails={initialHospitalDetails} />);
+        const headerHtml = renderToStaticMarkup(<MainHeader initialDetails={hospitalBranding} />);
+        const footerHtml = renderToStaticMarkup(<MainFooter initialDetails={hospitalBranding} />);
 
         return `
             <!DOCTYPE html>
@@ -1502,7 +1525,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                     }
                     .content { flex: 1; }
                     .header-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; }
-                    .title { color: #1e40af; margin: 0; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; }
+                    .title { color: #1e40af; margin: 0; font-size: 18px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; }
                     .doctor-info { text-align: right; }
                     .doctor-name { font-size: 14px; font-weight: 800; color: #1e293b; margin: 0; }
                     .doctor-spec { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin: 2px 0 0; }
@@ -1581,25 +1604,52 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         </div>
                         ` : ''}
 
-                        ${activeSpecialty.toUpperCase().includes('CARDIO') ? `
-                        <div style="margin-bottom: 25px; padding: 15px; border: 2px solid #fee2e2; border-radius: 12px; background: #fffcfc;">
-                            <span style="font-size: 9px; font-weight: 800; text-transform: uppercase; color: #ef4444; border-bottom: 1px solid #fee2e2; display: block; margin-bottom: 10px;">Cardiac Vital Report</span>
-                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                        ${activeSpecialty.toUpperCase().includes('CARDIO') && formData.cardiologyData ? (() => {
+                            const c = formData.cardiologyData;
+                            return `
+                        <div style="margin-bottom: 25px; padding: 18px; border: 2px solid #fee2e2; border-radius: 16px; background: #fffcfc; page-break-inside: avoid;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #fecaca; margin-bottom: 15px; padding-bottom: 8px;">
+                                <span style="font-size: 10px; font-weight: 900; text-transform: uppercase; color: #dc2626; letter-spacing: 1px;">Cardiac Evaluation Report</span>
+                                <span style="font-size: 11px; font-weight: 900; color: #dc2626; background: #fee2e2; padding: 4px 12px; border-radius: 6px;">Risk: ${c.riskLevel?.toUpperCase()}</span>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
                                 <div>
-                                    <span style="font-size: 8px; color: #94a3b8; font-weight: 800; text-transform: uppercase; display: block;">Blood Pressure</span>
-                                    <span style="font-size: 14px; font-weight: 800; color: #1e293b;">${formData.cardiologyData?.bpSystolic}/${formData.cardiologyData?.bpDiastolic} <small style="font-size: 8px; color: #94a3b8;">mmHg</small></span>
+                                    <span style="font-size: 8px; color: #991b1b; font-weight: 800; text-transform: uppercase; display: block;">Blood Pressure</span>
+                                    <span style="font-size: 16px; font-weight: 900; color: #1e293b;">${c.bpSystolic}/${c.bpDiastolic} <small style="font-size: 9px; font-weight: 600; color: #64748b;">mmHg</small></span>
                                 </div>
                                 <div>
-                                    <span style="font-size: 8px; color: #94a3b8; font-weight: 800; text-transform: uppercase; display: block;">Heart Rate</span>
-                                    <span style="font-size: 14px; font-weight: 800; color: #1e293b;">${formData.cardiologyData?.heartRate} <small style="font-size: 8px; color: #94a3b8;">BPM</small></span>
+                                    <span style="font-size: 8px; color: #991b1b; font-weight: 800; text-transform: uppercase; display: block;">Heart Rate</span>
+                                    <span style="font-size: 16px; font-weight: 900; color: #1e293b;">${c.heartRate} <small style="font-size: 9px; font-weight: 600; color: #64748b;">BPM</small></span>
                                 </div>
                                 <div>
-                                    <span style="font-size: 8px; color: #94a3b8; font-weight: 800; text-transform: uppercase; display: block;">Risk Level</span>
-                                    <span style="font-size: 11px; font-weight: 900; color: #ef4444; text-transform: uppercase;">${formData.cardiologyData?.riskLevel} Risk</span>
+                                    <span style="font-size: 8px; color: #991b1b; font-weight: 800; text-transform: uppercase; display: block;">Rhythm</span>
+                                    <span style="font-size: 13px; font-weight: 800; color: #1e293b;">${c.rhythm || 'Normal'}</span>
                                 </div>
                             </div>
-                        </div>
-                        ` : ''}
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px dashed #fecaca; padding-top: 12px; margin-bottom: 12px;">
+                                <div>
+                                    <span style="font-size: 8px; font-weight: 800; color: #dc2626; text-transform: uppercase; display: block; margin-bottom: 4px;">Clinical Profile</span>
+                                    <div style="font-size: 10px; font-weight: 700; color: #334155;">NYHA Class: <span style="font-weight: 900; color: #dc2626;">${c.nyhaClass || 'N/A'}</span></div>
+                                    <div style="font-size: 9px; font-weight: 700; color: #334155; margin-top: 2px;">Risk Factors: ${c.riskFactors?.join(', ') || 'None reported'}</div>
+                                </div>
+                                <div>
+                                    <span style="font-size: 8px; font-weight: 800; color: #dc2626; text-transform: uppercase; display: block; margin-bottom: 4px;">ECG Findings</span>
+                                    <div style="font-size: 11px; font-weight: 900; color: #1e1b4b;">${c.ecgType || 'Normal Sinus'}</div>
+                                    <div style="font-size: 9px; font-weight: 700; color: #475569;">Leads: ${c.ecgLeads?.join(', ') || 'N/A'}</div>
+                                </div>
+                            </div>
+
+                            <div style="border-top: 1px dashed #fecaca; padding-top: 10px;">
+                                <span style="font-size: 8px; color: #991b1b; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 4px;">Auscultation & Physical Exam</span>
+                                <div style="font-size: 10px; font-weight: 700; color: #1e293b;">
+                                    S1: ${c.s1} | S2: ${c.s2} | Murmur: ${c.murmur === 'Present' ? (c.murmurType || 'Yes') : 'None'}
+                                </div>
+                                ${c.notes ? `<div style="margin-top: 6px; font-size: 9px; color: #64748b; font-style: italic;">Notes: ${c.notes}</div>` : ''}
+                            </div>
+                        </div>`;
+                        })() : ''}
 
                         ${activeSpecialty.toUpperCase().includes('HEMA') && formData.hematologyData ? (() => {
                             const hema = formData.hematologyData;
@@ -2591,7 +2641,116 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         </div>`;
                         })() : ''}
 
+                        ${activeSpecialty.toUpperCase().includes('GASTRO') && formData.gastroData ? (() => {
+                            const g = formData.gastroData;
+                            const syms = g.symptoms || [];
+                            const liver = g.liver || {};
+                            return `
+                        <div style="margin-bottom:25px;padding:18px;border:2px solid #ecfdf5;border-radius:16px;background:#f0fdf4;page-break-inside:avoid;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid #bbf7d0;margin-bottom:12px;padding-bottom:8px;">
+                                <span style="font-size:10px;font-weight:900;text-transform:uppercase;color:#047857;letter-spacing:1px;">Gastroenterology Profile</span>
+                                ${g.diagnosis ? `<span style="font-size:11px;font-weight:900;color:#047857;background:#d1fae5;padding:4px 12px;border-radius:6px;">${g.diagnosis}</span>` : ''}
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:10px;">
+                                <div>
+                                    <span style="font-size:8px;color:#047857;font-weight:800;text-transform:uppercase;display:block;margin-bottom:4px;">Symptoms & Habits</span>
+                                    <div style="font-size:10px;font-weight:700;color:#1e293b;">${syms.join(', ') || 'Normal'}</div>
+                                    <div style="margin-top:4px;font-size:10px;font-weight:700;color:#047857;">Habits: ${g.bowelHabits || 'Normal'} | Stool: ${g.stoolType || 'Normal'}</div>
+                                </div>
+                                <div>
+                                    <span style="font-size:8px;color:#047857;font-weight:800;text-transform:uppercase;display:block;margin-bottom:4px;">Physical Exam</span>
+                                    <div style="font-size:10px;font-weight:700;color:#1e293b;">
+                                        Liver: ${liver.status || 'Normal'}${liver.size ? ` (${liver.size}cm)` : ''} | Spleen: ${g.spleen?.status || 'Normal'}<br/>
+                                        Bowel Sounds: ${g.bowelSounds || 'Normal'} | Distention: ${g.distention || 'None'}
+                                    </div>
+                                </div>
+                            </div>
+                            ${g.painLocation ? `
+                            <div style="background:#fff;padding:8px;border-radius:8px;border:1px dashed #bbf7d0;">
+                                <span style="font-size:8px;color:#047857;font-weight:800;text-transform:uppercase;">Pain Profile: </span>
+                                <span style="font-size:10px;font-weight:700;color:#1e293b;">${g.painLocation} (${g.painType || 'Diffuse'}) | Tenderness: ${g.tenderness || 'None'}</span>
+                            </div>` : ''}
+                        </div>`;
+                        })() : ''}
+
+                        ${activeSpecialty.toUpperCase().includes('PSYCH') && formData.psychiatryData ? (() => {
+                            const p = formData.psychiatryData;
+                            const mse = p.mse || {};
+                            return `
+                        <div style="margin-bottom:25px;padding:18px;border:2px solid #eef2ff;border-radius:16px;background:#f5f3ff;page-break-inside:avoid;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid #ddd6fe;margin-bottom:12px;padding-bottom:8px;">
+                                <span style="font-size:10px;font-weight:900;text-transform:uppercase;color:#4338ca;letter-spacing:1px;">Psychiatric Assessment</span>
+                                <span style="font-size:11px;font-weight:900;color:#4338ca;background:#ede9fe;padding:4px 12px;border-radius:6px;">Risk: ${p.suicideRisk || 'None'}</span>
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:10px;">
+                                <div>
+                                    <span style="font-size:8px;color:#4338ca;font-weight:800;text-transform:uppercase;display:block;margin-bottom:4px;">Clinical Presentation</span>
+                                    <div style="font-size:10px;font-weight:700;color:#1e293b;">${(p.complaints || []).join(', ') || 'Normal'}</div>
+                                    <div style="font-size:10px;font-weight:700;color:${p.severity === 'Severe' ? '#dc2626' : '#4338ca'};">Severity: ${p.severity || 'Mild'}</div>
+                                </div>
+                                <div>
+                                    <span style="font-size:8px;color:#4338ca;font-weight:800;text-transform:uppercase;display:block;margin-bottom:4px;">Mental Status (MSE)</span>
+                                    <div style="font-size:9px;font-weight:700;color:#1e293b;">
+                                        Mood: ${mse.mood || 'Euthymic'} | Speech: ${mse.speech || 'Normal'}<br/>
+                                        Insight: ${mse.insight}/5 | Judgment: ${mse.judgment}/5
+                                    </div>
+                                </div>
+                            </div>
+                            ${mse.thought?.length ? `
+                            <div style="background:#fff;padding:8px;border-radius:8px;border:1px dashed #ddd6fe;">
+                                <span style="font-size:8px;color:#dc2626;font-weight:800;text-transform:uppercase;">Thought / Perception Alerts: </span>
+                                <span style="font-size:10px;font-weight:700;color:#1e293b;">${mse.thought.join(', ')}</span>
+                            </div>` : ''}
+                        </div>`;
+                        })() : ''}
+
+                        ${activeSpecialty.toUpperCase().includes('DERMA') && formData.dermatologyData ? (() => {
+                            const d = formData.dermatologyData;
+                            return `
+                        <div style="margin-bottom:25px;padding:18px;border:2px solid #fff1f2;border-radius:16px;background:#fff5f5;page-break-inside:avoid;">
+                            <div style="border-bottom:1.5px solid #fecdd3;margin-bottom:12px;padding-bottom:8px;">
+                                <span style="font-size:10px;font-weight:900;text-transform:uppercase;color:#be123c;letter-spacing:1px;">Dermatological Findings</span>
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                                <div>
+                                    <span style="font-size:8px;color:#be123c;font-weight:800;text-transform:uppercase;display:block;margin-bottom:4px;">Lesion Profile</span>
+                                    <div style="font-size:12px;font-weight:900;color:#1e1b4b;">${d.lesionType || 'No lesions'}</div>
+                                    <div style="font-size:10px;font-weight:700;color:#be123c;">Location: ${d.location || 'Diffuse'}</div>
+                                </div>
+                                <div>
+                                    <span style="font-size:8px;color:#be123c;font-weight:800;text-transform:uppercase;display:block;margin-bottom:4px;">Characteristics</span>
+                                    <div style="font-size:10px;font-weight:700;color:#1e293b;">Pattern: ${d.pattern || 'Standard'}<br/>Appearance: ${d.appearance || 'Standard'}</div>
+                                </div>
+                            </div>
+                        </div>`;
+                        })() : ''}
+
+                        ${activeSpecialty.toUpperCase().includes('SURGERY') && formData.generalSurgeryData ? (() => {
+                            const s = formData.generalSurgeryData;
+                            const abd = s.abdomen || {};
+                            return `
+                        <div style="margin-bottom:25px;padding:18px;border:2px solid #ecfeff;border-radius:16px;background:#f0f9ff;page-break-inside:avoid;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid #bae6fd;margin-bottom:12px;padding-bottom:8px;">
+                                <span style="font-size:10px;font-weight:900;text-transform:uppercase;color:#0369a1;letter-spacing:1px;">General Surgery Profile</span>
+                                <span style="font-size:11px;font-weight:900;color:#0369a1;background:#e0f2fe;padding:4px 12px;border-radius:6px;">Plan: ${s.plan || 'Conservative'}</span>
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:10px;">
+                                <div>
+                                    <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:4px;">Abdominal Exam</span>
+                                    <div style="font-size:10px;font-weight:700;color:#1e293b;">Tenderness: ${abd.tenderness || 'None'} | Guarding: ${abd.guarding || 'None'}</div>
+                                    <div style="font-size:10px;font-weight:700;color:#0369a1;">Bowel Sounds: ${abd.bowelSounds || 'Normal'}</div>
+                                </div>
+                                <div>
+                                    <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:4px;">Special Findings</span>
+                                    <div style="font-size:10px;font-weight:700;color:#1e293b;">Hernia: ${s.hernia?.present ? `${s.hernia.type} (${s.hernia.site})` : 'None'}</div>
+                                    <div style="font-size:10px;font-weight:800;color:${s.surgicalSite?.infection ? '#dc2626' : '#16a34a'};">Surgical Site: ${s.surgicalSite?.dressing || 'N/A'}</div>
+                                </div>
+                            </div>
+                        </div>`;
+                        })() : ''}
+
                         <div class="section-title">Medications & Dosage</div>
+
                         <table>
                             <thead>
                                 <tr>
@@ -2679,8 +2838,8 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
             logo: hospitalBranding?.logo
         };
 
-        const headerHtml = renderToStaticMarkup(<MainHeader initialDetails={initialHospitalDetails} />);
-        const footerHtml = renderToStaticMarkup(<MainFooter initialDetails={initialHospitalDetails} />);
+        const headerHtml = renderToStaticMarkup(<MainHeader initialDetails={hospitalBranding} />);
+        const footerHtml = renderToStaticMarkup(<MainFooter initialDetails={hospitalBranding} />);
 
         return `
             <!DOCTYPE html>
@@ -2822,7 +2981,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
 
         // Submit the prescription and send to pharma
         setIsSending(true);
-        await executeSubmit(true, false);
+        await executeSubmit(true, true);
         setIsSending(false);
         setSentToPharma(true);
     };
@@ -2906,12 +3065,18 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                 dietAdvice: formData.dietAdvice,
                 suggestedTests: formData.suggestedTests,
                 avoid: formData.avoid,
-                aiGenerated: mode === 'AI',
+                aiGenerated: false,
                 age: formData.age,
                 gender: formData.gender,
                 sendToPharma: sendToPharmaFlag,
                 // ── Specialty module payloads (persisted as linked documents) ──
-                cardiologyData: activeSpecialty.toUpperCase().includes('CARDIO') ? formData.cardiologyData : undefined,
+                cardiologyData: activeSpecialty.toUpperCase().includes('CARDIO') ? (() => {
+                    const c = { ...formData.cardiologyData };
+                    if (!c.murmurType || c.murmur !== 'Present') {
+                        delete c.murmurType;
+                    }
+                    return c;
+                })() : undefined,
                 dermatologyData: activeSpecialty.toUpperCase().includes('DERMA') ? formData.dermatologyData : undefined,
                 entData: activeSpecialty.toUpperCase().includes('ENT') && !activeSpecialty.toUpperCase().includes('DENT') && !activeSpecialty.toUpperCase().includes('GASTRO') ? formData.entData : undefined,
                 pediatricData: activeSpecialty.toUpperCase().includes('PEDIATRI') ? formData.pediatricData : undefined,
@@ -2928,6 +3093,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                 hematologyData: (activeSpecialty.toUpperCase().includes('HEMA')) ? formData.hematologyData : undefined,
                 oncologyData: (activeSpecialty.toUpperCase().includes('ONCO')) ? formData.oncologyData : undefined,
                 dentistryData: (activeSpecialty.toUpperCase().includes('DENT')) ? formData.dentistryData : undefined,
+                radiologyOrder: (activeSpecialty.toUpperCase().includes('RADIO')) ? formData.radiologyOrder : undefined,
                 generalSurgeryData: (activeSpecialty.toUpperCase().includes('SURGERY')) ? formData.generalSurgeryData : undefined,
             };
 
@@ -2988,6 +3154,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
 
             if (warnings.length === 0) {
                 if (sendToPharmaFlag) {
+                    setSentToPharma(true);
                     toast.success("Prescription Saved & Sent to Pharmacy Successfully!");
                 } else {
                     toast.success("Prescription Saved Successfully!");
@@ -3030,7 +3197,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
     }
 
     return (
-        <div className="bg-slate-50/50">
+        <div className="bg-slate-50/50 relative min-h-screen">
             {/* Header */}
             <header className="bg-white border-b border-border-theme py-4 mb-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -3047,20 +3214,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         </div>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
-                        <div className="bg-secondary-theme p-1.5 rounded-2xl flex items-center w-full sm:w-auto">
-                            <button
-                                onClick={() => setMode('SELF')}
-                                className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${mode === 'SELF' ? 'bg-card shadow-sm text-primary-theme' : 'text-muted hover:bg-card/50'}`}
-                            >
-                                <PenTool size={14} /> Manual
-                            </button>
-                            <button
-                                onClick={() => setMode('AI')}
-                                className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${mode === 'AI' ? 'bg-indigo-600 text-white shadow-md' : 'text-muted hover:bg-card/50'}`}
-                            >
-                                <Sparkles size={14} /> One Click
-                            </button>
-                        </div>
+
                     </div>
                 </div>
             </header>
@@ -3184,6 +3338,34 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         </div>
                     </div>
 
+                    {/* ── COMMON FIELDS: Symptoms & Diagnosis (always shown, above specialty modules) ── */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex justify-between">
+                                Symptoms / Complaints
+                            </label>
+                            <textarea
+                                name="symptoms"
+                                value={formData.symptoms}
+                                onChange={handleInputChange}
+                                rows={3}
+                                placeholder="e.g. Fever, Cough, Headache..."
+                                className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Diagnosis</label>
+                            <textarea
+                                name="diagnosis"
+                                value={formData.diagnosis}
+                                onChange={handleInputChange}
+                                rows={3}
+                                placeholder="e.g. Viral Fever"
+                                className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
+                            />
+                        </div>
+                    </div>
+
                     {/* Unified Clinical Safety Monitor */}
                     <ClinicalAlertPanel alerts={clinicalAlerts} />
 
@@ -3229,11 +3411,10 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             return null;
                         })()}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8" style={{display:'none'}}>
                         <div>
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex justify-between">
                                 Symptoms / Complaints
-                                {mode === 'AI' && <span className="text-indigo-500 flex items-center gap-1"><Sparkles size={10} /> AI Ready</span>}
                             </label>
                             <textarea
                                 name="symptoms"
@@ -3243,14 +3424,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                 placeholder="e.g. Fever, Cough, Headache..."
                                 className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
                             />
-                            {mode === 'AI' && (
-                                <button
-                                    onClick={handleGeneratePrescription}
-                                    className="mt-3 w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 active:scale-95"
-                                >
-                                    <Sparkles size={14} /> Auto-Generate Rx
-                                </button>
-                            )}
+
                         </div>
                         <div>
                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Diagnosis</label>
@@ -3336,10 +3510,10 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                                                 {s.stock > 0 ? (
                                                                     <div className="flex flex-col items-end gap-1">
                                                                         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                                                                            {s.stock} Packs Available
+                                                                            {Number(s.stock).toFixed(2)} Packs Available
                                                                         </span>
                                                                         <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">
-                                                                            Total: {s.stock * (s.unitsPerPack || 1)} Units
+                                                                            Total: {(s.stock * (s.unitsPerPack || 1)).toFixed(2)} Units
                                                                         </span>
                                                                     </div>
                                                                 ) : (
@@ -3612,7 +3786,19 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             <span className="truncate">{sentToPharma ? 'Pharma' : 'Pharma'}</span>
                         </button>
                         <button
-                            onClick={handleSaveAndPrint}
+                            onClick={() => {
+                                // Preview: open modal only (do not submit)
+                                if (!formData.patientName) return toast.error("Patient Name is required");
+                                if (!formData.diagnosis) return toast.error("Diagnosis is required");
+                                if (formData.medicines.length === 0) return toast.error("At least one medicine is required");
+                                const emptyDurationIndex = formData.medicines.findIndex((m: Medicine) => !m.duration || m.duration.trim() === '');
+                                if (emptyDurationIndex !== -1) {
+                                    toast.error(`Medicine #${emptyDurationIndex + 1} "${formData.medicines[emptyDurationIndex].name || 'Unnamed'}" is missing a duration.`);
+                                    return;
+                                }
+                                setPreviewSendToPharma(false);
+                                setShowPreviewModal(true);
+                            }}
                             disabled={isSaving || isSending}
                             className="flex-1 sm:flex-none px-2 sm:px-10 py-2 sm:py-4 bg-indigo-50 text-indigo-700 rounded-2xl font-black uppercase text-[8px] sm:text-xs tracking-widest border border-indigo-100 hover:bg-indigo-100 transition-all active:scale-95 text-center shadow-xs flex items-center justify-center gap-1 sm:gap-2"
                         >
@@ -3632,9 +3818,8 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                 </div>
             </main>
 
-            {/* Success Modal */}
             {showSuccess && generatedHtml && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+                <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
                     <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full text-center space-y-6 relative overflow-hidden">
                         <div className="absolute top-0 left-0 right-0 h-2 bg-linear-to-r from-teal-400 to-indigo-500"></div>
                         <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-inner">
@@ -3683,7 +3868,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
 
             {/* Clear Confirmation Modal */}
             {showClearConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+                <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
                     <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center space-y-6 animate-in fade-in zoom-in duration-200">
                         <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
                             <Eraser size={32} />
@@ -3712,189 +3897,55 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                 </div>
             )}
 
-            {/* No Pharma Warning Modal */}
+
+            {/* ═══════════════════════════════════════════
+              PRESCRIPTION PREVIEW MODAL (PRINT MATCHING)
+            ═══════════════════════════════════════════ */}
+            <PrescriptionPreviewModal
+                isOpen={showPreviewModal}
+                onClose={() => setShowPreviewModal(false)}
+                formData={formData}
+                activeSpecialty={activeSpecialty}
+                hospitalBranding={hospitalBranding}
+                handlePrintDocument={handlePrintDocument}
+                handleFinalizeFromPreview={handleFinalizeFromPreview}
+                handleSendToPharma={handleSendToPharma}
+                sentToPharma={sentToPharma}
+            />
+
             {showNoPharmaWarn && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center space-y-6 animate-in fade-in zoom-in duration-200">
-                        <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center space-y-6">
+                        <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto">
                             <AlertCircle size={32} />
                         </div>
                         <div>
-                            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Pharmacy Not Notified</h3>
-                            <p className="text-sm text-slate-500 font-medium mt-2">
-                                You have <span className="text-teal-600 font-bold">{formData.medicines.length} medications</span> in this prescription, but you haven't sent them to the pharmacy yet.
+                            <h2 className="text-xl font-black text-slate-900 mb-2 uppercase tracking-tight">Pharmacy Integration</h2>
+                            <p className="text-slate-500 text-sm leading-relaxed">
+                                You haven't sent this prescription to the hospital pharmacy. In-house patients might face delays in medication acquisition.
                             </p>
-                            <p className="text-xs text-slate-400 font-medium mt-2">
-                                Are you sure you want to save and print without notifying the pharmacy?
-                            </p>
-                        </div>
-                        <div className="flex gap-3 pt-2">
-                            <button
-                                onClick={() => setShowNoPharmaWarn(false)}
-                                className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold uppercase text-xs tracking-wider hover:bg-slate-200 transition-colors"
-                            >
-                                Go Back
-                            </button>
-                            <button
-                                onClick={confirmSaveWithoutPharma}
-                                className="flex-1 py-3 bg-amber-500 text-white rounded-xl font-bold uppercase text-xs tracking-wider shadow-lg shadow-amber-500/20 hover:bg-amber-600 active:scale-95 transition-all"
-                            >
-                                Yes, Proceed
-                            </button>
+                            <div className="flex flex-col gap-3">
+                                <button
+                                    onClick={() => {
+                                        setShowNoPharmaWarn(false);
+                                        handleSendToPharma();
+                                    }}
+                                    className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+                                >
+                                    <CheckCircle2 size={16} />
+                                    Send to Pharma First
+                                </button>
+                                <button
+                                    onClick={confirmSaveWithoutPharma}
+                                    className="w-full py-4 bg-slate-100 text-slate-600 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-200 transition-all"
+                                >
+                                    Continue Without Pharma
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
-
-            {/* ═══════════════════════════════════════════
-              PRESCRIPTION PREVIEW MODAL
-            ═══════════════════════════════════════════ */}
-            {showPreviewModal && (
-                <div className="fixed inset-0 z-[60] flex items-start justify-center bg-slate-900/70 backdrop-blur-sm overflow-y-auto p-2 sm:p-4">
-                    <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-4xl my-2 sm:my-6 animate-in fade-in slide-in-from-bottom-4 duration-300 flex flex-col">
-
-                        {/* Modal Header */}
-                        <div className="flex items-center justify-between px-4 sm:px-8 py-4 sm:py-5 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl sm:rounded-t-3xl z-10">
-                            <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 sm:w-10 sm:h-10 bg-teal-50 rounded-xl flex items-center justify-center">
-                                    <FileText size={18} className="text-teal-600" />
-                                </div>
-                                <div>
-                                    <h2 className="text-sm sm:text-base font-black text-slate-900 uppercase tracking-tight">Prescription Preview</h2>
-                                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Review all details before finalizing</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => setShowPreviewModal(false)}
-                                className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-600 transition-colors"
-                            >
-                                <X size={18} />
-                            </button>
-                        </div>
-
-                        {/* Modal Body - Scrollable */}
-                        <div className="overflow-y-auto flex-1 px-4 sm:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
-
-                            {/* Patient Info */}
-                            <div className="bg-slate-50 rounded-2xl p-4 sm:p-5 border border-slate-100">
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Patient Information</p>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    {[['Patient', formData.patientName], ['Age / Gender', `${formData.age} / ${formData.gender}`], ['MRN', formData.mrn || '—'], ['Date', formData.date]].map(([label, val]) => (
-                                        <div key={label}>
-                                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
-                                            <p className="text-xs sm:text-sm font-black text-slate-800 mt-0.5 truncate">{val}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Diagnosis & Symptoms */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div className="bg-teal-50 border border-teal-100 rounded-2xl p-4">
-                                    <p className="text-[9px] font-black text-teal-500 uppercase tracking-widest mb-1">Diagnosis</p>
-                                    <p className="text-sm font-bold text-teal-800">{formData.diagnosis || <span className="text-rose-400 italic">Not entered</span>}</p>
-                                </div>
-                                <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
-                                    <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-1">Chief Complaints / Symptoms</p>
-                                    <p className="text-sm font-bold text-blue-800">{formData.symptoms || '—'}</p>
-                                </div>
-                            </div>
-
-                            {/* Medicines */}
-                            {formData.medicines.length > 0 && (
-                                <div>
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Medications & Dosage</p>
-                                    <div className="rounded-2xl border border-slate-100 overflow-hidden">
-                                        <div className="hidden sm:grid grid-cols-12 gap-2 px-4 py-2 bg-slate-50 border-b border-slate-100">
-                                            {['Medicine', 'Dosage', 'Frequency', 'Duration', 'Qty'].map(h => (
-                                                <p key={h} className="text-[8px] font-black text-slate-400 uppercase tracking-widest col-span-2 last:col-span-2">{h}</p>
-                                            ))}
-                                        </div>
-                                        {formData.medicines.map((m: Medicine, i: number) => (
-                                            <div key={i} className="px-4 py-3 border-b border-slate-50 last:border-0 grid grid-cols-1 sm:grid-cols-12 gap-1 sm:gap-2 items-center">
-                                                <div className="col-span-2">
-                                                    <p className="text-xs font-black text-slate-800">{m.name}</p>
-                                                    <p className="text-[9px] text-slate-400 font-medium">{m.form}</p>
-                                                </div>
-                                                <p className="col-span-2 text-xs font-bold text-slate-600">{m.dosage}</p>
-                                                <p className="col-span-4 text-xs font-medium text-slate-500">{formatFrequency(m.freq)}</p>
-                                                <p className="col-span-2 text-xs font-bold text-teal-700">{m.duration || <span className="text-rose-400">Missing!</span>}</p>
-                                                <p className="col-span-2 text-xs font-bold text-slate-600 text-right">{m.quantity || '—'}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Specialty Module Summary */}
-                            {activeSpecialty && activeSpecialty !== 'General' && (
-                                <div className="bg-violet-50 border border-violet-100 rounded-2xl p-4">
-                                    <p className="text-[9px] font-black text-violet-500 uppercase tracking-widest mb-2">{activeSpecialty} — Clinical Module</p>
-                                    <p className="text-xs font-bold text-violet-700">Specialty examination data for <span className="font-black">{activeSpecialty}</span> will be saved to the database as a linked clinical record.</p>
-                                </div>
-                            )}
-
-                            {/* Advice, Tests, Avoid */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                {formData.dietAdvice.length > 0 && (
-                                    <div className="bg-green-50 border border-green-100 rounded-2xl p-4">
-                                        <p className="text-[9px] font-black text-green-500 uppercase tracking-widest mb-1">Diet & Lifestyle</p>
-                                        <ul className="space-y-0.5">{formData.dietAdvice.map((a, i) => <li key={i} className="text-xs font-medium text-green-800">• {a}</li>)}</ul>
-                                    </div>
-                                )}
-                                {formData.suggestedTests.length > 0 && (
-                                    <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
-                                        <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-1">Lab Tests</p>
-                                        <ul className="space-y-0.5">{formData.suggestedTests.map((t, i) => <li key={i} className="text-xs font-medium text-blue-800">• {t}</li>)}</ul>
-                                    </div>
-                                )}
-                                {formData.avoid.length > 0 && (
-                                    <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4">
-                                        <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest mb-1">Things to Avoid</p>
-                                        <ul className="space-y-0.5">{formData.avoid.map((a, i) => <li key={i} className="text-xs font-medium text-rose-800">• {a}</li>)}</ul>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Follow Up */}
-                            {(formData.followUpDate || formData.followUp) && (
-                                <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                                    <Calendar size={16} className="text-amber-600 shrink-0" />
-                                    <div>
-                                        <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest">Follow Up</p>
-                                        <p className="text-xs font-bold text-amber-800">{formData.followUpDate || '—'} {formData.followUp && `· ${formData.followUp}`}</p>
-                                    </div>
-                                </div>
-                            )}
-
-                        </div>{/* End scrollable body */}
-
-                        {/* Modal Footer */}
-                        <div className="px-4 sm:px-8 py-4 sm:py-5 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sticky bottom-0 bg-white rounded-b-2xl sm:rounded-b-3xl z-10">
-                            <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center sm:text-left">
-                                ⚠ Once finalized, prescription is saved to the database.
-                            </p>
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setShowPreviewModal(false)}
-                                    className="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold uppercase text-xs tracking-wider hover:bg-slate-200 transition-colors"
-                                >
-                                    Go Back
-                                </button>
-                                <button
-                                    onClick={handleFinalizeFromPreview}
-                                    disabled={isSaving}
-                                    className="flex-1 sm:flex-none px-6 sm:px-8 py-3 bg-teal-600 text-white rounded-xl font-black uppercase text-xs tracking-wider shadow-lg shadow-teal-600/20 hover:bg-teal-700 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                                >
-                                    {isSaving ? <><Loader2 size={14} className="animate-spin" /> Saving...</> : <><CheckCircle2 size={14} /> Finalize Prescription</>}
-                                </button>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            )}
-
         </div>
     );
 }

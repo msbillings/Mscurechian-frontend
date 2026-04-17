@@ -52,45 +52,45 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails }) => {
             {/* ── Contact Slanted Bars ── */}
                     <div style={{ 
                         display: 'flex', 
-                        flexWrap: 'wrap',
-                        minHeight: '28px', 
-                        marginBottom: '8px', 
-                        position: 'relative',
-                        gap: '4px' 
+                        alignItems: 'stretch',
+                        minHeight: '32px', 
+                        marginBottom: '12px', 
+                        gap: '2px',
+                        borderRadius: '6px',
+                        overflow: 'hidden'
                     }}>
                         {details.phone && details.phone !== 'N/A' && details.phone !== 'Phone Number' && (
                             <div style={{
-                                flex: '1 1 200px', 
-                                background: '#22c55e',
+                                flex: '1', 
+                                background: '#10b981',
                                 color: '#ffffff',
                                 display: 'flex',
                                 alignItems: 'center',
-                                padding: 'clamp(6px, 1vw, 12px) 15px',
-                                fontWeight: 900,
-                                fontSize: 'clamp(10px, 1.8vw, 15px)', 
-                                zIndex: 2,
-                                borderRadius: '4px'
+                                padding: '8px 20px',
+                                fontWeight: 800,
+                                fontSize: '12px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
                             }}>
-                                <span style={{ marginRight: '10px' }}>📞</span>
+                                <span style={{ marginRight: '8px', fontSize: '14px' }}>📞</span>
                                 {details.phone}
                             </div>
                         )}
 
                         {details.email && details.email !== 'N/A' && details.email !== 'Email Address' && (
                             <div style={{
-                                flex: '1 1 200px',
+                                flex: '1.2',
                                 background: '#3b82f6',
                                 color: '#ffffff',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'center',
-                                padding: 'clamp(6px, 1vw, 12px) 15px',
-                                fontWeight: 900,
-                                fontSize: 'clamp(10px, 1.8vw, 15px)',
-                                zIndex: 1,
-                                borderRadius: '4px'
+                                padding: '8px 20px',
+                                fontWeight: 800,
+                                fontSize: '12px',
+                                textTransform: 'lowercase',
+                                letterSpacing: '0.5px'
                             }}>
-                                <span style={{ marginRight: '10px' }}>✉️</span>
+                                <span style={{ marginRight: '8px', fontSize: '14px' }}>✉️</span>
                                 {details.email}
                             </div>
                         )}

@@ -182,13 +182,14 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                 </div>
             </div>
 
-            {/* Bottom Green line */}
+            {/* Bottom Gradient line */}
             <div style={{
                 width: '100%',
-                height: '2px',
-                backgroundColor: '#22c55e',
-                marginTop: '6px',
-                marginBottom: '6px'
+                height: '3px',
+                background: 'linear-gradient(to right, #22c55e, #10b981, #3b82f6)',
+                marginTop: '8px',
+                marginBottom: '8px',
+                borderRadius: '2px'
             }}></div>
         </div>
     );

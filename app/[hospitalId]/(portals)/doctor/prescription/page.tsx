@@ -2283,12 +2283,7 @@ function CreatePrescriptionPage() {
                             >
                                 <PenTool size={14} /> Manual
                             </button>
-                            <button
-                                onClick={() => setMode('AI')}
-                                className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${mode === 'AI' ? 'bg-indigo-600 text-white shadow-md' : 'text-muted hover:bg-card/50'}`}
-                            >
-                                <Sparkles size={14} /> One Click
-                            </button>
+
                         </div>
                     </div>
                 </div>
@@ -2578,10 +2573,10 @@ function CreatePrescriptionPage() {
                                                                 {medicine.stock > 0 ? (
                                                                     <div className="flex flex-col items-end gap-1">
                                                                         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                                                                            {medicine.stock} Packs Available
+                                                                            {Number(medicine.stock).toFixed(2)} Packs Available
                                                                         </span>
                                                                         <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">
-                                                                            Total: {medicine.stock * (medicine.unitsPerPack || 1)} Units
+                                                                            Total: {(medicine.stock * (medicine.unitsPerPack || 1)).toFixed(2)} Units
                                                                         </span>
                                                                     </div>
                                                                 ) : (

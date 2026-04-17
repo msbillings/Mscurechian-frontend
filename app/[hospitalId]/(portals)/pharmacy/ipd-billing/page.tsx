@@ -28,8 +28,148 @@ import { useAuthStore } from "@/stores/authStore";
 import { useTenantLink } from "@/hooks/useTenantLink";
 import { ipdService } from "@/lib/integrations/services/ipd.service";
 import { ipdIssuanceService } from "@/lib/integrations/services/pharmacy.service";
-import { ClipboardList } from "lucide-react";
-import { formatFrequency } from "@/lib/frequencyUtils";
+import { ClipboardList, Clock } from "lucide-react";
+import { Frequency, FoodTiming, StandardFrequency, CustomFrequency, INITIAL_FREQUENCY, mapFrequency, formatFrequency } from "@/lib/frequencyUtils";
+
+const FrequencySelector = ({ value, onChange }: { value: Frequency, onChange: (val: Frequency) => void }) => {
+    const freq = mapFrequency(value);
+
+    const toggleStandard = (slot: keyof StandardFrequency) => {
+        const current = freq.standard[slot];
+        const nextMap: Record<string, FoodTiming | 'off'> = {
+            off: 'after',
+            after: 'before',
+            before: 'with',
+            with: 'anytime',
+            anytime: 'off'
+        };
+        onChange({
+            ...freq,
+            standard: {
+                ...freq.standard,
+                [slot]: nextMap[current] || 'anytime'
+            }
+        });
+    };
+
+    const setCustomInterval = (hours: number) => {
+        onChange({
+            ...freq,
+            type: 'custom',
+            custom: {
+                ...freq.custom,
+                interval: hours
+            }
+        });
+    };
+
+    const setCustomTiming = (timing: FoodTiming) => {
+        onChange({
+            ...freq,
+            type: 'custom',
+            custom: {
+                ...freq.custom,
+                timing
+            }
+        });
+    };
+
+    const timingColors: Record<string, string> = {
+        anytime: 'bg-slate-500',
+        before: 'bg-amber-500',
+        after: 'bg-emerald-500',
+        with: 'bg-blue-500'
+    };
+
+    const timingLabels: Record<string, string> = {
+        anytime: 'Anytime',
+        before: 'Before Food',
+        after: 'After Food',
+        with: 'With Food'
+    };
+
+    return (
+        <div className="flex flex-col sm:flex-row items-center gap-1.5 p-1 bg-white border border-slate-200 rounded-lg w-full max-w-full min-w-0 flex-1 h-8 shadow-sm transition-all relative overflow-visible">
+            {/* Type Toggle */}
+            <div className="flex p-0.5 bg-slate-100 rounded-md shrink-0">
+                <button
+                    onClick={() => onChange({ ...INITIAL_FREQUENCY, type: 'standard' })}
+                    className={`px-1.5 py-0.5 text-[7px] font-black uppercase tracking-tighter rounded transition-all ${freq.type === 'standard' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500'}`}
+                >
+                    Std
+                </button>
+                <button
+                    onClick={() => onChange({ ...INITIAL_FREQUENCY, type: 'custom' })}
+                    className={`px-1.5 py-0.5 text-[7px] font-black uppercase tracking-tighter rounded transition-all ${freq.type === 'custom' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500'}`}
+                >
+                    Cst
+                </button>
+            </div>
+
+            <div className="w-[1px] h-3 bg-slate-200 mx-0.5 shrink-0" />
+
+            {freq.type === 'standard' ? (
+                <div className="flex items-center gap-1 flex-1 overflow-x-auto no-scrollbar scroll-smooth px-0.5">
+                    {(['morning', 'afternoon', 'evening', 'night'] as const).map((slot) => {
+                        const timing = freq.standard[slot];
+                        const isActive = timing !== 'off';
+                        const slotLabels = {
+                            morning: 'Morning',
+                            afternoon: 'Afternoon',
+                            evening: 'Evening',
+                            night: 'Night'
+                        };
+                        return (
+                            <div key={slot} className="relative group/tooltip shrink-0">
+                                <button
+                                    onClick={() => toggleStandard(slot)}
+                                    className={`h-6 px-1.5 rounded-md border text-[7px] font-black uppercase transition-all flex items-center gap-1 whitespace-nowrap ${isActive ? 'bg-teal-50 border-teal-200 text-teal-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}
+                                >
+                                    <span className={isActive ? 'text-teal-600' : 'text-slate-300'}>{slotLabels[slot]}</span>
+                                    {isActive && (
+                                        <span className={`px-1 rounded-[2px] text-white text-[6px] py-0 font-bold ${timingColors[timing]}`}>
+                                            {timingLabels[timing].split(' ')[0]}
+                                        </span>
+                                    )}
+                                </button>
+                            </div>
+                        );
+                    })}
+                </div>
+            ) : (
+                <div className="flex items-center gap-1.5 flex-1 px-0.5 overflow-x-auto no-scrollbar">
+                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded-md shrink-0">
+                        <Clock size={8} className="text-slate-400" />
+                        <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">Every</span>
+                        <input
+                            type="text"
+                            value={freq.custom.interval === 0 ? '' : freq.custom.interval}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '' || /^\d+$/.test(val)) {
+                                    setCustomInterval(val === '' ? 0 : parseInt(val));
+                                }
+                            }}
+                            placeholder="8"
+                            className="w-5 bg-transparent text-[8px] font-black text-teal-600 outline-none text-center"
+                        />
+                        <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">Hrs</span>
+                    </div>
+                    <select
+                        value={freq.custom.timing}
+                        onChange={(e) => setCustomTiming(e.target.value as any)}
+                        className="h-6 px-1 bg-slate-50 border border-slate-200 rounded text-[7px] font-black uppercase focus:outline-none"
+                    >
+                        <option value="anytime">Anytime</option>
+                        <option value="before">Before Food</option>
+                        <option value="after">After Food</option>
+                        <option value="with">With Food</option>
+                    </select>
+                </div>
+            )}
+        </div>
+    );
+};
 
 const IPDBillingPage = () => {
     const router = useRouter();
@@ -62,7 +202,7 @@ const IPDBillingPage = () => {
     const [selectedProduct, setSelectedProduct] = useState<any>(null);
     const [quantity, setQuantity] = useState(1);
     const [price, setPrice] = useState(0);
-    const [frequency, setFrequency] = useState<any>("1-1-1");
+    const [frequency, setFrequency] = useState<Frequency>(INITIAL_FREQUENCY);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -247,7 +387,7 @@ const IPDBillingPage = () => {
         setSearchTerm("");
         setQuantity(1);
         setPrice(0);
-        setFrequency("");
+        setFrequency(INITIAL_FREQUENCY);
     };
 
     const removeItem = (index: number) => {
@@ -334,10 +474,10 @@ const IPDBillingPage = () => {
                     </button>
                     <div>
                         <h1 className="text-lg md:text-xl lg:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2 md:gap-3 uppercase">
-                            <CreditCard className="text-primary-theme w-5 h-5 md:w-7 md:h-7 shrink-0" />
+                            <CreditCard className="text-blue-600 w-5 h-5 md:w-7 md:h-7 shrink-0" />
                             IPD BILLING
                         </h1>
-                        <p className="text-[10px] md:text-xm font-black text-slate-400 uppercase tracking-widest mt-0.5 md:mt-1">Deferred Billing for Admitted Patients</p>
+                        <p className="text-[10px] md:text-xm font-black text-slate-400 uppercase tracking-widest mt-0.5 md:mt-1 italic">Deferred pharmaceutical Billing System</p>
                     </div>
                 </div>
             </div>
@@ -351,10 +491,10 @@ const IPDBillingPage = () => {
                                 <User size={24} className="md:w-8 md:h-8" />
                             </div>
                             <div className="min-w-0">
-                                <h3 className="text-xs md:text-lg font-black text-slate-900 uppercase truncate tracking-tight">{order?.patient?.name || "Unknown Patient"}</h3>
+                                <h3 className="text-xs md:text-lg font-black text-slate-900 uppercase tracking-tight">{order?.patient?.name || "Unknown Patient"}</h3>
                                 <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5 leading-relaxed">
-                                    {order?.patient?.age && `${order.patient.age}Y • `} {order?.patient?.gender && `${order.patient.gender} • `} 
-                                    <span className="hidden sm:inline">ADMISSION: </span>{order?.admission?.admissionId || "N/A"} 
+                                    {order?.patient?.age && `${order.patient.age}Y • `} {order?.patient?.gender && `${order.patient.gender} • `}
+                                    <span className="hidden sm:inline">ADMISSION: </span>{order?.admission?.admissionId || "N/A"}
                                     <br className="sm:hidden" />
                                     <span className="hidden sm:inline"> • </span>WARD: {order?.admission?.bedDetails?.wardType || order?.admission?.wardType || "N/A"} {order?.admission?.bedDetails?.bedId && `[BED: ${order.admission.bedDetails.bedId}]`}
                                 </p>
@@ -393,7 +533,7 @@ const IPDBillingPage = () => {
                                     return (
                                         <div key={`${med.name}-${i}`} className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3 md:p-4 rounded-xl md:rounded-2xl border border-slate-100 shadow-sm gap-3">
                                             <div className="min-w-0">
-                                                <p className="text-[11px] md:text-xs font-black text-slate-700 uppercase truncate">{med.name}</p>
+                                                <p className="text-[11px] md:text-xs font-black text-slate-700 uppercase">{med.name}</p>
                                                 <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
                                                     {med.dosage} • Freq: <span className="text-primary-theme">{formatFrequency(med.freq || med.frequency)}</span> • qty: {med.quantity}
                                                 </p>
@@ -403,7 +543,7 @@ const IPDBillingPage = () => {
                                                 onClick={() => {
                                                     setSearchTerm(med.name.split(' (')[0]);
                                                     setQuantity(Number(med.quantity) || 1);
-                                                    setFrequency(med.freq || med.frequency);
+                                                    setFrequency(mapFrequency(med.freq || med.frequency));
                                                     setProcessingMedIndex(i);
                                                 }}
                                                 className={`w-full sm:w-auto px-4 py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${med.processed ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-primary-theme text-white hover:bg-primary-theme/90 active:scale-95'}`}
@@ -448,17 +588,17 @@ const IPDBillingPage = () => {
                                                     Receiv: {iss.nurseNote || (iss.receivedByNurse?.name) || "Direct"}
                                                 </p>
                                                 <p className="text-[8px] md:text-[9px] font-black text-rose-600 uppercase tracking-widest bg-rose-50 dark:bg-rose-900/30 px-2 py-1 rounded">
-                                                    ₹{Number(iss.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                    ₹{Math.round(iss.totalAmount || 0).toLocaleString()}
                                                 </p>
                                             </div>
                                         </div>
                                         <div className="flex flex-col gap-2">
                                             {iss.items.map((item: any, i: number) => (
                                                 <div key={`${item.productName}-${i}`} className="flex justify-between items-center text-[10px] md:text-xs bg-slate-50/50 dark:bg-slate-800/50 p-2.5 md:p-3 rounded-lg md:rounded-xl border border-slate-100 dark:border-slate-700/50">
-                                                    <span className="font-bold text-slate-700 dark:text-slate-300 uppercase truncate pr-4">{item.productName}</span>
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300 uppercase pr-4">{item.productName}</span>
                                                     <div className="flex items-center gap-3 md:gap-4 shrink-0 font-black">
                                                         <span className="text-blue-600 dark:text-blue-400">{item.issuedQty} QTY</span>
-                                                        <span className="text-slate-500 min-w-[60px] text-right">₹{Number(item.totalAmount || 0).toFixed(2)}</span>
+                                                        <span className="text-slate-500 min-w-[60px] text-right">₹{Math.round(item.totalAmount || 0).toLocaleString()}</span>
                                                     </div>
                                                 </div>
                                             ))}
@@ -478,60 +618,58 @@ const IPDBillingPage = () => {
                             <h3 className="text-xs md:text-sm font-black text-slate-900 uppercase tracking-tight">Item Acquisition</h3>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
-                            <div className="sm:col-span-2 relative">
-                                <Search className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-400 absolute left-3 md:left-4 top-1/2 -translate-y-1/2" />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-2.5 md:gap-3 items-center">
+                            <div className="sm:col-span-1 md:col-span-4 relative group">
+                                <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none z-10">
+                                    <Search className="w-3 md:w-3.5 text-slate-400" />
+                                </div>
                                 <input
                                     type="text"
                                     placeholder="SEARCH PHARMA INVENTORY..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-9 md:pl-11 pr-4 py-3 md:py-4 bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl text-[11px] md:text-xs font-black uppercase outline-none focus:border-primary-theme focus:bg-white focus:ring-2 focus:ring-primary-theme/20 transition-all shadow-sm"
+                                    className="w-full pl-9 md:pl-10 pr-3 py-2.5 md:py-3 bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase outline-none focus:border-primary-theme focus:bg-white focus:ring-2 focus:ring-primary-theme/20 transition-all shadow-sm"
                                 />
                                 {searchResults.length > 0 && (
-                                    <div className="absolute z-20 w-full mt-2 bg-white border border-slate-100 rounded-xl md:rounded-2xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
+                                    <div className="absolute z-20 w-full mt-1 bg-white border border-slate-100 rounded-xl md:rounded-2xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
                                         {searchResults.map((p) => (
                                             <button
                                                 key={p._id}
                                                 onClick={() => handleSelectProduct(p)}
-                                                className="w-full px-4 md:px-6 py-3 md:py-4 text-left hover:bg-slate-50 border-b border-slate-50 last:border-none flex items-center justify-between gap-4 transition-colors"
+                                                className="w-full px-4 md:px-5 py-2.5 md:py-3 text-left hover:bg-slate-50 border-b border-slate-50 last:border-none flex items-center justify-between gap-4 transition-colors"
                                             >
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="text-[11px] md:text-xs font-black text-slate-700 uppercase truncate leading-tight">{p.brandName}</p>
-                                                    <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                                                    <p className="text-[10px] md:text-[11px] font-black text-slate-700 uppercase leading-tight">{p.brandName}</p>
+                                                    <p className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
                                                         {p.strength} • Units: {p.unitsPerPack || 1}
                                                     </p>
                                                 </div>
                                                 <div className="text-right shrink-0">
-                                                    <p className="text-[11px] md:text-xs font-black text-primary-theme">₹{p.mrp}</p>
-                                                    <p className="text-[8px] md:text-[9px] font-bold text-teal-600">₹{Math.round(p.mrp / (p.unitsPerPack || 1))} / unit</p>
+                                                    <p className="text-[10px] md:text-[11px] font-black text-primary-theme">₹{p.mrp}</p>
+                                                    <p className="text-[7px] md:text-[8px] font-bold text-teal-600">₹{Math.round(p.mrp / (p.unitsPerPack || 1))} / unit</p>
                                                 </div>
                                             </button>
                                         ))}
                                     </div>
                                 )}
                             </div>
-                            <input
-                                type="number"
-                                placeholder="QTY"
-                                value={quantity || ""}
-                                onChange={(e) => setQuantity(Number(e.target.value))}
-                                className="w-full px-4 py-3 md:py-4 bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl text-[11px] md:text-xs font-black outline-none focus:border-primary-theme focus:bg-white focus:ring-2 focus:ring-primary-theme/20 transition-all uppercase shadow-sm"
-                            />
-                            <div className="relative">
+                            <div className="md:col-span-2">
                                 <input
-                                    type="text"
-                                    placeholder="FREQ (e.g. 1-0-1 or object)"
-                                    value={typeof frequency === 'string' ? frequency : formatFrequency(frequency)}
-                                    onChange={(e) => setFrequency(e.target.value)}
-                                    className="w-full px-4 py-3 md:py-4 bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl text-[11px] md:text-xs font-black outline-none focus:border-primary-theme focus:bg-white focus:ring-2 focus:ring-primary-theme/20 transition-all uppercase shadow-sm"
+                                    type="number"
+                                    placeholder="QTY"
+                                    value={quantity || ""}
+                                    onChange={(e) => setQuantity(Number(e.target.value))}
+                                    className="w-full px-3 py-2.5 md:py-3 bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl text-[10px] md:text-[11px] font-black outline-none focus:border-primary-theme focus:bg-white focus:ring-2 focus:ring-primary-theme/20 transition-all uppercase shadow-sm"
                                 />
+                            </div>
+                            <div className="sm:col-span-1 md:col-span-4">
+                                <FrequencySelector value={frequency} onChange={setFrequency} />
                             </div>
                             <button
                                 onClick={handleAddItem}
-                                className="w-full sm:col-span-2 md:col-span-1 px-5 py-3 md:py-4 bg-slate-900 text-white rounded-xl md:rounded-2xl text-[11px] md:text-xs font-black uppercase tracking-widest hover:bg-slate-800 active:scale-95 transition-all shadow-md flex items-center justify-center gap-2"
+                                className="w-full sm:col-span-1 md:col-span-2 px-3 py-2 md:py-3 bg-slate-900 text-white rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 active:scale-95 transition-all shadow-md flex items-center justify-center gap-1.5"
                             >
-                                <ShoppingCart size={16} className="md:w-4 md:h-4" />
+                                <ShoppingCart size={12} className="md:w-3 md:h-3" />
                                 Queue Item
                             </button>
                         </div>
@@ -586,11 +724,36 @@ const IPDBillingPage = () => {
                 <div className="space-y-6">
                     <div className="bg-white rounded-2xl md:rounded-4xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-6 md:space-y-8 sticky top-24">
                         <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                            <div className="p-2.5 md:p-3 bg-primary-theme/10 text-primary-theme rounded-xl md:rounded-2xl">
+                            <div className="p-2.5 md:p-3 bg-blue-600/10 text-blue-600 rounded-xl md:rounded-2xl">
                                 <Calculator size={20} />
                             </div>
                             <h3 className="text-xs md:text-sm font-black text-slate-900 uppercase tracking-tight">Ledger Summary</h3>
                         </div>
+
+                        {order?.admission?.bedHistory && order.admission.bedHistory.length > 0 && (
+                            <div className="bg-slate-50 rounded-2xl border border-slate-200 p-4 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Bed Assignment Log</h4>
+                                    <Clock size={12} className="text-slate-400" />
+                                </div>
+                                <div className="space-y-3">
+                                    {order.admission.bedHistory.map((item: any, idx: number) => (
+                                        <div key={idx} className="flex items-center justify-between gap-3 bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm">
+                                            <div className="min-w-0">
+                                                <p className="text-[10px] font-black text-slate-700 uppercase leading-none">{item.bedId}</p>
+                                                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{item.room} / {item.type}</p>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <p className="text-[8px] font-black text-blue-600 uppercase">
+                                                    {new Date(item.startDate).toLocaleDateString([], { day: '2-digit', month: 'short' })}
+                                                    {item.endDate ? ` - ${new Date(item.endDate).toLocaleDateString([], { day: '2-digit', month: 'short' })}` : ' (Current)'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* ✅ NURSE SELECTION */}
                         <div className="space-y-3">
@@ -605,8 +768,8 @@ const IPDBillingPage = () => {
                                                 {selectedNurse.name?.charAt(0)?.toUpperCase()}
                                             </div>
                                             <div className="min-w-0 flex-1">
-                                                <p className="text-[10px] md:text-xs font-black text-teal-800 uppercase truncate leading-tight">{selectedNurse.name}</p>
-                                                <p className="text-[8px] md:text-[9px] font-bold text-teal-500 uppercase tracking-widest truncate">{selectedNurse.email || "AUTHORIZED STAFF"}</p>
+                                                <p className="text-[10px] md:text-xs font-black text-teal-800 uppercase leading-tight">{selectedNurse.name}</p>
+                                                <p className="text-[8px] md:text-[9px] font-bold text-teal-500 uppercase tracking-widest">{selectedNurse.email || "AUTHORIZED STAFF"}</p>
                                             </div>
                                             <button
                                                 onClick={() => { setSelectedNurse(null); setNurseSearch(""); }}
@@ -625,7 +788,7 @@ const IPDBillingPage = () => {
                                             <div className="w-8 h-8 bg-slate-200 group-hover:bg-teal-100 text-slate-400 group-hover:text-teal-600 rounded-lg md:rounded-xl flex items-center justify-center shrink-0 transition-colors">
                                                 <User size={14} />
                                             </div>
-                                            <span className="text-[9px] md:text-[10px] font-black text-slate-400 group-hover:text-teal-600 uppercase tracking-widest truncate">
+                                            <span className="text-[9px] md:text-[10px] font-black text-slate-400 group-hover:text-teal-600 uppercase tracking-widest">
                                                 {loadingNurses ? "SEARCHING..." : "SELECT NURSE..."}
                                             </span>
                                         </div>
@@ -678,7 +841,7 @@ const IPDBillingPage = () => {
                             {previousIssuances.length > 0 && (
                                 <div className="flex justify-between items-center text-[9px] md:text-[10px] font-black text-rose-500 uppercase tracking-widest">
                                     <span>Previously Settled</span>
-                                    <span className="text-rose-600 font-mono tracking-tighter tabular-nums text-xs md:text-sm">₹{previousIssuances.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                    <span className="text-rose-600 font-mono tracking-tighter tabular-nums text-xs md:text-sm">₹{Math.round(previousIssuances.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0)).toLocaleString()}</span>
                                 </div>
                             )}
                             <div className="flex justify-between items-center text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -687,11 +850,11 @@ const IPDBillingPage = () => {
                             </div>
                             <div className="flex justify-between items-center text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                 <span>Current Payable</span>
-                                <span className="text-slate-900 font-mono tracking-tighter tabular-nums text-xs md:text-sm">₹{Math.round(subtotal).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                <span className="text-slate-900 font-mono tracking-tighter tabular-nums text-xs md:text-sm">₹{Math.round(subtotal).toLocaleString()}</span>
                             </div>
                             <div className="pt-5 border-t border-dashed border-slate-200">
                                 <p className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 leading-none">Cumulative Discharge Balance</p>
-                                <p className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter tabular-nums leading-none">
+                                <p className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter tabular-nums leading-none">
                                     ₹{Math.round(subtotal + previousIssuances.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0)).toLocaleString()}
                                 </p>
                             </div>

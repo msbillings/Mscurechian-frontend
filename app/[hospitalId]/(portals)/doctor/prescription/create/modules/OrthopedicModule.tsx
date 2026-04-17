@@ -16,7 +16,7 @@ type AlertEntry = { type: 'emergency' | 'error' | 'warning' | 'info'; message: s
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const JOINTS = ['Neck', 'Shoulder', 'Elbow', 'Wrist', 'Spine', 'Hip', 'Knee', 'Ankle'] as const;
-const SIDES  = ['Left', 'Right', 'Bilateral'] as const;
+const SIDES = ['Left', 'Right', 'Bilateral'] as const;
 const PAIN_TYPES = ['Sharp', 'Dull', 'Radiating', 'Burning'] as const;
 const ROM_OPTIONS = ['Normal', 'Restricted', 'Painful', 'Severely restricted'] as const;
 
@@ -27,14 +27,14 @@ const SENSATION_OPTS = ['Normal', 'Reduced', 'Absent'] as const;
 const PULSE_OPTS = ['Normal', 'Weak', 'Absent'] as const;
 
 const SPECIAL_TESTS = [
-    'Lachman test', 'McMurray test', 'Straight leg raise (SLR)', 
+    'Lachman test', 'McMurray test', 'Straight leg raise (SLR)',
     'Drawer test', 'Phalen test', 'Tinel sign', 'Finkelstein test',
     'Thompson test', 'Hawkins test'
 ] as const;
 
 const XRAY_FINDINGS = ['Normal', 'Fracture', 'Degenerative changes'] as const;
-const MRI_FINDINGS  = ['Normal', 'Ligament tear', 'Disc prolapse'] as const;
-const DIAGNOSES     = ['Osteoarthritis', 'Rheumatoid Arthritis', 'Fracture', 'Ligament Injury', 'Spondylosis', 'Disc Prolapse'] as const;
+const MRI_FINDINGS = ['Normal', 'Ligament tear', 'Disc prolapse'] as const;
+const DIAGNOSES = ['Osteoarthritis', 'Rheumatoid Arthritis', 'Fracture', 'Ligament Injury', 'Spondylosis', 'Disc Prolapse'] as const;
 const ORTHO_SYMPTOMS = ['Acute Pain', 'Joint Swelling', 'Stiffness', 'Inability to bear weight', 'Locking', 'Numbness', 'Weakness', 'Instability'] as const;
 
 export const OrthopedicModule: React.FC<OrthopedicModuleProps> = ({ formData, setFormData }) => {
@@ -72,9 +72,7 @@ export const OrthopedicModule: React.FC<OrthopedicModuleProps> = ({ formData, se
         const motor = o.motorPower || 5;
 
         // Basic Requirements
-        if (!o.joint) newAlerts.push({ type: 'error', message: '❗ Joint/Region is required.' });
-        if (!o.side)  newAlerts.push({ type: 'error', message: '❗ Side (Left/Right/Bilateral) is required.' });
-        if (!o.rom)   newAlerts.push({ type: 'error', message: '❗ Range of Motion (ROM) assessment is required.' });
+
 
         // 1. Severe Pain
         if (painScore >= 8) {
@@ -145,9 +143,9 @@ export const OrthopedicModule: React.FC<OrthopedicModuleProps> = ({ formData, se
     // ── Style helpers ─────────────────────────────────────────────────────────
     const alertColors: Record<string, string> = {
         emergency: 'bg-red-50 border-red-600 text-red-900',
-        error:     'bg-rose-50 border-rose-500 text-rose-800',
-        warning:   'bg-amber-50 border-amber-500 text-amber-800',
-        info:      'bg-blue-50 border-blue-400 text-blue-800',
+        error: 'bg-rose-50 border-rose-500 text-rose-800',
+        warning: 'bg-amber-50 border-amber-500 text-amber-800',
+        info: 'bg-blue-50 border-blue-400 text-blue-800',
     };
 
     const sectionCard = (children: React.ReactNode, borderColor = 'border-slate-200') =>
@@ -157,18 +155,16 @@ export const OrthopedicModule: React.FC<OrthopedicModuleProps> = ({ formData, se
         <div className="flex items-center gap-2 mb-4">
             <div className="text-orange-600">{icon}</div>
             <h3 className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-700">{title}</h3>
-            {required && <span className="ml-auto text-[9px] font-bold text-red-400 uppercase tracking-wider">Required</span>}
-            {note && !required && <span className="ml-auto text-[9px] font-bold text-slate-400">{note}</span>}
+            {note && <span className="ml-auto text-[9px] font-bold text-slate-400">{note}</span>}
         </div>
     );
 
     const btnPill = (active: boolean, color = 'blue') =>
-        `px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
-            active
-                ? color === 'red' ? 'bg-red-600 text-white border-red-600 shadow-md'
-                  : color === 'orange' ? 'bg-orange-500 text-white border-orange-500 shadow-md'
-                  : 'bg-blue-600 text-white border-blue-600 shadow-md'
-                : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
+        `px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${active
+            ? color === 'red' ? 'bg-red-600 text-white border-red-600 shadow-md'
+                : color === 'orange' ? 'bg-orange-500 text-white border-orange-500 shadow-md'
+                    : 'bg-blue-600 text-white border-blue-600 shadow-md'
+            : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
         }`;
 
     return (
@@ -203,8 +199,8 @@ export const OrthopedicModule: React.FC<OrthopedicModuleProps> = ({ formData, se
                 <div className="flex items-center gap-3">
                     {hasEmergency && (
                         <div className="bg-orange-100/50 px-3 py-2 rounded-lg flex items-center gap-2 border border-orange-200 hidden md:flex">
-                             <AlertTriangle size={14} className="text-orange-600" />
-                             <span className="text-[9px] font-black uppercase tracking-widest text-orange-700">Safety Alerts Active</span>
+                            <AlertTriangle size={14} className="text-orange-600" />
+                            <span className="text-[9px] font-black uppercase tracking-widest text-orange-700">Safety Alerts Active</span>
                         </div>
                     )}
                     <div className="bg-white border border-orange-200 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.1em] text-orange-600">
@@ -232,7 +228,7 @@ export const OrthopedicModule: React.FC<OrthopedicModuleProps> = ({ formData, se
             {sectionCard(
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        {sectionHeader(<Target size={17} />, 'A. Affected Region', true)}
+                        {sectionHeader(<Target size={17} />, 'A. Affected Region')}
                         <div className="grid grid-cols-4 gap-2">
                             {JOINTS.map(j => (
                                 <button key={j} type="button"
@@ -243,14 +239,13 @@ export const OrthopedicModule: React.FC<OrthopedicModuleProps> = ({ formData, se
                         </div>
                     </div>
                     <div>
-                        {sectionHeader(<Activity size={17} />, 'B. Side', true)}
+                        {sectionHeader(<Activity size={17} />, 'B. Side')}
                         <div className="flex gap-2">
                             {SIDES.map(s => (
                                 <button key={s} type="button"
                                     onClick={() => update('side', o.side === s ? '' : s)}
-                                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
-                                        o.side === s ? 'bg-orange-600 text-white border-orange-600' : 'bg-slate-50 text-slate-400 border-slate-200'
-                                    }`}
+                                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${o.side === s ? 'bg-orange-600 text-white border-orange-600' : 'bg-slate-50 text-slate-400 border-slate-200'
+                                        }`}
                                 >{s}</button>
                             ))}
                         </div>
@@ -268,7 +263,7 @@ export const OrthopedicModule: React.FC<OrthopedicModuleProps> = ({ formData, se
                                 <span className={`text-4xl font-black ${o.pain?.score >= 8 ? 'text-red-600' : o.pain?.score >= 5 ? 'text-orange-500' : 'text-slate-800'}`}>
                                     {o.pain?.score || 0}
                                 </span>
-                                <input type="range" min="0" max="10" 
+                                <input type="range" min="0" max="10"
                                     value={o.pain?.score || 0}
                                     onChange={(e) => updateNested('pain', 'score', parseInt(e.target.value))}
                                     className="flex-1 accent-orange-600"
@@ -285,7 +280,7 @@ export const OrthopedicModule: React.FC<OrthopedicModuleProps> = ({ formData, se
                         </div>
                     </div>
                     <div>
-                        {sectionHeader(<Move size={17} />, 'D. Range of Motion (ROM)', true)}
+                        {sectionHeader(<Move size={17} />, 'D. Range of Motion (ROM)')}
                         <div className="grid grid-cols-2 gap-2">
                             {ROM_OPTIONS.map(opt => (
                                 <button key={opt} type="button"
@@ -360,7 +355,7 @@ export const OrthopedicModule: React.FC<OrthopedicModuleProps> = ({ formData, se
                             <span className={`text-4xl font-black ${o.motorPower < 3 ? 'text-red-600' : o.motorPower < 5 ? 'text-orange-500' : 'text-emerald-600'}`}>
                                 {o.motorPower || 5}/5
                             </span>
-                            <input type="range" min="0" max="5" 
+                            <input type="range" min="0" max="5"
                                 value={o.motorPower || 5}
                                 onChange={(e) => update('motorPower', parseInt(e.target.value))}
                                 className="flex-1 accent-orange-600"

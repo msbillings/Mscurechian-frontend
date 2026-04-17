@@ -122,6 +122,26 @@ const LoginForm = () => {
   const [fpLoading, setFpLoading] = useState(false);
   const [fpServerMsg, setFpServerMsg] = useState('');
 
+  const roleDisplayMap: Record<string, string> = {
+    'super-admin': 'Super Admin',
+    'admin': 'Admin Portal',
+    'patient': 'Patient Portal',
+    'doctor': 'Doctor Portal',
+    'hospital-admin': 'Hospital Admin',
+    'helpdesk': 'Helpdesk Portal',
+    'frontdesk': 'Front Desk Portal',
+    'staff': 'Staff Portal',
+    'nurse': 'Nurse Portal',
+    'pharma': 'Pharmacy Portal',
+    'pharma-owner': 'Pharmacy Portal',
+    'pharmacist': 'Pharmacy Portal',
+    'lab': 'Lab Portal',
+    'emergency': 'Emergency Portal',
+    'ambulance': 'Ambulance Portal',
+    'hr': 'HR Portal',
+    'discharge': 'Discharge Portal',
+  };
+
   // ── Check lockout whenever identifier changes ───────────────────────────────
   useEffect(() => {
     const secs = getLockoutSecsRemaining(form.identifier);
@@ -173,6 +193,8 @@ const LoginForm = () => {
         }
       }
       if (target && target !== window.location.pathname) {
+        const roleLabel = roleDisplayMap[role] || 'Portal';
+        setDashboardName(roleLabel);
         setIsNavigating(true);
         router.replace(target);
         setTimeout(() => { if (window.location.pathname === '/auth/login') window.location.href = target!; }, 3000);
@@ -258,26 +280,6 @@ const LoginForm = () => {
         if (!finalPath.startsWith('/')) finalPath = '/' + finalPath;
       }
 
-      const roleDisplayMap: Record<string, string> = {
-        'super-admin': 'Super Admin',
-        'admin': 'Admin',
-        'patient': 'Patient',
-        'doctor': 'Doctor',
-        'hospital-admin': 'Hospital Admin',
-        'helpdesk': 'Helpdesk',
-        'frontdesk': 'Front Desk',
-        'staff': 'Staff',
-        'nurse': 'Nurse',
-        'pharma': 'Pharmacy',
-        'pharma-owner': 'Pharmacy',
-        'pharmacist': 'Pharmacy',
-        'lab': 'Lab',
-        'emergency': 'Emergency',
-        'ambulance': 'Ambulance',
-        'hr': 'HR',
-        'discharge': 'Discharge',
-      };
-      
       const roleLabel = roleDisplayMap[role] || 'Portal';
       setDashboardName(roleLabel);
       setIsNavigating(true);

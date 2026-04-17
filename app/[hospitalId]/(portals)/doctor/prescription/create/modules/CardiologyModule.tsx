@@ -187,24 +187,9 @@ export const CardiologyModule: React.FC<CardiologyModuleProps> = ({ formData, se
                 <div className="space-y-6">
                     <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
-                            <Activity size={14} className="text-rose-500" /> Cardiac Symptoms (NYHA)
+                            <Activity size={14} className="text-rose-500" /> NYHA Functional Class
                         </h3>
-                        <div className="flex flex-wrap gap-2">
-                            {["Chest Pain", "Shortness of Breath", "Palpitations", "Syncope", "Fatigue"].map(s => (
-                                <button
-                                    key={s}
-                                    type="button"
-                                    onClick={() => toggleArrayField('symptoms', s)}
-                                    className={`px-3 py-2 rounded-xl text-[10px] font-bold border transition-all ${data.symptoms?.includes(s)
-                                        ? 'bg-rose-50 border-rose-200 text-rose-600 shadow-sm'
-                                        : 'bg-slate-50 border-slate-100 text-slate-500'
-                                    }`}
-                                >
-                                    {s}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="mt-6 flex items-center gap-4">
+                        <div className="flex items-center gap-4">
                             <div className="flex-1">
                                 <label className="text-[9px] font-black text-slate-400 uppercase mb-2 block">NYHA Classification</label>
                                 <div className="grid grid-cols-4 gap-2">

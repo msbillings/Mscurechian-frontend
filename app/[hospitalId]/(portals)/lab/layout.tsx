@@ -1,30 +1,27 @@
 'use client';
 
 import React, { useState, useEffect, useTransition } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useParams } from "next/navigation";
 import { useAuthStore } from '@/stores/authStore';
 import { Menu, LogOut, LayoutDashboard, Activity, ClipboardList, FlaskConical, Settings } from "lucide-react";
 import LogoutModal from "@/components/auth/LogoutModal";
 import LabQuickActions from "@/components/lab/LabQuickActions";
 import ProgressBar from "@/components/ui/ProgressBar";
-import { getSocket } from "@/lib/integrations/api/socket";
+import { getSocket, joinSocketRoom } from "@/lib/integrations/api/socket";
 import { clearApiCache } from "@/lib/integrations/api/apiClient";
 import LabSupportFloatingBox from "@/components/lab/LabSupportFloatingBox";
 import { useTenantLink } from "@/hooks/useTenantLink";
 import { useRealtime } from '@/hooks/useRealtime';
 import SharedSidebar from "@/components/navbar/SharedSidebar";
+import { LabSampleService } from "@/lib/integrations/services";
 
-const labMenuLinks = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/lab/dashboard" },
-    { icon: Activity, label: "Transactions", path: "/lab/billing/transactions" },
-    { icon: ClipboardList, label: "Departments", path: "/lab/departments" },
-    { icon: FlaskConical, label: "Test Master", path: "/lab/tests" },
-    { icon: Settings, label: "Settings", path: "/lab/settings" },
-];
+// Menu links will be generated dynamically to include the pending count
+
 
 const LabLayout = ({ children }: { children: React.ReactNode }) => {
     const router = useRouter();
     const pathname = usePathname();
+    const routeParams = useParams();
     const { user, logout, isAuthenticated, checkAuth, isLoading, isInitialized } = useAuthStore();
     const [labLogo, setLabLogo] = useState<string | null>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -36,8 +33,21 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
 
     useRealtime(['lab', 'billing', 'patients', 'system']);
 
+    const fetchPendingCount = async () => {
+        if (!isAuthenticated || user?.role !== 'lab') return;
+        try {
+            // Use dedicated count method — always bypasses cache for accuracy
+            const count = await LabSampleService.getPendingCount();
+            setActiveTestCount(count);
+        } catch (error) {
+            console.error('Failed to fetch pending test count:', error);
+        }
+    };
+
     const triggerGlobalRefresh = () => {
+        // Clear the entire client-side cache before re-fetching
         clearApiCache();
+        fetchPendingCount();
         window.dispatchEvent(new Event('refresh-lab-data'));
     };
 
@@ -45,12 +55,21 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
         setIsMounted(true);
         useAuthStore.getState().initEvents();
         checkAuth();
-        const handleRefresh = () => clearApiCache();
+        const handleRefresh = () => {
+            clearApiCache();
+            fetchPendingCount();
+        };
         window.addEventListener('refresh-lab-data', handleRefresh);
         return () => window.removeEventListener('refresh-lab-data', handleRefresh);
     }, [checkAuth]);
 
     const isLoginPage = pathname.includes('/lab/login');
+
+    useEffect(() => {
+        if (isAuthenticated && user?.role === 'lab' && isMounted && !isLoginPage) {
+            fetchPendingCount();
+        }
+    }, [isAuthenticated, user, isMounted, isLoginPage]);
 
     useEffect(() => {
         if (!isLoginPage && isInitialized) {
@@ -71,17 +90,55 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
     }, [isAuthenticated, isInitialized, user?.role, router, isLoginPage, getPath]);
 
     useEffect(() => {
+        let socketInstance: any = null;
+
         if (isAuthenticated && user?.role === 'lab') {
+            const hId = (routeParams?.hospitalId as string);
+            
+            // Join the hospital-specific room for real-time updates
+            joinSocketRoom({ role: 'lab', userId: user.id, hospitalId: hId });
+
             getSocket().then(socket => {
                 if (socket) {
-                    socket.on('new_lab_order', () => { triggerGlobalRefresh(); });
-                    ['sample_collected', 'lab_order_updated', 'payment_status_changed', 'bill_generated', 'lab_refresh_forced'].forEach(evt => {
-                        socket.on(evt, () => triggerGlobalRefresh());
-                    });
+                    socketInstance = socket;
+                    
+                    // Handler function to re-fetch count when a change is detected
+                    // Two-tier delay: first at 500ms, then again at 2s to catch any slow DB writes
+                    const handleUpdate = () => {
+                        console.log('📡 [LabLayout] Real-time event received, refreshing count...');
+                        // First refresh shortly after event — covers fast DB writes
+                        setTimeout(() => {
+                            clearApiCache();
+                            fetchPendingCount();
+                        }, 500);
+                        // Second refresh after 2s — handles slower writes or network lag
+                        setTimeout(() => {
+                            clearApiCache();
+                            fetchPendingCount();
+                        }, 2000);
+                    };
+
+                    socket.on('new_lab_order', handleUpdate);
+                    socket.on('sample_collected', handleUpdate);
+                    socket.on('lab_order_updated', handleUpdate);
+                    socket.on('payment_status_changed', handleUpdate);
+                    socket.on('bill_generated', handleUpdate);
+                    socket.on('lab_refresh_forced', handleUpdate);
                 }
             });
         }
-    }, [isAuthenticated, user]);
+
+        return () => {
+            if (socketInstance) {
+                socketInstance.off('new_lab_order');
+                socketInstance.off('sample_collected');
+                socketInstance.off('lab_order_updated');
+                socketInstance.off('payment_status_changed');
+                socketInstance.off('bill_generated');
+                socketInstance.off('lab_refresh_forced');
+            }
+        };
+    }, [isAuthenticated, user, routeParams?.hospitalId]);
 
     if (!isLoginPage && (!isMounted || isLoading || !isInitialized)) {
         return (
@@ -100,6 +157,14 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
     if (isLoginPage) return <>{children}</>;
     if (!isAuthenticated || user?.role !== 'lab') return null;
 
+    const currentMenuLinks = [
+        { icon: LayoutDashboard, label: "Dashboard", path: "/lab/dashboard" },
+        { icon: Activity, label: "Transactions", path: "/lab/billing/transactions" },
+        { icon: ClipboardList, label: "Departments", path: "/lab/departments" },
+        { icon: FlaskConical, label: "Test Master", path: "/lab/tests" },
+        { icon: Settings, label: "Settings", path: "/lab/settings" },
+    ];
+
     return (
         <div className="flex min-h-screen bg-background text-slate-900">
             <LogoutModal
@@ -112,7 +177,7 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
             <SharedSidebar
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
-                menuItems={labMenuLinks}
+                menuItems={currentMenuLinks}
                 branding={{ logo: FlaskConical, title: "CureChain", subtitle: "Lab Portal" }}
                 currentPath={pathname}
                 onMenuItemClick={(path) => {

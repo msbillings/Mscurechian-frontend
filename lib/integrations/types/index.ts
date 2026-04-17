@@ -1,4 +1,4 @@
-﻿export * from './api';
+export * from './api';
 export * from './user';
 export * from './auth';
 export * from './admin';
@@ -9,3 +9,4 @@ export * from './helpdesk';
 export * from './patient';
 export * from './ipd';
 export * from './quality';
+export * from './spellcheck';

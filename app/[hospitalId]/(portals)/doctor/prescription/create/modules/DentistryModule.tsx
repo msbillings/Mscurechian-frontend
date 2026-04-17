@@ -39,11 +39,6 @@ export const DentistryModule: React.FC<DentistryModuleProps> = ({ formData, setF
             newAlerts.push({ type: 'emergency', message: 'Severe dental pain (≥7) — urgent intervention required.' });
         }
 
-        // 2. Tooth Selection Validation
-        if (!d.teeth || d.teeth.length === 0) {
-            newAlerts.push({ type: 'error', message: 'CRITICAL: At least one tooth must be selected for clinical assessment.' });
-        }
-
         // 3. Procedure Logic
         if (containsPulpitis && d.procedure !== 'Root Canal Treatment') {
             newAlerts.push({ type: 'warning', message: 'Diagnosis includes Pulpitis — Suggestion: RCT (Root Canal Treatment) indicated.' });

@@ -114,11 +114,8 @@ export function DischargeBillingProcess() {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
 
-        if (name === 'advanceAmount' || name === 'settlementPaid' || name === 'balanceDue') {
-            const val = parseFloat(value) || 0;
-            setBillingData(prev => ({ ...prev, [name]: val }));
-        } else if (name === 'totalBillAmount') {
-            const val = parseFloat(value) || 0;
+        if (name === 'advanceAmount' || name === 'settlementPaid' || name === 'balanceDue' || name === 'totalBillAmount') {
+            const val = Math.round(parseFloat(value) || 0);
             setBillingData(prev => ({ ...prev, [name]: val }));
         } else {
             setBillingData(prev => ({ ...prev, [name]: value }));
@@ -711,7 +708,7 @@ export function DischargeBillingProcess() {
                                             </p>
                                         </div>
                                     </div>
-                                    <p className="text-xs font-black text-slate-900">₹{(billSummary.bedCharges?.total || 0).toLocaleString()}</p>
+                                    <p className="text-xs font-black text-slate-900">₹{Math.round(billSummary.bedCharges?.total || 0).toLocaleString()}</p>
                                 </div>
 
                                 {/* 2. Medicine Charges */}
@@ -726,7 +723,7 @@ export function DischargeBillingProcess() {
                                                 <p className="text-[7px] font-bold text-slate-400 mt-1 uppercase tracking-tight">Pharmacy Issues</p>
                                             </div>
                                         </div>
-                                        <p className="text-xs font-black text-slate-900">₹{(billSummary.extraCharges?.categoryBreakdown?.Pharmacy || 0).toLocaleString()}</p>
+                                        <p className="text-xs font-black text-slate-900">₹{Math.round(billSummary.extraCharges?.categoryBreakdown?.Pharmacy || 0).toLocaleString()}</p>
                                     </div>
                                 )}
 
@@ -742,7 +739,7 @@ export function DischargeBillingProcess() {
                                                 <p className="text-[7px] font-bold text-slate-400 mt-1 uppercase tracking-tight">Procedures & Miscellaneous</p>
                                             </div>
                                         </div>
-                                        <p className="text-xs font-black text-slate-900">₹{((billSummary.extraCharges?.total || 0) - (billSummary.extraCharges?.categoryBreakdown?.Pharmacy || 0)).toLocaleString()}</p>
+                                        <p className="text-xs font-black text-slate-900">₹{Math.round((billSummary.extraCharges?.total || 0) - (billSummary.extraCharges?.categoryBreakdown?.Pharmacy || 0)).toLocaleString()}</p>
                                     </div>
                                 )}
 
@@ -758,7 +755,7 @@ export function DischargeBillingProcess() {
                                                 <p className="text-[7px] font-bold opacity-70 mt-1 uppercase tracking-tight">Pharmacy Credit</p>
                                             </div>
                                         </div>
-                                        <p className="text-xs font-black">- ₹{billSummary.financials.returnCredits.toLocaleString()}</p>
+                                        <p className="text-xs font-black">- ₹{Math.round(billSummary.financials.returnCredits).toLocaleString()}</p>
                                     </div>
                                 )}
 
@@ -772,7 +769,7 @@ export function DischargeBillingProcess() {
                                                 <p className="text-[7px] font-bold opacity-60 mt-1 uppercase tracking-tight">Admin Adjustment</p>
                                             </div>
                                         </div>
-                                        <p className="text-xs font-black">- ₹{billSummary.financials.discount.toLocaleString()}</p>
+                                        <p className="text-xs font-black">- ₹{Math.round(billSummary.financials.discount).toLocaleString()}</p>
                                     </div>
                                 )}
 

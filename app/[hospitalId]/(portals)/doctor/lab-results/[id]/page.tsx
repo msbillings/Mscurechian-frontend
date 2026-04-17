@@ -150,10 +150,11 @@ export default function DoctorLabResultDetailPage() {
         );
     }
 
-    // Logic to show "Report Pending" if not released/completed
-    // A report should only be visible to a doctor if it's Completed AND released (Notified)
-    // A report should be visible to a doctor if it's Completed
-    const isReleased = order.status?.toLowerCase() === 'completed';
+    // A report is ONLY accessible to the doctor when:
+    // 1. The order is completed (results entered), AND
+    // 2. The lab technician has explicitly clicked "Notify Doctor" (doctorNotified: true)
+    // Direct URL access is blocked by this check — the backend also enforces this.
+    const isReleased = order.status?.toLowerCase() === 'completed' && order.doctorNotified === true;
     const showReport = isReleased;
 
     if (!showReport) {

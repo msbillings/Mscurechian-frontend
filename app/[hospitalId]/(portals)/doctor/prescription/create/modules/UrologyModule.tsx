@@ -71,11 +71,6 @@ export const UrologyModule: React.FC<UrologyModuleProps> = ({ formData, setFormD
         const stoneSize = parseFloat(u.stone?.size) || 0;
         const syms: string[] = u.symptoms || [];
 
-        // Required fields
-        if (!u.renal?.creatinine) newAlerts.push({ type: 'error', message: '❗ Serum Creatinine is required (Mandatory).' });
-        if (!u.diagnosis)         newAlerts.push({ type: 'error', message: '❗ Clinical Diagnosis is required (Mandatory).' });
-        if (!syms.length)         newAlerts.push({ type: 'error', message: '❗ At least one symptom is required (Mandatory).' });
-
         // 1. IPSS
         if (score > 20) {
             newAlerts.push({ type: 'warning', message: '❗ Severe LUTS — intervention required' });
@@ -134,7 +129,6 @@ export const UrologyModule: React.FC<UrologyModuleProps> = ({ formData, setFormD
         <div className="flex items-center gap-2 mb-4">
             <div className="text-sky-700">{icon}</div>
             <h3 className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-700">{title}</h3>
-            {required && <span className="ml-auto text-[9px] font-bold text-red-400 uppercase tracking-wider">Required</span>}
             {note && !required && <span className="ml-auto text-[9px] font-bold text-slate-400">{note}</span>}
         </div>
     );
@@ -183,7 +177,7 @@ export const UrologyModule: React.FC<UrologyModuleProps> = ({ formData, setFormD
                 {/* ── A. SYMPTOMS ────────────────────────── */}
                 {sectionCard(
                     <>
-                        {sectionHeader(<ClipboardList size={17} />, 'A. Urological Symptoms (LUTS)', true)}
+                        {sectionHeader(<ClipboardList size={17} />, 'A. Urological Symptoms (LUTS)')}
                         <div className="space-y-4">
                             <div>
                                 <p className="text-[9px] font-black text-slate-400 uppercase mb-2 tracking-widest">Storage Symptoms</p>
@@ -228,7 +222,7 @@ export const UrologyModule: React.FC<UrologyModuleProps> = ({ formData, setFormD
                                         className="w-full bg-transparent text-xl font-black text-center outline-none" placeholder="0-35" />
                                 </div>
                                 <div className="bg-sky-50 rounded-xl p-3 border border-sky-100 text-center">
-                                    <label className="block text-[8px] font-black uppercase tracking-widest mb-1 text-sky-600 text-left">Creatinine (Mandatory)</label>
+                                    <label className="block text-[8px] font-black uppercase tracking-widest mb-1 text-sky-600 text-left">Creatinine</label>
                                     <input type="number" step="0.1" value={u.renal?.creatinine || ''} onChange={e => updateNested('renal', 'creatinine', e.target.value)}
                                         className="w-full bg-transparent text-xl font-black text-center outline-none text-sky-800" placeholder="mg/dL" />
                                 </div>
@@ -376,7 +370,7 @@ export const UrologyModule: React.FC<UrologyModuleProps> = ({ formData, setFormD
             {/* ── Final Diagnosis ────────────────────────────────────────── */}
             {sectionCard(
                 <>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Final Clinical Impression / Diagnosis (Mandatory)</label>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Final Clinical Impression / Diagnosis</label>
                     <input type="text" value={u.diagnosis || ''} onChange={e => update('diagnosis', e.target.value)}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-black uppercase focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-sky-800"
                         placeholder="e.g. BPH with Acute Urinary Retention" />

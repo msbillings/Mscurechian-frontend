@@ -151,9 +151,9 @@ const BedBlock = ({ bed, selectedBedId, handleBedClick, getStatusColor }: any) =
                 </div>
 
                 <div className="mt-1">
-                    <h3 className="text-[12px] font-black text-slate-900 uppercase tracking-tight truncate leading-tight">{bed.bedId}</h3>
+                    <h3 className="text-[12px] font-black text-slate-900 uppercase tracking-tight leading-tight">{bed.bedId}</h3>
                     <div className="flex items-center gap-1 mt-0.5">
-                        <span className="text-[9px] font-bold text-slate-400 capitalize truncate">
+                        <span className="text-[9px] font-bold text-slate-400 capitalize">
                             {bed.status === 'Occupied' ? (bed.currentOccupancy?.patientName || 'Loading...') : bed.type}
                         </span>
                     </div>
@@ -163,7 +163,7 @@ const BedBlock = ({ bed, selectedBedId, handleBedClick, getStatusColor }: any) =
                         if (!reasonText) return null;
                         
                         return (
-                            <p className="text-[7.5px] font-bold text-teal-600 line-clamp-1 mt-1 opacity-90 uppercase tracking-tighter" title={reasonText}>
+                            <p className="text-[7.5px] font-bold text-teal-600 mt-1 opacity-90 uppercase tracking-tighter" title={reasonText}>
                                 {reasonText}
                             </p>
                         );
@@ -173,14 +173,14 @@ const BedBlock = ({ bed, selectedBedId, handleBedClick, getStatusColor }: any) =
                 <div className="mt-auto space-y-1 pt-2 border-t border-slate-50">
                     <div className="grid grid-cols-2 gap-2">
                         <div className="flex items-center gap-1 overflow-hidden">
-                            <span className="text-[8px] font-black text-slate-500 uppercase truncate">R:{bed.room || "?"}</span>
+                            <span className="text-[8px] font-black text-slate-500 uppercase">R:{bed.room || "?"}</span>
                         </div>
                         <div className="flex items-center gap-1 overflow-hidden">
-                            <span className="text-[8px] font-black text-slate-500 uppercase truncate">F:{bed.floor || "?"}</span>
+                            <span className="text-[8px] font-black text-slate-500 uppercase">F:{bed.floor || "?"}</span>
                         </div>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest truncate max-w-[80px]">
+                        <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest">
                             {bed.department || bed.ward || "GEN"}
                         </span>
                         {bed.currentOccupancy?.condition === 'Critical' && (
@@ -460,7 +460,7 @@ export default function WardStatus() {
                                 <td className="px-4 py-3">
                                     {bed.currentOccupancy ? (
                                         <div className="max-w-[180px]">
-                                            <p className="text-[10px] font-bold text-slate-700 leading-tight line-clamp-2">
+                                            <p className="text-[10px] font-bold text-slate-700 leading-tight">
                                                 {bed.currentOccupancy.reasonForAdmission || bed.currentOccupancy.reason || '-'}
                                             </p>
                                         </div>
@@ -771,7 +771,7 @@ export default function WardStatus() {
                                                      <div className="p-2 bg-slate-50 rounded-lg border border-slate-100 shadow-sm flex flex-col items-center text-center gap-1">
                                                          <Stethoscope size={14} className="text-teal-500 mb-1" />
                                                          <p className="text-[6px] font-black text-slate-400 uppercase tracking-widest">Primary Doctor</p>
-                                                         <p className="text-[8px] font-bold text-slate-700 uppercase truncate w-full">{bedDetails.occupancyDetails.doctor?.user?.name || 'N/A'}</p>
+                                                         <p className="text-[8px] font-bold text-slate-700 uppercase w-full">{bedDetails.occupancyDetails.doctor?.user?.name || 'N/A'}</p>
                                                      </div>
                                                      <div className="p-2 bg-slate-50 rounded-lg border border-slate-100 shadow-sm flex flex-col items-center text-center gap-1">
                                                          <Activity size={14} className="text-rose-500 mb-1" />
@@ -792,7 +792,7 @@ export default function WardStatus() {
                                                          <p className="text-[7px] font-black uppercase tracking-widest">Reason for Admission</p>
                                                      </div>
                                                      <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-left">
-                                                         <p className="text-[10px] font-bold text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-1" title={bedDetails.occupancyDetails.reason}>
+                                                         <p className="text-[10px] font-bold text-gray-700 dark:text-gray-300 leading-relaxed" title={bedDetails.occupancyDetails.reason}>
                                                              {bedDetails.occupancyDetails.reason || 'No specific reason provided.'}
                                                          </p>
                                                      </div>

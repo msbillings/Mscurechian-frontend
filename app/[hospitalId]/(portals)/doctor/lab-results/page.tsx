@@ -3,11 +3,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { getSocket, joinSocketRoom } from '@/lib/integrations/api/socket';
 import { toast } from 'react-hot-toast';
-import { TestTube, AlertCircle, User, Calendar, FileText, ChevronRight, Trash2, Clock, ChevronLeft } from 'lucide-react';
+import {
+    TestTube, ChevronRight,
+    ChevronLeft, LayoutGrid, List, FlaskConical,
+    AlertTriangle, RefreshCw
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTenantLink } from '@/hooks/useTenantLink';
 import Link from 'next/link';
-import { API_CONFIG } from '@/lib/integrations/config/api-config';
 import { apiClient } from '@/lib/integrations/api/apiClient';
 import DeleteConfirmationModal from '@/components/common/DeleteConfirmationModal';
 
@@ -30,42 +33,289 @@ interface LabResult {
     }>;
     status: string;
     doctorNotified?: boolean;
-    doctor?: {
-        name: string;
-    };
-    hospital?: {
-        name: string;
-    };
+    doctor?: { name: string; };
+    hospital?: { name: string; };
     completedAt?: Date;
     createdAt: Date;
 }
 
+type ViewMode = 'card' | 'table';
+type FilterType = 'all' | 'completed' | 'pending';
+
+const ITEMS_PER_PAGE = 12;
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const getStatusConfig = (result: LabResult) => {
+    const isDone = result.status?.toLowerCase() === 'completed' && result.doctorNotified;
+    const isProcessing = result.status?.toLowerCase() === 'completed' && !result.doctorNotified;
+    if (isDone) return { label: 'Verified', color: 'blue', dot: 'bg-blue-500', badge: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800' };
+    if (isProcessing) return { label: 'Pending Notify', color: 'indigo', dot: 'bg-indigo-500', badge: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800' };
+    return { label: result.status || 'In Queue', color: 'amber', dot: 'bg-amber-500 animate-pulse', badge: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800' };
+};
+
+const formatDate = (d: any) => d ? new Date(d).toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+const formatTime = (d: any) => d ? new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+
+// ── Pagination Component ──────────────────────────────────────────────────────
+
+function Pagination({ page, total, perPage, onChange }: { page: number; total: number; perPage: number; onChange: (p: number) => void }) {
+    const totalPages = Math.max(1, Math.ceil(total / perPage));
+    if (totalPages <= 1) return null;
+
+    return (
+        <div className="flex items-center justify-center gap-2 mt-4">
+            <button
+                onClick={() => onChange(Math.max(1, page - 1))}
+                disabled={page === 1}
+                className="w-8 h-8 flex items-center justify-center rounded-lg border border-border-theme bg-card text-muted hover:text-primary-theme hover:border-primary-theme/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+                <ChevronLeft size={14} />
+            </button>
+
+            <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                    <button
+                        key={p}
+                        onClick={() => onChange(p)}
+                        className={`min-w-[32px] h-8 px-2 rounded-lg text-[11px] font-black transition-all border ${
+                            p === page
+                                ? 'bg-primary-theme text-white border-primary-theme shadow-sm'
+                                : 'bg-card text-muted border-border-theme hover:text-primary-theme hover:border-primary-theme/40'
+                        }`}
+                    >
+                        {p}
+                    </button>
+                ))}
+            </div>
+
+            <button
+                onClick={() => onChange(Math.min(totalPages, page + 1))}
+                disabled={page === totalPages}
+                className="w-8 h-8 flex items-center justify-center rounded-lg border border-border-theme bg-card text-muted hover:text-primary-theme hover:border-primary-theme/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+                <ChevronRight size={14} />
+            </button>
+
+            {/* <prev / next> style indicator */}
+            <span className="text-[11px] font-black text-muted ml-1 font-mono tracking-tight opacity-60">
+                &lt;{page - 1}/{totalPages}&gt;
+            </span>
+        </div>
+    );
+}
+
+// ── Card View ─────────────────────────────────────────────────────────────────
+
+function CardView({ items, getPath }: { items: LabResult[]; getPath: (p: string) => string }) {
+    return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {items.map(result => {
+                const cfg = getStatusConfig(result);
+                const hasAbnormal = result.tests.some(t => t.isAbnormal);
+                return (
+                    <Link
+                        key={result._id}
+                        href={getPath(`/doctor/lab-results/${result._id}`)}
+                        className="group bg-card rounded-xl border border-border-theme hover:border-primary-theme/30 hover:shadow-md transition-all flex flex-col overflow-hidden relative"
+                    >
+                        {/* Top strip */}
+                        <div className={`h-0.5 w-full ${cfg.color === 'blue' ? 'bg-blue-500' : cfg.color === 'indigo' ? 'bg-indigo-500' : 'bg-amber-400'}`} />
+
+                        <div className="p-3 flex flex-col gap-2 flex-1">
+                            {/* Row 1: Status + Abnormal badge */}
+                            <div className="flex items-center justify-between gap-1">
+                                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${cfg.badge}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shrink-0`} />
+                                    {cfg.label}
+                                </span>
+                                {hasAbnormal && (
+                                    <span className="flex items-center gap-1 px-1.5 py-0.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-md text-[9px] font-black dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-800">
+                                        <AlertTriangle size={9} /> ABN
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Row 2: Patient */}
+                            <div className="flex items-center gap-2">
+                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-black text-white shrink-0 ${cfg.color === 'blue' ? 'bg-blue-600' : cfg.color === 'indigo' ? 'bg-indigo-600' : 'bg-amber-500'}`}>
+                                    {result.patient?.name?.charAt(0)?.toUpperCase() || '?'}
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-[13px] font-black text-foreground truncate uppercase tracking-tight leading-tight">
+                                        {result.patient?.name || 'Unknown'}
+                                    </p>
+                                    <p className="text-[10px] font-bold text-muted uppercase tracking-widest opacity-60 truncate">
+                                        MRN: {result.patient?.mrn || '—'} · #{result.sampleId}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Row 3: Tests */}
+                            <div className="flex flex-wrap gap-1">
+                                {result.tests.slice(0, 3).map((test, i) => (
+                                    <span
+                                        key={i}
+                                        className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wide border ${
+                                            test.isAbnormal
+                                                ? 'bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-900/20 dark:border-rose-800'
+                                                : 'bg-secondary-theme border-border-theme text-muted'
+                                        }`}
+                                    >
+                                        {test.testName}
+                                    </span>
+                                ))}
+                                {result.tests.length > 3 && (
+                                    <span className="px-2 py-0.5 rounded-md text-[9px] font-black border border-border-theme bg-secondary-theme text-muted italic">
+                                        +{result.tests.length - 3}
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Row 4: Date + Doctor */}
+                            <div className="mt-auto pt-2 border-t border-border-theme/50 grid grid-cols-2 gap-1">
+                                <div>
+                                    <p className="text-[9px] font-black text-muted uppercase opacity-50">Date</p>
+                                    <p className="text-[10px] font-black text-foreground">{formatDate(result.completedAt || result.createdAt)}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[9px] font-black text-muted uppercase opacity-50">Doctor</p>
+                                    <p className="text-[10px] font-black text-foreground truncate">
+                                        {result.doctor?.name ? (result.doctor.name.startsWith('Dr.') ? result.doctor.name : `Dr. ${result.doctor.name}`) : 'Staff'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-3 py-2 bg-secondary-theme/30 border-t border-border-theme flex items-center justify-between text-muted group-hover:text-primary-theme transition-colors">
+                            <span className="text-[10px] font-black uppercase tracking-widest">View Report</span>
+                            <ChevronRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+                        </div>
+                    </Link>
+                );
+            })}
+        </div>
+    );
+}
+
+// ── Table View ────────────────────────────────────────────────────────────────
+
+function TableView({ items, getPath }: { items: LabResult[]; getPath: (p: string) => string }) {
+    return (
+        <div className="overflow-x-auto rounded-xl border border-border-theme bg-card">
+            <table className="w-full text-left">
+                <thead>
+                    <tr className="border-b border-border-theme">
+                        {['Sample ID', 'Patient', 'MRN', 'Tests', 'Abnormal', 'Doctor', 'Date', 'Time', 'Status', ''].map(h => (
+                            <th key={h} className="px-3 py-2.5 text-[10px] font-black text-muted uppercase tracking-widest whitespace-nowrap bg-secondary-theme/30">
+                                {h}
+                            </th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {items.map((result, idx) => {
+                        const cfg = getStatusConfig(result);
+                        const hasAbnormal = result.tests.some(t => t.isAbnormal);
+                        return (
+                            <tr
+                                key={result._id}
+                                className={`border-b border-border-theme/50 hover:bg-primary-theme/3 transition-colors group ${idx % 2 === 0 ? '' : 'bg-secondary-theme/10'}`}
+                            >
+                                <td className="px-3 py-2">
+                                    <span className="text-[11px] font-black text-primary-theme font-mono">#{result.sampleId}</span>
+                                </td>
+                                <td className="px-3 py-2">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-7 h-7 rounded-md flex items-center justify-center text-[10px] font-black text-white shrink-0 ${cfg.color === 'blue' ? 'bg-blue-600' : cfg.color === 'indigo' ? 'bg-indigo-600' : 'bg-amber-500'}`}>
+                                            {result.patient?.name?.charAt(0)?.toUpperCase() || '?'}
+                                        </div>
+                                        <span className="text-[12px] font-black text-foreground uppercase tracking-tight whitespace-nowrap">
+                                            {result.patient?.name || 'Unknown'}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td className="px-3 py-2">
+                                    <span className="text-[11px] text-muted font-mono">{result.patient?.mrn || '—'}</span>
+                                </td>
+                                <td className="px-3 py-2">
+                                    <div className="flex flex-wrap gap-1 max-w-[160px]">
+                                        {result.tests.slice(0, 2).map((t, i) => (
+                                            <span key={i} className={`px-2 py-0.5 rounded text-[9px] font-black border uppercase ${t.isAbnormal ? 'bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-900/20 dark:border-rose-800' : 'bg-secondary-theme border-border-theme text-muted'}`}>
+                                                {t.testName}
+                                            </span>
+                                        ))}
+                                        {result.tests.length > 2 && (
+                                            <span className="px-2 py-0.5 rounded text-[9px] font-black border border-border-theme bg-secondary-theme text-muted italic">
+                                                +{result.tests.length - 2}
+                                            </span>
+                                        )}
+                                    </div>
+                                </td>
+                                <td className="px-3 py-2 text-center">
+                                    {hasAbnormal
+                                        ? <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[9px] font-black dark:bg-rose-900/20 dark:border-rose-800"><AlertTriangle size={9} />Yes</span>
+                                        : <span className="text-[11px] text-muted opacity-40">—</span>
+                                    }
+                                </td>
+                                <td className="px-3 py-2">
+                                    <span className="text-[11px] text-muted whitespace-nowrap">
+                                        {result.doctor?.name ? (result.doctor.name.startsWith('Dr.') ? result.doctor.name : `Dr. ${result.doctor.name}`) : 'Staff'}
+                                    </span>
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap">
+                                    <span className="text-[11px] text-foreground font-medium">{formatDate(result.completedAt || result.createdAt)}</span>
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap">
+                                    <span className="text-[11px] text-muted">{formatTime(result.completedAt || result.createdAt)}</span>
+                                </td>
+                                <td className="px-3 py-2">
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black border uppercase tracking-wide ${cfg.badge}`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shrink-0`} />
+                                        {cfg.label}
+                                    </span>
+                                </td>
+                                <td className="px-3 py-2">
+                                    <Link
+                                        href={getPath(`/doctor/lab-results/${result._id}`)}
+                                        className="p-1.5 text-muted hover:text-primary-theme hover:bg-primary-theme/5 rounded-md transition-all inline-flex"
+                                        title="View Report"
+                                    >
+                                        <ChevronRight size={15} />
+                                    </Link>
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
 export default function DoctorLabResultsPage() {
-    const router = useRouter();
     const { getPath } = useTenantLink();
     const [results, setResults] = useState<LabResult[]>([]);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [filter, setFilter] = useState<'all' | 'completed' | 'pending'>('all');
+    const [filter, setFilter] = useState<FilterType>('all');
+    const [viewMode, setViewMode] = useState<ViewMode>('card');
     const [socketConnected, setSocketConnected] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [idToDelete, setIdToDelete] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const itemsPerPage = 15;
 
     const fetchLabResults = useCallback(async (silent = false) => {
         if (!silent) setLoading(true);
         else setIsRefreshing(true);
-
         try {
-            // Added cache busting and slightly higher limit to ensure reliability
             const data = await apiClient<any>(`/doctor/lab-results?limit=60&_cb=${Date.now()}`);
-            if (data?.success) {
-                setResults(data.data);
-            }
-        } catch (error) {
-            // Silently fail background fetches unless loading
+            if (data?.success) setResults(data.data);
+        } catch {
             if (!silent) toast.error('Failed to fetch lab results');
         } finally {
             setLoading(false);
@@ -75,110 +325,68 @@ export default function DoctorLabResultsPage() {
 
     useEffect(() => {
         fetchLabResults();
-
         let socketInstance: any = null;
 
         const initSocket = async () => {
             try {
                 const user = JSON.parse(localStorage.getItem('user') || '{}');
                 const userId = user._id || user.id;
-
                 if (userId && user.role) {
                     socketInstance = await getSocket();
                     if (socketInstance) {
-                        // Function to join rooms (re-usable for reconnection)
                         const performRoomJoin = async () => {
-                            console.log('📡 Attempting to join clinical rooms for:', user.role);
-                            await joinSocketRoom({
-                                role: user.role,
-                                userId: userId,
-                                hospitalId: user.hospital
-                            });
+                            await joinSocketRoom({ role: user.role, userId, hospitalId: user.hospital });
                             setSocketConnected(true);
                         };
-
-                        if (socketInstance.connected) {
-                            await performRoomJoin();
-                        }
-
+                        if (socketInstance.connected) await performRoomJoin();
                         socketInstance.on('connect', performRoomJoin);
                         socketInstance.on('disconnect', () => setSocketConnected(false));
-
-                        // Listen for final notifications (Send to Doctor)
                         socketInstance.on('lab_result_notification', (notification: any) => {
-                            console.log('📬 NEW LAB RESULT:', notification);
-                            toast.success(`Lab results ready for ${notification.patientName}`, {
-                                duration: 8000,
-                                icon: '🧪',
-                                position: 'top-right'
-                            });
+                            toast.success(`Lab results ready for ${notification.patientName}`, { duration: 8000, icon: '🧪', position: 'top-right' });
                             fetchLabResults();
-                            playNotificationSound();
+                            try { new Audio('/notification.mp3').play().catch(() => {}); } catch {}
                         });
-
-                        // Listen for status-wide updates (Processing, Collected, etc)
-                        const handleGenericUpdate = () => {
-                            console.log('🔄 Live Update: Refreshing result list...');
-                            fetchLabResults();
-                        };
-
-                        socketInstance.on('lab_order_updated', handleGenericUpdate);
-                        socketInstance.on('new_lab_order', handleGenericUpdate);
-                        socketInstance.on('sample_collected', handleGenericUpdate);
-                        socketInstance.on('bill_generated', handleGenericUpdate);
                     }
                 }
-            } catch (error) {
-                console.error('Socket setup error:', error);
-            }
+            } catch (error) { console.error('Socket setup error:', error); }
         };
 
         initSocket();
-
-        // Listen for internal refresh events
         const handleRefresh = () => fetchLabResults();
         window.addEventListener('refresh-lab-results', handleRefresh);
-
         return () => {
             if (socketInstance) {
                 socketInstance.off('connect');
                 socketInstance.off('disconnect');
                 socketInstance.off('lab_result_notification');
-                socketInstance.off('lab_order_updated');
-                socketInstance.off('new_lab_order');
-                socketInstance.off('sample_collected');
-                socketInstance.off('bill_generated');
             }
             window.removeEventListener('refresh-lab-results', handleRefresh);
         };
     }, [fetchLabResults]);
 
-    const playNotificationSound = () => {
-        try {
-            const audio = new Audio('/notification.mp3');
-            audio.play().catch(() => { });
-        } catch (error) {
-            console.log('Could not play notification sound');
-        }
-    };
+    // Reset to page 1 on filter/view change
+    useEffect(() => setCurrentPage(1), [filter, viewMode]);
 
+    const filteredResults = results.filter(r => {
+        const isVerified = r.status?.toLowerCase() === 'completed' && r.doctorNotified;
+        if (filter === 'completed') return isVerified;
+        if (filter === 'pending') return !isVerified;
+        return true;
+    });
 
-    const handleDeleteResult = async (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        setIdToDelete(id);
-        setIsDeleteModalOpen(true);
-    };
+    const totalPages = Math.max(1, Math.ceil(filteredResults.length / ITEMS_PER_PAGE));
+    const pageItems = filteredResults.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+    // delete handler kept for modal wiring (modal is removed from UI but kept for safety)
+    const handleDeleteResult = (_id: string, _e: React.MouseEvent) => {};
 
     const confirmDelete = async () => {
         if (!idToDelete) return;
-
         setIsDeleting(true);
         try {
-            await apiClient(`/lab/orders/${idToDelete}`, {
-                method: 'DELETE'
-            });
+            await apiClient(`/lab/orders/${idToDelete}`, { method: 'DELETE' });
             toast.success('Lab result deleted successfully');
-            setResults(results.filter(r => r._id !== idToDelete));
+            setResults(r => r.filter(x => x._id !== idToDelete));
             setIsDeleteModalOpen(false);
             setIdToDelete(null);
         } catch (error: any) {
@@ -188,293 +396,136 @@ export default function DoctorLabResultsPage() {
         }
     };
 
-    const filteredResults = results.filter(result => {
-        const isOfficiallyCompleted = result.status.toLowerCase() === 'completed' && result.doctorNotified;
-        if (filter === 'all') return true;
-        if (filter === 'completed') return isOfficiallyCompleted;
-        if (filter === 'pending') return !isOfficiallyCompleted;
-        return true;
-    });
-
-    const totalPages = Math.ceil(filteredResults.length / itemsPerPage);
-
-    // Reset to page 1 when filter changes
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [filter]);
-
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="relative w-16 h-16">
-                        <div className="absolute inset-0 border-4 border-primary-theme/20 border-t-primary-theme rounded-full animate-spin"></div>
-                        <TestTube className="absolute inset-0 m-auto text-primary-theme animate-pulse" size={24} />
+                    <div className="relative w-12 h-12">
+                        <div className="absolute inset-0 border-4 border-primary-theme/20 border-t-primary-theme rounded-full animate-spin" />
+                        <TestTube className="absolute inset-0 m-auto text-primary-theme animate-pulse" size={18} />
                     </div>
-                    <p className="text-[10px] font-black text-muted uppercase tracking-[0.3em] animate-pulse">Analyzing Diagnostic Data...</p>
+                    <p className="text-[9px] font-black text-muted uppercase tracking-[0.3em] animate-pulse">Loading Results...</p>
                 </div>
             </div>
         );
     }
 
+    const tabs: { id: FilterType; label: string; count: number }[] = [
+        { id: 'all', label: 'All', count: results.length },
+        { id: 'completed', label: 'Verified', count: results.filter(r => r.status?.toLowerCase() === 'completed' && r.doctorNotified).length },
+        { id: 'pending', label: 'In Queue', count: results.filter(r => !(r.status?.toLowerCase() === 'completed' && r.doctorNotified)).length },
+    ];
+
     return (
-        <div className="min-h-screen space-y-4 sm:space-y-6 pt-1 sm:pt-3 pb-20">
-            {/* Header Area */}
-            <div className="bg-card rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-border-theme shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-48 h-48 bg-primary-theme/5 rounded-full -mr-24 -mt-24 blur-3xl"></div>
-                
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
-                    <div className="flex items-center gap-4 sm:gap-8">
-                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20 rotate-3">
-                            <TestTube className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+        <div className="min-h-screen space-y-3 pt-1 pb-16">
+
+            {/* ── Header Card ── */}
+            <div className="bg-card rounded-xl border border-border-theme p-3 sm:p-4 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary-theme/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none" />
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative">
+                    {/* Title */}
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                            <FlaskConical className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                            <div className="flex items-center gap-3 flex-wrap">
-                                <h1 className="text-lg md:text-xl lg:text-xl font-bold text-foreground uppercase tracking-tight">Lab Results</h1>
-                                <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] border ${socketConnected ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-rose-50 text-rose-600 border-rose-200'}`}>
-                                    <div className={`w-2 h-2 rounded-full ${socketConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-                                    {socketConnected ? 'LIVE FEED' : 'OFFLINE'}
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-base font-black text-foreground uppercase tracking-tight">Lab Results</h1>
+                                <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${socketConnected ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20' : 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/20'}`}>
+                                    <div className={`w-1.5 h-1.5 rounded-full ${socketConnected ? 'bg-blue-500 animate-pulse' : 'bg-rose-500'}`} />
+                                    {socketConnected ? 'Live' : 'Offline'}
                                 </div>
                             </div>
-                            <p className="text-[7px] md:text-[10px] lg:text-[10px] font-black text-muted uppercase tracking-[0.3em] mt-2 opacity-60">Real-time Diagnostic Intelligence Network</p>
+                            <p className="text-[9px] font-bold text-muted uppercase tracking-widest opacity-50">
+                                {filteredResults.length} result{filteredResults.length !== 1 ? 's' : ''} · Page {currentPage}/{totalPages}
+                            </p>
                         </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
-                        <div className="flex items-center gap-3 w-full sm:w-auto">
-                            <button
-                                onClick={() => {
-                                    fetchLabResults(true);
-                                }}
-                                className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-secondary-theme hover:bg-primary-theme/5 text-muted hover:text-primary-theme rounded-xl border border-border-theme transition-all active:scale-90"
-                                title="Refresh Stream"
-                                disabled={loading || isRefreshing}
-                            >
-                                <Clock className={`w-5 h-5 sm:w-6 sm:h-6 ${loading || isRefreshing ? 'animate-spin' : ''}`} />
-                            </button>
-                            
-                            <div className="flex-1 sm:flex-none flex items-center bg-secondary-theme/50 p-1 rounded-xl sm:rounded-2xl border border-border-theme shadow-inner overflow-x-auto no-scrollbar">
-                                {[
-                                    { id: 'all', label: 'All Results', count: results.length, color: 'blue' },
-                                    { id: 'completed', label: 'Verified', count: results.filter(r => r.status.toLowerCase() === 'completed' && r.doctorNotified).length, color: 'emerald' },
-                                    { id: 'pending', label: 'In Queue', count: results.filter(r => !(r.status.toLowerCase() === 'completed' && r.doctorNotified)).length, color: 'amber' }
-                                ].map((tab) => (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setFilter(tab.id as any)}
-                                        className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap flex items-center gap-2 ${filter === tab.id
-                                            ? `bg-card text-${tab.color}-600 shadow-lg shadow-black/5`
-                                            : 'text-muted hover:text-foreground'
-                                            }`}
-                                    >
-                                        {tab.label}
-                                        <span className={`px-1.5 py-0.5 rounded-md text-[8px] ${filter === tab.id ? `bg-${tab.color}-50 text-${tab.color}-600` : 'bg-secondary-theme text-muted'}`}>
-                                            {tab.count}
-                                        </span>
-                                    </button>
-                                ))}
-                            </div>
+                    {/* Controls */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {/* Filter Tabs */}
+                        <div className="flex items-center bg-secondary-theme/60 p-0.5 rounded-lg border border-border-theme">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setFilter(tab.id)}
+                                    className={`px-3 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                                        filter === tab.id ? 'bg-card text-primary-theme shadow-sm' : 'text-muted hover:text-foreground'
+                                    }`}
+                                >
+                                    {tab.label}
+                                    <span className={`px-1 py-0.5 rounded text-[8px] font-black ${filter === tab.id ? 'bg-primary-theme/10 text-primary-theme' : 'bg-border-theme/50 text-muted'}`}>
+                                        {tab.count}
+                                    </span>
+                                </button>
+                            ))}
                         </div>
+
+                        {/* View Mode Toggle */}
+                        <div className="flex items-center bg-secondary-theme/60 p-0.5 rounded-lg border border-border-theme">
+                            <button
+                                onClick={() => setViewMode('card')}
+                                className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-card text-primary-theme shadow-sm' : 'text-muted hover:text-foreground'}`}
+                                title="Card View"
+                            >
+                                <LayoutGrid size={14} />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('table')}
+                                className={`p-1.5 rounded-md transition-all ${viewMode === 'table' ? 'bg-card text-primary-theme shadow-sm' : 'text-muted hover:text-foreground'}`}
+                                title="Table View"
+                            >
+                                <List size={14} />
+                            </button>
+                        </div>
+
+                        {/* Refresh */}
+                        <button
+                            onClick={() => fetchLabResults(true)}
+                            disabled={isRefreshing}
+                            className="p-2 bg-secondary-theme hover:bg-primary-theme/5 text-muted hover:text-primary-theme rounded-lg border border-border-theme transition-all disabled:opacity-50"
+                            title="Refresh"
+                        >
+                            <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
+                        </button>
                     </div>
                 </div>
             </div>
 
-            {/* Results Grid logic */}
-            {filteredResults.length > 0 ? (
-                <div className="space-y-10">
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
-                        {filteredResults.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((result) => (
-                            <Link
-                                key={result._id}
-                                href={getPath(`/doctor/lab-results/${result._id}`)}
-                                prefetch={true}
-                                className="bg-card rounded-2xl border border-border-theme shadow-sm hover:shadow-2xl hover:shadow-primary-theme/5 transition-all cursor-pointer group flex flex-col overflow-hidden relative"
-                            >
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-primary-theme/5 rounded-full -mr-12 -mt-12 group-hover:bg-primary-theme/10 transition-colors"></div>
-                                
-                                {/* Card Header */}
-                                <div className="p-6 pb-4 flex justify-between items-start relative z-10">
-                                    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] border shadow-sm ${result.status.toLowerCase() === 'completed' && result.doctorNotified ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/30' :
-                                        result.status.toLowerCase() === 'completed' && !result.doctorNotified ? 'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-900/30' :
-                                            'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-900/30'
-                                        }`}>
-                                        <div className={`w-1.5 h-1.5 rounded-full ${result.status.toLowerCase() === 'completed' && result.doctorNotified ? 'bg-emerald-500' :
-                                            result.status.toLowerCase() === 'completed' && !result.doctorNotified ? 'bg-indigo-500' :
-                                                'bg-amber-500 animate-pulse'
-                                            }`} />
-                                        {result.status.toLowerCase() === 'completed' && !result.doctorNotified ? 'Pending Node' : result.status}
-                                    </span>
-                                    <div className="text-right flex flex-col items-end gap-1">
-                                        <span className="text-[10px] font-black text-muted uppercase tracking-[0.2em] opacity-40 italic">
-                                            #{result.sampleId}
-                                        </span>
-                                        <button
-                                            onClick={(e) => handleDeleteResult(result._id, e)}
-                                            className="p-2 text-muted hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all active:scale-90"
-                                            title="Purge Record"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Patient Info */}
-                                <div className="px-6 pb-4 flex items-center gap-4 relative z-10">
-                                    <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center text-lg font-black shadow-lg shadow-black/5 shrink-0 transition-transform group-hover:scale-105 group-hover:rotate-3 ${result.status.toLowerCase() === 'completed' ? 'bg-blue-600 text-white' : 'bg-secondary-theme text-foreground border border-border-theme'}`}>
-                                        {result.patient?.name?.charAt(0) || '?'}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="text-base sm:text-lg font-black text-foreground group-hover:text-primary-theme transition-colors leading-tight truncate uppercase tracking-tight">
-                                            {result.patient?.name || 'Unknown Patient'}
-                                        </h3>
-                                        <div className="flex items-center gap-4 mt-1">
-                                            <p className="text-[10px] font-black text-primary-theme uppercase tracking-widest opacity-70">
-                                                MRN: {result.patient?.mrn || 'N/A'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Detail Stats */}
-                                <div className="px-6 pb-6 grid grid-cols-2 gap-3">
-                                    <div className="bg-secondary-theme/30 rounded-xl p-2.5 border border-border-theme/50">
-                                        <div className="flex items-center gap-2 mb-1 opacity-50">
-                                            <Calendar className="w-2.5 h-2.5 text-blue-500" />
-                                            <span className="text-[8px] font-black uppercase tracking-widest">Released</span>
-                                        </div>
-                                        <p className="text-[9px] font-black text-foreground uppercase tracking-wider">
-                                            {new Date(result.completedAt || result.createdAt).toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' })}
-                                        </p>
-                                    </div>
-                                    <div className="bg-secondary-theme/30 rounded-xl p-2.5 border border-border-theme/50">
-                                        <div className="flex items-center gap-2 mb-1 opacity-50">
-                                            <Clock className="w-2.5 h-2.5 text-indigo-500" />
-                                            <span className="text-[8px] font-black uppercase tracking-widest">Timestamp</span>
-                                        </div>
-                                        <p className="text-[9px] font-black text-foreground uppercase tracking-wider">
-                                            {new Date(result.completedAt || result.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Referral Info */}
-                                <div className="px-6 pb-6">
-                                    <div className="bg-gradient-to-r from-secondary-theme to-transparent rounded-2xl p-3 flex items-center gap-3 border border-border-theme/50">
-                                        <div className="w-9 h-9 bg-card rounded-xl flex items-center justify-center shadow-sm border border-border-theme/40 shrink-0">
-                                            <User className="w-4 h-4 text-blue-500" />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="text-[8px] font-black text-muted uppercase tracking-[0.2em] opacity-50">Ordered By</p>
-                                            <p className="text-[11px] font-black text-foreground truncate uppercase tracking-tight italic">
-                                                {result.doctor?.name ? (result.doctor.name.startsWith('Dr.') ? result.doctor.name : `Dr. ${result.doctor.name}`) : 'Medical Staff Node'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Tests Section */}
-                                <div className="px-6 pb-8 flex-1">
-                                    <div className="flex flex-wrap gap-2">
-                                        {result.tests.slice(0, 4).map((test, idx) => (
-                                            <span
-                                                key={idx}
-                                                className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${test.isAbnormal
-                                                    ? 'bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-500/10 dark:border-rose-900/30'
-                                                    : 'bg-secondary-theme/50 border-border-theme/60 text-muted'
-                                                    }`}
-                                            >
-                                                {test.testName}
-                                            </span>
-                                        ))}
-                                        {result.tests.length > 4 && (
-                                            <span className="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border border-border-theme/60 bg-secondary-theme/50 text-muted italic">
-                                                +{result.tests.length - 4} Cluster
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Footer Link */}
-                                <div className="mt-auto px-6 py-4 bg-secondary-theme/20 border-t border-border-theme flex items-center justify-between text-muted group-hover:bg-primary-theme/5 group-hover:text-primary-theme transition-all">
-                                    <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Access Full Metadata Report</span>
-                                    <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                                </div>
-                            </Link>
-                        ))}
+            {/* ── Content ── */}
+            {filteredResults.length === 0 ? (
+                <div className="bg-card rounded-xl border border-border-theme p-16 text-center shadow-sm flex flex-col items-center">
+                    <div className="w-16 h-16 bg-secondary-theme rounded-2xl flex items-center justify-center mb-4 relative">
+                        <TestTube className="w-8 h-8 text-muted/30" />
+                        <div className="absolute inset-0 border-2 border-dashed border-border-theme rounded-2xl animate-[spin_12s_linear_infinite]" />
                     </div>
-
-                    {/* Pagination Controls - Optimized */}
-                    {totalPages > 1 && (
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 px-4 py-8 bg-card rounded-[2.5rem] border border-border-theme shadow-sm">
-                            <p className="text-[10px] sm:text-xs font-black text-muted uppercase tracking-[0.3em] italic opacity-40">
-                                Registry Page <span className="text-primary-theme font-black">{currentPage}</span> of {totalPages}
-                            </p>
-                            <div className="flex items-center gap-3">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setCurrentPage(p => Math.max(1, p - 1));
-                                    }}
-                                    disabled={currentPage === 1}
-                                    className="w-12 h-12 flex items-center justify-center bg-white dark:bg-card border border-border-theme rounded-2xl disabled:opacity-20 hover:border-primary-theme/30 hover:bg-primary-theme/5 transition-all shadow-sm"
-                                >
-                                    <ChevronLeft className="w-6 h-6 text-primary-theme" />
-                                </button>
-                                
-                                <div className="hidden sm:flex items-center gap-2">
-                                    {[...Array(totalPages)].map((_, i) => (
-                                        <button
-                                            key={i + 1}
-                                            onClick={() => setCurrentPage(i + 1)}
-                                            className={`w-12 h-12 rounded-2xl text-[10px] font-black flex items-center justify-center transition-all border ${
-                                                currentPage === i + 1
-                                                    ? 'bg-primary-theme text-white border-primary-theme shadow-lg shadow-primary-theme/20 scale-110 z-10'
-                                                    : 'bg-white dark:bg-card border-border-theme text-muted hover:border-primary-theme/30'
-                                            }`}
-                                        >
-                                            {(i + 1).toString().padStart(2, '0')}
-                                        </button>
-                                    )).slice(Math.max(0, currentPage - 3), Math.min(totalPages, currentPage + 2))}
-                                </div>
-
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setCurrentPage(p => (p < totalPages ? p + 1 : p));
-                                    }}
-                                    disabled={currentPage === totalPages}
-                                    className="w-12 h-12 flex items-center justify-center bg-white dark:bg-card border border-border-theme rounded-2xl disabled:opacity-20 hover:border-primary-theme/30 hover:bg-primary-theme/5 transition-all shadow-sm"
-                                >
-                                    <ChevronRight className="w-6 h-6 text-primary-theme" />
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            ) : (
-                <div className="bg-card rounded-[3rem] border border-border-theme p-16 sm:p-24 text-center shadow-sm flex flex-col items-center">
-                    <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-[2.5rem] flex items-center justify-center mb-8 bg-secondary-theme relative">
-                        <TestTube className="w-10 h-10 sm:w-14 sm:h-14 text-muted/30" />
-                        <div className="absolute inset-0 border-2 border-dashed border-border-theme rounded-[2.5rem] animate-[spin_10s_linear_infinite]"></div>
-                    </div>
-                    <h3 className="text-lg md:text-xl lg:text-2xl font-bold text-foreground uppercase tracking-tight mb-3">Empty Clinical Result Set</h3>
-                    <p className="text-[7px] md:text-[10px] lg:text-[10px] font-black text-muted uppercase tracking-[0.3em] opacity-60">
-                        {filter === 'all'
-                            ? 'No diagnostic intelligence captured in this cycle.'
-                            : `No ${filter} records detected in the active ledger.`
-                        }
+                    <h3 className="text-base font-black text-foreground uppercase tracking-tight mb-1">No Results Found</h3>
+                    <p className="text-[9px] font-black text-muted uppercase tracking-widest opacity-50">
+                        {filter === 'all' ? 'No diagnostic records in this cycle.' : `No ${filter} records found.`}
                     </p>
                 </div>
+            ) : (
+                <>
+                    {viewMode === 'card'
+                        ? <CardView items={pageItems} getPath={getPath} />
+                        : <TableView items={pageItems} getPath={getPath} />
+                    }
+
+                    {/* Pagination */}
+                    <Pagination
+                        page={currentPage}
+                        total={filteredResults.length}
+                        perPage={ITEMS_PER_PAGE}
+                        onChange={setCurrentPage}
+                    />
+                </>
             )}
 
             <DeleteConfirmationModal
                 isOpen={isDeleteModalOpen}
-                onClose={() => {
-                    if (!isDeleting) {
-                        setIsDeleteModalOpen(false);
-                        setIdToDelete(null);
-                    }
-                }}
+                onClose={() => { if (!isDeleting) { setIsDeleteModalOpen(false); setIdToDelete(null); } }}
                 onConfirm={confirmDelete}
                 isDeleting={isDeleting}
                 title="Delete Lab Result"

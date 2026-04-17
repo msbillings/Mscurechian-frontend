@@ -269,8 +269,8 @@ export default function AppointmentBooking() {
                     // Extraction of departments is still needed here OR in the other effect
                 }
                 else {
-                    // Extract unique departments from physicians anyway
-                    const uniqueDepts = Array.from(new Set(validDocs.map(d => d.department || d.specialties?.[0]).filter(Boolean)));
+                    // Extract unique departments/specialties from physicians anyway
+                    const uniqueDepts = Array.from(new Set(validDocs.map(d => d.specialty || d.specialties?.[0]).filter(Boolean)));
                     setDepartments(uniqueDepts as string[]);
                     // Still fetch unit types for the dropdown if registration type changes
                     ipdService.getUnitTypes().then(setUnitTypes).catch(() => []);
@@ -332,7 +332,7 @@ export default function AppointmentBooking() {
     }, [patientSearch]);
 
     const filteredDoctors = selectedDept
-        ? doctors.filter(d => (d.department === selectedDept || d.specialties?.[0] === selectedDept))
+        ? doctors.filter(d => (d.specialty === selectedDept || d.specialties?.[0] === selectedDept))
         : doctors;
 
     const fetchSlots = useCallback(async () => {
@@ -873,35 +873,22 @@ export default function AppointmentBooking() {
                                 <h2 className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">Consultant & Schedule</h2>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div className="space-y-2">
                                     <FormLabel label="Appointment Date" />
-                                    <div className="relative group">
-                                        <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-600 transition-colors" size={16} />
+                                    <div className="relative group opacity-80">
+                                        <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                         <input
                                             type="date"
                                             value={selectedDate}
-                                            min={new Date().toLocaleDateString('en-CA')}
-                                            onChange={(e) => setSelectedDate(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all cursor-pointer hover:bg-white"
+                                            readOnly
+                                            disabled
+                                            className="w-full pl-10 pr-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-xs font-black uppercase outline-none cursor-not-allowed"
                                             style={{ colorScheme: 'light' }}
                                         />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <FormLabel label="Appointment Time" />
-                                    <div className="relative group">
-                                        <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-600 transition-colors" size={16} />
-                                        <input
-                                            type="time"
-                                            value={selectedTime}
-                                            onChange={(e) => setSelectedTime(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all cursor-pointer hover:bg-white"
-                                            style={{ colorScheme: 'light' }}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-2 lg:col-span-1 md:col-span-2">
                                     <FormLabel label="Filter By Department" />
                                     <select
                                         value={selectedDept}

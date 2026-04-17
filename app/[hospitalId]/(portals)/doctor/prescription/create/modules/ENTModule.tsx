@@ -232,8 +232,7 @@ export const ENTModule: React.FC<ENTModuleProps> = ({ formData, setFormData }) =
 
         // Lymph nodes: if Enlarged → size & tenderness required
         if (lymph.cervical === 'Enlarged') {
-            if (!lymph.sizeCm) msgs.push({ field: 'lymph', message: 'Enlarged lymph node: size (cm) is required', type: 'warning' });
-            if (!lymph.tender) msgs.push({ field: 'lymph', message: 'Enlarged lymph node: tenderness must be documented', type: 'warning' });
+
         }
 
         // Hearing reduced/absent → tuning fork required
@@ -315,33 +314,6 @@ export const ENTModule: React.FC<ENTModuleProps> = ({ formData, setFormData }) =
                     ))}
                 </div>
             )}
-
-            {/* ── G. SYMPTOMS ── */}
-            <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-                <div className="flex items-center gap-2 mb-4">
-                    <div className="w-1.5 h-5 bg-sky-500 rounded-full" />
-                    <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400">Presenting Symptoms</h3>
-                    {(ent.symptoms || []).length === 0 && (
-                        <span className="ml-auto text-[9px] text-rose-500 font-bold uppercase">Required</span>
-                    )}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    {['Ear Pain', 'Hearing Loss', 'Tinnitus', 'Nasal Block', 'Nasal Discharge', 'Sore Throat', 'Difficulty Swallowing'].map(sym => (
-                        <button
-                            key={sym}
-                            type="button"
-                            onClick={() => toggleSymptom(sym)}
-                            className={`px-3 py-2 rounded-xl text-[10px] font-bold border transition-all ${
-                                (ent.symptoms || []).includes(sym)
-                                    ? 'bg-sky-50 border-sky-300 text-sky-700 shadow-sm'
-                                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-sky-200'
-                            }`}
-                        >
-                            {sym}
-                        </button>
-                    ))}
-                </div>
-            </div>
 
             {/* ── H. DURATION ── */}
             <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">

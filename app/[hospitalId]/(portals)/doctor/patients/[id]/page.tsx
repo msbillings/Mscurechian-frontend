@@ -485,38 +485,82 @@ function PatientDetailsPage() {
                 <div className="space-y-3 sm:space-y-4">
                     {/* Inpatient Admission & Bed Info */}
                     {patient.admission && (
-                        <div className="bg-gradient-to-br from-emerald-600 to-teal-700 p-4 sm:p-5 rounded-xl sm:rounded-2xl text-white relative overflow-hidden shadow-xl shadow-emerald-600/20">
-                            <div className="absolute top-0 right-0 p-4 sm:p-6 opacity-10 rotate-12">
-                                <Activity size={80} />
-                            </div>
-                            <div className="relative z-10">
-                                <div className="flex justify-between items-start mb-6 sm:mb-8">
-                                    <h3 className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.25em] text-emerald-100/80">Admission Sync</h3>
-                                    <MonitoringTimer
-                                        lastRecorded={patient.admission.vitals?.lastVitalsRecordedAt}
-                                        nextDue={patient.admission.vitals?.nextVitalsDue}
-                                        status={patient.admission.vitals?.status}
-                                    />
+                        <div className="space-y-3 sm:space-y-4">
+                            <div className="bg-gradient-to-br from-emerald-600 to-teal-700 p-4 sm:p-5 rounded-xl sm:rounded-2xl text-white relative overflow-hidden shadow-xl shadow-emerald-600/20">
+                                <div className="absolute top-0 right-0 p-4 sm:p-6 opacity-10 rotate-12">
+                                    <Activity size={80} />
                                 </div>
-                                <div className="space-y-5">
-                                    <div className="flex justify-between items-end border-b border-white/10 pb-2">
-                                        <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-tight text-emerald-100/60 italic">Bed Identification</span>
-                                        <span className="text-lg sm:text-xl font-black uppercase tracking-tighter leading-none">{patient.admission.bed?.bedId || 'N-001'}</span>
+                                <div className="relative z-10">
+                                    <div className="flex justify-between items-start mb-6 sm:mb-8">
+                                        <h3 className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.25em] text-emerald-100/80">Admission Sync</h3>
+                                        <MonitoringTimer
+                                            lastRecorded={patient.admission.vitals?.lastVitalsRecordedAt}
+                                            nextDue={patient.admission.vitals?.nextVitalsDue}
+                                            status={patient.admission.vitals?.status}
+                                        />
                                     </div>
-                                    <div className="flex justify-between items-end border-b border-white/10 pb-3">
-                                        <span className="text-[10px] sm:text-xs font-black uppercase tracking-tight text-emerald-100/60 italic">Level / Grid</span>
-                                        <span className="text-xs sm:text-sm font-black uppercase tracking-[0.15em] leading-none">
-                                            {typeof patient.admission.bed?.type === 'object' ? (patient.admission.bed.type.type || 'Standard') : (patient.admission.bed?.type || 'Standard')} / {typeof patient.admission.bed?.room === 'object' ? (patient.admission.bed.room.name || 'General') : (patient.admission.bed?.room || 'General')}
-                                        </span>
-                                    </div>
-                                    <div className="pt-2 flex justify-between items-center">
-                                        <span className="text-[8px] sm:text-[10px] font-black text-emerald-100/50 uppercase tracking-[0.2em]">Deployment Date</span>
-                                        <span className="text-[10px] sm:text-xs font-black italic text-emerald-50">
-                                            {patient.admission.admissionDate ? new Date(patient.admission.admissionDate).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
-                                        </span>
+                                    <div className="space-y-5">
+                                        <div className="flex justify-between items-end border-b border-white/10 pb-2">
+                                            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-tight text-emerald-100/60 italic">Bed Identification</span>
+                                            <span className="text-lg sm:text-xl font-black uppercase tracking-tighter leading-none">{patient.admission.bed?.bedId || 'N-001'}</span>
+                                        </div>
+                                        <div className="flex justify-between items-end border-b border-white/10 pb-3">
+                                            <span className="text-[10px] sm:text-xs font-black uppercase tracking-tight text-emerald-100/60 italic">Level / Grid</span>
+                                            <span className="text-xs sm:text-sm font-black uppercase tracking-[0.15em] leading-none">
+                                                {typeof patient.admission.bed?.type === 'object' ? (patient.admission.bed.type.type || 'Standard') : (patient.admission.bed?.type || 'Standard')} / {typeof patient.admission.bed?.room === 'object' ? (patient.admission.bed.room.name || 'General') : (patient.admission.bed?.room || 'General')}
+                                            </span>
+                                        </div>
+                                        <div className="pt-2 flex justify-between items-center">
+                                            <span className="text-[8px] sm:text-[10px] font-black text-emerald-100/50 uppercase tracking-[0.2em]">Deployment Date</span>
+                                            <span className="text-[10px] sm:text-xs font-black italic text-emerald-50">
+                                                {patient.admission.admissionDate ? new Date(patient.admission.admissionDate).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+
+                            {patient.admission.bedHistory && patient.admission.bedHistory.length > 0 && (
+                                <div className="bg-white dark:bg-slate-900/50 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-emerald-100/20 shadow-sm">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest italic">Room/Bed Transfer Logic</h3>
+                                        <div className="p-1.5 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg">
+                                            <Activity size={14} className="text-emerald-500" />
+                                        </div>
+                                    </div>
+                                    <div className="overflow-hidden rounded-xl border border-emerald-100/30">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr className="bg-emerald-50/50 dark:bg-emerald-500/5">
+                                                    <th className="px-3 py-2 text-[8px] font-black text-emerald-700/60 uppercase tracking-widest border-b border-emerald-100/20">Resource</th>
+                                                    <th className="px-3 py-2 text-[8px] font-black text-emerald-700/60 uppercase tracking-widest border-b border-emerald-100/20">Timeline</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-emerald-100/10">
+                                                {patient.admission.bedHistory.map((item: any, idx: number) => (
+                                                    <tr key={idx} className="hover:bg-emerald-50/20 transition-colors">
+                                                        <td className="px-3 py-3">
+                                                            <div className="text-[10px] font-black text-foreground uppercase tracking-tight italic">{item.bedId}</div>
+                                                            <div className="text-[8px] font-bold text-muted uppercase tracking-widest mt-0.5 opacity-60">
+                                                                {item.room} / {item.type}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-3 py-3">
+                                                            <div className="text-[9px] font-black text-emerald-600 uppercase tracking-tighter">
+                                                                {new Date(item.startDate).toLocaleDateString([], { day: '2-digit', month: 'short' })} 
+                                                                {item.endDate ? ` - ${new Date(item.endDate).toLocaleDateString([], { day: '2-digit', month: 'short' })}` : ' (Current)'}
+                                                            </div>
+                                                            <div className="text-[7px] font-bold text-muted uppercase tracking-widest mt-0.5 opacity-40 italic">
+                                                                Rate: ₹{item.pricePerDay}/Day
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 

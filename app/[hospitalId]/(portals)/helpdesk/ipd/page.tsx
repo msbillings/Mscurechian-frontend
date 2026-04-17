@@ -875,7 +875,7 @@ export default function IPDCenter() {
                                                 </div>
                                             </section>
 
-                                            <section className="space-y-1.5">
+                                             <section className="space-y-1.5">
                                                 <div className="flex items-center gap-1.5 text-slate-400">
                                                     <Monitor size={10} className="text-teal-600" />
                                                     <p className="text-[7px] font-black uppercase tracking-widest">Health Snapshot</p>
@@ -899,6 +899,47 @@ export default function IPDCenter() {
                                                     </div>
                                                 </div>
                                             </section>
+
+                                            {bedDetails.occupancyDetails?.bedHistory && bedDetails.occupancyDetails.bedHistory.length > 0 && (
+                                                <section className="space-y-1.5 border-t border-slate-100 pt-3">
+                                                    <div className="flex items-center gap-1.5 text-slate-400">
+                                                        <Activity size={10} className="text-teal-600" />
+                                                        <p className="text-[7px] font-black uppercase tracking-widest">Bed Transfer History</p>
+                                                    </div>
+                                                    <div className="bg-slate-50 border border-slate-100 rounded-xl overflow-hidden">
+                                                        <table className="w-full text-[8px] border-collapse">
+                                                            <thead>
+                                                                <tr className="bg-slate-100/50 border-b border-slate-100">
+                                                                    <th className="px-2 py-1.5 text-left font-black text-slate-400 uppercase tracking-widest">Bed/Room</th>
+                                                                    <th className="px-2 py-1.5 text-left font-black text-slate-400 uppercase tracking-widest">Stay Duration</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-slate-100">
+                                                                {bedDetails.occupancyDetails.bedHistory.map((item: any, idx: number) => {
+                                                                    const start = new Date(item.startDate);
+                                                                    const end = item.endDate ? new Date(item.endDate) : new Date();
+                                                                    const stayDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 6 * 60 * 24)) || 1;
+                                                                    
+                                                                    return (
+                                                                        <tr key={idx} className="hover:bg-white/50 transition-colors">
+                                                                            <td className="px-2 py-2">
+                                                                                <div className="font-bold text-slate-900 uppercase">{item.bedId}</div>
+                                                                                <div className="text-[7px] font-medium text-slate-500 uppercase">{item.room} • {item.type}</div>
+                                                                            </td>
+                                                                            <td className="px-2 py-2">
+                                                                                <div className="font-black text-teal-600 uppercase tracking-tighter">
+                                                                                    {item.endDate ? calculateStayDuration(item.startDate, item.endDate) : `Since ${new Date(item.startDate).toLocaleDateString()}`}
+                                                                                </div>
+                                                                                <div className="text-[7px] font-bold text-slate-400 uppercase">Rate: ₹{item.pricePerDay}</div>
+                                                                            </td>
+                                                                        </tr>
+                                                                    );
+                                                                })}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </section>
+                                            )}
 
                                             {(() => {
                                                 const request = pendingRequests.find(r => r.bedId === bedDetails.bed._id);
