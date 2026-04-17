@@ -3,16 +3,21 @@
 import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import SupportFloatingButton from '@/components/common/SupportFloatingButton';
+import { useTenantLink } from '@/hooks/useTenantLink';
 
 const NurseSupportFloatingBox = () => {
     const router = useRouter();
     const pathname = usePathname();
+    const { getPath } = useTenantLink();
 
     const handleClick = () => {
-        if (pathname === '/nurse/support') {
-            router.push('/nurse');
+        const supportPath = getPath('/nurse/support');
+        const nursePath = getPath('/nurse');
+
+        if (pathname === supportPath) {
+            router.push(nursePath);
         } else {
-            router.push('/nurse/support');
+            router.push(supportPath);
         }
     };
 

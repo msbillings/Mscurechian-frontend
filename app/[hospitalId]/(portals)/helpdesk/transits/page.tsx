@@ -166,75 +166,75 @@ function TransitsPage() {
                             <ArrowLeft size={20} />
                         </Link>
                         <div>
-                            <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
+                            <h1 className="text-lg lg:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
                                 Clinical Document Transits
                             </h1>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Medical Logistics • {totalItems} Live Nodes</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <div className="relative w-full md:w-80 group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-rose-500 transition-colors" size={16} />
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                        <div className="relative flex-1 sm:w-80 group">
+                            <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-slate-400 size-[14px] sm:size-[16px] group-focus-within:text-rose-500 transition-colors" />
                             <input
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="SEARCH NAME / MRN..."
-                                className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold uppercase tracking-tight outline-none focus:bg-white focus:border-rose-500 shadow-inner transition-all"
+                                placeholder="SEARCH..."
+                                className="w-full pl-9 sm:pl-11 pr-3 sm:pr-4 py-2 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-tight outline-none focus:bg-white focus:border-rose-500 shadow-inner transition-all"
                             />
                         </div>
 
                         {/* COMPACT PAGINATION */}
                         {totalPages > 1 && (
-                            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-inner">
+                            <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-100 p-1 rounded-lg sm:rounded-xl border border-slate-200 shadow-inner">
                                 <button
                                     onClick={() => setPage(p => Math.max(1, p - 1))}
                                     disabled={page === 1}
-                                    className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-rose-600 disabled:opacity-20 transition-all active:scale-90"
+                                    className="p-1 sm:p-1.5 rounded-md sm:rounded-lg hover:bg-white text-slate-400 hover:text-rose-600 disabled:opacity-20 transition-all active:scale-90"
                                 >
-                                    <ChevronLeft size={16} />
+                                    <ChevronLeft size={14} className="sm:size-[16px]" />
                                 </button>
-                                <div className="px-3 py-1.5 text-xs font-black text-slate-900 bg-white rounded-md shadow-sm border border-slate-100 min-w-[55px] text-center">
+                                <div className="px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-black text-slate-900 bg-white rounded-md shadow-sm border border-slate-100 min-w-[45px] sm:min-w-[55px] text-center">
                                     {page} / {totalPages}
                                 </div>
                                 <button
                                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                                     disabled={page === totalPages}
-                                    className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-rose-600 disabled:opacity-20 transition-all active:scale-90"
+                                    className="p-1 sm:p-1.5 rounded-md sm:rounded-lg hover:bg-white text-slate-400 hover:text-rose-600 disabled:opacity-20 transition-all active:scale-90"
                                 >
-                                    <ChevronRight size={16} />
+                                    <ChevronRight size={14} className="sm:size-[16px]" />
                                 </button>
                             </div>
                         )}
 
-                        <button onClick={() => refetch()} className="p-2.5 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-teal-600 shadow-sm active:scale-95 transition-all">
-                            <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
+                        <button onClick={() => refetch()} className="p-2 sm:p-2.5 bg-white border border-slate-200 text-slate-400 rounded-lg sm:rounded-xl hover:text-teal-600 shadow-sm active:scale-95 transition-all">
+                            <RefreshCw size={14} className={`${isFetching ? 'animate-spin' : ''} sm:size-[16px]`} />
                         </button>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 border-t border-slate-100 pt-3 px-2">
+                <div className="flex items-center gap-1 sm:gap-1.5 border-t border-slate-100 pt-3 px-2 overflow-x-auto no-scrollbar">
                     {(['all', 'prescription', 'lab'] as const).map((f) => (
                         <button
                             key={f}
                             onClick={() => setFilter(f)}
-                            className={`px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${filter === f
+                            className={`px-3 sm:px-5 py-1.5 sm:py-2 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap ${filter === f
                                 ? 'bg-teal-600  text-white shadow-lg shadow-rose-900/10'
                                 : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
                                 }`}
                         >
                             {f === 'all' ? (
-                                <div className="flex items-center gap-2">
-                                    <Navigation size={14} className={filter === 'all' ? 'animate-pulse' : ''} /> All Entities
+                                <div className="flex items-center gap-1.5 sm:gap-2">
+                                    <Navigation size={12} className={`${filter === 'all' ? 'animate-pulse' : ''} sm:size-[14px]`} /> All<span className="hidden sm:inline"> Entities</span>
                                 </div>
                             ) : f === 'prescription' ? (
-                                <div className="flex items-center gap-2">
-                                    <FileText size={14} /> Prescriptions
+                                <div className="flex items-center gap-1.5 sm:gap-2">
+                                    <FileText size={12} className="sm:size-[14px]" /> Prescr<span className="hidden sm:inline">iptions</span>
                                 </div>
                             ) : (
-                                <div className="flex items-center gap-2">
-                                    <Beaker size={14} /> Lab Tokens
+                                <div className="flex items-center gap-1.5 sm:gap-2">
+                                    <Beaker size={12} className="sm:size-[14px]" /> Lab<span className="hidden sm:inline"> Tokens</span>
                                 </div>
                             )}
                         </button>
@@ -243,16 +243,16 @@ function TransitsPage() {
             </div>
 
             {/* TABLE LAYOUT */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[425px] flex flex-col max-w-full mx-auto">
-                <div className="overflow-x-auto flex-1">
-                    <table className="w-full text-left border-collapse">
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[425px] flex flex-col max-w-full mx-auto">
+                <div className="scroll-x-container flex-1">
+                    <table className="w-full min-w-[1000px] sm:min-w-0 text-left border-collapse">
                         <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-400 uppercase tracking-widest">
-                                <th className="px-6 py-6 text-left">Patient Details</th>
-                                <th className="px-6 py-6 text-left">MRN</th>
-                                <th className="px-6 py-6 text-left">Available Documents</th>
-                                <th className="px-6 py-6 text-left">Authorizing Doctor</th>
-                                <th className="px-6 py-6 text-right pr-10">Actions</th>
+                            <tr className="bg-slate-50 border-b border-slate-200 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">
+                                <th className="px-4 sm:px-6 py-3 sm:py-6 text-left">Patient Details</th>
+                                <th className="px-4 sm:px-6 py-3 sm:py-6 text-left">MRN</th>
+                                <th className="px-4 sm:px-6 py-3 sm:py-6 text-left">Available Documents</th>
+                                <th className="px-4 sm:px-6 py-3 sm:py-6 text-left">Authorizing Doctor</th>
+                                <th className="px-4 sm:px-6 py-3 sm:py-6 text-right pr-6 sm:pr-10">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">

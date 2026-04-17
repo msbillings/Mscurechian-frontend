@@ -1,75 +1,83 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Navbar from '@/components/navbar/Navbar';
-import Sidebar, { SidebarItem } from '@/components/slidebar/Sidebar';
-import { LayoutDashboard, CalendarCheck, Calendar, Clock, Bell, User, ReceiptText, BookOpenCheck, LogOut, AlertTriangle, ClipboardCheck, LifeBuoy } from 'lucide-react';
+import React, { useState, useEffect, useTransition } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { 
+    LayoutDashboard, 
+    CalendarCheck, 
+    BookOpenCheck, 
+    AlertTriangle, 
+    ClipboardCheck, 
+    Bell, 
+    LogOut 
+} from 'lucide-react';
+
 import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import LogoutModal from '@/components/auth/LogoutModal';
+import Navbar from '@/components/navbar/Navbar';
+import SharedSidebar from "@/components/navbar/SharedSidebar";
+import ProgressBar from "@/components/ui/ProgressBar";
+import StaffSupportFloatingBox from '@/components/staff/StaffSupportFloatingBox';
+
 import { getSocket, joinSocketRoom } from '@/lib/integrations/api/socket';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { useNotifications } from '@/lib/integrations/hooks';
-import { staffService } from '@/lib/integrations';
-import StaffSupportFloatingBox from '@/components/staff/StaffSupportFloatingBox';
+import { 
+    useNotifications, 
+    useTodayStatus, 
+    useCheckIn, 
+    useCheckOut 
+} from '@/lib/integrations/hooks';
 import { useTenantLink } from '@/hooks/useTenantLink';
+import { useRealtime } from '@/hooks/useRealtime';
 
-
-const staffMenuItems: SidebarItem[] = [
-    { icon: LayoutDashboard, label: 'Dashboard', href: '/staff' },
-    { icon: CalendarCheck, label: 'Leave & Absence', href: '/staff/leaves' },
-    { icon: BookOpenCheck, label: 'My Schedule', href: '/staff/schedule' },
-    { icon: AlertTriangle, label: 'Medical Incident', href: '/staff/incidents' },
-    { icon: ClipboardCheck, label: 'SOP & Policies', href: '/staff/sop' },
-    { icon: Bell, label: 'Announcements', href: '/staff/announcements' },
+const staffMenuItems: any[] = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/staff' },
+    { icon: CalendarCheck, label: 'Leave & Absence', path: '/staff/leaves' },
+    { icon: BookOpenCheck, label: 'My Schedule', path: '/staff/schedule' },
+    { icon: AlertTriangle, label: 'Medical Incident', path: '/staff/incidents' },
+    { icon: ClipboardCheck, label: 'SOP & Policies', path: '/staff/sop' },
+    { icon: Bell, label: 'Announcements', path: '/staff/announcements' },
 ];
 
 function StaffLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
+    const pathname = usePathname();
     const { user, logout, isInitialized, isAuthenticated, isLoading, checkAuth, initEvents } = useAuthStore();
     const { theme, toggleTheme } = useThemeStore();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-    const { getPath } = useTenantLink(); // ✅ MULTI-TENANCY
+    const [isMounted, setIsMounted] = useState(false);
+    const [isPending, startTransition] = React.useTransition();
+    const { getPath } = useTenantLink();
+
+    useRealtime(['staff', 'system', 'emergency']);
 
     useEffect(() => {
+        setIsMounted(true);
         initEvents();
         checkAuth();
-
-        // Prefetch critical routes for faster navigation
-        const prefetchRoutes = [
-            '/staff/leaves',
-            '/staff/schedule',
-            '/staff/announcements'
-        ];
-
-        prefetchRoutes.forEach(route => {
-            router.prefetch(route);
-        });
-    }, [router]);
+    }, [checkAuth, initEvents]);
 
     useEffect(() => {
         if (isInitialized) {
             if (!isAuthenticated) {
-                router.push('/auth/login');
+                router.push(getPath('/auth/login'));
             } else if (user?.role !== 'staff') {
                 const routeMap: Record<string, string> = {
-                    'doctor': '/doctor',
-                    'hospital-admin': '/hospital-admin',
-                    'lab': '/lab/dashboard',
-                    'pharmacy': '/pharmacy/dashboard',
-                    'pharma-owner': '/pharmacy/dashboard',
-                    'super-admin': '/admin',
+                    'doctor': getPath('/doctor'),
+                    'hospital-admin': getPath('/hospital-admin'),
+                    'lab': getPath('/lab/dashboard'),
+                    'pharmacy': getPath('/pharmacy/dashboard'),
+                    'pharma-owner': getPath('/pharmacy/dashboard'),
                     'admin': '/admin'
                 };
-                router.push(routeMap[user?.role || ''] || '/auth/login');
+                router.push(routeMap[user?.role || ''] || getPath('/auth/login'));
             }
         }
-    }, [isInitialized, isAuthenticated, user?.role, router]);
+    }, [isInitialized, isAuthenticated, user?.role, router, getPath]);
 
-    // ✅ REAL-TIME DYNAMICS: Leave Status Sync
     const queryClient = useQueryClient();
     useEffect(() => {
         if (isAuthenticated && user) {
@@ -77,166 +85,94 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
                 const socket = await getSocket();
                 if (socket) {
                     joinSocketRoom({
-                        userId: user.id,
+                        userId: user.id || (user as any)._id,
                         role: user.role,
                         hospitalId: user.hospitalId || (user as any).hospital
                     });
 
                     socket.on('leave:status_change', (data: any) => {
-                        console.log('📡 [Staff] Leave Status Sync Received:', data);
                         const status = data.leave.status;
-                        const toastIcon = status === 'approved' ? '✅' : '❌';
-                        toast(`Leave Request ${status.toUpperCase()}!`, { icon: toastIcon, duration: 4000 });
-
-                        // ✅ INSTANT SYNC: Refetch and invalidate all staff-scoped data
-                        queryClient.refetchQueries({ queryKey: ['staff'] });
+                        toast(`Leave Request ${status.toUpperCase()}!`, { icon: status === 'approved' ? '✅' : '❌', duration: 4000 });
                         queryClient.invalidateQueries({ queryKey: ['staff'] });
                     });
 
-                    // ✅ NEW: Real-time Incident Status Sync
                     socket.on('incident_update', (data: any) => {
-                        console.log('📡 [Staff] Incident Status Sync Received:', data);
-                        toast(`Incident ${data.status.toUpperCase()}: ${data.incidentId}`, {
-                            icon: '🏥',
-                            duration: 5000
-                        });
+                        toast(`Incident ${data.status.toUpperCase()}: ${data.incidentId}`, { icon: '🏥', duration: 5000 });
                         queryClient.invalidateQueries({ queryKey: ['my-incidents'] });
                     });
 
-                    // ✅ NEW: Real-time New Incident Sync
-                    socket.on('new_incident', (data: any) => {
+                    socket.on('new_incident', () => {
                         queryClient.invalidateQueries({ queryKey: ['my-incidents'] });
                     });
 
-                    // ✅ REAL-TIME: Notification Listener (Specifically for Expiry Alerts)
                     socket.on('notification:new', (notif: any) => {
-                        console.log('📡 [Staff] New Notification Socket Received:', notif);
                         if (notif.type === 'license_expiry') {
                             toast(notif.message || 'License Expiry Warning', {
                                 icon: '⚠️',
                                 duration: 8000,
-                                style: {
-                                    borderRadius: '16px',
-                                    background: '#fffbeb',
-                                    color: '#92400e',
-                                    border: '1px solid #fde68a',
-                                    fontWeight: 'bold'
-                                }
+                                style: { borderRadius: '16px', background: '#fffbeb', color: '#92400e', border: '1px solid #fde68a', fontWeight: 'bold' }
                             });
                         }
                     });
                 }
             };
             initSocket();
-
             return () => {
-                const cleanup = async () => {
-                    const socket = await getSocket();
+                getSocket().then(socket => {
                     if (socket) {
                         socket.off('leave:status_change');
                         socket.off('incident_update');
                         socket.off('new_incident');
                         socket.off('notification:new');
                     }
-                };
-                cleanup();
+                });
             };
         }
     }, [isAuthenticated, user, queryClient]);
 
-    // ✅ CHECK FOR UNREAD EXPIRY ALERTS ON MOUNT
     const { data: notifications } = useNotifications();
     useEffect(() => {
         if (notifications && Array.isArray(notifications)) {
-            // Filter unread expiry notifications
             const unreadExpiry = notifications.filter(n => !n.isRead && n.type === 'license_expiry');
-
-            // Sort by createdAt descending (newest first) and take the top one
-            // This prevents stacking multiple alerts if old ones exist
             if (unreadExpiry.length > 0) {
-                // Sort by creation time if available, or just take the last one assuming order
-                // Safest to rely on array structure if sorted from backend, but explicit sort is better
                 const sorted = unreadExpiry.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                 const latestNotif = sorted[0];
-
                 toast(latestNotif.message, {
                     icon: '⚠️',
                     duration: 10000,
-                    id: `expiry-${latestNotif._id}`, // Prevent duplicate toasts
-                    style: {
-                        borderRadius: '16px',
-                        background: '#fffbeb',
-                        color: '#92400e',
-                        border: '1px solid #fde68a',
-                        fontWeight: 'bold'
-                    }
+                    id: `expiry-${latestNotif._id}`,
+                    style: { borderRadius: '16px', background: '#fffbeb', color: '#92400e', border: '1px solid #fde68a', fontWeight: 'bold' }
                 });
             }
         }
     }, [notifications]);
 
-    const handleConfirmLogout = async () => {
-        await logout();
-        router.push('/');
-    };
-
-    // ✅ Attendance Implementation
-    const [todayAttendance, setTodayAttendance] = useState<any>(null);
-    const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
-
-    useEffect(() => {
-        if (isAuthenticated && user?.role === 'staff') {
-            fetchAttendanceStatus();
-        }
-    }, [isAuthenticated, user?.role]);
-
-    const fetchAttendanceStatus = async () => {
-        try {
-            const data = await staffService.getTodayStatus();
-            setTodayAttendance(data.attendance);
-        } catch (error) {
-            console.error('Failed to fetch attendance status:', error);
-        }
-    };
+    const { data: statusData } = useTodayStatus();
+    const todayAttendance = statusData?.attendance;
+    const checkInMutation = useCheckIn();
+    const checkOutMutation = useCheckOut();
+    const isAttendanceLoading = checkInMutation.isPending || checkOutMutation.isPending;
 
     const handleAttendanceAction = async (action: 'check-in' | 'check-out') => {
         try {
-            setIsAttendanceLoading(true);
-            let response;
             if (action === 'check-in') {
-                response = await staffService.checkIn();
+                await checkInMutation.mutateAsync(undefined);
                 toast.success('Successfully Checked In!', { icon: '🚀' });
             } else {
-                response = await staffService.checkOut();
+                await checkOutMutation.mutateAsync(undefined);
                 toast.success('Successfully Checked Out!', { icon: '👋' });
             }
-            setTodayAttendance(response.attendance);
-            // ✅ Fix: Use correct query keys for reliable dashboard sync
-            queryClient.invalidateQueries({ queryKey: ['staff', 'dashboard'] });
-            queryClient.invalidateQueries({ queryKey: ['staff', 'today-status'] });
         } catch (error: any) {
             toast.error(error?.message || `Failed to ${action}`);
-        } finally {
-            setIsAttendanceLoading(false);
         }
     };
 
-    // Premium Loading State
-    if (isLoading || !isInitialized) {
+    if (!isMounted || isLoading || !isInitialized) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+            <div className="flex min-h-screen items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center gap-6">
-                    <div className="relative w-24 h-24">
-                        <div className="absolute inset-0 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin"></div>
-                        <div className="absolute inset-4 border-4 border-indigo-600/20 border-b-indigo-600 rounded-full animate-spin-reverse"></div>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <p className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tighter italic">Initializing Portal</p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center mt-1">Verifying Credentials • MScurechain</p>
-                    </div>
+                    <div className="w-16 h-16 border-4 border-blue-600/10 border-t-blue-600 rounded-full animate-spin"></div>
+                    <p className="text-xl font-black text-gray-900 uppercase tracking-tighter italic text-center">Initializing Portal</p>
                 </div>
             </div>
         );
@@ -252,7 +188,6 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
                     disabled={isAttendanceLoading}
                     className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all disabled:opacity-50"
                 >
-
                     <span>Check In Now</span>
                 </button>
             ) : !todayAttendance.checkOut ? (
@@ -275,51 +210,65 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
     const staffUser = {
         name: user?.name || "Staff Member",
         role: user?.role || "Staff",
-        image: (user as any)?.image || ""
+        image: (user as any)?.image || (user as any)?.avatar || (user as any)?.profilePic || (user as any)?.logo || ""
     };
 
+    const staffMenuItems: any[] = [
+        { icon: LayoutDashboard, label: 'Dashboard', path: '/staff' },
+        { icon: CalendarCheck, label: 'Leave & Absence', path: '/staff/leaves' },
+        { icon: BookOpenCheck, label: 'My Schedule', path: '/staff/schedule' },
+        { icon: AlertTriangle, label: 'Medical Incident', path: '/staff/incidents' },
+        { icon: ClipboardCheck, label: 'SOP & Policies', path: '/staff/sop' },
+        { icon: Bell, label: 'Announcements', path: '/staff/announcements' },
+    ];
+
     return (
-        <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
+        <div className="flex min-h-screen bg-gray-50">
             <LogoutModal
                 isOpen={isLogoutModalOpen}
                 onClose={() => setIsLogoutModalOpen(false)}
-                onConfirm={handleConfirmLogout}
+                onConfirm={async () => { await logout(); router.push(getPath('/auth/login')); }}
                 userName={user?.name}
             />
-            {/* Sidebar */}
-            <Sidebar
+            
+            <SharedSidebar
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
-                items={staffMenuItems}
-                onLogout={() => setIsLogoutModalOpen(true)}
+                menuItems={staffMenuItems}
+                branding={{ logo: LayoutDashboard, title: "CureChain", subtitle: "Staff Portal" }}
+                currentPath={pathname}
+                onMenuItemClick={(path) => {
+                    startTransition(() => {
+                        router.push(getPath(path));
+                        setIsSidebarOpen(false);
+                    });
+                }}
             />
 
-            {/* Main Content Area */}
-            <div className={`flex-1 flex flex-col ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-64' /* Simple desktop persistence */}`}>
-
-                {/* Navbar */}
+            <div className={`flex-1 flex flex-col min-h-screen min-w-0 relative`}>
                 <Navbar
-                    titleHref={getPath('/staff')}
                     user={staffUser}
                     onMenuClick={() => setIsSidebarOpen(true)}
                     isDarkMode={theme === 'dark'}
                     onThemeToggle={toggleTheme}
                     onLogout={() => setIsLogoutModalOpen(true)}
-                    className="sticky top-0 z-30"
+                    className="sticky top-0 z-30 shrink-0"
                     profileHref={getPath('/staff/profile')}
                     actions={attendanceButtons}
                 />
 
-                {/* Page Content */}
-                <main className="p-1 sm:p-2.5 flex-1 overflow-y-auto bg-transparent">
-                    {children}
+                <main className="p-2 md:p-6 flex-1 overflow-y-auto relative bg-transparent">
+                    <ProgressBar isPending={isPending} color="indigo" />
+                    <div className="max-w-[1600px] mx-auto w-full">
+                        <React.Fragment>
+                            {children}
+                        </React.Fragment>
+                    </div>
+                    <StaffSupportFloatingBox />
                 </main>
             </div>
-            {/* Floating Support Icon */}
-            <StaffSupportFloatingBox />
         </div>
     );
 }
 
-
-export default React.memo(StaffLayout);
+export default StaffLayout;

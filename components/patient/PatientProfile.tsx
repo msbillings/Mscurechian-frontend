@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import {
@@ -73,7 +73,7 @@ function PatientProfile({ profile, appointments }: PatientProfileProps) {
         { label: 'Height', value: displayVitals.height },
         { label: 'Weight', value: displayVitals.weight },
         { label: 'Blood Group', value: displayVitals.bloodGroup },
-        { label: 'BP / TEMP', value: `${displayVitals.bloodPressure || '---'} | ${displayVitals.temperature ? displayVitals.temperature + '°F' : '---'}` },
+        { label: 'BP / TEMP', value: `${displayVitals.bloodPressure || '---'} | ${displayVitals.temperature ? displayVitals.temperature + 'Â°F' : '---'}` },
         { label: 'Glucose', value: displayVitals.glucose ? `${displayVitals.glucose} mg/dL ${displayVitals.glucoseType ? `(${displayVitals.glucoseType})` : ''}` : '---' },
       ],
     },
@@ -198,7 +198,7 @@ function PatientProfile({ profile, appointments }: PatientProfileProps) {
                         <td className="py-6 px-4">
                           <div className="flex flex-col gap-1">
                             <span className="text-xs text-white/80 font-bold uppercase"><span className="text-blue-400">O2:</span> {item.vitals.spO2 || item.vitals.spo2 || '---'}%</span>
-                            <span className="text-xs text-white/80 font-bold uppercase"><span className="text-blue-400">TP:</span> {item.vitals.temperature || '---'} °F</span>
+                            <span className="text-xs text-white/80 font-bold uppercase"><span className="text-blue-400">TP:</span> {item.vitals.temperature || '---'} Â°F</span>
                             <span className="text-xs text-white/80 font-bold uppercase"><span className="text-blue-400">GL:</span> {item.vitals.glucose || item.vitals.sugar || '---'} {item.vitals.glucoseType ? `(${item.vitals.glucoseType})` : ''}</span>
                           </div>
                         </td>

@@ -145,6 +145,51 @@ export const doctorService = {
   getPrescriptionById: (id: string) =>
     apiClient<any>(DOCTOR_ENDPOINTS.GET_PRESCRIPTION(id)),
 
+  getDermatologyByPrescriptionId: (id: string) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.GET_DERMATOLOGY(id)),
+
+  getCardiologyByPrescriptionId: (id: string) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.GET_CARDIOLOGY(id)),
+
+  getENTByPrescriptionId: (id: string) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.GET_ENT(id)),
+
+  getPedsByPrescriptionId: (id: string) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.GET_PEDIATRICS(id)),
+
+  getGynecologyByPrescriptionId: (id: string) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.GET_GYNECOLOGY(id)),
+
+  getNeurologyByPrescriptionId: (id: string) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.GET_NEUROLOGY(id)),
+
+  getGastroByPrescriptionId: (id: string) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.GET_GASTRO(id)),
+
+  getOrthopedicByPrescriptionId: (id: string) =>
+    apiClient<any>(`/doctor/prescriptions/${id}/orthopedic`),
+
+  getOncologyByPrescriptionId: (id: string) =>
+    apiClient<any>(`/doctor/prescriptions/${id}/oncology`),
+
+  getPulmonologyByPrescriptionId: (id: string) =>
+    apiClient<any>(`/doctor/prescriptions/${id}/pulmonology`),
+
+  getEndocrinologyByPrescriptionId: (id: string) =>
+    apiClient<any>(`/doctor/prescriptions/${id}/endocrinology`),
+
+  getPsychiatryByPrescriptionId: (id: string) =>
+    apiClient<any>(`/doctor/prescriptions/${id}/psychiatry`),
+
+  getHematologyByPrescriptionId: (id: string) =>
+    apiClient<any>(`/doctor/prescriptions/${id}/hematology`),
+
+  getOphthalmologyByPrescriptionId: (id: string) =>
+    apiClient<any>(`/doctor/prescriptions/${id}/ophthalmology`),
+
+  getDentistryByPrescriptionId: (id: string) =>
+    apiClient<any>(`/doctor/prescriptions/${id}/dentistry`),
+
   getLabTokenById: (id: string) =>
     apiClient<any>(DOCTOR_ENDPOINTS.GET_LAB_TOKEN(id)),
 
@@ -211,4 +256,14 @@ export const doctorService = {
       `/helpdesk/patients/search?search=${encodeURIComponent(query)}`,
     );
   },
+
+  getPatientHistory: (id: string, scope: 'hospital' | 'all' = 'hospital') =>
+    apiClient<any>(`${DOCTOR_ENDPOINTS.PATIENT_HISTORY(id)}?scope=${scope}`),
+
+  // ✅ New Profile Update (Client-side)
+  updateProfile: (data: any) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.PROFILE, {
+      method: "PUT",
+      body: data instanceof FormData ? data : JSON.stringify(data),
+    }),
 };

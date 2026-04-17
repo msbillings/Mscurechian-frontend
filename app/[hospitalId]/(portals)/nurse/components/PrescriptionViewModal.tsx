@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { X, FileText, Pill, Calendar, User, Hash, Download } from 'lucide-react';
 import { ipdService } from '@/lib/integrations';
 import toast from 'react-hot-toast';
+import { formatFrequency } from '@/lib/frequencyUtils';
 
 interface PrescriptionViewModalProps {
     isOpen: boolean;
@@ -96,13 +97,255 @@ export default function PrescriptionViewModal({ isOpen, onClose, admissionId, pa
                                             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Diagnosis</span>
                                             <span className="text-[10px] font-bold text-slate-700 uppercase">{presc.diagnosis}</span>
                                         </div>
-                                        {presc.symptoms?.length > 0 && (
-                                            <div className="flex flex-col gap-1 border-l border-slate-200 pl-4">
-                                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Symptoms / Reason</span>
-                                                <span className="text-[10px] font-bold text-slate-600 uppercase">{presc.symptoms.join(', ')}</span>
-                                            </div>
-                                        )}
+                                        {/* Aggregate symptoms from general and specialty data */}
+                                        {(() => {
+                                            const allSymptoms = [];
+                                            if (presc.symptoms) {
+                                                if (Array.isArray(presc.symptoms)) allSymptoms.push(...presc.symptoms);
+                                                else if (presc.symptoms.trim()) allSymptoms.push(presc.symptoms);
+                                            }
+                                            
+                                            // Specialty specific symptoms
+                                            const specs = [
+                                                presc.orthopedicData, presc.pediatricsData, presc.pediatricData, presc.entData, 
+                                                presc.ophthalmologyData, presc.ophthaData, presc.gynecologyData, presc.gynaecData,
+                                                presc.neurologyData, presc.neuroData, presc.pulmonologyData, presc.pulmoData,
+                                                presc.gastroenterologyData, presc.gastroData, presc.psychiatryData, presc.endocrinologyData
+                                            ];
+                                            
+                                            specs.forEach(s => {
+                                                if (s?.symptoms && Array.isArray(s.symptoms)) {
+                                                    allSymptoms.push(...s.symptoms);
+                                                } else if (s?.complaints && Array.isArray(s.complaints)) {
+                                                    allSymptoms.push(...s.complaints);
+                                                }
+                                            });
+
+                                            const uniqueSymptoms = Array.from(new Set(allSymptoms.map((s: any) => s?.toString().trim()).filter(Boolean)));
+            
+                                            if (uniqueSymptoms.length > 0) {
+                                                return (
+                                                    <div className="flex flex-col gap-1 border-l border-slate-200 pl-4">
+                                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Symptoms / Reason</span>
+                                                        <span className="text-[10px] font-bold text-slate-600 uppercase">
+                                                            {uniqueSymptoms.join(', ')}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
                                     </div>
+
+                                    {/* SPECIALTY ASSESSMENT DETAILS */}
+                                    {(() => {
+                                        const renderedSpecs = [];
+                                        
+                                        // Orthopedics
+                                        const ortho = presc.orthopedicData || presc.orthoData;
+                                        if (ortho && (ortho.joint || ortho.pain)) {
+                                            renderedSpecs.push(
+                                                <div key="ortho" className="px-6 py-3 bg-orange-50/30 border-b border-slate-50">
+                                                    <p className="text-[8px] font-black text-orange-600 uppercase tracking-widest mb-1">Orthopedic Assessment: {ortho.side} {ortho.joint}</p>
+                                                    <div className="flex flex-wrap gap-4 text-[9px] font-bold text-slate-600">
+                                                        <span>Pain: {ortho.pain?.score || ortho.painScore}/10 ({ortho.pain?.type || 'N/A'})</span>
+                                                        <span>ROM: {ortho.rom}</span>
+                                                        <span>Power: {ortho.motorPower || ortho.motor}/5</span>
+                                                        {ortho.diagnosis && <span>Impression: {ortho.diagnosis}</span>}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        // Pediatrics
+                                        const peds = presc.pediatricsData || presc.pediatricData;
+                                        if (peds && (peds.weight || peds.temperature)) {
+                                            renderedSpecs.push(
+                                                <div key="peds" className="px-6 py-3 bg-rose-50/30 border-b border-slate-50">
+                                                    <p className="text-[8px] font-black text-rose-600 uppercase tracking-widest mb-1">Pediatric Vitals & Growth</p>
+                                                    <div className="flex flex-wrap gap-4 text-[9px] font-bold text-slate-600">
+                                                        <span>Weight: {peds.weight}kg</span>
+                                                        <span>Temp: {peds.temperature}°F</span>
+                                                        <span>HR: {peds.heartRate}</span>
+                                                        <span>Milestones: {peds.milestones}</span>
+                                                        {peds.immunizationStatus && <span>Immuno: {peds.immunizationStatus}</span>}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        // Pulmonology
+                                        const pulmo = presc.pulmonologyData || presc.pulmoData;
+                                        if (pulmo && pulmo.vitals) {
+                                            renderedSpecs.push(
+                                                <div key="pulmo" className="px-6 py-3 bg-blue-50/30 border-b border-slate-50">
+                                                    <p className="text-[8px] font-black text-blue-600 uppercase tracking-widest mb-1">Pulmonary Profile</p>
+                                                    <div className="flex flex-wrap gap-4 text-[9px] font-bold text-slate-600">
+                                                        <span>SpO2: {pulmo.vitals.spo2}%</span>
+                                                        <span>RR: {pulmo.vitals.respRate}</span>
+                                                        <span>Support: {pulmo.vitals.oxygenSupport}</span>
+                                                        <span>mMRC: {pulmo.mmrcGrade}/4</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        // Endocrinology
+                                        const endo = presc.endocrinologyData;
+                                        if (endo && (endo.glycemic || endo.thyroid)) {
+                                            renderedSpecs.push(
+                                                <div key="endo" className="px-6 py-3 bg-slate-100/50 border-b border-slate-50">
+                                                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">Endocrine Dashboard</p>
+                                                    <div className="flex flex-wrap gap-4 text-[9px] font-bold text-slate-600">
+                                                        {endo.glycemic?.fbs && <span>FBS: {endo.glycemic.fbs}</span>}
+                                                        {endo.glycemic?.hba1c && <span>HbA1c: {endo.glycemic.hba1c}%</span>}
+                                                        {endo.thyroid?.tsh && <span>TSH: {endo.thyroid.tsh}</span>}
+                                                        <span>BMI: {endo.bmi}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        // Hematology
+                                        const hema = presc.hematologyData;
+                                        if (hema && hema.cbc) {
+                                            renderedSpecs.push(
+                                                <div key="hema" className="px-6 py-3 bg-blue-50/20 border-b border-slate-50">
+                                                    <p className="text-[8px] font-black text-blue-800 uppercase tracking-widest mb-1">Hematology Report</p>
+                                                    <div className="flex flex-wrap gap-4 text-[9px] font-bold text-slate-600">
+                                                        <span>Hb: {hema.cbc.hb}</span>
+                                                        <span>TLC: {hema.cbc.tlc}</span>
+                                                        <span>Plat: {hema.cbc.platelets}</span>
+                                                        {hema.coagulation?.inr && <span>INR: {hema.coagulation.inr}</span>}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        // Oncology
+                                        const onco = presc.oncologyData;
+                                        if (onco && (onco.labs || onco.tnm)) {
+                                            renderedSpecs.push(
+                                                <div key="onco" className="px-6 py-3 bg-indigo-50/20 border-b border-slate-50">
+                                                    <p className="text-[8px] font-black text-indigo-800 uppercase tracking-widest mb-1">Oncology Staging & Labs</p>
+                                                    <div className="flex flex-wrap gap-4 text-[9px] font-bold text-slate-600">
+                                                        <span>Stage: {onco.tnm?.stage}</span>
+                                                        <span>Intent: {onco.treatment?.intent}</span>
+                                                        <span>ANC: {onco.labs?.anc}</span>
+                                                        {onco.toxicity?.length > 0 && <span>Toxicities: {onco.toxicity.join(', ')}</span>}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        // Nephrology
+                                        const nephro = presc.nephrologyData;
+                                        if (nephro && nephro.vitals) {
+                                            renderedSpecs.push(
+                                                <div key="nephro" className="px-6 py-3 bg-teal-50/20 border-b border-slate-50">
+                                                    <p className="text-[8px] font-black text-teal-800 uppercase tracking-widest mb-1">Nephrology Vitals</p>
+                                                    <div className="flex flex-wrap gap-4 text-[9px] font-bold text-slate-600">
+                                                        <span>BP: {nephro.vitals.systolic}/{nephro.vitals.diastolic}</span>
+                                                        <span>Urine Output: {nephro.vitals.urineOutput}ml</span>
+                                                        <span>Fluid Balance: {nephro.vitals.fluidBalance}ml</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        // Dermatology
+                                        const derma = presc.dermatologyData;
+                                        if (derma && derma.site) {
+                                            renderedSpecs.push(
+                                                <div key="derma" className="px-6 py-3 bg-violet-50/20 border-b border-slate-50">
+                                                    <p className="text-[8px] font-black text-violet-800 uppercase tracking-widest mb-1">Dermatology Assessment</p>
+                                                    <div className="flex flex-wrap gap-4 text-[9px] font-bold text-slate-600">
+                                                        <span>Site: {derma.site}</span>
+                                                        <span>Duration: {derma.duration}</span>
+                                                        <span>Associated: {derma.associatedFeatures}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        // Neurology
+                                        const neuro = presc.neurologyData || presc.neuroData;
+                                        if (neuro && neuro.gcs) {
+                                            renderedSpecs.push(
+                                                <div key="neuro" className="px-6 py-3 bg-indigo-50/20 border-b border-slate-50">
+                                                    <p className="text-[8px] font-black text-indigo-800 uppercase tracking-widest mb-1">Neurology Scan (GCS: {neuro.gcs}/15)</p>
+                                                    <div className="flex flex-wrap gap-4 text-[9px] font-bold text-slate-600">
+                                                        <span>Motor: {neuro.motorResponse}</span>
+                                                        <span>Eyes: {neuro.eyeOpening}</span>
+                                                        <span>Speech: {neuro.verbalResponse}</span>
+                                                        {neuro.pupils && <span>Pupils: {neuro.pupils}</span>}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        // Gynaecology
+                                        const gyn = presc.gynecologyData || presc.gynaecData;
+                                        if (gyn && gyn.lmp) {
+                                            renderedSpecs.push(
+                                                <div key="gyn" className="px-6 py-3 bg-pink-50/20 border-b border-slate-50">
+                                                    <p className="text-[8px] font-black text-pink-800 uppercase tracking-widest mb-1">Obstetric & Gynaec Profile</p>
+                                                    <div className="flex flex-wrap gap-4 text-[9px] font-bold text-slate-600">
+                                                        <span>LMP: {gyn.lmp}</span>
+                                                        <span>EDD: {gyn.edd}</span>
+                                                        <span>GPLA: {gyn.gpla}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        // Cardiology
+                                        const cardio = presc.cardiologyData;
+                                        if (cardio && cardio.bpSystolic) {
+                                            renderedSpecs.push(
+                                                <div key="cardio" className="px-6 py-3 bg-red-50/20 border-b border-slate-50">
+                                                    <p className="text-[8px] font-black text-red-800 uppercase tracking-widest mb-1">Cardiac Vitals</p>
+                                                    <div className="flex flex-wrap gap-4 text-[9px] font-bold text-slate-600">
+                                                        <span>BP: {cardio.bpSystolic}/{cardio.bpDiastolic}</span>
+                                                        <span>HR: {cardio.heartRate} BPM</span>
+                                                        <span>Risk: {cardio.riskLevel}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        // Gastro
+                                        const gastro = presc.gastroenterologyData || presc.gastroData;
+                                        if (gastro && (gastro.bowelHabits || gastro.abdominalExam)) {
+                                            renderedSpecs.push(
+                                                <div key="gastro" className="px-6 py-3 bg-emerald-50/20 border-b border-slate-50">
+                                                    <p className="text-[8px] font-black text-emerald-800 uppercase tracking-widest mb-1">Gastroenterology Evaluation</p>
+                                                    <div className="flex flex-wrap gap-4 text-[9px] font-bold text-slate-600">
+                                                        <span>Bowel Habits: {gastro.bowelHabits}</span>
+                                                        <span>Jaundice: {gastro.generalExam?.jaundice || 'No'}</span>
+                                                        <span>Ascites: {gastro.abdominalExam?.ascites || 'No'}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        // Psychiatry
+                                        const psych = presc.psychiatryData;
+                                        if (psych && psych.mse) {
+                                            renderedSpecs.push(
+                                                <div key="psych" className="px-6 py-3 bg-slate-200/50 border-b border-slate-50">
+                                                    <p className="text-[8px] font-black text-slate-800 uppercase tracking-widest mb-1">Mental State Examination</p>
+                                                    <div className="flex flex-wrap gap-4 text-[9px] font-bold text-slate-600">
+                                                        <span>Mood: {psych.mse.mood}</span>
+                                                        <span>Insight: {psych.mse.insight}</span>
+                                                        <span>Suicide Risk: {psych.suicideRisk}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        return renderedSpecs;
+                                    })()}
 
                                     {/* MEDICINES */}
                                     <div className="p-0">
@@ -129,7 +372,7 @@ export default function PrescriptionViewModal({ isOpen, onClose, admissionId, pa
                                                         <td className="px-6 py-4 text-[11px] font-bold text-slate-600">{med.dosage}</td>
                                                         <td className="px-6 py-4">
                                                             <span className="px-2.5 py-1 bg-amber-50 text-amber-600 rounded-lg text-[9px] font-black uppercase tracking-wider border border-amber-100">
-                                                                {med.frequency}
+                                                                {formatFrequency(med.frequency || med.freq)}
                                                             </span>
                                                         </td>
                                                         <td className="px-6 py-4 text-[11px] font-bold text-slate-500 italic">{med.duration}</td>
@@ -140,10 +383,26 @@ export default function PrescriptionViewModal({ isOpen, onClose, admissionId, pa
                                     </div>
 
                                     {/* NOTES */}
-                                    {presc.notes && (
-                                        <div className="p-6 bg-slate-50/30 border-t border-slate-50">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Doctor's Instructions</p>
-                                            <p className="text-xs font-medium text-slate-600 leading-relaxed">{presc.notes}</p>
+                                    {(presc.notes || presc.dietAdvice?.length > 0 || presc.suggestedTests?.length > 0) && (
+                                        <div className="p-6 bg-slate-50/30 border-t border-slate-50 space-y-4">
+                                            {presc.notes && (
+                                                <div>
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Doctor's Instructions</p>
+                                                    <p className="text-xs font-medium text-slate-600 leading-relaxed">{presc.notes}</p>
+                                                </div>
+                                            )}
+                                            {presc.dietAdvice?.length > 0 && (
+                                                <div>
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Dietary Advice</p>
+                                                    <p className="text-[10px] font-bold text-slate-600 uppercase">{presc.dietAdvice.filter((a:string)=>a).join(' • ')}</p>
+                                                </div>
+                                            )}
+                                            {presc.suggestedTests?.length > 0 && (
+                                                <div>
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Recommended Tests</p>
+                                                    <p className="text-[10px] font-bold text-slate-500 uppercase">{presc.suggestedTests.filter((t:string)=>t).join(' • ')}</p>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>

@@ -1,11 +1,17 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { getSocket, joinSocketRoom } from '@/lib/integrations/api/socket';
 import { toast } from 'react-hot-toast';
-import { TestTube, AlertCircle, User, Calendar, FileText, ChevronRight, Trash2, Clock, ChevronLeft } from 'lucide-react';
+import {
+    TestTube, ChevronRight,
+    ChevronLeft, LayoutGrid, List, FlaskConical,
+    AlertTriangle, RefreshCw
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { API_CONFIG } from '@/lib/integrations/config/api-config';
+import { useTenantLink } from '@/hooks/useTenantLink';
+import Link from 'next/link';
+import { apiClient } from '@/lib/integrations/api/apiClient';
 import DeleteConfirmationModal from '@/components/common/DeleteConfirmationModal';
 
 interface LabResult {
@@ -27,450 +33,499 @@ interface LabResult {
     }>;
     status: string;
     doctorNotified?: boolean;
-    doctor?: {
-        name: string;
-    };
-    hospital?: {
-        name: string;
-    };
+    doctor?: { name: string; };
+    hospital?: { name: string; };
     completedAt?: Date;
     createdAt: Date;
 }
 
+type ViewMode = 'card' | 'table';
+type FilterType = 'all' | 'completed' | 'pending';
+
+const ITEMS_PER_PAGE = 12;
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const getStatusConfig = (result: LabResult) => {
+    const isDone = result.status?.toLowerCase() === 'completed' && result.doctorNotified;
+    const isProcessing = result.status?.toLowerCase() === 'completed' && !result.doctorNotified;
+    if (isDone) return { label: 'Verified', color: 'blue', dot: 'bg-blue-500', badge: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800' };
+    if (isProcessing) return { label: 'Pending Notify', color: 'indigo', dot: 'bg-indigo-500', badge: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800' };
+    return { label: result.status || 'In Queue', color: 'amber', dot: 'bg-amber-500 animate-pulse', badge: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800' };
+};
+
+const formatDate = (d: any) => d ? new Date(d).toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+const formatTime = (d: any) => d ? new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+
+// ── Pagination Component ──────────────────────────────────────────────────────
+
+function Pagination({ page, total, perPage, onChange }: { page: number; total: number; perPage: number; onChange: (p: number) => void }) {
+    const totalPages = Math.max(1, Math.ceil(total / perPage));
+    if (totalPages <= 1) return null;
+
+    return (
+        <div className="flex items-center justify-center gap-2 mt-4">
+            <button
+                onClick={() => onChange(Math.max(1, page - 1))}
+                disabled={page === 1}
+                className="w-8 h-8 flex items-center justify-center rounded-lg border border-border-theme bg-card text-muted hover:text-primary-theme hover:border-primary-theme/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+                <ChevronLeft size={14} />
+            </button>
+
+            <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                    <button
+                        key={p}
+                        onClick={() => onChange(p)}
+                        className={`min-w-[32px] h-8 px-2 rounded-lg text-[11px] font-black transition-all border ${
+                            p === page
+                                ? 'bg-primary-theme text-white border-primary-theme shadow-sm'
+                                : 'bg-card text-muted border-border-theme hover:text-primary-theme hover:border-primary-theme/40'
+                        }`}
+                    >
+                        {p}
+                    </button>
+                ))}
+            </div>
+
+            <button
+                onClick={() => onChange(Math.min(totalPages, page + 1))}
+                disabled={page === totalPages}
+                className="w-8 h-8 flex items-center justify-center rounded-lg border border-border-theme bg-card text-muted hover:text-primary-theme hover:border-primary-theme/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+                <ChevronRight size={14} />
+            </button>
+
+            {/* <prev / next> style indicator */}
+            <span className="text-[11px] font-black text-muted ml-1 font-mono tracking-tight opacity-60">
+                &lt;{page - 1}/{totalPages}&gt;
+            </span>
+        </div>
+    );
+}
+
+// ── Card View ─────────────────────────────────────────────────────────────────
+
+function CardView({ items, getPath }: { items: LabResult[]; getPath: (p: string) => string }) {
+    return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {items.map(result => {
+                const cfg = getStatusConfig(result);
+                const hasAbnormal = result.tests.some(t => t.isAbnormal);
+                return (
+                    <Link
+                        key={result._id}
+                        href={getPath(`/doctor/lab-results/${result._id}`)}
+                        className="group bg-card rounded-xl border border-border-theme hover:border-primary-theme/30 hover:shadow-md transition-all flex flex-col overflow-hidden relative"
+                    >
+                        {/* Top strip */}
+                        <div className={`h-0.5 w-full ${cfg.color === 'blue' ? 'bg-blue-500' : cfg.color === 'indigo' ? 'bg-indigo-500' : 'bg-amber-400'}`} />
+
+                        <div className="p-3 flex flex-col gap-2 flex-1">
+                            {/* Row 1: Status + Abnormal badge */}
+                            <div className="flex items-center justify-between gap-1">
+                                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${cfg.badge}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shrink-0`} />
+                                    {cfg.label}
+                                </span>
+                                {hasAbnormal && (
+                                    <span className="flex items-center gap-1 px-1.5 py-0.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-md text-[9px] font-black dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-800">
+                                        <AlertTriangle size={9} /> ABN
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Row 2: Patient */}
+                            <div className="flex items-center gap-2">
+                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-black text-white shrink-0 ${cfg.color === 'blue' ? 'bg-blue-600' : cfg.color === 'indigo' ? 'bg-indigo-600' : 'bg-amber-500'}`}>
+                                    {result.patient?.name?.charAt(0)?.toUpperCase() || '?'}
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-[13px] font-black text-foreground truncate uppercase tracking-tight leading-tight">
+                                        {result.patient?.name || 'Unknown'}
+                                    </p>
+                                    <p className="text-[10px] font-bold text-muted uppercase tracking-widest opacity-60 truncate">
+                                        MRN: {result.patient?.mrn || '—'} · #{result.sampleId}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Row 3: Tests */}
+                            <div className="flex flex-wrap gap-1">
+                                {result.tests.slice(0, 3).map((test, i) => (
+                                    <span
+                                        key={i}
+                                        className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wide border ${
+                                            test.isAbnormal
+                                                ? 'bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-900/20 dark:border-rose-800'
+                                                : 'bg-secondary-theme border-border-theme text-muted'
+                                        }`}
+                                    >
+                                        {test.testName}
+                                    </span>
+                                ))}
+                                {result.tests.length > 3 && (
+                                    <span className="px-2 py-0.5 rounded-md text-[9px] font-black border border-border-theme bg-secondary-theme text-muted italic">
+                                        +{result.tests.length - 3}
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Row 4: Date + Doctor */}
+                            <div className="mt-auto pt-2 border-t border-border-theme/50 grid grid-cols-2 gap-1">
+                                <div>
+                                    <p className="text-[9px] font-black text-muted uppercase opacity-50">Date</p>
+                                    <p className="text-[10px] font-black text-foreground">{formatDate(result.completedAt || result.createdAt)}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[9px] font-black text-muted uppercase opacity-50">Doctor</p>
+                                    <p className="text-[10px] font-black text-foreground truncate">
+                                        {result.doctor?.name ? (result.doctor.name.startsWith('Dr.') ? result.doctor.name : `Dr. ${result.doctor.name}`) : 'Staff'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-3 py-2 bg-secondary-theme/30 border-t border-border-theme flex items-center justify-between text-muted group-hover:text-primary-theme transition-colors">
+                            <span className="text-[10px] font-black uppercase tracking-widest">View Report</span>
+                            <ChevronRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+                        </div>
+                    </Link>
+                );
+            })}
+        </div>
+    );
+}
+
+// ── Table View ────────────────────────────────────────────────────────────────
+
+function TableView({ items, getPath }: { items: LabResult[]; getPath: (p: string) => string }) {
+    return (
+        <div className="overflow-x-auto rounded-xl border border-border-theme bg-card">
+            <table className="w-full text-left">
+                <thead>
+                    <tr className="border-b border-border-theme">
+                        {['Sample ID', 'Patient', 'MRN', 'Tests', 'Abnormal', 'Doctor', 'Date', 'Time', 'Status', ''].map(h => (
+                            <th key={h} className="px-3 py-2.5 text-[10px] font-black text-muted uppercase tracking-widest whitespace-nowrap bg-secondary-theme/30">
+                                {h}
+                            </th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {items.map((result, idx) => {
+                        const cfg = getStatusConfig(result);
+                        const hasAbnormal = result.tests.some(t => t.isAbnormal);
+                        return (
+                            <tr
+                                key={result._id}
+                                className={`border-b border-border-theme/50 hover:bg-primary-theme/3 transition-colors group ${idx % 2 === 0 ? '' : 'bg-secondary-theme/10'}`}
+                            >
+                                <td className="px-3 py-2">
+                                    <span className="text-[11px] font-black text-primary-theme font-mono">#{result.sampleId}</span>
+                                </td>
+                                <td className="px-3 py-2">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-7 h-7 rounded-md flex items-center justify-center text-[10px] font-black text-white shrink-0 ${cfg.color === 'blue' ? 'bg-blue-600' : cfg.color === 'indigo' ? 'bg-indigo-600' : 'bg-amber-500'}`}>
+                                            {result.patient?.name?.charAt(0)?.toUpperCase() || '?'}
+                                        </div>
+                                        <span className="text-[12px] font-black text-foreground uppercase tracking-tight whitespace-nowrap">
+                                            {result.patient?.name || 'Unknown'}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td className="px-3 py-2">
+                                    <span className="text-[11px] text-muted font-mono">{result.patient?.mrn || '—'}</span>
+                                </td>
+                                <td className="px-3 py-2">
+                                    <div className="flex flex-wrap gap-1 max-w-[160px]">
+                                        {result.tests.slice(0, 2).map((t, i) => (
+                                            <span key={i} className={`px-2 py-0.5 rounded text-[9px] font-black border uppercase ${t.isAbnormal ? 'bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-900/20 dark:border-rose-800' : 'bg-secondary-theme border-border-theme text-muted'}`}>
+                                                {t.testName}
+                                            </span>
+                                        ))}
+                                        {result.tests.length > 2 && (
+                                            <span className="px-2 py-0.5 rounded text-[9px] font-black border border-border-theme bg-secondary-theme text-muted italic">
+                                                +{result.tests.length - 2}
+                                            </span>
+                                        )}
+                                    </div>
+                                </td>
+                                <td className="px-3 py-2 text-center">
+                                    {hasAbnormal
+                                        ? <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[9px] font-black dark:bg-rose-900/20 dark:border-rose-800"><AlertTriangle size={9} />Yes</span>
+                                        : <span className="text-[11px] text-muted opacity-40">—</span>
+                                    }
+                                </td>
+                                <td className="px-3 py-2">
+                                    <span className="text-[11px] text-muted whitespace-nowrap">
+                                        {result.doctor?.name ? (result.doctor.name.startsWith('Dr.') ? result.doctor.name : `Dr. ${result.doctor.name}`) : 'Staff'}
+                                    </span>
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap">
+                                    <span className="text-[11px] text-foreground font-medium">{formatDate(result.completedAt || result.createdAt)}</span>
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap">
+                                    <span className="text-[11px] text-muted">{formatTime(result.completedAt || result.createdAt)}</span>
+                                </td>
+                                <td className="px-3 py-2">
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black border uppercase tracking-wide ${cfg.badge}`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shrink-0`} />
+                                        {cfg.label}
+                                    </span>
+                                </td>
+                                <td className="px-3 py-2">
+                                    <Link
+                                        href={getPath(`/doctor/lab-results/${result._id}`)}
+                                        className="p-1.5 text-muted hover:text-primary-theme hover:bg-primary-theme/5 rounded-md transition-all inline-flex"
+                                        title="View Report"
+                                    >
+                                        <ChevronRight size={15} />
+                                    </Link>
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
 export default function DoctorLabResultsPage() {
-    const router = useRouter();
+    const { getPath } = useTenantLink();
     const [results, setResults] = useState<LabResult[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState<'all' | 'completed' | 'pending'>('all');
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [filter, setFilter] = useState<FilterType>('all');
+    const [viewMode, setViewMode] = useState<ViewMode>('card');
     const [socketConnected, setSocketConnected] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [idToDelete, setIdToDelete] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const itemsPerPage = 15;
+
+    const fetchLabResults = useCallback(async (silent = false) => {
+        if (!silent) setLoading(true);
+        else setIsRefreshing(true);
+        try {
+            const data = await apiClient<any>(`/doctor/lab-results?limit=60&_cb=${Date.now()}`);
+            if (data?.success) setResults(data.data);
+        } catch {
+            if (!silent) toast.error('Failed to fetch lab results');
+        } finally {
+            setLoading(false);
+            setIsRefreshing(false);
+        }
+    }, []);
 
     useEffect(() => {
         fetchLabResults();
-
         let socketInstance: any = null;
 
         const initSocket = async () => {
             try {
-                const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
                 const userId = user._id || user.id;
-
                 if (userId && user.role) {
                     socketInstance = await getSocket();
                     if (socketInstance) {
-                        // Function to join rooms (re-usable for reconnection)
                         const performRoomJoin = async () => {
-                            console.log('📡 Attempting to join clinical rooms for:', user.role);
-                            await joinSocketRoom({
-                                role: user.role,
-                                userId: userId,
-                                hospitalId: user.hospital
-                            });
+                            await joinSocketRoom({ role: user.role, userId, hospitalId: user.hospital });
                             setSocketConnected(true);
                         };
-
-                        if (socketInstance.connected) {
-                            await performRoomJoin();
-                        }
-
+                        if (socketInstance.connected) await performRoomJoin();
                         socketInstance.on('connect', performRoomJoin);
                         socketInstance.on('disconnect', () => setSocketConnected(false));
-
-                        // Listen for final notifications (Send to Doctor)
                         socketInstance.on('lab_result_notification', (notification: any) => {
-                            console.log('📬 NEW LAB RESULT:', notification);
-                            toast.success(`Lab results ready for ${notification.patientName}`, {
-                                duration: 8000,
-                                icon: '🧪',
-                                position: 'top-right'
-                            });
+                            toast.success(`Lab results ready for ${notification.patientName}`, { duration: 8000, icon: '🧪', position: 'top-right' });
                             fetchLabResults();
-                            playNotificationSound();
+                            try { new Audio('/notification.mp3').play().catch(() => {}); } catch {}
                         });
-
-                        // Listen for status-wide updates (Processing, Collected, etc)
-                        const handleGenericUpdate = () => {
-                            console.log('🔄 Live Update: Refreshing result list...');
-                            fetchLabResults();
-                        };
-
-                        socketInstance.on('lab_order_updated', handleGenericUpdate);
-                        socketInstance.on('new_lab_order', handleGenericUpdate);
-                        socketInstance.on('sample_collected', handleGenericUpdate);
-                        socketInstance.on('bill_generated', handleGenericUpdate);
                     }
                 }
-            } catch (error) {
-                console.error('Socket setup error:', error);
-            }
+            } catch (error) { console.error('Socket setup error:', error); }
         };
 
         initSocket();
-
-        // Listen for internal refresh events
         const handleRefresh = () => fetchLabResults();
         window.addEventListener('refresh-lab-results', handleRefresh);
-
         return () => {
             if (socketInstance) {
                 socketInstance.off('connect');
                 socketInstance.off('disconnect');
                 socketInstance.off('lab_result_notification');
-                socketInstance.off('lab_order_updated');
-                socketInstance.off('new_lab_order');
-                socketInstance.off('sample_collected');
-                socketInstance.off('bill_generated');
             }
             window.removeEventListener('refresh-lab-results', handleRefresh);
         };
-    }, []);
+    }, [fetchLabResults]);
 
-    const playNotificationSound = () => {
-        try {
-            const audio = new Audio('/notification.mp3');
-            audio.play().catch(() => { });
-        } catch (error) {
-            console.log('Could not play notification sound');
-        }
-    };
+    // Reset to page 1 on filter/view change
+    useEffect(() => setCurrentPage(1), [filter, viewMode]);
 
-    const fetchLabResults = async () => {
-        try {
-            const token = sessionStorage.getItem('accessToken');
-            // Added cache busting and slightly higher limit to ensure reliability
-            const response = await fetch(
-                `${API_CONFIG.BASE_URL}/doctor/lab-results?limit=60&_cb=${Date.now()}`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    }
-                }
-            );
+    const filteredResults = results.filter(r => {
+        const isVerified = r.status?.toLowerCase() === 'completed' && r.doctorNotified;
+        if (filter === 'completed') return isVerified;
+        if (filter === 'pending') return !isVerified;
+        return true;
+    });
 
-            const data = await response.json();
-            if (data.success) {
-                setResults(data.data);
-            }
-        } catch (error) {
-            // Silently fail background fetches unless loading
-            if (loading) toast.error('Failed to fetch lab results');
-        } finally {
-            setLoading(false);
-        }
-    };
+    const totalPages = Math.max(1, Math.ceil(filteredResults.length / ITEMS_PER_PAGE));
+    const pageItems = filteredResults.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-    const handleDeleteResult = async (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        setIdToDelete(id);
-        setIsDeleteModalOpen(true);
-    };
+    // delete handler kept for modal wiring (modal is removed from UI but kept for safety)
+    const handleDeleteResult = (_id: string, _e: React.MouseEvent) => {};
 
     const confirmDelete = async () => {
         if (!idToDelete) return;
-
         setIsDeleting(true);
         try {
-            const token = sessionStorage.getItem('accessToken');
-            const response = await fetch(`${API_CONFIG.BASE_URL}/lab/orders/${idToDelete}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            const data = await response.json();
-            if (response.ok) {
-                toast.success('Lab result deleted successfully');
-                setResults(results.filter(r => r._id !== idToDelete));
-                setIsDeleteModalOpen(false);
-                setIdToDelete(null);
-            } else {
-                toast.error(data.message || 'Failed to delete lab result');
-            }
-        } catch (error) {
-            toast.error('Error deleting lab result');
+            await apiClient(`/lab/orders/${idToDelete}`, { method: 'DELETE' });
+            toast.success('Lab result deleted successfully');
+            setResults(r => r.filter(x => x._id !== idToDelete));
+            setIsDeleteModalOpen(false);
+            setIdToDelete(null);
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to delete lab result');
         } finally {
             setIsDeleting(false);
         }
     };
 
-    const filteredResults = results.filter(result => {
-        const isOfficiallyCompleted = result.status.toLowerCase() === 'completed' && result.doctorNotified;
-        if (filter === 'all') return true;
-        if (filter === 'completed') return isOfficiallyCompleted;
-        if (filter === 'pending') return !isOfficiallyCompleted;
-        return true;
-    });
-
-    const totalPages = Math.ceil(filteredResults.length / itemsPerPage);
-
-    // Reset to page 1 when filter changes
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [filter]);
-
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="flex flex-col items-center gap-3">
-                    <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Loading lab results...</p>
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="relative w-12 h-12">
+                        <div className="absolute inset-0 border-4 border-primary-theme/20 border-t-primary-theme rounded-full animate-spin" />
+                        <TestTube className="absolute inset-0 m-auto text-primary-theme animate-pulse" size={18} />
+                    </div>
+                    <p className="text-[9px] font-black text-muted uppercase tracking-[0.3em] animate-pulse">Loading Results...</p>
                 </div>
             </div>
         );
     }
 
-    return (
-        <div className="space-y-6 p-6 pt-2 pb-10 border-t border-gray-100 dark:border-gray-800/50">
-            {/* Header Area */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-blue-600 rounded-xl shadow-lg shadow-blue-100 dark:shadow-none">
-                        <TestTube className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Lab Results</h1>
-                            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${socketConnected ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
-                                <div className={`w-1.5 h-1.5 rounded-full ${socketConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-                                {socketConnected ? 'Live Connection' : 'Offline'}
-                            </div>
-                        </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Monitor and review patient diagnostic reports</p>
-                    </div>
-                </div>
+    const tabs: { id: FilterType; label: string; count: number }[] = [
+        { id: 'all', label: 'All', count: results.length },
+        { id: 'completed', label: 'Verified', count: results.filter(r => r.status?.toLowerCase() === 'completed' && r.doctorNotified).length },
+        { id: 'pending', label: 'In Queue', count: results.filter(r => !(r.status?.toLowerCase() === 'completed' && r.doctorNotified)).length },
+    ];
 
-                <div className="flex items-center gap-3">
-                    {totalPages > 1 && (
-                        <div className="flex items-center gap-2 mr-2">
+    return (
+        <div className="min-h-screen space-y-3 pt-1 pb-16">
+
+            {/* ── Header Card ── */}
+            <div className="bg-card rounded-xl border border-border-theme p-3 sm:p-4 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary-theme/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none" />
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative">
+                    {/* Title */}
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                            <FlaskConical className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-base font-black text-foreground uppercase tracking-tight">Lab Results</h1>
+                                <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${socketConnected ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20' : 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/20'}`}>
+                                    <div className={`w-1.5 h-1.5 rounded-full ${socketConnected ? 'bg-blue-500 animate-pulse' : 'bg-rose-500'}`} />
+                                    {socketConnected ? 'Live' : 'Offline'}
+                                </div>
+                            </div>
+                            <p className="text-[9px] font-bold text-muted uppercase tracking-widest opacity-50">
+                                {filteredResults.length} result{filteredResults.length !== 1 ? 's' : ''} · Page {currentPage}/{totalPages}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Controls */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {/* Filter Tabs */}
+                        <div className="flex items-center bg-secondary-theme/60 p-0.5 rounded-lg border border-border-theme">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setFilter(tab.id)}
+                                    className={`px-3 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                                        filter === tab.id ? 'bg-card text-primary-theme shadow-sm' : 'text-muted hover:text-foreground'
+                                    }`}
+                                >
+                                    {tab.label}
+                                    <span className={`px-1 py-0.5 rounded text-[8px] font-black ${filter === tab.id ? 'bg-primary-theme/10 text-primary-theme' : 'bg-border-theme/50 text-muted'}`}>
+                                        {tab.count}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* View Mode Toggle */}
+                        <div className="flex items-center bg-secondary-theme/60 p-0.5 rounded-lg border border-border-theme">
                             <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setCurrentPage(p => Math.max(1, p - 1));
-                                }}
-                                disabled={currentPage === 1}
-                                className="p-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed hover:border-blue-200 transition-all shadow-sm"
-                                title="Previous Page"
+                                onClick={() => setViewMode('card')}
+                                className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-card text-primary-theme shadow-sm' : 'text-muted hover:text-foreground'}`}
+                                title="Card View"
                             >
-                                <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                                <LayoutGrid size={14} />
                             </button>
                             <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setCurrentPage(p => (p < totalPages ? p + 1 : p));
-                                }}
-                                disabled={currentPage === totalPages}
-                                className="p-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed hover:border-blue-200 transition-all shadow-sm"
-                                title="Next Page"
+                                onClick={() => setViewMode('table')}
+                                className={`p-1.5 rounded-md transition-all ${viewMode === 'table' ? 'bg-card text-primary-theme shadow-sm' : 'text-muted hover:text-foreground'}`}
+                                title="Table View"
                             >
-                                <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                                <List size={14} />
                             </button>
                         </div>
-                    )}
-                    <button
-                        onClick={() => {
-                            setLoading(true);
-                            fetchLabResults();
-                        }}
-                        className="p-2.5 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-blue-200 shadow-sm transition-all"
-                        title="Refresh Data"
-                    >
-                        <Clock className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-                    </button>
-                    <div className="flex items-center bg-gray-50 dark:bg-gray-900 p-1.5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-inner">
+
+                        {/* Refresh */}
                         <button
-                            onClick={() => setFilter('all')}
-                            className={`px-5 py-2 rounded-[14px] text-xs font-bold transition-all duration-300 ${filter === 'all'
-                                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                                }`}
+                            onClick={() => fetchLabResults(true)}
+                            disabled={isRefreshing}
+                            className="p-2 bg-secondary-theme hover:bg-primary-theme/5 text-muted hover:text-primary-theme rounded-lg border border-border-theme transition-all disabled:opacity-50"
+                            title="Refresh"
                         >
-                            ALL ({results.length})
-                        </button>
-                        <button
-                            onClick={() => setFilter('completed')}
-                            className={`px-5 py-2 rounded-[14px] text-xs font-bold transition-all duration-300 ${filter === 'completed'
-                                ? 'bg-white dark:bg-gray-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                                }`}
-                        >
-                            COMPLETED ({results.filter(r => r.status.toLowerCase() === 'completed' && r.doctorNotified).length})
-                        </button>
-                        <button
-                            onClick={() => setFilter('pending')}
-                            className={`px-5 py-2 rounded-[14px] text-xs font-bold transition-all duration-300 ${filter === 'pending'
-                                ? 'bg-white dark:bg-gray-700 text-amber-600 dark:text-amber-400 shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                                }`}
-                        >
-                            PENDING ({results.filter(r => !(r.status.toLowerCase() === 'completed' && r.doctorNotified)).length})
+                            <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* Results Grid logic */}
-            {filteredResults.length > 0 ? (
-                <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {filteredResults.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((result) => (
-                            <div
-                                key={result._id}
-                                onClick={() => router.push(`/doctor/lab-results/${result._id}`)}
-                                className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col overflow-hidden"
-                            >
-                                {/* Card Header */}
-                                <div className="p-4 pb-2 flex justify-between items-start">
-                                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${result.status.toLowerCase() === 'completed' && result.doctorNotified ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400' :
-                                        result.status.toLowerCase() === 'completed' && !result.doctorNotified ? 'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400' :
-                                            'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400'
-                                        }`}>
-                                        <div className={`w-1 h-1 rounded-full ${result.status.toLowerCase() === 'completed' && result.doctorNotified ? 'bg-emerald-500' :
-                                            result.status.toLowerCase() === 'completed' && !result.doctorNotified ? 'bg-indigo-500' :
-                                                'bg-amber-500'
-                                            }`} />
-                                        {result.status.toLowerCase() === 'completed' && !result.doctorNotified ? 'Review Pending' : result.status}
-                                    </span>
-                                    <div className="text-right">
-                                        <div className="text-[10px] font-mono text-gray-400 dark:text-gray-500">
-                                            {result.patient?.mrn || 'No MRN'}
-                                        </div>
-                                        <div className="flex items-center justify-end gap-2 mt-0.5">
-                                            <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 font-mono">
-                                                #{result.sampleId}
-                                            </span>
-                                            <button
-                                                onClick={(e) => handleDeleteResult(result._id, e)}
-                                                className="p-1 text-gray-300 hover:text-red-500 transition-colors"
-                                                title="Delete Result"
-                                            >
-                                                <Trash2 size={12} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Patient Info */}
-                                <div className="px-4 pb-4 flex items-center gap-4">
-                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold shadow-sm ${result.status.toLowerCase() === 'completed' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
-                                        {result.patient?.name?.charAt(0) || '?'}
-                                    </div>
-                                    <div className="flex-1">
-                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors leading-tight">
-                                            {result.patient?.name || 'Unknown Patient'}
-                                        </h3>
-                                        <div className="flex items-center gap-4 mt-1.5">
-                                            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                                <Calendar className="w-3 h-3 text-blue-400" />
-                                                {new Date(result.completedAt || result.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                                            </div>
-                                            <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                                <Clock className="w-3 h-3 text-indigo-400" />
-                                                {new Date(result.completedAt || result.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Referral Info */}
-                                <div className="px-4 pb-4">
-                                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-2.5 flex items-center gap-2 border border-gray-50 dark:border-gray-700/50">
-                                        <div className="p-1.5 bg-white dark:bg-gray-800 rounded-lg shadow-xs">
-                                            <User className="w-3.5 h-3.5 text-blue-500" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Referred By</p>
-                                            <p className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
-                                                {result.doctor?.name ? (result.doctor.name.startsWith('Dr.') ? result.doctor.name : `Dr. ${result.doctor.name}`) : 'Medical Staff'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Tests Section */}
-                                <div className="px-4 pb-4 flex-1">
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {result.tests.map((test, idx) => (
-                                            <span
-                                                key={idx}
-                                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors ${test.isAbnormal
-                                                    ? 'bg-red-50 border-red-100 text-red-600 dark:bg-red-900/20 dark:border-red-800'
-                                                    : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400'
-                                                    }`}
-                                            >
-                                                {test.testName}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Footer Link */}
-                                <div className="mt-auto px-4 py-3 border-t border-gray-50 dark:border-gray-700/50 flex items-center justify-between text-gray-400 group-hover:bg-blue-50/30 dark:group-hover:bg-blue-900/10 transition-colors">
-                                    <span className="text-[11px] font-bold uppercase tracking-wider">View Detailed Report</span>
-                                    <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                                </div>
-                            </div>
-                        ))}
+            {/* ── Content ── */}
+            {filteredResults.length === 0 ? (
+                <div className="bg-card rounded-xl border border-border-theme p-16 text-center shadow-sm flex flex-col items-center">
+                    <div className="w-16 h-16 bg-secondary-theme rounded-2xl flex items-center justify-center mb-4 relative">
+                        <TestTube className="w-8 h-8 text-muted/30" />
+                        <div className="absolute inset-0 border-2 border-dashed border-border-theme rounded-2xl animate-[spin_12s_linear_infinite]" />
                     </div>
-
-                    {/* Pagination Controls */}
-                    {totalPages > 1 && (
-                        <div className="flex items-center justify-between px-2 pr-20">
-                            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-                                Page <span className="text-blue-600 font-black">{currentPage}</span> of {totalPages}
-                            </p>
-                            <div className="flex items-center gap-2.5">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setCurrentPage(p => Math.max(1, p - 1));
-                                    }}
-                                    disabled={currentPage === 1}
-                                    className="p-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed hover:border-blue-200 transition-all shadow-sm"
-                                >
-                                    <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                                </button>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setCurrentPage(p => (p < totalPages ? p + 1 : p));
-                                    }}
-                                    disabled={currentPage === totalPages}
-                                    className="p-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed hover:border-blue-200 transition-all shadow-sm"
-                                >
-                                    <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            ) : (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-16 text-center shadow-sm">
-                    <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-blue-50 dark:bg-blue-900/20">
-                        <TestTube className="w-10 h-10 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Lab Results</h3>
-                    <p className="text-gray-500 dark:text-gray-400">
-                        {filter === 'all'
-                            ? 'No lab results available yet.'
-                            : `No ${filter} lab results found.`
-                        }
+                    <h3 className="text-base font-black text-foreground uppercase tracking-tight mb-1">No Results Found</h3>
+                    <p className="text-[9px] font-black text-muted uppercase tracking-widest opacity-50">
+                        {filter === 'all' ? 'No diagnostic records in this cycle.' : `No ${filter} records found.`}
                     </p>
                 </div>
+            ) : (
+                <>
+                    {viewMode === 'card'
+                        ? <CardView items={pageItems} getPath={getPath} />
+                        : <TableView items={pageItems} getPath={getPath} />
+                    }
+
+                    {/* Pagination */}
+                    <Pagination
+                        page={currentPage}
+                        total={filteredResults.length}
+                        perPage={ITEMS_PER_PAGE}
+                        onChange={setCurrentPage}
+                    />
+                </>
             )}
 
             <DeleteConfirmationModal
                 isOpen={isDeleteModalOpen}
-                onClose={() => {
-                    if (!isDeleting) {
-                        setIsDeleteModalOpen(false);
-                        setIdToDelete(null);
-                    }
-                }}
+                onClose={() => { if (!isDeleting) { setIsDeleteModalOpen(false); setIdToDelete(null); } }}
                 onConfirm={confirmDelete}
                 isDeleting={isDeleting}
                 title="Delete Lab Result"

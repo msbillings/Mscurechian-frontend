@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-    DollarSign,
+    IndianRupee,
     Download,
     CheckCircle,
     Clock,
@@ -61,7 +61,7 @@ const StatCard = ({ label, value, sub, color, icon: Icon, large = false }: any) 
 
 // ─── Attendance Badge ─────────────────────────────────────────────────────────
 const AttBadge = ({ count, label, color }: { count: number; label: string; color: string }) => (
-    <div className={`flex flex-col items-center p-4 rounded-2xl border ${color}`}>
+    <div className={`flex flex-col items-center p-2 md:p-4 rounded-2xl border ${color}`}>
         <span className="text-2xl font-black">{count}</span>
         <span className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-70">{label}</span>
     </div>
@@ -74,11 +74,13 @@ export default function PayrollPage() {
     // ── Period State ─────────────────────────────────────────────────────────
     const [fromDate, setFromDate] = useState(() => {
         const d = new Date();
-        return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
+        const dateObj = new Date(d.getFullYear(), d.getMonth(), 1);
+        return new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000).toISOString().split('T')[0];
     });
     const [toDate, setToDate] = useState(() => {
         const d = new Date();
-        return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split('T')[0];
+        const dateObj = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        return new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000).toISOString().split('T')[0];
     });
 
     // ── Employee State ───────────────────────────────────────────────────────
@@ -293,8 +295,14 @@ export default function PayrollPage() {
     const setMonthPreset = (offset: number) => {
         const d = new Date();
         const target = new Date(d.getFullYear(), d.getMonth() + offset, 1);
-        const from = new Date(target.getFullYear(), target.getMonth(), 1).toISOString().split('T')[0];
-        const to = new Date(target.getFullYear(), target.getMonth() + 1, 0).toISOString().split('T')[0];
+        
+        const toLocalISO = (dateStr: Date) => {
+            return new Date(dateStr.getTime() - dateStr.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        };
+        
+        const from = toLocalISO(new Date(target.getFullYear(), target.getMonth(), 1));
+        const to = toLocalISO(new Date(target.getFullYear(), target.getMonth() + 1, 0));
+        
         setFromDate(from);
         setToDate(to);
     };
@@ -306,12 +314,12 @@ export default function PayrollPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50/50 p-6 space-y-6">
+        <div className="min-h-screen bg-slate-50/50 space-y-6">
 
             {/* ── Header ─────────────────────────────────────────────────── */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 md:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight">Payroll Management</h1>
+                    <h1 className="text-lg font-bold text-slate-900 tracking-tight">Payroll Management</h1>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-1">HR & Salary Disbursement System</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -347,26 +355,26 @@ export default function PayrollPage() {
                             </button>
                         ))}
                     </div>
-                    <div className="flex items-center gap-2 ml-auto">
+                    <div className="flex items-center flex-wrap gap-2 w-full xl:w-auto xl:ml-auto">
                         <input
                             type="date"
                             value={fromDate}
                             onChange={e => setFromDate(e.target.value)}
-                            className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-primary-theme/20"
+                            className="flex-1 min-w-[110px] px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-primary-theme/20"
                         />
                         <span className="text-slate-300 font-bold text-xs">→</span>
                         <input
                             type="date"
                             value={toDate}
                             onChange={e => setToDate(e.target.value)}
-                            className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-primary-theme/20"
+                            className="flex-1 min-w-[110px] px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-primary-theme/20"
                         />
                     </div>
                 </div>
             </div>
 
             {/* ── Tab Bar ─────────────────────────────────────────────────── */}
-            <div className="flex gap-1 bg-white p-1 rounded-2xl border border-slate-200 shadow-sm w-fit">
+            <div className="flex flex-col sm:flex-row gap-1 bg-white p-1 rounded-2xl border border-slate-200 shadow-sm w-full sm:w-fit">
                 {[
                     { key: 'overview', label: 'All Staff Overview', icon: Users },
                     { key: 'employee', label: 'Employee Payroll', icon: UserCheck },
@@ -374,7 +382,7 @@ export default function PayrollPage() {
                     <button
                         key={tab.key}
                         onClick={() => setActiveTab(tab.key as any)}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.key
+                        className={`flex justify-center items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.key
                             ? 'bg-primary-theme text-white shadow-sm'
                             : 'text-slate-500 hover:bg-slate-50'
                             }`}
@@ -392,16 +400,16 @@ export default function PayrollPage() {
                 <div className="space-y-6">
 
                     {/* Global Stats */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                         <StatCard label="Total Staff" value={globalStats.count} sub="Payroll Records" color={{ bg: 'bg-blue-50', text: 'text-blue-600' }} icon={Users} />
-                        <StatCard label="Total Liability" value={`₹${globalStats.total.toLocaleString()}`} sub="Gross Net Payable" color={{ bg: 'bg-slate-100', text: 'text-slate-700' }} icon={DollarSign} />
+                        <StatCard label="Total Liability" value={`₹${globalStats.total.toLocaleString()}`} sub="Gross Net Payable" color={{ bg: 'bg-slate-100', text: 'text-slate-700' }} icon={IndianRupee} />
                         <StatCard label="Settled Amount" value={`₹${globalStats.paid.toLocaleString()}`} sub="Disbursed" color={{ bg: 'bg-emerald-50', text: 'text-emerald-600' }} icon={CheckCircle} />
                         <StatCard label="Pending Payout" value={`₹${globalStats.pending.toLocaleString()}`} sub="Unpaid" color={{ bg: 'bg-rose-50', text: 'text-rose-600' }} icon={Clock} />
                     </div>
 
                     {/* Search & Table Header */}
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div className="p-4 border-b border-slate-100 flex items-center gap-4">
+                        <div className="p-2 md:p-4 border-b border-slate-100 flex items-center gap-4">
                             <div className="relative flex-1">
                                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                                 <input
@@ -418,24 +426,24 @@ export default function PayrollPage() {
                         </div>
 
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left">
+                            <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full text-left">
                                 <thead>
                                     <tr className="bg-slate-50 border-b border-slate-100">
-                                        <th className="py-4 px-6 text-[9px] font-black uppercase tracking-widest text-slate-400">Employee</th>
-                                        <th className="py-4 px-6 text-[9px] font-black uppercase tracking-widest text-slate-400">Period</th>
-                                        <th className="py-4 px-6 text-[9px] font-black uppercase tracking-widest text-slate-400 text-center">Work Cycle</th>
-                                        <th className="py-4 px-6 text-[9px] font-black uppercase tracking-widest text-slate-400 text-center">Attendance</th>
-                                        <th className="py-4 px-6 text-[9px] font-black uppercase tracking-widest text-slate-400">Monthly Salary</th>
-                                        <th className="py-4 px-6 text-[9px] font-black uppercase tracking-widest text-slate-400">Net Payable</th>
-                                        <th className="py-4 px-6 text-[9px] font-black uppercase tracking-widest text-slate-400 text-center">Status</th>
-                                        <th className="py-4 px-6 text-[9px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
+                                        <th className="py-4 px-3 md:px-6 text-[9px] font-black uppercase tracking-widest text-slate-400">Employee</th>
+                                        <th className="py-4 px-3 md:px-6 text-[9px] font-black uppercase tracking-widest text-slate-400">Period</th>
+                                        <th className="py-4 px-3 md:px-6 text-[9px] font-black uppercase tracking-widest text-slate-400 text-center">Work Cycle</th>
+                                        <th className="py-4 px-3 md:px-6 text-[9px] font-black uppercase tracking-widest text-slate-400 text-center">Attendance</th>
+                                        <th className="py-4 px-3 md:px-6 text-[9px] font-black uppercase tracking-widest text-slate-400">Monthly Salary</th>
+                                        <th className="py-4 px-3 md:px-6 text-[9px] font-black uppercase tracking-widest text-slate-400">Net Payable</th>
+                                        <th className="py-4 px-3 md:px-6 text-[9px] font-black uppercase tracking-widest text-slate-400 text-center">Status</th>
+                                        <th className="py-4 px-3 md:px-6 text-[9px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
                                     {loading && filteredPayrolls.length === 0 ? (
                                         Array.from({ length: 5 }).map((_, i) => (
                                             <tr key={i} className="animate-pulse">
-                                                <td colSpan={8} className="py-5 px-6">
+                                                <td colSpan={8} className="py-5 px-3 md:px-6">
                                                     <div className="h-10 bg-slate-50 rounded-xl w-full" />
                                                 </td>
                                             </tr>
@@ -445,7 +453,7 @@ export default function PayrollPage() {
                                             <td colSpan={8} className="py-24 text-center">
                                                 <div className="flex flex-col items-center gap-4">
                                                     <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-300">
-                                                        <DollarSign size={40} />
+                                                        <IndianRupee size={40} />
                                                     </div>
                                                     <div>
                                                         <p className="text-sm font-bold text-slate-400">No payroll records found</p>
@@ -458,7 +466,7 @@ export default function PayrollPage() {
                                         filteredPayrolls.map(p => (
                                             <tr key={p._id} className="hover:bg-slate-50/70 transition-all group">
                                                 {/* Employee */}
-                                                <td className="py-4 px-6">
+                                                <td className="py-4 px-3 md:px-6">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-9 h-9 rounded-xl bg-primary-theme/10 text-primary-theme flex items-center justify-center font-black text-xs">
                                                             {p.user?.name?.charAt(0) || '?'}
@@ -474,7 +482,7 @@ export default function PayrollPage() {
                                                 </td>
 
                                                 {/* Period */}
-                                                <td className="py-4 px-6">
+                                                <td className="py-4 px-3 md:px-6">
                                                     <div className="flex flex-col">
                                                         <span className="text-[10px] font-black text-slate-700">{new Date(p.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</span>
                                                         <span className="text-[9px] font-black text-slate-400">to {new Date(p.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}</span>
@@ -482,13 +490,13 @@ export default function PayrollPage() {
                                                 </td>
 
                                                 {/* Working Days */}
-                                                <td className="py-4 px-6 text-center">
+                                                <td className="py-4 px-3 md:px-6 text-center">
                                                     <span className="text-sm font-black text-slate-700">{(p.monthDays || 30) - (p.weeklyOffDays || 0)}/{p.monthDays || 30}</span>
                                                     <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-tighter">Working Days</span>
                                                 </td>
 
                                                 {/* Attendance */}
-                                                <td className="py-4 px-6">
+                                                <td className="py-4 px-3 md:px-6">
                                                     <div className="flex items-center justify-center gap-1">
                                                         <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[9px] font-black border border-emerald-100" title="Present">{p.presentDays}P</span>
                                                         <span className="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[9px] font-black border border-amber-100" title="Paid Leave">{p.leaveDays}L</span>
@@ -497,22 +505,22 @@ export default function PayrollPage() {
                                                 </td>
 
                                                 {/* Monthly Salary */}
-                                                <td className="py-4 px-6">
+                                                <td className="py-4 px-3 md:px-6">
                                                     <span className="text-sm font-bold text-slate-600">₹{(p.baseSalary || 0).toLocaleString()}</span>
                                                 </td>
 
                                                 {/* Net Payable */}
-                                                <td className="py-4 px-6">
+                                                <td className="py-4 px-3 md:px-6">
                                                     <span className="text-sm font-black text-slate-900">
-                                                        ₹{(p.isVirtual 
-                                                            ? (p.baseSalary + (p.totalAllowances || 0) - (p.totalDeductions || 0)) 
+                                                        ₹{(p.isVirtual
+                                                            ? (p.baseSalary + (p.totalAllowances || 0) - (p.totalDeductions || 0))
                                                             : (p.netSalary || 0)).toLocaleString()}
                                                     </span>
                                                     {p.isVirtual && <span className="text-[8px] text-slate-300 uppercase font-black block">Draft</span>}
                                                 </td>
 
                                                 {/* Status */}
-                                                <td className="py-4 px-6 text-center">
+                                                <td className="py-4 px-3 md:px-6 text-center">
                                                     {p.isVirtual ? (
                                                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-slate-50 text-slate-400 border border-slate-200 italic">Unprocessed</span>
                                                     ) : (() => {
@@ -526,7 +534,7 @@ export default function PayrollPage() {
                                                 </td>
 
                                                 {/* Actions */}
-                                                <td className="py-4 px-6 text-right">
+                                                <td className="py-4 px-3 md:px-6 text-right">
                                                     <div className="flex items-center justify-end gap-1">
                                                         {!p.isVirtual ? (
                                                             <>
@@ -560,12 +568,12 @@ export default function PayrollPage() {
                                         ))
                                     )}
                                 </tbody>
-                            </table>
+                            </table></div>
                         </div>
 
                         {/* Pagination */}
                         {totalPages > 1 && (
-                            <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                            <div className="p-2 md:p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Page {page} of {totalPages}</span>
                                 <div className="flex gap-2">
                                     <button onClick={() => setPage(page - 1)} disabled={page === 1} className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-[10px] font-black uppercase disabled:opacity-30 hover:bg-slate-50 transition-all">
@@ -685,13 +693,13 @@ export default function PayrollPage() {
                         <div className="space-y-5">
 
                             {/* Employee Info Banner */}
-                            <div className="bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-6 text-white flex items-center justify-between">
+                            <div className="bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-3 md:p-6 text-white flex items-center justify-between">
                                 <div className="flex items-center gap-4">
                                     <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center font-black text-xl">
                                         {empStats.employee?.name?.charAt(0)}
                                     </div>
                                     <div>
-                                        <h2 className="text-lg font-black">{empStats.employee?.name}</h2>
+                                        <h2 className="text-sm md:text-lg font-black">{empStats.employee?.name}</h2>
                                         <p className="text-white/60 text-[10px] font-black uppercase tracking-widest">
                                             {empStats.employee?.designation || empStats.employee?.role} · {empStats.employee?.department || 'General'}
                                         </p>
@@ -712,33 +720,33 @@ export default function PayrollPage() {
                             </div>
 
                             {/* Attendance Stats Cards */}
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 text-center">
+                            <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-2 md:p-4 text-center">
                                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Days</p>
                                     <p className="text-3xl font-black text-slate-900">{empStats.attendance?.totalDays}</p>
                                     <p className="text-[9px] font-black text-slate-400 mt-1">In Period</p>
                                 </div>
-                                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 text-center">
+                                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-2 md:p-4 text-center">
                                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Working Days</p>
                                     <p className="text-3xl font-black text-slate-700">{empStats.attendance?.workingDays}</p>
                                     <p className="text-[9px] font-black text-slate-400 mt-1">Excl. Offs</p>
                                 </div>
-                                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 shadow-sm p-4 text-center">
+                                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 shadow-sm p-2 md:p-4 text-center">
                                     <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-2">Present</p>
                                     <p className="text-3xl font-black text-emerald-700">{empStats.attendance?.presentDays}</p>
                                     <p className="text-[9px] font-black text-emerald-500 mt-1">Days Present</p>
                                 </div>
-                                <div className="rounded-2xl border border-amber-200 bg-amber-50 shadow-sm p-4 text-center">
+                                <div className="rounded-2xl border border-amber-200 bg-amber-50 shadow-sm p-2 md:p-4 text-center">
                                     <p className="text-[8px] font-black text-amber-600 uppercase tracking-widest mb-2">Paid Leave</p>
                                     <p className="text-3xl font-black text-amber-700">{empStats.attendance?.paidLeaveDays}</p>
                                     <p className="text-[9px] font-black text-amber-500 mt-1">Approved</p>
                                 </div>
-                                <div className="rounded-2xl border border-rose-200 bg-rose-50 shadow-sm p-4 text-center">
+                                <div className="rounded-2xl border border-rose-200 bg-rose-50 shadow-sm p-2 md:p-4 text-center">
                                     <p className="text-[8px] font-black text-rose-600 uppercase tracking-widest mb-2">Absent</p>
                                     <p className="text-3xl font-black text-rose-700">{empStats.attendance?.absentDays}</p>
                                     <p className="text-[9px] font-black text-rose-500 mt-1">Unauthorized</p>
                                 </div>
-                                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 text-center">
+                                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-2 md:p-4 text-center">
                                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Weekly Off</p>
                                     <p className="text-3xl font-black text-slate-500">{empStats.attendance?.weeklyOffDays}</p>
                                     <p className="text-[9px] font-black text-slate-400 mt-1">Days Off</p>
@@ -749,7 +757,7 @@ export default function PayrollPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                                 {/* Salary Calculation */}
-                                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 md:p-6">
                                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-5 flex items-center gap-2">
                                         <TrendingUp size={13} /> Salary Computation
                                     </p>
@@ -775,7 +783,7 @@ export default function PayrollPage() {
                                 </div>
 
                                 {/* Attendance Timeline */}
-                                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 md:p-6">
                                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                                         <Calendar size={13} /> Attendance Log ({empStats.attendance?.attendanceRecords?.length || 0} entries)
                                     </p>
@@ -805,7 +813,7 @@ export default function PayrollPage() {
                             </div>
 
                             {/* Existing Payroll Record or Generate */}
-                            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 md:p-6">
                                 <div className="flex items-center justify-between mb-5">
                                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
                                         <FileText size={13} /> Payroll Record Status
@@ -848,17 +856,17 @@ export default function PayrollPage() {
                                 </div>
 
                                 {empStats.existingPayroll ? (
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-4 gap-4">
                                         {[
                                             { label: 'Status', value: (() => { const c = STATUS_CONFIG[empStats.existingPayroll.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.draft; return <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-[9px] font-black uppercase border ${c.bg} ${c.color}`}>{c.label}</span>; })() },
                                             { label: 'Base Salary', value: `₹${(empStats.existingPayroll.baseSalary || 0).toLocaleString()}` },
                                             { label: 'Net Payable', value: `₹${(empStats.existingPayroll.netSalary || 0).toLocaleString()}`, highlight: true },
                                             { label: 'Payment Date', value: empStats.existingPayroll.paymentDate ? new Date(empStats.existingPayroll.paymentDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Not paid yet' },
                                         ].map((item, i) => (
-                                            <div key={i} className="bg-slate-50 rounded-xl p-4">
+                                            <div key={i} className="bg-slate-50 rounded-xl p-2 md:p-4">
                                                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">{item.label}</p>
                                                 {typeof item.value === 'string' ? (
-                                                    <p className={`text-base font-black ${(item as any).highlight ? 'text-emerald-700' : 'text-slate-800'}`}>{item.value}</p>
+                                                    <p className={`text-xs md:text-base font-black ${(item as any).highlight ? 'text-emerald-700' : 'text-slate-800'}`}>{item.value}</p>
                                                 ) : item.value}
                                             </div>
                                         ))}

@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { PharmacyProfileSkeleton } from '@/components/ui/skeletons';
 import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
+import ImageCropper from '@/components/ui/ImageCropper';
 
 /**
  * PharmacyProfile Component
@@ -68,14 +69,22 @@ const PharmacyProfile = () => {
         registrationCertificate: ''
     });
 
+    // Document Viewer State
+    const [docViewer, setDocViewer] = useState<{ url: string; label: string } | null>(null);
+
     // Image/Logo State
     const [logo, setLogo] = useState<string | null>(null);
     const [isUploadingLogo, setIsUploadingLogo] = useState(false);
     const [isLogoDropdownOpen, setIsLogoDropdownOpen] = useState(false);
-    
-    // Document Viewer State
-    const [viewerOpen, setViewerOpen] = useState(false);
-    const [viewerData, setViewerData] = useState({ url: '', title: '' });
+
+    // Cropper State
+    const [cropper, setCropper] = useState<{
+        isOpen: boolean;
+        image: string;
+    }>({
+        isOpen: false,
+        image: ''
+    });
 
     // LOGO PRESETS
     const LOGO_PRESETS = [
@@ -204,40 +213,59 @@ const PharmacyProfile = () => {
         setHasChanges(true);
     };
 
-    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handlePhotoSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (!file) return;
-
-        // Validate file type
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-        if (!allowedTypes.includes(file.type)) {
-            toast.error('Only Image files are allowed for logo');
-            return;
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                setCropper({
+                    isOpen: true,
+                    image: reader.result as string
+                });
+            };
+            reader.readAsDataURL(file);
         }
+    };
 
-        // Validate file size (2MB limit for logo)
-        if (file.size > 2 * 1024 * 1024) {
-            toast.error('Logo file size must be less than 2MB');
-            return;
-        }
+    const handleCropComplete = async (blob: Blob) => {
+        setCropper(prev => ({ ...prev, isOpen: false }));
+        setIsUploadingLogo(true);
+        const uploadToast = toast.loading('Uploading logo...');
 
         try {
-            setIsUploadingLogo(true);
-            const fileName = `pharmacy_logo_${Date.now()}`;
-
-            const response = await pharmacyService.uploadDocument(file, fileName);
+            const file = new File([blob], `pharmacy_logo_${Date.now()}.png`, { type: 'image/png' });
+            const response = await pharmacyService.uploadDocument(file, `pharmacy_logo_${Date.now()}`);
 
             if (response.success) {
-                setLogo(response.url);
+                const newLogo = response.url;
+                const cacheBustedLogo = `${newLogo}${newLogo.includes('?') ? '&' : '?'}t=${Date.now()}`;
+                setLogo(cacheBustedLogo);
                 setHasChanges(true);
-                toast.success('Logo uploaded successfully');
+
+                // Sync with store for immediate navbar update
+                if (setUser && user) {
+                    setUser({
+                        ...user,
+                        image: cacheBustedLogo,
+                        avatar: cacheBustedLogo,
+                        profilePic: cacheBustedLogo
+                    } as any);
+                }
+
+                toast.success('Logo updated successfully', { id: uploadToast });
+            } else {
+                toast.error('Logo upload failed', { id: uploadToast });
             }
         } catch (error) {
             console.error('Logo upload failed:', error);
-            toast.error('Logo upload failed');
+            toast.error('An error occurred during upload', { id: uploadToast });
         } finally {
             setIsUploadingLogo(false);
         }
+    };
+
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        handlePhotoSelected(e);
     };
 
     // Handle Save/Commit
@@ -270,6 +298,10 @@ const PharmacyProfile = () => {
                 ...user,
                 ...response,
                 id: response._id || user?.id, // Ensure ID is preserved
+                // Sync all image fields for Navbar consistency
+                image: logo || response.image || user?.image,
+                avatar: logo || response.image || user?.image,
+                profilePic: logo || response.image || user?.image
             };
 
             // Update local store immediately for instant UI feedback
@@ -297,12 +329,12 @@ const PharmacyProfile = () => {
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-10">
+        <div className="max-w-7xl mx-auto space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-gray-100 dark:border-gray-800 pb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-gray-100 dark:border-gray-800">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight ">Pharmacist Profile</h1>
-                    <p className="text-gray-500 dark:text-gray-400 font-bold mt-1 uppercase tracking-widest text-xs">Registry Configuration & Branding</p>
+                    <h1 className="text-lg md:text-xl font-black text-gray-900 dark:text-white tracking-tight ">Pharmacist Profile</h1>
+                    <p className="text-gray-500 dark:text-gray-400 font-bold mt-1 uppercase tracking-widest text-[10px] md:text-[12px]">Registry Configuration & Branding</p>
                 </div>
                 <div className="flex items-center gap-3">
                     {hasChanges && (
@@ -313,7 +345,7 @@ const PharmacyProfile = () => {
                     {!isEditing ? (
                         <button
                             onClick={() => setIsEditing(true)}
-                            className="px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-2 transition-all active:scale-95 bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200 dark:shadow-none"
+                            className="px-4 py-2 md:py-3 md:px-8 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-2 transition-all active:scale-95 bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200 dark:shadow-none"
                         >
                             Edit Profile
                         </button>
@@ -475,25 +507,25 @@ const PharmacyProfile = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">Shop / Entity Name</label>
-                                    <input
-                                        name="shopName"
-                                        value={formData.shopName}
-                                        onChange={handleInputChange}
-                                        disabled={!isEditing}
-                                        className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl px-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                        placeholder="ENTER SHOP NAME"
-                                    />
+                                <input
+                                    name="shopName"
+                                    value={formData.shopName}
+                                    onChange={handleInputChange}
+                                    disabled={!isEditing}
+                                    className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl px-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    placeholder="ENTER SHOP NAME"
+                                />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">Owner Name</label>
-                                    <input
-                                        name="name"
-                                        value={formData.name}
-                                        onChange={handleInputChange}
-                                        disabled={!isEditing}
-                                        className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl px-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                        placeholder="FULL LEGAL NAME"
-                                    />
+                                <input
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleInputChange}
+                                    disabled={!isEditing}
+                                    className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl px-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    placeholder="FULL LEGAL NAME"
+                                />
                             </div>
                             <div className="space-y-2 col-span-full">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">Full Service Address</label>
@@ -541,14 +573,14 @@ const PharmacyProfile = () => {
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">Drug License No.</label>
-                                    <input
-                                        name="licenseNo"
-                                        value={formData.licenseNo}
-                                        onChange={handleInputChange}
-                                        disabled={!isEditing}
-                                        className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl px-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500 dark:text-white uppercase transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                        placeholder="DL-00000-00"
-                                    />
+                                <input
+                                    name="licenseNo"
+                                    value={formData.licenseNo}
+                                    onChange={handleInputChange}
+                                    disabled={!isEditing}
+                                    className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl px-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500 dark:text-white uppercase transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    placeholder="DL-00000-00"
+                                />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">Communication Line</label>
@@ -607,7 +639,7 @@ const PharmacyProfile = () => {
                         <div className="space-y-4 mb-8">
                             <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">Educational Qualifications</label>
                             {formData.qualificationDetails.qualifications?.map((qual: string, index: number) => (
-                                <div key={index} className="flex items-center gap-3 animate-in fade-in slide-in-from-left-4 duration-300">
+                                <div key={`qual-${index}`} className="flex items-center gap-3 animate-in fade-in slide-in-from-left-4 duration-300">
                                     <div className="flex-1 relative group">
                                         <Award className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                                         <input
@@ -680,11 +712,10 @@ const PharmacyProfile = () => {
                                                         type="button"
                                                         onClick={(e) => {
                                                             e.preventDefault();
-                                                            setViewerData({ 
-                                                                url: formData.documents?.[doc.key as keyof typeof formData.documents]?.url, 
-                                                                title: doc.label 
+                                                            setDocViewer({
+                                                                url: formData.documents?.[doc.key as keyof typeof formData.documents]?.url,
+                                                                label: doc.label
                                                             });
-                                                            setViewerOpen(true);
                                                         }}
                                                         className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                                                         title="View Document"
@@ -707,12 +738,29 @@ const PharmacyProfile = () => {
                     </div>
                 </div>
             </div>
-            <DocumentViewerModal 
-                isOpen={viewerOpen}
-                onClose={() => setViewerOpen(false)}
-                url={viewerData.url}
-                title={viewerData.title}
+
+            {/* DOCUMENT VIEWER MODAL */}
+            <DocumentViewerModal
+                isOpen={!!docViewer}
+                onClose={() => setDocViewer(null)}
+                url={docViewer?.url || ''}
+                title={docViewer?.label || ''}
             />
+
+            {/* IMAGE CROPPER MODAL */}
+            {cropper.isOpen && (
+                <ImageCropper
+                    src={cropper.image}
+                    onCancel={() => setCropper(prev => ({ ...prev, isOpen: false }))}
+                    onCrop={(dataUrl) => {
+                        // Convert dataUrl to blob and call handleCropComplete
+                        fetch(dataUrl)
+                            .then(res => res.blob())
+                            .then(handleCropComplete);
+                    }}
+                    isUploading={isUploadingLogo}
+                />
+            )}
         </div>
     );
 };

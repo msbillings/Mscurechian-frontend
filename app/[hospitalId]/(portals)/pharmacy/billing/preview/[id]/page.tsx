@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { PharmacyBillingService } from '@/lib/integrations/services/pharmacyBilling.service';
 import { PharmacyBill } from '@/lib/integrations/types/pharmacyBilling';
 import PharmacyBillPrint, { ShopDetails } from '@/components/pharmacy/billing/PharmacyBillPrint';
@@ -15,6 +15,7 @@ const InvoicePreviewPage = () => {
     const router = useRouter();
     const { user } = useAuthStore();
     const { getPath } = useTenantLink();
+    const searchParams = useSearchParams();
     const [bill, setBill] = useState<PharmacyBill | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const componentRef = useRef<HTMLDivElement>(null);
@@ -53,6 +54,17 @@ const InvoicePreviewPage = () => {
         fetchBill();
     }, [invoiceId]);
 
+    useEffect(() => {
+        if (!isLoading && bill && searchParams.get('print') === 'true') {
+            const timer = setTimeout(() => {
+                handlePrint();
+                // Optional: remove query param after print triggered so page refresh doesn't re-trigger it
+                // router.replace(getPath(`/pharmacy/billing/preview/${invoiceId}`), { scroll: false });
+            }, 1000); // Small delay to ensure rendering is complete
+            return () => clearTimeout(timer);
+        }
+    }, [isLoading, bill, searchParams]);
+
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -81,47 +93,50 @@ const InvoicePreviewPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-950 p-6 md:p-8">
-            {/* Top Navigation */}
-            <div className="max-w-7xl mx-auto flex items-center justify-between mb-8">
+        <div className="min-h-screen bg-gray-100 dark:bg-gray-950 p-2 sm:p-4 md:p-8">
+            {/* Top Navigation - Compact Toolbar for Mobile */}
+            <div className="max-w-7xl mx-auto flex items-center justify-between gap-1 mb-6 md:mb-8 bg-white dark:bg-gray-800 p-2 md:p-0 rounded-xl md:bg-transparent md:dark:bg-transparent md:rounded-none border border-gray-200 dark:border-gray-700 md:border-none shadow-sm md:shadow-none">
                 <button
                     onClick={() => router.push(getPath('/pharmacy/dashboard'))}
-                    className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl font-black uppercase text-xs tracking-widest hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+                    className="shrink-0 flex items-center gap-1 md:gap-2 px-2 py-1.5 md:px-4 md:py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg md:rounded-xl font-black uppercase text-[8px] md:text-xs tracking-tighter md:tracking-widest hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors whitespace-nowrap"
                 >
-                    <ArrowLeft size={16} /> Back to Dashboard
+                    <ArrowLeft size={12} className="md:w-4 md:h-4" />
+                    <span>BACK <span className="hidden sm:inline">TO DASHBOARD</span></span>
                 </button>
 
-                <div className="flex items-center gap-3">
-                    <span className="bg-teal-100 text-teal-700 px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest border border-teal-200 flex items-center gap-1">
-                        <CheckCircle size={12} /> Generated
+                <div className="flex items-center gap-1 md:gap-3 min-w-0">
+                    <span className="shrink-0 bg-teal-50 text-teal-700 px-1.5 py-0.5 md:px-3 md:py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-tighter md:tracking-widest border border-teal-100 flex items-center gap-0.5">
+                        <CheckCircle size={10} className="md:w-3 md:h-3" /> GENERATED
                     </span>
-                    <p className="text-gray-500 dark:text-gray-400 text-xs font-bold">Filesystem / Invoices / {bill.invoiceId}</p>
+                    <p className="text-gray-400 dark:text-gray-500 text-[8px] md:text-xs font-bold truncate max-w-[70px] sm:max-w-none">
+                        <span className="hidden md:inline">Filesystem / Invoices / </span>{bill.invoiceId}
+                    </p>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
                 {/* Actions Sidebar */}
                 <div className="lg:col-span-3 space-y-6">
-                    <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 sticky top-24">
-                        <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight mb-1">Actions</h3>
-                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-6">Manage Document</p>
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl p-5 md:p-6 shadow-sm border border-gray-200 dark:border-gray-700 md:sticky md:top-24">
+                        <h3 className="text-base md:text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight mb-0.5">Actions</h3>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-4 md:mb-6">Manage Document</p>
 
-                        <div className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 md:gap-4">
                             <button
                                 onClick={() => handlePrint()}
-                                className="w-full flex items-center justify-between p-4 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 group"
+                                className="w-full flex items-center justify-between p-3.5 md:p-4 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 group transition-all active:scale-[0.98] shadow-md shadow-teal-500/10"
                             >
                                 <span className="flex items-center gap-3">
-                                    <Printer size={20} /> <span className="uppercase text-xs tracking-wider">Print Invoice</span>
+                                    <Printer size={18} className="md:w-5 md:h-5" /> <span className="uppercase text-[10px] md:text-xs tracking-wider">Print Invoice</span>
                                 </span>
                             </button>
 
                             <button
                                 onClick={() => router.push(getPath('/pharmacy/dashboard'))}
-                                className="w-full flex items-center justify-between p-4 bg-white text-gray-700 border border-gray-300 rounded-xl font-bold hover:bg-gray-50 group"
+                                className="w-full flex items-center justify-between p-3.5 md:p-4 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-600 group transition-all active:scale-[0.98]"
                             >
                                 <span className="flex items-center gap-3">
-                                    <ArrowLeft size={20} /> <span className="uppercase text-xs tracking-wider">Back to Dashboard</span>
+                                    <ArrowLeft size={18} className="md:w-5 md:h-5" /> <span className="uppercase text-[10px] md:text-xs tracking-wider">Dashboard</span>
                                 </span>
                             </button>
                         </div>
@@ -148,7 +163,7 @@ const InvoicePreviewPage = () => {
 
                 {/* Preview Area */}
                 <div className="lg:col-span-9">
-                    <div className="bg-gray-200/50 dark:bg-gray-900/50 rounded-3xl p-8 md:p-12 flex justify-center items-start min-h-[800px] overflow-x-auto shadow-inner border border-gray-200 dark:border-gray-800">
+                    <div className="bg-gray-200/50 dark:bg-gray-900/50 rounded-3xl p-2 md:p-12 flex justify-start md:justify-center items-start min-h-[800px] overflow-x-auto shadow-inner border border-gray-200 dark:border-gray-800">
                         <div className="shadow-2xl hover:scale-[1.005] origin-top">
                             <div ref={componentRef} style={{ width: '210mm', minHeight: '297mm', background: '#ffffff' }}>
                                 <PharmacyBillPrint billData={bill} shopDetails={shopDetails} />

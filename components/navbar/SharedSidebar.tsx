@@ -1,18 +1,21 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
     ChevronDown,
-    ChevronRight,
     X
 } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useParams } from "next/navigation";
+import { useTenantLink } from "@/hooks/useTenantLink";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/integrations";
 
-interface MenuItem {
+export interface MenuItem {
     icon: any;
     label: string;
     path?: string;
     subItems?: { label: string; path: string }[];
+    badge?: string;
 }
 
 interface SharedSidebarProps {
@@ -26,6 +29,8 @@ interface SharedSidebarProps {
     };
     onMenuItemClick: (path: string) => void;
     currentPath: string;
+    /** Called with `true` when sidebar expands (hover/open), `false` when collapsed */
+    onHoverChange?: (expanded: boolean) => void;
 }
 
 const SharedSidebar: React.FC<SharedSidebarProps> = ({
@@ -34,9 +39,56 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
     menuItems,
     branding,
     onMenuItemClick,
-    currentPath
+    currentPath,
+    onHoverChange,
 }) => {
     const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
+    const [isHovered, setIsHovered] = useState(false);
+    const { getPath } = useTenantLink();
+    const params = useParams();
+    const hospitalId = params?.hospitalId as string;
+
+    // Determine if we should show the dynamic hospital name
+    // Exclude Super Admin, Patient Portal, and Emergency portals
+    const isExcluded = useMemo(() => {
+        const sub = branding.subtitle?.toLowerCase() || "";
+        return sub.includes("super admin") || 
+               sub.includes("patient") || 
+               sub.includes("emergency");
+    }, [branding.subtitle]);
+
+    const { data: dynamicHospitalName, isLoading: isBrandingLoading } = useQuery({
+        queryKey: ["sidebar-hospital-branding", hospitalId],
+        queryFn: async () => {
+            if (!hospitalId || isExcluded) return null;
+            try {
+                // Correct path for apiClient is /auth/... NOT /api/auth/...
+                // The BASE_URL already contains the /api prefix
+                const data = await apiClient<{ valid: boolean; hospitalName?: string }>(
+                    `/auth/verify-hospital/${hospitalId}`
+                );
+                return data?.hospitalName || null;
+            } catch (err) {
+                console.error("[Sidebar] Failed to fetch hospital branding:", err);
+                return null;
+            }
+        },
+        enabled: !!hospitalId && !isExcluded,
+        staleTime: 1000 * 60 * 30, // 30 minutes cache
+        retry: 2,
+    });
+
+    const displayTitle = useMemo(() => {
+        // If it's an excluded portal (Admin/Patient/Emergency) or no hospital context, stay with standard branding
+        if (!hospitalId || isExcluded) return branding.title;
+        
+        // While loading, show a subtle placeholder
+        if (isBrandingLoading) return "...";
+        
+        // If we found a name, use it. 
+        // If NO name found but we HAVE a hospitalId, still DO NOT show "CureChain" as requested.
+        return dynamicHospitalName || "HOSPITAL PORTAL";
+    }, [hospitalId, isExcluded, dynamicHospitalName, isBrandingLoading, branding.title]);
 
     const toggleMenu = (label: string) => {
         setExpandedMenus((prev) => ({
@@ -45,63 +97,100 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
         }));
     };
 
+    const handleMouseEnter = useCallback(() => {
+        setIsHovered(true);
+        onHoverChange?.(true);
+    }, [onHoverChange]);
+
+    const handleMouseLeave = useCallback(() => {
+        setIsHovered(false);
+        onHoverChange?.(false);
+    }, [onHoverChange]);
+
+    const handleCollapse = useCallback(() => {
+        setIsHovered(false);
+        onHoverChange?.(false);
+        onClose();
+    }, [onClose, onHoverChange]);
+
+    const isExpanded = isOpen || isHovered;
+
     const BrandingIcon = branding.logo;
 
     return (
         <>
-            {/* Overlay for mobile */}
+            {/* Backdrop for mobile drawer */}
             {isOpen && (
                 <div
-                    className="lg:hidden fixed inset-0 bg-slate-900/20 z-30 backdrop-blur-sm transition-all duration-300"
-                    onClick={onClose}
+                    className="md:hidden fixed inset-0 bg-slate-900/30 z-30 backdrop-blur-sm transition-all duration-300"
+                    onClick={handleCollapse}
                 />
             )}
 
             {/* Sidebar */}
             <aside
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
                 className={`
-                    fixed left-0 top-0 h-full w-64 flex flex-col z-40
-                    transform transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]
-                    ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+                    fixed md:sticky left-0 top-0 h-screen flex flex-col z-40
+                    transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]
                     border-r border-slate-200 bg-white shadow-xl lg:shadow-none
+                    ${isOpen
+                        ? "translate-x-0 w-72"                            // mobile drawer
+                        : "-translate-x-full md:translate-x-0 md:w-16 lg:w-[260px]" // default
+                    }
                 `}
             >
                 {/* Brand */}
-                <div className="h-16 flex items-center px-6 border-b border-slate-100 justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-primary-theme rounded-lg flex items-center justify-center shadow-lg shadow-primary-theme-200">
-                            <BrandingIcon className="text-white" size={18} />
+                <div className="h-16 flex items-center px-4 border-b border-slate-100 justify-between overflow-hidden shrink-0 gap-4">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="w-9 h-9 shrink-0 bg-primary-theme rounded-xl flex items-center justify-center shadow-lg shadow-primary-theme-200 transition-transform duration-300 hover:scale-105 active:scale-95">
+                            <BrandingIcon className="text-white" size={19} />
                         </div>
-                        <div>
-                            <h1 className="text-sm font-black text-slate-900 leading-none uppercase tracking-tighter">
-                                {branding.title}
+                        <div
+                            className={`
+                                min-w-0 overflow-hidden transition-all duration-500
+                                ${isExpanded ? "opacity-100 max-w-[200px] translate-x-0" : "opacity-0 max-w-0 lg:opacity-100 lg:max-w-[200px] -translate-x-2 lg:translate-x-0"}
+                            `}
+                        >
+                            <h1 className="text-[14px] font-black text-slate-900 leading-tight tracking-tight whitespace-nowrap overflow-hidden text-ellipsis drop-shadow-xs" 
+                                title={displayTitle}>
+                                {displayTitle}
                             </h1>
                             {branding.subtitle && (
-                                <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-[0.2em]">
+                                <p className="text-[8.5px] font-bold text-slate-400 mt-0.5 uppercase tracking-[0.2em] whitespace-nowrap">
                                     {branding.subtitle}
                                 </p>
                             )}
                         </div>
                     </div>
-                    <button onClick={onClose} className="lg:hidden p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
+
+                    {/* X button for mobile/hover close */}
+                    <button
+                        onClick={handleCollapse}
+                        className={`
+                            shrink-0 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all lg:hidden
+                            ${isExpanded ? "flex" : "hidden"}
+                        `}
+                    >
                         <X size={18} />
                     </button>
                 </div>
 
                 {/* Scrollable menu area */}
-                <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1.5 custom-scrollbar">
-                    {menuItems.map((item) => {
+                <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1 custom-scrollbar overflow-x-hidden">
+                    {menuItems.map((item, index) => {
                         const hasSubItems = item.subItems && item.subItems.length > 0;
-                        const isExpanded = expandedMenus[item.label] || item.subItems?.some(s => currentPath === s.path);
+                        const isAutoExpanded = item.subItems?.some(s => currentPath === getPath(s.path));
+                        const isMenuExpanded = expandedMenus[item.label] ?? isAutoExpanded;
+
                         const isActive = item.path
-                            ? (item.path.split('/').length <= 2
-                                ? currentPath.endsWith(item.path)
-                                : currentPath.endsWith(item.path) || currentPath.includes(item.path + '/'))
-                            : item.subItems?.some((s) => currentPath.endsWith(s.path));
+                            ? currentPath === getPath(item.path)
+                            : item.subItems?.some((s) => currentPath === getPath(s.path));
                         const IconComponent = item.icon;
 
                         return (
-                            <div key={item.label} className="space-y-1">
+                            <div key={`${item.label}-${item.path || index}`} className="space-y-1">
                                 <button
                                     onClick={() => {
                                         if (hasSubItems) {
@@ -110,42 +199,80 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
                                             onMenuItemClick(item.path);
                                         }
                                     }}
+                                    title={item.label}
                                     className={`
-                                        flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 w-full text-left group
+                                        flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold
+                                        transition-all duration-200 w-full text-left group/btn
                                         ${isActive
                                             ? "bg-primary-theme-50 text-primary-theme shadow-sm border border-primary-theme-100/50"
                                             : "hover:bg-slate-50 text-slate-500 hover:text-slate-900"
                                         }
                                     `}
                                 >
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-3 min-w-0 py-0.5">
                                         <IconComponent
                                             size={18}
-                                            className={`transition-colors duration-300 ${isActive
+                                            className={`transition-colors duration-200 shrink-0 ${isActive
                                                 ? "text-primary-theme"
-                                                : "text-slate-400 group-hover:text-primary-theme"
+                                                : "text-slate-400 group-hover/btn:text-primary-theme"
                                                 }`}
                                         />
-                                        <span className="uppercase tracking-widest">{item.label}</span>
+                                        <span
+                                            className={`
+                                                uppercase tracking-widest whitespace-nowrap transition-all duration-300 overflow-hidden shrink-0
+                                                ${isExpanded ? "opacity-100 max-w-[200px]" : "opacity-0 max-w-0 lg:opacity-100 lg:max-w-[200px]"}
+                                            `}
+                                        >
+                                            {item.label}
+                                        </span>
+                                        {item.badge && (
+                                            <span
+                                                className={`
+                                                    ml-auto px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase
+                                                    transition-all duration-300 shrink-0
+                                                    ${isActive
+                                                        ? "bg-primary-theme text-white"
+                                                        : "bg-slate-200 text-slate-600"
+                                                    }
+                                                    ${isExpanded ? "opacity-100 scale-100" : "opacity-0 scale-0 lg:opacity-100 lg:scale-100"}
+                                                `}
+                                            >
+                                                {item.badge}
+                                            </span>
+                                        )}
                                     </div>
+
                                     {hasSubItems && (
-                                        <div className={`transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}>
-                                            <ChevronDown size={14} className={isActive ? "text-emerald-500" : "text-slate-300"} />
+                                        <div
+                                            className={`
+                                                transition-all duration-300 shrink-0 ml-2
+                                                ${isMenuExpanded ? "rotate-180" : ""}
+                                                ${isExpanded ? "opacity-100" : "opacity-0 lg:opacity-100"}
+                                            `}
+                                        >
+                                            <ChevronDown size={14} className={isActive ? "text-primary-theme" : "text-slate-300"} />
                                         </div>
                                     )}
                                 </button>
 
                                 {/* Sub Items */}
-                                {hasSubItems && isExpanded && (
-                                    <div className="ml-5 pl-4 border-l-2 border-slate-100 space-y-1 mt-1 animate-in slide-in-from-top-2 duration-300">
-                                        {item.subItems?.map((sub) => (
+                                {hasSubItems && (isMenuExpanded || isAutoExpanded) && (isExpanded || true) && (
+                                    <div
+                                        className={`
+                                            ml-4 pl-4 border-l-2 border-slate-100 space-y-1 mt-1
+                                            animate-in slide-in-from-top-2 duration-200
+                                            ${isExpanded ? "block" : "hidden lg:block"}
+                                        `}
+                                    >
+                                        {item.subItems?.map((sub, subIndex) => (
                                             <button
-                                                key={sub.path}
+                                                key={sub.path || `sub-${subIndex}`}
                                                 onClick={() => onMenuItemClick(sub.path)}
                                                 className={`
-                                                    w-full text-left px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all
-                                                    ${currentPath === sub.path
-                                                        ? "text-primary-theme-700 bg-primary-theme-50"
+                                                    w-full text-left px-3 py-2 rounded-lg text-[10px] font-black
+                                                    uppercase tracking-widest transition-all whitespace-nowrap
+                                                    ${currentPath === getPath(sub.path)
+                                                        ? "text-primary-theme bg-primary-theme-50"
                                                         : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
                                                     }
                                                 `}
@@ -160,15 +287,20 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
                     })}
                 </nav>
 
-                {/* Footer area if needed */}
-                <div className="p-4 border-t border-slate-100">
-                    <div className="bg-slate-50 p-3 rounded-2xl flex items-center gap-3 border border-slate-200/50">
-                        <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-primary-theme font-bold text-xs border border-primary-theme-100">
+                {/* Footer */}
+                <div className="p-3 border-t border-slate-100 overflow-hidden shrink-0">
+                    <div className="bg-slate-50 p-2.5 rounded-2xl flex items-center gap-3 border border-slate-200/50 overflow-hidden">
+                        <div className="w-8 h-8 rounded-lg bg-white shadow-sm shrink-0 flex items-center justify-center text-primary-theme font-bold text-xs border border-primary-theme-100">
                             SYS
                         </div>
-                        <div>
-                            <p className="text-[10px] font-black text-slate-900 uppercase tracking-tighter">System Node</p>
-                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Active Status</p>
+                        <div
+                            className={`
+                                transition-all duration-300 min-w-0 overflow-hidden
+                                ${isExpanded ? "opacity-100 max-w-[180px]" : "opacity-0 max-w-0 lg:opacity-100 lg:max-w-[180px]"}
+                            `}
+                        >
+                            <p className="text-[10px] font-black text-slate-900 uppercase tracking-tighter whitespace-nowrap">System Node</p>
+                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Active Status</p>
                         </div>
                     </div>
                 </div>
@@ -193,4 +325,4 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
     );
 };
 
-export default SharedSidebar;
+export default React.memo(SharedSidebar);

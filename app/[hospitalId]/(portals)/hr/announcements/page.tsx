@@ -80,62 +80,62 @@ function HRAnnouncementsPage() {
   }
 
   return (
-    <div className="p-8 space-y-8 bg-gray-50 min-h-screen">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
-            Hospital Announcements
-            {announcements.filter(a => a.priority === 'high').length > 0 && (
-              <span className="flex items-center gap-1 bg-red-100 text-red-600 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border border-red-200">
-                <AlertTriangle className="w-3 h-3" /> Urgent
-              </span>
-            )}
-          </h1>
-          <p className="text-gray-500 font-medium">Internal hospital updates and administrative bulletins.</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h3 className="font-bold text-gray-900 mb-4 tracking-tight">Categories</h3>
-            <div className="space-y-1">
-              {[
-                { label: 'All Updates', value: 'all', count: announcements.length },
-                { label: 'High Priority', value: 'high', count: announcements.filter(a => a.priority === 'high').length },
-                { label: 'General', value: 'medium', count: announcements.filter(a => a.priority === 'medium').length },
-                { label: 'Information', value: 'low', count: announcements.filter(a => a.priority === 'low').length }
-              ].map(cat => (
-                <button
-                  key={cat.value}
-                  onClick={() => setFilter(cat.value as any)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${filter === cat.value ? 'bg-indigo-600 text-white shadow-lg' : 'hover:bg-gray-50 text-gray-600'
-                    }`}
-                >
-                  <span className="text-xs font-bold uppercase tracking-wider">{cat.label}</span>
-                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${filter === cat.value ? 'bg-white/20' : 'bg-gray-100'
-                    }`}>{cat.count}</span>
-                </button>
-              ))}
+        <div className="space-y-6 sm:space-y-8 bg-gray-50 min-h-screen">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
+                <div>
+                    <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 tracking-tight flex flex-wrap items-center gap-2 sm:gap-3">
+                        Hospital Announcements
+                        {announcements.filter(a => a.priority === 'high').length > 0 && (
+                            <span className="flex items-center gap-1 bg-red-100 text-red-600 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border border-red-200">
+                                <AlertTriangle className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Urgent
+                            </span>
+                        )}
+                    </h1>
+                    <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">Internal hospital updates and administrative bulletins.</p>
+                </div>
             </div>
-          </div>
-        </div>
 
-        <div className="lg:col-span-3">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col min-h-[600px]">
-            <div className="flex-1">
-              {paginatedAnnouncements.length > 0 ? (
-                <div className="w-full">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="bg-gray-50/50 border-b border-gray-100">
-                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Title</th>
-                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Date</th>
-                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Priority</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {paginatedAnnouncements.map((announcement) => (
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 sm:gap-8">
+                <div className="lg:col-span-1 space-y-6">
+                    <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 className="font-bold text-gray-900 mb-4 tracking-tight text-sm uppercase">Categories</h3>
+                        <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
+                            {[
+                                { label: 'All Updates', value: 'all', count: announcements.length },
+                                { label: 'High Priority', value: 'high', count: announcements.filter(a => a.priority === 'high').length },
+                                { label: 'General', value: 'medium', count: announcements.filter(a => a.priority === 'medium').length },
+                                { label: 'Information', value: 'low', count: announcements.filter(a => a.priority === 'low').length }
+                            ].map(cat => (
+                                <button
+                                    key={cat.value}
+                                    onClick={() => setFilter(cat.value as any)}
+                                    className={`w-full flex items-center justify-between px-3 py-2 sm:py-2.5 rounded-xl transition-all ${filter === cat.value ? 'bg-indigo-600 text-white shadow-lg' : 'hover:bg-gray-50 text-gray-600'
+                                        }`}
+                                >
+                                    <span className="text-[9px] sm:text-xs font-bold uppercase tracking-wider text-left">{cat.label}</span>
+                                    <span className={`text-[8px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-full ${filter === cat.value ? 'bg-white/20' : 'bg-gray-100'
+                                        }`}>{cat.count}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="lg:col-span-3">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col min-h-[400px] sm:min-h-[600px]">
+                        <div className="flex-1 overflow-x-auto">
+                            {paginatedAnnouncements.length > 0 ? (
+                                <div className="min-w-[500px] sm:min-w-full">
+                                    <table className="w-full text-left">
+                                        <thead>
+                                            <tr className="bg-gray-50/50 border-b border-gray-100">
+                                                <th className="px-4 sm:px-6 py-4 text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">Title</th>
+                                                <th className="px-4 sm:px-6 py-4 text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">Date</th>
+                                                <th className="px-4 sm:px-6 py-4 text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Priority</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50">
+                                            {paginatedAnnouncements.map((announcement) => (
                         <tr key={announcement._id} className="hover:bg-gray-50/50 transition-colors">
                           <td className="px-6 py-6">
                             <div className="flex items-center gap-4">

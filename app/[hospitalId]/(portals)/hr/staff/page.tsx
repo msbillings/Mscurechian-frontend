@@ -48,14 +48,14 @@ const StaffCard = React.memo(({
   const isActive = member.status === 'active' || !member.status;
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-all group">
-      <div className="p-6">
+      <div className="p-3.5 sm:p-6">
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-xl font-black text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+            <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-50 flex items-center justify-center text-lg sm:text-xl font-black text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shrink-0">
               {member.name?.charAt(0) || '?'}
             </div>
             <div className="min-w-0">
-              <h3 className="text-lg font-black text-slate-900 truncate leading-tight">
+              <h3 className="text-xs sm:text-lg font-black text-slate-900 truncate leading-tight">
                 {member.name}
               </h3>
               <div className="flex items-center gap-2 mt-1.5">
@@ -113,7 +113,7 @@ const StaffCard = React.memo(({
           >
             Profile
           </button>
-          <div className="flex gap-1">
+          <div className="flex gap-1 shrink-0">
             <button
               onClick={onEdit}
               className="px-4 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-blue-600 hover:border-blue-200 transition-all"
@@ -225,52 +225,52 @@ function HRStaffDirectory() {
   }, [debouncedSearch, filterDepartment]);
 
   return (
-    <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
-      {/* Simple Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Personnel Directory</h1>
-          <p className="text-sm text-slate-500 font-medium flex items-center gap-2 mt-1">
-            <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
-            {pagination?.total || 0} active institutional nodes
-          </p>
-        </div>
-        <button
-          onClick={() => router.push(`/${hospitalId}/hr/staff/create`)}
-          className="flex items-center gap-2 px-6 py-2.5 bg-[#4F46E5] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#4338CA] transition-all shadow-lg shadow-indigo-500/20"
-        >
-          <UserPlus className="w-4 h-4" strokeWidth={3} /> Register Personnel
-        </button>
-      </div>
+        <div className="space-y-6 sm:space-y-8 bg-slate-50/50 min-h-screen">
+            {/* Simple Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight uppercase">Staff Management</h1>
+                    <p className="text-[10px] sm:text-xs text-slate-500 font-medium flex items-center gap-2 mt-1 uppercase">
+                        <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
+                        {pagination?.total || 0} active institutional nodes
+                    </p>
+                </div>
+                <button
+                    onClick={() => router.push(`/${hospitalId}/hr/staff/create`)}
+                    className="flex items-center justify-center gap-2 px-6 py-3 sm:py-2.5 bg-[#4F46E5] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#4338CA] transition-all shadow-lg shadow-indigo-500/20 w-full sm:w-auto"
+                >
+                    <UserPlus className="w-4 h-4" strokeWidth={3} /> Register Personnel
+                </button>
+            </div>
 
-      {/* Controller */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
-        <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search name, employee ID, or secure email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
-          />
-        </div>
-        <div className="flex items-center gap-3 w-full lg:w-auto">
-          <div className="relative flex-1 lg:w-64">
-            <Filter className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-            <select
-              value={filterDepartment}
-              onChange={(e) => setFilterDepartment(e.target.value)}
-              className="w-full pl-11 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-indigo-500/20 outline-none appearance-none cursor-pointer transition-all"
-            >
-              <option value="">Global Filter</option>
-              {departments.map((dept) => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
+            {/* Controller */}
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
+                <div className="relative flex-1 w-full">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                    <input
+                        type="text"
+                        placeholder="Search name, employee ID, or secure email..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                    />
+                </div>
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <div className="relative flex-1 md:w-64">
+                        <Filter className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                        <select
+                            value={filterDepartment}
+                            onChange={(e) => setFilterDepartment(e.target.value)}
+                            className="w-full pl-11 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-indigo-500/20 outline-none appearance-none cursor-pointer transition-all"
+                        >
+                            <option value="">Global Filter</option>
+                            {departments.map((dept) => (
+                                <option key={dept} value={dept}>{dept}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            </div>
 
       {/* Clean Grid */}
       {loading ? (
@@ -287,7 +287,7 @@ function HRStaffDirectory() {
         </div>
       ) : (
         <div className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {staff.map((member: any) => (
               <StaffCard
                 key={member._id}

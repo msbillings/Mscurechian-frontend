@@ -1,24 +1,19 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
-import Navbar from '@/components/navbar/Navbar';
-import Sidebar, { SidebarItem } from '@/components/slidebar/Sidebar';
 import {
   LayoutDashboard,
-  Users,
-  Activity,
   ClipboardList,
   Calendar,
-  Bell,
-  Clock,
   AlertTriangle,
   BookOpenCheck,
-  LifeBuoy,
   Settings,
-  RotateCcw
+  Activity,
+  Users,
+  Clock,
+  RotateCcw,
+  Bell
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
@@ -30,110 +25,100 @@ import { useNotifications } from '@/lib/integrations/hooks';
 import NurseShiftButton from './components/NurseShiftButton';
 import NurseSupportFloatingBox from './components/NurseSupportFloatingBox';
 import { useTenantLink } from '@/hooks/useTenantLink';
+import { useRealtime } from '@/hooks/useRealtime';
+import Navbar from '@/components/navbar/Navbar';
+import SharedSidebar from "@/components/navbar/SharedSidebar";
+import ProgressBar from "@/components/ui/ProgressBar";
 
+export function NurseLayout({ children }: { children: React.ReactNode }) {
+    const router = useRouter();
+    const pathname = usePathname();
+    const { getPath } = useTenantLink();
+    const { user, logout, isInitialized, isAuthenticated, isLoading, checkAuth, initEvents } = useAuthStore();
+    const { theme, toggleTheme } = useThemeStore();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+    const [isPending, startTransition] = React.useTransition();
 
-const nurseMenuItems: SidebarItem[] = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/nurse' },
-  { icon: Activity, label: 'My Ward Status', href: '/nurse/ward' },
-  { icon: Users, label: 'Patient Monitoring', href: '/nurse/patients' },
-  { icon: Activity, label: 'Hourly Monitoring', href: '/nurse/patient-hourly-record' },
-  { icon: ClipboardList, label: 'Daily Tasks', href: '/nurse/tasks' },
-  { icon: ClipboardList, label: 'Discharge Management', href: '/nurse/discharge' },
-  {
-    icon: Clock, label: 'My Workforce', href: '#', subItems: [
-      { icon: Clock, label: 'Attendance', href: '/nurse/attendance' },
-      { icon: Calendar, label: 'Leave Management', href: '/nurse/leaves' },
-      { icon: Calendar, label: 'My Schedule', href: '/nurse/schedule' },
-    ]
-  },
-  { icon: AlertTriangle, label: 'Medical Incident', href: '/nurse/incidents' },
-  { icon: RotateCcw, label: 'Medicine Return', href: '/nurse/medicine-return' },
-  { icon: BookOpenCheck, label: 'Sop & Policies', href: '/nurse/sop' },
-  { icon: Bell, label: 'Announcements', href: '/nurse/announcements' },
+    useRealtime(['patients', 'beds', 'staff', 'emergency', 'system', 'pharmacy']);
 
+    const isLoginPage = pathname?.includes('/nurse/login');
 
-];
-
-export default function NurseLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { user, logout, isInitialized, isAuthenticated, isLoading, checkAuth, initEvents } = useAuthStore();
-  const { theme, toggleTheme } = useThemeStore();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const { getPath } = useTenantLink(); // ✅ MULTI-TENANCY
+    const nurseMenuItems: any[] = [
+      { icon: LayoutDashboard, label: 'Dashboard', path: '/nurse' },
+      { icon: Activity, label: 'My Ward Status', path: '/nurse/ward' },
+      { icon: Users, label: 'Patient Monitoring', path: '/nurse/patients' },
+      { icon: Activity, label: 'Hourly Monitoring', path: '/nurse/patient-hourly-record' },
+      { icon: ClipboardList, label: 'Daily Tasks', path: '/nurse/tasks' },
+      { icon: ClipboardList, label: 'Discharge Management', path: '/nurse/discharge' },
+      {
+        icon: Clock, label: 'My Workforce',
+        subItems: [
+          { label: 'Attendance', path: '/nurse/attendance' },
+          { label: 'Leave Management', path: '/nurse/leaves' },
+          { label: 'My Schedule', path: '/nurse/schedule' },
+        ]
+      },
+      { icon: AlertTriangle, label: 'Medical Incident', path: '/nurse/incidents' },
+      { icon: RotateCcw, label: 'Medicine Return', path: '/nurse/medicine-return' },
+      { icon: BookOpenCheck, label: 'Sop & Policies', path: '/nurse/sop' },
+      { icon: Bell, label: 'Announcements', path: '/nurse/announcements' },
+    ];
 
   useEffect(() => {
+    setIsMounted(true);
     initEvents();
     checkAuth();
-  }, []);
+  }, [checkAuth, initEvents]);
 
   useEffect(() => {
-    if (isInitialized) {
+    if (!isLoginPage && isInitialized) {
       if (!isAuthenticated) {
-        router.push('/auth/login');
+        router.push(getPath('/auth/login'));
       } else if (user?.role !== 'nurse') {
-        // Allow helpdesk/admin to view for testing if needed, or strict redirect
         const roleMap: Record<string, string> = {
-          'helpdesk': '/helpdesk',
-          'staff': '/staff',
-          'doctor': '/doctor',
-          'hospital-admin': '/hospital-admin',
+          'helpdesk': getPath('/helpdesk'),
+          'staff': getPath('/staff'),
+          'doctor': getPath('/doctor'),
+          'hospital-admin': getPath('/hospital-admin'),
         };
         if (roleMap[user?.role || '']) router.push(roleMap[user?.role || '']!);
       }
     }
-  }, [isInitialized, isAuthenticated, user?.role, router]);
+  }, [isInitialized, isAuthenticated, user?.role, router, isLoginPage, getPath]);
 
-  // ✅ REAL-TIME DYNAMICS: Leave Status Sync
-  // ✅ REAL-TIME DYNAMICS: Hyper-Reactive Leave Sync
   const queryClient = useQueryClient();
   useEffect(() => {
     if (isAuthenticated && user) {
       const initSocket = async () => {
         const socket = await getSocket();
         if (socket) {
-          const uId = user.id || (user as any)._id;
-          const hId = user.hospitalId || (user as any).hospital;
-
           joinSocketRoom({
-            userId: uId,
+            userId: user.id || (user as any)._id,
             role: user.role,
-            hospitalId: hId
+            hospitalId: user.hospitalId || (user as any).hospital
           });
 
           socket.on('leave:status_change', (data: any) => {
-            console.log('📡 [Nurse] Leave Status Sync Received:', data);
             const status = data.leave.status;
-            const toastIcon = status === 'approved' ? '✅' : '❌';
-            toast(`Leave Request ${status.toUpperCase()}!`, { icon: toastIcon, duration: 4000 });
-
-            // ✅ INSTANT SYNC: Refetch and invalidate all staff-related data
-            queryClient.refetchQueries({ queryKey: ['staff'] });
+            toast(`Leave Request ${status.toUpperCase()}!`, { icon: status === 'approved' ? '✅' : '❌', duration: 4000 });
             queryClient.invalidateQueries({ queryKey: ['staff'] });
           });
 
-          // ✅ NEW: Real-time Incident Status Sync
           socket.on('incident_update', (data: any) => {
-            console.log('📡 [Nurse] Incident Status Sync Received:', data);
-            toast(`Incident ${data.status.toUpperCase()}: ${data.incidentId}`, {
-              icon: '🏥',
-              duration: 5000
-            });
+            toast(`Incident ${data.status.toUpperCase()}: ${data.incidentId}`, { icon: '🏥', duration: 5000 });
             queryClient.invalidateQueries({ queryKey: ['my-incidents'] });
           });
 
-          // ✅ NEW: Real-time New Incident Sync
-          socket.on('new_incident', (data: any) => {
+          socket.on('new_incident', () => {
             queryClient.invalidateQueries({ queryKey: ['my-incidents'] });
           });
         }
       };
       initSocket();
-
       return () => {
-        const socketPromise = getSocket();
-        socketPromise.then(socket => {
+        getSocket().then(socket => {
           if (socket) {
             socket.off('leave:status_change');
             socket.off('incident_update');
@@ -144,19 +129,15 @@ export default function NurseLayout({ children }: { children: React.ReactNode })
     }
   }, [isAuthenticated, user, queryClient]);
 
-  const handleConfirmLogout = async () => {
-    await logout();
-    router.push('/nurse/login');
-  };
-
-  if (isLoading || !isInitialized) {
+  if (!isLoginPage && (!isMounted || isLoading || !isInitialized)) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="w-16 h-16 border-4 border-blue-600/10 border-t-blue-600 rounded-full animate-spin"></div>
       </div>
     );
   }
 
+  if (isLoginPage) return <>{children}</>;
   if (!isAuthenticated || user?.role !== 'nurse') return null;
 
   const nurseUser = {
@@ -166,41 +147,52 @@ export default function NurseLayout({ children }: { children: React.ReactNode })
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex min-h-screen bg-slate-50">
       <LogoutModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
-        onConfirm={handleConfirmLogout}
+        onConfirm={async () => { await logout(); router.push(getPath('/nurse/login')); }}
         userName={user?.name}
       />
-      <Sidebar
+
+      <SharedSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
-        items={nurseMenuItems}
-        onLogout={() => setIsLogoutModalOpen(true)}
+        menuItems={nurseMenuItems}
+        branding={{ logo: Activity, title: "CureChain", subtitle: "Nurse Portal" }}
+        currentPath={pathname}
+        onMenuItemClick={(path) => {
+          startTransition(() => {
+            router.push(getPath(path));
+            setIsSidebarOpen(false);
+          });
+        }}
       />
 
-      <div className="flex-1 flex flex-col min-w-0 h-full lg:ml-64">
-
+      <div className="flex-1 flex flex-col min-h-screen min-w-0 relative">
         <Navbar
-          title="Nurse Care Portal"
           user={nurseUser}
           onMenuClick={() => setIsSidebarOpen(true)}
           isDarkMode={theme === 'dark'}
           onThemeToggle={toggleTheme}
           actions={<NurseShiftButton />}
           onLogout={() => setIsLogoutModalOpen(true)}
-          className="sticky top-0 z-50"
+          className="sticky top-0 z-30 shrink-0"
           profileHref={getPath('/nurse/profile')}
         />
-        <main className="p-1.5 sm:p-4 md:p-6 flex-1 overflow-y-auto relative">
-          {children}
 
-          {/* Global Floating Support Button */}
+        <main className="p-2 md:p-6 flex-1 overflow-y-auto relative">
+          <ProgressBar color="#2563eb" isPending={isPending} />
+          <div className="max-w-[1600px] mx-auto w-full">
+            <React.Fragment>
+                {children}
+            </React.Fragment>
+          </div>
           <NurseSupportFloatingBox />
         </main>
-
       </div>
     </div>
   );
 }
+
+export default NurseLayout;

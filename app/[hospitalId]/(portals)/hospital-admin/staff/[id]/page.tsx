@@ -176,7 +176,7 @@ function StaffDetailPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-20">
       {/* Header / Navigation */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-white/5 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 md:p-6 border border-gray-100 dark:border-white/5 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
             <button
@@ -246,7 +246,7 @@ function StaffDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Summary Card */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-white/5">
+        <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-white/5">
           <div className="flex flex-col items-center text-center">
             <div className="w-20 h-20 rounded-2xl bg-gray-50 dark:bg-white/5 flex items-center justify-center border border-gray-100 dark:border-white/10 mb-5">
               <User className="text-blue-500" size={32} />
@@ -283,7 +283,7 @@ function StaffDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Info Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
               <div className="flex items-center gap-3 mb-5">
                 <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600">
                   <Building2 size={18} />
@@ -306,7 +306,7 @@ function StaffDetailPage() {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
               <div className="flex items-center gap-3 mb-5">
                 <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-emerald-600">
                   <Clock size={18} />
@@ -332,7 +332,7 @@ function StaffDetailPage() {
 
           {/* Personal & Contact */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-amber-600">
                   <Mail size={18} />
@@ -359,14 +359,14 @@ function StaffDetailPage() {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600">
                   <CreditCard size={18} />
                 </div>
                 <h3 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">Financial & Identity</h3>
               </div>
-              <div className="grid grid-cols-2 gap-y-5 gap-x-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-5 gap-x-4">
                 <div>
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-2">Base Salary</p>
                   <p className="text-sm font-black text-blue-600">₹{(staff.baseSalary || 0).toLocaleString()}</p>
@@ -396,7 +396,7 @@ function StaffDetailPage() {
           </div>
 
           {/* Professional License & Documents */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm space-y-6">
+          <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm space-y-6">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-purple-600">
                 <Award size={18} />
@@ -423,7 +423,7 @@ function StaffDetailPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {[
                   { label: 'Degree', key: 'degreeCertificate' },
                   { label: 'Med. Council', key: 'medicalCouncilRegistration' },
@@ -455,7 +455,7 @@ function StaffDetailPage() {
 
           {/* Bank Details & Emergency Contact */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-5 flex items-center gap-2">
                 <Building size={14} className="text-gray-300" /> Bank Disclosure
               </p>
@@ -475,12 +475,12 @@ function StaffDetailPage() {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-5 flex items-center gap-2">
                 <Users size={14} className="text-gray-300" /> Emergency Contact
               </p>
               {staff.emergencyContact ? (
-                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-white/5 rounded-xl border border-dashed border-gray-200 dark:border-white/10">
+                <div className="flex items-center justify-between p-2 md:p-4 bg-gray-50 dark:bg-white/5 rounded-xl border border-dashed border-gray-200 dark:border-white/10">
                   <div>
                     <p className="text-sm font-bold text-gray-900 dark:text-white">{staff.emergencyContact.name}</p>
                     <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-0.5">{staff.emergencyContact.relationship}</p>
@@ -497,7 +497,7 @@ function StaffDetailPage() {
 
           {/* Qualifications, Skills & Certifications */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
               <div className="flex items-center gap-2 mb-4 text-purple-600">
                 <FileText size={16} />
                 <h3 className="text-[10px] font-bold uppercase tracking-widest">Qualifications</h3>
@@ -510,7 +510,7 @@ function StaffDetailPage() {
                 ) : <p className="text-[10px] text-gray-400 italic">None listed</p>}
               </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
               <div className="flex items-center gap-2 mb-4 text-blue-600">
                 <Activity size={16} />
                 <h3 className="text-[10px] font-bold uppercase tracking-widest">Skills</h3>
@@ -521,7 +521,7 @@ function StaffDetailPage() {
                 )) : <p className="text-[10px] text-gray-400 italic">None listed</p>}
               </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
               <div className="flex items-center gap-2 mb-4 text-emerald-600">
                 <ShieldCheck size={16} />
                 <h3 className="text-[10px] font-bold uppercase tracking-widest">Certifications</h3>

@@ -129,14 +129,14 @@ export default function HelpdeskProfilePage() {
                         </div>
                     </div>
 
-                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+                    <div className="bg-white p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm space-y-4 sm:space-y-5">
                         <div className="flex items-center gap-2.5 border-b border-slate-50 pb-3">
                             <div className="p-1.5 bg-amber-50 rounded-lg text-amber-600">
-                                <CreditCard size={15} />
+                                <CreditCard size={14} className="sm:size-[15px]" />
                             </div>
-                            <h3 className="font-black text-xs uppercase tracking-[0.15em] text-slate-900">Tax &amp; Payroll</h3>
+                            <h3 className="font-black text-[10px] sm:text-xs uppercase tracking-[0.15em] text-slate-900">Tax &amp; Payroll</h3>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-2 sm:gap-3">
                             <SecureItem label="PAN" value={panNumber} />
                             <SecureItem label="PF No" value={pfNumber} />
                             <SecureItem label="ESI" value={esiNumber} />
@@ -147,40 +147,40 @@ export default function HelpdeskProfilePage() {
 
                 {/* RIGHT COLUMN: BANK */}
                 <div className="lg:col-span-8">
-                    <div className="bg-white p-5 sm:p-7 rounded-2xl border border-slate-200 shadow-sm space-y-5">
-                        <div className="flex items-center gap-2.5 border-b border-slate-50 pb-4">
-                            <div className="p-2 bg-teal-600 rounded-xl text-white">
-                                <Landmark size={16} />
+                    <div className="bg-white p-4 sm:p-7 rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm space-y-4 sm:space-y-5">
+                        <div className="flex items-center gap-2.5 border-b border-slate-50 pb-3 sm:pb-4">
+                            <div className="p-1.5 sm:p-2 bg-teal-600 rounded-lg sm:rounded-xl text-white">
+                                <Landmark size={14} className="sm:size-[16px]" />
                             </div>
-                            <h3 className="font-black text-sm text-slate-900 tracking-tight uppercase">Settlement Bank</h3>
+                            <h3 className="font-black text-xs sm:text-sm text-slate-900 tracking-tight uppercase">Settlement Bank</h3>
                         </div>
 
-                        <div className="bg-slate-900 rounded-2xl p-6 text-white relative overflow-hidden group shadow-xl">
-                            <div className="absolute top-0 right-0 w-48 h-48 bg-teal-500/10 rounded-full -mr-24 -mt-24 blur-3xl transition-all group-hover:bg-teal-500/20"></div>
+                        <div className="bg-slate-900 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white relative overflow-hidden group shadow-xl">
+                            <div className="absolute top-0 right-0 w-32 sm:w-48 h-32 sm:h-48 bg-teal-500/10 rounded-full -mr-16 sm:-mr-24 -mt-16 sm:-mt-24 blur-3xl transition-all group-hover:bg-teal-500/20"></div>
 
-                            <div className="relative space-y-5">
+                            <div className="relative space-y-4 sm:space-y-5">
                                 <div className="flex justify-between items-start">
                                     <div className="space-y-0.5">
-                                        <p className="text-[10px] font-black text-teal-400 uppercase tracking-[0.2em]">Primary Salary Node</p>
-                                        <h4 className="text-lg sm:text-xl font-black tracking-tight">{bankDetails?.bankName || "BANK NOT LINKED"}</h4>
+                                        <p className="text-[8px] sm:text-[10px] font-black text-teal-400 uppercase tracking-[0.2em]">Primary Salary Node</p>
+                                        <h4 className="text-base sm:text-xl font-black tracking-tight leading-tight">{bankDetails?.bankName || "BANK NOT LINKED"}</h4>
                                     </div>
-                                    <div className="px-2.5 py-1 bg-white/10 rounded-lg text-[10px] font-mono tracking-widest">{bankDetails?.ifscCode || "IFSC"}</div>
+                                    <div className="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-white/10 rounded-md sm:rounded-lg text-[8px] sm:text-[10px] font-mono tracking-widest">{bankDetails?.ifscCode || "IFSC"}</div>
                                 </div>
 
-                                <div className="space-y-1.5">
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Account Number</p>
-                                    <p className="text-2xl sm:text-3xl font-mono tracking-[0.15em] text-teal-50">
+                                <div className="space-y-1 sm:space-y-1.5">
+                                    <p className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-widest">Account Number</p>
+                                    <p className="text-xl sm:text-3xl font-mono tracking-[0.1em] sm:tracking-[0.15em] text-teal-50">
                                         {bankDetails?.accountNumber ? `•••• •••• ${bankDetails.accountNumber.slice(-4)}` : "•••• •••• ••••"}
                                     </p>
                                 </div>
 
                                 <div className="flex justify-between items-center pt-3 border-t border-white/5">
                                     <div className="space-y-0.5">
-                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Account Holder</p>
-                                        <p className="text-xs font-black uppercase tracking-tight">{bankDetails?.accountName || name}</p>
+                                        <p className="text-[7px] sm:text-[8px] font-black text-slate-500 uppercase tracking-widest">Account Holder</p>
+                                        <p className="text-[10px] sm:text-xs font-black uppercase tracking-tight">{bankDetails?.accountName || name}</p>
                                     </div>
-                                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/20 text-emerald-400 rounded-xl text-[10px] font-black border border-emerald-500/20 uppercase tracking-widest">
-                                        <CheckCircle2 size={11} /> Encrypted
+                                    <div className="flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg sm:rounded-xl text-[8px] sm:text-[10px] font-black border border-emerald-500/20 uppercase tracking-widest">
+                                        <CheckCircle2 size={10} className="sm:size-[11px]" /> Encrypted
                                     </div>
                                 </div>
                             </div>
@@ -195,13 +195,13 @@ export default function HelpdeskProfilePage() {
 // Helper Components
 function InfoItem({ icon, label, value }: any) {
     return (
-        <div className="flex items-start gap-4 p-4 hover:bg-slate-50 rounded-2xl transition-all border border-transparent hover:border-slate-100 group">
-            <div className="p-2.5 bg-slate-50 rounded-xl text-slate-400 group-hover:text-teal-500 transition-colors">
-                {icon}
+        <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 hover:bg-slate-50 rounded-xl sm:rounded-2xl transition-all border border-transparent hover:border-slate-100 group">
+            <div className="p-2 sm:p-2.5 bg-slate-50 rounded-lg sm:rounded-xl text-slate-400 group-hover:text-teal-500 transition-colors">
+                {React.cloneElement(icon as React.ReactElement<any>, { size: 14 })}
             </div>
-            <div className="space-y-1">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">{label}</p>
-                <p className="text-xs font-black text-slate-900 tracking-tight">{value || "Not Set"}</p>
+            <div className="space-y-0.5 sm:space-y-1">
+                <p className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">{label}</p>
+                <p className="text-[11px] sm:text-xs font-black text-slate-900 tracking-tight">{value || "Not Set"}</p>
             </div>
         </div>
     );

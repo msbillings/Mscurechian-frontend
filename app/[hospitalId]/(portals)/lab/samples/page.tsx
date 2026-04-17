@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useTransition, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { LabSample } from '@/lib/integrations/types/labSample';
 import { LabSampleService } from '@/lib/integrations/services/labSample.service';
-import { FlaskConical, RefreshCw, User, TestTube, Clock, CheckCircle2, FileText, AlertCircle, PlayCircle, ChevronLeft, ChevronRight, Receipt } from 'lucide-react';
+import { FlaskConical, RefreshCw, User, TestTube, Clock, CheckCircle2, FileText, AlertCircle, PlayCircle, ChevronLeft, ChevronRight, Receipt, Printer } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { invalidateCachePattern } from '@/lib/integrations/api/apiClient';
+import { invalidateCachePattern, clearApiCache } from '@/lib/integrations/api/apiClient';
+import { getSocket } from '@/lib/integrations/api/socket';
 
 
 
@@ -37,61 +38,86 @@ export default function SampleCollectionPage() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<TabType>('pending');
     const [currentPage, setCurrentPage] = useState(1);
+    const [isNavigating, startNavigation] = useTransition();
     const itemsPerPage = 15;
 
 
-    useEffect(() => {
-        // Use cache by default for performance. Cache is invalidated on actions.
-        fetchSamples(false);
-
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                // Determine if we need to refresh. For now rely on cache TTL or specific invalidations.
-                fetchSamples(false);
-            }
-        };
-
-        const handleRefresh = () => fetchSamples(true, true);
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        window.addEventListener('refresh-lab-data', handleRefresh);
-
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-            window.removeEventListener('refresh-lab-data', handleRefresh);
-        };
-    }, []);
-
-    const fetchSamples = async (silent = false, skipCache = false) => {
+    const fetchSamples = useCallback(async (silent = false, skipCache = false) => {
         if (!silent) setLoading(true);
         try {
-            // Fetch samples by status - using standard frontend status names that backend maps
             const [pending, processing, completed] = await Promise.all([
-                LabSampleService.getSamples('Pending', skipCache),        // Backend maps to 'prescribed'
-                LabSampleService.getSamples('In Processing', skipCache), // Backend maps to ['sample_collected', 'processing']
-                LabSampleService.getSamples('Completed', skipCache)       // Backend maps to 'completed'
+                LabSampleService.getSamples('Pending', skipCache),
+                LabSampleService.getSamples('In Processing', skipCache),
+                LabSampleService.getSamples('Completed', skipCache)
             ]);
 
             setPendingSamples(pending.sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime()));
-
-            setReadySamples(processing.sort((a, b) => {
-                const dateA = new Date(a.collectionDate || a.createdAt || '').getTime();
-                const dateB = new Date(b.collectionDate || b.createdAt || '').getTime();
-                return dateB - dateA;
-            }));
-
-            setCollectedSamples(completed.sort((a, b) => {
-                const dateA = new Date(a.reportDate || a.collectionDate || a.createdAt || '').getTime();
-                const dateB = new Date(b.reportDate || b.collectionDate || b.createdAt || '').getTime();
-                return dateB - dateA;
-            }));
-
+            setReadySamples(processing.sort((a, b) => new Date(b.collectionDate || b.createdAt || '').getTime() - new Date(a.collectionDate || a.createdAt || '').getTime()));
+            setCollectedSamples(completed.sort((a, b) => new Date(b.reportDate || b.collectionDate || b.createdAt || '').getTime() - new Date(a.reportDate || a.collectionDate || a.createdAt || '').getTime()));
         } catch (error) {
             console.error(error);
             if (!silent) toast.error('Failed to load samples');
         } finally {
             if (!silent) setLoading(false);
         }
-    };
+    }, []);
+
+    // ── Real-time: trigger a cache-busted refresh after a short delay ──
+    const triggerLiveRefresh = useCallback(() => {
+        // First pass — fast write (500ms)
+        setTimeout(() => {
+            clearApiCache();
+            fetchSamples(true, true);
+        }, 500);
+        // Second pass — slower writes / network lag (2s)
+        setTimeout(() => {
+            clearApiCache();
+            fetchSamples(true, true);
+        }, 2000);
+    }, [fetchSamples]);
+
+    useEffect(() => {
+        fetchSamples(false);
+
+        // ── Socket listeners ──
+        let socketInstance: any = null;
+        getSocket().then(socket => {
+            if (!socket) return;
+            socketInstance = socket;
+
+            const handleUpdate = () => {
+                console.log('📡 [SamplesPage] Real-time event → refreshing list...');
+                triggerLiveRefresh();
+            };
+
+            socket.on('new_lab_order',       handleUpdate);
+            socket.on('sample_collected',    handleUpdate);
+            socket.on('lab_order_updated',   handleUpdate);
+            socket.on('lab_refresh_forced',  handleUpdate);
+            socket.on('payment_status_changed', handleUpdate);
+        });
+
+        // ── Existing listeners ──
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') fetchSamples(true, false);
+        };
+        const handleRefresh = () => fetchSamples(true, true);
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('refresh-lab-data', handleRefresh);
+
+        return () => {
+            if (socketInstance) {
+                socketInstance.off('new_lab_order');
+                socketInstance.off('sample_collected');
+                socketInstance.off('lab_order_updated');
+                socketInstance.off('lab_refresh_forced');
+                socketInstance.off('payment_status_changed');
+            }
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('refresh-lab-data', handleRefresh);
+        };
+    }, [fetchSamples, triggerLiveRefresh]);
 
     const handleCollect = async (id: string) => {
         try {
@@ -133,7 +159,9 @@ export default function SampleCollectionPage() {
             displayId: sample.sampleId,
             refDoctor: sample.patientDetails.refDoctor || ''
         }).toString();
-        router.push(`/lab/billing?${queryParams}`);
+        startNavigation(() => {
+            router.push(`/lab/billing?${queryParams}`);
+        });
     };
 
     const getDisplaySamples = () => {
@@ -168,17 +196,24 @@ export default function SampleCollectionPage() {
     }
 
     return (
-        <div className="space-y-6">
-            <div className="bg-linear-to-br from-slate-50 to-blue-50/30 dark:from-gray-900 dark:to-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 p-8">
-                <div className="flex items-center justify-between mb-6">
+        <div className="space-y-4 lg:space-y-6">
+            <div className="bg-linear-to-br from-slate-50 to-blue-50/30 dark:from-gray-900 dark:to-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 p-4 sm:p-6 lg:p-8">
+                <div className="flex items-start sm:items-center justify-between gap-4 mb-4 lg:mb-6">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
                             <div className="p-2.5 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
                                 <FlaskConical className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                             </div>
-                            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Lab Samples</h1>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-lg md:text-xl lg:text-xl font-semibold text-gray-900 dark:text-white">Lab Samples</h1>
+                                {pendingSamples.length > 0 && (
+                                    <span className="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full shadow-sm">
+                                        {pendingSamples.length}
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Manage sample collection and result entry</p>
+                        <p className="text-xs md:text-sm lg:text-base text-gray-600 dark:text-gray-400">Manage sample collection and result entry</p>
                     </div>
                     <button
                         onClick={() => fetchSamples()}
@@ -190,7 +225,7 @@ export default function SampleCollectionPage() {
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                     <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-slate-200 dark:border-gray-700 shadow-sm">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
@@ -228,9 +263,9 @@ export default function SampleCollectionPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">View:</span>
-                <div className="inline-flex bg-slate-100 dark:bg-gray-700 rounded-lg p-1">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center">
+                <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">View:</span>
+                <div className="inline-flex bg-slate-100 dark:bg-gray-700 rounded-lg p-1 overflow-x-auto no-scrollbar max-w-full">
                     <button
                         onClick={() => setActiveTab('pending')}
                         className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'pending'
@@ -277,37 +312,44 @@ export default function SampleCollectionPage() {
             ) : activeTab === 'collected' ? (
                 // Table View for Completed Samples
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
+                    <div className="overflow-x-auto no-scrollbar">
+                        <table className="w-full text-left text-xs md:text-sm min-w-[700px]">
                             <thead className="bg-slate-50 dark:bg-gray-900/50 border-b border-slate-200 dark:border-gray-700">
                                 <tr>
-                                    <th className="px-6 py-4 font-semibold text-gray-900 dark:text-white">Patient Details</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-900 dark:text-white">Sample ID</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-900 dark:text-white">Tests</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-900 dark:text-white">Dates</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-900 dark:text-white text-right">Status</th>
+                                    <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white">Patient Details</th>
+                                    <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white">Sample ID</th>
+                                    <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white">Tests</th>
+                                    <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white">Dates</th>
+                                    <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white text-right">Status</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-gray-700">
                                 {paginatedSamples.map((sample) => (
                                     <tr key={sample._id} className="hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors">
-                                        <td className="px-6 py-4">
+                                        <td className="px-4 md:px-6 py-3 md:py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-9 h-9 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-700 dark:text-green-400 font-bold text-xs">
                                                     {sample.patientDetails.name.charAt(0)}
                                                 </div>
                                                 <div>
                                                     <div className="font-medium text-gray-900 dark:text-white">{sample.patientDetails.name}</div>
-                                                    <div className="text-xs text-gray-500">{sample.patientDetails.age}Y • {sample.patientDetails.gender}</div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {sample.patientDetails.age}Y • {sample.patientDetails.gender}
+                                                        {sample.patientDetails.bedInfo && (
+                                                            <span className="ml-2 text-emerald-600 font-bold uppercase tracking-tighter">
+                                                                • {sample.patientDetails.bedInfo.bedId} ({sample.patientDetails.bedInfo.room})
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <span className="px-2.5 py-1 bg-slate-100 dark:bg-gray-800 rounded-md text-xs font-medium text-gray-700 dark:text-gray-300 border border-slate-200 dark:border-gray-700">
+                                        <td className="px-4 md:px-6 py-3 md:py-4">
+                                            <span className="px-2 md:px-2.5 py-0.5 md:py-1 bg-slate-100 dark:bg-gray-800 rounded-md text-[10px] md:text-xs font-medium text-gray-700 dark:text-gray-300 border border-slate-200 dark:border-gray-700">
                                                 {sample.sampleId}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-4 md:px-6 py-3 md:py-4">
                                             <div className="relative group/tooltip">
                                                 <div className="max-w-[200px] truncate text-gray-600 dark:text-gray-300" title={sample.tests.map(t => t.testName).join(', ')}>
                                                     {sample.tests.map(t => t.testName).join(', ')}
@@ -331,17 +373,26 @@ export default function SampleCollectionPage() {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
+                                        <td className="px-4 md:px-6 py-3 md:py-4 text-gray-600 dark:text-gray-400">
                                             <div className="flex flex-col gap-1">
                                                 <span className="text-xs">Coll: {new Date(sample.collectionDate || sample.createdAt).toLocaleDateString()}</span>
                                                 <span className="text-xs text-gray-400">Rep: {sample.reportDate ? new Date(sample.reportDate).toLocaleDateString() : '-'}</span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800">
-                                                <CheckCircle2 className="w-3 h-3" />
-                                                Completed
-                                            </span>
+                                        <td className="px-4 md:px-6 py-3 md:py-4 text-right">
+                                            <div className="flex items-center justify-end gap-3">
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800">
+                                                    <CheckCircle2 className="w-3 h-3" />
+                                                    Completed
+                                                </span>
+                                                <button
+                                                    onClick={() => router.push(`/lab/samples/${sample._id}`)}
+                                                    className="p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded-lg transition-colors border border-blue-100 dark:border-blue-800 shadow-sm"
+                                                    title="View / Print Report"
+                                                >
+                                                    <Printer className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -351,7 +402,7 @@ export default function SampleCollectionPage() {
 
                     {/* Pagination for Completed Tab */}
                     {totalPages > 1 && (
-                        <div className="px-6 py-4 flex items-center justify-between border-t border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900/30">
+                        <div className="px-4 md:px-6 py-3 md:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 border-t border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900/30">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, displaySamples.length)}</span> of <span className="font-medium">{displaySamples.length}</span> completed samples
                             </p>
@@ -382,21 +433,21 @@ export default function SampleCollectionPage() {
             ) : (
                 // Table View for Pending and Processing
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
+                    <div className="overflow-x-auto no-scrollbar">
+                        <table className="w-full text-left text-xs md:text-sm min-w-[750px]">
                             <thead className="bg-slate-50 dark:bg-gray-900/50 border-b border-slate-200 dark:border-gray-700">
                                 <tr>
-                                    <th className="px-6 py-4 font-semibold text-gray-900 dark:text-white">Patient Details</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-900 dark:text-white">Sample ID</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-900 dark:text-white">Tests</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-900 dark:text-white">Info</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-900 dark:text-white text-right">Actions</th>
+                                    <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white">Patient Details</th>
+                                    <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white">Sample ID</th>
+                                    <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white">Tests</th>
+                                    <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white">Info</th>
+                                    <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-gray-700">
                                 {paginatedSamples.map((sample) => (
                                     <tr key={sample._id} className="hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors">
-                                        <td className="px-6 py-4">
+                                        <td className="px-4 md:px-6 py-3 md:py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs ${activeTab === 'pending' ? 'bg-primary-theme' : 'bg-primary-theme'}`}>
                                                     {sample.patientDetails.name.charAt(0)}
@@ -410,11 +461,18 @@ export default function SampleCollectionPage() {
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <div className="text-xs text-gray-500">{sample.patientDetails.age}Y • {sample.patientDetails.gender}</div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {sample.patientDetails.age}Y • {sample.patientDetails.gender}
+                                                        {sample.patientDetails.bedInfo && (
+                                                            <span className="ml-2 text-emerald-600 font-bold uppercase tracking-tighter">
+                                                                • {sample.patientDetails.bedInfo.bedId} ({sample.patientDetails.bedInfo.room})
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-4 md:px-6 py-3 md:py-4">
                                             <div className="flex flex-col">
                                                 <span className="px-2 py-0.5 bg-slate-100 dark:bg-gray-800 rounded-md text-xs font-medium text-gray-700 dark:text-gray-300 border border-slate-200 dark:border-gray-700 w-fit">
                                                     {sample.sampleId}
@@ -426,7 +484,7 @@ export default function SampleCollectionPage() {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-4 md:px-6 py-3 md:py-4">
                                             <div className="relative group/tooltip">
                                                 <div className="max-w-[200px] truncate text-gray-600 dark:text-gray-300" title={sample.tests.map(t => t.testName).join(', ')}>
                                                     {sample.tests.map(t => t.testName).join(', ')}
@@ -450,7 +508,7 @@ export default function SampleCollectionPage() {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
+                                        <td className="px-4 md:px-6 py-3 md:py-4 text-gray-600 dark:text-gray-400">
                                             {activeTab === 'pending' ? (
                                                 <div className="flex flex-col gap-1">
                                                     <span className="text-xs whitespace-nowrap">Prescribed:</span>
@@ -463,7 +521,7 @@ export default function SampleCollectionPage() {
                                                 </div>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 text-right">
+                                        <td className="px-4 md:px-6 py-3 md:py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 {activeTab === 'pending' && (
                                                     <button
@@ -491,9 +549,11 @@ export default function SampleCollectionPage() {
                                                             </div>
                                                         )}
                                                         <button
-                                                            onClick={() => router.push(`/lab/samples/${sample._id}`)}
-                                                            className="px-3 py-2 bg-primary-theme hover:bg-primary-theme/90 text-white rounded-lg text-xs font-bold transition-all whitespace-nowrap shadow-sm"
+                                                            onClick={() => startNavigation(() => router.push(`/lab/samples/${sample._id}`))}
+                                                            disabled={isNavigating}
+                                                            className={`px-3 py-2 bg-primary-theme hover:bg-primary-theme/90 text-white rounded-lg text-xs font-bold transition-all whitespace-nowrap shadow-sm flex items-center gap-1.5 ${isNavigating ? 'opacity-70 cursor-wait' : ''}`}
                                                         >
+                                                            {isNavigating && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                                                             Enter Results
                                                         </button>
                                                     </div>
@@ -508,7 +568,7 @@ export default function SampleCollectionPage() {
 
                     {/* Generic Pagination for Pending/Processing Tabs */}
                     {totalPages > 1 && (
-                        <div className="px-6 py-4 flex items-center justify-between border-t border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900/30">
+                        <div className="px-4 md:px-6 py-3 md:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 border-t border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900/30">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, displaySamples.length)}</span> of <span className="font-medium">{displaySamples.length}</span> {activeTab} samples
                             </p>
@@ -540,5 +600,3 @@ export default function SampleCollectionPage() {
         </div>
     );
 }
-
-

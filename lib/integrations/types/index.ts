@@ -9,3 +9,4 @@ export * from './helpdesk';
 export * from './patient';
 export * from './ipd';
 export * from './quality';
+export * from './spellcheck';

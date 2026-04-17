@@ -57,12 +57,12 @@ function NurseSchedulePage() {
     }
 
     return (
-        <div className="space-y-4 sm:space-y-8 max-w-7xl mx-auto pb-20 animate-in fade-in duration-500 px-[1px] sm:px-6 lg:px-8">
+        <div className="space-y-4 sm:space-y-8 max-w-7xl mx-auto pb-20 animate-in fade-in duration-500">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-6 text-center sm:text-left pt-2">
                 <div className="space-y-0.5">
-                    <h1 className="text-xs sm:text-2xl font-black text-slate-900 tracking-tight uppercase leading-tight">Work Protocol Management</h1>
-                    <p className="text-slate-500 font-bold flex items-center justify-center sm:justify-start gap-1.5 text-[8px] sm:text-sm uppercase tracking-widest">
+                    <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight leading-none mb-1 sm:mb-2 uppercase">Work Protocol Management</h1>
+                    <p className="text-slate-500 font-bold flex items-center justify-center sm:justify-start gap-1.5 text-[7px] md:text-[8px] max-w-xl leading-relaxed uppercase tracking-widest">
                         <Clock className="w-2.5 h-2.5 sm:w-4 sm:h-4 text-teal-600" />
                         Shift registry & deployment monitoring
                     </p>

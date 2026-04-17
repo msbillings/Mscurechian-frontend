@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 
@@ -81,6 +81,8 @@ export default function ProblemBasedFeatures() {
                         {features.map((feature, idx) => (
                             <button
                                 key={idx}
+                                type="button"
+                                suppressHydrationWarning
                                 onClick={() => setActiveTab(idx)}
                                 className={`p-4 rounded-2xl text-left transition-all duration-500 border-2 ${activeTab === idx ? 'border-primary-theme bg-white shadow-[0_20px_50px_-12px_rgba(var(--primary-theme-rgb),0.2)] scale-105' : 'border-slate-200 bg-slate-50/50 hover:bg-white hover:border-slate-300 hover:shadow-lg hover:scale-[1.02]'}`}
                             >

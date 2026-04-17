@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient, UseMutationOptions } from '@tanstack/react-query';
+﻿import { useMutation, useQueryClient, UseMutationOptions } from '@tanstack/react-query';
 import { emergencyService } from '@/lib/integrations/services/emergency.service';
 import { CreateEmergencyRequestData } from '@/lib/integrations/types/emergency';
 

@@ -1,4 +1,4 @@
-export interface BillItem {
+﻿export interface BillItem {
   drug?: string; // Align with backend 'drug' field
   productId?: string; // Keep for frontend legacy
   productName: string;

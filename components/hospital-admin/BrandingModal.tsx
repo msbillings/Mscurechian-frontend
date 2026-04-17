@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Settings, Building2, MapPin, Save, X, RefreshCw, Eye, FileText } from 'lucide-react';
@@ -154,8 +154,8 @@ export const BrandingModal: React.FC<BrandingModalProps> = ({ isOpen, onClose, o
                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Fetching Identity Node...</p>
                 </div>
             ) : (
-                <div className="flex flex-col max-h-[80vh]">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 py-2 overflow-y-auto pr-2 custom-scrollbar">
+                <div className="flex flex-col max-h-[70vh] md:max-h-[80vh]">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 py-2 overflow-y-auto pr-2 custom-scrollbar pb-6">
                         {/* Form Side */}
                         <div className="space-y-4">
                             {/* Logo Section */}
@@ -238,7 +238,7 @@ export const BrandingModal: React.FC<BrandingModalProps> = ({ isOpen, onClose, o
 
                         {/* Preview Side */}
                         <div className="space-y-4 h-full">
-                            <div className="bg-slate-900 rounded-[1.5rem] p-6 text-white shadow-2xl relative overflow-hidden h-full min-h-[400px]">
+                            <div className="bg-slate-900 rounded-[1.5rem] p-4 md:p-6 text-white shadow-2xl relative overflow-hidden h-full min-h-[300px] md:min-h-[400px]">
                                 <div className="absolute top-0 right-0 p-6 opacity-[0.03]">
                                     <FileText size={120} />
                                 </div>

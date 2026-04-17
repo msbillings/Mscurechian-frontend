@@ -1,4 +1,4 @@
-import { endpoints } from '../config';
+﻿import { endpoints } from '../config';
 import { AUTH_ENDPOINTS } from '../config/endpoints';
 import { apiClient } from '../api';
 import type {
@@ -55,10 +55,14 @@ export const authService = {
       body: JSON.stringify(data),
     }),
 
-  refreshClient: (refreshToken: string) =>
-    apiClient<{ tokens: { accessToken: string; refreshToken: string } }>(endpoints.auth.refresh, {
-      method: 'POST',
-      body: JSON.stringify({ refreshToken }),
+  refreshClient: () =>
+    apiClient<{ accessToken: string; csrfToken: string }>(endpoints.auth.refresh, {
+      method: "POST",
+    }),
+
+  logoutClient: () =>
+    apiClient<{ success: boolean }>(endpoints.auth.logout, {
+      method: "POST",
     }),
 
   getMeClient: (options?: any) =>

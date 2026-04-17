@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Activity,
     Search,
@@ -17,6 +17,7 @@ import {
     ChevronRight,
     Receipt,
     Clock,
+    ClipboardList,
 } from 'lucide-react';
 import { joinSocketRoom, getSocket } from '@/lib/integrations/api/socket';
 import { useRouter } from 'next/navigation';
@@ -96,6 +97,7 @@ export default function IPDCenter() {
     const [billingSummary, setBillingSummary] = useState<any>(null);
     const [billingLoading, setBillingLoading] = useState(false);
     const [pharmacyError, setPharmacyError] = useState<string | null>(null);
+    const detailPanelRef = useRef<HTMLDivElement>(null);
     const [pharmacySignoffLoading, setPharmacySignoffLoading] = useState(false);
 
     const triggerActivityAnimation = () => {
@@ -162,17 +164,31 @@ export default function IPDCenter() {
         }
     }, [showTransferModal, transferBedTypeFilter, transferBedRoomFilter]);
 
-    // ✅ AUTO-SELECT DOCTOR'S TARGET BED
+    // ✅ AUTO-SELECT DOCTOR'S TARGET BED & FILTERS
     useEffect(() => {
         if (showTransferModal && bedDetails?.bed?._id) {
             const request = pendingRequests.find(r => r.bedId === bedDetails.bed._id && r.requestType === 'transfer');
-            if (request?.instructions?.targetBedId) {
-                setSelectedNewBedId(request.instructions.targetBedId);
-            } else {
-                setSelectedNewBedId('');
+            if (request?.instructions) {
+                // Auto-fill filters from instructions
+                if (request.instructions.roomType) setTransferBedTypeFilter(request.instructions.roomType);
+                if (request.instructions.room) setTransferBedRoomFilter(request.instructions.room);
+
+                // Auto-select ID if present
+                if (request.instructions.targetBedId) {
+                    setSelectedNewBedId(request.instructions.targetBedId);
+                } else if (request.instructions.bed) {
+                    // Try to find bed ID by label if we have vacant beds already
+                    const match = vacantBeds.find(b => 
+                        b.bedId.toLowerCase() === request.instructions.bed.toLowerCase() &&
+                        (!request.instructions.room || b.room?.toLowerCase() === request.instructions.room.toLowerCase())
+                    );
+                    if (match) setSelectedNewBedId(match._id);
+                } else {
+                    setSelectedNewBedId('');
+                }
             }
         }
-    }, [showTransferModal, bedDetails, pendingRequests]);
+    }, [showTransferModal, bedDetails, pendingRequests, vacantBeds]);
 
     const fetchPendingRequests = async (skipCache: boolean = false) => {
         try {
@@ -237,12 +253,38 @@ export default function IPDCenter() {
     const fetchBeds = async () => {
         try {
             setLoading(true);
-            const data = await ipdService.getBeds({
-                ...filters,
-                room: filters.room || undefined,
-                type: filters.type || undefined
+            const [bedsData, activeAdmissions] = await Promise.all([
+                ipdService.getBeds({
+                    ...filters,
+                    room: filters.room || undefined,
+                    type: filters.type || undefined
+                }),
+                ipdService.getActiveAdmissions().catch(() => [])
+            ]);
+
+            // Enrich beds with full admission records for exhaustive clinical info (reason, symptoms)
+            const enrichedBeds = bedsData.map(bed => {
+                if (bed.status === 'Occupied' && bed.currentOccupancy) {
+                    const admission = activeAdmissions.find(a => (a.admissionId || a.id || a._id) === bed.currentOccupancy?.admissionId);
+                    if (admission) {
+                        return {
+                            ...bed,
+                            currentOccupancy: {
+                                ...bed.currentOccupancy,
+                                // Strictly use the clinical reason. Strip legacy 'not now.' notes.
+                                reason: (admission.reason && admission.reason !== 'not now.')
+                                    ? admission.reason
+                                    : 'No specific reason provided.'
+                            }
+                        };
+                    }
+                }
+                return bed;
             });
-            setBeds(data);
+
+            console.log("[Helpdesk IPD] ENRICHED BEDS COUNT:", enrichedBeds.filter(b => b.status === 'Occupied').length);
+            console.log("[Helpdesk IPD] SAMPLE OCCUPIED REASON:", enrichedBeds.find(b => b.status === 'Occupied' && b.currentOccupancy?.reason)?.currentOccupancy?.reason);
+            setBeds(enrichedBeds);
         } catch (error: any) {
             toast.error(error.message || "Failed to load beds");
         } finally {
@@ -255,6 +297,39 @@ export default function IPDCenter() {
         try {
             setDetailsLoading(true);
             const data = await ipdService.getBedDetails(id, skipCache);
+            
+            // Enrich with full admission Details for exhaustive clinical information
+            if (data.bed.status === 'Occupied' && data.occupancyDetails?.admissionId) {
+                console.log("[Helpdesk IPD] Fetching Full Admission for ID:", data.occupancyDetails?.admissionId);
+                try {
+                    const fullAdmission = await ipdService.getAdmissionDetails(data.occupancyDetails?.admissionId || '');
+                    console.log("[Helpdesk IPD] Full Admission Detail for Sidebar:", {
+                        id: data.occupancyDetails?.admissionId,
+                        reason: fullAdmission?.reason,
+                        reasonForAdmission: fullAdmission?.reasonForAdmission,
+                        clinicalNotes: fullAdmission?.clinicalNotes
+                    });
+                    if (fullAdmission && data.occupancyDetails) {
+                        const bedFromList = beds.find(b => b._id === id);
+                        const existingReason = bedFromList?.currentOccupancy?.reason;
+                        const currentDetails = data.occupancyDetails;
+
+                        data.occupancyDetails = {
+                            ...currentDetails,
+                            ...fullAdmission,
+                            // Strictly prioritize the 'HEART ATTACK' style reason from the enriched list
+                            reason: existingReason || (fullAdmission.reason && fullAdmission.reason !== 'not now.' ? fullAdmission.reason : 'No specific reason provided.'),
+                            // Preserve UI-specific mapped fields from original bed details
+                            patient: currentDetails.patient,
+                            doctor: currentDetails.doctor
+                        };
+                        console.log("[Helpdesk IPD] SIDEBAR FINAL ENRICHED REASON:", data.occupancyDetails?.reason);
+                    }
+                } catch (admErr) {
+                    console.warn("Failed to fetch full admission details for helpdesk sidebar:", admErr);
+                }
+            }
+            
             setBedDetails(data);
         } catch (error: any) {
             console.error("Bed Details Fetch Error:", error);
@@ -305,6 +380,15 @@ export default function IPDCenter() {
     const handleBedClick = (bed: Bed) => {
         setSelectedBedId(bed._id);
         fetchBedDetails(bed._id);
+        
+        // Auto-scroll to details for better mobile/tablet UX
+        setTimeout(() => {
+            detailPanelRef.current?.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start',
+                inline: 'nearest' 
+            });
+        }, 100);
     };
 
     const fetchVacantBeds = async (type?: string, room?: string) => {
@@ -479,40 +563,41 @@ export default function IPDCenter() {
     return (
         <div className="flex flex-col gap-8 animate-in fade-in duration-700">
             {/* HEADER */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-100 pb-1">
+            {/* HEADER */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6 border-b border-slate-100 pb-2">
                 <div>
-                    <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                        <Activity size={28} className="text-teal-600" strokeWidth={2.5} />
+                    <h1 className="text-lg md:text-xl lg:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2 sm:gap-3">
+                        <Activity size={24} className="text-teal-600 sm:size-[28px]" strokeWidth={2.5} />
                         IPD ADMISSION CENTER
                     </h1>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-2">Real-time Bed Occupancy & Patient Monitoring</p>
+                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] sm:tracking-[0.3em] mt-1 sm:mt-2">Real-time Bed Occupancy & Patient Monitoring</p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     {/* UNIQUE PREMIUM REQUEST TOGGLE */}
-                    <div className="flex bg-slate-200/50 p-1.5 rounded-2xl border border-slate-200/60 items-center gap-1 shadow-sm h-12 mr-2">
+                    <div className="flex bg-slate-200/50 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-slate-200/60 items-center gap-0.5 sm:gap-1 shadow-sm h-10 sm:h-12">
                         <button
                             onClick={() => setActiveRequestFilter(null)}
-                            className={`px-4 h-full rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${!activeRequestFilter ? 'bg-white text-teal-600 shadow-sm scale-[1.02]' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`px-2 sm:px-4 h-full rounded-lg sm:rounded-xl text-[8px] sm:text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${!activeRequestFilter ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                         >
-                            All Beds
+                            All<span className="hidden sm:inline"> Beds</span>
                         </button>
-                        <div className="w-[1px] h-4 bg-slate-300/50 mx-1" />
+                        <div className="w-[1px] h-3 sm:h-4 bg-slate-300/50 mx-0.5 sm:mx-1" />
                         <button
                             onClick={() => setActiveRequestFilter('discharge')}
-                            className={`px-4 h-full rounded-xl flex items-center gap-2 transition-all duration-300 ${activeRequestFilter === 'discharge' ? 'bg-emerald-600 text-white shadow-lg scale-[1.05]' : 'text-slate-400 hover:text-emerald-700 hover:bg-emerald-50'}`}
+                            className={`px-2 sm:px-4 h-full rounded-lg sm:rounded-xl flex items-center gap-1 sm:gap-2 transition-all duration-300 ${activeRequestFilter === 'discharge' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-emerald-700 hover:bg-emerald-50'}`}
                         >
-                            <span className="text-[9px] font-black uppercase tracking-widest leading-none">Discharge</span>
-                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full leading-none ${activeRequestFilter === 'discharge' ? 'bg-emerald-500/50 text-white' : 'bg-slate-300/50 text-slate-600'}`}>
+                            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest leading-none">Disch</span>
+                            <span className={`text-[9px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5 rounded-full leading-none ${activeRequestFilter === 'discharge' ? 'bg-emerald-500/50 text-white' : 'bg-slate-300/50 text-slate-600'}`}>
                                 {pendingRequests.filter(r => r.requestType === 'discharge').length}
                             </span>
                         </button>
                         <button
                             onClick={() => setActiveRequestFilter('transfer')}
-                            className={`px-4 h-full rounded-xl flex items-center gap-2 transition-all duration-300 ${activeRequestFilter === 'transfer' ? 'bg-amber-500 text-white shadow-lg scale-[1.05]' : 'text-slate-400 hover:text-amber-700 hover:bg-amber-50'}`}
+                            className={`px-2 sm:px-4 h-full rounded-lg sm:rounded-xl flex items-center gap-1 sm:gap-2 transition-all duration-300 ${activeRequestFilter === 'transfer' ? 'bg-amber-500 text-white shadow-lg' : 'text-slate-400 hover:text-amber-700 hover:bg-amber-50'}`}
                         >
-                            <span className="text-[9px] font-black uppercase tracking-widest leading-none">Transfer</span>
-                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full leading-none ${activeRequestFilter === 'transfer' ? 'bg-amber-400/50 text-white' : 'bg-slate-300/50 text-slate-600'}`}>
+                            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest leading-none">Trans</span>
+                            <span className={`text-[9px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5 rounded-full leading-none ${activeRequestFilter === 'transfer' ? 'bg-amber-400/50 text-white' : 'bg-slate-300/50 text-slate-600'}`}>
                                 {pendingRequests.filter(r => r.requestType === 'transfer').length}
                             </span>
                         </button>
@@ -520,51 +605,53 @@ export default function IPDCenter() {
 
                     <button
                         onClick={() => router.push('/helpdesk/patient-registration?type=IPD')}
-                        className="px-6 py-2.5 bg-teal-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-lg shadow-teal-900/10 flex items-center gap-2"
+                        className="px-3 sm:px-6 py-2 sm:py-2.5 bg-teal-600 text-white rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-lg shadow-teal-900/10 flex items-center gap-1 sm:gap-2"
                     >
-                        <Plus size={16} /> New Admission
+                        <Plus size={14} className="sm:size-[16px]" /> <span className="hidden sm:inline">New Admission</span><span className="sm:hidden">New Adm</span>
                     </button>
                     <button
                         onClick={() => { fetchBeds(); fetchPendingRequests(); }}
-                        className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-teal-600 transition-all shadow-sm"
+                        className="p-2 sm:p-2.5 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-400 hover:text-teal-600 transition-all shadow-sm"
                     >
-                        <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+                        <RefreshCw size={16} className={`${loading ? 'animate-spin' : ''} sm:size-[18px]`} />
                     </button>
                 </div>
             </div>
 
             {/* FILTERS & STATS */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <div className="lg:col-span-3 bg-white p-3 rounded-[24px] border border-slate-200 shadow-sm flex flex-wrap items-center gap-3">
-                    <div className="flex-1 min-w-[200px] relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                <div className="lg:col-span-3 bg-white p-2 sm:p-3 rounded-xl sm:rounded-[24px] border border-slate-200 shadow-sm flex flex-row flex-wrap items-center gap-2 sm:gap-3">
+                    <div className="w-full sm:flex-1 sm:min-w-[200px] relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 size-[12px] sm:size-[14px]" />
                         <input
-                            placeholder="Find Bed or Room..."
-                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold focus:ring-2 focus:ring-teal-500/10 outline-none transition-all"
+                            placeholder="FIND BEDS..."
+                            className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 bg-slate-50 border border-slate-100 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-tight focus:ring-2 focus:ring-teal-500/10 outline-none transition-all placeholder:text-slate-300"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <select
-                        className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none"
-                        value={filters.status}
-                        onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                    >
-                        <option value="">All Status</option>
-                        <option value="Vacant">Vacant</option>
-                        <option value="Occupied">Occupied</option>
-                        <option value="Cleaning">Cleaning</option>
-                    </select>
-                    <select
-                        className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none"
-                        value={filters.type}
-                        onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value }))}
-                    >
-                        <option value="">All Types</option>
-                        {unitTypes.map(type => (
-                            <option key={type} value={type}>{type}</option>
-                        ))}
-                    </select>
+                    <div className="flex flex-1 items-center gap-2 w-full sm:w-auto">
+                        <select
+                            className="flex-1 sm:flex-none px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg sm:rounded-xl !text-[10px] font-black uppercase tracking-widest outline-none focus:bg-white focus:border-teal-500 transition-all cursor-pointer shadow-sm appearance-none"
+                            value={filters.status}
+                            onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                        >
+                            <option value="">STATUS</option>
+                            <option value="Vacant">Vacant</option>
+                            <option value="Occupied">Occupied</option>
+                            <option value="Cleaning">Cleaning</option>
+                        </select>
+                        <select
+                            className="flex-1 sm:flex-none px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg sm:rounded-xl !text-[10px] font-black uppercase tracking-widest outline-none focus:bg-white focus:border-teal-500 transition-all cursor-pointer shadow-sm appearance-none"
+                            value={filters.type}
+                            onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value }))}
+                        >
+                            <option value="">TYPES</option>
+                            {unitTypes.map(type => (
+                                <option key={type} value={type}>{type}</option>
+                            ))}
+                        </select>
+                    </div>
 
                     <HybridRoomSearch
                         value={filters.room}
@@ -574,7 +661,7 @@ export default function IPDCenter() {
                         }}
                         rooms={hospitalRooms}
                         typeFilter={filters.type}
-                        className="min-w-[160px]"
+                        className="w-full sm:w-auto sm:min-w-[160px]"
                     />
 
                     {/* COMPACT PAGINATION */}
@@ -599,10 +686,10 @@ export default function IPDCenter() {
                     )}
                 </div>
 
-                <div className="bg-slate-900 p-4 rounded-[24px] flex items-center justify-between text-white shadow-xl shadow-slate-200">
+                <div className="bg-slate-900 p-3 sm:p-4 rounded-xl sm:rounded-[24px] flex items-center justify-between text-white shadow-xl shadow-slate-200">
                     <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Beds</p>
-                        <p className="text-xl font-black">
+                        <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Beds</p>
+                        <p className="text-lg sm:text-xl font-black">
                             <AnimatedNumber value={filteredBeds.length} trigger={debouncedSearch + JSON.stringify(filters)} />
                         </p>
                     </div>
@@ -615,9 +702,9 @@ export default function IPDCenter() {
             </div>
 
             {/* BED GRID AREA */}
-            <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 sm:gap-8">
                 {/* GRID */}
-                <div className="xl:col-span-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 items-start">
+                <div className="xl:col-span-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4 items-start">
                     {loading || isCleaningFilterLoading ? (
                         Array(15).fill(0).map((_, i) => (
                             <div key={i} className="aspect-[4/3] bg-slate-100 rounded-2xl animate-pulse flex flex-col p-4 space-y-3">
@@ -669,10 +756,15 @@ export default function IPDCenter() {
 
                                 <div className="mt-1">
                                     <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-tight truncate leading-tight">{bed.bedId}</h3>
-                                    <div className="flex items-center gap-1 mt-0.5">
+                                    <div className="flex flex-col mt-0.5">
                                         <span className="text-[7px] font-bold text-slate-400 capitalize truncate">
                                             {bed.status === 'Occupied' ? bed.currentOccupancy?.patientName : bed.type}
                                         </span>
+                                        {bed.status === 'Occupied' && bed.currentOccupancy?.reason && (
+                                            <p className="text-[7px] font-bold text-teal-600 line-clamp-1 mt-1 opacity-90 uppercase tracking-tighter" title={bed.currentOccupancy.reason}>
+                                                {bed.currentOccupancy.reason}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -707,7 +799,10 @@ export default function IPDCenter() {
                 </div>
 
                 {/* SIDE DETAIL PANEL */}
-                <div className="bg-white rounded-[32px] border border-slate-200 shadow-xl overflow-hidden sticky top-24 h-fit">
+                <div 
+                    ref={detailPanelRef}
+                    className="xl:col-span-1 bg-white rounded-2xl sm:rounded-[32px] border border-slate-200 shadow-xl overflow-hidden xl:sticky xl:top-24 h-fit scroll-mt-24"
+                >
                     {!selectedBedId ? (
                         <div className="p-12 text-center space-y-4">
                             <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto text-slate-300">
@@ -770,6 +865,18 @@ export default function IPDCenter() {
 
                                             <section className="space-y-1.5">
                                                 <div className="flex items-center gap-1.5 text-slate-400">
+                                                    <ClipboardList size={10} className="text-teal-600" />
+                                                    <p className="text-[7px] font-black uppercase tracking-widest">Reason for Admission</p>
+                                                </div>
+                                                <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-left">
+                                                    <p className="text-[10px] font-bold text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-1" title={bedDetails.occupancyDetails.reason}>
+                                                        {bedDetails.occupancyDetails.reason || 'No specific reason provided.'}
+                                                    </p>
+                                                </div>
+                                            </section>
+
+                                             <section className="space-y-1.5">
+                                                <div className="flex items-center gap-1.5 text-slate-400">
                                                     <Monitor size={10} className="text-teal-600" />
                                                     <p className="text-[7px] font-black uppercase tracking-widest">Health Snapshot</p>
                                                 </div>
@@ -792,6 +899,47 @@ export default function IPDCenter() {
                                                     </div>
                                                 </div>
                                             </section>
+
+                                            {bedDetails.occupancyDetails?.bedHistory && bedDetails.occupancyDetails.bedHistory.length > 0 && (
+                                                <section className="space-y-1.5 border-t border-slate-100 pt-3">
+                                                    <div className="flex items-center gap-1.5 text-slate-400">
+                                                        <Activity size={10} className="text-teal-600" />
+                                                        <p className="text-[7px] font-black uppercase tracking-widest">Bed Transfer History</p>
+                                                    </div>
+                                                    <div className="bg-slate-50 border border-slate-100 rounded-xl overflow-hidden">
+                                                        <table className="w-full text-[8px] border-collapse">
+                                                            <thead>
+                                                                <tr className="bg-slate-100/50 border-b border-slate-100">
+                                                                    <th className="px-2 py-1.5 text-left font-black text-slate-400 uppercase tracking-widest">Bed/Room</th>
+                                                                    <th className="px-2 py-1.5 text-left font-black text-slate-400 uppercase tracking-widest">Stay Duration</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-slate-100">
+                                                                {bedDetails.occupancyDetails.bedHistory.map((item: any, idx: number) => {
+                                                                    const start = new Date(item.startDate);
+                                                                    const end = item.endDate ? new Date(item.endDate) : new Date();
+                                                                    const stayDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 6 * 60 * 24)) || 1;
+                                                                    
+                                                                    return (
+                                                                        <tr key={idx} className="hover:bg-white/50 transition-colors">
+                                                                            <td className="px-2 py-2">
+                                                                                <div className="font-bold text-slate-900 uppercase">{item.bedId}</div>
+                                                                                <div className="text-[7px] font-medium text-slate-500 uppercase">{item.room} • {item.type}</div>
+                                                                            </td>
+                                                                            <td className="px-2 py-2">
+                                                                                <div className="font-black text-teal-600 uppercase tracking-tighter">
+                                                                                    {item.endDate ? calculateStayDuration(item.startDate, item.endDate) : `Since ${new Date(item.startDate).toLocaleDateString()}`}
+                                                                                </div>
+                                                                                <div className="text-[7px] font-bold text-slate-400 uppercase">Rate: ₹{item.pricePerDay}</div>
+                                                                            </td>
+                                                                        </tr>
+                                                                    );
+                                                                })}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </section>
+                                            )}
 
                                             {(() => {
                                                 const request = pendingRequests.find(r => r.bedId === bedDetails.bed._id);
@@ -928,7 +1076,7 @@ export default function IPDCenter() {
             {/* TRANSFER MODAL */}
             {showTransferModal && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[32px] w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                    <div className="bg-white rounded-[32px] w-full max-w-lg h-[80vh] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col">
                         <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                             <div>
                                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Transfer Bed</h3>
@@ -980,109 +1128,165 @@ export default function IPDCenter() {
                             );
                         })()}
 
-                        <div className="px-8 pt-4 pb-2 border-b border-slate-100 grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Room Type</label>
-                                <select
-                                    value={transferBedTypeFilter}
-                                    onChange={(e) => {
-                                        setTransferBedTypeFilter(e.target.value);
-                                        setTransferBedRoomFilter(''); // Reset room when type changes
-                                    }}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-widest bg-white hover:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all font-mono"
-                                >
-                                    <option value="">All Types</option>
-                                    {unitTypes.map(type => (
-                                        <option key={type} value={type}>{type}</option>
-                                    ))}
-                                </select>
-                            </div>
 
-                            <div>
-                                <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Room Name</label>
-                                <select
-                                    value={transferBedRoomFilter}
-                                    onChange={(e) => setTransferBedRoomFilter(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-widest bg-white hover:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all font-mono"
-                                >
-                                    <option value="">All Rooms</option>
-                                    {hospitalRooms
-                                        .filter(room => !transferBedTypeFilter || room.type === transferBedTypeFilter)
-                                        .map(room => (
-                                            <option key={room._id} value={room.label}>{room.label}</option>
-                                        ))
-                                    }
-                                </select>
-                            </div>
-                        </div>
+                        {(() => {
+                            const request = pendingRequests.find(r => r.bedId === bedDetails?.bed?._id && r.requestType === 'transfer');
+                            
+                            // A target is "sufficient" if we have a resolved ID, or enough info to likely match
+                            const hasTargetBed = !!(selectedNewBedId || request?.instructions?.targetBedId || (request?.instructions?.room && request?.instructions?.bed));
 
-                        <div className="p-8 space-y-6">
-                            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                                {vacantLoading ? (
-                                    <div className="py-20 flex flex-col items-center gap-3">
-                                        <RefreshCw className="animate-spin text-teal-600" size={32} />
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Finding Vacant Beds...</p>
-                                    </div>
-                                ) : vacantBeds
-                                    .map(bed => {
-                                        const request = pendingRequests.find(r => r.bedId === bedDetails?.bed?._id && r.requestType === 'transfer');
-                                        const isDoctorTarget = request?.instructions?.targetBedId === bed._id;
-
-                                        return (
-                                            <button
-                                                key={bed._id}
-                                                onClick={() => setSelectedNewBedId(bed._id)}
-                                                className={`
-                                                w-full p-4 rounded-2xl border-2 flex items-center justify-between transition-all relative
-                                                ${selectedNewBedId === bed._id ? 'border-teal-500 bg-teal-50 ring-4 ring-teal-500/5' : 'border-slate-100 hover:border-slate-200'}
-                                                ${isDoctorTarget ? 'ring-2 ring-amber-400 ring-offset-2' : ''}
-                                            `}
-                                            >
-                                                {isDoctorTarget && (
-                                                    <div className="absolute -top-2 -right-2 px-2 py-0.5 bg-amber-500 text-white text-[7px] font-black uppercase rounded-lg shadow-lg z-10 animate-bounce">
-                                                        Doctor's Choice
+                            return (
+                                <div className="flex-1 flex flex-col overflow-hidden">
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                                        {hasTargetBed ? (
+                                            <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                                <div className="text-center space-y-2">
+                                                    <div className="w-20 h-20 bg-emerald-50 rounded-[2.5rem] flex items-center justify-center mx-auto text-emerald-600 shadow-inner">
+                                                        <CheckCircle2 size={40} />
                                                     </div>
-                                                )}
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-teal-600 shadow-sm">
-                                                        <BedIcon size={20} />
+                                                    <h4 className="text-lg font-black text-slate-900 uppercase">Transfer Confirmed</h4>
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Doctor Has Pre-Selected the destination</p>
+                                                </div>
+
+                                                <div className="bg-slate-900 rounded-3xl p-6 text-white relative overflow-hidden group">
+                                                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-125 transition-transform duration-700">
+                                                        <ArrowRightLeft size={80} />
                                                     </div>
-                                                    <div className="text-left">
-                                                        <p className="text-sm font-black text-slate-900 uppercase">{bed.bedId}</p>
-                                                        <p className="text-[10px] font-bold text-slate-400 capitalize">Floor {bed.floor} • Room {bed.room} • {bed.type}</p>
+                                                    <div className="relative z-10 space-y-6">
+                                                        <div>
+                                                            <p className="text-[9px] font-black text-teal-400 uppercase tracking-[0.2em] mb-4">Patient Destination</p>
+                                                            <div className="flex items-center gap-5">
+                                                                <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-white shrink-0">
+                                                                    <BedIcon size={28} />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-2xl font-black uppercase tracking-tight">{request.instructions.bed || 'SELECTED BED'}</p>
+                                                                    <p className="text-[10px] font-bold text-slate-400 uppercase">Room: {request.instructions.room || 'N/A'}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-4 pb-2 border-t border-white/10 pt-5">
+                                                            <div>
+                                                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Unit Type</p>
+                                                                <p className="text-xs font-bold uppercase">{request.instructions.roomType || 'Standard'}</p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Requested By</p>
+                                                                <p className="text-xs font-bold uppercase">{request.requestedBy}</p>
+                                                            </div>
+                                                        </div>
+
+                                                        {request.instructions.notes && (
+                                                            <div className="bg-white/5 p-4 rounded-2xl border border-white/5 italic">
+                                                                <p className="text-[10px] font-medium text-slate-300">"{request.instructions.notes}"</p>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
-                                                {selectedNewBedId === bed._id && <CheckCircle2 className="text-teal-600" size={20} />}
-                                            </button>
-                                        );
-                                    })}
-                                {!vacantLoading && vacantBeds.length === 0 && (
-                                    <div className="py-12 text-center space-y-3">
-                                        <AlertCircle className="mx-auto text-slate-300" size={40} />
-                                        <p className="text-xs font-bold text-slate-500 uppercase">
-                                            {transferBedTypeFilter || transferBedRoomFilter ? `No vacant beds available matching filters` : 'No vacant beds available'}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
 
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setShowTransferModal(false)}
-                                    className="flex-1 py-4 border border-slate-200 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    disabled={!selectedNewBedId || transferLoading}
-                                    onClick={handleTransfer}
-                                    className="flex-[2] py-4 bg-teal-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-lg shadow-teal-900/10 flex items-center justify-center gap-2"
-                                >
-                                    {transferLoading ? <RefreshCw className="animate-spin" size={16} /> : <ArrowRightLeft size={16} />}
-                                    Confirm Transfer
-                                </button>
-                            </div>
-                        </div>
+                                                <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 flex items-center gap-3">
+                                                    <AlertCircle className="text-amber-500 shrink-0" size={16} />
+                                                    <p className="text-[9px] font-bold text-amber-700 uppercase leading-relaxed">
+                                                        The helpdesk will complete this transfer with a single tap. All patient records will be migrated to the new bed instantly.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="px-8 pt-4 pb-2 border-b border-slate-100 grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Room Type</label>
+                                                        <select
+                                                            value={transferBedTypeFilter}
+                                                            onChange={(e) => {
+                                                                setTransferBedTypeFilter(e.target.value);
+                                                                setTransferBedRoomFilter('');
+                                                            }}
+                                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-widest bg-white hover:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all font-mono"
+                                                        >
+                                                            <option value="">All Types</option>
+                                                            {unitTypes.map(type => (
+                                                                <option key={type} value={type}>{type}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Room Name</label>
+                                                        <select
+                                                            value={transferBedRoomFilter}
+                                                            onChange={(e) => setTransferBedRoomFilter(e.target.value)}
+                                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 uppercase tracking-widest bg-white hover:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all font-mono"
+                                                        >
+                                                            <option value="">All Rooms</option>
+                                                            {hospitalRooms
+                                                                .filter(room => !transferBedTypeFilter || room.type === transferBedTypeFilter)
+                                                                .map(room => (
+                                                                    <option key={room._id} value={room.label}>{room.label}</option>
+                                                                ))
+                                                            }
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-8 space-y-3">
+                                                    {vacantLoading ? (
+                                                        <div className="py-20 flex flex-col items-center gap-3">
+                                                            <RefreshCw className="animate-spin text-teal-600" size={32} />
+                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Finding Vacant Beds...</p>
+                                                        </div>
+                                                    ) : vacantBeds.map(bed => (
+                                                        <button
+                                                            key={bed._id}
+                                                            onClick={() => setSelectedNewBedId(bed._id)}
+                                                            className={`
+                                                                w-full p-4 rounded-2xl border-2 flex items-center justify-between transition-all relative
+                                                                ${selectedNewBedId === bed._id ? 'border-teal-500 bg-teal-50 ring-4 ring-teal-500/5' : 'border-slate-100 hover:border-slate-200'}
+                                                            `}
+                                                        >
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-teal-600 shadow-sm">
+                                                                    <BedIcon size={20} />
+                                                                </div>
+                                                                <div className="text-left">
+                                                                    <p className="text-sm font-black text-slate-900 uppercase">{bed.bedId}</p>
+                                                                    <p className="text-[10px] font-bold text-slate-400 capitalize">Floor {bed.floor} • Room {bed.room} • {bed.type}</p>
+                                                                </div>
+                                                            </div>
+                                                            {selectedNewBedId === bed._id && <CheckCircle2 className="text-teal-600" size={20} />}
+                                                        </button>
+                                                    ))}
+                                                    {!vacantLoading && vacantBeds.length === 0 && (
+                                                        <div className="py-12 text-center space-y-3">
+                                                            <AlertCircle className="mx-auto text-slate-300" size={40} />
+                                                            <p className="text-xs font-bold text-slate-500 uppercase">No vacant beds available</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    <div className="p-8 bg-slate-50 border-t border-slate-100 flex gap-3">
+                                        <button
+                                            onClick={() => setShowTransferModal(false)}
+                                            className="flex-1 py-4 border border-slate-200 bg-white text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            disabled={!selectedNewBedId || transferLoading}
+                                            onClick={handleTransfer}
+                                            className="flex-[2] py-4 bg-teal-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-lg shadow-teal-900/10 flex items-center justify-center gap-2"
+                                        >
+                                            {transferLoading ? <RefreshCw className="animate-spin" size={16} /> : <ArrowRightLeft size={16} />}
+                                            {hasTargetBed ? 'Complete Transfer' : 'Confirm Transfer'}
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })()}
                     </div>
                 </div>
             )}
@@ -1097,55 +1301,10 @@ export default function IPDCenter() {
                             </div>
 
                             <div className="space-y-2">
-                                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Confirm Discharge</h3>
+                                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Send to Nurse</h3>
                                 <p className="text-sm font-bold text-slate-500 leading-relaxed">
-                                    Are you sure you want to discharge <span className="text-slate-900">{bedDetails?.occupancyDetails?.patient?.name}</span>?
+                                    Are you sure you want to send <span className="text-slate-900">{bedDetails?.occupancyDetails?.patient?.name}</span>'s discharge file to the nurse?
                                 </p>
-                            </div>
-
-                            {/* Billing Verification Section */}
-                            <div className="bg-slate-50 border border-slate-100 rounded-3xl p-5 space-y-4">
-                                {billingLoading ? (
-                                    <div className="flex items-center justify-center gap-2 py-4">
-                                        <RefreshCw size={16} className="animate-spin text-teal-600" />
-                                        <p className="text-[10px] font-black uppercase text-slate-400">Verifying Payments...</p>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="text-left bg-white p-3 rounded-2xl border border-slate-100">
-                                                <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1">Advance Paid</p>
-                                                <p className="text-sm font-black text-teal-600">₹{Math.round(billingSummary?.financials?.totalAdvance || 0).toLocaleString()}</p>
-                                            </div>
-                                            <div className="text-left bg-white p-3 rounded-2xl border border-slate-100">
-                                                <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1">Current Balance</p>
-                                                <p className={`text-sm font-black ${Math.round(billingSummary?.financials?.balance || 0) > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                                                    ₹{Math.max(0, Math.round(billingSummary?.financials?.balance || 0)).toLocaleString()}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center justify-center">
-                                            {Math.round(billingSummary?.financials?.balance || 0) > 0 ? (
-                                                <div className="flex items-center gap-2 px-4 py-1.5 bg-rose-100 text-rose-600 rounded-full border border-rose-200">
-                                                    <AlertCircle size={12} />
-                                                    <span className="text-[8px] font-black uppercase tracking-widest">Pending Balance</span>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-2 px-4 py-1.5 bg-emerald-100 text-emerald-600 rounded-full border border-emerald-200">
-                                                    <CheckCircle2 size={12} />
-                                                    <span className="text-[8px] font-black uppercase tracking-widest">Amount Cleared</span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {Math.round(billingSummary?.financials?.balance || 0) > 0 && (
-                                            <p className="text-[8px] font-bold text-rose-500 italic">
-                                                * Patient has an outstanding balance of ₹{Math.round(billingSummary.financials.balance).toLocaleString()}.
-                                            </p>
-                                        )}
-                                    </>
-                                )}
                             </div>
 
                             {/* ✅ Pharmacy Clearance Block Banner */}
@@ -1168,7 +1327,7 @@ export default function IPDCenter() {
                                     >
                                         {pharmacySignoffLoading ? (
                                             <><RefreshCw size={13} className="animate-spin" /> Clearing...</>) : (
-                                            <><CheckCircle2 size={13} /> Clear Pharmacy & Discharge</>)}
+                                            <><CheckCircle2 size={13} /> Clear Pharmacy & Send to Nurse</>)}
                                     </button>
                                 </div>
                             )}
@@ -1192,10 +1351,10 @@ export default function IPDCenter() {
                                     {dischargeLoading ? (
                                         <>
                                             <RefreshCw className="animate-spin" size={16} />
-                                            Discharging...
+                                            Sending...
                                         </>
                                     ) : (
-                                        'Confirm Discharge'
+                                        'Send to Nurse'
                                     )}
                                 </button>
                             </div>

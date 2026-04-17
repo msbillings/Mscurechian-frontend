@@ -5,11 +5,11 @@ import dynamic from "next/dynamic";
 import toast from "react-hot-toast";
 import { adminService } from "@/lib/integrations";
 import { useAuthStore } from "@/stores/authStore";
-import { 
-  Users, 
-  Building2, 
-  Stethoscope, 
-  UserPlus, 
+import {
+  Users,
+  Building2,
+  Stethoscope,
+  UserPlus,
   Headphones,
   ShieldCheck,
   TrendingUp,
@@ -193,9 +193,9 @@ function AdminDashboard() {
     },
     colors: ['#3b82f6'],
     dataLabels: { enabled: false },
-    stroke: { 
-      curve: 'smooth', 
-      width: 3 
+    stroke: {
+      curve: 'smooth',
+      width: 3
     },
     fill: {
       type: 'gradient',
@@ -208,23 +208,23 @@ function AdminDashboard() {
     },
     xaxis: {
       categories: stats?.activityStats?.map(item => item._id) || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      labels: { 
-        style: { 
-          colors: 'var(--secondary-color)', 
+      labels: {
+        style: {
+          colors: 'var(--secondary-color)',
           fontSize: '11px',
           fontWeight: 500
-        } 
+        }
       },
       axisBorder: { show: false },
       axisTicks: { show: false }
     },
     yaxis: {
-      labels: { 
-        style: { 
-          colors: 'var(--secondary-color)', 
+      labels: {
+        style: {
+          colors: 'var(--secondary-color)',
           fontSize: '11px',
           fontWeight: 500
-        } 
+        }
       }
     },
     grid: {
@@ -276,10 +276,10 @@ function AdminDashboard() {
             <Activity className="text-white" size={24} />
           </div>
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+            <h1 className="text-lg md:text-xl lg:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
               SuperAdmin Dashboard
             </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1">
               Monitor and manage your healthcare ecosystem
             </p>
           </div>
@@ -294,13 +294,14 @@ function AdminDashboard() {
           return (
             <div
               key={index}
-              className="group relative rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 cursor-pointer"
+              className={`group relative rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 cursor-pointer ${hoveredCard === index ? 'z-50' : 'z-10'
+                }`}
               onMouseEnter={() => setHoveredCard(index)}
               onMouseLeave={() => setHoveredCard(null)}
             >
               {/* Background Gradient */}
               <div className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl`}></div>
-              
+
               {/* Content */}
               <div className="relative z-10 h-full">
                 <div className="flex items-start justify-between mb-4">
@@ -309,7 +310,7 @@ function AdminDashboard() {
                   </div>
                   <ArrowUpRight className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" size={18} />
                 </div>
-                
+
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
                     {stat.label}
@@ -377,14 +378,14 @@ function AdminDashboard() {
             </div>
           </div>
         </div>
-        
+
         {/* System Status - Takes 1 column */}
         <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
           <div className="mb-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">System Status</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Real-time monitoring</p>
           </div>
-          
+
           <div className="space-y-4">
             {/* Platform Load */}
             <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/10 border border-blue-500/20">
@@ -396,7 +397,7 @@ function AdminDashboard() {
                 <span className="text-xs font-bold text-blue-600 dark:text-blue-500 px-2 py-1 rounded-md bg-blue-500/10">Normal</span>
               </div>
               <div className="flex gap-1">
-                {[1,2,3,4,5,6,7,8,9,10].map(i => (
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
                   <div key={i} className={`flex-1 h-2 rounded-full ${i <= 3 ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-800'}`}></div>
                 ))}
               </div>
@@ -491,7 +492,7 @@ function AdminDashboard() {
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Hospital Network</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Infrastructure overview</p>
           </div>
-          
+
           <div className="space-y-6">
             {/* Active Hospitals */}
             <div>
@@ -505,8 +506,8 @@ function AdminDashboard() {
                 </span>
               </div>
               <div className="w-full h-2.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-500" 
+                <div
+                  className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-500"
                   style={{ width: `${(stats?.hospitalsByStatus?.active || 0) / (stats?.totalHospitals || 1) * 100}%` }}
                 ></div>
               </div>
@@ -524,8 +525,8 @@ function AdminDashboard() {
                 </span>
               </div>
               <div className="w-full h-2.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-500" 
+                <div
+                  className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-500"
                   style={{ width: `${(stats?.hospitalsByStatus?.pending || 0) / (stats?.totalHospitals || 1) * 100}%` }}
                 ></div>
               </div>

@@ -6,7 +6,7 @@ import {
     Users,
     Microscope,
     Wallet,
-    DollarSign,
+    IndianRupee,
     Activity,
     TestTube,
     CheckCircle2,
@@ -89,7 +89,7 @@ function HRHospitalLabs() {
                 <StatCard
                     title="Gross Revenue"
                     value={`₹${stats?.revenue?.toLocaleString() || 0}`}
-                    icon={DollarSign}
+                    icon={IndianRupee}
                     color="blue"
                 />
                 <StatCard

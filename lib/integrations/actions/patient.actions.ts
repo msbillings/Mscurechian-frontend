@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { apiServer } from "../api/apiServer";
 import { PATIENT_ENDPOINTS } from "../config";

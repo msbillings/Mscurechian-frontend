@@ -53,9 +53,9 @@ export default function EditAdminProfilePage() {
                 if (res && res.staff) {
                     const s = res.staff;
                     setFormData({
-                        name: s.user?.name || '',
-                        email: s.user?.email || '',
-                        mobile: s.user?.mobile || '',
+                        name: (s.user as any)?.name || '',
+                        email: (s.user as any)?.email || '',
+                        mobile: (s.user as any)?.mobile || '',
                         gender: (s.user as any)?.gender || '',
                         dateOfBirth: (s.user as any)?.dateOfBirth ? new Date((s.user as any).dateOfBirth).toISOString().split('T')[0] : '',
                         designation: s.designation || 'Hospital Administrator',
@@ -167,7 +167,7 @@ export default function EditAdminProfilePage() {
                         <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Institutional Access Control</p>
                     </div>
                 </div>
-                <button onClick={handleSave} disabled={isSaving} className="px-8 py-3 bg-slate-900 text-white text-sm font-black uppercase tracking-widest rounded-2xl shadow-xl active:scale-95 transition-all disabled:opacity-50">
+                <button onClick={handleSave} disabled={isSaving} className="px-2 md:px-8 py-3 bg-slate-900 text-white text-sm font-black uppercase tracking-widest rounded-2xl shadow-xl active:scale-95 transition-all disabled:opacity-50">
                     {isSaving ? "Saving..." : "Save Identity"}
                 </button>
             </div>
@@ -181,7 +181,7 @@ export default function EditAdminProfilePage() {
                     ))}
                 </div>
 
-                <div className="md:col-span-3 bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm space-y-8">
+                <div className="md:col-span-3 bg-white rounded-[2rem] p-2 md:p-4 md:p-8 border border-gray-100 shadow-sm space-y-8">
                     {activeTab === 'personal' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <Input label="Full Name" name="name" value={formData.name} onChange={handleChange} error={errors.name} />

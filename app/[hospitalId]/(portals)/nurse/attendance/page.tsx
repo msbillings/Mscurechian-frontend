@@ -132,7 +132,7 @@ export default function NurseAttendancePage() {
                     <div className="lg:col-span-8">
                         <div className="bg-white rounded-[0.5rem] shadow-sm border border-slate-100 overflow-hidden flex flex-col h-full mb-8">
                             <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/10">
-                                <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
+                                <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 uppercase tracking-tight">
                                     Recent Activity
                                 </h2>
 

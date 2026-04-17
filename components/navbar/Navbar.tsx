@@ -1,12 +1,13 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import { Menu, Bell, User, Search, LogOut, Settings, UserCircle, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useTransition } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
 import { useTenantLink } from '@/hooks/useTenantLink';
+import ProgressBar from '@/components/ui/ProgressBar';
 
 interface NavbarProps {
     title?: string;
@@ -54,6 +55,7 @@ function Navbar({
     showLogo = true
 }: NavbarProps) {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isPending, startTransition] = useTransition();
     const dropdownRef = useRef<HTMLDivElement>(null);
     const { logout, user: authUser } = useAuthStore();
     const router = useRouter();
@@ -84,6 +86,7 @@ function Navbar({
     };
     return (
         <nav className={`w-full bg-card border-b border-border-theme px-4 py-3 flex items-center justify-between sticky top-0 z-50 ${className}`}>
+            <ProgressBar isPending={isPending} color="teal" />
             {/* Left Section: Logo & Menu Toggle */}
             <div className="flex items-center gap-4">
                 {/* Mobile menu button */}
@@ -131,7 +134,7 @@ function Navbar({
                             </div>
                             <div className="w-10 h-10 rounded-2xl bg-gray-50 dark:bg-gray-800 overflow-hidden border border-gray-100 dark:border-gray-700 shadow-xs group-hover:border-blue-500 flex items-center justify-center text-gray-400">
                                 {user?.image ? (
-                                    <img src={user.image} alt="Profile" className="w-full h-full object-cover" />
+                                    <img src={user.image.includes('?') ? `${user.image}&t=${Date.now()}` : `${user.image}?t=${Date.now()}`} alt="Profile" className="w-full h-full object-cover" />
                                 ) : (
                                     <User className="w-5 h-5 group-hover:text-blue-500" />
                                 )}
@@ -148,7 +151,13 @@ function Navbar({
 
                                 <Link
                                     href={profileHref || getPath(`/${user?.role?.toLowerCase()}/profile`)}
-                                    onClick={() => setIsProfileOpen(false)}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        startTransition(() => {
+                                            router.push(profileHref || getPath(`/${user?.role?.toLowerCase()}/profile`));
+                                            setIsProfileOpen(false);
+                                        });
+                                    }}
                                     className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl group"
                                 >
                                     <UserCircle className="w-4 h-4 text-gray-400 group-hover:text-blue-600 font-black" />

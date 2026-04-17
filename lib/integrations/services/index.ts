@@ -1,4 +1,5 @@
 export * from "./auth.service";
+export * from "./spellcheck.service";
 export * from "./user.service";
 export * from "./admin.service";
 export * from "./hospitalAdmin.service";
@@ -14,7 +15,10 @@ export * from "./analytics.service";
 export * from "./feedback.service";
 export * from "./hr.service";
 
-// ─── Unified Services ────────────────────────────────────────────────────────
+// --- Phase 2: Aggregated Dashboard Service (HMS Performance Architecture v6) ---
+export * from "./unifiedDashboard.service";
+
+// ─── Unified Services ─────────────────────────────────────────────────────────
 // These replace the scattered sub-services below. Import directly from the
 // individual files if you need the legacy sub-service types.
 export * from "./pharmacy.service";
@@ -23,7 +27,7 @@ export * from "./nurse.service";
 export * from "./emergency.service";
 export * from "./helpdesk-emergency.service";
 
-// ─── Legacy sub-services ─────────────────────────────────────────────────────
+// ─── Legacy sub-services ───────────────────────────────────────────────────
 // Kept for backward compatibility. Types that conflict with the unified
 // services are NOT re-exported here to avoid ambiguity.
 export { PharmacyBillingService } from "./pharmacyBilling.service";

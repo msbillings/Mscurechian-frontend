@@ -6,19 +6,26 @@ import {
     User, Mail, Phone, Briefcase, Award,
     CreditCard, Building, Landmark, Wallet, Globe,
     Save, ArrowLeft, Plus, X,
-    Calendar, Clock, DollarSign, FileText, Upload, CheckCircle2,
-    ShieldCheck, ChevronDown, Trash2, UploadCloud
+    Calendar, Clock, IndianRupee, FileText, Upload, CheckCircle2,
+    ShieldCheck, ChevronDown, Trash2, UploadCloud, Search
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getDoctorProfileAction, updateDoctorProfileAction, uploadDoctorPhotoAction } from '@/lib/integrations/actions/doctor.actions';
+import { doctorService } from '@/lib/integrations/services/doctor.service';
 import { useAuthStore } from '@/stores/authStore';
 import ImageCropper from '@/components/ui/ImageCropper';
 import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
+import { clearApiCache } from '@/lib/integrations/api';
+import { useTenantLink } from '@/hooks/useTenantLink';
+import { TagInput } from '@/components/common/TagInput';
+import { COMMON_SPECIALTIES, COMMON_QUALIFICATIONS, COMMON_LANGUAGES } from '@/lib/constants/medicalData';
 
 export default function EditDoctorProfilePage() {
     const router = useRouter();
+    const { getPath, hospitalId } = useTenantLink();
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isPhotoUploading, setIsPhotoUploading] = useState(false);
     const [activeTab, setActiveTab] = useState('personal');
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [files, setFiles] = useState<Record<string, File>>({});
@@ -41,7 +48,6 @@ export default function EditDoctorProfilePage() {
         email: '',
         mobile: '',
         profilePic: '',
-        signature: '',
         gender: '',
         dateOfBirth: '',
 
@@ -64,13 +70,10 @@ export default function EditDoctorProfilePage() {
         registrationCertificate: '',
 
         // Practice
-        department: '',
-        designation: '',
         employeeId: '',
         consultationFee: '',
         consultationDuration: '',
         maxAppointmentsPerDay: '',
-        room: '',
 
         // Bank & Payroll
         bankDetails: {
@@ -88,9 +91,6 @@ export default function EditDoctorProfilePage() {
     });
 
     // Helper states for adding items
-    const [tempSpecialty, setTempSpecialty] = useState("");
-    const [tempQualification, setTempQualification] = useState("");
-    const [tempLanguage, setTempLanguage] = useState("");
     const [tempAward, setTempAward] = useState("");
 
 
@@ -127,7 +127,6 @@ export default function EditDoctorProfilePage() {
                         email: d.user?.email || '',
                         mobile: d.user?.mobile || '',
                         profilePic: d.profilePic || '',
-                        signature: d.signature || '',
                         gender: d.user?.gender || d.gender || '',
                         dateOfBirth: d.user?.dateOfBirth ? new Date(d.user.dateOfBirth).toISOString().split('T')[0] : (d.dateOfBirth ? new Date(d.dateOfBirth).toISOString().split('T')[0] : ''),
                         specialties: cleanArrayArtefacts(d.specialties),
@@ -144,13 +143,10 @@ export default function EditDoctorProfilePage() {
                         registrationCertificate: d.registrationCertificate || '',
                         doctorateCertificate: d.doctorateCertificate || '',
                         internshipCertificate: d.internshipCertificate || '',
-                        department: d.department || '',
-                        designation: d.designation || '',
                         employeeId: d.employeeId || '',
                         consultationFee: d.consultationFee || '',
                         consultationDuration: d.consultationDuration || '',
                         maxAppointmentsPerDay: d.maxAppointmentsPerDay || '',
-                        room: d.room || '',
                         bankDetails: {
                             bankName: d.bankDetails?.bankName || '',
                             accountNumber: d.bankDetails?.accountNumber || '',
@@ -256,27 +252,6 @@ export default function EditDoctorProfilePage() {
         }
     };
 
-    const addItem = (type: 'specialties' | 'qualifications' | 'languages' | 'awards', value: string) => {
-        if (!value.trim()) return;
-        if (!formData[type].includes(value)) {
-            setFormData((prev: any) => ({
-                ...prev,
-                [type]: [...prev[type], value]
-            }));
-        }
-        if (type === 'specialties') setTempSpecialty("");
-        else if (type === 'qualifications') setTempQualification("");
-        else if (type === 'languages') setTempLanguage("");
-        else setTempAward("");
-    };
-
-    const removeItem = (type: 'specialties' | 'qualifications' | 'languages' | 'awards', item: string) => {
-        setFormData((prev: any) => ({
-            ...prev,
-            [type]: prev[type].filter((i: string) => i !== item)
-        }));
-    };
-
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files: selectedFiles } = e.target;
         if (selectedFiles && selectedFiles[0]) {
@@ -329,6 +304,7 @@ export default function EditDoctorProfilePage() {
     const handleCropComplete = async (croppedDataUrl: string) => {
         try {
             setCropper({ isOpen: false, image: '' });
+            setIsPhotoUploading(true);
 
             // Convert data URL to File
             const resBlob = await fetch(croppedDataUrl);
@@ -339,23 +315,58 @@ export default function EditDoctorProfilePage() {
             photoData.append("profilePic", file);
 
             const uploadToast = toast.loading("Uploading cropped photo...");
-            const res = await uploadDoctorPhotoAction(photoData);
 
-            if (res.success && res.data) {
-                const rawPic = res.data.profilePic?.url || res.data.profilePic;
-                const newPic = `${rawPic}${rawPic.includes('?') ? '&' : '?'}t=${Date.now()}`;
+            // Optimistic update for immediate visual feedback
+            setFormData((prev: any) => ({ ...prev, profilePic: croppedDataUrl }));
+            if (setUser && user) {
+                setUser({
+                    ...user,
+                    image: croppedDataUrl,
+                    avatar: croppedDataUrl,
+                    profilePic: croppedDataUrl
+                } as any);
+            }
+
+            // Change from server action to client-side API call to avoid token-mirroring issues in multi-tab
+            const res = await doctorService.updateProfile(photoData);
+
+            if (res && (res as any).profilePic) {
+                const rawPic = (res as any).profilePic?.url || (res as any).profilePic;
+
+                if (!rawPic) {
+                    toast.error('Success, but no image URL returned', { id: uploadToast });
+                    return;
+                }
+
+                // Add timestamp to bypass browser cache (ONLY if NOT a data URI)
+                const newPic = (rawPic && rawPic.startsWith('data:')) 
+                    ? rawPic 
+                    : `${rawPic}${rawPic.includes('?') ? '&' : '?'}t=${Date.now()}`;
 
                 setFormData((prev: any) => ({ ...prev, profilePic: newPic }));
 
+                // Update auth store with final URL
                 if (setUser && user) {
-                    setUser({ ...user, image: newPic });
+                    setUser({
+                        ...user,
+                        image: newPic,
+                        avatar: newPic,
+                        profilePic: newPic
+                    } as any);
                 }
-                toast.success('Profile photo updated', { id: uploadToast });
+
+                // ✅ CRITICAL: Clear memory cache so next page refresh is fresh
+                clearApiCache();
+
+                toast.success('Profile photo updated!', { id: uploadToast });
             } else {
-                toast.error(res.error || 'Failed to upload photo', { id: uploadToast });
+                toast.error('Failed to upload photo', { id: uploadToast });
             }
         } catch (error: any) {
+            console.error('Photo upload error:', error);
             toast.error('An error occurred while uploading');
+        } finally {
+            setIsPhotoUploading(false);
         }
     };
 
@@ -391,9 +402,10 @@ export default function EditDoctorProfilePage() {
         setIsSaving(true);
         try {
             const formDataToSubmit = new FormData();
+            formDataToSubmit.append('hospital', hospitalId || '');
 
             // URL/file fields that must NOT go through the generic loop (to avoid double-sends and field-size issues)
-            const urlFields = new Set(['profilePic', 'signature', 'degreeCertificate', 'registrationCertificate', 'doctorateCertificate', 'internshipCertificate']);
+            const urlFields = new Set(['profilePic', 'degreeCertificate', 'registrationCertificate', 'doctorateCertificate', 'internshipCertificate']);
 
             // Add all simple scalar fields (skip objects, arrays, and URL/cert fields)
             Object.keys(formData).forEach(key => {
@@ -417,7 +429,6 @@ export default function EditDoctorProfilePage() {
 
             // Existing URL strings — only send if no new file selected for that slot
             if (formData.profilePic && !files['profilePic']) formDataToSubmit.append('profilePic', formData.profilePic);
-            if (formData.signature && !files['signature']) formDataToSubmit.append('signature', formData.signature);
             if (formData.degreeCertificate && !files['degreeCertificate']) formDataToSubmit.append('degreeCertificate', formData.degreeCertificate);
             if (formData.registrationCertificate && !files['registrationCertificate']) formDataToSubmit.append('registrationCertificate', formData.registrationCertificate);
             if (formData.doctorateCertificate && !files['doctorateCertificate']) formDataToSubmit.append('doctorateCertificate', formData.doctorateCertificate);
@@ -426,8 +437,28 @@ export default function EditDoctorProfilePage() {
 
             const res = await updateDoctorProfileAction(formDataToSubmit);
             if (res.success) {
+                // ✅ SYNC AUTH STORE: Update global user state immediately
+                if (res.data && res.data.user) {
+                    const rawPic = res.data.user.image || res.data.user.avatar || res.data.user.profilePic;
+                    const finalPic = (rawPic && rawPic.startsWith('data:')) 
+                        ? rawPic 
+                        : (rawPic ? (rawPic.includes('?') ? `${rawPic}&t=${Date.now()}` : `${rawPic}?t=${Date.now()}`) : '');
+
+                    setUser({
+                        ...user,
+                        ...res.data.user,
+                        name: res.data.user.name || user?.name,
+                        image: finalPic,
+                        avatar: finalPic,
+                        profilePic: finalPic
+                    } as any);
+                }
+
+                // ✅ CRITICAL: Clear memory cache so next GET /doctor/profile is fresh
+                clearApiCache();
+
                 toast.success('Your data is safe');
-                router.push('/doctor/profile');
+                router.push(getPath('/doctor/profile'));
             } else {
                 toast.error(res.error || 'Failed to update profile');
             }
@@ -465,7 +496,7 @@ export default function EditDoctorProfilePage() {
     ];
 
     return (
-        <div className="max-w-6xl mx-auto py-4 sm:py-8 px-2 sm:px-4 min-h-[calc(100vh-100px)]">
+        <div className="max-w-7xl mx-auto py-4 sm:py-8 min-h-[calc(100vh-100px)]">
             {cropper.isOpen && (
                 <ImageCropper
                     src={cropper.image}
@@ -486,7 +517,7 @@ export default function EditDoctorProfilePage() {
                         <ArrowLeft size={24} />
                     </button>
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Edit Your Profile</h1>
+                        <h1 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">Edit Your Profile</h1>
                         <p className="text-gray-500 mt-1">Manage all your personal, professional, and payroll details.</p>
                     </div>
                 </div>
@@ -591,16 +622,34 @@ export default function EditDoctorProfilePage() {
                                 <div className="flex flex-col md:flex-row items-center gap-6">
                                     <div className="w-24 h-24 rounded-full bg-gray-100 dark:bg-gray-800 border-4 border-white dark:border-gray-900 shadow-xl overflow-hidden flex items-center justify-center shrink-0">
                                         {formData.profilePic ? (
-                                            <img src={(typeof formData.profilePic === 'string' ? formData.profilePic : formData.profilePic?.url) || ''} alt="Profile" className="w-full h-full object-cover" />
+                                            <img
+                                                src={(() => {
+                                                    const raw = (typeof formData.profilePic === 'string' ? formData.profilePic : formData.profilePic?.url) || '';
+                                                    if (!raw) return '';
+                                                    if (raw.startsWith('data:') || raw.includes('t=')) return raw;
+                                                    return `${raw}${raw.includes('?') ? '&' : '?'}t=${Date.now()}`;
+                                                })()}
+                                                alt="Profile"
+                                                className="w-full h-full object-cover"
+                                            />
                                         ) : (
                                             <User size={40} className="text-gray-400" />
                                         )}
                                     </div>
                                     <div className="flex-1 w-full flex flex-col items-start gap-2">
-                                        <label className="flex items-center justify-center gap-2 w-full md:w-auto max-w-[280px] px-6 py-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-bold rounded-xl border border-indigo-100 dark:border-indigo-800/30 hover:bg-indigo-100 transition-colors cursor-pointer">
-                                            <Upload size={18} />
-                                            <span>Upload New Photo</span>
-                                            <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+                                        <label className={`flex items-center justify-center gap-2 w-full md:w-auto max-w-[280px] px-6 py-3 ${isPhotoUploading ? 'bg-indigo-100 cursor-not-allowed opacity-70' : 'bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 cursor-pointer'} text-indigo-600 dark:text-indigo-400 font-bold rounded-xl border border-indigo-100 dark:border-indigo-800/30 transition-colors`}>
+                                            {isPhotoUploading ? (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                                                    <span>Processing...</span>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <Upload size={18} />
+                                                    <span>Upload New Photo</span>
+                                                    <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" disabled={isPhotoUploading} />
+                                                </>
+                                            )}
                                         </label>
                                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">Only PDF and any type of image only. Max 5MB</p>
                                         {uploadErrors.profilePic && (
@@ -635,62 +684,50 @@ export default function EditDoctorProfilePage() {
                             </div>
 
                             <div className="space-y-6 pt-6 border-t border-gray-50 dark:border-gray-800">
-                                <div>
-                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider mb-3 block">Specialties</label>
-                                    <div className="flex gap-2 mb-3">
-                                        <input type="text" value={tempSpecialty} onChange={(e) => setTempSpecialty(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && addItem('specialties', tempSpecialty)} placeholder="e.g. Cardiology, Pediatrics" className="flex-1 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
-                                        <button onClick={() => addItem('specialties', tempSpecialty)} className="bg-emerald-100 text-emerald-700 px-4 rounded-xl font-bold hover:bg-emerald-200"><Plus size={18} /></button>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {formData.specialties.map((s: string) => (
-                                            <span key={s} className="px-3 py-1.5 bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-300 rounded-lg text-xs font-bold border border-gray-200 flex items-center gap-2">
-                                                {s} <button onClick={() => removeItem('specialties', s)}><X size={12} /></button>
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
+                                <TagInput
+                                    label="Medical Specialties"
+                                    placeholder="Search and select specialties (e.g. Cardiology)..."
+                                    options={COMMON_SPECIALTIES}
+                                    selectedItems={formData.specialties}
+                                    onAdd={(val) => setFormData((prev: any) => ({ ...prev, specialties: [...prev.specialties, val] }))}
+                                    onRemove={(val) => setFormData((prev: any) => ({ ...prev, specialties: prev.specialties.filter((i: string) => i !== val) }))}
+                                    accentColor="emerald"
+                                />
 
-                                <div>
-                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider mb-3 block">Qualifications</label>
-                                    <div className="flex gap-2 mb-3">
-                                        <input type="text" value={tempQualification} onChange={(e) => setTempQualification(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && addItem('qualifications', tempQualification)} placeholder="e.g. MBBS, MD" className="flex-1 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
-                                        <button onClick={() => addItem('qualifications', tempQualification)} className="bg-emerald-100 text-emerald-700 px-4 rounded-xl font-bold hover:bg-emerald-200"><Plus size={18} /></button>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {formData.qualifications.map((q: string) => (
-                                            <span key={q} className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 rounded-lg text-xs font-bold border border-emerald-100 flex items-center gap-2">
-                                                <Award size={12} /> {q} <button onClick={() => removeItem('qualifications', q)}><X size={12} /></button>
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
+                                <TagInput
+                                    label="Medical Qualifications"
+                                    placeholder="Search and select qualifications (e.g. MBBS, MD)..."
+                                    options={COMMON_QUALIFICATIONS}
+                                    selectedItems={formData.qualifications}
+                                    onAdd={(val) => setFormData((prev: any) => ({ ...prev, qualifications: [...prev.qualifications, val] }))}
+                                    onRemove={(val) => setFormData((prev: any) => ({ ...prev, qualifications: prev.qualifications.filter((i: string) => i !== val) }))}
+                                    accentColor="indigo"
+                                    icon={<Award size={20} className="mb-2 opacity-20" />}
+                                />
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-gray-50 dark:border-gray-800">
-                                <div>
-                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider mb-3 block">Languages Spoken</label>
-                                    <div className="flex gap-2 mb-3">
-                                        <input type="text" value={tempLanguage} onChange={(e) => setTempLanguage(e.target.value)} placeholder="English, Hindi..." className="flex-1 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
-                                        <button onClick={() => addItem('languages', tempLanguage)} className="bg-gray-100 text-gray-600 px-4 rounded-xl font-bold hover:bg-gray-200"><Plus size={18} /></button>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {formData.languages.map((l: string) => (
-                                            <span key={l} className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/10 text-blue-600 rounded-lg text-xs font-bold border border-blue-100 flex items-center gap-2">
-                                                <Globe size={12} /> {l} <button onClick={() => removeItem('languages', l)}><X size={12} /></button>
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
+                                <TagInput
+                                    label="Languages Spoken"
+                                    placeholder="Search and select languages..."
+                                    options={COMMON_LANGUAGES}
+                                    selectedItems={formData.languages}
+                                    onAdd={(val) => setFormData((prev: any) => ({ ...prev, languages: [...prev.languages, val] }))}
+                                    onRemove={(val) => setFormData((prev: any) => ({ ...prev, languages: prev.languages.filter((i: string) => i !== val) }))}
+                                    accentColor="blue"
+                                    icon={<Globe size={20} className="mb-2 opacity-20" />}
+                                />
+
                                 <div>
                                     <label className="text-xs font-black uppercase text-gray-400 tracking-wider mb-3 block">Awards & Recognition</label>
                                     <div className="flex gap-2 mb-3">
                                         <input type="text" value={tempAward} onChange={(e) => setTempAward(e.target.value)} placeholder="Best Doctor Award..." className="flex-1 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
-                                        <button onClick={() => addItem('awards', tempAward)} className="bg-amber-100 text-amber-700 px-4 rounded-xl font-bold hover:bg-amber-200"><Plus size={18} /></button>
+                                        <button onClick={() => { if(tempAward.trim()) { setFormData((prev: any) => ({ ...prev, awards: [...prev.awards, tempAward] })); setTempAward(""); } }} className="bg-amber-100 text-amber-700 px-4 rounded-xl font-bold hover:bg-amber-200"><Plus size={18} /></button>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                         {formData.awards.map((a: string) => (
                                             <span key={a} className="px-3 py-1.5 bg-amber-50 dark:bg-amber-900/10 text-amber-600 rounded-lg text-xs font-bold border border-amber-100 flex items-center gap-2">
-                                                <Award size={12} /> {a} <button onClick={() => removeItem('awards', a)}><X size={12} /></button>
+                                                <Award size={12} /> {a} <button onClick={() => setFormData((prev: any) => ({ ...prev, awards: prev.awards.filter((i: string) => i !== a) }))}><X size={12} /></button>
                                             </span>
                                         ))}
                                     </div>
@@ -699,7 +736,7 @@ export default function EditDoctorProfilePage() {
 
                             <div className="pt-6 border-t border-gray-50 dark:border-gray-800">
                                 <h4 className="text-xs font-black uppercase text-gray-400 tracking-wider mb-4 block">Proof of Qualification</h4>
-                                <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-4">
+                                <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="flex items-center gap-4">
                                         <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-500">
                                             <Award size={20} />
@@ -709,7 +746,7 @@ export default function EditDoctorProfilePage() {
                                             <p className="text-[10px] text-gray-500">Upload your highest degree certificate (PDF/Image)</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2 sm:gap-3">
+                                    <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
                                         {formData.degreeCertificate && (
                                             <div className="flex items-center gap-1.5 sm:gap-2">
                                                 <button type="button" onClick={() => setDocViewer({ url: formData.degreeCertificate, label: 'Degree Certificate' })} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] sm:text-[11px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
@@ -739,7 +776,7 @@ export default function EditDoctorProfilePage() {
                                     <p className="text-[10px] text-rose-500 font-bold uppercase tracking-tighter mt-1 animate-bounce">{uploadErrors.degreeCertificate}</p>
                                 )}
 
-                                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-4">
+                                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="flex items-center gap-4">
                                         <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-500">
                                             <Award size={20} />
@@ -749,7 +786,7 @@ export default function EditDoctorProfilePage() {
                                             <p className="text-[10px] text-gray-500">Upload your Doctorate/PhD certificate (PDF/Image)</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2 sm:gap-3">
+                                    <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
                                         {formData.doctorateCertificate && (
                                             <div className="flex items-center gap-1.5 sm:gap-2">
                                                 <button type="button" onClick={() => setDocViewer({ url: formData.doctorateCertificate, label: 'Doctorate Certificate' })} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] sm:text-[11px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
@@ -779,7 +816,7 @@ export default function EditDoctorProfilePage() {
                                     <p className="text-[10px] text-rose-500 font-bold uppercase tracking-tighter mt-1 animate-bounce">{uploadErrors.doctorateCertificate}</p>
                                 )}
 
-                                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-4">
+                                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="flex items-center gap-4">
                                         <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-500">
                                             <Award size={20} />
@@ -789,7 +826,7 @@ export default function EditDoctorProfilePage() {
                                             <p className="text-[10px] text-gray-500">Upload your Internship Completion certificate (PDF/Image)</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2 sm:gap-3">
+                                    <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
                                         {formData.internshipCertificate && (
                                             <div className="flex items-center gap-1.5 sm:gap-2">
                                                 <button type="button" onClick={() => setDocViewer({ url: formData.internshipCertificate, label: 'Internship Completion' })} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] sm:text-[11px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
@@ -925,7 +962,7 @@ export default function EditDoctorProfilePage() {
                                         <input type="date" name="registrationExpiryDate" value={formData.registrationExpiryDate} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
                                     </div>
                                 </div>
-                                <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-4">
+                                <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="flex items-center gap-4">
                                         <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center text-emerald-500">
                                             <ShieldCheck size={20} />
@@ -935,7 +972,7 @@ export default function EditDoctorProfilePage() {
                                             <p className="text-[10px] text-gray-500">Upload your Medical Council Registration (PDF/Image)</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2 sm:gap-3">
+                                    <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
                                         {formData.registrationCertificate && (
                                             <div className="flex items-center gap-1.5 sm:gap-2">
                                                 <button type="button" onClick={() => setDocViewer({ url: formData.registrationCertificate, label: 'Registration Certificate' })} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] sm:text-[11px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
@@ -968,22 +1005,10 @@ export default function EditDoctorProfilePage() {
 
                             <div className="pt-8 border-t border-gray-50 dark:border-gray-800">
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Hospital Assignment</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Department</label>
-                                        <input type="text" name="department" value={formData.department} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Designation</label>
-                                        <input type="text" name="designation" value={formData.designation} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
-                                    </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Employee ID</label>
                                         <input type="text" name="employeeId" value={formData.employeeId} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Room/Cabin</label>
-                                        <input type="text" name="room" value={formData.room} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
                                     </div>
                                 </div>
                             </div>
@@ -995,7 +1020,7 @@ export default function EditDoctorProfilePage() {
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Consultation Fee (₹)</label>
                                         <div className="relative">
                                             <input type="number" name="consultationFee" value={formData.consultationFee} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
-                                            <DollarSign className="absolute right-4 top-3.5 text-gray-300" size={16} />
+                                            <IndianRupee className="absolute right-4 top-3.5 text-gray-300" size={16} />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
@@ -1057,7 +1082,7 @@ export default function EditDoctorProfilePage() {
                                         </label>
                                         <div className="relative">
                                             <input type="number" name="baseSalary" value={formData.baseSalary} readOnly className="w-full bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3 text-sm outline-none cursor-not-allowed text-gray-500" />
-                                            <DollarSign className="absolute right-4 top-3.5 text-gray-400" size={16} />
+                                            <IndianRupee className="absolute right-4 top-3.5 text-gray-400" size={16} />
                                         </div>
                                     </div>
                                     <div className="space-y-2">

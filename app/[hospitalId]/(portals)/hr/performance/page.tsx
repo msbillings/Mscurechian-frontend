@@ -228,8 +228,19 @@ function EmployeePanel({
 
   const rm = emp.roleMetrics;
 
+  useEffect(() => {
+    if (window.innerWidth < 1024) {
+      setTimeout(() => {
+        const el = document.getElementById("perf-detail-panel-id");
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 150);
+    }
+  }, [emp._id]);
+
   return (
-    <div className="perf-detail-panel">
+    <div className="perf-detail-panel" id="perf-detail-panel-id">
       <button className="perf-panel-close" onClick={onClose}><X size={16} /></button>
       <div className="perf-panel-header">
         <Avatar name={emp.name} image={emp.image} size={52} />
@@ -495,114 +506,159 @@ export default function PerformanceAnalyticsPage() {
         }
 
         /* ─── Layout ─────────────────────────────────────────────── */
-        .perf-layout { display: flex; gap: 0; min-height: 100vh; background: var(--bg); }
-        .perf-main { flex: 1; overflow-y: auto; padding: 24px; max-width: calc(100% - 360px); transition: max-width 0.3s ease; }
+        .perf-layout { display: flex; flex-direction: column; min-height: 100vh; background: var(--bg); }
+        @media (min-width: 1024px) { .perf-layout { flex-direction: row; } }
+        .perf-main { flex: 1; overflow-y: auto; width: 100%; transition: max-width 0.3s ease; }
+        @media (min-width: 1024px) { .perf-main { max-width: calc(100% - 360px); } }
         .perf-main.full-width { max-width: 100%; }
 
         /* ─── Header ─────────────────────────────────────────────── */
-        .perf-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
-        .perf-title { font-size: 20px; font-weight: 700; color: #1e293b; letter-spacing: -0.01em; }
-        .perf-subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+        .perf-header { margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+        .perf-title { font-size: 18px; font-weight: 700; color: #1e293b; letter-spacing: -0.01em; }
+        @media (min-width: 768px) { .perf-title { font-size: 20px; } }
+        .perf-subtitle { font-size: 10px; color: var(--muted); margin-top: 2px; }
+        @media (min-width: 768px) { .perf-subtitle { font-size: 12px; } }
         
         .perf-filters { display: flex; gap: 8px; align-items: center; }
         .perf-select-wrap { position: relative; display: flex; align-items: center; }
         .perf-select {
           background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-          color: var(--text); padding: 7px 32px 7px 12px; font-size: 12px; font-weight: 600; cursor: pointer; outline: none;
+          color: var(--text); padding: 7px 32px 7px 12px; font-size: 11px; font-weight: 600; cursor: pointer; outline: none;
           appearance: none; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s;
         }
         .perf-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
 
         /* ─── Stats Cards ────────────────────────────────────────── */
-        .perf-stats-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; margin-bottom: 24px; }
+        .perf-stats-grid { 
+          display: grid; 
+          grid-template-columns: repeat(2, 1fr); 
+          gap: 10px; 
+          margin-bottom: 24px; 
+        }
+        @media (min-width: 640px) { .perf-stats-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (min-width: 768px) { .perf-stats-grid { grid-template-columns: repeat(4, 1fr); } }
+        @media (min-width: 1280px) { .perf-stats-grid { grid-template-columns: repeat(8, 1fr); } }
+
         .perf-stat-card {
-          background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-          padding: 14px 12px; display: flex; flex-direction: column; gap: 10px;
+          background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+          padding: 12px; display: flex; flex-direction: column; gap: 8px;
           transition: all 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
         .perf-stat-card:hover { border-color: var(--primary); transform: translateY(-1px); }
-        .perf-stat-icon { width: 32px; height: 32px; border-radius: 8px; background: #eff6ff; color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 14px; }
-        .perf-stat-value { font-size: 18px; font-weight: 700; color: #0f172a; line-height: 1.2; }
-        .perf-stat-label { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
-        .perf-stat-sub { font-size: 10px; color: #94a3b8; margin-top: -2px; }
+        .perf-stat-icon { width: 28px; height: 28px; border-radius: 8px; background: #eff6ff; color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .perf-stat-value { font-size: 16px; font-weight: 700; color: #0f172a; line-height: 1.2; }
+        .perf-stat-label { font-size: 9px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+        .perf-stat-sub { font-size: 9px; color: #94a3b8; margin-top: -2px; }
 
         /* ─── Department Overview ─────────────────────────────────── */
-        .perf-dept-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 24px; }
-        .perf-section-title { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .perf-dept-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 24px; }
+        .perf-section-title { font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
         .perf-dept-bars { display: flex; flex-direction: column; gap: 12px; }
-        .perf-dept-bar-row { display: grid; grid-template-columns: 80px 1fr 40px; align-items: center; gap: 16px; }
-        .perf-dept-bar-label { font-size: 12px; font-weight: 600; color: var(--muted); }
-        .perf-dept-bar-track { height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+        .perf-dept-bar-row { display: grid; grid-template-columns: 80px 1fr 40px; align-items: center; gap: 12px; }
+        .perf-dept-bar-label { font-size: 11px; font-weight: 600; color: var(--muted); }
+        .perf-dept-bar-track { height: 6px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
         .perf-dept-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
-        .perf-dept-bar-val { font-size: 12px; font-weight: 700; color: var(--primary); text-align: right; }
+        .perf-dept-bar-val { font-size: 11px; font-weight: 700; color: var(--primary); text-align: right; }
 
         /* ─── Tabs ───────────────────────────────────────────────── */
-        .perf-tabs-container { display: flex; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 4px; margin-bottom: 16px; width: fit-content; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .perf-tabs-container { display: flex; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 16px; width: 100%; max-width: fit-content; box-shadow: 0 1px 2px rgba(0,0,0,0.05); overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none; }
+        .perf-tabs-container::-webkit-scrollbar { display: none; }
         .perf-tab {
-          padding: 8px 18px; border-radius: 7px; font-size: 12px; font-weight: 600;
+          padding: 7px 14px; border-radius: 8px; font-size: 11px; font-weight: 600;
           color: var(--muted); transition: all 0.2s; cursor: pointer; border: none; background: transparent;
-          display: flex; align-items: center; gap: 6px;
+          display: flex; align-items: center; gap: 6px; white-space: nowrap;
         }
+        @media (min-width: 768px) { .perf-tab { padding: 8px 18px; font-size: 12px; } }
         .perf-tab:hover { color: var(--primary); }
         .perf-tab.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(37,99,235,0.2); }
 
         /* ─── Top Performers ─────────────────────────────────────── */
         .perf-top-section { margin-bottom: 24px; }
-        .perf-top-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+        .perf-top-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+        @media (min-width: 768px) { .perf-top-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; } }
         .perf-top-card {
-          background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px;
-          display: flex; align-items: center; gap: 12px; position: relative; transition: all 0.2s;
+          background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px;
+          display: flex; align-items: center; gap: 10px; position: relative; transition: all 0.2s;
           box-shadow: 0 1px 3px rgba(0,0,0,0.04); cursor: pointer;
         }
+        @media (min-width: 768px) { .perf-top-card { padding: 16px; gap: 12px; } }
         .perf-top-card:hover { border-color: var(--primary); transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .perf-top-card-highlight { border: 1.5px solid #dbeafe; background: #f0f7ff; }
-        .perf-top-medal { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: var(--primary); background: #eff6ff; border-radius: 50%; opacity: 0.8; }
+        .perf-top-medal { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: var(--primary); background: #eff6ff; border-radius: 50%; opacity: 0.8; }
         .perf-top-info { flex: 1; min-width: 0; }
-        .perf-top-name { font-size: 13px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .perf-top-score { font-size: 16px; font-weight: 800; color: var(--primary); }
+        .perf-top-name { font-size: 12px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        @media (min-width: 768px) { .perf-top-name { font-size: 13px; } }
+        .perf-top-score { font-size: 14px; font-weight: 800; color: var(--primary); }
+        @media (min-width: 768px) { .perf-top-score { font-size: 16px; } }
 
         /* ─── Employee List ───────────────────────────────────────── */
         .perf-emp-list { display: flex; flex-direction: column; gap: 6px; }
         .perf-emp-row {
-          background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-          padding: 12px 16px; display: flex; align-items: center; gap: 16px; cursor: pointer;
+          background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+          padding: 8px 10px; display: flex; flex-direction: row; align-items: center; gap: 8px; cursor: pointer;
           transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
         }
+        @media (min-width: 768px) { .perf-emp-row { gap: 16px; padding: 12px 16px; } }
         .perf-emp-row:hover { background: #f8faff; border-color: #dbeafe; }
         .perf-emp-row.perf-emp-row-active { border-color: var(--primary); background: #f0f7ff; box-shadow: 0 0 0 1px var(--primary); }
-        .perf-emp-rank { width: 30px; font-size: 12px; font-weight: 700; color: #94a3b8; }
+        .perf-emp-rank { width: 20px; font-size: 11px; font-weight: 700; color: #94a3b8; }
+        
+        .perf-emp-trend { display: none; }
+        .perf-emp-flags { display: none; }
+        @media (min-width: 640px) { .perf-emp-trend { display: block; } }
+        @media (min-width: 1024px) { .perf-emp-flags { display: flex; } }
         .perf-emp-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
-        .perf-emp-name { font-size: 13px; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .perf-emp-meta { font-size: 11px; color: var(--muted); margin-top: 1px; display: flex; align-items: center; gap: 6px; }
-        .perf-emp-id { font-size: 10px; color: #94a3b8; }
-        .perf-emp-att { width: 80px; text-align: center; }
-        .perf-att-pct { display: block; font-size: 13px; font-weight: 700; color: #334155; }
-        .perf-att-label { color: var(--muted); font-size: 10px; font-weight: 500; }
-        .perf-emp-score-col { width: 80px; text-align: center; }
-        .perf-score-val { display: block; font-size: 15px; font-weight: 800; color: var(--primary); }
-        .perf-score-label { display: block; font-size: 10px; color: var(--muted); font-weight: 600; }
-        .perf-emp-chevron { color: #cbd5e1; }
+        .perf-emp-name { font-size: 12px; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        @media (min-width: 768px) { .perf-emp-name { font-size: 13px; } }
+        .perf-emp-meta { font-size: 10px; color: var(--muted); margin-top: 1px; display: flex; align-items: center; gap: 6px; }
+        .perf-emp-id { font-size: 9px; color: #94a3b8; }
+        
+        .perf-emp-stats-wrap { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #f1f5f9; pt-2; mt-1; }
+        @media (min-width: 768px) { .perf-emp-stats-wrap { border: none; pt: 0; mt: 0; gap: 16px; justify-content: flex-end; } }
+
+        .perf-emp-att { text-align: left; }
+        @media (min-width: 768px) { .perf-emp-att { width: 80px; text-align: center; } }
+        .perf-att-pct { display: block; font-size: 11px; font-weight: 700; color: #334155; }
+        @media (min-width: 768px) { .perf-att-pct { font-size: 12px; } }
+        .perf-att-label { color: var(--muted); font-size: 9px; font-weight: 500; }
+        
+        .perf-emp-score-col { text-align: center; }
+        @media (min-width: 768px) { .perf-emp-score-col { width: 80px; text-align: center; } }
+        .perf-score-val { display: block; font-size: 11px; font-weight: 800; color: var(--primary); }
+        @media (min-width: 768px) { .perf-score-val { font-size: 14px; } }
+        .perf-score-label { display: block; font-size: 9px; color: var(--muted); font-weight: 600; }
+        .perf-emp-chevron { display: none; }
+        @media (min-width: 1024px) { .perf-emp-chevron { display: block; color: #cbd5e1; } }
 
         /* ─── Detail Panel ───────────────────────────────────────── */
         .perf-detail-panel {
-          width: 360px; background: var(--surface); border-left: 1px solid var(--border);
-          padding: 24px; position: sticky; top: 0; height: 100vh; overflow-y: auto;
-          box-shadow: -4px 0 15px rgba(0,0,0,0.03); flex-shrink: 0;
+          width: 100%; background: var(--surface); border-top: 1px solid var(--border);
+          padding: 24px; z-index: 50;
+        }
+        @media (min-width: 1024px) { 
+          .perf-detail-panel { 
+            width: 360px; height: 100vh; position: sticky; top: 0; border-top: none; border-left: 1px solid var(--border); overflow-y: auto;
+          } 
         }
         .perf-panel-close { float: right; color: var(--muted); cursor: pointer; padding: 4px; }
         .perf-panel-header { display: flex; gap: 16px; margin-bottom: 24px; align-items: center; }
-        .perf-panel-name { font-size: 18px; font-weight: 700; color: #1e293b; }
-        .perf-panel-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
-        .perf-panel-scores { background: #f8fafc; border: 1px solid #eef2f7; border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .perf-panel-name { font-size: 16px; font-weight: 700; color: #1e293b; }
+        @media (min-width: 768px) { .perf-panel-name { font-size: 18px; } }
+        .perf-panel-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+        @media (min-width: 768px) { .perf-panel-meta { font-size: 12px; } }
+        .perf-panel-scores { background: #f8fafc; border: 1px solid #eef2f7; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; }
+        @media (min-width: 640px) { .perf-panel-scores { flex-direction: row; } }
         .perf-panel-score-item { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; }
-        .perf-panel-score-val { font-size: 20px; font-weight: 800; color: var(--primary); }
-        .perf-panel-divider { width: 1px; height: 40px; background: var(--border); }
-        .perf-panel-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; }
+        .perf-panel-divider { display: none; }
+        @media (min-width: 640px) { .perf-panel-divider { display: block; width: 1px; height: 40px; background: var(--border); } }
+        .perf-panel-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin: 20px 0 12px; display: flex; align-items: center; gap: 8px; }
         .perf-panel-section-title::after { content: ''; flex: 1; height: 1px; background: #f1f5f9; }
-        .perf-panel-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .perf-panel-kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        @media (min-width: 640px) { .perf-panel-kpis { grid-template-columns: repeat(3, 1fr); } }
+        @media (min-width: 1024px) { .perf-panel-kpis { grid-template-columns: 1fr 1fr; } }
         .perf-kpi-item { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
-        .perf-kpi-val { font-size: 15px; font-weight: 700; color: var(--primary); display: block; }
-        .perf-kpi-label { font-size: 10px; color: var(--muted); margin-top: 2px; display: block; }
+        .perf-kpi-val { font-size: 14px; font-weight: 700; color: var(--primary); display: block; }
+        .perf-kpi-label { font-size: 9px; color: var(--muted); margin-top: 2px; display: block; }
 
         .perf-trend-up { font-size: 11px; font-weight: 700; color: var(--success); display: flex; align-items: center; gap: 2px; }
         .perf-trend-down { font-size: 11px; font-weight: 700; color: #64748b; display: flex; align-items: center; gap: 2px; }
@@ -617,14 +673,14 @@ export default function PerformanceAnalyticsPage() {
         <div className={`perf-main ${!selectedEmp ? "full-width" : ""}`}>
           {/* Header */}
           <div className="perf-header">
-            <div className="perf-header-top">
+            <div className="perf-header-top flex flex-col md:flex-row md:items-center justify-between w-full gap-4">
               <div>
-                <div className="perf-title">Performance Analytics</div>
+                <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight">Performance Analytics</h1>
                 <div className="perf-subtitle">
                   Enterprise-grade HR performance reporting · all data from live records
                 </div>
               </div>
-              <div className="perf-filters">
+              <div className="perf-filters flex-wrap">
                 <Calendar size={14} style={{ color: "var(--muted)" }} />
                 <div style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
                   <select
@@ -691,18 +747,18 @@ export default function PerformanceAnalyticsPage() {
                     />
                   ))}
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 12 }}>
+                <div className="grid grid-cols-3 gap-1 lg:gap-2 mt-3">
                   {dash.departmentStats.map((dept) => (
-                    <div key={dept.role} style={{ background: "var(--bg)", borderRadius: 8, padding: "10px 12px", border: "1px solid var(--border)" }}>
-                      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>{dept.department}</div>
-                      <div style={{ display: "flex", gap: 12 }}>
+                    <div key={dept.role} className="bg-[var(--bg)] rounded-md lg:rounded-lg p-1.5 lg:p-3 border border-[var(--border)] overflow-hidden">
+                      <div className="text-[9px] lg:text-[11px] text-[var(--muted)] mb-0.5 lg:mb-1 truncate">{dept.department}</div>
+                      <div className="flex flex-col lg:flex-row gap-0.5 lg:gap-3">
                         <div>
-                          <div style={{ fontSize: 14, fontWeight: 700 }}>{dept.avgAttendance}%</div>
-                          <div style={{ fontSize: 9, color: "var(--muted)" }}>Attendance</div>
+                          <div className="text-[10px] lg:text-[14px] font-bold">{dept.avgAttendance}%</div>
+                          <div className="text-[7.5px] lg:text-[9px] text-[var(--muted)] truncate">Attend.</div>
                         </div>
                         <div>
-                          <div style={{ fontSize: 14, fontVariantNumeric: "tabular-nums", fontWeight: 700, color: PRIMARY_BLUE }}>{dept.avgCompositeScore}</div>
-                          <div style={{ fontSize: 9, color: "var(--muted)" }}>Avg Score</div>
+                          <div className="text-[10px] lg:text-[14px] font-bold text-[var(--primary)]">{dept.avgCompositeScore}</div>
+                          <div className="text-[7.5px] lg:text-[9px] text-[var(--muted)] truncate">Avg Score</div>
                         </div>
                       </div>
                     </div>

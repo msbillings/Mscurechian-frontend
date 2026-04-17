@@ -1,4 +1,4 @@
-import { SUPPORT_ENDPOINTS } from "../config/endpoints";
+﻿import { SUPPORT_ENDPOINTS } from "../config/endpoints";
 import { apiClient } from "../api/apiClient";
 import { SupportTicket } from "../types/support";
 

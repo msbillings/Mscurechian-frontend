@@ -152,22 +152,24 @@ function HRStaffDetailPage() {
   if (!staff) return null;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-20 pt-8 px-8">
+    <div className="max-w-7xl mx-auto space-y-6 pb-20 pt-1">
       {/* Header / Navigation */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-white/5 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
-            <button
-              onClick={() => router.push(`/${hospitalId}/hr/staff`)}
-              className="hidden md:flex p-3 rounded-2xl bg-gray-50 dark:bg-white/5 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <div className="w-20 h-20 rounded-2xl bg-blue-600 flex items-center justify-center text-3xl font-bold text-white shadow-lg shadow-blue-500/20">
-              {staff.name?.charAt(0)}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 border border-gray-100 dark:border-white/5 shadow-sm">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5 w-full xl:w-auto">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <button
+                onClick={() => router.push(`/${hospitalId}/hr/staff`)}
+                className="flex p-2.5 sm:p-3 rounded-2xl bg-gray-50 dark:bg-white/5 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-blue-600 flex items-center justify-center text-2xl sm:text-3xl font-bold text-white shadow-lg shadow-blue-500/20 shrink-0">
+                {staff.name?.charAt(0)}
+              </div>
             </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex-1 w-full sm:w-auto">
+              <div className="flex flex-wrap items-center gap-2 mb-1.5">
                 <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider rounded-md border border-blue-100 dark:border-blue-500/20">
                   Staff Registry
                 </span>
@@ -178,19 +180,19 @@ function HRStaffDetailPage() {
                   {staff.status}
                 </span>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{staff.name}</h1>
-              <div className="flex items-center gap-3 mt-1">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">ID: {staff.employeeId || 'N/A'}</p>
-                <div className="h-1 w-1 rounded-full bg-gray-300" />
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{formattedDepartment}</p>
+              <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white tracking-tight uppercase">{staff.name}</h1>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1">
+                <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">ID: {staff.employeeId || 'N/A'}</p>
+                <div className="hidden sm:block h-1 w-1 rounded-full bg-gray-300" />
+                <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">{formattedDepartment}</p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-center gap-2 w-full xl:w-auto mt-2 xl:mt-0">
             <button
               onClick={() => router.push(`/${hospitalId}/hr/staff/edit/${id}`)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-white border border-gray-200 dark:border-white/10 rounded-xl text-xs font-semibold hover:bg-gray-50 dark:hover:bg-white/5 transition-all active:scale-95"
+              className="flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-white border border-gray-200 dark:border-white/10 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-white/5 transition-all active:scale-95 w-full sm:w-auto shadow-sm"
             >
               <Edit size={14} /> Edit Profile
             </button>
@@ -198,7 +200,7 @@ function HRStaffDetailPage() {
             <button
               onClick={handleToggleStatus}
               disabled={statusLoading}
-              className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95 flex-1 md:flex-none ${staff.status === 'active'
+              className={`flex items-center justify-center gap-2 px-6 py-3 sm:py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 w-full sm:w-auto shadow-sm ${staff.status === 'active'
                 ? 'bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100 hover:border-amber-300'
                 : 'bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300'
                 }`}

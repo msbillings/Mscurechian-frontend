@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { LabSample } from '@/lib/integrations/types/labSample';
 import { LabSampleService } from '@/lib/integrations/services/labSample.service';
@@ -11,9 +11,14 @@ function ActiveTestsPage() {
     const router = useRouter();
     const [samples, setSamples] = useState<LabSample[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isNavigating, startNavigation] = useTransition();
 
     useEffect(() => {
         fetchActiveSamples();
+
+        const handleRefresh = () => {
+            fetchActiveSamples();
+        };
 
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
@@ -21,8 +26,10 @@ function ActiveTestsPage() {
             }
         };
 
+        window.addEventListener('refresh-lab-data', handleRefresh);
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => {
+            window.removeEventListener('refresh-lab-data', handleRefresh);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
     }, []);
@@ -81,10 +88,10 @@ function ActiveTestsPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6 animate-in fade-in duration-700">
             {/* Header Section */}
-            <div className="bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-gray-900 dark:to-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 p-8">
-                <div className="flex items-center justify-between mb-6">
+            <div className="bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-gray-900 dark:to-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 p-4 sm:p-6 md:p-8">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-6">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
                             <div className="p-2.5 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
@@ -134,15 +141,15 @@ function ActiveTestsPage() {
                     {samples.map((sample) => (
                         <div
                             key={sample._id}
-                            className="group bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md transition-all p-6"
+                            className="group bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md transition-all p-4 sm:p-6"
                         >
-                            <div className="flex items-start gap-6">
-                                <div className="w-14 h-14 rounded-xl flex items-center justify-center font-semibold text-white shadow-sm bg-indigo-500">
+                            <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
+                                <div className="hidden sm:flex w-14 h-14 rounded-xl items-center justify-center font-semibold text-white shadow-sm bg-indigo-500 shrink-0">
                                     {sample.patientDetails.name.charAt(0)}
                                 </div>
 
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-start justify-between gap-4 mb-3">
+                                <div className="flex-1 min-w-0 w-full">
+                                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4 mb-3">
                                         <div>
                                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
                                                 {sample.patientDetails.name}
@@ -158,7 +165,7 @@ function ActiveTestsPage() {
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="text-right">
+                                        <div className="text-left sm:text-right mt-2 sm:mt-0">
                                             <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Sample ID</div>
                                             <div className="px-3 py-1.5 bg-slate-50 dark:bg-gray-700 rounded-lg border border-slate-200 dark:border-gray-600">
                                                 <span className="text-sm font-semibold text-gray-900 dark:text-white">{sample.sampleId}</span>
@@ -180,13 +187,13 @@ function ActiveTestsPage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                                         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
                                             <AlertCircle className="w-3.5 h-3.5" />
                                             Pending Collection
                                         </span>
 
-                                        <div className="flex-1"></div>
+                                        <div className="hidden sm:block flex-1"></div>
 
                                         <button
                                             onClick={() => {
@@ -201,11 +208,14 @@ function ActiveTestsPage() {
                                                     displayId: sample.sampleId,
                                                     refDoctor: sample.patientDetails.refDoctor || ''
                                                 }).toString();
-                                                router.push(`/lab/billing?${queryParams}`);
+                                                startNavigation(() => {
+                                                    router.push(`/lab/billing?${queryParams}`);
+                                                });
                                             }}
-                                            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium shadow-sm transition-all flex items-center gap-2"
+                                            disabled={isNavigating}
+                                            className={`px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium shadow-sm transition-all flex items-center gap-2 ${isNavigating ? 'opacity-70 cursor-wait' : ''}`}
                                         >
-                                            <Receipt className="w-4 h-4" />
+                                            {isNavigating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
                                             Generate Bill
                                         </button>
 

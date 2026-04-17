@@ -30,9 +30,10 @@ import toast from "react-hot-toast";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useAuthStore } from "@/stores/authStore";
 import { useRequestLeaveAdmin, useUpdateLeaveStatusAdmin } from '@/lib/integrations/hooks';
+import { TableSkeleton } from '@/components/admin/Skeletons';
 
 const STATUS_CONFIG = {
-   pending: { icon: AlertCircle, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100", label: "Pending Review" },
+   pending: { icon: AlertCircle, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100", label: "Pending" },
    approved: { icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100", label: "Approved" },
    rejected: { icon: XCircle, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-100", label: "Rejected" },
    cancelled: { icon: XCircle, color: "text-gray-500", bg: "bg-gray-50", border: "border-gray-100", label: "Cancelled" }
@@ -73,7 +74,7 @@ const LeaveRow = React.memo(({
 
    return (
       <tr className="hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-50 dark:border-gray-800 last:border-0 group">
-         <td className="py-5 px-6">
+         <td className="py-5 px-3 md:px-6">
             <div className="flex items-center gap-4">
                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-indigo-500/10 to-blue-600/10 flex items-center justify-center text-blue-600 font-black text-sm">
                   {(leave.requester?.name || leave.applicant?.name || "A")?.charAt(0).toUpperCase()}
@@ -88,12 +89,12 @@ const LeaveRow = React.memo(({
                </div>
             </div>
          </td>
-         <td className="py-5 px-6">
+         <td className="py-5 px-3 md:px-6">
             <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase">
                {LEAVE_TYPE_LABELS[leave.leaveType] || leave.leaveType}
             </p>
          </td>
-         <td className="py-5 px-6">
+         <td className="py-5 px-3 md:px-6">
             <div className="flex flex-col gap-1">
                <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300">
                   {new Date(leave.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} - {new Date(leave.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -103,18 +104,18 @@ const LeaveRow = React.memo(({
                </span>
             </div>
          </td>
-         <td className="py-5 px-6 max-w-xs">
+         <td className="py-5 px-3 md:px-6 max-w-xs">
             <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 italic line-clamp-1 truncate">
                "{leave.reason}"
             </p>
          </td>
-         <td className="py-5 px-6">
+         <td className="py-5 px-3 md:px-6">
             <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase border ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}>
                <StatusIcon size={12} />
                {statusConfig.label}
             </div>
          </td>
-         <td className="py-5 px-6 text-right">
+         <td className="py-5 px-3 md:px-6 text-right">
             {isPending && !isOwnLeave ? (
                <div className="flex justify-end gap-2">
                   <button
@@ -126,7 +127,7 @@ const LeaveRow = React.memo(({
                   </button>
                   <button
                      onClick={() => {
-                        const reason = prompt("State rejection protocol justification:");
+                        const reason = prompt("Enter reason for rejection:");
                         if (reason) onStatusUpdate(leave._id, 'rejected', reason);
                      }}
                      disabled={isProcessing}
@@ -137,7 +138,7 @@ const LeaveRow = React.memo(({
                </div>
             ) : isPending && isOwnLeave ? (
                <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest italic">
-                  Self-Requested (Awaiting Admin Sync)
+                  Your Request (Pending Review)
                </span>
             ) : (
                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
@@ -175,7 +176,8 @@ export default function HospitalAdminLeaves() {
             throw error;
          }
       },
-      staleTime: 10 * 1000,
+      staleTime: 30000,
+      placeholderData: (previousData: any) => previousData,
       refetchInterval: 15000,
    });
 
@@ -293,14 +295,14 @@ export default function HospitalAdminLeaves() {
    }, [leaves]);
 
    return (
-      <div className="space-y-8 pb-12 p-8 bg-gray-50 min-h-screen">
+      <div className="space-y-8 pb-12 bg-gray-50 min-h-screen">
          {/* Header */}
          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-               <h1 className="text-2xl font-bold text-gray-900 dark:text-white uppercase leading-none">Management Leave Intelligence</h1>
+               <h1 className="text-lg font-bold text-gray-900 dark:text-white uppercase leading-none">Leave Management</h1>
                <p className="text-gray-500 font-bold mt-2 uppercase tracking-[0.2em] text-[10px] flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse" />
-                  Governance Panel: {leaves.length} Total Records
+                  Total Leave Requests: {leaves.length}
                </p>
             </div>
             <div className="flex items-center gap-4">
@@ -309,14 +311,14 @@ export default function HospitalAdminLeaves() {
          </div>
 
          {/* Stats Summary */}
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {[
                { label: 'Total Requests', value: stats.total, icon: ClipboardList, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-               { label: 'Pending Review', value: stats.pending, icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50' },
-               { label: 'Approved Logs', value: stats.approved, icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-               { label: 'Denied Actions', value: stats.rejected, icon: XCircle, color: 'text-rose-600', bg: 'bg-rose-50' }
+               { label: 'Pending Requests', value: stats.pending, icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50' },
+               { label: 'Approved Requests', value: stats.approved, icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+               { label: 'Rejected Requests', value: stats.rejected, icon: XCircle, color: 'text-rose-600', bg: 'bg-rose-50' }
             ].map((stat, i) => (
-               <div key={i} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 group hover:border-indigo-200 transition-colors">
+               <div key={i} className="bg-white p-3 md:p-6 rounded-2xl shadow-sm border border-gray-100 group hover:border-indigo-200 transition-colors">
                   <div className="flex items-center gap-4">
                      <div className={`w-12 h-12 ${stat.bg} rounded-xl flex items-center justify-center ${stat.color} group-hover:scale-110 transition-transform`}>
                         <stat.icon className="w-6 h-6" />
@@ -331,46 +333,46 @@ export default function HospitalAdminLeaves() {
          </div>
 
          {/* Navigation Tabs */}
-         <div className="flex items-center gap-2 p-1 bg-white rounded-xl border border-gray-100 w-fit">
+         <div className="flex flex-wrap items-center gap-2 p-1 bg-white rounded-xl border border-gray-100 w-full sm:w-fit">
             <button
                onClick={() => setActiveTab('active')}
-               className={`flex items-center gap-2 px-8 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'active'
+               className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 md:px-8 py-3 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'active'
                   ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100'
                   : 'text-gray-400 hover:text-gray-600'}`}
             >
-               <AlertCircle size={14} /> Active Requests ({stats.pending})
+               <AlertCircle size={14} className="shrink-0" /> <span className="truncate">Active Requests ({stats.pending})</span>
             </button>
             <button
                onClick={() => setActiveTab('history')}
-               className={`flex items-center gap-2 px-8 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'history'
+               className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 md:px-8 py-3 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'history'
                   ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100'
                   : 'text-gray-400 hover:text-gray-600'}`}
             >
-               <History size={14} /> Application History ({stats.total - stats.pending})
+               <History size={14} className="shrink-0" /> <span className="truncate">Leave History ({stats.total - stats.pending})</span>
             </button>
          </div>
 
          {/* Filter Bar */}
-         <div className="bg-white p-5 rounded-2xl border border-gray-100 flex flex-col md:flex-row items-center gap-4">
-            <div className="relative flex-1 w-full lg:w-auto">
-               <Search className="w-4 h-4 text-gray-400 absolute left-5 top-1/2 -translate-y-1/2" />
+         <div className="bg-white p-4 md:p-5 rounded-2xl border border-gray-100 flex flex-col md:flex-row items-center gap-3 md:gap-4">
+            <div className="relative flex-1 w-full">
+               <Search className="w-4 h-4 text-gray-400 absolute left-4 md:left-5 top-1/2 -translate-y-1/2" />
                <input
                   type="text"
-                  placeholder="Filter by applicant name..."
+                  placeholder="Search by employee name..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  className="w-full pl-10 md:pl-12 pr-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                />
             </div>
-            <div className="flex items-center gap-3 w-full lg:w-auto">
-               <div className="relative flex-1 lg:w-44">
+            <div className="flex items-center gap-3 w-full md:w-auto">
+               <div className="relative flex-1 md:w-44">
                   <User className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
                   <select
                      value={filterRole}
                      onChange={(e) => setFilterRole(e.target.value)}
-                     className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-indigo-500 outline-none appearance-none cursor-pointer"
+                     className="w-full pl-10 md:pl-11 pr-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-indigo-500 outline-none appearance-none cursor-pointer"
                   >
-                     <option value="all">Consolidated Roles</option>
+                     <option value="all">All Roles</option>
                      <option value="doctor">Doctors</option>
                      <option value="nurse">Nurses</option>
                      <option value="staff">Staff</option>
@@ -383,32 +385,30 @@ export default function HospitalAdminLeaves() {
          {/* Tabular Registry */}
          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="overflow-x-auto">
-               <table className="w-full text-left border-collapse">
+               <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full text-left border-collapse">
                   <thead>
                      <tr className="bg-gray-50 border-b border-gray-100">
-                        <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Applicant Identity</th>
-                        <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Category</th>
-                        <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Temporal Range</th>
-                        <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Justification</th>
-                        <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Matrix Status</th>
-                        <th className="py-4 px-6 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Governance</th>
+                        <th className="py-4 px-3 md:px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Employee Name</th>
+                        <th className="py-4 px-3 md:px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Leave Type</th>
+                        <th className="py-4 px-3 md:px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Leave Dates</th>
+                        <th className="py-4 px-3 md:px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Reason</th>
+                        <th className="py-4 px-3 md:px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                        <th className="py-4 px-3 md:px-6 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Applied On</th>
                      </tr>
                   </thead>
                   <tbody>
-                     {loading ? (
-                        Array.from({ length: 6 }).map((_, i) => (
-                           <tr key={i} className="animate-pulse">
-                              <td colSpan={6} className="py-8 px-6">
-                                 <div className="h-10 bg-gray-50 rounded-xl" />
-                              </td>
-                           </tr>
-                        ))
+                     {loading && !leaves.length ? (
+                        <tr className="bg-white">
+                           <td colSpan={6} className="p-0">
+                              <TableSkeleton rows={8} />
+                           </td>
+                        </tr>
                      ) : paginatedLeaves.length === 0 ? (
                         <tr>
                            <td colSpan={6} className="py-32 text-center text-gray-400">
                               <div className="flex flex-col items-center gap-4">
                                  <ClipboardList size={48} className="opacity-20" />
-                                 <p className="text-[10px] font-black uppercase tracking-widest">No matching application logs detected</p>
+                                 <p className="text-[10px] font-black uppercase tracking-widest">No leave requests found</p>
                               </div>
                            </td>
                         </tr>
@@ -424,25 +424,25 @@ export default function HospitalAdminLeaves() {
                         ))
                      )}
                   </tbody>
-               </table>
+               </table></div>
             </div>
 
             {/* Pagination Interface */}
-            <div className="flex items-center justify-between p-8 bg-gray-50/50 border-t border-gray-100">
+            <div className="flex items-center justify-between p-2 md:p-4 md:p-8 bg-gray-50/50 border-t border-gray-100">
                <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="flex items-center gap-3 px-8 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-white rounded-xl border border-gray-100 hover:text-indigo-600 disabled:opacity-30 transition-all shadow-sm"
+                  className="flex items-center gap-3 px-4 md:px-8 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-white rounded-xl border border-gray-100 hover:text-indigo-600 disabled:opacity-30 transition-all shadow-sm"
                >
                   <ChevronLeft size={16} /> Previous
                </button>
                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">
-                  Registry Layer {page} / {totalPages || 1}
+                  Page {page} / {totalPages || 1}
                </span>
                <button
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
-                  className="flex items-center gap-3 px-8 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-white rounded-xl border border-gray-100 hover:text-indigo-600 disabled:opacity-30 transition-all shadow-sm"
+                  className="flex items-center gap-3 px-4 md:px-8 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-white rounded-xl border border-gray-100 hover:text-indigo-600 disabled:opacity-30 transition-all shadow-sm"
                >
                   Next <ChevronRight size={16} />
                </button>
@@ -451,73 +451,75 @@ export default function HospitalAdminLeaves() {
 
          {/* Self Request Modal */}
          {showRequestModal && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-               <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-                  <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-indigo-50/30">
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 md:p-4 overflow-y-auto">
+               <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[95vh] flex flex-col">
+                  <div className="p-4 md:p-8 border-b border-gray-100 flex justify-between items-center bg-indigo-50/30 shrink-0">
                      <div>
-                        <h2 className="text-xl font-extrabold text-gray-900 uppercase">Personal Leave Request</h2>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Admin Secondary Protocol Initiation</p>
+                        <h2 className="text-lg md:text-xl font-extrabold text-gray-900 uppercase">Personal Leave Request</h2>
+                        <p className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest mt-0.5 md:mt-1">Submit your own leave request</p>
                      </div>
-                     <button onClick={() => setShowRequestModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400">
+                     <button onClick={() => setShowRequestModal(false)} className="p-1.5 md:p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-400 shrink-0">
                         <XCircle size={24} />
                      </button>
                   </div>
-                  <form onSubmit={handleSelfRequest} className="p-8 space-y-6">
-                     <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                           <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Commencement Date</label>
-                           <input
-                              type="date"
-                              required
-                              value={selfRequestData.startDate}
-                              onChange={e => setSelfRequestData(prev => ({ ...prev, startDate: e.target.value }))}
-                              className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                           />
-                        </div>
-                        <div className="space-y-2">
-                           <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Termination Date</label>
-                           <input
-                              type="date"
-                              required
-                              value={selfRequestData.endDate}
-                              onChange={e => setSelfRequestData(prev => ({ ...prev, endDate: e.target.value }))}
-                              className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                           />
-                        </div>
+                  <form onSubmit={handleSelfRequest} className="p-4 md:p-8 space-y-4 md:space-y-6 overflow-y-auto custom-scrollbar flex-1">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div className="space-y-1.5 md:space-y-2">
+                            <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Start Date</label>
+                            <input
+                               type="date"
+                               required
+                               min={new Date().toISOString().split('T')[0]}
+                               value={selfRequestData.startDate}
+                               onChange={e => setSelfRequestData(prev => ({ ...prev, startDate: e.target.value }))}
+                               className="w-full px-4 md:px-5 py-3 md:py-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-bold outline-none focus:border-blue-500 transition-all font-mono"
+                            />
+                         </div>
+                         <div className="space-y-1.5 md:space-y-2">
+                            <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">End Date</label>
+                            <input
+                               type="date"
+                               required
+                               min={selfRequestData.startDate || new Date().toISOString().split('T')[0]}
+                               value={selfRequestData.endDate}
+                               onChange={e => setSelfRequestData(prev => ({ ...prev, endDate: e.target.value }))}
+                               className="w-full px-4 md:px-5 py-3 md:py-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-bold outline-none focus:border-blue-500 transition-all font-mono"
+                            />
+                         </div>
                      </div>
 
-                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Classification</label>
+                     <div className="space-y-1.5 md:space-y-2">
+                        <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Leave Type</label>
                         <select
                            value={selfRequestData.leaveType}
                            onChange={e => setSelfRequestData(prev => ({ ...prev, leaveType: e.target.value }))}
-                           className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
+                           className="w-full px-4 md:px-5 py-3 md:py-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
                         >
                            {Object.entries(LEAVE_TYPE_LABELS).map(([val, label]) => (
-                              <option key={val} value={val}>{label}</option>
+                               <option key={val} value={val}>{label}</option>
                            ))}
                         </select>
                      </div>
 
-                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Operational Justification</label>
+                     <div className="space-y-1.5 md:space-y-2">
+                        <label className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Reason for Leave</label>
                         <textarea
                            required
                            value={selfRequestData.reason}
                            onChange={e => setSelfRequestData(prev => ({ ...prev, reason: e.target.value }))}
-                           placeholder="Specify rationale for leave allocation..."
-                           className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500 min-h-[120px] resize-none"
+                           placeholder="Briefly describe your reason for leave..."
+                           className="w-full px-4 md:px-5 py-3 md:py-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500 min-h-[100px] md:min-h-[120px] resize-none"
                         />
                      </div>
 
                      <button
                         type="submit"
                         disabled={requestLeaveMutation.isPending}
-                        className="w-full py-5 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 active:scale-[0.98] disabled:opacity-50"
+                        className="w-full py-4 md:py-5 bg-indigo-600 text-white rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 active:scale-[0.98] disabled:opacity-50"
                      >
-                        {requestLeaveMutation.isPending ? "Transmitting..." : (
+                        {requestLeaveMutation.isPending ? "Submitting..." : (
                            <>
-                              <Send size={18} /> Transmit Request to Super-Admin
+                              <Send size={18} /> Submit Request
                            </>
                         )}
                      </button>

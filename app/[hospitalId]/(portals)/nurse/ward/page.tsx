@@ -18,7 +18,8 @@ import {
     ShieldAlert,
     LayoutGrid,
     Table as TableIcon,
-    X
+    X,
+    ClipboardList
 } from 'lucide-react';
 import { ipdService, staffService } from '@/lib/integrations';
 import { Bed } from '@/lib/integrations/types';
@@ -150,25 +151,36 @@ const BedBlock = ({ bed, selectedBedId, handleBedClick, getStatusColor }: any) =
                 </div>
 
                 <div className="mt-1">
-                    <h3 className="text-[12px] font-black text-slate-900 uppercase tracking-tight truncate leading-tight">{bed.bedId}</h3>
+                    <h3 className="text-[12px] font-black text-slate-900 uppercase tracking-tight leading-tight">{bed.bedId}</h3>
                     <div className="flex items-center gap-1 mt-0.5">
-                        <span className="text-[9px] font-bold text-slate-400 capitalize truncate">
+                        <span className="text-[9px] font-bold text-slate-400 capitalize">
                             {bed.status === 'Occupied' ? (bed.currentOccupancy?.patientName || 'Loading...') : bed.type}
                         </span>
                     </div>
+                    {bed.status === 'Occupied' && bed.currentOccupancy && (() => {
+                        const admission = bed.currentOccupancy;
+                        const reasonText = admission.reasonForAdmission || admission.reason;
+                        if (!reasonText) return null;
+                        
+                        return (
+                            <p className="text-[7.5px] font-bold text-teal-600 mt-1 opacity-90 uppercase tracking-tighter" title={reasonText}>
+                                {reasonText}
+                            </p>
+                        );
+                    })()}
                 </div>
 
                 <div className="mt-auto space-y-1 pt-2 border-t border-slate-50">
                     <div className="grid grid-cols-2 gap-2">
                         <div className="flex items-center gap-1 overflow-hidden">
-                            <span className="text-[8px] font-black text-slate-500 uppercase truncate">R:{bed.room || "?"}</span>
+                            <span className="text-[8px] font-black text-slate-500 uppercase">R:{bed.room || "?"}</span>
                         </div>
                         <div className="flex items-center gap-1 overflow-hidden">
-                            <span className="text-[8px] font-black text-slate-500 uppercase truncate">F:{bed.floor || "?"}</span>
+                            <span className="text-[8px] font-black text-slate-500 uppercase">F:{bed.floor || "?"}</span>
                         </div>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest truncate max-w-[80px]">
+                        <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest">
                             {bed.department || bed.ward || "GEN"}
                         </span>
                         {bed.currentOccupancy?.condition === 'Critical' && (
@@ -239,21 +251,42 @@ export default function WardStatus() {
         triggerActivityAnimation();
     }, [debouncedSearch, filters]);
 
-    const fetchBeds = React.useCallback(async (dept?: string) => {
+    const fetchBeds = React.useCallback(async (dept?: string, skipCache: boolean = false) => {
         try {
             setLoading(true);
-            const data = await ipdService.getBeds({
-                ...filters,
-                department: dept || filters.department || undefined,
-            } as any);
+            // Fetch both beds and active admissions in parallel to enrich data
+            const [bedsData, activeAdmissions] = await Promise.all([
+                ipdService.getBeds({
+                    ...filters,
+                    department: dept || filters.department || undefined,
+                } as any, skipCache),
+                ipdService.getActiveAdmissions(dept || filters.department || undefined, skipCache).catch(() => [])
+            ]);
 
-            console.log("[WardPage] Profile Dept:", dept);
-            console.log("[WardPage] Profile Rooms:", nurseRooms);
-            console.log("[WardPage] Applied Filters:", filters);
-            console.log("[WardPage] Response Beds Count:", data.length);
-            console.log("[WardPage] Sample Bed Data:", data[0]);
+            // Enrich beds with full admission records for exhaustive clinical info (reason, symptoms)
+            const enrichedBeds = bedsData.map(bed => {
+                if (bed.status === 'Occupied' && bed.currentOccupancy) {
+                    const admission = activeAdmissions.find(a => (a.admissionId || a.id || a._id) === bed.currentOccupancy?.admissionId);
+                    if (admission) {
+                        return {
+                            ...bed,
+                            currentOccupancy: {
+                                ...bed.currentOccupancy,
+                                // Strictly use the clinical reason. Strip legacy 'not now.' notes.
+                                reason: (admission.reason && admission.reason !== 'not now.') 
+                                    ? admission.reason 
+                                    : 'No specific reason provided.'
+                            }
+                        };
+                    }
+                }
+                return bed;
+            });
 
-            setBeds(data);
+            console.log("[WardPage] Final Enriched Beds (Sample):", enrichedBeds.filter(b => b.status === 'Occupied')[0]?.currentOccupancy);
+            console.log("[HospitalAdmin] ENRICHED BEDS COUNT:", enrichedBeds.filter(b => b.status === 'Occupied').length);
+            console.log("[HospitalAdmin] SAMPLE OCCUPIED REASON:", enrichedBeds.find(b => b.status === 'Occupied' && b.currentOccupancy?.reason)?.currentOccupancy?.reason);
+            setBeds(enrichedBeds);
         } catch (error: any) {
             toast.error(error.message || "Failed to load beds");
         } finally {
@@ -266,6 +299,40 @@ export default function WardStatus() {
         try {
             if (!silent) setDetailsLoading(true);
             const data = await ipdService.getBedDetails(id);
+            
+            // Enrich with full admission details for exhaustive clinical information
+            if (data.bed.status === 'Occupied' && data.occupancyDetails?.admissionId) {
+                console.log("[WardPage] Fetching Full Admission for ID:", data.occupancyDetails?.admissionId);
+                try {
+                    const fullAdmission = await ipdService.getAdmissionDetails(data.occupancyDetails?.admissionId || '');
+                    console.log("[WardPage] Full Admission Detail for Sidebar:", {
+                        id: data.occupancyDetails?.admissionId,
+                        reason: fullAdmission?.reason,
+                        reasonForAdmission: fullAdmission?.reasonForAdmission,
+                        clinicalNotes: fullAdmission?.clinicalNotes
+                    });
+                    if (fullAdmission && data.occupancyDetails) {
+                        const bedFromList = beds.find(b => b._id === id);
+                        // Strictly take the reason that is correctly showing on the bed card (enriched during list fetch)
+                        const existingReason = bedFromList?.currentOccupancy?.reason;
+                        const currentDetails = data.occupancyDetails;
+
+                        data.occupancyDetails = {
+                            ...currentDetails,
+                            ...fullAdmission,
+                            // Prioritize the clinical reason from the enriched list (e.g. 'HEART ATTACK')
+                            reason: (existingReason && existingReason !== 'not now.') ? existingReason : (fullAdmission.reason && fullAdmission.reason !== 'not now.' ? fullAdmission.reason : 'No specific reason provided.'),
+                            // Preserve UI-specific mapped fields from original bed details
+                            patient: currentDetails.patient,
+                            doctor: currentDetails.doctor
+                        };
+                        console.log("[WardPage] SIDEBAR FINAL ENRICHED REASON:", data.occupancyDetails?.reason);
+                    }
+                } catch (admErr) {
+                    console.warn("Failed to fetch full admission details for sidebar:", admErr);
+                }
+            }
+            
             setBedDetails(data);
         } catch (error: any) {
             console.error("Bed Details Fetch Error:", error);
@@ -273,7 +340,7 @@ export default function WardStatus() {
         } finally {
             if (!silent) setDetailsLoading(false);
         }
-    }, []);
+    }, [beds]);
 
     useEffect(() => {
         const init = async () => {
@@ -331,6 +398,16 @@ export default function WardStatus() {
     const handleBedClick = (bed: Bed) => {
         setSelectedBedId(bed._id);
         fetchBedDetails(bed._id);
+        
+        if (typeof window !== 'undefined' && window.innerWidth < 1280) {
+            setTimeout(() => {
+                const detailPanel = document.getElementById('detail-panel');
+                if (detailPanel) {
+                    const y = detailPanel.getBoundingClientRect().top + window.scrollY - 80;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                }
+            }, 100);
+        }
     };
 
     const getStatusColor = (status: string) => {
@@ -350,6 +427,7 @@ export default function WardStatus() {
                         <tr className="bg-slate-50 border-b border-slate-100">
                             <th className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-slate-400">Bed / Unit</th>
                             <th className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-slate-400">Patient</th>
+                            <th className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-slate-400">Reason</th>
                             <th className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-slate-400 text-center">Vitals</th>
                             <th className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-slate-400 text-center">Status</th>
                             <th className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-slate-400 text-center">Actions</th>
@@ -378,6 +456,15 @@ export default function WardStatus() {
                                     ) : (
                                         <span className="text-[10px] font-bold text-slate-300 uppercase italic">Vacant Unit</span>
                                     )}
+                                </td>
+                                <td className="px-4 py-3">
+                                    {bed.currentOccupancy ? (
+                                        <div className="max-w-[180px]">
+                                            <p className="text-[10px] font-bold text-slate-700 leading-tight">
+                                                {bed.currentOccupancy.reasonForAdmission || bed.currentOccupancy.reason || '-'}
+                                            </p>
+                                        </div>
+                                    ) : '-'}
                                 </td>
                                 <td className="px-4 py-3">
                                     {bed.currentOccupancy ? (
@@ -438,10 +525,10 @@ export default function WardStatus() {
         <div className="flex flex-col gap-4 animate-in fade-in duration-700 pb-20 text-slate-900">
             {/* HEADER */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-100 pb-2 sm:pb-3 px-2 sm:px-0">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-8">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <div className="shrink-0">
-                        <h1 className="text-xs sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2 sm:gap-2.5 uppercase leading-none">
-                            <Activity size={14} className="text-blue-600 sm:size-[20px]" strokeWidth={2.5} />
+                        <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2 sm:gap-2.5 uppercase leading-none">
+                            <Activity size={14} className="text-blue-600" strokeWidth={2.5} />
                             Ward Status Hub
                         </h1>
                         <p className="text-[7.5px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 sm:mt-1 italic">
@@ -499,7 +586,7 @@ export default function WardStatus() {
                     </div>
 
                     <button
-                        onClick={() => fetchBeds()}
+                        onClick={() => fetchBeds(undefined, true)}
                         className="p-1.5 sm:p-2.5 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-400 hover:text-blue-600 transition-all shadow-sm"
                     >
                         <RefreshCw size={12} className={`${loading ? 'animate-spin' : ''} sm:size-[14px]`} />
@@ -621,7 +708,7 @@ export default function WardStatus() {
                 </div>
 
                 {/* DETAIL PANEL */}
-                <div className="xl:col-span-1 order-1 xl:order-2">
+                <div id="detail-panel" className="xl:col-span-1 order-1 xl:order-2">
                     <div className="bg-white rounded-[1rem] sm:rounded-[1rem] border border-slate-200 shadow-xl overflow-hidden xl:sticky xl:top-24 h-fit">
                         {!selectedBedId ? (
                             <div className="p-8 sm:p-12 text-center space-y-3 sm:space-y-4">
@@ -680,23 +767,36 @@ export default function WardStatus() {
                                                 </section>
 
                                                 {/* CLINICAL TRIAGE */}
-                                                <section className="grid grid-cols-2 gap-2">
-                                                    <div className="p-2 bg-slate-50 rounded-lg border border-slate-100 shadow-sm flex flex-col items-center text-center gap-1">
-                                                        <Stethoscope size={14} className="text-teal-500 mb-1" />
-                                                        <p className="text-[6px] font-black text-slate-400 uppercase tracking-widest">Primary Doctor</p>
-                                                        <p className="text-[8px] font-bold text-slate-700 uppercase truncate w-full">{bedDetails.occupancyDetails.doctor?.user?.name || 'N/A'}</p>
-                                                    </div>
-                                                    <div className="p-2 bg-slate-50 rounded-lg border border-slate-100 shadow-sm flex flex-col items-center text-center gap-1">
-                                                        <Activity size={14} className="text-rose-500 mb-1" />
-                                                        <p className="text-[6px] font-black text-slate-400 uppercase tracking-widest">Adm. Since</p>
-                                                        <p className="text-[8px] font-bold text-slate-700">
-                                                            {new Date(bedDetails.occupancyDetails.admissionDate).toLocaleDateString()}
-                                                        </p>
-                                                        <p className="text-[7px] font-black text-rose-600 uppercase tracking-tighter mt-0.5">
-                                                            STAY: {calculateStayDuration(bedDetails.occupancyDetails.admissionDate)}
-                                                        </p>
-                                                    </div>
-                                                </section>
+                                                 <section className="grid grid-cols-2 gap-2">
+                                                     <div className="p-2 bg-slate-50 rounded-lg border border-slate-100 shadow-sm flex flex-col items-center text-center gap-1">
+                                                         <Stethoscope size={14} className="text-teal-500 mb-1" />
+                                                         <p className="text-[6px] font-black text-slate-400 uppercase tracking-widest">Primary Doctor</p>
+                                                         <p className="text-[8px] font-bold text-slate-700 uppercase w-full">{bedDetails.occupancyDetails.doctor?.user?.name || 'N/A'}</p>
+                                                     </div>
+                                                     <div className="p-2 bg-slate-50 rounded-lg border border-slate-100 shadow-sm flex flex-col items-center text-center gap-1">
+                                                         <Activity size={14} className="text-rose-500 mb-1" />
+                                                         <p className="text-[6px] font-black text-slate-400 uppercase tracking-widest">Adm. Since</p>
+                                                         <p className="text-[8px] font-bold text-slate-700">
+                                                             {new Date(bedDetails.occupancyDetails.admissionDate).toLocaleDateString()}
+                                                         </p>
+                                                         <p className="text-[7px] font-black text-rose-600 uppercase tracking-tighter mt-0.5">
+                                                             STAY: {calculateStayDuration(bedDetails.occupancyDetails.admissionDate)}
+                                                         </p>
+                                                     </div>
+                                                 </section>
+
+                                                 {/* REASON FOR ADMISSION */}
+                                                 <section className="space-y-1.5">
+                                                     <div className="flex items-center gap-1.5 text-slate-400">
+                                                         <ClipboardList size={10} className="text-teal-600" />
+                                                         <p className="text-[7px] font-black uppercase tracking-widest">Reason for Admission</p>
+                                                     </div>
+                                                     <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-left">
+                                                         <p className="text-[10px] font-bold text-gray-700 dark:text-gray-300 leading-relaxed" title={bedDetails.occupancyDetails.reason}>
+                                                             {bedDetails.occupancyDetails.reason || 'No specific reason provided.'}
+                                                         </p>
+                                                     </div>
+                                                 </section>
 
                                                 {/* VITALS SNAPSHOT */}
                                                 <section className="space-y-1.5">

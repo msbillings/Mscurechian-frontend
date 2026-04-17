@@ -9,7 +9,7 @@ function HA_TicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = React.use(params);
 
     return (
-        <div className="p-8 max-w-5xl mx-auto">
+        <div className="p-1 sm:p-2 md:p-3 max-w-5xl mx-auto">
             {/* Wrapper to maintain some sci-fi spacing/feel if needed, or just standard view */}
             <div className="bg-transparent">
                 <TicketDetailView

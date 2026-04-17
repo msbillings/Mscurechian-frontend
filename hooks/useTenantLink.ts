@@ -28,13 +28,39 @@ export function useTenantLink() {
       ? internalPath
       : `/${internalPath}`;
 
+    // ✅ GLOBAL ROUTES: NEVER prefix these with hospitalId
+    const globalRoots = [
+      "/ambulance",
+      "/patient",
+      "/emergency",
+      "/auth",
+      "/portals",
+      "/admin",
+      "/super-admin",
+      "/nurse/login",
+      "/doctor/login",
+      "/staff/login",
+      "/hospital-admin/login",
+      "/hr/login",
+      "/pharmacy/login",
+      "/lab/login",
+    ];
+    if (globalRoots.some(root => cleanPath === root || cleanPath.startsWith(`${root}/`))) {
+      return cleanPath;
+    }
+
     if (hospitalId) {
+      // ✅ PREVENT DOUBLE PREFIXING
+      // If the path already starts with /hospitalId/ or is exactly /hospitalId, return as-is.
+      if (cleanPath === `/${hospitalId}` || cleanPath.startsWith(`/${hospitalId}/`)) {
+        return cleanPath;
+      }
       return `/${hospitalId}${cleanPath}`;
     }
 
-    // Fallback: try sessionStorage
+    // Fallback: try localStorage (only if NOT a global route)
     if (typeof window !== "undefined") {
-      const storedId = sessionStorage.getItem("activeHospitalId");
+      const storedId = localStorage.getItem("activeHospitalId");
       if (storedId) {
         return `/${storedId}${cleanPath}`;
       }

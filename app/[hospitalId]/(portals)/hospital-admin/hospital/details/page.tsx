@@ -54,12 +54,11 @@ const HospitalDetailsPage = () => {
       // Enrich hospital with live counts if missing or outdated
       const enrichedHospital = {
         ...h,
-        numberOfBeds: beds.length || h.numberOfBeds || 0,
+        totalBeds: beds.length || 0,
         availableBeds: beds.filter(b => b.status === "Vacant").length || 0,
         roomCount: meta.data.rooms?.length || h.roomCount || 0,
         departmentCount: meta.data.departments?.length || h.departmentCount || 0,
         // Use live staff count
-        numberOfDoctors: staffCounts.total || h.numberOfDoctors || 0,
         medicalStaffCount: staffCounts.total || 0
       };
 
@@ -136,9 +135,10 @@ const HospitalDetailsPage = () => {
   };
 
   const occupancyRate = useMemo(() => {
-    if (!hospital?.numberOfBeds) return 0;
+    const total = (hospital as any)?.totalBeds || 0;
+    if (!total) return 0;
     const available = hospital.availableBeds || 0;
-    return Math.min(100, Math.round(((hospital.numberOfBeds - available) / hospital.numberOfBeds) * 100));
+    return Math.min(100, Math.round(((total - available) / total) * 100));
   }, [hospital]);
 
   if (loading) {
@@ -156,13 +156,13 @@ const HospitalDetailsPage = () => {
         <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center border border-rose-100 mb-2">
           <Building2 size={32} className="text-rose-400" />
         </div>
-        <h3 className="text-lg font-black text-slate-900 tracking-tight">Institutional Link Offline</h3>
+        <h3 className="text-sm md:text-lg font-black text-slate-900 tracking-tight">Institutional Link Offline</h3>
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center max-w-[280px]">
           Unable to establish secure connection with facility parameters. Please verify network status.
         </p>
         <button
           onClick={fetchHospitalData}
-          className="mt-4 px-6 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all flex items-center gap-2"
+          className="mt-4 px-3 md:px-6 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all flex items-center gap-2"
         >
           <RefreshCw size={14} /> Retry Handshake
         </button>
@@ -173,13 +173,13 @@ const HospitalDetailsPage = () => {
   const isEdit = mode === 'edit';
 
   return (
-    <div className="max-w-7xl mx-auto pb-12 px-4">
+    <div className="max-w-7xl mx-auto pb-12">
       {/* Header Area */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
         <PageHeader
           icon={<Building2 className="text-primary-theme" />}
-          title="Facility Profile"
-          subtitle="Manage institutional identification and operational parameters"
+          title="Hospital Profile"
+          subtitle="Manage hospital details, contact information, and basic settings"
         />
 
         <div className="flex items-center gap-3">
@@ -203,7 +203,7 @@ const HospitalDetailsPage = () => {
               onClick={handleSave}
               loading={saving}
               variant="primary"
-              className="bg-primary-theme hover:bg-primary-theme/80 h-11 px-6 rounded-xl shadow-lg shadow-primary-theme/10 flex items-center gap-2"
+              className="bg-primary-theme hover:bg-primary-theme/80 h-11 px-3 md:px-6 rounded-xl shadow-lg shadow-primary-theme/10 flex items-center gap-2"
             >
               <Save size={16} />
               Save Changes
@@ -212,19 +212,19 @@ const HospitalDetailsPage = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
         {/* Left Column: Comprehensive Data Matrix */}
-        <div className="lg:col-span-8 space-y-8">
+        <div className="xl:col-span-8 space-y-8">
           <Card padding="p-0 overflow-hidden">
             {/* Section: Core Identity */}
-            <div className="p-8 border-b border-slate-100">
+            <div className="p-2 md:p-4 md:p-8 border-b border-slate-100">
               <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8">
                 <div className="flex items-center gap-4">
                   <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
                       <Shield size={16} className="text-primary-theme" />
                     </div>
-                    Institutional Identity
+                    Hospital Information
                   </h3>
                   {!isEdit && (
                     <button
@@ -254,7 +254,7 @@ const HospitalDetailsPage = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-6 md:gap-x-10 md:gap-y-8">
                 <div className="md:col-span-2">
                   <FormInput
                     label="Official Hospital Name"
@@ -299,7 +299,7 @@ const HospitalDetailsPage = () => {
             </div>
 
             {/* Section: Connectivity */}
-            <div className="p-8 border-b border-slate-100 bg-slate-50/30">
+            <div className="p-2 md:p-4 md:p-8 border-b border-slate-100 bg-slate-50/30">
               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 mb-8">
                 <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                   <Phone size={16} className="text-blue-600" />
@@ -307,7 +307,7 @@ const HospitalDetailsPage = () => {
                 Communication Nodes
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
                 <FormInput
                   label="Contact Number"
                   value={formData.phone}
@@ -325,7 +325,7 @@ const HospitalDetailsPage = () => {
                   className={!isEdit ? "bg-transparent border-none p-0 font-bold text-slate-800" : ""}
                 />
                 <FormInput
-                  label="Institutional Website"
+                  label="Hospital Website"
                   value={formData.website}
                   onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                   readOnly={!isEdit}
@@ -346,7 +346,7 @@ const HospitalDetailsPage = () => {
             </div>
 
             {/* Section: Clinical Capability */}
-            <div className="p-8">
+            <div className="p-2 md:p-4 md:p-8">
               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 mb-8">
                 <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
                   <Stethoscope size={16} className="text-emerald-600" />
@@ -364,71 +364,17 @@ const HospitalDetailsPage = () => {
                   placeholder="Comma separated list (e.g. Cardiology, Neurology)"
                   className={!isEdit ? "bg-transparent border-none p-0 font-medium text-slate-600" : "uppercase text-[11px]"}
                 />
-                <FormTextarea
-                  label="Support Services Provided"
-                  value={formData.services}
-                  onChange={(e) => setFormData({ ...formData, services: e.target.value })}
-                  readOnly={!isEdit}
-                  rows={3}
-                  placeholder="Comma separated list (e.g. 24/7 Pharmacy, Lab, Radiology)"
-                  className={!isEdit ? "bg-transparent border-none p-0 font-medium text-slate-600 " : "uppercase text-[11px]"}
-                />
               </div>
             </div>
           </Card>
 
-          {/* Section: Operational Settings */}
-          <Card className="border-l-4 border-l-emerald-500">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600">
-                  <Clock size={24} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Operating Schedule</p>
-                  <div className="mt-1 flex items-center gap-3">
-                    <FormInput
-                      value={formData.operatingHours}
-                      onChange={(e) => setFormData({ ...formData, operatingHours: e.target.value })}
-                      readOnly={!isEdit}
-                      className={`min-w-[120px] ${!isEdit ? "bg-transparent border-none p-0 text-lg font-bold text-slate-900" : "h-9"}`}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="h-12 w-px bg-slate-100 hidden md:block" />
-
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${formData.ambulanceAvailability ? 'bg-primary-theme/10 text-primary-theme' : 'bg-slate-100 text-slate-400'}`}>
-                  <Truck size={24} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Emergency Logistics</p>
-                  <div className="mt-1 flex items-center gap-4">
-                    <p className={`font-bold text-sm ${formData.ambulanceAvailability ? 'text-primary-theme' : 'text-slate-500'}`}>
-                      {formData.ambulanceAvailability ? 'Fleet Active' : 'Fleet Inactive'}
-                    </p>
-                    {isEdit && (
-                      <button
-                        onClick={() => setFormData({ ...formData, ambulanceAvailability: !formData.ambulanceAvailability })}
-                        className={`relative w-10 h-5 rounded-full transition-all duration-300 ${formData.ambulanceAvailability ? 'bg-primary-theme' : 'bg-slate-300'}`}
-                      >
-                        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${formData.ambulanceAvailability ? 'left-5.5' : 'left-0.5'}`} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
         </div>
 
         {/* Right Column: Asset Metrics */}
-        <div className="lg:col-span-4 space-y-8">
+        <div className="xl:col-span-4 space-y-8">
           {/* Bed Occupancy Card */}
-          <div className="bg-slate-900 rounded-[32px] p-8 text-white relative overflow-hidden group shadow-xl">
-            <div className="absolute -right-4 -top-4 p-8 opacity-10 rotate-12 group-hover:rotate-0 transition-transform duration-700">
+          <div className="bg-slate-900 rounded-[24px] md:rounded-[32px] p-3 md:p-6 md:p-8 text-white relative overflow-hidden group shadow-xl">
+            <div className="absolute -right-4 -top-4 p-2 md:p-4 md:p-8 opacity-10 rotate-12 group-hover:rotate-0 transition-transform duration-700">
               <Bed size={120} />
             </div>
 
@@ -440,7 +386,7 @@ const HospitalDetailsPage = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
                 <div className="space-y-1">
-                  <p className="text-5xl sm:text-6xl font-black">{hospital?.numberOfBeds || 0}</p>
+                  <p className="text-5xl sm:text-6xl font-black">{hospital?.totalBeds || 0}</p>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Inpatient Bed Matrix</p>
                 </div>
 
@@ -468,62 +414,81 @@ const HospitalDetailsPage = () => {
 
           {/* Quick Stats Grid */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+            <div className="bg-white p-3 md:p-6 rounded-3xl border border-slate-100 shadow-sm">
               <div className="flex items-center gap-2 mb-3">
                 <Activity size={14} className="text-rose-500" />
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">ICU Core</span>
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">ICU Beds</span>
               </div>
               <p className="text-2xl font-black text-slate-900">{hospital.ICUBeds || 0}</p>
             </div>
-            <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+            <div className="bg-white p-3 md:p-6 rounded-3xl border border-slate-100 shadow-sm">
               <div className="flex items-center gap-2 mb-3">
                 <Layers size={14} className="text-purple-500" />
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Room Nodes</span>
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Number Of Rooms</span>
               </div>
               <p className="text-2xl font-black text-slate-900">{hospital?.roomCount || 0}</p>
             </div>
-            <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+            <div className="bg-white p-3 md:p-6 rounded-3xl border border-slate-100 shadow-sm">
               <div className="flex items-center gap-2 mb-3">
                 <Shield size={14} className="text-amber-500" />
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Divisions</span>
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Number Of Departments</span>
               </div>
               <p className="text-2xl font-black text-slate-900">{hospital?.departmentCount || 0}</p>
             </div>
-            <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+            <div className="bg-white p-3 md:p-6 rounded-3xl border border-slate-100 shadow-sm">
               <div className="flex items-center gap-2 mb-3">
                 <Stethoscope size={14} className="text-emerald-500" />
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Medical Staff</span>
               </div>
-              <p className="text-2xl font-black text-slate-900">{hospital?.medicalStaffCount || hospital?.numberOfDoctors || 0}</p>
+              <p className="text-2xl font-black text-slate-900">{hospital?.medicalStaffCount || 0}</p>
             </div>
           </div>
 
-          {/* Institutional Status Card */}
-          <div className="bg-primary-theme rounded-3xl p-8 text-white relative overflow-hidden shadow-xl shadow-emerald-900/10">
-            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-              <Shield size={64} />
-            </div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-70">Regulatory Registry</p>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-emerald-100 uppercase tracking-wider">Auth Status</span>
-                <span className="text-[10px] font-black bg-white/20 px-2 py-0.5 rounded uppercase backdrop-blur-md">
-                  {hospital?.status || 'Active'}
-                </span>
+          {/* Emergency Logistics Card */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${formData.ambulanceAvailability ? 'bg-primary-theme/10 text-primary-theme' : 'bg-slate-100 text-slate-400'}`}>
+                <Truck size={24} />
               </div>
-              <div className="h-px bg-white/10" />
-              <div>
-                <span className="text-[10px] font-bold text-emerald-100 uppercase tracking-wider block mb-1">Registration Identifier</span>
-                <span className="text-[10px] font-black font-mono tracking-tighter break-all opacity-80">{hospital?._id}</span>
+              <div className="flex-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Emergency Logistics</p>
+                <div className="mt-1 flex items-center justify-between">
+                  <p className={`font-bold text-sm ${formData.ambulanceAvailability ? 'text-primary-theme' : 'text-slate-500'}`}>
+                    {formData.ambulanceAvailability ? 'Fleet Active' : 'Fleet Inactive'}
+                  </p>
+                  {isEdit && (
+                    <button
+                      onClick={() => setFormData({ ...formData, ambulanceAvailability: !formData.ambulanceAvailability })}
+                      className={`relative w-10 h-5 rounded-full transition-all duration-300 ${formData.ambulanceAvailability ? 'bg-primary-theme' : 'bg-slate-300'}`}
+                    >
+                      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${formData.ambulanceAvailability ? 'left-5.2' : 'left-0.5'}`} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
+          </div>
 
-            <button
-              onClick={fetchHospitalData}
-              className="mt-6 w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 backdrop-blur-sm border border-white/10"
-            >
-              <RefreshCw size={14} /> Refresh Node Data
-            </button>
+          {/* Support Services Provided Card */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-5 rotate-12 group-hover:rotate-0 transition-all duration-700">
+              <Stethoscope size={48} className="text-emerald-500" />
+            </div>
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-4">
+                <Activity size={14} className="text-emerald-500" />
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Support Services Provided</span>
+              </div>
+              <FormTextarea
+                label=""
+                value={formData.services}
+                onChange={(e) => setFormData({ ...formData, services: e.target.value })}
+                readOnly={!isEdit}
+                rows={isEdit ? 4 : 2}
+                placeholder="Comma separated list (e.g. 24/7 Pharmacy, Lab, Radiology)"
+                className={!isEdit ? "bg-transparent border-none p-0 font-bold text-slate-900 text-sm leading-relaxed" : "uppercase text-[11px]"}
+              />
+            </div>
           </div>
         </div>
       </div>

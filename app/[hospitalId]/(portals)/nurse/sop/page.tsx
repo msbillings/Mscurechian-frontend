@@ -129,12 +129,12 @@ export default function NurseSOPPage() {
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-6 md:space-y-10 max-w-7xl mx-auto min-h-screen pb-20">
+        <div className="space-y-6 md:space-y-10 max-w-7xl mx-auto min-h-screen pb-20">
             {/* Header Tier */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 sm:gap-6 pt-2">
                 <div className="w-full sm:w-auto">
                     <div className="text-left">
-                        <h1 className="text-xs sm:text-2xl font-black text-gray-900 dark:text-white uppercase leading-none">Nursing Protocols</h1>
+                        <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white uppercase leading-none">Nursing Protocols</h1>
                         <p className="text-gray-400 dark:text-gray-500 font-black mt-1 uppercase tracking-widest text-[8px] sm:text-[10px] flex items-center gap-1.5">
                             <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
                             Staff Compliance & Standards

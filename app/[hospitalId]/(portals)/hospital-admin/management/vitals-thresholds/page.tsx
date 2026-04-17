@@ -443,50 +443,52 @@ export default function VitalsThresholdsPage() {
     if (loading && templates.length === 0) return <div className="p-10 text-center">Loading Clinical Protocols...</div>;
 
     return (
-        <div className="p-8 max-w-[1600px] mx-auto space-y-8 bg-slate-50/50 min-h-screen">
+        <div className="max-w-7xl mx-auto space-y-8 bg-slate-50/50 min-h-screen">
             {/* Header Section */}
-            <div className="bg-white p-8 rounded-[2rem] border border-slate-200/60 shadow-sm flex flex-wrap items-center justify-between gap-6">
-                <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
-                        <ShieldAlert size={32} />
+            <div className="bg-white p-2 md:p-4 md:px-6 rounded-[1.5rem] md:rounded-[2rem] border border-slate-200/60 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
+                <div className="flex items-center gap-3 md:gap-5 md:flex-1">
+                    <div className="w-10 h-10 md:w-14 md:h-14 bg-indigo-50 rounded-xl md:rounded-2xl flex items-center justify-center text-indigo-600 shrink-0">
+                        <ShieldAlert size={24} className="md:w-8 md:h-8" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Clinical Triage Engine</h1>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">
+                        <h1 className="text-lg md:text-xl lg:text-xl font-black text-slate-900 uppercase tracking-tight">Clinical Triage Engine</h1>
+                        <p className="text-[7px] md:text-[10px] font-bold text-slate-400 uppercase tracking-tight md:tracking-[0.2em] mt-1">
                             NABH Compliance • Dynamic Ward-Specific Protocols
                         </p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner">
-                        <select
-                            value={selectedTemplate}
-                            onChange={(e) => setSelectedTemplate(e.target.value)}
-                            className="bg-transparent px-4 py-2.5 text-xs font-black uppercase text-slate-600 outline-none min-w-[200px]"
-                        >
-                            {templates.map(t => (
-                                <option key={t._id} value={t._id}>{t.templateName} ({t.wardType})</option>
-                            ))}
-                        </select>
-                        <button
-                            onClick={() => setIsCreating(true)}
-                            className="bg-white p-2.5 rounded-xl border border-slate-200 text-indigo-600 hover:bg-indigo-50 transition-all shadow-sm"
-                        >
-                            <Plus size={18} />
-                        </button>
-                    </div>
+                <div className="flex bg-slate-100 p-1 rounded-xl md:rounded-2xl border border-slate-200 shadow-inner w-full md:w-full md:max-w-[400px] items-center overflow-hidden">
+                    <select
+                        value={selectedTemplate}
+                        onChange={(e) => setSelectedTemplate(e.target.value)}
+                        className="bg-transparent px-3 md:px-4 py-2 md:py-2.5 text-[10px] md:text-xs font-black uppercase text-slate-600 outline-none flex-1 min-w-0 truncate"
+                    >
+                        {templates.map(t => (
+                            <option key={t._id} value={t._id} className="truncate">
+                                {t.templateName} ({t.wardType})
+                            </option>
+                        ))}
+                    </select>
+                    <button
+                        onClick={() => setIsCreating(true)}
+                        className="shrink-0 bg-white p-2 md:p-2.5 rounded-lg md:rounded-xl border border-slate-200 text-indigo-600 hover:bg-indigo-50 transition-all shadow-sm"
+                    >
+                        <Plus size={16} className="md:w-[18px] md:h-[18px]" />
+                    </button>
+                </div>
 
+                <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0 no-scrollbar md:flex-1 md:justify-end shrink-0">
                     <button
                         onClick={() => {
                             const current = templates.find(t => t._id === selectedTemplate);
                             setEditData({ name: current?.templateName || '', ward: current?.wardType || '' });
                             setIsEditing(true);
                         }}
-                        className="p-4 bg-white border border-slate-200 text-slate-400 rounded-2xl hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm"
+                        className="p-2 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm shrink-0"
                         title="Edit Template Properties"
                     >
-                        <Edit3 size={18} />
+                        <Edit3 size={16} className="md:w-[18px] md:h-[18px]" />
                     </button>
 
                     <button
@@ -498,46 +500,47 @@ export default function VitalsThresholdsPage() {
                             });
                             setIsCloning(true);
                         }}
-                        className="p-4 bg-white border border-slate-200 text-slate-400 rounded-2xl hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm"
+                        className="p-2 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm shrink-0"
                         title="Clone Template"
                     >
-                        <Copy size={18} />
+                        <Copy size={16} className="md:w-[18px] md:h-[18px]" />
                     </button>
 
                     <button
                         onClick={() => setIsImporting(true)}
-                        className="p-4 bg-white border border-slate-200 text-slate-400 rounded-2xl hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm"
+                        className="p-2 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm shrink-0"
                         title="Bulk Import Protocol"
                     >
-                        <Import size={18} />
+                        <Import size={16} className="md:w-[18px] md:h-[18px]" />
                     </button>
 
                     <button
                         onClick={() => setIsDeleting(true)}
-                        className="p-4 bg-white border border-slate-200 text-rose-400 rounded-2xl hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm"
+                        className="p-2 bg-white border border-slate-200 text-rose-400 rounded-xl hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm shrink-0"
                         title="Delete Template"
                     >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} className="md:w-[18px] md:h-[18px]" />
                     </button>
 
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="px-8 py-4 bg-indigo-600 text-white rounded-[1.2rem] text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center gap-3"
+                        className="shrink-0 px-3 md:px-4 py-2 md:py-2.5 bg-indigo-600 text-white rounded-xl md:rounded-[1.2rem] text-[10px] md:text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
                     >
-                        <Save size={18} />
-                        {saving ? 'Syncing...' : 'Save Configuration'}
+                        <Save size={16} className="md:w-[18px] md:h-[18px]" />
+                        {saving ? 'Syncing...' : 'Save'}
                     </button>
                 </div>
+
             </div>
 
             {/* Main Config Table */}
             <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50 text-slate-500 border-b border-slate-100 uppercase text-[9px] font-black tracking-[0.15em]">
-                                <th className="px-8 py-6 w-[240px] sticky left-0 bg-slate-50 z-10">Vital Parameter</th>
+                                <th className="px-4 md:px-8 py-4 md:py-6 w-[120px] md:w-[240px] md:sticky md:left-0 md:bg-slate-50 md:z-10 border-r border-slate-200 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">Vital Parameter</th>
                                 <th className="px-4 py-6 text-center border-l border-white/10">Min</th>
                                 <th className="px-4 py-6 text-center text-rose-500">Low Crit</th>
                                 <th className="px-4 py-6 text-center text-amber-500">Low Warn</th>
@@ -545,7 +548,7 @@ export default function VitalsThresholdsPage() {
                                 <th className="px-4 py-6 text-center text-amber-500">Up Warn</th>
                                 <th className="px-4 py-6 text-center text-rose-500">Up Crit</th>
                                 <th className="px-4 py-6 text-center">Max</th>
-                                <th className="px-6 py-6 text-center text-indigo-500">Esc (Mins)</th>
+                                <th className="px-2 md:px-6 py-6 text-center text-indigo-500">Esc (Mins)</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -557,25 +560,25 @@ export default function VitalsThresholdsPage() {
 
                                 return (
                                     <tr key={idx} className={`group transition-all hover:bg-slate-50/50 ${!isValid ? 'bg-rose-50/50' : ''}`}>
-                                        <td className="px-8 py-5 sticky left-0 bg-white z-10 border-r border-slate-100 group-hover:bg-slate-50">
-                                            <div className="flex items-center gap-4">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isValid ? 'bg-slate-100 text-slate-400' : 'bg-rose-100 text-rose-500'}`}>
-                                                    <Icon size={20} />
+                                        <td className="px-4 md:px-8 py-4 md:py-5 md:sticky md:left-0 bg-white md:z-10 border-r border-slate-200 group-hover:bg-slate-50 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
+                                            <div className="flex items-center gap-3 md:gap-4">
+                                                <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center transition-all shrink-0 ${isValid ? 'bg-slate-100 text-slate-400' : 'bg-rose-100 text-rose-500'}`}>
+                                                    <Icon size={18} className="md:w-5 md:h-5" />
                                                 </div>
-                                                <div>
-                                                    <p className="text-[11px] font-black text-slate-800 uppercase leading-snug">{meta?.name}</p>
-                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t.unit}</p>
+                                                <div className="min-w-0">
+                                                    <p className="text-[10px] md:text-[11px] font-black text-slate-800 uppercase leading-tight truncate">{meta?.name}</p>
+                                                    <p className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t.unit}</p>
                                                 </div>
                                             </div>
                                             {t.vitalName === 'spO2' && (
-                                                <div className="mt-4 flex items-center gap-2">
+                                                <div className="mt-2 md:mt-4 flex items-center gap-1.5 md:gap-2">
                                                     <input
                                                         type="checkbox"
                                                         checked={t.isSpO2UpperEnabled}
                                                         onChange={(e) => handleUpdate(idx, 'isSpO2UpperEnabled', e.target.checked)}
-                                                        className="w-3.5 h-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600"
+                                                        className="w-3 md:w-3.5 h-3 md:h-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600"
                                                     />
-                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Check Upper SpO2?</span>
+                                                    <span className="text-[7px] md:text-[8px] font-black text-slate-400 uppercase tracking-tighter">Check Upper SpO2?</span>
                                                 </div>
                                             )}
                                             <SeverityPreview thresholds={t} />
@@ -596,7 +599,7 @@ export default function VitalsThresholdsPage() {
                                                                 onWheel={(e) => (e.target as HTMLInputElement).blur()}
                                                                 onFocus={(e) => e.target.select()}
                                                                 onChange={(e) => handleUpdate(idx, 'targetMin', e.target.value === '' ? 0 : parseFloat(e.target.value))}
-                                                                className={`w-16 px-2 py-2.5 bg-white border border-slate-200 rounded-xl text-[11px] font-black text-center shadow-sm focus:border-indigo-500 transition-all outline-none ${!isValid ? 'border-rose-300' : ''}`}
+                                                                className={`w-12 md:w-16 px-1 md:px-2 py-2 md:py-2.5 bg-white border border-slate-200 rounded-xl text-[8px] md:text-[11px] font-black text-center shadow-sm focus:border-indigo-500 transition-all outline-none ${!isValid ? 'border-rose-300' : ''}`}
                                                             />
                                                             <span className="text-[10px] font-bold text-slate-300">-</span>
                                                             <input
@@ -605,7 +608,7 @@ export default function VitalsThresholdsPage() {
                                                                 onWheel={(e) => (e.target as HTMLInputElement).blur()}
                                                                 onFocus={(e) => e.target.select()}
                                                                 onChange={(e) => handleUpdate(idx, 'targetMax', e.target.value === '' ? 0 : parseFloat(e.target.value))}
-                                                                className={`w-16 px-2 py-2.5 bg-white border border-slate-200 rounded-xl text-[11px] font-black text-center shadow-sm focus:border-indigo-500 transition-all outline-none ${!isValid ? 'border-rose-300' : ''}`}
+                                                                className={`w-12 md:w-16 px-1 md:px-2 py-2 md:py-2.5 bg-white border border-slate-200 rounded-xl text-[8px] md:text-[11px] font-black text-center shadow-sm focus:border-indigo-500 transition-all outline-none ${!isValid ? 'border-rose-300' : ''}`}
                                                             />
                                                         </div>
                                                     </td>
@@ -619,7 +622,7 @@ export default function VitalsThresholdsPage() {
                                                         onWheel={(e) => (e.target as HTMLInputElement).blur()}
                                                         onFocus={(e) => e.target.select()}
                                                         onChange={(e) => handleUpdate(idx, field, e.target.value === '' ? 0 : parseFloat(e.target.value))}
-                                                        className={`w-16 px-2 py-2.5 bg-white border border-slate-200 rounded-xl text-[11px] font-black text-center shadow-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none ${!isValid ? 'border-rose-300' : ''}`}
+                                                        className={`w-12 md:w-16 px-1 md:px-2 py-2 md:py-2.5 bg-white border border-slate-200 rounded-xl text-[8px] md:text-[11px] font-black text-center shadow-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none ${!isValid ? 'border-rose-300' : ''}`}
                                                     />
                                                     {field === 'lowerWarning' && (
                                                         <div className="inline-block ml-2 text-slate-300"><ArrowRight size={12} /></div>
@@ -640,7 +643,7 @@ export default function VitalsThresholdsPage() {
                                                         handleUpdate(idx, 'escalationCriticalMinutes', val);
                                                         handleUpdate(idx, 'escalationWarningMinutes', val);
                                                     }}
-                                                    className={`w-20 px-3 py-2 border border-slate-100 rounded-xl text-[11px] font-black text-center bg-indigo-50/30 text-indigo-600 outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all relative z-20 ${t.escalationCriticalMinutes < minEscLimit ? 'border-amber-300 bg-amber-50/50' : ''}`}
+                                                    className={`w-14 md:w-20 px-1 md:px-3 py-2 border border-slate-100 rounded-xl text-[8px] md:text-[11px] font-black text-center bg-indigo-50/30 text-indigo-600 outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all relative z-20 ${t.escalationCriticalMinutes < minEscLimit ? 'border-amber-300 bg-amber-50/50' : ''}`}
                                                 />
                                                 {t.escalationCriticalMinutes < minEscLimit && (
                                                     <span className="text-[7px] font-bold text-amber-500 uppercase tracking-tighter italic">Min {minEscLimit}m</span>
@@ -651,20 +654,20 @@ export default function VitalsThresholdsPage() {
                                 );
                             })}
                         </tbody>
-                    </table>
+                    </table></div>
                 </div>
             </div>
 
             {/* Template Creation Modal */}
             {isCreating && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl p-6 border border-slate-100 animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-2 md:p-4 animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl p-3 md:p-6 border border-slate-100 animate-in zoom-in-95 duration-200">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
                                 <Zap size={20} />
                             </div>
                             <div>
-                                <h3 className="text-lg font-black text-slate-900 uppercase">New Protocol</h3>
+                                <h3 className="text-sm md:text-lg font-black text-slate-900 uppercase">New Protocol</h3>
                                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Base configuration</p>
                             </div>
                         </div>
@@ -703,13 +706,13 @@ export default function VitalsThresholdsPage() {
                             <div className="flex gap-3 pt-4">
                                 <button
                                     onClick={() => setIsCreating(false)}
-                                    className="flex-1 px-8 py-4 bg-slate-100 text-slate-600 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                                    className="flex-1 px-4 md:px-8 py-4 bg-slate-100 text-slate-600 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleCreateTemplate}
-                                    className="flex-3 px-8 py-4 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
+                                    className="flex-3 px-4 md:px-8 py-4 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
                                 >
                                     Create Template
                                 </button>
@@ -808,14 +811,14 @@ export default function VitalsThresholdsPage() {
             />
             {/* Clone Template Modal */}
             {isCloning && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl p-6 border border-slate-100 animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-2 md:p-4 animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl p-3 md:p-6 border border-slate-100 animate-in zoom-in-95 duration-200">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
                                 <Copy size={20} />
                             </div>
                             <div>
-                                <h3 className="text-lg font-black text-slate-900 uppercase">Clone Protocol</h3>
+                                <h3 className="text-sm md:text-lg font-black text-slate-900 uppercase">Clone Protocol</h3>
                                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Duplicate settings</p>
                             </div>
                         </div>
@@ -847,14 +850,14 @@ export default function VitalsThresholdsPage() {
                             <div className="flex gap-3 pt-4">
                                 <button
                                     onClick={() => setIsCloning(false)}
-                                    className="flex-1 px-8 py-4 bg-slate-100 text-slate-600 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                                    className="flex-1 px-4 md:px-8 py-4 bg-slate-100 text-slate-600 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleCopy}
                                     disabled={saving}
-                                    className="flex-3 px-8 py-4 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                                    className="flex-3 px-4 md:px-8 py-4 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
                                 >
                                     <Zap size={16} />
                                     {saving ? 'Cloning...' : 'Start Clone'}
@@ -862,7 +865,7 @@ export default function VitalsThresholdsPage() {
                             </div>
                         </div>
 
-                        <div className="mt-8 bg-amber-50 rounded-2xl p-4 flex gap-3 border border-amber-100/50">
+                        <div className="mt-8 bg-amber-50 rounded-2xl p-2 md:p-4 flex gap-3 border border-amber-100/50">
                             <Info size={16} className="text-amber-500 shrink-0 mt-0.5" />
                             <p className="text-[9px] font-bold text-amber-600 uppercase tracking-wider leading-relaxed">
                                 This will create a fresh database entry with its own unique identifier. Changes back to the original won't affect this clone.
@@ -873,14 +876,14 @@ export default function VitalsThresholdsPage() {
             )}
             {/* Template Edit Modal */}
             {isEditing && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl p-6 border border-slate-100 animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-2 md:p-4 animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl p-3 md:p-6 border border-slate-100 animate-in zoom-in-95 duration-200">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
                                 <Edit3 size={20} />
                             </div>
                             <div>
-                                <h3 className="text-lg font-black text-slate-900 uppercase">Update Settings</h3>
+                                <h3 className="text-sm md:text-lg font-black text-slate-900 uppercase">Update Settings</h3>
                                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Metadata modification</p>
                             </div>
                         </div>
@@ -911,14 +914,14 @@ export default function VitalsThresholdsPage() {
                             <div className="flex gap-3 pt-4">
                                 <button
                                     onClick={() => setIsEditing(false)}
-                                    className="flex-1 px-8 py-4 bg-slate-100 text-slate-600 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                                    className="flex-1 px-4 md:px-8 py-4 bg-slate-100 text-slate-600 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleUpdateTemplate}
                                     disabled={saving}
-                                    className="flex-3 px-8 py-4 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
+                                    className="flex-3 px-4 md:px-8 py-4 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
                                 >
                                     {saving ? 'Updating...' : 'Apply Changes'}
                                 </button>
@@ -930,8 +933,8 @@ export default function VitalsThresholdsPage() {
 
             {/* Custom Delete Confirmation Modal */}
             {isDeleting && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/60 backdrop-blur-md p-4 animate-in fade-in duration-300">
-                    <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-8 border border-slate-100 animate-in zoom-in-95 duration-300 relative overflow-hidden">
+                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/60 backdrop-blur-md p-2 md:p-4 animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-2 md:p-4 md:p-8 border border-slate-100 animate-in zoom-in-95 duration-300 relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-1.5 bg-rose-500" />
 
                         <div className="flex flex-col items-center text-center">
@@ -952,7 +955,7 @@ export default function VitalsThresholdsPage() {
                                         "{templates.find(t => t._id === selectedTemplate)?.templateName}"
                                     </span>
                                 </div>
-                                <div className="bg-rose-50/50 p-4 rounded-2xl border border-rose-100/50">
+                                <div className="bg-rose-50/50 p-2 md:p-4 rounded-2xl border border-rose-100/50">
                                     <p className="text-[9px] font-black text-rose-700 uppercase leading-relaxed tracking-wider">
                                         Immediately disables safety monitoring for this ward. Irreversible.
                                     </p>
@@ -962,14 +965,14 @@ export default function VitalsThresholdsPage() {
                             <div className="flex gap-3 w-full">
                                 <button
                                     onClick={() => setIsDeleting(false)}
-                                    className="flex-1 px-6 py-3.5 bg-slate-100 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200 shadow-sm"
+                                    className="flex-1 px-3 md:px-6 py-3.5 bg-slate-100 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200 shadow-sm"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleDeleteTemplate}
                                     disabled={saving}
-                                    className="flex-[1.2] px-6 py-3.5 bg-rose-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-xl shadow-rose-200/50 hover:bg-rose-700 transition-all flex items-center justify-center gap-2"
+                                    className="flex-[1.2] px-3 md:px-6 py-3.5 bg-rose-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-xl shadow-rose-200/50 hover:bg-rose-700 transition-all flex items-center justify-center gap-2"
                                 >
                                     <Trash2 size={14} />
                                     {saving ? '...' : 'YES, DELETE'}

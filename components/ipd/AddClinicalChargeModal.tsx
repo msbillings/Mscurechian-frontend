@@ -1,7 +1,7 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Tag, DollarSign, Calendar as CalendarIcon, Loader2, Trash2, History } from 'lucide-react';
+import { X, Plus, Tag, IndianRupee, Calendar as CalendarIcon, Loader2, Trash2, History } from 'lucide-react';
 import { ipdService, hospitalAdminService, ipdIssuanceService } from '@/lib/integrations';
 import toast from 'react-hot-toast';
 
@@ -19,7 +19,6 @@ export default function AddClinicalChargeModal({ isOpen, onClose, admissionId, o
     const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
     const [isManagingCategories, setIsManagingCategories] = useState(false);
     const [newCategory, setNewCategory] = useState('');
-    const [loadingPharma, setLoadingPharma] = useState(false);
     const [formData, setFormData] = useState({
         category: 'Consultation',
         description: '',
@@ -36,33 +35,7 @@ export default function AddClinicalChargeModal({ isOpen, onClose, admissionId, o
         }
     }, [isOpen, admissionId]);
 
-    // ✅ AUTO-FETCH PHARMACY TOTALS
-    useEffect(() => {
-        if (formData.category === 'Pharmacy' && admissionId && isOpen) {
-            handleFetchPharmacyTotal();
-        }
-    }, [formData.category, admissionId, isOpen]);
 
-    const handleFetchPharmacyTotal = async () => {
-        try {
-            setLoadingPharma(true);
-            const summary = await ipdIssuanceService.getIssuanceSummary(admissionId);
-            if (summary) {
-                const amount = summary.netBillableAmount || 0;
-                setFormData(prev => ({
-                    ...prev,
-                    amount: amount.toString(),
-                    description: `Final Pharmacy Reconciliation [Issued: ₹${summary.totalIssuedAmount} - Returned: ₹${summary.totalReturnedAmount}]`
-                }));
-                toast.success(`Fetched pharmacy net total: ₹${amount}`);
-            }
-        } catch (error) {
-            console.error("Failed to fetch pharmacy summary", error);
-            toast.error("Could not fetch pharmacy billing totals");
-        } finally {
-            setLoadingPharma(false);
-        }
-    };
 
     const fetchCategories = async () => {
         try {
@@ -175,7 +148,7 @@ export default function AddClinicalChargeModal({ isOpen, onClose, admissionId, o
                 {/* Header */}
                 <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
                     <div>
-                        <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
+                        <h2 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
                             <Plus size={20} className="text-teal-600" />
                             Add Clinical Charge
                         </h2>
@@ -272,21 +245,15 @@ export default function AddClinicalChargeModal({ isOpen, onClose, admissionId, o
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Amount (₹)</label>
                             <div className="relative group">
-                                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-600 transition-colors" size={16} />
+                                <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-600 transition-colors" size={16} />
                                 <input
                                     required
                                     type="number"
                                     value={formData.amount}
                                     onChange={(e) => handleAmountChange(e.target.value)}
-                                    placeholder={loadingPharma ? "Fetching..." : "0.00"}
-                                    disabled={loadingPharma}
-                                    className={`w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold uppercase outline-none focus:border-teal-500 transition-all ${loadingPharma ? 'animate-pulse opacity-50' : ''}`}
+                                    placeholder="0.00"
+                                    className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold uppercase outline-none focus:border-teal-500 transition-all"
                                 />
-                                {loadingPharma && (
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                                        <Loader2 size={12} className="animate-spin text-teal-600" />
-                                    </div>
-                                )}
                             </div>
                         </div>
 

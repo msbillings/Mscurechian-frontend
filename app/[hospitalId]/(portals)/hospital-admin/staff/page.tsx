@@ -1,26 +1,20 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { useQuery } from '@tanstack/react-query';
 import { hospitalAdminService } from "@/lib/integrations";
 import {
   Users,
-
   Trash2,
   Edit,
-
   Mail,
   Phone,
-
   Search,
   Filter,
   UserPlus,
   Briefcase,
-
-
-
   Building2,
   ShieldCheck,
   ShieldOff,
@@ -55,14 +49,14 @@ const StaffCard = React.memo(({
 }) => {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-all group">
-      <div className="p-6">
+      <div className="p-2 md:p-6">
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-xl font-black text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
               {member.name?.charAt(0) || '?'}
             </div>
             <div className="min-w-0">
-              <h3 className="text-lg font-black text-slate-900 leading-tight wrap-break-word">
+              <h3 className="text-sm md:text-lg font-black text-slate-900 leading-tight wrap-break-word">
                 {member.name}
               </h3>
               <div className="flex items-center gap-2 mt-1.5">
@@ -165,6 +159,7 @@ StaffCard.displayName = 'StaffCard';
 
 function HospitalAdminStaff() {
   const router = useRouter();
+  const { hospitalId } = useParams();
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounce(searchTerm, 300);
   const [filterDepartment, setFilterDepartment] = useState("");
@@ -268,26 +263,26 @@ function HospitalAdminStaff() {
   }, [debouncedSearch, filterDepartment]);
 
   return (
-    <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
+    <div className="space-y-8 bg-slate-50/50 min-h-screen">
       {/* Simple Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Personnel Directory</h1>
+          <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight">Staff Management</h1>
           <p className="text-sm text-slate-500 font-medium flex items-center gap-2 mt-1">
             <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
             {filteredStaff.length} active institutional nodes
           </p>
         </div>
         <button
-          onClick={() => router.push('/hospital-admin/staff/create')}
-          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all"
+          onClick={() => router.push(`/${hospitalId}/hospital-admin/staff/create`)}
+          className="flex items-center gap-2 px-3 md:px-6 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all"
         >
-          <UserPlus className="w-4 h-4" strokeWidth={3} /> Register Personnel
+          <UserPlus className="w-4 h-4" strokeWidth={3} /> Add Staff
         </button>
       </div>
 
       {/* Simple Controller */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
+      <div className="bg-white p-2 md:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
         <div className="relative flex-1 w-full">
           <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
           <input
@@ -335,8 +330,8 @@ function HospitalAdminStaff() {
               <StaffCard
                 key={member._id || member.staffProfileId}
                 member={member}
-                onView={() => router.push(`/hospital-admin/staff/${member._id || member.staffProfileId}`)}
-                onEdit={() => router.push(`/hospital-admin/staff/edit/${member._id || member.staffProfileId}`)}
+                onView={() => router.push(`/${hospitalId}/hospital-admin/staff/${member._id || member.staffProfileId}`)}
+                onEdit={() => router.push(`/${hospitalId}/hospital-admin/staff/edit/${member._id || member.staffProfileId}`)}
                 onDelete={() => handleDelete(member._id || member.staffProfileId, member.name)}
                 onToggleStatus={(status) => handleToggleStatus(member._id || member.staffProfileId, status)}
                 deleteLoading={deleteLoading === (member._id || member.staffProfileId)}
@@ -345,11 +340,11 @@ function HospitalAdminStaff() {
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between bg-white p-2 md:p-4 rounded-2xl border border-slate-200 shadow-sm">
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-6 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 bg-slate-50 rounded-xl hover:bg-slate-900 hover:text-white disabled:opacity-50 transition-all"
+                className="px-2 md:px-6 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 bg-slate-50 rounded-xl hover:bg-slate-900 hover:text-white disabled:opacity-50 transition-all"
               >
                 Prev
               </button>
@@ -359,7 +354,7 @@ function HospitalAdminStaff() {
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="px-6 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 bg-slate-50 rounded-xl hover:bg-slate-900 hover:text-white disabled:opacity-50 transition-all"
+                className="px-2 md:px-6 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 bg-slate-50 rounded-xl hover:bg-slate-900 hover:text-white disabled:opacity-50 transition-all"
               >
                 Next
               </button>

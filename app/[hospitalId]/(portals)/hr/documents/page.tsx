@@ -305,46 +305,46 @@ export default function DocumentVaultPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 md:px-6 space-y-6 bg-gray-50 min-h-screen font-sans w-full max-w-[100vw] overflow-x-hidden">
-      {/* HEADER BAR */}
-      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm min-h-[72px] w-full">
-        {/* LEFT: title */}
-        <div className="flex flex-col justify-center shrink-0 w-full lg:w-auto">
-          <h1 className="text-lg font-black text-gray-900 tracking-tight leading-none uppercase">Document Vault</h1>
-          <p className="mt-1 text-slate-500 text-[10px] font-medium uppercase tracking-tight">Securely manage staff contracts, IDs, and medical credentials</p>
-        </div>
-
-        {/* RIGHT SIDE (Upload & Stats wrapped) */}
-        <div className="flex flex-col md:flex-row flex-wrap items-start md:items-center gap-3 sm:gap-4 w-full xl:w-auto flex-1 justify-start xl:justify-end">
-
-          {/* Upload button */}
-          <div className="shrink-0 w-full md:w-auto">
-            <button
-              onClick={() => setIsUploadModalOpen(true)}
-              className="flex items-center justify-center gap-2 w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-indigo-100 text-[10px] uppercase tracking-widest"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Upload Document
-            </button>
-          </div>
-
-          {/* Stats */}
-          <div className="flex flex-wrap items-center gap-y-3 gap-x-4 sm:gap-x-5 px-4 sm:px-5 py-2.5 bg-slate-50/50 rounded-xl border border-slate-100">
-            {stats.map((stat, i) => (
-              <React.Fragment key={i}>
-                <div className="flex flex-col">
-                  <div className={`flex items-center gap-1.5 mb-0.5 ${stat.color}`}>
-                    <stat.icon size={10} />
-                    <span className="text-[7.5px] font-black uppercase tracking-widest">{stat.label}</span>
-                  </div>
-                  <p className="text-base font-black text-slate-900 leading-none">{stat.value}</p>
+        <div className="space-y-6 bg-gray-50 min-h-screen font-sans w-full max-w-[100vw] overflow-x-hidden">
+            {/* HEADER BAR */}
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-white p-4 sm:p-6 rounded-3xl sm:rounded-2xl border border-slate-100 shadow-sm w-full">
+                {/* LEFT: title */}
+                <div className="flex flex-col justify-center shrink-0 w-full lg:w-auto">
+                    <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 tracking-tight leading-none uppercase">Document Vault</h1>
+                    <p className="mt-1 text-slate-500 text-[10px] font-medium uppercase tracking-tight">Securely manage staff contracts, IDs, and medical credentials</p>
                 </div>
-                {i < stats.length - 1 && <div className="w-px h-6 bg-slate-200 hidden sm:block" />}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-      </div>
+
+                {/* RIGHT SIDE (Upload & Stats wrapped) */}
+                <div className="flex flex-col md:flex-row flex-wrap items-start md:items-center gap-3 sm:gap-4 w-full lg:w-auto flex-1 justify-start lg:justify-end">
+
+                    {/* Upload button */}
+                    <div className="shrink-0 w-full md:w-auto">
+                        <button
+                            onClick={() => setIsUploadModalOpen(true)}
+                            className="flex items-center justify-center gap-2 w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 sm:py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-indigo-100 text-[10px] uppercase tracking-widest"
+                        >
+                            <Plus className="w-3.5 h-3.5" />
+                            Upload Document
+                        </button>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="flex flex-wrap items-center gap-y-3 gap-x-4 sm:gap-x-5 px-4 sm:px-5 py-3 sm:py-2.5 bg-slate-50/50 rounded-xl border border-slate-100 w-full md:w-auto">
+                        {stats.map((stat, i) => (
+                            <React.Fragment key={i}>
+                                <div className="flex flex-col flex-1 sm:flex-none min-w-[80px]">
+                                    <div className={`flex items-center gap-1.5 mb-0.5 ${stat.color}`}>
+                                        <stat.icon size={10} />
+                                        <span className="text-[7.5px] sm:text-[8px] font-black uppercase tracking-widest">{stat.label}</span>
+                                    </div>
+                                    <p className="text-sm sm:text-base font-black text-slate-900 leading-none">{stat.value}</p>
+                                </div>
+                                {i < stats.length - 1 && <div className="w-px h-6 bg-slate-200 hidden sm:block" />}
+                            </React.Fragment>
+                        ))}
+                    </div>
+                </div>
+            </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-1 space-y-6">

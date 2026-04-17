@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Calendar, Users, FileText, Activity } from 'lucide-react';
 
 interface CalendarStatsProps {

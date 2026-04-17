@@ -194,71 +194,77 @@ export default function BulkImportPage() {
     };
 
     return (
-        <div className="max-w-[1400px] mx-auto space-y-6 pb-12 px-4 md:px-8">
+        <div className="max-w-7xl mx-auto space-y-6 pb-12">
 
             {/* Header */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 p-6 shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => router.back()}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                            className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors shrink-0"
                         >
                             <ChevronLeft className="w-5 h-5 text-gray-500" />
                         </button>
-                        <div className="p-2.5 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-100 dark:shadow-none">
-                            <FileSpreadsheet className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Bulk Import</h1>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Import lab tests or departments from an Excel / CSV file</p>
+                        <div className="flex items-center gap-4">
+                            <div className="p-2.5 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-100 dark:shadow-none shrink-0">
+                                <FileSpreadsheet className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white">Bulk Import</h1>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Import lab tests or departments from an Excel / CSV file</p>
+                            </div>
                         </div>
                     </div>
 
                     {/* Download Templates */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                         <button
                             onClick={downloadDeptTemplate}
-                            className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-all"
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-all shadow-sm"
                         >
-                            <Download className="w-3.5 h-3.5" />
+                            <Download className="w-4 h-4" />
                             Dept Template
                         </button>
                         <button
                             onClick={downloadTestTemplate}
-                            className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-all"
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-all shadow-sm"
                         >
-                            <Download className="w-3.5 h-3.5" />
+                            <Download className="w-4 h-4" />
                             Tests Template
                         </button>
                     </div>
                 </div>
 
                 {/* Mode Selector */}
-                <div className="flex items-center gap-2 mt-5">
-                    <button
-                        onClick={() => { setMode('departments'); reset(); }}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${mode === 'departments'
-                            ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100 dark:shadow-none'
-                            : 'bg-slate-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-600'
-                            }`}
-                    >
-                        <Building2 className="w-4 h-4" />
-                        Import Departments
-                    </button>
-                    <ArrowRight className="w-4 h-4 text-gray-400" />
-                    <button
-                        onClick={() => { setMode('tests'); reset(); }}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${mode === 'tests'
-                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 dark:shadow-none'
-                            : 'bg-slate-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-600'
-                            }`}
-                    >
-                        <FlaskConical className="w-4 h-4" />
-                        Import Lab Tests
-                    </button>
-                    <div className="ml-3 flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-700 dark:text-amber-400 font-medium">
-                        <Info className="w-3.5 h-3.5" />
+                <div className="flex flex-col md:flex-row md:items-center gap-3 mt-6">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
+                        <button
+                            onClick={() => { setMode('departments'); reset(); }}
+                            className={`flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all ${mode === 'departments'
+                                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100 dark:shadow-none'
+                                : 'bg-slate-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-600'
+                                }`}
+                        >
+                            <Building2 className="w-4 h-4" />
+                            Import Departments
+                        </button>
+                        <div className="hidden sm:flex items-center justify-center">
+                            <ArrowRight className="w-4 h-4 text-gray-400" />
+                        </div>
+                        <button
+                            onClick={() => { setMode('tests'); reset(); }}
+                            className={`flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all ${mode === 'tests'
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 dark:shadow-none'
+                                : 'bg-slate-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-600'
+                                }`}
+                        >
+                            <FlaskConical className="w-4 h-4" />
+                            Import Lab Tests
+                        </button>
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-700 dark:text-amber-400 font-bold w-full md:w-auto">
+                        <Info className="w-4 h-4 shrink-0" />
                         Import departments first, then tests
                     </div>
                 </div>
@@ -266,7 +272,7 @@ export default function BulkImportPage() {
                 {/* Force Update Toggle — only for tests */}
                 {mode === 'tests' && (
                     <div className="mt-4 flex items-center gap-3">
-                        <label className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border cursor-pointer transition-all ${
+                        <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all w-full sm:w-auto ${
                             forceUpdate
                                 ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700'
                                 : 'bg-white dark:bg-gray-700/50 border-slate-200 dark:border-gray-700 hover:border-slate-300'
@@ -275,19 +281,22 @@ export default function BulkImportPage() {
                                 type="checkbox"
                                 checked={forceUpdate}
                                 onChange={e => setForceUpdate(e.target.checked)}
-                                className="w-4 h-4 rounded accent-orange-500"
+                                className="w-4 h-4 rounded accent-orange-500 shrink-0"
                             />
-                            <div className="flex items-center gap-1.5">
-                                <RefreshCw className={`w-3.5 h-3.5 ${forceUpdate ? 'text-orange-500' : 'text-gray-400'}`} />
-                                <span className={`text-sm font-semibold ${forceUpdate ? 'text-orange-700 dark:text-orange-400' : 'text-gray-600 dark:text-gray-300'}`}>
+                            <div className="flex items-center gap-2">
+                                <RefreshCw className={`w-4 h-4 shrink-0 ${forceUpdate ? 'text-orange-500' : 'text-gray-400'}`} />
+                                <span className={`text-sm font-bold ${forceUpdate ? 'text-orange-700 dark:text-orange-400' : 'text-gray-600 dark:text-gray-300'}`}>
                                     Force Update existing tests
                                 </span>
                             </div>
                         </label>
                         {forceUpdate && (
-                            <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">
-                                ⚠ Existing tests will be overwritten with new data (including result fields)
-                            </p>
+                            <div className="flex items-center gap-2 px-3 py-2 bg-orange-50/50 dark:bg-orange-900/10 rounded-lg">
+                                <AlertTriangle className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                                <p className="text-xs text-orange-600 dark:text-orange-400 font-bold">
+                                    Existing tests will be overwritten
+                                </p>
+                            </div>
                         )}
                     </div>
                 )}
@@ -358,19 +367,21 @@ export default function BulkImportPage() {
             ) : (
                 <div className="space-y-4">
                     {/* File info bar */}
-                    <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 px-5 py-3 shadow-sm">
-                        <div className="flex items-center gap-3">
-                            <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 p-4 sm:px-6 sm:py-4 shadow-sm gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2.5 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl shrink-0">
+                                <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
+                            </div>
                             <div>
-                                <p className="text-sm font-bold text-gray-900 dark:text-white">{fileName}</p>
-                                <p className="text-xs text-gray-500">{rows.length} rows ready to import</p>
+                                <p className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1 break-all">{fileName}</p>
+                                <p className="text-xs text-gray-500 font-medium">{rows.length} rows ready to import</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                             <button
                                 onClick={handleImport}
                                 disabled={importing}
-                                className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-100 dark:shadow-none transition-all"
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-100 dark:shadow-none transition-all"
                             >
                                 {importing ? (
                                     <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Importing...</>
@@ -378,8 +389,12 @@ export default function BulkImportPage() {
                                     <><Upload className="w-4 h-4" />Import {rows.length} Rows</>
                                 )}
                             </button>
-                            <button onClick={reset} className="p-2.5 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl border border-slate-200 dark:border-gray-700 transition-all">
-                                <X className="w-4 h-4" />
+                            <button 
+                                onClick={reset} 
+                                className="p-3 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl border border-slate-200 dark:border-gray-700 transition-all shadow-sm"
+                                title="Cancel Import"
+                            >
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
                     </div>

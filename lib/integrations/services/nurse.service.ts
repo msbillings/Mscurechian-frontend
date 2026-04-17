@@ -1,7 +1,7 @@
 import { apiClient } from "../api/apiClient";
 import { NURSE_ENDPOINTS } from "../config/endpoints";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types 
 
 export interface NursePatient {
   _id: string;
@@ -50,10 +50,10 @@ export interface PaginatedTaskResponse<T> extends PaginatedResponse<T> {
   isHistorical?: boolean;
 }
 
-// ─── Service ──────────────────────────────────────────────────────────────────
+// ─── Service 
 
 export const NurseService = {
-  // ─── Dashboard ──────────────────────────────────────────────────────────────
+  // ─── Dashboard 
 
   /** GET /nurse/dashboard/stats */
   getDashboardStats: async (): Promise<NurseDashboardStats> => {
@@ -70,8 +70,7 @@ export const NurseService = {
     );
   },
 
-  // ─── Patients ────────────────────────────────────────────────────────────────
-
+  // ─── Patients 
   /** GET /nurse/patients?page=&limit=&ward=&status= */
   getPatients: async (
     page = 1,
@@ -102,7 +101,7 @@ export const NurseService = {
     return response.patient || response;
   },
 
-  // ─── Tasks ───────────────────────────────────────────────────────────────────
+  // ─── Tasks 
 
   /** GET /nurse/tasks?page=&limit=&status=&priority=&date= */
   getTasks: async (
@@ -143,7 +142,7 @@ export const NurseService = {
     });
   },
 
-  // ─── Quick Notes (Clinical Note Templates) ──────────────────────────────────
+  // ─── Quick Notes (Clinical Note Templates) 
   getQuickNotes: async (): Promise<any[]> => {
     return apiClient(NURSE_ENDPOINTS.QUICK_NOTES);
   },
@@ -161,7 +160,7 @@ export const NurseService = {
     });
   },
 
-  // ─── React Query key helpers ─────────────────────────────────────────────────
+  // ─── React Query key helpers 
   queryKeys: {
     all: () => ["nurse"] as const,
     dashboard: () => ["nurse", "dashboard"] as const,

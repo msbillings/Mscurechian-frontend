@@ -18,6 +18,7 @@ import { Card, FormInput } from "@/components/admin";
 
 interface FormData {
   // Personal
+  honorific: string;
   name: string;
   email: string;
   mobile: string;
@@ -73,6 +74,7 @@ export default function HREditStaffPage() {
   const [allRooms, setAllRooms] = useState<any[]>([]);
 
   const [formData, setFormData] = useState<FormData>({
+    honorific: "Mr",
     name: "", email: "", mobile: "", gender: "",
     dateOfBirth: "",
     department: [], assignedRoom: [], designation: "", employeeId: "", employmentType: "full-time",
@@ -141,6 +143,7 @@ export default function HREditStaffPage() {
       }
 
       setFormData({
+        honorific: staff.honorific || "Mr",
         name: staff.name || "",
         email: staff.email || "",
         mobile: staff.mobile || "",
@@ -195,6 +198,14 @@ export default function HREditStaffPage() {
     if (name === "panNumber" && (value.length > 10)) return;
     if (name === "baseSalary" && !/^\d*$/.test(value)) return;
 
+    if (name === "honorific") {
+      let gender = formData.gender;
+      if (value === "Mr") gender = "male";
+      else if (value === "Mrs" || value === "Ms") gender = "female";
+      setFormData(prev => ({ ...prev, [name]: value, gender }));
+      return;
+    }
+
     setFormData(prev => ({ ...prev, [name]: name === "panNumber" ? value.toUpperCase() : value }));
   };
 
@@ -235,6 +246,7 @@ export default function HREditStaffPage() {
     }
     if (name === "panNumber" && value && value.length !== 10) error = "Invalid PAN (Must be 10 chars)";
     if (name === "aadharNumber" && value && value.length !== 12) error = "Invalid Aadhar (Must be 12 digits)";
+    if (name === "employeeId" && !value) error = "Employee ID is required";
 
     if (error) toast.error(error);
     return !error;
@@ -246,7 +258,7 @@ export default function HREditStaffPage() {
   };
 
   const validateForm = () => {
-    const fieldsToValidate = ['name', 'email', 'mobile', 'panNumber', 'aadharNumber'] as const;
+    const fieldsToValidate = ['name', 'email', 'mobile', 'employeeId', 'panNumber', 'aadharNumber'] as const;
     let isValid = true;
     fieldsToValidate.forEach(field => {
       if (!validateField(field, formData[field])) isValid = false;
@@ -291,14 +303,14 @@ export default function HREditStaffPage() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto pb-20 space-y-6 pt-8 px-8">
+    <div className="max-w-7xl mx-auto pb-20 space-y-6 pt-1">
       <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button onClick={() => router.back()} className="p-2 hover:bg-gray-50 rounded-xl transition-all">
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Edit Registry Record</h1>
+            <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 uppercase leading-none">Edit Registry Record</h1>
             <p className="text-gray-500 text-xs mt-0.5">Staff : {formData.name}</p>
           </div>
         </div>
@@ -317,6 +329,13 @@ export default function HREditStaffPage() {
         {/* Compact 3-Column Layout for Personal Info */}
         <Card title="Personnel Profile" icon={<User className="text-gray-400" />} padding="p-6">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+            <div className="md:col-span-2 space-y-1.5">
+              <label className="text-xs font-semibold text-gray-700 ml-1">Honorific <span className="text-rose-500 ml-0.5">*</span></label>
+              <select name="honorific" value={formData.honorific} onChange={handleChange} required
+                className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/10 outline-none">
+                <option value="Mr">Mr</option><option value="Mrs">Mrs</option><option value="Ms">Ms</option><option value="Dr">Dr</option>
+              </select>
+            </div>
             <div className="md:col-span-4">
               <FormInput label="Full Name" type="text" name="name" required value={formData.name} onChange={handleChange} onBlur={handleBlur} className="rounded-xl font-bold" />
             </div>
@@ -419,7 +438,7 @@ export default function HREditStaffPage() {
               <FormInput label="Designation" name="designation" value={formData.designation} onChange={handleChange} className="rounded-xl font-bold" />
             </div>
             <div className="md:col-span-2">
-              <FormInput label="Staff ID" name="employeeId" value={formData.employeeId} onChange={handleChange} className="rounded-xl font-bold text-indigo-600" />
+              <FormInput label="Staff ID" name="employeeId" required value={formData.employeeId} onChange={handleChange} onBlur={handleBlur} className="rounded-xl font-bold text-indigo-600" />
             </div>
 
             <div className="md:col-span-2 space-y-1.5">

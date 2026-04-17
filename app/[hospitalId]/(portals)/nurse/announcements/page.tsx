@@ -69,7 +69,7 @@ export default function AnnouncementsPage() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 px-4 md:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
             {/* HERO SECTION */}
             <div className="relative overflow-hidden rounded-xl sm:rounded-[0.5rem] p-4 sm:p-6 bg-white border border-slate-100 shadow-sm">
                 <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 text-center sm:text-left">
@@ -78,7 +78,7 @@ export default function AnnouncementsPage() {
                             <Megaphone size={16} className="sm:size-[20px] text-white" strokeWidth={2.5} />
                         </div>
                         <div>
-                            <h1 className="text-xs sm:text-lg font-black uppercase text-slate-900 tracking-tight leading-none">Announcements</h1>
+                            <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight leading-none mb-1 sm:mb-2 uppercase">Announcements</h1>
                             <p className="text-slate-400 text-[7px] sm:text-xs font-bold uppercase tracking-widest mt-1">Hospital-wide broadcasts.</p>
                         </div>
                     </div>

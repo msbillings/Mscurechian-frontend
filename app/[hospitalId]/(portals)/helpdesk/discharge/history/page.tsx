@@ -5,7 +5,7 @@ import DischargeHistory from '@/app/[hospitalId]/(portals)/discharge/components/
 
 export default function HelpdeskDischargeHistoryPage() {
     return (
-        <div className="px-6">
+        <div className="px-0 lg:px-2">
             <DischargeHistory basePath="/helpdesk/discharge" />
         </div>
     );

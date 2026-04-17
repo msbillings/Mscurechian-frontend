@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { X, ArrowRightLeft, Layout, Home, Bed as BedIcon, FileText, ChevronDown } from 'lucide-react';

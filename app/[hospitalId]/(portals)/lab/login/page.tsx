@@ -24,9 +24,18 @@ const LabLoginPage = () => {
     const { login, logout, isLoading } = useAuthStore();
     const router = useRouter();
 
-    // ✅ SPEED FIX: Prefetch dashboard
+    // ✅ SPEED FIX: Prefetch dashboard & AUTO-REDIRECT
     const { hospitalId } = useParams();
     React.useEffect(() => {
+        const isAuth = useAuthStore.getState().isAuthenticated;
+        const user = useAuthStore.getState().user;
+        const rawId = (user as any)?.hospital || (user as any)?.hospitalId;
+        const userHospitalId = (rawId && typeof rawId === 'object') ? ((rawId as any)._id || (rawId as any).id) : rawId;
+
+        if (isAuth && userHospitalId && (user?.role === 'lab' || user?.role === 'technician')) {
+            router.replace(`/${userHospitalId}/lab/dashboard`);
+        }
+
         if (hospitalId) {
             router.prefetch(`/${hospitalId}/lab/dashboard`);
         }
@@ -108,12 +117,11 @@ const LabLoginPage = () => {
                     borderRadius: '1rem',
                     background: '#1e293b',
                     color: '#fff',
-                    fontWeight: 'bold'
                 }
             });
 
             const rawIdVal = (user as any).hospital || (user as any).hospitalId;
-            const userHospitalId = (rawIdVal && typeof rawIdVal === 'object') ? (rawIdVal._id || rawIdVal.id) : rawIdVal;
+            const userHospitalId = (rawIdVal && typeof rawIdVal === 'object') ? ((rawIdVal as any)._id || (rawIdVal as any).id) : rawIdVal;
             router.replace(`/${userHospitalId}/lab/dashboard`);
         } catch (err: any) {
             const errorMessage = err?.message || err?.response?.data?.message || 'Login failed. Please check your credentials.';

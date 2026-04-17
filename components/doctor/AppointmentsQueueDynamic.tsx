@@ -31,9 +31,11 @@ interface QueueProps {
     overallStats?: any;
   }) => void;
   consultationDuration?: number;
+  visitTypeFilter: 'all' | 'opd' | 'ipd';
+  setVisitTypeFilter: (type: 'all' | 'opd' | 'ipd') => void;
 }
 
-function AppointmentsQueueDynamic({ onStatsChange, consultationDuration }: QueueProps) {
+function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTypeFilter, setVisitTypeFilter }: QueueProps) {
   const router = useRouter();
   const [showQueue, setShowQueue] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -44,6 +46,32 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration }: Queue
     pendingReports: 0,
     consultationsValue: 0
   });
+  const [appointmentToDelete, setAppointmentToDelete] = useState<string | null>(null);
+  const [startDateFilter, setStartDateFilter] = useState<string>(() => {
+    const today = new Date();
+    today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+    return today.toISOString().split('T')[0];
+  });
+  const [endDateFilter, setEndDateFilter] = useState<string>(() => {
+    const today = new Date();
+    today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+    return today.toISOString().split('T')[0];
+  });
+
+  const confirmDelete = async () => {
+    if (!appointmentToDelete) return;
+    try {
+      await doctorService.updateAppointmentStatus(appointmentToDelete, 'cancelled');
+      toast.success('Appointment removed');
+      fetchAppointments();
+    } catch (err: any) {
+      toast.error('Failed to remove');
+      console.error(err);
+    } finally {
+      setAppointmentToDelete(null);
+    }
+  };
+
 
   // Fetch appointments
   const fetchAppointments = async () => {
@@ -85,7 +113,29 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration }: Queue
   const queueAppointments = appointments.filter(apt => {
     const status = apt.status?.toLowerCase();
     const isExcluded = status === 'completed' || status === 'cancelled' || (apt as any).isPaused === true;
-    console.log('[Queue] Appointment:', apt.patientName, 'Status:', apt.status, 'isPaused:', (apt as any).isPaused, 'Excluded:', isExcluded);
+    
+    // Filter by Visit Type
+    if (visitTypeFilter !== 'all') {
+      const type = (apt.type || 'opd').toLowerCase();
+      if (visitTypeFilter === 'opd') {
+        if (!(type === 'opd' || type === 'consultation')) return false;
+      } else if (type !== visitTypeFilter) {
+        return false;
+      }
+    }
+
+    // Filter by Date Range
+    if (startDateFilter || endDateFilter) {
+      const aptDateStr = apt.date ? new Date(apt.date).toISOString().split('T')[0] : '';
+      if (!aptDateStr) return false;
+      
+      let isValid = true;
+      if (startDateFilter && aptDateStr < startDateFilter) isValid = false;
+      if (endDateFilter && aptDateStr > endDateFilter) isValid = false;
+      
+      if (!isValid) return false;
+    }
+    
     return !isExcluded;
   });
 
@@ -139,9 +189,49 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration }: Queue
     };
   }, [user]);
 
+  // Determine dynamic label inside the render so it can be used for the title
+  let dynamicLabel = "Today's";
+  const todayObj = new Date();
+  todayObj.setMinutes(todayObj.getMinutes() - todayObj.getTimezoneOffset());
+  const todayStr = todayObj.toISOString().split('T')[0];
+  
+  if (startDateFilter !== todayStr || endDateFilter !== todayStr) {
+      if (startDateFilter === endDateFilter && startDateFilter) {
+          dynamicLabel = startDateFilter.split('-').reverse().join('-');
+      } else if (startDateFilter && endDateFilter) {
+          dynamicLabel = `${startDateFilter.split('-').reverse().join('-')} TO ${endDateFilter.split('-').reverse().join('-')}`;
+      } else {
+          dynamicLabel = "All Dates";
+      }
+  }
+
   // Notify parent of stats changes
   useEffect(() => {
-    const completedCount = appointments.filter(apt => apt.status === 'completed').length;
+
+    const filteredAppointments = appointments.filter(apt => {
+        // Filter by Visit Type
+        if (visitTypeFilter !== 'all') {
+          const type = (apt.type || 'opd').toLowerCase();
+          if (visitTypeFilter === 'opd') {
+            if (!(type === 'opd' || type === 'consultation')) return false;
+          } else if (type !== visitTypeFilter) {
+            return false;
+          }
+        }
+
+        // Filter by Date Range
+        if (startDateFilter || endDateFilter) {
+          const aptDateStr = apt.date ? new Date(apt.date).toISOString().split('T')[0] : '';
+          if (!aptDateStr) return false;
+          let isValid = true;
+          if (startDateFilter && aptDateStr < startDateFilter) isValid = false;
+          if (endDateFilter && aptDateStr > endDateFilter) isValid = false;
+          if (!isValid) return false;
+        }
+        return true;
+    });
+
+    const completedCount = filteredAppointments.filter(apt => apt.status === 'completed').length;
     const estimatedMinutes = queueAppointments.length * (consultationDuration || 15);
     const nextAppointmentId = sortedAppointments.length > 0 ? sortedAppointments[0].id : null;
 
@@ -152,49 +242,156 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration }: Queue
     if (onStatsChange) {
       onStatsChange({
         queueCount: queueAppointments.length,
-        totalAppointments: appointments.length,
+        totalAppointments: filteredAppointments.length,
         completedCount,
         estimatedMinutes,
         showQueue,
         nextAppointmentId,
         currentAppointmentId,
-        overallStats: stats
+        overallStats: {
+            ...stats,
+            totalPendingQueue: queueAppointments.length,
+            appointmentsToday: filteredAppointments.length,
+            dynamicLabel: dynamicLabel
+        }
       });
     }
-  }, [appointments.length, queueAppointments.length, showQueue, sortedAppointments.length, appointments, onStatsChange, consultationDuration]);
+  }, [appointments.length, queueAppointments.length, showQueue, sortedAppointments.length, appointments, onStatsChange, consultationDuration, startDateFilter, endDateFilter, stats, visitTypeFilter]);
 
   return (
     <div className="bg-card dark:bg-card rounded-2xl border border-border-theme dark:border-border-theme shadow-sm h-full flex flex-col">
       {/* Header with Toggle - Fixed */}
-      <div className="p-6 border-b border-border-theme dark:border-border-theme flex items-center justify-between shrink-0">
-        <div>
-          <h2 className="text-lg font-bold text-foreground dark:text-foreground">Today's Appointments</h2>
-          <p className="text-xs text-muted mt-1">
-            {showQueue ? (
-              <>
-                {queueAppointments.length} patient{queueAppointments.length !== 1 ? 's' : ''} in queue
-              </>
-            ) : (
-              <>Queue view disabled</>
-            )}
-          </p>
+      <div className="p-4 sm:p-6 border-b border-border-theme dark:border-border-theme flex flex-col lg:flex-row lg:items-center justify-between gap-4 shrink-0 overflow-hidden">
+        <div className="flex items-center justify-between w-full lg:w-auto">
+          <div>
+            <h2 className="text-sm sm:text-base md:text-lg font-black text-foreground dark:text-foreground uppercase tracking-tight leading-tight">
+              {startDateFilter === todayStr && endDateFilter === todayStr ? "Schedule Today" : `Schedule: ${dynamicLabel}`}
+            </h2>
+            <p className="text-[9px] sm:text-[10px] text-muted mt-0.5 font-bold uppercase tracking-widest opacity-70">
+              {showQueue ? (
+                <>
+                  {queueAppointments.length} Patient{queueAppointments.length !== 1 ? 's' : ''} in list
+                </>
+              ) : (
+                <>Queue view disabled</>
+              )}
+            </p>
+          </div>
+
+          {/* Moved Toggle here on Mobile - stacked on right of title */}
+          <div className="flex lg:hidden items-center gap-2 bg-secondary-theme px-3 py-1.5 rounded-xl border border-border-theme">
+            <button
+              onClick={() => setShowQueue(!showQueue)}
+              className={`relative w-8 h-4 sm:w-10 sm:h-5 rounded-full cursor-pointer transition-colors ${showQueue ? 'bg-primary-theme' : 'bg-gray-300'}`}
+            >
+              <div className={`absolute top-0.5 left-0.5 w-3 h-3 sm:w-4 sm:h-4 bg-white rounded-full transition-transform ${showQueue ? 'translate-x-4 sm:translate-x-5' : 'translate-x-0'}`} />
+            </button>
+            <span className={`text-[10px] font-black uppercase ${showQueue ? 'text-primary-theme' : 'text-muted'}`}>
+              {showQueue ? 'ON' : 'OFF'}
+            </span>
+          </div>
         </div>
 
-        {/* Queue Toggle */}
-        <div className="flex items-center gap-3 bg-secondary-theme dark:bg-secondary-theme px-4 py-2 rounded-xl border border-border-theme dark:border-border-theme">
-          <span className="text-xs font-bold text-muted dark:text-muted uppercase">Queue</span>
-          <button
-            onClick={() => setShowQueue(!showQueue)}
-            className={`relative w-12 h-6 rounded-full cursor-pointer ${showQueue ? 'bg-primary-theme' : 'bg-gray-300 dark:bg-gray-600'
-              }`}
-          >
-            <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full cursor-pointer ${showQueue ? 'translate-x-6' : 'translate-x-0'
-              }`} />
-          </button>
-          <span className={`text-[10px] font-black uppercase ${showQueue ? 'text-primary-theme' : 'text-muted'
-            }`}>
-            {showQueue ? 'ON' : 'OFF'}
-          </span>
+        {/* Queue Filters */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+          {/* Date Filter */}
+          <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 bg-secondary-theme px-3 py-2 rounded-xl border border-border-theme focus-within:ring-2 focus-within:ring-primary-theme/50 transition-all w-full lg:w-auto">
+            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-[10px] font-bold text-muted uppercase">From</span>
+                <input 
+                  type="date" 
+                  value={startDateFilter || ''}
+                  onChange={(e) => {
+                    setStartDateFilter(e.target.value);
+                    if (endDateFilter && e.target.value > endDateFilter) {
+                      setEndDateFilter(e.target.value);
+                    }
+                  }}
+                  className="bg-transparent text-[11px] font-black text-foreground outline-none uppercase tracking-widest cursor-pointer w-[100px] sm:w-[110px]"
+                  style={{ colorScheme: 'light' }}
+                />
+              </div>
+              
+              <div className="w-[1px] h-4 bg-border-theme hidden sm:block"></div>
+              <div className="flex sm:hidden items-center text-muted font-black text-[10px] uppercase">To</div>
+              
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-[10px] font-bold text-muted uppercase hidden sm:block">To</span>
+                <input 
+                  type="date" 
+                  value={endDateFilter || ''}
+                  onChange={(e) => {
+                    setEndDateFilter(e.target.value);
+                    if (startDateFilter && e.target.value < startDateFilter) {
+                      setStartDateFilter(e.target.value);
+                    }
+                  }}
+                  className="bg-transparent text-[11px] font-black text-foreground outline-none uppercase tracking-widest cursor-pointer w-[100px] sm:w-[110px]"
+                  style={{ colorScheme: 'light' }}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t sm:border-t-0 sm:border-l border-border-theme pt-2 sm:pt-0 sm:pl-3">
+              {(() => {
+                  const today = new Date();
+                  today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+                  const todayStr = today.toISOString().split('T')[0];
+                  return (startDateFilter !== todayStr || endDateFilter !== todayStr);
+              })() && (
+                <button 
+                  onClick={() => {
+                    const today = new Date();
+                    today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+                    const todayStr = today.toISOString().split('T')[0];
+                    setStartDateFilter(todayStr);
+                    setEndDateFilter(todayStr);
+                  }} 
+                  className="text-[9px] text-primary-theme font-black uppercase bg-primary-theme/10 px-3 py-1 rounded-lg hover:bg-primary-theme/20 transition-colors"
+                >
+                  Today
+                </button>
+              )}
+              {(startDateFilter || endDateFilter) ? (
+                <button 
+                  onClick={() => { setStartDateFilter(''); setEndDateFilter(''); }}
+                  className="text-[9px] text-rose-500 font-black uppercase bg-rose-50 px-3 py-1 rounded-lg hover:bg-rose-100 transition-colors"
+                >
+                  Clear
+                </button>
+              ) : null}
+            </div>
+          </div>
+          
+          {/* Visit Type Filter (IPD/OPD/ALL) - Styled like Front Desk */}
+          <div className="flex items-center p-1 bg-secondary-theme rounded-xl border border-border-theme shadow-sm overflow-hidden h-full">
+            {(['all', 'opd', 'ipd'] as const).map((type) => (
+              <button
+                key={type}
+                onClick={() => setVisitTypeFilter(type)}
+                className={`px-3 py-1 text-[10px] font-black uppercase rounded-lg transition-all ${visitTypeFilter === type
+                  ? 'bg-primary-theme text-primary-theme-foreground shadow-md'
+                  : 'text-muted hover:text-foreground'
+                  }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+
+          <div className="hidden lg:flex items-center gap-3 bg-secondary-theme dark:bg-secondary-theme px-4 py-2 rounded-xl border border-border-theme dark:border-border-theme">
+            <span className="text-xs font-bold text-muted dark:text-muted uppercase">Queue</span>
+            <button
+              onClick={() => setShowQueue(!showQueue)}
+              className={`relative w-12 h-6 rounded-full cursor-pointer ${showQueue ? 'bg-primary-theme' : 'bg-gray-300 dark:bg-gray-600'}`}
+            >
+              <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full cursor-pointer ${showQueue ? 'translate-x-6' : 'translate-x-0'}`} />
+            </button>
+            <span className={`text-[10px] font-black uppercase ${showQueue ? 'text-primary-theme' : 'text-muted'}`}>
+              {showQueue ? 'ON' : 'OFF'}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -210,10 +407,9 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration }: Queue
             <div className="space-y-3">
               {/* Desktop Table Header (Visible on sm and up) */}
               <div className="hidden sm:grid grid-cols-12 gap-4 px-4 py-2 border-b border-border-theme text-[10px] font-black text-muted uppercase tracking-widest">
-                <div className="col-span-1">#</div>
-                <div className="col-span-5">Patient Name & Type</div>
-                <div className="col-span-3 text-center">Wait/Time</div>
-                <div className="col-span-3 text-right">Actions</div>
+                <div className="col-span-1 text-center">#</div>
+                <div className="col-span-7">Patient Name & Type</div>
+                <div className="col-span-4 text-right pr-6">Actions</div>
               </div>
 
               {sortedAppointments.map((apt, idx) => {
@@ -253,27 +449,18 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration }: Queue
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-sm font-bold text-foreground">
-                          {apt.time || formatLocalTime(apt.createdAt)}
+                        <p className="text-sm font-bold text-foreground">{apt.time}</p>
+                        <p className="text-[10px] text-muted font-bold mt-0.5">
+                          {apt.date ? new Date(apt.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : "N/A"}
                         </p>
                         <p className="text-xs text-muted">~{consultationDuration || 15}min</p>
                       </div>
                       <button
-                        onClick={async (e) => {
+                        onClick={(e) => {
                           e.stopPropagation();
-                          if (!confirm('Are you sure you want to remove this appointment?')) return;
-                          try {
-                            // Assuming updateAppointmentStatus exists on doctorService or we need to add it.
-                            // If strictly not available, I'll allow the error to guide me, but likely it is available.
-                            await doctorService.updateAppointmentStatus(apt.id, 'cancelled');
-                            toast.success('Appointment removed');
-                            fetchAppointments();
-                          } catch (err: any) {
-                            toast.error('Failed to remove');
-                            console.error(err);
-                          }
+                          setAppointmentToDelete(apt.id);
                         }}
-                        className="shrink-0 p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg cursor-pointer"
+                        className="shrink-0 p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg cursor-pointer transition-colors"
                         title="Remove Appointment"
                       >
                         <Trash2 size={16} />
@@ -287,26 +474,55 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration }: Queue
                     </div>
 
                     {/* Mobile Table Row (xs only) */}
-                    <div className="sm:hidden grid grid-cols-12 gap-2 items-center p-3 py-4 bg-secondary-theme rounded-xl border border-border-theme/50">
-                      <div className="col-span-1 text-[11px] font-black text-primary-theme">
-                        {idx + 1}
+                    <div className="sm:hidden flex flex-col gap-2 p-3 bg-secondary-theme rounded-xl border border-border-theme/50 relative">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-2.5 min-w-0 pr-2">
+                          <div className="shrink-0 w-8 h-8 bg-primary-theme rounded-full flex items-center justify-center text-primary-theme-foreground font-black text-[11px]">
+                            {idx + 1}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[12px] font-black text-foreground truncate">{apt.patientName}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap text-[9px]">
+                              <span className="text-muted font-bold truncate max-w-[60px]">{apt.type}</span>
+                              <span className="text-border-theme">•</span>
+                              <span className={`font-black uppercase tracking-wider ${apt.status?.toLowerCase() === 'confirmed' ? 'text-green-600' :
+                                apt.status?.toLowerCase() === 'in-progress' ? 'text-blue-600' : 'text-muted'
+                                }`}>
+                                {apt.status || 'Pending'}
+                              </span>
+                            </div>
+                            {idx > 0 && (
+                               <div className="text-[9px] font-bold text-orange-600 flex items-center gap-1 mt-1 border border-orange-200 bg-orange-50 px-1.5 py-0.5 rounded-full w-max">
+                                 <Clock size={10} /> Wait: {waitTime}
+                               </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <p className="text-[11px] font-black text-foreground">{apt.time}</p>
+                          <p className="text-[9px] text-muted font-bold mt-0.5 truncate">
+                            {apt.date ? new Date(apt.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : "N/A"}
+                          </p>
+                          <p className="text-[9px] text-muted font-bold mt-0.5">~{consultationDuration || 15}m</p>
+                        </div>
                       </div>
-                      <div className="col-span-5 min-w-0">
-                        <p className="text-[11px] font-black text-foreground truncate ">{apt.patientName}</p>
-                        <p className="text-[9px] text-muted font-bold truncate">{apt.type}</p>
-                      </div>
-                      <div className="col-span-3 text-center">
-                        <p className="text-[10px] font-black text-foreground">
-                          {apt.time || formatLocalTime(apt.createdAt)}
-                        </p>
-                        <p className="text-[8px] text-muted font-bold">~{consultationDuration || 15}min</p>
-                      </div>
-                      <div className="col-span-3 text-right">
+
+                      <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-border-theme/50">
                         <button
-                          onClick={() => router.push(`/doctor/appointment/${apt.id}`)}
-                          className="w-full py-2 bg-primary-theme text-primary-theme-foreground text-[10px] font-black rounded-lg shadow-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAppointmentToDelete(apt.id);
+                          }}
+                          className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors border border-red-100"
                         >
-                          Start
+                          <Trash2 size={14} />
+                        </button>
+                        <button
+                          onClick={() => router.push(`/${user?.hospitalId || user?.hospital}/doctor/appointment/${apt.id}`)}
+                          className="px-4 py-1.5 flex flex-1 max-w-[120px] items-center justify-center bg-primary-theme text-primary-theme-foreground text-[10px] font-black uppercase tracking-wider rounded-lg shadow-sm"
+                        >
+                          <CheckCircle2 size={12} className="mr-1" /> Start
                         </button>
                       </div>
                     </div>
@@ -348,6 +564,36 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration }: Queue
           </div>
         )}
       </div>
+
+      {appointmentToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-card w-full max-w-sm rounded-[1.5rem] p-6 shadow-2xl border border-border-theme animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-black text-foreground mb-2 flex items-center gap-2">
+              <span className="w-8 h-8 bg-red-100 text-red-600 rounded-full flex items-center justify-center">
+                <Trash2 size={16} />
+              </span>
+              Remove Appointment
+            </h3>
+            <p className="text-sm text-muted font-medium mb-6 leading-relaxed">
+              Are you sure you want to remove this appointment? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setAppointmentToDelete(null)} 
+                className="px-5 py-2.5 rounded-xl text-xs font-bold text-foreground bg-secondary-theme border border-border-theme hover:bg-muted/10 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDelete} 
+                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 shadow-md shadow-red-500/20 active:scale-95 transition-all"
+              >
+                Yes, Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

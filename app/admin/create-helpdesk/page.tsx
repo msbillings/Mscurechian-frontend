@@ -96,7 +96,7 @@ function CreateHelpdesk() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       <PageHeader
         title="Register Front Desk Staff"
         subtitle="Create dedicated helpdesk accounts for hospital branches"
@@ -156,11 +156,12 @@ function CreateHelpdesk() {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Set initial password"
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-10 text-gray-400 hover:text-purple-500"
+                  className="absolute right-3 top-9 text-gray-400 hover:text-purple-500"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>

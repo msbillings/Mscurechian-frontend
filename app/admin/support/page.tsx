@@ -101,9 +101,9 @@ function HospitalBadge({ hospital }: { hospital?: SupportTicket['hospital'] }) {
     );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ADMIN SUPPORT PAGE
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function AdminSupportPage() {
     const router = useRouter();
     const [tickets, setTickets] = useState<SupportTicket[]>([]);
@@ -200,12 +200,12 @@ function AdminSupportPage() {
     }
 
     return (
-        <div className="p-6 lg:p-8 space-y-8 max-w-[1400px] mx-auto">
+        <div className="lg:p-8 space-y-8 max-w-[1400px] mx-auto">
 
             {/* ─── Header ────────────────────────────────────────────────────── */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Support Centre</h1>
+                    <h1 className="text-lg md:text-xl lg:text-2xl font-black text-slate-900 dark:text-white tracking-tight">Support Centre</h1>
                     <p className="text-sm text-slate-400 mt-0.5">Monitor and manage all hospital support requests across the platform</p>
                 </div>
                 <button
@@ -262,7 +262,7 @@ function AdminSupportPage() {
                         onChange={setTypeFilter}
                         options={[
                             { value: 'all', label: 'All Types' },
-                            { value: 'bug', label: '🐛 Bug Reports' },
+                            { value: 'bug', label: '🪲 Bug Reports' },
                             { value: 'complaint', label: '⚠️ Complaints' },
                             { value: 'feedback', label: '💬 Feedback' },
                             { value: 'other', label: 'Other' },
@@ -300,7 +300,7 @@ function AdminSupportPage() {
                 {/* Result count */}
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-3">
                     Showing {filtered.length} of {tickets.length} tickets
-                    {search && ` · "${search}"`}
+                    {search && ` • "${search}"`}
                 </p>
             </div>
 
@@ -452,7 +452,7 @@ function AdminSupportPage() {
     );
 }
 
-// ─── Filter Select ─────────────────────────────────────────────────────────────
+// ─── Filter Select 
 function FilterSelect({ value, onChange, options, icon }: {
     value: string;
     onChange: (v: string) => void;

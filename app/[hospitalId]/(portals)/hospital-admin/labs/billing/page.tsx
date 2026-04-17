@@ -137,7 +137,7 @@ function HospitalAdminLabBillingPage() {
                 {/* Left Column: Input Modules */}
                 <div className="xl:col-span-8 space-y-8">
                     {/* Patient Registry Module */}
-                    <div className="bg-white dark:bg-gray-800 p-8 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden group">
+                    <div className="bg-white dark:bg-gray-800 p-2 md:p-4 md:p-8 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 left-0 w-2 h-full bg-blue-600"></div>
                         <div className="flex items-center gap-4 mb-8">
                             <div className="p-3 bg-blue-50 dark:bg-blue-500/10 rounded-2xl text-blue-600 dark:text-blue-400">
@@ -177,7 +177,7 @@ function HospitalAdminLabBillingPage() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Age Chronology</label>
                                     <input
@@ -220,7 +220,7 @@ function HospitalAdminLabBillingPage() {
                     </div>
 
                     {/* Test Catalog Gateway */}
-                    <div className="bg-white dark:bg-gray-800 p-8 rounded-4xl border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden group">
+                    <div className="bg-white dark:bg-gray-800 p-2 md:p-4 md:p-8 rounded-4xl border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden group">
                         <div className="flex items-center justify-between mb-8">
                             <div className="flex items-center gap-4">
                                 <div className="p-3 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl text-indigo-600 dark:text-indigo-400">
@@ -289,7 +289,7 @@ function HospitalAdminLabBillingPage() {
                                     <input
                                         type="number"
                                         placeholder="VALUE"
-                                        className="w-full bg-gray-800/50 border-none rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-500 text-lg font-black italic tracking-tighter text-right text-blue-400"
+                                        className="w-full bg-gray-800/50 border-none rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-500 text-xs md:text-base md:text-lg font-black italic tracking-tighter text-right text-blue-400"
                                         value={discount || ''}
                                         onChange={e => setDiscount(parseFloat(e.target.value) || 0)}
                                     />
@@ -305,7 +305,7 @@ function HospitalAdminLabBillingPage() {
 
                             <div className="space-y-4">
                                 <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Gateway Selection</span>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     {['Cash', 'UPI', 'Card', 'Mixed'].map(mode => (
                                         <button
                                             key={mode}
@@ -351,7 +351,7 @@ function HospitalAdminLabBillingPage() {
                         </button>
                     </div>
 
-                    <div className="bg-indigo-600 rounded-[0.5rem] p-8 text-white flex items-center justify-between group cursor-pointer hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none"
+                    <div className="bg-indigo-600 rounded-[0.5rem] p-2 md:p-4 md:p-8 text-white flex items-center justify-between group cursor-pointer hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none"
                         onClick={() => router.push('/hospital-admin/labs/transactions')}>
                         <div className="flex items-center gap-4">
                             <div className="p-3 bg-white/20 rounded-2xl">

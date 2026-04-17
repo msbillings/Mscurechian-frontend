@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { User, Calendar, Users, TrendingUp, Bell, ArrowRight, Activity, Clock, FileText, LayoutDashboard, ClipboardList, Briefcase, PlusCircle } from 'lucide-react';
@@ -13,6 +13,7 @@ import EstimatedWaitCard from './EstimatedWaitCard';
 import DoctorDashboardCharts from './DoctorDashboardCharts';
 import DoctorIncomeStatsCard from './DoctorIncomeStatsCard';
 import { AttendanceButton } from '@/components/attendance/AttendanceButton';
+import { useTenantLink } from "@/hooks/useTenantLink";
 
 interface DoctorDashboardContainerProps {
     doctorName: string;
@@ -51,6 +52,7 @@ function DoctorDashboardContainer({
     });
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
     const [isUpdating, setIsUpdating] = useState(false);
+    const [visitTypeFilter, setVisitTypeFilter] = useState<'all' | 'opd' | 'ipd'>('all');
 
     // Auto-refresh to show live updates
     React.useEffect(() => {
@@ -66,52 +68,69 @@ function DoctorDashboardContainer({
     const handleNextPatient = () => {
         if (queueStats.nextAppointmentId) {
             toast.success('Navigating to next patient...');
-            router.push(`/doctor/appointment/${queueStats.nextAppointmentId}`);
+            router.push(getPath(`/doctor/appointment/${queueStats.nextAppointmentId}`));
         } else {
             toast.error('No patients in queue');
         }
     };
 
-    const handleQueueStatsChange = (newStats: any) => {
+    const handleQueueStatsChange = useCallback((newStats: any) => {
         setQueueStats(newStats);
         if (newStats.overallStats) {
             setDynamicStats(newStats.overallStats);
         }
-    };
+    }, []);
+
+    const { getPath } = useTenantLink();
+
+    // Shortcuts Grid
+    const shortcuts = React.useMemo(() => [
+        {
+            href: "/doctor/patients",
+            icon: <Users className="text-blue-500" />,
+            label: "All Patients",
+            sub: "History & Records"
+        },
+        {
+            href: "/doctor/inpatients",
+            icon: <Activity className="text-emerald-500" />,
+            label: "Inpatients",
+            sub: "Ward Surveillance"
+        },
+        {
+            href: "/doctor/leaves",
+            icon: <Briefcase className="text-amber-500" />,
+            label: "My Leaves",
+            sub: "Schedule Planning"
+        },
+        {
+            href: "/doctor/support",
+            icon: <PlusCircle className="text-rose-500" />,
+            label: "Helpdesk",
+            sub: "Support & Queries"
+        }
+    ], []);
 
     return (
-        <div className="space-y-2 md:space-y-3 pt-1">
+        <div className="space-y-3 sm:space-y-4 md:space-y-6 pt-0">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-card p-4 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-border-theme">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-card p-3 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-border-theme">
                 <div>
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-base sm:text-lg font-bold text-foreground uppercase tracking-tight">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 uppercase tracking-tight">
                             Welcome, {doctorName.startsWith('Dr.') ? doctorName : `Dr. ${doctorName}`}
                         </h1>
-                        <div className="flex items-center gap-2">
-                            <div className={`relative flex h-2.5 w-2.5 ${isUpdating ? 'animate-pulse' : ''}`}>
-                                <span className={`absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 ${isUpdating ? 'animate-ping' : ''}`}></span>
-                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                            </div>
-                            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Live</span>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3 mt-1">
-                        <p className="text-muted text-xs sm:text-sm">Your dashboard and quick actions</p>
-                        <span className="text-[9px] text-muted">
-                            Updated {new Date(lastUpdated).toLocaleTimeString()}
-                        </span>
                     </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                     <div className="shrink-0">
                         <AttendanceButton userRole="doctor" compact />
                     </div>
                     <button
                         onClick={handleNextPatient}
-                        className="px-4 sm:px-5 py-2 sm:py-2.5 bg-primary-theme text-primary-theme-foreground text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl shadow-lg hover:opacity-90 flex items-center justify-center gap-2 shrink-0"
+                        className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 bg-primary-theme text-primary-theme-foreground text-[9px] sm:text-[10px] md:text-xs font-black uppercase tracking-widest rounded-lg sm:rounded-xl shadow-lg hover:opacity-90 flex items-center justify-center gap-1.5 sm:gap-2"
                     >
-                        <User size={16} /> Next Patient
+                        <User size={14} className="sm:size-[16px]" /> Next Patient
                     </button>
                 </div>
             </div>
@@ -119,7 +138,11 @@ function DoctorDashboardContainer({
             {/* Stats Cards Section */}
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-6">
                 <div className="xl:col-span-9 h-full">
-                    <DoctorStatsCards stats={dynamicStats} />
+                    <DoctorStatsCards 
+                        stats={dynamicStats} 
+                        visitTypeFilter={visitTypeFilter}
+                        onTypeChange={setVisitTypeFilter}
+                    />
                 </div>
                 <div className="xl:col-span-3 h-full">
                     <DoctorIncomeStatsCard />
@@ -129,10 +152,12 @@ function DoctorDashboardContainer({
             {/* Queue Section */}
             <div className="grid grid-cols-1 gap-4 md:gap-6">
                 {/* Appointments Queue */}
-                <div className="h-[500px] sm:h-[550px] md:h-[600px]">
+                <div className="h-[450px] sm:h-[550px] md:h-[600px]">
                     <AppointmentsQueueDynamic
                         onStatsChange={handleQueueStatsChange}
                         consultationDuration={consultationDuration}
+                        visitTypeFilter={visitTypeFilter}
+                        setVisitTypeFilter={setVisitTypeFilter}
                     />
                 </div>
             </div>
@@ -142,30 +167,15 @@ function DoctorDashboardContainer({
                 <div className="xl:col-span-8 space-y-6">
                     {/* Shortcuts Grid */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <ShortcutCard
-                            href="/doctor/patients"
-                            icon={<Users className="text-blue-500" />}
-                            label="All Patients"
-                            sub="History & Records"
-                        />
-                        <ShortcutCard
-                            href="/doctor/inpatients"
-                            icon={<Activity className="text-emerald-500" />}
-                            label="Inpatients"
-                            sub="Ward Surveillance"
-                        />
-                        <ShortcutCard
-                            href="/doctor/leaves"
-                            icon={<Briefcase className="text-amber-500" />}
-                            label="My Leaves"
-                            sub="Schedule Planning"
-                        />
-                        <ShortcutCard
-                            href="/doctor/support"
-                            icon={<PlusCircle className="text-rose-500" />}
-                            label="Helpdesk"
-                            sub="Support & Queries"
-                        />
+                        {shortcuts.map((shortcut) => (
+                            <ShortcutCard
+                                key={shortcut.href}
+                                href={getPath(shortcut.href)}
+                                icon={shortcut.icon}
+                                label={shortcut.label}
+                                sub={shortcut.sub}
+                            />
+                        ))}
                     </div>
 
                     {/* Chart: Patient Flow */}
@@ -192,7 +202,7 @@ function DoctorDashboardContainer({
                     <div className="bg-card rounded-2xl border border-border-theme shadow-sm flex flex-col h-full">
                         <div className="p-5 border-b border-border-theme flex items-center justify-between">
                             <h3 className="text-sm font-bold text-foreground">Recent Patients seen</h3>
-                            <Link href="/doctor/patients" className="text-[10px] font-black text-primary-theme uppercase tracking-widest hover:underline">View All</Link>
+                            <Link href={getPath("/doctor/patients")} className="text-[10px] font-black text-primary-theme uppercase tracking-widest hover:underline">View All</Link>
                         </div>
                         <div className="p-2 space-y-1">
                             {recentPatients.length > 0 ? recentPatients.slice(0, 5).map((p: any) => (
@@ -206,7 +216,7 @@ function DoctorDashboardContainer({
                                             <p className="text-[10px] text-muted font-medium">{p.email || p.mobile}</p>
                                         </div>
                                     </div>
-                                    <Link href={`/doctor/patients/${p.id || p._id}`} className="opacity-0 group-hover:opacity-100 p-2 hover:bg-primary-theme/10 rounded-lg text-primary-theme transition-all">
+                                    <Link href={getPath(`/doctor/patients/${p.id || p._id}`)} className="opacity-0 group-hover:opacity-100 p-2 hover:bg-primary-theme/10 rounded-lg text-primary-theme transition-all">
                                         <ArrowRight size={14} />
                                     </Link>
                                 </div>
@@ -240,7 +250,6 @@ function DoctorDashboardContainer({
                                     <p className="text-[10px] sm:text-xs text-muted font-medium">Progress overview</p>
                                 </div>
                             </div>
-                            <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 text-[9px] sm:text-[10px] font-bold rounded-full uppercase">Live</span>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3 sm:gap-4">

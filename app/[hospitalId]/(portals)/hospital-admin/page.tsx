@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { useQuery } from '@tanstack/react-query';
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
 import dynamic from 'next/dynamic';
@@ -39,7 +39,7 @@ import { BrandingModal } from '@/components/hospital-admin/BrandingModal';
 
 // Dynamic import for charts
 const AttendancePieChart = dynamic(
-  () => import('@/components/charts/OptimizedCharts').then(mod => mod.AttendancePieChart),
+  () => import('@/components/charts/OptimizedCharts'),
   {
     ssr: false, // Don't render on server
     loading: () => (
@@ -50,21 +50,59 @@ const AttendancePieChart = dynamic(
   }
 );
 
-const CHART_COLORS = ['#10b981', '#f59e0b', '#ef4444', '#6366f1'];
+const CHART_COLORS = ['#10b981', '#1b1917ff', '#ef4444', '#6366f1'];
 
 function HospitalAdminDashboard() {
   const [range, setRange] = useState("today");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [visitType, setVisitType] = useState<"all" | "opd" | "ipd">("all");
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("all");
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
   const [isBrandingModalOpen, setIsBrandingModalOpen] = useState(false);
 
+  // Fetch doctors for the filter
+  const { data: doctorsData } = useQuery<any>({
+    queryKey: ['hospital-admin', 'doctors-list'],
+    queryFn: async () => {
+      const resp = await hospitalAdminService.getDoctors();
+      return resp;
+    },
+    staleTime: 5 * 60 * 1000, // 5 min cache
+  });
 
-  const getMetricDetails = (label: string) => {
-    const totalStaff = stats.totalDoctors + stats.totalNurses + stats.totalStaff;
-    const attendanceRate = totalStaff > 0 ? Math.round((stats.attendance?.present || 0) / totalStaff * 100) : 0;
+  // Main dashboard data
+  const { data: dashboardData, isLoading, error, refetch, isFetching } = useQuery<any>({
+    queryKey: ['hospital-admin', 'dashboard', range, startDate, endDate, visitType, selectedDoctorId],
+    queryFn: async () => {
+      const data = await hospitalAdminService.getDashboard({
+        range,
+        startDate,
+        endDate,
+        visitType,
+        doctorId: selectedDoctorId === 'all' ? undefined : selectedDoctorId
+      } as any);
+      return data;
+    },
+    staleTime: 30000, // 30s cache for smoother navigation
+    gcTime: 15 * 60 * 1000,
+    retry: 2,
+    refetchInterval: 30000, // Poll every 30 seconds (balanced for performance)
+    refetchOnWindowFocus: true,
+    placeholderData: (previousData: any) => previousData,
+  });
+
+  const { hospital = {}, stats = {} } = dashboardData || {};
+
+  // ✅ PERFORMANCE: Memoize shared calculations
+  const { totalStaff, attendanceRate } = useMemo(() => {
+    const total = (stats.totalDoctors || 0) + (stats.totalNurses || 0) + (stats.totalStaff || 0);
+    const rate = total > 0 ? Math.round((stats.attendance?.present || 0) / total * 100) : 0;
+    return { totalStaff: total, attendanceRate: rate };
+  }, [stats]);
+
+  const getMetricDetails = useCallback((label: string) => {
 
     const details: Record<string, { items: { label: string, value: string | number }[], insight: string }> = {
       "Active Doctors": {
@@ -85,6 +123,15 @@ function HospitalAdminDashboard() {
         ],
         insight: `Nursing staff at ${attendanceRate}% capacity with ${stats.totalNurses || 0} active nurses.`
       },
+      "Total Staff": {
+        items: [
+          { label: "Total Staff", value: stats.totalStaff || 0 },
+          { label: "On Duty", value: stats.todayAttendance || 0 },
+          { label: "On Leave", value: stats.pendingLeaves || 0 },
+          { label: "Departments", value: "All" }
+        ],
+        insight: `Total ${stats.totalStaff || 0} non-clinical staff members. ${stats.todayAttendance || 0} currently present.`
+      },
       "Total Patients": {
         items: [
           { label: "Total Patients", value: stats.totalPatients || 0 },
@@ -93,17 +140,6 @@ function HospitalAdminDashboard() {
           { label: "Admissions", value: stats.totalAdmissions || 0 }
         ],
         insight: `${stats.totalPatients || 0} registered patients with ${stats.totalInpatients || 0} currently admitted.`
-      },
-      "Bed Occupancy": {
-        items: [
-          { label: "Occupancy", value: `${stats.bedOccupancy || 0}%` },
-          { label: "Inpatients", value: stats.totalInpatients || 0 },
-          { label: "Admissions", value: stats.totalAdmissions || 0 },
-          { label: "Available", value: `${100 - (stats.bedOccupancy || 0)}%` }
-        ],
-        insight: stats.bedOccupancy >= 80
-          ? `High occupancy at ${stats.bedOccupancy}%. Consider capacity planning.`
-          : `Occupancy at ${stats.bedOccupancy}%. Capacity is ${stats.bedOccupancy < 50 ? 'optimal' : 'moderate'}.`
       },
       "Avg. Patient Wait": {
         items: [
@@ -123,81 +159,60 @@ function HospitalAdminDashboard() {
           { label: "Doctors", value: stats.totalDoctors || 0 },
           { label: "Per Doctor", value: stats.totalDoctors > 0 ? Math.round((stats.totalAppointments || 0) / stats.totalDoctors) : 0 }
         ],
-        insight: `Average consultation ${stats.avgConsultationTime || 0} minutes with ${stats.totalAppointments || 0} active appointments.`
+        insight: `Average consultation ${stats.avgConsultationTime || 0} minutes with ${stats.totalAppointments || 0} ${visitType.toUpperCase()} appointments.`
       },
-      "Lab Activity": {
+      "Number of Lab Tests Gained": {
         items: [
-          { label: "Total Orders", value: stats.totalLabRequests || 0 },
+          { label: "Total Tests", value: stats.totalLabRequests || 0 },
           { label: "Today", value: stats.totalLabRequests || 0 },
-          { label: "Revenue", value: `₹${(stats.revenue || 0).toLocaleString()}` },
+          { label: "Revenue", value: `₹${(stats.labRevenue || 0).toLocaleString()}` },
           { label: "Active Patients", value: stats.totalPatients || 0 }
         ],
-        insight: `${stats.totalLabRequests || 0} lab orders processed. Activity is ${stats.totalLabRequests > 10 ? 'high' : 'moderate'}.`
+        insight: `${stats.totalLabRequests || 0} lab tests processed. Lab Revenue: ₹${(stats.labRevenue || 0).toLocaleString()}.`
       },
-      "Pharma Throughput": {
+      "Pharma Invoices Generated": {
         items: [
-          { label: "Sales Today", value: stats.totalPharmaSales || 0 },
-          { label: "Revenue", value: `₹${(stats.revenue || 0).toLocaleString()}` },
+          { label: "Total Generated", value: stats.totalPharmaSales || 0 },
+          { label: "Revenue", value: `₹${(stats.pharmaRevenue || 0).toLocaleString()}` },
           { label: "Inpatient", value: stats.totalInpatients || 0 },
           { label: "Outpatient", value: stats.totalAppointments || 0 }
         ],
-        insight: `${stats.totalPharmaSales || 0} pharmacy transactions. Revenue: ₹${(stats.revenue || 0).toLocaleString()}`
+        insight: `${stats.totalPharmaSales || 0} pharmacy invoices generated. Pharma Revenue: ₹${(stats.pharmaRevenue || 0).toLocaleString()}.`
       },
-      "Daily Admissions": {
+      "Admissions (IPD)": {
         items: [
-          { label: "Total Today", value: stats.totalAdmissions || 0 },
-          { label: "Currently Admitted", value: stats.totalInpatients || 0 },
+          { label: "Total Admissions", value: stats.totalAdmissions || 0 },
+          { label: "Still on Bed", value: stats.ipdActive || 0 },
+          { label: "Discharged Today", value: stats.ipdDischarged || 0 },
+          { label: "IPD Bill Revenue", value: `₹${(stats.ipdRevenue || 0).toLocaleString()}` },
           { label: "Bed Occupancy", value: `${stats.bedOccupancy || 0}%` },
-          { label: "Available", value: `${100 - (stats.bedOccupancy || 0)}%` }
         ],
-        insight: `${stats.totalAdmissions || 0} admissions today with ${stats.totalInpatients || 0} patients currently admitted.`
+        insight: `${stats.ipdActive || 0} patients currently admitted. Total admissions generating ₹${(stats.ipdRevenue || 0).toLocaleString()} in revenue.`
       },
-      "Monthly Revenue": {
+      "OPD Appointments": {
         items: [
-          { label: "Total Revenue", value: `₹${(stats.revenue || 0).toLocaleString()}` },
-          { label: "Appointments", value: stats.totalAppointments || 0 },
-          { label: "Lab Orders", value: stats.totalLabRequests || 0 },
-          { label: "Pharmacy", value: stats.totalPharmaSales || 0 }
+          { label: "Total Appts", value: stats.totalAppointments || 0 },
+          { label: "Finished", value: stats.opdCompleted || 0 },
+          { label: "Pending", value: stats.opdPending || 0 },
+          { label: "OPD Bill Revenue", value: `₹${(stats.opdRevenue || 0).toLocaleString()}` },
+          { label: "Avg. Consult", value: `${stats.avgConsultationTime || 0}m` },
+          { label: "Wait Time", value: `${stats.avgPatientWaitTime || 0}m` }
         ],
-        insight: `Revenue: ₹${(stats.revenue || 0).toLocaleString()} from ${stats.totalAppointments + stats.totalLabRequests + stats.totalPharmaSales} transactions.`
+        insight: `${stats.opdCompleted || 0} finished, ${stats.opdPending || 0} waiting. Generating ₹${(stats.opdRevenue || 0).toLocaleString()} in revenue today.`
+      },
+      "Revenue": {
+        items: [
+          { label: "Total Revenue", value: `₹${(stats.revenue || stats.monthlyRevenue || 0).toLocaleString()}` },
+          { label: "OPD Bill", value: `₹${(stats.opdRevenue || 0).toLocaleString()}` },
+          { label: "IPD Bill", value: `₹${(stats.ipdRevenue || 0).toLocaleString()}` },
+          { label: "Pharma Bill", value: `₹${(stats.pharmaRevenue || 0).toLocaleString()}` },
+          { label: "Lab Bill", value: `₹${(stats.labRevenue || 0).toLocaleString()}` }
+        ],
+        insight: `Consolidated ₹${(stats.revenue || stats.monthlyRevenue || 0).toLocaleString()} across all institutional streams.`
       }
     };
     return details[label] || { items: [], insight: "" };
-  };
-
-  // Fetch doctors for the filter
-  const { data: doctorsData } = useQuery<any>({
-    queryKey: ['hospital-admin', 'doctors-list'],
-    queryFn: async () => {
-      const resp = await hospitalAdminService.getDoctors();
-      return resp;
-    },
-    staleTime: 0,
-  });
-
-  // Main dashboard data
-  const { data: dashboardData, isLoading, error, refetch, isFetching } = useQuery<any>({
-    queryKey: ['hospital-admin', 'dashboard', range, startDate, endDate, selectedDoctorId],
-    queryFn: async () => {
-      const data = await hospitalAdminService.getDashboard({
-        range,
-        startDate,
-        endDate,
-        doctorId: selectedDoctorId === 'all' ? undefined : selectedDoctorId
-      });
-      return data;
-    },
-    staleTime: 5000,
-    gcTime: 5 * 60 * 1000,
-    retry: 2,
-    refetchInterval: 10000, // Poll every 10 seconds for live updates
-    refetchOnWindowFocus: true,
-    placeholderData: (previousData: any) => previousData, // Keep showing old data while fetching new data
-  });
-
-
-
-  const { hospital = {}, stats = {} } = dashboardData || {};
+  }, [stats, attendanceRate, totalStaff]);
 
   // Memoized stat cards with real data
   const primaryStats = useMemo(() => [
@@ -216,18 +231,18 @@ function HospitalAdminDashboard() {
       href: "/hospital-admin/nurses"
     },
     {
+      label: "Total Staff",
+      value: stats.totalStaff || 0,
+      icon: Users,
+      color: "orange",
+      href: "/hospital-admin/staff"
+    },
+    {
       label: "Total Patients",
       value: stats.totalPatients || 0,
       icon: Users,
       color: "indigo",
       href: "/hospital-admin/patients"
-    },
-    {
-      label: "Bed Occupancy",
-      value: `${stats.bedOccupancy || 0}%`,
-      icon: BedDouble,
-      color: "rose",
-      href: "/hospital-admin/hospital"
     }
   ], [stats]);
 
@@ -240,35 +255,45 @@ function HospitalAdminDashboard() {
     },
     {
       label: "Avg. Consultation",
-      value: `${stats.avgConsultationTime || 15} min`,
+      value: `${stats.avgConsultationTime || 0} min`,
       icon: Stethoscope,
       color: "emerald",
     },
     {
-      label: "Lab Activity",
+      label: "Number of Lab Tests Gained",
       value: stats.totalLabRequests || 0,
       icon: TestTube,
       color: "indigo",
     },
     {
-      label: "Pharma Throughput",
+      label: "Pharma Invoices Generated",
       value: stats.totalPharmaSales || 0,
       icon: Pill,
       color: "rose",
     },
     {
-      label: "Daily Admissions",
+      label: `${range === 'today' ? "Today's" : range === '7days' ? "Weekly" : range === 'month' ? "Monthly" : range === 'year' ? "Yearly" : "Filtered"} Admissions (IPD)`,
       value: stats.totalAdmissions || 0,
+      bill: stats.ipdRevenue || 0,
+      status: `(${stats.ipdActive || 0} In-Bed | ${stats.ipdDischarged || 0} Discharged)`,
       icon: CalendarCheck,
       color: "blue",
     },
     {
-      label: "Monthly Revenue",
-      value: `₹${(stats.revenue || 0).toLocaleString()}`,
+      label: "OPD Appointments",
+      value: stats.totalAppointments || 0,
+      bill: stats.opdRevenue || 0,
+      status: `(${stats.opdCompleted || 0} Finished | ${stats.opdPending || 0} Pending)`,
+      icon: Activity,
+      color: "emerald",
+    },
+    {
+      label: "Revenue",
+      value: `₹${(stats.revenue || stats.monthlyRevenue || 0).toLocaleString()}`,
       icon: Wallet,
       color: "emerald",
     }
-  ], [stats]);
+  ], [stats, range, visitType]);
 
   // Attendance chart data
   const attendanceChartData = useMemo(() => {
@@ -302,7 +327,7 @@ function HospitalAdminDashboard() {
   // Show skeleton on initial load with refined aesthetics
   if (isLoading && !dashboardData) {
     return (
-      <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
+      <div className="p-1 md:p-8 space-y-8 bg-slate-50/50 min-h-screen">
         {/* Header Skeleton */}
         <div className="flex justify-between items-center">
           <div className="space-y-2">
@@ -316,9 +341,9 @@ function HospitalAdminDashboard() {
         </div>
 
         {/* Primary Metrics Skeleton */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 bg-white border border-slate-100 rounded-2xl p-6 space-y-4 shadow-sm">
+            <div key={i} className="h-32 bg-white border border-slate-100 rounded-2xl p-3 md:p-6 space-y-4 shadow-sm">
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 bg-slate-100 rounded-xl animate-pulse"></div>
                 <div className="space-y-2 flex-1">
@@ -332,7 +357,7 @@ function HospitalAdminDashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="h-24 bg-white border border-slate-100 rounded-2xl animate-pulse shadow-sm"></div>
               ))}
@@ -349,361 +374,413 @@ function HospitalAdminDashboard() {
   }
 
   return (
-    <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
-      {/* Simple Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Dashboard Overview</h1>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mt-1">
-            <Building2 className="w-3 h-3" /> {hospital?.name || "Hospital Management System"}
-          </p>
+    <div className="space-y-4 md:space-y-5 bg-slate-50/50 min-h-screen flex flex-col pb-12">
+      {/* Dynamic Header with Advanced Filters */}
+      <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-8 rounded-3xl border border-slate-100 shadow-sm shrink-0">
+        {/* Top Row: Identification */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-50 pb-4">
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight whitespace-nowrap">
+              Dashboard Overview
+            </h1>
+            <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg text-[8px] md:text-[10px] font-black uppercase tracking-widest border border-blue-100 shrink-0">
+              Live Control
+            </span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50/80 rounded-xl border border-slate-100/50">
+            <Building2 className="w-3.5 md:w-4 h-3.5 md:h-4 text-blue-600" />
+            <span className="text-[7px] sm:text-[10px] font-medium text-slate-500 uppercase tracking-widest">
+              {hospital?.name || "Hospital Node"}
+            </span>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4">
-          {/* Range Filter */}
-          <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
-            {[
-              { key: 'today', label: 'Today' },
-              { key: '7days', label: '7 Days' },
-              { key: 'month', label: 'Month' },
-              { key: '3months', label: '3 Months' },
-              { key: 'custom', label: 'Custom' },
-            ].map((r) => (
-              <button
-                key={r.key}
-                onClick={() => setRange(r.key)}
-                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${range === r.key
-                  ? 'bg-primary-theme text-white shadow-md'
-                  : 'text-slate-400 hover:text-slate-600'
-                  }`}
-              >
-                {r.label}
-              </button>
-            ))}
+        {/* Bottom Row: Control Center */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Group 1: Time Perspective */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex p-0.5 md:p-1 bg-slate-50 border border-slate-200 rounded-xl shrink-0">
+                {[
+                  { key: 'today', label: 'Today' },
+                  { key: '7days', label: '7D' },
+                  { key: 'month', label: 'Month' },
+                  { key: 'year', label: 'Year' },
+                  { key: 'custom', label: 'Custom' },
+                ].map((r) => (
+                  <button
+                    key={r.key}
+                    onClick={() => setRange(r.key)}
+                    className={`px-2.5 md:px-4 py-1.5 md:py-2 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${range === r.key
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+
+              {range === 'custom' && (
+                <div className="flex items-center gap-2 animate-in fade-in zoom-in-95 duration-300">
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-[9px] font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-100 shadow-sm"
+                  />
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-[9px] font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-100 shadow-sm"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Group 2: Operational Filters & Quick Actions */}
+            <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+              <div className="flex p-0.5 md:p-1 bg-slate-50 border border-slate-200 rounded-xl shrink-0">
+                {[
+                  { key: 'all', label: 'All' },
+                  { key: 'opd', label: 'OPD' },
+                  { key: 'ipd', label: 'IPD' },
+                ].map((v) => (
+                  <button
+                    key={v.key}
+                    onClick={() => setVisitType(v.key as any)}
+                    className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${visitType === v.key
+                      ? 'bg-emerald-600 text-white shadow-lg'
+                      : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => refetch()}
+                  className="p-2 md:px-4 md:py-2 bg-white border border-slate-200 text-slate-400 hover:text-blue-600 hover:border-blue-200 rounded-xl md:rounded-2xl shadow-sm transition-all group shrink-0"
+                  title="Refresh Dashboard"
+                >
+                  <RefreshCw size={14} className={`group-hover:rotate-180 transition-transform duration-500 ${isFetching ? 'animate-spin text-blue-600' : ''}`} />
+
+                </button>
+
+                <button
+                  onClick={() => setIsBrandingModalOpen(true)}
+                  className="flex items-center gap-2 px-3 md:px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-200 rounded-xl md:rounded-2xl shadow-sm transition-all group shrink-0"
+                >
+                  <Settings size={14} className="text-slate-400 group-hover:text-blue-600" />
+                  <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Receipt Meta</span>
+                </button>
+              </div>
+            </div>
           </div>
 
-          {range === 'custom' && (
-            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-[10px] font-bold uppercase outline-none focus:ring-2 focus:ring-slate-900 shadow-sm"
-              />
-              <span className="w-2 h-px bg-slate-200"></span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-[10px] font-bold uppercase outline-none focus:ring-2 focus:ring-slate-900 shadow-sm"
-              />
-            </div>
-          )}
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => refetch()}
-              disabled={isFetching}
-              className="p-2 bg-white border border-slate-200 rounded-xl text-slate-500 hover:bg-slate-50 transition-all flex items-center gap-2 disabled:opacity-50 shadow-sm"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />
-              <span className="text-[9px] font-black uppercase tracking-widest">Reload</span>
-            </button>
-            <button
-              onClick={() => setIsBrandingModalOpen(true)}
-              className="p-2 bg-white border border-slate-200 rounded-xl text-slate-900 font-bold hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm"
-            >
-              <Settings className="w-3.5 h-3.5" />
-              <span className="text-[9px] font-black uppercase tracking-widest">Receipt Meta</span>
-            </button>
+          <div className="flex items-center shrink-0">
             <button
               onClick={() => setIsReminderModalOpen(true)}
-              className="p-2 bg-slate-900 text-white border border-slate-900 rounded-xl hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg shadow-slate-200"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 border border-slate-900 text-white hover:bg-slate-800 rounded-xl md:rounded-2xl shadow-lg transition-all group"
             >
-              <BellRing className="w-3.5 h-3.5" />
-              <span className="text-[9px] font-black uppercase tracking-widest">Reminder Settings</span>
+              <BellRing size={14} className="text-white/70 group-hover:text-white" />
+              <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Reminder Settings</span>
             </button>
           </div>
         </div>
+
       </div>
 
-      {/* Primary Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
-        {primaryStats.map((stat, index) => {
-          const details = getMetricDetails(stat.label);
+
+      {/* Primary Personnel Cards (Static Context) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3 shrink-0">
+        {primaryStats.map((stat, index) => (
+          <Link key={index} href={stat.href}>
+            <Card className="p-2 md:p-3 lg:p-3 xl:p-4 border-slate-100 shadow-sm bg-white hover:border-slate-300 transition-all group relative overflow-hidden">
+              <div className="flex items-center gap-2 md:gap-3 relative z-10">
+                <div className={`p-1.5 md:p-2 rounded-xl md:rounded-2xl transition-colors ${stat.color === 'emerald' ? 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100' :
+                  stat.color === 'blue' ? 'bg-blue-50 text-blue-600 group-hover:bg-blue-100' :
+                    stat.color === 'orange' ? 'bg-orange-50 text-orange-600 group-hover:bg-orange-100' :
+                      'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-100'
+                  }`}>
+                  <stat.icon size={16} strokeWidth={2.5} className="md:w-4 md:h-4" />
+                </div>
+                <div className="text-center sm:text-left min-w-0">
+                  <p className="text-[7px] md:text-[9.5px] font-bold text-slate-400 uppercase tracking-wider truncate">{stat.label}</p>
+                  <p className="text-xs md:text-lg font-black text-slate-900 truncate">{stat.value}</p>
+                </div>
+              </div>
+            </Card>
+          </Link>
+        ))}
+      </div>
+
+
+      {/* Performance Grid (Dynamic with Advanced Overlays) */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-3 shrink-0">
+        {performanceStats.map((stat, index) => {
+          const detailKey = stat.label.includes("Admissions") ? "Admissions (IPD)" : stat.label;
+          const details = getMetricDetails(detailKey);
           const isHovered = hoveredCard === stat.label;
           return (
             <div
               key={index}
-              className="relative group h-full"
+              className="relative group cursor-pointer"
               onMouseEnter={() => setHoveredCard(stat.label)}
               onMouseLeave={() => setHoveredCard(null)}
             >
-              <Link href={stat.href} className="block h-full">
-                <Card className={`p-6 border-slate-200 shadow-sm transition-all h-full bg-white relative z-20 ${isHovered ? 'border-slate-300 ring-2 ring-slate-100' : ''}`}>
-                  <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-xl transition-colors ${stat.color === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
-                      stat.color === 'blue' ? 'bg-blue-50 text-blue-600' :
-                        stat.color === 'indigo' ? 'bg-indigo-50 text-indigo-600' :
-                          'bg-rose-50 text-rose-600'
-                      }`}>
-                      <stat.icon size={20} strokeWidth={2.5} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                      <h3 className="text-2xl font-black text-slate-900 leading-tight">{stat.value}</h3>
-                    </div>
+              <Card className={`p-2 md:p-3 lg:p-3 xl:p-4 border-slate-100 shadow-sm transition-all h-full bg-white relative z-10 ${isHovered ? 'border-slate-300 ring-4 ring-slate-100 shadow-md' : ''}`}>
+                <div className="flex items-center justify-between mb-2 md:mb-3">
+                  <div className={`p-1 md:p-2 rounded-lg md:rounded-xl ${stat.color === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
+                    stat.color === 'amber' ? 'bg-amber-50 text-amber-600' :
+                      stat.color === 'indigo' ? 'bg-indigo-50 text-indigo-600' :
+                        stat.color === 'rose' ? 'bg-rose-50 text-rose-600' :
+                          'bg-blue-50 text-blue-600'
+                    }`}>
+                    <stat.icon size={14} strokeWidth={2.5} className="md:w-4 md:h-4" />
                   </div>
-                </Card>
-              </Link>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="inline-flex px-1.5 md:px-2 py-0.5 bg-slate-50 text-slate-400 text-[6.5px] md:text-[8px] font-black uppercase tracking-tighter rounded border border-slate-100">
+                      {range === '7days' ? '7D' : range === 'custom' ? 'Range' : range.toUpperCase()}
+                    </span>
+                    {visitType !== 'all' &&
+                      stat.label !== 'OPD Appointments' &&
+                      !stat.label.includes('Admissions (IPD)') && (
+                        <span className={`inline-flex px-1.5 md:px-2 py-0.5 ${visitType === 'opd' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-blue-50 text-blue-600 border-blue-100'} text-[6.5px] md:text-[8px] font-black uppercase tracking-tighter rounded border`}>
+                          {visitType.toUpperCase()}
+                        </span>
+                      )}
+                  </div>
+                  {isHovered && <ArrowUpRight size={12} className="text-slate-300 animate-in fade-in slide-in-from-bottom-1" />}
+                </div>
+                <div>
+                  <p className="text-[7.5px] md:text-[8.5px] font-black text-slate-400 uppercase tracking-[0.1em] md:tracking-[0.15em] mb-1 line-clamp-1">{stat.label}</p>
+                  <div className="flex items-baseline gap-2">
+                    <h4 className="text-sm md:text-lg xl:text-xl font-black text-slate-900 truncate">{stat.value}</h4>
+                  </div>
+                  {(stat as any).bill !== undefined && (
+                    <p className="text-[7px] md:text-[8px] font-bold text-emerald-600 uppercase tracking-tighter mt-1">
+                      Billing Flow: ₹{(stat as any).bill.toLocaleString()}
+                    </p>
+                  )}
+                  {(stat as any).status && (
+                    <p className="text-[6.5px] md:text-[7.5px] font-bold text-slate-500 uppercase tracking-tighter mt-0.5 opacity-80">
+                      {(stat as any).status}
+                    </p>
+                  )}
+                </div>
+              </Card>
 
-              {/* Floating Detail Card */}
+              {/* Enhanced Floating Detail Overlay */}
               {isHovered && (
-                <div className="absolute top-full left-0 right-0 mt-4 p-5 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 animate-in fade-in zoom-in-95 duration-200 w-full min-w-[280px]">
-                  <div className="absolute -top-2 left-8 w-4 h-4 bg-white border-t border-l border-slate-100 transform rotate-45"></div>
-                  <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide mb-3 flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full ${stat.color === 'emerald' ? 'bg-emerald-500' :
-                      stat.color === 'blue' ? 'bg-blue-500' :
-                        stat.color === 'indigo' ? 'bg-indigo-500' : 'bg-rose-500'
-                      }`}></div>
-                    {stat.label} Breakdown
-                  </h4>
-                  <div className="space-y-3 mb-4">
+                <div className="absolute top-full left-0 right-0 mt-1 md:mt-2 p-2 md:p-3 bg-white border border-slate-100 rounded-xl md:rounded-2xl shadow-2xl z-50 animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-300 w-full overflow-hidden">
+                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-slate-100 to-transparent"></div>
+                  <div className="flex items-center gap-1.5 md:gap-2 mb-1.5 md:mb-2">
+                    <div className={`w-4 h-4 md:w-6 md:h-6 rounded-lg flex items-center justify-center ${stat.color === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
+                      stat.color === 'blue' ? 'bg-blue-50 text-blue-600' :
+                        stat.color === 'indigo' ? 'bg-indigo-50 text-indigo-600' : 'bg-rose-50 text-rose-600'
+                      }`}>
+                      <stat.icon size={8} strokeWidth={3} className="md:w-3 md:h-3" />
+                    </div>
+                    <h4 className="text-[7.5px] md:text-[9px] font-black text-slate-900 uppercase tracking-widest">{range.toUpperCase()} Analysis</h4>
+                  </div>
+
+                  <div className="space-y-1 md:space-y-1.5">
                     {details.items.map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-slate-500">{item.label}</span>
-                        <span className="font-black text-slate-900">{item.value}</span>
+                      <div key={idx} className="flex items-center justify-between group/item">
+                        <span className="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase tracking-tight group-hover/item:text-slate-600 transition-colors">{item.label}</span>
+                        <span className="text-[8px] md:text-[10px] font-black text-slate-900">{item.value}</span>
                       </div>
                     ))}
                   </div>
-                  <div className="pt-3 border-t border-slate-50">
-                    <p className="text-[10px] font-bold text-slate-400 leading-relaxed italic">
-                      "{details.insight}"
-                    </p>
+
+                  <div className="mt-2 md:mt-3 pt-1.5 md:pt-2 border-t border-slate-50">
+                    <div className="flex gap-1.5 md:gap-2">
+                      <div className="mt-0.5 shrink-0"><ArrowUpRight size={8} className="text-emerald-500 md:w-2.5 md:h-2.5" /></div>
+                      <p className="text-[6.5px] md:text-[8px] font-bold text-slate-500 leading-relaxed italic opacity-90">
+                        {details.insight}
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
           );
         })}
+
+        {/* Workforce Pulse Card - The 8th element in the grid */}
+        <Card className="p-2 md:p-3 lg:p-3 xl:p-4 border-slate-100 shadow-sm bg-white h-full rounded-2xl md:rounded-[1.5rem] flex flex-col">
+          <h3 className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 md:mb-3 flex items-center justify-between">
+            Workforce Pulse
+            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+          </h3>
+          <div className="space-y-1.5 md:space-y-2 flex-1 flex flex-col justify-center">
+            <div className="flex items-center justify-between p-1.5 md:p-2 bg-indigo-50/50 rounded-xl border border-indigo-100 group transition-all hover:bg-indigo-50">
+              <div className="flex items-center gap-2">
+                <div className="p-1 bg-white text-indigo-600 rounded-lg shadow-sm"><Users size={12} /></div>
+                <span className="text-[8px] md:text-[8.5px] font-bold text-slate-500 uppercase tracking-tighter">HR Staff</span>
+              </div>
+              <span className="text-xs md:text-base font-black text-slate-900">{stats.totalHR || 0}</span>
+            </div>
+            <div className="flex items-center justify-between p-1.5 md:p-2 bg-amber-50/50 rounded-xl border border-amber-100 group transition-all hover:bg-amber-50">
+              <div className="flex items-center gap-2">
+                <div className="p-1 bg-white text-amber-600 rounded-lg shadow-sm"><Headphones size={12} /></div>
+                <span className="text-[8px] md:text-[8.5px] font-bold text-slate-500 uppercase tracking-tighter">Info Desk</span>
+              </div>
+              <span className="text-xs md:text-base font-black text-slate-900">{stats.totalHelpdesk || 0}</span>
+            </div>
+          </div>
+        </Card>
       </div>
 
-      {/* Performance & Operations */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Performance Metrics */}
-        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {performanceStats.map((stat, index) => (
-            <Card key={index} className="p-6 border-slate-100 shadow-sm bg-white">
-              <div className="flex items-center justify-between">
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 md:gap-4 items-stretch flex-1 min-h-[380px]">
+        {/* Clinical Registry - Main Data Stream */}
+        <div className="lg:col-span-8 flex flex-col min-h-0">
+          <Card className="p-3 md:p-4 lg:p-5 xl:p-6 border-slate-100 shadow-xl shadow-slate-100/50 bg-white rounded-[1.5rem] lg:rounded-[2rem] flex flex-col h-full overflow-hidden relative">
+            {/* Loading Overlay */}
+            {isFetching && (
+              <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] rounded-2xl z-50 flex items-center justify-center transition-all">
+                <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-lg border border-slate-100">
+                  <div className="h-4 w-4 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Updating Stream...</p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col mb-3 md:mb-4 gap-3 shrink-0">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 md:gap-4">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-                  <h4 className="text-xl font-black text-slate-900">{stat.value}</h4>
+                  <h3 className="text-xs md:text-base font-black text-slate-900 uppercase tracking-tight">Clinical Registry</h3>
+                  <p className="text-[7px] md:text-[9px] font-bold text-slate-400 uppercase flex items-center gap-2 mt-0.5 md:mt-1">
+                    <span className="w-1 md:w-1.5 h-1 md:h-1.5 bg-primary-theme rounded-full animate-pulse"></span>
+                    Live Feed Active • {selectedDoctorId !== 'all' ? 'Filtering Active' : 'Global Flow'}
+                  </p>
                 </div>
-                <div className={`p-2 rounded-lg ${stat.color === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
-                  stat.color === 'amber' ? 'bg-amber-50 text-amber-600' :
-                    stat.color === 'indigo' ? 'bg-indigo-50 text-indigo-600' :
-                      stat.color === 'rose' ? 'bg-rose-50 text-rose-600' :
-                        'bg-blue-50 text-blue-600'
-                  }`}>
-                  <stat.icon size={18} />
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="px-2 md:px-3 py-1 md:py-1.5 bg-slate-50 border border-slate-200 rounded-lg md:rounded-xl">
+                    <p className="text-[6px] md:text-[8px] font-black text-slate-400 uppercase">Load</p>
+                    <p className="text-[9px] md:text-[10px] font-black text-slate-900">
+                      {(dashboardData?.liveQueue?.length || 0) > 5 ? 'High' : 'Optimal'}
+                    </p>
+                  </div>
+                  <div className="px-2 md:px-3 py-1 md:py-1.5 bg-blue-600 text-white rounded-lg md:rounded-xl shadow-lg flex items-center gap-2">
+                    <Monitor size={12} className="text-white/60" />
+                    <span className="text-[9px] font-black">{dashboardData?.liveQueue?.length || 0} Entities</span>
+                  </div>
                 </div>
               </div>
-            </Card>
-          ))}
 
-          <div className="sm:col-span-2">
-            <LiveFeedbackWidget />
-          </div>
-        </div>
-
-        {/* Workforce & Attendance */}
-        <div className="flex flex-col gap-6">
-          <Card className="p-6 border-slate-200 shadow-sm bg-white">
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-4">Workforce Pulse</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><Users size={16} /></div>
-                  <span className="text-xs font-bold text-slate-600 uppercase">Support Staff</span>
-                </div>
-                <span className="text-sm font-black text-slate-900">{stats.totalStaff || 0}</span>
+              {/* Compact Doctor Switcher */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                <button
+                  onClick={() => setSelectedDoctorId('all')}
+                  className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${selectedDoctorId === 'all'
+                    ? 'bg-primary-theme text-white border-primary-theme shadow-md'
+                    : 'bg-white text-slate-400 border-slate-100'
+                    }`}
+                >
+                  All
+                </button>
+                {(Array.isArray(doctorsData?.doctors) ? doctorsData.doctors : []).map((doc: any) => {
+                  const profileId = doc.doctorProfileId || doc._id;
+                  const doctorName = doc.name || doc.user?.name || "Doctor";
+                  return (
+                    <button
+                      key={doc._id}
+                      onClick={() => setSelectedDoctorId(profileId)}
+                      className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all whitespace-nowrap ${selectedDoctorId === profileId
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                        : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'
+                        }`}
+                    >
+                      Dr. {doctorName.startsWith('Dr.') ? doctorName.substring(3).split(' ')[0] : doctorName.split(' ')[0]}
+                    </button>
+                  );
+                })}
               </div>
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-amber-50 text-amber-600 rounded-lg"><Headphones size={16} /></div>
-                  <span className="text-xs font-bold text-slate-600 uppercase">Information Desk</span>
-                </div>
-                <span className="text-sm font-black text-slate-900">{stats.totalHelpdesk || 0}</span>
-              </div>
+            </div>
 
-              {stats.inactiveCount > 0 && (
-                <div className="flex items-center justify-between p-3 bg-rose-50/50 rounded-xl border border-rose-100 mt-2">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-rose-50 text-rose-600 rounded-lg"><AlertCircle size={16} /></div>
-                    <div>
-                      <span className="text-[10px] font-black text-rose-600 uppercase tracking-tight block">Suspended Nodes</span>
-                      <span className="text-[9px] font-bold text-rose-400">Total inactive personnel</span>
+            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 pr-1">
+              {(dashboardData?.liveQueue || []).length > 0 ? (
+                <div className="border border-slate-100 rounded-2xl overflow-hidden bg-slate-50/20">
+                  <div className="min-w-0">
+                    <div className="grid grid-cols-12 gap-4 px-4 py-3 border-b border-slate-100 bg-white/50 sticky top-0 z-10 box-decoration-clone">
+                      <div className="col-span-3 text-[8px] font-black text-slate-400 uppercase tracking-widest">Status</div>
+                      <div className="col-span-5 text-[8px] font-black text-slate-400 uppercase tracking-widest">Patient</div>
+                      <div className="col-span-4 text-[8px] font-black text-slate-400 uppercase tracking-widest text-right">Doctor</div>
+                    </div>
+                    <div className="divide-y divide-slate-50">
+                      {dashboardData.liveQueue.map((item: any, i: number) => (
+                        <div key={item._id || i} className="grid grid-cols-12 gap-4 px-4 py-2.5 items-center hover:bg-white transition-colors group">
+                          <div className="col-span-3">
+                            <span className={`inline-flex px-1.5 py-0.5 rounded-lg text-[7px] font-black uppercase ${item.status === 'in-progress' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' :
+                              item.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' :
+                                'bg-slate-100 text-slate-600'
+                              }`}>
+                              {item.status}
+                            </span>
+                          </div>
+                          <div className="col-span-5 truncate text-[10px] font-black text-slate-900 group-hover:text-blue-600 transition-colors">
+                            {item.patientName?.toUpperCase()}
+                          </div>
+                          <div className="col-span-4 text-right truncate text-[9px] font-bold text-slate-500">
+                            {item.doctorName}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  <span className="text-sm font-black text-rose-600">{stats.inactiveCount}</span>
+                </div>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center border-2 border-dashed border-slate-100 rounded-[1.5rem] bg-white/50 py-10">
+                  <Monitor size={24} className="mx-auto text-slate-200 mb-2" />
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">No active monitoring data</p>
                 </div>
               )}
             </div>
           </Card>
+        </div>
 
-          <Card className="p-6 border-slate-200 shadow-sm bg-white flex-1 flex flex-col">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Attendance Flow</h3>
-              <Link href="/hospital-admin/attendance/overview" className="text-emerald-600 hover:text-emerald-700">
-                <ArrowUpRight size={18} />
+        {/* Attendance Analytics - Sidebar View */}
+        <div className="lg:col-span-4 flex flex-col min-h-0">
+          <Card className="p-3 md:p-4 lg:p-5 border-slate-100 shadow-sm bg-white flex flex-col rounded-[1.5rem] lg:rounded-[2rem] h-full overflow-hidden">
+            <div className="flex items-center justify-between mb-3 md:mb-4 shrink-0">
+              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">Attendance</h3>
+              <Link href="/hospital-admin/attendance/overview" className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors">
+                <ArrowUpRight size={16} />
               </Link>
             </div>
-            <div className="flex-1 flex items-center justify-center min-h-[160px]">
-              <AttendancePieChart
-                data={attendanceChartData}
-                colors={CHART_COLORS}
-                centerValue={stats.attendance?.present || 0}
-                centerLabel="Present"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3 mt-4">
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                <p className="text-[9px] font-bold text-slate-400 uppercase">Present</p>
-                <p className="text-base font-black text-slate-900">{stats.attendance?.present || 0}</p>
+
+            <div className="flex-1 flex items-center justify-center min-h-0 min-w-0 py-1">
+              <div className="w-full h-full max-h-[140px] xl:max-h-[180px]">
+                <AttendancePieChart
+                  data={attendanceChartData}
+                  colors={CHART_COLORS}
+                  centerValue={stats.attendance?.present || 0}
+                  centerLabel="Present"
+                />
               </div>
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                <p className="text-[9px] font-bold text-slate-400 uppercase">On Leave</p>
-                <p className="text-base font-black text-slate-900">{stats.attendance?.onLeave || 0}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 mt-3 shrink-0">
+              <div className="p-2 bg-slate-50 rounded-xl md:rounded-2xl border border-slate-100 text-center">
+                <p className="text-[7px] md:text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Present</p>
+                <p className="text-base md:text-xl font-black text-slate-900">{stats.attendance?.present || 0}</p>
+              </div>
+              <div className="p-2 bg-slate-50 rounded-xl md:rounded-2xl border border-slate-100 text-center">
+                <p className="text-[7px] md:text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Leave</p>
+                <p className="text-base md:text-xl font-black text-slate-900">{stats.attendance?.onLeave || 0}</p>
               </div>
             </div>
           </Card>
         </div>
+
       </div>
 
-      {/* Clinical Registry - More Proper Details */}
-      <Card className="p-6 border-slate-200 shadow-sm bg-white rounded-2xl relative">
-        {/* Loading Overlay - Subtle and Fast */}
-        {isFetching && (
-          <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] rounded-2xl z-50 flex items-center justify-center transition-all">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-lg border border-slate-100">
-              <div className="h-4 w-4 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
-              <p className="text-[10px] font-bold text-slate-500">Refreshing...</p>
-            </div>
-          </div>
-        )}
-
-        <div className="flex flex-col mb-8 gap-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Real-time Clinical Registry</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-2 mt-1">
-                <span className="w-1.5 h-1.5 bg-primary-theme rounded-full animate-pulse"></span>
-                In-Flow Monitoring Active • {selectedDoctorId !== 'all' ? `Filtering by Consultant` : 'All Departments'}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl">
-                <p className="text-[9px] font-black text-slate-400 uppercase">Current Load</p>
-                <p className="text-xs font-black text-slate-900">
-                  {dashboardData?.liveQueue?.length > 7 ? 'High' : dashboardData?.liveQueue?.length > 3 ? 'Moderate' : 'Optimal'}
-                </p>
-              </div>
-              <div className="px-4 py-2 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-100 flex items-center gap-3">
-                <div>
-                  <p className="text-[9px] font-black text-white/60 uppercase">Live Queue</p>
-                  <p className="text-xs font-black">{dashboardData?.liveQueue?.length || 0} Entities</p>
-                </div>
-                <Monitor size={16} className="text-white/40" />
-              </div>
-            </div>
-          </div>
-
-          {/* Doctor Switcher */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-            <button
-              onClick={() => setSelectedDoctorId('all')}
-              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${selectedDoctorId === 'all'
-                ? 'bg-primary-theme text-white border-primary-theme shadow-md'
-                : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'
-                }`}
-            >
-              All Doctors
-            </button>
-            {(Array.isArray(doctorsData?.doctors) ? doctorsData.doctors : []).map((doc: any) => {
-              const profileId = doc.doctorProfileId || doc._id;
-              const doctorName = doc.name || doc.user?.name || "Doctor";
-              return (
-                <button
-                  key={doc._id}
-                  onClick={() => setSelectedDoctorId(profileId)}
-                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${selectedDoctorId === profileId
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                    : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'
-                    }`}
-                >
-                  {doctorName.startsWith('Dr.') ? doctorName : `Dr. ${doctorName}`}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          {(dashboardData?.liveQueue || []).length > 0 ? (
-            <div className="border border-slate-100 rounded-2xl overflow-hidden bg-slate-50/30">
-              <div className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-slate-100 bg-white/50">
-                <div className="col-span-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</div>
-                <div className="col-span-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Patient Subject</div>
-                <div className="col-span-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Consultant</div>
-                <div className="col-span-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Time</div>
-              </div>
-              <div className="divide-y divide-slate-50">
-                {dashboardData.liveQueue.map((item: any, i: number) => (
-                  <div
-                    key={item._id || i}
-                    className={`grid grid-cols-12 gap-4 px-6 py-5 items-center transition-all hover:bg-white group ${item.status === 'in-progress' ? 'bg-blue-50/30' : 'bg-white/30'
-                      }`}
-                  >
-                    <div className="col-span-2">
-                      <span className={`inline-flex px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${item.status === 'in-progress' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' :
-                        item.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' :
-                          item.status === 'Booked' ? 'bg-indigo-100 text-indigo-700' :
-                            item.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600'
-                        }`}>
-                        {item.status}
-                      </span>
-                    </div>
-
-                    <div className="col-span-4">
-                      <p className="text-sm font-black text-slate-900 uppercase group-hover:text-blue-600 transition-colors">{item.patientName}</p>
-                    </div>
-
-                    <div className="col-span-4 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center text-[10px] font-black group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
-                        {item.doctorName ? item.doctorName.split(' ').pop()?.substring(0, 2).toUpperCase() : 'DR'}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-slate-700 truncate">{item.doctorName}</p>
-                      </div>
-                    </div>
-
-                    <div className="col-span-2 text-right">
-                      <span className="text-[11px] font-black text-slate-900 group-hover:text-blue-600 transition-colors flex items-center justify-end gap-2">
-                        <Clock size={12} className="text-slate-400" strokeWidth={3} /> {item.time}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="py-16 text-center border-2 border-dashed border-slate-100 rounded-2xl bg-white/50">
-              <Monitor size={32} className="mx-auto text-slate-200 mb-4" />
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.3em]">No active clinical activity detected</p>
-            </div>
-          )}
-        </div>
-      </Card>
 
       <ReminderConfigModal
         isOpen={isReminderModalOpen}

@@ -97,7 +97,7 @@ function AnnouncementsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 sm:gap-2 px-1 sm:px-0">
         <div>
-          <h1 className="text-sm sm:text-base font-black text-gray-900 flex flex-col sm:flex-row sm:items-center gap-2 leading-none">
+          <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 flex flex-col sm:flex-row sm:items-center gap-2 leading-none">
             Hospital Announcements
             {announcements.filter(a => a.priority === 'high').length > 0 && (
               <span className="w-fit flex items-center gap-1 bg-red-100 text-red-600 text-[8px] sm:text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-red-200">

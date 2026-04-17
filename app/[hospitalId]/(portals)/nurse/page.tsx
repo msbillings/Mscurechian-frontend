@@ -143,14 +143,14 @@ export default function NurseDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-20">
+        <div className="min-h-screen bg-slate-50 pb-10">
             <div className="max-w-7xl mx-auto space-y-4">
 
                 {/* HEADER SECTION */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm">
                     <div>
-                        <h1 className="text-xs sm:text-xl font-bold text-slate-900 tracking-tight uppercase">Nurse Dashboard</h1>
-                        <p className="text-[8px] sm:text-xs text-slate-500 mt-0.5">
+                        <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight uppercase leading-none">Nurse Dashboard</h1>
+                        <p className="text-[7px] sm:text-[10px] font-medium text-muted uppercase tracking-widest mt-1">
                             Overview for <span className="font-semibold text-emerald-600">{nurseDept || 'All Departments'}</span> • {format(currentTime, 'EEEE')}
                         </p>
                     </div>
@@ -220,10 +220,8 @@ export default function NurseDashboard() {
 
                 <div className="flex flex-col space-y-2 mt-4">
                     <div>
-                        <h1 className="text-sm sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2 sm:gap-4 uppercase">
-                            Nurse Care Portal <Activity className="text-teal-600 shrink-0" size={16} />
-                        </h1>
-                        <p className="text-[7px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest sm:tracking-[0.4em] mt-1">
+                        <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white">Nurse Care Portal <Activity className="text-teal-600 shrink-0" size={20} /></h1>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] mt-1">
                             Monitoring {nurseDept ? `${nurseDept}` : 'All Assigned Wards'} • Session Active
                         </p>
                     </div>
@@ -262,12 +260,12 @@ export default function NurseDashboard() {
                     <div className="lg:col-span-2 space-y-4">
                         <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[300px] sm:min-h-[350px]">
                             <div className="p-3 sm:p-4 border-b border-slate-100 flex items-center justify-between">
-                                <h3 className="text-xs sm:text-base font-bold text-slate-800 flex items-center gap-2">
-                                    <Activity size={14} className="text-emerald-500 sm:size-[16px]" />
+                                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 uppercase tracking-tight">
+                                    <Activity size={16} className="text-emerald-500" />
                                     Live Patients
                                 </h3>
-                                <Link href="/nurse/patients" className="text-[10px] sm:text-sm font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 group">
-                                    View <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform sm:size-[14px]" />
+                                <Link href="/nurse/patients" className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 group uppercase tracking-widest">
+                                    View <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                                 </Link>
                             </div>
 
@@ -275,31 +273,39 @@ export default function NurseDashboard() {
                                 <table className="w-full text-left border-collapse min-w-[500px] sm:min-w-[600px]">
                                     <thead className="bg-slate-50">
                                         <tr>
-                                            <th className="px-4 sm:px-8 py-3 sm:py-5 text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest">Patient / Bed</th>
-                                            <th className="px-4 sm:px-8 py-3 sm:py-5 text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest">Latest BP</th>
-                                            <th className="px-4 sm:px-8 py-3 sm:py-5 text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest">Temp</th>
-                                            <th className="px-4 sm:px-8 py-3 sm:py-5 text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                                            <th className="px-4 sm:px-8 py-3 sm:py-5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Patient / Bed</th>
+                                            <th className="px-4 sm:px-8 py-3 sm:py-5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Latest BP</th>
+                                            <th className="px-4 sm:px-8 py-3 sm:py-5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Temp</th>
+                                            <th className="px-4 sm:px-8 py-3 sm:py-5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Pulse</th>
+                                            <th className="px-4 sm:px-8 py-3 sm:py-5 text-[9px] font-black text-slate-400 uppercase tracking-widest">SpO2</th>
+                                            <th className="px-4 sm:px-8 py-3 sm:py-5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {recentAdmissions.length > 0 ? (
                                             recentAdmissions.map((adm) => (
                                                 <tr key={adm._id} className="group hover:bg-slate-50/50 transition-colors">
-                                                    <td className="px-4 sm:px-8 py-3 sm:py-5 text-[10px] sm:text-xs font-black text-slate-900">
+                                                    <td className="px-4 sm:px-8 py-3 sm:py-5 text-xs font-black text-slate-900">
                                                         <div className="flex flex-col">
                                                             <span>{adm.patient?.name}</span>
-                                                            <span className="text-[7px] sm:text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1">{adm.bed?.bedId || 'N/A'}</span>
+                                                            <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1">{adm.bed?.bedId || 'N/A'}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-4 sm:px-8 py-3 sm:py-5 font-bold text-slate-600 text-[10px] sm:text-xs">
+                                                    <td className="px-4 sm:px-8 py-3 sm:py-5 font-bold text-slate-600 text-xs">
                                                         {adm.vitals?.bloodPressure || '--'}
                                                     </td>
-                                                    <td className="px-4 sm:px-8 py-3 sm:py-5 font-bold text-slate-600 text-[10px] sm:text-xs">
+                                                    <td className="px-4 sm:px-8 py-3 sm:py-5 font-bold text-slate-600 text-xs">
                                                         {adm.vitals?.temperature ? `${adm.vitals.temperature}°F` : '--'}
+                                                    </td>
+                                                    <td className="px-4 sm:px-8 py-3 sm:py-5 font-bold text-slate-600 text-xs">
+                                                        {adm.vitals?.pulse ? `${adm.vitals.pulse} bpm` : '--'}
+                                                    </td>
+                                                    <td className="px-4 sm:px-8 py-3 sm:py-5 font-bold text-slate-600 text-xs">
+                                                        {adm.vitals?.spO2 ? `${adm.vitals.spO2}%` : '--'}
                                                     </td>
                                                     <td className="px-4 sm:px-8 py-3 sm:py-5">
                                                         <div className="flex flex-col gap-1">
-                                                            <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[7px] sm:text-[8px] font-black uppercase tracking-widest w-fit ${adm.vitals?.status === 'Critical' ? 'bg-rose-50 text-rose-600' :
+                                                            <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest w-fit ${adm.vitals?.status === 'Critical' ? 'bg-rose-50 text-rose-600' :
                                                                 adm.vitals?.status === 'Warning' ? 'bg-amber-50 text-amber-600' :
                                                                     'bg-emerald-50 text-emerald-600'
                                                                 }`}>
@@ -314,7 +320,7 @@ export default function NurseDashboard() {
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan={4} className="px-4 sm:px-8 py-6 sm:py-10 text-center text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">No active monitoring data</td>
+                                                <td colSpan={6} className="px-4 sm:px-8 py-10 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">No active monitoring data</td>
                                             </tr>
                                         )}
                                     </tbody>

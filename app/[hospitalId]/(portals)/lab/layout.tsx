@@ -1,191 +1,154 @@
 'use client';
 
-import React, { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import React, { useState, useEffect, useTransition } from "react";
+import { useRouter, usePathname, useParams } from "next/navigation";
 import { useAuthStore } from '@/stores/authStore';
-import { Menu, LogOut } from "lucide-react";
+import { Menu, LogOut, LayoutDashboard, Activity, ClipboardList, FlaskConical, Settings } from "lucide-react";
 import LogoutModal from "@/components/auth/LogoutModal";
-import LabSidebar from "@/components/lab/Sidebar";
-import Link from "next/link";
-
-import { LabSampleService } from "@/lib/integrations/services/labSample.service";
-import { LabDashboardService } from "@/lib/integrations/services/labDashboard.service";
-import { getSocket } from "@/lib/integrations/api/socket";
+import LabQuickActions from "@/components/lab/LabQuickActions";
+import ProgressBar from "@/components/ui/ProgressBar";
+import { getSocket, joinSocketRoom } from "@/lib/integrations/api/socket";
 import { clearApiCache } from "@/lib/integrations/api/apiClient";
 import LabSupportFloatingBox from "@/components/lab/LabSupportFloatingBox";
 import { useTenantLink } from "@/hooks/useTenantLink";
+import { useRealtime } from '@/hooks/useRealtime';
+import SharedSidebar from "@/components/navbar/SharedSidebar";
+import { LabSampleService } from "@/lib/integrations/services";
+
+// Menu links will be generated dynamically to include the pending count
+
 
 const LabLayout = ({ children }: { children: React.ReactNode }) => {
     const router = useRouter();
     const pathname = usePathname();
+    const routeParams = useParams();
     const { user, logout, isAuthenticated, checkAuth, isLoading, isInitialized } = useAuthStore();
+    const [labLogo, setLabLogo] = useState<string | null>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const [activeTestCount, setActiveTestCount] = useState(0);
-    const { getPath } = useTenantLink(); // ✅ MULTI-TENANCY
+    const [isPending, startTransition] = useTransition();
+    const [isMounted, setIsMounted] = useState(false);
+    const { getPath } = useTenantLink();
 
-    const labUser = user || {
-        name: "Lab User",
-        role: "lab",
-        avatar: null,
+    useRealtime(['lab', 'billing', 'patients', 'system']);
+
+    const fetchPendingCount = async () => {
+        if (!isAuthenticated || user?.role !== 'lab') return;
+        try {
+            // Use dedicated count method — always bypasses cache for accuracy
+            const count = await LabSampleService.getPendingCount();
+            setActiveTestCount(count);
+        } catch (error) {
+            console.error('Failed to fetch pending test count:', error);
+        }
     };
 
-    // Shared refresh logic for all pages
     const triggerGlobalRefresh = () => {
-        console.log('🔄 Live Update: Clearing cache and notifying components...');
+        // Clear the entire client-side cache before re-fetching
         clearApiCache();
+        fetchPendingCount();
         window.dispatchEvent(new Event('refresh-lab-data'));
     };
 
     useEffect(() => {
+        setIsMounted(true);
         useAuthStore.getState().initEvents();
         checkAuth();
-
-        // 🚀 Ensure cache is cleared whenever a refresh is requested (local OR socket)
         const handleRefresh = () => {
-            console.log('🔄 Refresh Signal: Clearing API cache');
             clearApiCache();
+            fetchPendingCount();
         };
         window.addEventListener('refresh-lab-data', handleRefresh);
         return () => window.removeEventListener('refresh-lab-data', handleRefresh);
-    }, []);
+    }, [checkAuth]);
 
-    const isLoginPage = pathname === '/lab/login';
+    const isLoginPage = pathname.includes('/lab/login');
+
+    useEffect(() => {
+        if (isAuthenticated && user?.role === 'lab' && isMounted && !isLoginPage) {
+            fetchPendingCount();
+        }
+    }, [isAuthenticated, user, isMounted, isLoginPage]);
 
     useEffect(() => {
         if (!isLoginPage && isInitialized) {
             if (!isAuthenticated) {
-                router.push('/auth/login');
+                router.push(getPath('/auth/login'));
             } else if (user?.role !== 'lab') {
                 const routeMap: Record<string, string> = {
-                    'staff': '/staff',
-                    'doctor': '/doctor',
-                    'hospital-admin': '/hospital-admin',
-                    'pharmacy': '/pharmacy/dashboard',
-                    'pharma-owner': '/pharmacy/dashboard',
-                    'super-admin': '/admin',
+                    'staff': getPath('/staff'),
+                    'doctor': getPath('/doctor'),
+                    'hospital-admin': getPath('/hospital-admin'),
+                    'pharma-owner': getPath('/pharmacy/dashboard'),
+                    'pharmacy': getPath('/pharmacy/dashboard'),
                     'admin': '/admin'
                 };
-                router.push(routeMap[user?.role || ''] || '/auth/login');
+                router.push(routeMap[user?.role || ''] || getPath('/auth/login'));
             }
         }
-    }, [isAuthenticated, isInitialized, user?.role, router, isLoginPage]);
+    }, [isAuthenticated, isInitialized, user?.role, router, isLoginPage, getPath]);
 
-    // Aggressive Prefetching for sub-2s loads
-    useEffect(() => {
-        if (isAuthenticated && user?.role === 'lab') {
-            const prefetchData = async () => {
-                try {
-                    await Promise.all([
-                        LabSampleService.getSamples('Pending'),
-                        LabSampleService.getSamples('In Processing'),
-                        LabSampleService.getSamples('Completed'),
-                        LabDashboardService.getStats('today')
-                    ]);
-                } catch (e) {
-                    console.warn('Prefetch failed');
-                }
-            };
-            prefetchData();
-        }
-    }, [isAuthenticated, user?.role]);
-
-    // Fetch active count and listen for updates
     useEffect(() => {
         let socketInstance: any = null;
 
         if (isAuthenticated && user?.role === 'lab') {
-            const fetchCount = async () => {
-                try {
-                    const pending = await LabSampleService.getSamples('Pending', true);
-                    setActiveTestCount(pending.length);
-                } catch (error) {
-                    console.error("Failed to fetch active count", error);
-                }
-            };
-
-            fetchCount();
-
-            // Poll every 10 seconds to ensure count is accurate
-            const intervalId = setInterval(fetchCount, 10000);
-
-            const handleVisibilityChange = () => {
-                if (!document.hidden) fetchCount();
-            };
-
-            const handleFocus = () => fetchCount();
-
-            document.addEventListener('visibilitychange', handleVisibilityChange);
-            window.addEventListener('focus', handleFocus);
+            const hId = (routeParams?.hospitalId as string);
+            
+            // Join the hospital-specific room for real-time updates
+            joinSocketRoom({ role: 'lab', userId: user.id, hospitalId: hId });
 
             getSocket().then(socket => {
-                socketInstance = socket;
-                if (socketInstance && user) {
-                    const hId = (user.hospital || user.hospitalId || (user as any).hospital?._id || '').toString();
+                if (socket) {
+                    socketInstance = socket;
+                    
+                    // Handler function to re-fetch count when a change is detected
+                    // Two-tier delay: first at 500ms, then again at 2s to catch any slow DB writes
+                    const handleUpdate = () => {
+                        console.log('📡 [LabLayout] Real-time event received, refreshing count...');
+                        // First refresh shortly after event — covers fast DB writes
+                        setTimeout(() => {
+                            clearApiCache();
+                            fetchPendingCount();
+                        }, 500);
+                        // Second refresh after 2s — handles slower writes or network lag
+                        setTimeout(() => {
+                            clearApiCache();
+                            fetchPendingCount();
+                        }, 2000);
+                    };
 
-                    if (hId) {
-                        console.log(`🔌 Joining rooms for hospital: ${hId}`);
-                        socketInstance.emit('join_room', {
-                            userId: user.id || (user as any)._id,
-                            role: user.role,
-                            hospitalId: hId
-                        });
-                    }
-
-                    // Listeners with explicit logging for debugging
-                    socketInstance.on('new_lab_order', (data: any) => {
-                        console.log('🔔 Received: new_lab_order', data);
-                        fetchCount();
-                        triggerGlobalRefresh();
-                    });
-
-                    const syncEvents = ['sample_collected', 'lab_order_updated', 'payment_status_changed', 'bill_generated', 'lab_refresh_forced'];
-                    syncEvents.forEach(evt => {
-                        socketInstance.on(evt, (data: any) => {
-                            console.log(`🔔 Received: ${evt}`, data);
-                            fetchCount();
-                            triggerGlobalRefresh();
-                        });
-                    });
+                    socket.on('new_lab_order', handleUpdate);
+                    socket.on('sample_collected', handleUpdate);
+                    socket.on('lab_order_updated', handleUpdate);
+                    socket.on('payment_status_changed', handleUpdate);
+                    socket.on('bill_generated', handleUpdate);
+                    socket.on('lab_refresh_forced', handleUpdate);
                 }
             });
-
-            return () => {
-                clearInterval(intervalId);
-                document.removeEventListener('visibilitychange', handleVisibilityChange);
-                window.removeEventListener('focus', handleFocus);
-                if (socketInstance) {
-                    socketInstance.off('new_lab_order');
-                    ['sample_collected', 'lab_order_updated', 'payment_status_changed', 'bill_generated'].forEach(evt => {
-                        socketInstance.off(evt);
-                    });
-                }
-            };
         }
-    }, [isAuthenticated, user]);
 
-    const handleConfirmLogout = async () => {
-        await logout();
-        router.push('/lab/login');
-    };
+        return () => {
+            if (socketInstance) {
+                socketInstance.off('new_lab_order');
+                socketInstance.off('sample_collected');
+                socketInstance.off('lab_order_updated');
+                socketInstance.off('payment_status_changed');
+                socketInstance.off('bill_generated');
+                socketInstance.off('lab_refresh_forced');
+            }
+        };
+    }, [isAuthenticated, user, routeParams?.hospitalId]);
 
-    // Premium Loading UI
-    // Do NOT show global loader on login page to prevent the "refresh" effect during submission
-    if (!isLoginPage && (isLoading || !isInitialized)) {
+    if (!isLoginPage && (!isMounted || isLoading || !isInitialized)) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+            <div className="flex min-h-screen items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center gap-6">
                     <div className="relative w-24 h-24">
                         <div className="absolute inset-0 border-4 border-purple-600/20 border-t-purple-600 rounded-full animate-spin"></div>
-                        <div className="absolute inset-4 border-4 border-indigo-600/20 border-b-indigo-600 rounded-full animate-spin-reverse"></div>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
-                        </div>
+                        <div className="absolute inset-0 flex items-center justify-center text-purple-600 font-bold">LAB</div>
                     </div>
-                    <div>
-                        <p className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tighter italic text-center">Lab Panel</p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center mt-1">Verifying Diagnostic Access</p>
-                    </div>
+                    <p className="text-xl font-black text-gray-900 uppercase tracking-tighter italic">Lab Panel</p>
                 </div>
             </div>
         );
@@ -194,100 +157,81 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
     if (isLoginPage) return <>{children}</>;
     if (!isAuthenticated || user?.role !== 'lab') return null;
 
+    const currentMenuLinks = [
+        { icon: LayoutDashboard, label: "Dashboard", path: "/lab/dashboard" },
+        { icon: Activity, label: "Transactions", path: "/lab/billing/transactions" },
+        { icon: ClipboardList, label: "Departments", path: "/lab/departments" },
+        { icon: FlaskConical, label: "Test Master", path: "/lab/tests" },
+        { icon: Settings, label: "Settings", path: "/lab/settings" },
+    ];
+
     return (
-        <div className="flex h-screen overflow-hidden bg-background">
+        <div className="flex min-h-screen bg-background text-slate-900">
             <LogoutModal
                 isOpen={isLogoutModalOpen}
                 onClose={() => setIsLogoutModalOpen(false)}
-                onConfirm={handleConfirmLogout}
+                onConfirm={async () => { await logout(); router.push(getPath('/lab/login')); }}
                 userName={user?.name}
             />
 
-            <LabSidebar
+            <SharedSidebar
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
-                activeTestCount={activeTestCount}
-                onLogout={() => setIsLogoutModalOpen(true)}
+                menuItems={currentMenuLinks}
+                branding={{ logo: FlaskConical, title: "CureChain", subtitle: "Lab Portal" }}
+                currentPath={pathname}
+                onMenuItemClick={(path) => {
+                    startTransition(() => {
+                        router.push(getPath(path));
+                        setIsSidebarOpen(false);
+                    });
+                }}
             />
 
-            <div className="flex-1 flex flex-col lg:ml-64 h-screen transition-all duration-300 min-w-0">
-                <header className="h-16 flex items-center justify-between px-6 border-b border-border-theme bg-card backdrop-blur-sm sticky top-0 z-20">
+            <div className="flex-1 flex flex-col min-h-screen min-w-0 relative">
+                <ProgressBar isPending={isPending} color="blue" />
+                <header className="h-16 flex items-center justify-between px-6 border-b border-border-theme bg-card sticky top-0 z-20 shrink-0">
                     <button
                         onClick={() => setIsSidebarOpen(true)}
-                        className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300"
+                        className="lg:hidden p-2 rounded-lg hover:bg-gray-100 text-gray-600"
                     >
                         <Menu size={22} />
                     </button>
 
                     <div className="flex-1 flex justify-center items-center mx-4">
-                        <div className="flex items-center p-1 bg-gray-50/50 dark:bg-gray-800/40 rounded-full border border-gray-100/50 dark:border-gray-700/50 backdrop-blur-sm">
-                            <Link
-                                href={getPath('/lab/billing')}
-                                className={`px-3 py-1.5 sm:px-6 sm:py-2 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${pathname.includes('/lab/billing')
-                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none"
-                                    : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-                                    }`}
-                            >
-                                Billing
-                            </Link>
-
-                            <Link
-                                href={getPath('/lab/samples')}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-6 sm:py-2 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${pathname.includes('/lab/samples') || pathname.includes('/lab/dashboard')
-                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none"
-                                    : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-                                    }`}
-                            >
-                                Sample
-                                <span className={`flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full text-[9px] font-bold ${pathname.includes('/lab/samples') || pathname.includes('/lab/dashboard')
-                                    ? "bg-white text-blue-600"
-                                    : "bg-blue-600 text-white"
-                                    }`}>
-                                    {activeTestCount}
-                                </span>
-                            </Link>
-
-                            <Link
-                                href={getPath('/lab/results')}
-                                className={`px-3 py-1.5 sm:px-6 sm:py-2 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${pathname.includes('/lab/results')
-                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none"
-                                    : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-                                    }`}
-                            >
-                                Result Entry
-                            </Link>
-                        </div>
+                        <LabQuickActions activeTestCount={activeTestCount} startTransition={startTransition} />
                     </div>
 
-                    <div className="flex items-center gap-2 sm:gap-4">
-
-
-                        <div className="hidden sm:flex items-center gap-3 px-4 py-2 rounded-lg dark:from-gray-800 dark:to-gray-700 border border-purple-200 dark:border-gray-600">
-                            <div className="w-9 h-9 rounded-full bg-primary-theme flex items-center justify-center text-white font-bold text-sm shadow-md">
-                                {labUser.name?.charAt(0).toUpperCase()}
+                    <div className="flex items-center gap-4">
+                        <div className="hidden sm:flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-sm shadow-md overflow-hidden">
+                                {(labLogo || (user as any)?.image) ? (
+                                    <img src={labLogo || (user as any)?.image} alt={user?.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    user?.name?.charAt(0).toUpperCase() || 'L'
+                                )}
                             </div>
                             <div className="flex flex-col">
-                                <span className="font-semibold text-sm text-gray-700 dark:text-gray-200">{labUser.name}</span>
-                                <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">Lab Technician</span>
+                                <span className="font-semibold text-sm text-gray-700">{user?.name || "Lab User"}</span>
+                                <span className="text-[10px] text-gray-500 uppercase tracking-wider">Lab Technician</span>
                             </div>
                         </div>
 
-                        <button
-                            onClick={() => setIsLogoutModalOpen(true)}
-                            className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 dark:text-red-400 rounded-lg transition-colors"
-                            title="Sign Out"
-                        >
+                        <button onClick={() => setIsLogoutModalOpen(true)} className="p-2 hover:bg-red-50 text-red-500 rounded-lg transition-colors">
                             <LogOut size={20} />
                         </button>
                     </div>
                 </header>
 
-                <div className="p-6 max-[600px]:p-4 flex-1 overflow-y-auto bg-background">
-                    {children}
-                </div>
+                <main className="p-2 md:p-6 flex-1 overflow-y-auto bg-background">
+                    <div className="max-w-[1600px] mx-auto w-full">
+                        <React.Fragment>
+                            {children}
+                        </React.Fragment>
+                    </div>
+                </main>
+                <LabSupportFloatingBox />
             </div>
-            {/* Floating Support & Feedback Box */}
-            <LabSupportFloatingBox />
         </div>
     );
 };

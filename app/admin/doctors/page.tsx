@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, Suspense } from "react";
-import { Trash2, User, Activity, Edit3, Search, Stethoscope, Building2 } from "lucide-react";
+import { Trash2, User, Activity, Edit3, Search, Stethoscope, Building2, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { adminService } from '@/lib/integrations';
 import { useAuthStore } from '@/stores/authStore';
@@ -41,6 +41,13 @@ function DoctorsList() {
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [hospitals, setHospitals] = useState<any[]>([]);
+  const [selectedHospital, setSelectedHospital] = useState("");
+  const [hospitalSearch, setHospitalSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalDoctors, setTotalDoctors] = useState(0);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -56,14 +63,53 @@ function DoctorsList() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchDoctors();
+      fetchHospitals();
     }
   }, [isAuthenticated]);
 
-  const fetchDoctors = async () => {
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchDoctors();
+    }
+  }, [isAuthenticated, debouncedSearch, currentPage, selectedHospital]);
+
+  const fetchHospitals = async () => {
     try {
-      const data = await adminService.getDoctorsClient();
-      setDoctors(data);
+      const resp = await adminService.getHospitalsClient();
+      setHospitals(resp || []);
+    } catch (err: any) {
+      console.error("Failed to fetch hospitals");
+    }
+  };
+
+  const fetchDoctors = async () => {
+    setLoading(true);
+    try {
+      const resp = await adminService.getUsersClient({
+        role: 'doctor',
+        page: currentPage,
+        limit: 10,
+        search: debouncedSearch,
+        hospitalId: selectedHospital || undefined
+      });
+      if (resp && resp.users) {
+        setDoctors(resp.users);
+        setTotalPages(resp.pagination?.pages || 1);
+        setTotalDoctors(resp.pagination?.total || resp.users.length || 0);
+      } else if (Array.isArray(resp)) {
+        setDoctors(resp);
+        setTotalPages(1);
+        setTotalDoctors(resp.length);
+      } else {
+        setDoctors([]);
+        setTotalPages(1);
+        setTotalDoctors(0);
+      }
     } catch (err: any) {
       console.error("Failed to fetch doctors", err);
       toast.error("Failed to fetch doctors");
@@ -123,18 +169,15 @@ function DoctorsList() {
     }
   };
 
-  const filteredDoctors = doctors.filter((doctor) =>
-    doctor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doctor.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doctor.specialties?.some(spec => spec.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Use server-side filtering, so we use doctors directly
+  const filteredDoctors = doctors;
 
   const headers = ["Doctor", "Specialties", "Contact", "Status", "Actions"];
 
-  if (loading) return <div className="p-8 text-center" style={{ color: 'var(--text-color)' }}>Loading doctors...</div>;
+
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto pb-4">
       <ConfirmModal
         isOpen={confirmModal.isOpen}
         onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
@@ -146,70 +189,146 @@ function DoctorsList() {
         type={confirmModal.type}
       />
 
-      <PageHeader
-        title="Doctors Management"
-        subtitle="Manage and monitor all healthcare professionals"
-        icon={<Stethoscope className="text-green-500" />}
-      />
-
-      <div className="mb-6 relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-        <input
-          type="text"
-          placeholder="Search by name, email or specialty..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full border rounded-xl pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
-          style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 mb-2 md:mb-6">
+        <PageHeader
+          title="Doctors Management"
+          subtitle="Manage and monitor all healthcare professionals"
+          icon={<Stethoscope className="text-green-500" />}
         />
       </div>
 
+      <div className="flex flex-col lg:flex-row gap-3 md:gap-4 mb-4 md:mb-6 mx-0">
+        <div className="w-full lg:w-[70%] flex gap-2 md:gap-3 items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="text"
+              placeholder="Search by name, email or specialty..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              className="w-full border rounded-xl pl-9 md:pl-12 pr-4 py-2.5 md:py-3.5 text-xs md:text-sm placeholder:text-[10px] md:placeholder:text-sm outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-all"
+              style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }}
+            />
+          </div>
+          <div className="shrink-0 flex flex-col items-center justify-center bg-blue-500/5 border rounded-xl px-2.5 py-1.5 md:px-4 md:py-2 min-w-[50px] md:min-w-[80px]" style={{ borderColor: 'var(--border-color)' }}>
+            <span className="text-[7px] md:text-[9px] uppercase font-bold text-gray-400 tracking-tighter md:tracking-wider leading-none mb-0.5">Total</span>
+            <span className="text-xs md:text-base font-black text-blue-500 leading-none">{totalDoctors}</span>
+          </div>
+        </div>
+
+        <div className="w-full lg:w-[30%] flex flex-row items-center justify-between gap-2 md:gap-3">
+          <div className="relative flex-1 group">
+            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" size={14} />
+            <input
+              list="hospitals-list"
+              value={hospitalSearch}
+              onChange={(e) => {
+                setHospitalSearch(e.target.value);
+                const h = hospitals.find(h => h.name === e.target.value);
+                if (h) {
+                  setSelectedHospital(h._id);
+                  setCurrentPage(1);
+                } else if (e.target.value === "") {
+                  setSelectedHospital("");
+                  setCurrentPage(1);
+                }
+              }}
+              placeholder="Hospital Filter..."
+              className="w-full border rounded-xl pl-8 pr-7 py-2 md:py-3 text-[10px] md:text-sm outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-all"
+              style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }}
+            />
+            {hospitalSearch && (
+              <button
+                onClick={() => { setHospitalSearch(""); setSelectedHospital(""); setCurrentPage(1); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full text-gray-400"
+              >
+                <X size={12} />
+              </button>
+            )}
+            <datalist id="hospitals-list">
+              {hospitals.map(h => <option key={h._id} value={h.name} />)}
+            </datalist>
+          </div>
+
+          <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-0.5 md:p-1 shadow-inner border border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-1.5 md:px-3 py-1 text-[9px] md:text-xs font-bold uppercase transition-all hover:bg-white dark:hover:bg-gray-700 rounded-lg disabled:opacity-30 disabled:hover:bg-transparent"
+              style={{ color: 'var(--text-color)' }}
+            >
+              Prev
+            </button>
+            <div className="px-1.5 md:px-3 py-1 text-[9px] md:text-xs font-mono text-blue-500 font-bold border-x border-gray-200 dark:border-gray-700">
+              {currentPage}/{totalPages}
+            </div>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-1.5 md:px-3 py-1 text-[9px] md:text-xs font-bold uppercase transition-all hover:bg-white dark:hover:bg-gray-700 rounded-lg disabled:opacity-30 disabled:hover:bg-transparent"
+              style={{ color: 'var(--text-color)' }}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+
       <Table headers={headers}>
-        {filteredDoctors.length > 0 ? (
+        {loading ? (
+          <tr>
+            <td colSpan={5} className="py-24 text-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="text-sm font-medium opacity-50">Loading doctors...</p>
+              </div>
+            </td>
+          </tr>
+        ) : filteredDoctors.length > 0 ? (
           filteredDoctors.map((doctor) => (
             <tr
               key={doctor._id}
               className="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
               onClick={() => setSelectedDoctor(doctor)}
             >
-              <td className="px-6 py-4">
-                <div className="flex items-center gap-3">
+              <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap min-w-[120px] md:min-w-0">
+                <div className="flex items-center gap-2 md:gap-3">
                   {doctor.profilePic ? (
                     <img
                       src={doctor.profilePic}
                       alt={doctor.name}
-                      className="w-10 h-10 rounded-full object-cover border"
+                      className="w-8 h-8 md:w-10 md:h-10 shrink-0 rounded-full object-cover border"
                       style={{ borderColor: 'var(--border-color)' }}
                       onError={(e) => { (e.target as HTMLImageElement).src = "/avatar.png"; }}
                     />
                   ) : (
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs ${getColor(doctor.name)}`}>
+                    <div className={`w-8 h-8 md:w-10 md:h-10 shrink-0 rounded-full flex items-center justify-center text-white font-bold text-[10px] md:text-xs ${getColor(doctor.name)}`}>
                       {getInitials(doctor.name)}
                     </div>
                   )}
                   <div>
-                    <div className="font-semibold">{doctor.name}</div>
-                    <div className="text-xs opacity-50 font-mono mt-0.5">{doctor._id.slice(-8).toUpperCase()}</div>
+                    <div className="font-semibold text-[11px] md:text-sm truncate leading-none">{doctor.name}</div>
+                    <div className="text-[9px] md:text-[10px] opacity-40 font-mono leading-none mt-1">{doctor._id.slice(-8).toUpperCase()}</div>
                   </div>
                 </div>
               </td>
-              <td className="px-6 py-4">
+              <td className="px-4 md:px-6 py-3 md:py-4">
                 <div className="flex flex-wrap gap-1">
                   {doctor.specialties && doctor.specialties.length > 0 ? (
                     doctor.specialties.slice(0, 2).map((s, i) => (
-                      <span key={i} className="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                      <span key={i} className="text-[8px] md:text-[10px] px-1.5 md:px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20">
                         {s}
                       </span>
                     ))
-                  ) : <span className="text-xs opacity-40 italic">None</span>}
+                  ) : <span className="text-[10px] md:text-xs opacity-40 italic">None</span>}
                   {doctor.specialties && doctor.specialties.length > 2 && (
-                    <span className="text-[10px] opacity-50">+{doctor.specialties.length - 2} more</span>
+                    <span className="text-[8px] md:text-[10px] opacity-50">+{doctor.specialties.length - 2} more</span>
                   )}
                 </div>
               </td>
-              <td className="px-6 py-4 text-sm">
-                <div>{doctor.mobile}</div>
-                <div className="text-xs opacity-60 mt-1">{doctor.email}</div>
+              <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
+                <div className="font-medium text-[10px] md:text-sm leading-none">{doctor.mobile}</div>
+                <div className="text-[9px] md:text-xs opacity-60 mt-1 leading-none truncate max-w-[120px]">{doctor.email}</div>
               </td>
               <td className="px-6 py-4">
                 <Badge variant={doctor.status === 'active' ? 'success' : 'danger'}>

@@ -16,6 +16,12 @@ export interface SupplierPayload {
     phone: string;
     email?: string;
     gstNumber?: string;
-    address?: string;
+    address?: string | {
+        street?: string;
+        landmark?: string;
+        city?: string;
+        state?: string;
+        pincode?: string;
+    };
     notes?: string;
 }

@@ -13,13 +13,28 @@ import {
     ArrowLeft,
     Loader2
 } from "lucide-react";
+import { useTransition } from "react";
+import ProgressBar from "@/components/ui/ProgressBar";
 
 function PharmacyLogin() {
     const router = useRouter();
+    const [isPending, startTransition] = useTransition();
     const { setUser } = useAuthStore();
     const [identifier, setIdentifier] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+
+    // ✅ AUTO-REDIRECT
+    React.useEffect(() => {
+        const isAuth = useAuthStore.getState().isAuthenticated;
+        const user = useAuthStore.getState().user;
+        const rawId = (user as any)?.hospital || (user as any)?.hospitalId;
+        const userHospitalId = (rawId && typeof rawId === 'object') ? ((rawId as any)._id || (rawId as any).id) : rawId;
+
+        if (isAuth && userHospitalId && (user?.role === 'pharmacy' || user?.role === 'pharmacist' || user?.role === 'pharma-owner' || user?.role === 'pharma')) {
+            router.replace(`/${userHospitalId}/pharmacy/dashboard`);
+        }
+    }, [router]);
     const [loading, setLoading] = useState(false);
     const [mobileError, setMobileError] = useState("");
     const [passwordError, setPasswordError] = useState("");
@@ -52,30 +67,33 @@ function PharmacyLogin() {
             // ✅ Calls dedicated pharmacy-only endpoint — server enforces role server-side
             const response = await authService.loginPharmacy({ identifier, password });
 
-            const { tokens, user } = response;
+            const { accessToken, user, sessionId } = response as any;
+
+            if (accessToken) {
+                const { setAccessToken } = await import('@/lib/integrations');
+                setAccessToken(accessToken);
+            }
 
             // Normalize _id → id
             if ((user as any)._id && !(user as any).id) {
                 (user as any).id = (user as any)._id;
             }
 
-            // Store tokens in session + cookies (mirrors authStore.login pattern)
-            sessionStorage.setItem("accessToken", tokens.accessToken);
-            sessionStorage.setItem("refreshToken", tokens.refreshToken);
-            sessionStorage.setItem("user", JSON.stringify(user));
-            sessionStorage.setItem("lastAuthCheck", Date.now().toString());
+            // Store user session (mirrors authStore.login pattern)
+            localStorage.setItem("user", JSON.stringify(user));
+            localStorage.setItem("lastAuthCheck", Date.now().toString());
+            if (sessionId) localStorage.setItem("sessionId", sessionId);
+            localStorage.setItem("tabAuthorized", "true");
 
-            // ✅ MULTI-TENANCY: Store hospitalId in sessionStorage and cookie
+            // hospitalId cookie for server actions discovery
             const rawId = (user as any).hospital || (user as any).hospitalId;
             const userHospitalIdStr = (rawId && typeof rawId === 'object') ? (rawId._id || rawId.id) : rawId;
             if (userHospitalIdStr) {
                 const hospitalIdStr = userHospitalIdStr.toString();
-                sessionStorage.setItem("activeHospitalId", hospitalIdStr);
-                document.cookie = `hospitalId=${hospitalIdStr}; path=/; max-age=86400; SameSite=Lax`;
+                localStorage.setItem("activeHospitalId", hospitalIdStr);
+                document.cookie = `hospitalId=${hospitalIdStr}; path=/; max-age=604800; SameSite=Lax`;
             }
 
-            document.cookie = `accessToken=${tokens.accessToken}; path=/; max-age=86400; SameSite=Lax`;
-            document.cookie = `refreshToken=${tokens.refreshToken}; path=/; max-age=604800; SameSite=Lax`;
 
             // Update store
             setUser(user as any);
@@ -95,9 +113,13 @@ function PharmacyLogin() {
             const rawIdVal = (user as any).hospital || (user as any).hospitalId;
             const userHospitalId = (rawIdVal && typeof rawIdVal === 'object') ? (rawIdVal._id || rawIdVal.id) : rawIdVal;
             if (userHospitalId) {
-                router.push(`/${userHospitalId}/pharmacy/dashboard`);
+                startTransition(() => {
+                    router.push(`/${userHospitalId}/pharmacy/dashboard`);
+                });
             } else {
-                router.push("/pharmacy/dashboard");
+                startTransition(() => {
+                    router.push("/pharmacy/dashboard");
+                });
             }
 
         } catch (err: any) {
@@ -121,11 +143,12 @@ function PharmacyLogin() {
 
     return (
         <div className="min-h-screen w-full flex justify-center items-center p-0 sm:p-4 lg:p-8 bg-background">
+            <ProgressBar isPending={isPending} color="#fbbf24" /> 
             <div className="flex w-full max-w-5xl bg-card sm:rounded-lg overflow-hidden shadow-2xl border-0 sm:border border-primary-theme/30 min-h-screen sm:min-h-[600px] lg:min-h-[700px]">
 
                 {/* Left Side: Illustration & Branding - Hidden on touch devices/small screens */}
                 <div className="hidden lg:flex w-5/12 flex-col justify-center items-center gap-10 p-12 relative overflow-hidden bg-muted/5 border-r border-border/50">
-                    <div className="flex items-center justify-center gap-3 cursor-pointer" onClick={() => router.push('/')}>
+                    <div className="flex items-center justify-center gap-3 cursor-pointer" onClick={() => startTransition(() => router.push('/'))}>
                         <span className="text-2xl font-bold bg-linear-to-r from-primary-theme to-blue-400 bg-clip-text text-transparent">
                             MScurechain
                         </span>
@@ -157,7 +180,7 @@ function PharmacyLogin() {
                     {/* Header for mobile only */}
                     <div className="flex lg:hidden items-center gap-2 mb-8 absolute top-6 left-6">
                         <div
-                            onClick={() => router.push('/')}
+                            onClick={() => startTransition(() => router.push('/'))}
                             className="p-2 rounded-xl bg-muted/10 text-muted flex items-center justify-center"
                         >
                             <ArrowLeft size={18} />
@@ -167,7 +190,7 @@ function PharmacyLogin() {
                     </div>
 
                     <button
-                        onClick={() => router.push('/')}
+                        onClick={() => startTransition(() => router.push('/'))}
                         className="hidden lg:flex absolute top-8 left-8 p-2 rounded-xl hover:bg-muted/10 text-muted items-center gap-2 text-xs font-bold"
                     >
                         <ArrowLeft size={16} /> Back to Home

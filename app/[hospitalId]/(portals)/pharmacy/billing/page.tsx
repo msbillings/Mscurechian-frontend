@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, Plus, Trash2, Printer, Save, User, ShoppingCart, CreditCard, ChevronRight, Calculator, Eye, Hash, AlertCircle } from 'lucide-react';
+import { Search, Plus, Trash2, Printer, Save, User, ShoppingCart, CreditCard, ChevronRight, Calculator, Eye, Hash, AlertCircle, Loader2 } from 'lucide-react';
 import { ProductService } from '@/lib/integrations/services/product.service';
 import { PharmacyBillingService } from '@/lib/integrations/services/pharmacyBilling.service';
 import { PharmacyProduct } from '@/lib/integrations/types/product';
@@ -372,7 +372,7 @@ const BillingPage = () => {
             const res = await PharmacyBillingService.createBill(payload);
             toast.success('Invoice generated successfully');
             clearDraft();
-            router.push(getPath(`/pharmacy/billing/preview/${res.bill._id}`));
+            router.push(getPath(`/pharmacy/billing/preview/${res.bill._id}?print=true`));
         } catch (error: any) {
             console.error(error);
             toast.error(error.message || 'Failed to generate invoice');
@@ -429,17 +429,17 @@ const BillingPage = () => {
     };
 
     return (
-        <div className="space-y-4 md:space-y-8 text-gray-900 dark:text-white pb-20">
+        <div className="space-y-4 md:space-y-6 lg:space-y-8 text-gray-900 dark:text-white pb-20 pt-2">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 text-black dark:text-white">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-6 text-black dark:text-white px-1">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Billing & POS</h1>
-                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-1 uppercase tracking-wider">Generate invoices and manage sales</p>
+                    <h1 className="text-lg md:text-xl lg:text-xl font-bold tracking-tight">Billing & POS</h1>
+                    <p className="text-[10px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 mt-1 uppercase tracking-wider">Invoices & Sales Management</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <div className="px-4 py-2 md:px-5 md:py-2.5 bg-teal-50 dark:bg-teal-900/20 rounded-2xl border border-teal-100 dark:border-teal-800/30 flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-teal-500" />
-                        <span className="text-xs font-bold text-teal-600 uppercase tracking-wider">Active Device</span>
+                <div className="flex items-center gap-2 md:gap-3">
+                    <div className="px-3 py-1.5 md:px-5 md:py-2.5 bg-teal-50 dark:bg-teal-900/20 rounded-xl md:rounded-2xl border border-teal-100 dark:border-teal-800/30 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-teal-500" />
+                        <span className="text-[10px] md:text-xs font-bold text-teal-600 uppercase tracking-wider">Active Device</span>
                     </div>
                 </div>
             </div>
@@ -447,14 +447,14 @@ const BillingPage = () => {
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-8">
                 <div className="xl:col-span-2 space-y-4 md:space-y-8">
                     {/* Patient Context */}
-                    <div className="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-3xl md:rounded-4xl shadow-sm border border-gray-100 dark:border-gray-700">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-3 bg-teal-50 text-teal-600 rounded-2xl">
-                                <User size={20} />
+                    <div className="bg-white dark:bg-gray-800 p-4 md:p-8 rounded-2xl md:rounded-4xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+                            <div className="p-2 md:p-3 bg-teal-50 text-teal-600 rounded-xl md:rounded-2xl">
+                                <User size={18} className="md:w-5 md:h-5" />
                             </div>
                             <div>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Customer Details</p>
-                                <h2 className="text-lg font-bold uppercase tracking-tight">Patient Information</h2>
+                                <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Customer Details</p>
+                                <h2 className="text-base md:text-lg font-bold uppercase tracking-tight">Patient Information</h2>
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
@@ -475,7 +475,7 @@ const BillingPage = () => {
                                 {showSuggestions && filteredPatients.length > 0 && (
                                     <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden">
                                         {filteredPatients.map((p, i) => (
-                                            <div key={i} className="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b dark:border-gray-700 last:border-none" onClick={() => { setPatientName(p.name); setMobileNumber(p.phone); setShowSuggestions(false); }}>
+                                            <div key={`${p.phone}-${i}`} className="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b dark:border-gray-700 last:border-none" onClick={() => { setPatientName(p.name); setMobileNumber(p.phone); setShowSuggestions(false); }}>
                                                 <p className="font-bold text-xs uppercase tracking-tight">{p.name}</p>
                                                 <p className="text-xs font-medium text-gray-400 mt-0.5">{p.phone}</p>
                                             </div>
@@ -519,7 +519,7 @@ const BillingPage = () => {
                             </div>
                             <div className="space-y-3">
                                 {prescribedMedicines.map((med: any, i) => (
-                                    <div key={i} className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-2xl border border-teal-100 dark:border-gray-700">
+                                    <div key={`${med.name}-${i}`} className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-2xl border border-teal-100 dark:border-gray-700">
                                         <div>
                                             <p className="font-bold text-xs text-teal-900 dark:text-teal-300">{med.name}</p>
                                             <p className="text-xs text-gray-400 font-medium">{med.dosage} • {med.quantity} Units</p>
@@ -542,14 +542,14 @@ const BillingPage = () => {
                     )}
 
                     {/* Entry Section */}
-                    <div className="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-3xl md:rounded-4xl shadow-sm border border-gray-100 dark:border-gray-700">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-3 bg-teal-50 text-teal-600 rounded-2xl">
-                                <Plus size={20} />
+                    <div className="bg-white dark:bg-gray-800 p-4 md:p-8 rounded-2xl md:rounded-4xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+                            <div className="p-2 md:p-3 bg-teal-50 text-teal-600 rounded-xl md:rounded-2xl">
+                                <Plus size={18} className="md:w-5 md:h-5" />
                             </div>
                             <div>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Entry Mode</p>
-                                <h2 className="text-lg font-bold uppercase tracking-tight">Add Medicine</h2>
+                                <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Entry Mode</p>
+                                <h2 className="text-base md:text-lg font-bold uppercase tracking-tight">Add Medicine</h2>
                             </div>
                         </div>
                         <div className="space-y-6">
@@ -614,16 +614,16 @@ const BillingPage = () => {
                             </div>
                             <span className="px-3 py-1 bg-white dark:bg-gray-700 rounded-full text-xs font-bold text-gray-500 uppercase border border-gray-100 dark:border-gray-600">{cart.length} items</span>
                         </div>
-                        <div className="overflow-x-auto">
+                        <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
                             <table className="w-full min-w-[600px]">
                                 <thead>
-                                    <tr className="text-gray-400 text-xs font-bold uppercase tracking-wider border-b dark:border-gray-700">
-                                        <th className="px-8 py-5 text-left">No.</th>
-                                        <th className="px-8 py-5 text-left">Medicine Name</th>
-                                        <th className="px-8 py-5 text-center">Qty</th>
-                                        <th className="px-8 py-5 text-right">Price</th>
-                                        <th className="px-8 py-5 text-right">Total</th>
-                                        <th className="px-8 py-5 text-center">Action</th>
+                                    <tr className="text-gray-400 text-[10px] md:text-xs font-bold uppercase tracking-wider border-b dark:border-gray-700">
+                                        <th className="px-4 md:px-8 py-3 md:py-5 text-left">No.</th>
+                                        <th className="px-4 md:px-8 py-3 md:py-5 text-left">Medicine Name</th>
+                                        <th className="px-4 md:px-8 py-3 md:py-5 text-center">Qty</th>
+                                        <th className="px-4 md:px-8 py-3 md:py-5 text-right">Price</th>
+                                        <th className="px-4 md:px-8 py-3 md:py-5 text-right">Total</th>
+                                        <th className="px-4 md:px-8 py-3 md:py-5 text-center">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y dark:divide-gray-700/50">
@@ -638,7 +638,7 @@ const BillingPage = () => {
                                         </tr>
                                     ) : (
                                         cart.map((item, index) => (
-                                            <tr key={index} className="text-xs hover:bg-gray-50 dark:hover:bg-gray-700/20">
+                                            <tr key={`${item.productId}-${index}`} className="text-xs hover:bg-gray-50 dark:hover:bg-gray-700/20">
                                                 <td className="px-8 py-5 font-bold text-gray-400">{(index + 1).toString().padStart(2, '0')}</td>
                                                 <td className="px-8 py-5 font-bold uppercase tracking-tight line-clamp-1">{item.itemName}</td>
                                                 <td className="px-8 py-5 text-center">
@@ -767,18 +767,27 @@ const BillingPage = () => {
 
             {isPreviewOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl md:rounded-3xl shadow-2xl w-full max-w-[900px] max-h-[90vh] overflow-y-auto relative">
+                    <div className="bg-white rounded-2xl md:rounded-3xl shadow-2xl w-full max-w-[900px] max-h-[90vh] overflow-auto relative">
                         <div className="sticky top-0 bg-white border-b z-10 p-4 flex justify-between items-center text-black">
                             <h3 className="font-bold uppercase tracking-wider text-sm">Invoice Preview</h3>
                             <div className="flex gap-3">
                                 <button onClick={closePreview} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold uppercase text-black">Close</button>
-                                <button onClick={() => { closePreview(); handleSaveAndPrint(); }} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold uppercase flex items-center gap-2">
-                                    <Printer size={14} /> Print Now
+                                <button onClick={handleSaveAndPrint} disabled={isGenerating} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold uppercase flex items-center gap-2 disabled:opacity-50">
+                                    {isGenerating ? (
+                                        <>
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            Generating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Printer size={14} /> Print Now
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </div>
-                        <div className="p-4 md:p-8 flex justify-center bg-gray-50 overflow-x-auto">
-                            <div className="min-w-[600px] bg-white shadow-lg">
+                        <div className="p-1 md:p-8 flex justify-start md:justify-center bg-gray-50 overflow-x-auto">
+                            <div className="min-w-fit bg-white shadow-lg">
                                 {tempBill && <PharmacyBillPrint billData={tempBill as PharmacyBill} shopDetails={shopDetails} />}
                             </div>
                         </div>

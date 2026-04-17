@@ -2,14 +2,16 @@
 
 import React, { useState, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { hospitalAdminService } from "@/lib/integrations";
 import {
     UserPlus, Eye, EyeOff, ArrowLeft, AlertCircle, CheckCircle2,
     User, Mail, MapPin, Briefcase, Clock, FileText, Landmark,
-    DollarSign, Award, Globe, ImageIcon, CreditCard, Plus, X, CalendarDays
+    IndianRupee, Award, Globe, ImageIcon, CreditCard, Plus, X, CalendarDays
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { TagInput } from "@/components/common/TagInput";
+import { COMMON_SPECIALTIES, COMMON_QUALIFICATIONS, COMMON_LANGUAGES } from "@/lib/constants/medicalData";
 
 // ─── Color-only palette: blue, green, yellow, white ───────────────────────────
 const cls = {
@@ -48,6 +50,7 @@ const RULES = {
     medRegNo: (v: string) => !v.trim() ? "Medical Registration Number is required" : v.length > 50 ? "Max 50 characters" : "",
     consultationFee: (v: string) => !v ? "Consultation fee is required" : parseInt(v) <= 0 ? "Must be greater than 0" : "",
     experienceStart: (v: string) => !v ? "Experience start date is required" : "",
+    employeeId: (v: string) => !v.trim() ? "Employee ID is required" : "",
     pincode: (v: string) => v && (!/^\d+$/.test(v) || v.length !== 6) ? `${v.length}/6 digits required` : "",
     specialties: (v: string[]) => v.length === 0 ? "At least one specialty required" : "",
     panNumber: (v: string) => v && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(v.toUpperCase()) ? "Format: ABCDE1234F" : "",
@@ -57,10 +60,8 @@ const RULES = {
     registrationYear: (v: string) => v && (!/^\d+$/.test(v) || parseInt(v) < 1950 || parseInt(v) > new Date().getFullYear()) ? "Enter valid year" : "",
 };
 
-const SPECIALTIES = ["Cardiology", "Dermatology", "Emergency Medicine", "Endocrinology", "Gastroenterology", "General Practice", "Gynecology", "Hematology", "Internal Medicine", "Nephrology", "Neurology", "Oncology", "Ophthalmology", "Orthopedics", "Otolaryngology (ENT)", "Pediatrics", "Psychiatry", "Pulmonology", "Radiology", "Rheumatology", "Surgery", "Urology"];
 const DEPARTMENTS = ["Cardiology", "Neurology", "Orthopedics", "Pediatrics", "General Surgery", "Internal Medicine", "Emergency", "ICU", "Radiology", "Pathology", "Anesthesiology"];
 const DESIGNATIONS = ["Consultant", "Senior Consultant", "Surgeon", "Resident", "Fellow", "Professor", "Other"];
-const LANGUAGES = ["English", "Hindi", "Tamil", "Telugu", "Kannada", "Malayalam", "Bengali", "Marathi", "Gujarati", "Punjabi"];
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 // ─── Field component ──────────────────────────────────────────────────────────
@@ -111,21 +112,39 @@ function SectionHeader({ icon, title, color = "blue", extra }: { icon: React.Rea
 // ─── Main component ───────────────────────────────────────────────────────────
 interface AvailSlot { days: string[]; startTime: string; breakStart: string; breakEnd: string; endTime: string; }
 
+const formatAMPM = (time: string) => {
+    if (!time) return "";
+    if (time.toLowerCase().includes('am') || time.toLowerCase().includes('pm')) return time;
+    const [hours, minutes] = time.split(':');
+    let h = parseInt(hours);
+    const m = minutes || "00";
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    h = h ? h : 12;
+    return `${h}:${m} ${ampm}`;
+};
+
 export default function HRCreateDoctorPage() {
     const router = useRouter();
     const { hospitalId } = useParams();
     const qc = useQueryClient();
     const [loading, setLoading] = useState(false);
     const [showPwd, setShowPwd] = useState(false);
+    
+    const { data: metadata } = useQuery({
+        queryKey: ["hospital-metadata"],
+        queryFn: () => hospitalAdminService.getHospitalMetadata()
+    });
 
     // Form fields
     const [f, setF] = useState({
+        honorific: "Mr",
         name: "", email: "", mobile: "", password: "", gender: "", dob: "",
         street: "", city: "", state: "", pincode: "",
         medRegNo: "", regCouncil: "National Medical Commission (NMC)", regYear: "", regExpiry: "",
-        experienceStart: "", department: "", designation: "Consultant", employeeId: "",
-        consultationFee: "", consultationDuration: "15", maxAppt: "20", room: "",
-        bio: "", profilePic: "", signature: "",
+        experienceStart: "", employeeId: "",
+        consultationFee: "", consultationDuration: "15", maxAppt: "20",
+        bio: "",
         accountName: "", bankName: "", accountNumber: "", ifscCode: "",
         baseSalary: "", panNumber: "", aadharNumber: "", pfNumber: "", esiNumber: "", uanNumber: "",
     });
@@ -135,9 +154,6 @@ export default function HRCreateDoctorPage() {
     const [languages, setLanguages] = useState<string[]>([]);
     const [awards, setAwards] = useState<string[]>([]);
     const [availability, setAvailability] = useState<AvailSlot[]>([{ days: [], startTime: "09:00", breakStart: "13:00", breakEnd: "14:00", endTime: "17:00" }]);
-    const [tempSpec, setTempSpec] = useState("");
-    const [tempQual, setTempQual] = useState("");
-    const [tempLang, setTempLang] = useState("");
     const [tempAward, setTempAward] = useState("");
 
     // ── Real-time validation
@@ -160,6 +176,18 @@ export default function HRCreateDoctorPage() {
         if (["consultationFee", "maxAppt", "consultationDuration", "baseSalary"].includes(name) && !/^\d*$/.test(value)) return;
 
         const upper = ["panNumber", "ifscCode"].includes(name) ? value.toUpperCase() : value;
+
+        if (name === "honorific") {
+            let gender = f.gender;
+            if (value === "Mr") gender = "male";
+            else if (value === "Mrs" || value === "Ms") gender = "female";
+            setF(p => ({ ...p, [name]: value, gender }));
+            // Validate immediately
+            const err = validateField(name, value);
+            setErrors(p => ({ ...p, [name]: err }));
+            return;
+        }
+
         setF(p => ({ ...p, [name]: upper }));
         // Validate immediately
         const err = validateField(name === "regYear" ? "registrationYear" : name, upper);
@@ -180,6 +208,7 @@ export default function HRCreateDoctorPage() {
             aadharNumber: RULES.aadharNumber(f.aadharNumber),
             accountNumber: RULES.accountNumber(f.accountNumber),
             ifscCode: RULES.ifscCode(f.ifscCode),
+            employeeId: RULES.employeeId(f.employeeId),
         };
         if (!f.gender) checks.gender = "Please select gender";
         if (specialties.length === 0) checks.specialties = "At least one specialty required";
@@ -193,6 +222,7 @@ export default function HRCreateDoctorPage() {
         setLoading(true);
         try {
             await hospitalAdminService.createDoctor({
+                honorific: f.honorific,
                 name: f.name.trim(), email: f.email.trim(), mobile: f.mobile,
                 password: f.password, gender: f.gender, dateOfBirth: f.dob || undefined,
                 address: f.street || f.city ? { street: f.street, city: f.city, state: f.state, pincode: f.pincode, country: "India" } : undefined,
@@ -202,14 +232,12 @@ export default function HRCreateDoctorPage() {
                 registrationYear: f.regYear ? parseInt(f.regYear) : undefined,
                 registrationExpiryDate: f.regExpiry || undefined,
                 experienceStart: f.experienceStart,
-                department: f.department || undefined, designation: f.designation || "Consultant",
                 employeeId: f.employeeId || undefined,
                 consultationFee: parseInt(f.consultationFee),
                 consultationDuration: parseInt(f.consultationDuration) || 15,
                 maxAppointmentsPerDay: f.maxAppt ? parseInt(f.maxAppt) : undefined,
                 availability: availability.filter(s => s.days.length > 0),
-                room: f.room || undefined,
-                bio: f.bio, profilePic: f.profilePic, signature: f.signature, languages, awards,
+                bio: f.bio, languages, awards,
                 bankDetails: { bankName: f.bankName, accountNumber: f.accountNumber, accountName: f.accountName, ifscCode: f.ifscCode },
                 panNumber: f.panNumber, aadharNumber: f.aadharNumber,
                 baseSalary: f.baseSalary ? Number(f.baseSalary) : undefined,
@@ -238,7 +266,7 @@ export default function HRCreateDoctorPage() {
     const E = (name: string) => errors[name] ? <p className={cls.errMsg}><AlertCircle size={11} />{errors[name]}</p> : null;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50/60 via-white to-green-50/40 pb-16">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50/60 via-white to-green-50/40 pb-10">
             {/* TOP BAR */}
             <div className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-blue-100 px-6 py-3 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-3">
@@ -248,13 +276,13 @@ export default function HRCreateDoctorPage() {
                     </button>
                     <div>
                         <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">HR Portal · Doctors</p>
-                        <h1 className="text-base font-black text-blue-900">Onboard New Physician</h1>
+                        <h1 className="text-sm md:text-base font-black text-blue-900">Onboard New Physician</h1>
                     </div>
                 </div>
                 <div className="flex gap-3">
                     <button type="button" onClick={() => router.push(`/${hospitalId}/hr/hospital/doctors`)}
-                        disabled={loading} className={cls.btn.secondary}>Cancel</button>
-                    <button type="submit" form="doctor-form" disabled={loading} className={cls.btn.primary}>
+                        disabled={loading} className={`${cls.btn.secondary} text-[10px] md:text-sm px-8 py-2 md:px-12 md:py-4`}>Cancel</button>
+                    <button type="submit" form="doctor-form" disabled={loading} className={`${cls.btn.primary} text-[10px] md:text-sm px-8 py-2 md:px-12 md:py-4`}>
                         {loading ? <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><UserPlus size={16} />Create Doctor</>}
                     </button>
                 </div>
@@ -266,7 +294,14 @@ export default function HRCreateDoctorPage() {
                 <div className={cls.card}>
                     <SectionHeader icon={<User size={16} />} title="Personal Information" color="blue" />
                     <div className={cls.cardBody}>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label className={cls.label}>Honorific <span className="text-red-500">*</span></label>
+                                <select name="honorific" value={f.honorific} onChange={handleChange}
+                                    className={cls.input(!!errors.honorific, !!f.honorific)}>
+                                    <option value="Mr">Mr</option><option value="Mrs">Mrs</option><option value="Ms">Ms</option><option value="Dr">Dr</option>
+                                </select>
+                            </div>
                             <F label="Full Name" name="name" value={f.name} onChange={handleChange} error={errors.name} required placeholder="Dr. John Smith" maxLength={100} hint="Max 100 characters" />
                             <div>
                                 <label className={cls.label}>Gender <span className="text-red-500">*</span></label>
@@ -343,33 +378,30 @@ export default function HRCreateDoctorPage() {
 
                         {/* Specialties */}
                         <div className="mb-5">
-                            <label className={cls.label}>Specialties <span className="text-red-500">*</span></label>
-                            <div className="flex gap-2 mb-2">
-                                <select value={tempSpec} onChange={(e) => setTempSpec(e.target.value)}
-                                    className={`flex-1 ${cls.input(false, !!tempSpec)}`}>
-                                    <option value="">Select Specialty</option>
-                                    {SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}
-                                </select>
-                                <button type="button" onClick={() => addTag(specialties, setSpecialties, tempSpec, () => setTempSpec(""))} disabled={!tempSpec} className={cls.btn.add}><Plus size={14} />Add</button>
-                            </div>
+                            <TagInput
+                                label="Medical Specialties"
+                                placeholder="Search & select specialties..."
+                                options={COMMON_SPECIALTIES}
+                                selectedItems={specialties}
+                                onAdd={(val) => setSpecialties([...specialties, val])}
+                                onRemove={(val) => setSpecialties(specialties.filter(i => i !== val))}
+                                accentColor="blue"
+                            />
                             {E("specialties")}
-                            <div className="flex flex-wrap gap-2 mt-2">
-                                {specialties.map(s => <span key={s} className={cls.tag("blue")}>{s}<button type="button" onClick={() => removeTag(specialties, setSpecialties, s)}><X size={12} /></button></span>)}
-                            </div>
                         </div>
 
                         {/* Qualifications */}
                         <div className="mb-5">
-                            <label className={cls.label}>Qualifications</label>
-                            <div className="flex gap-2 mb-2">
-                                <input value={tempQual} onChange={(e) => setTempQual(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag(qualifications, setQualifications, tempQual, () => setTempQual("")))}
-                                    placeholder="e.g. MBBS, MD, MS" maxLength={80}
-                                    className={`flex-1 ${cls.input(false, !!tempQual)}`} />
-                                <button type="button" onClick={() => addTag(qualifications, setQualifications, tempQual, () => setTempQual(""))} disabled={!tempQual} className={cls.btn.add}><Plus size={14} />Add</button>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {qualifications.map(q => <span key={q} className={cls.tag("green")}><Award size={11} />{q}<button type="button" onClick={() => removeTag(qualifications, setQualifications, q)}><X size={12} /></button></span>)}
-                            </div>
+                            <TagInput
+                                label="Medical Qualifications"
+                                placeholder="Search & select qualifications..."
+                                options={COMMON_QUALIFICATIONS}
+                                selectedItems={qualifications}
+                                onAdd={(val) => setQualifications([...qualifications, val])}
+                                onRemove={(val) => setQualifications(qualifications.filter(i => i !== val))}
+                                accentColor="green"
+                                icon={<Award size={20} className="mb-2 opacity-20" />}
+                            />
                         </div>
 
                         {/* Dept / Designation / Experience */}
@@ -380,20 +412,7 @@ export default function HRCreateDoctorPage() {
                                     className={cls.input(!!errors.experienceStart, !!f.experienceStart)} />
                                 {E("experienceStart")}
                             </div>
-                            <div>
-                                <label className={cls.label}>Department</label>
-                                <select name="department" value={f.department} onChange={handleChange} className={cls.input(false, !!f.department)}>
-                                    <option value="">Select Department</option>
-                                    {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className={cls.label}>Designation</label>
-                                <select name="designation" value={f.designation} onChange={handleChange} className={cls.input(false, true)}>
-                                    {DESIGNATIONS.map(d => <option key={d} value={d}>{d}</option>)}
-                                </select>
-                            </div>
-                            <F label="Employee ID" name="employeeId" value={f.employeeId} onChange={handleChange} placeholder="Optional" maxLength={30} />
+                            <F label="Employee ID" name="employeeId" value={f.employeeId} onChange={handleChange} error={errors.employeeId} required placeholder="HSP-DOC-XXXX" maxLength={30} />
                         </div>
                     </div>
                 </div>
@@ -415,7 +434,6 @@ export default function HRCreateDoctorPage() {
                             </div>
                             <F label="Duration (mins)" name="consultationDuration" value={f.consultationDuration} onChange={handleChange} placeholder="15" maxLength={3} hint="Default: 15 mins" />
                             <F label="Max Appt/Day" name="maxAppt" value={f.maxAppt} onChange={handleChange} placeholder="20" maxLength={3} />
-                            <F label="Room / Chamber" name="room" value={f.room} onChange={handleChange} placeholder="e.g. Room 101" maxLength={30} />
                         </div>
 
                         {/* Weekly Schedule */}
@@ -441,6 +459,7 @@ export default function HRCreateDoctorPage() {
                                                     <label className="block text-[10px] font-bold text-blue-500 mb-1">{["Start", "Break Start", "Break End", "End"][fi]}</label>
                                                     <input type="time" value={slot[fld]} onChange={(e) => { const u = [...availability]; u[i] = { ...u[i], [fld]: e.target.value }; setAvailability(u); }}
                                                         className="w-full px-3 py-2 rounded-lg border border-blue-100 bg-white text-sm focus:ring-2 focus:ring-blue-200 outline-none" />
+                                                    <p className="text-[10px] text-blue-400 mt-1">{formatAMPM(slot[fld])}</p>
                                                 </div>
                                             ))}
                                         </div>
@@ -462,24 +481,20 @@ export default function HRCreateDoctorPage() {
                                 className="w-full px-4 py-3 rounded-xl border border-blue-100 text-sm bg-white focus:ring-2 focus:ring-blue-200 outline-none resize-none transition-all" />
                             <p className={cls.hintMsg}>{f.bio.length}/1000 characters</p>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 mb-5">
-                            <F label="Profile Picture URL" name="profilePic" value={f.profilePic} onChange={handleChange} type="url" placeholder="https://..." maxLength={300} />
-                            <F label="Digital Signature URL" name="signature" value={f.signature} onChange={handleChange} type="url" placeholder="https://..." maxLength={300} />
-                        </div>
+
 
                         {/* Languages */}
                         <div className="mb-4">
-                            <label className={cls.label}>Languages Spoken</label>
-                            <div className="flex gap-2 mb-2">
-                                <select value={tempLang} onChange={(e) => setTempLang(e.target.value)} className={`flex-1 ${cls.input(false, !!tempLang)}`}>
-                                    <option value="">Select Language</option>
-                                    {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
-                                </select>
-                                <button type="button" onClick={() => addTag(languages, setLanguages, tempLang, () => setTempLang(""))} disabled={!tempLang} className={cls.btn.add}><Plus size={14} />Add</button>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {languages.map(l => <span key={l} className={cls.tag("green")}><Globe size={11} />{l}<button type="button" onClick={() => removeTag(languages, setLanguages, l)}><X size={12} /></button></span>)}
-                            </div>
+                            <TagInput
+                                label="Languages Spoken"
+                                placeholder="Search & select languages..."
+                                options={COMMON_LANGUAGES}
+                                selectedItems={languages}
+                                onAdd={(val) => setLanguages([...languages, val])}
+                                onRemove={(val) => setLanguages(languages.filter(i => i !== val))}
+                                accentColor="green"
+                                icon={<Globe size={20} className="mb-2 opacity-20" />}
+                            />
                         </div>
 
                         {/* Awards */}

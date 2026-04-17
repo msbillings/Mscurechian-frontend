@@ -2,16 +2,18 @@
 
 import React, { useState } from 'react';
 import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { hospitalAdminService } from "@/lib/integrations";
 import {
-  UserPlus, Eye, EyeOff, DollarSign, User, Mail,
+  UserPlus, Eye, EyeOff, IndianRupee, User, Mail,
   Briefcase, FileText, Award, Image as ImageIcon, MapPin,
   Clock, CreditCard, Globe, Landmark, AlertCircle, CheckCircle2
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { PageHeader, Card, FormInput, Button } from "@/components/admin";
 import type { CreateDoctorRequest } from "@/lib/integrations/types";
+import { TagInput } from "@/components/common/TagInput";
+import { COMMON_SPECIALTIES, COMMON_QUALIFICATIONS, COMMON_LANGUAGES } from "@/lib/constants/medicalData";
 
 type Errors = Partial<Record<string, string>>;
 const docValidators: Record<string, (v: string) => string> = {
@@ -20,6 +22,7 @@ const docValidators: Record<string, (v: string) => string> = {
   mobile: v => v.length === 0 ? "Mobile is required" : v.length !== 10 ? `${v.length}/10 digits — must be exactly 10` : "",
   password: v => !v ? "Password is required" : v.length < 6 ? `Too short — ${v.length}/6 chars minimum` : "",
   medicalRegistrationNumber: v => !v.trim() ? "Medical Registration Number is mandatory" : "",
+  employeeId: v => !v.trim() ? "Employee ID is required" : "",
   consultationFee: v => !v || parseInt(v) <= 0 ? "Consultation fee is required" : "",
   pincode: v => v && v.length !== 6 ? `${v.length}/6 digits` : "",
   panNumber: v => v && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(v.toUpperCase()) ? "Invalid PAN — e.g. ABCDE1234F" : "",
@@ -53,30 +56,17 @@ function DField({ label, name, value, onChange, onBlur, error, touched, type="te
 }
 
 // Constants
-const SPECIALTIES = [
-  "Cardiology", "Dermatology", "Emergency Medicine", "Endocrinology",
-  "Gastroenterology", "General Practice", "Gynecology", "Hematology",
-  "Internal Medicine", "Nephrology", "Neurology", "Oncology",
-  "Ophthalmology", "Orthopedics", "Otolaryngology (ENT)", "Pediatrics",
-  "Psychiatry", "Pulmonology", "Radiology", "Rheumatology",
-  "Surgery", "Urology"
-];
-
 const GENDER_OPTIONS = [
   { value: "male", label: "Male" },
   { value: "female", label: "Female" },
   { value: "other", label: "Other" }
 ];
 
-const DESIGNATION_OPTIONS = [
-  "Consultant", "Senior Consultant", "Surgeon", "Resident", 
-  "Fellow", "Professor", "Other"
-];
-
-const DEPARTMENTS = [
-  "Cardiology", "Neurology", "Orthopedics", "Pediatrics",
-  "General Surgery", "Internal Medicine", "Emergency",
-  "ICU", "Radiology", "Pathology", "Anesthesiology"
+const HONORIFIC_OPTIONS = [
+  { value: "Mr", label: "Mr" },
+  { value: "Mrs", label: "Mrs" },
+  { value: "Ms", label: "Ms" },
+  { value: "Dr", label: "Dr" }
 ];
 
 const DAYS_OF_WEEK = [
@@ -84,13 +74,9 @@ const DAYS_OF_WEEK = [
   "Friday", "Saturday", "Sunday"
 ];
 
-const LANGUAGES = [
-  "English", "Hindi", "Tamil", "Telugu", "Kannada",
-  "Malayalam", "Bengali", "Marathi", "Gujarati", "Punjabi"
-];
-
-interface FormData {
+interface DoctorFormData {
   // Personal
+  honorific: string;
   name: string;
   email: string;
   mobile: string;
@@ -112,23 +98,11 @@ interface FormData {
   registrationYear: string;
   registrationExpiryDate: string;
   experienceStart: string;
-  
-  // Department
-  department: string;
-  designation: string;
   employeeId: string;
-  
-  // Scheduling
   consultationFee: string;
   consultationDuration: string;
   maxAppointmentsPerDay: string;
-  room: string;
-  
-  
-  // Additional
   bio: string;
-  profilePic: string;
-  signature: string;
   languages: string[];
   awards: string[];
   
@@ -153,12 +127,29 @@ interface AvailabilitySlot {
   endTime: string;
 }
 
+const formatAMPM = (time: string) => {
+  if (!time) return "";
+  if (time.toLowerCase().includes('am') || time.toLowerCase().includes('pm')) return time;
+  const [hours, minutes] = time.split(':');
+  let h = parseInt(hours);
+  const m = minutes || "00";
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  h = h ? h : 12;
+  return `${h}:${m} ${ampm}`;
+};
+
 function CreateDoctor() {
   const router = useRouter();
   const queryClient = useQueryClient();
   
-  const [formData, setFormData] = useState<FormData>({
-    name: "", email: "", mobile: "", password: "", gender: "",
+  const { data: metadata } = useQuery({
+    queryKey: ["hospital-metadata"],
+    queryFn: () => hospitalAdminService.getHospitalMetadata()
+  });
+  
+  const [formData, setFormData] = useState<DoctorFormData>({
+    honorific: "Dr", name: "", email: "", mobile: "", password: "", gender: "",
     dateOfBirth: "",
     street: "", city: "", state: "", pincode: "",
     specialties: [], qualifications: [],
@@ -167,10 +158,10 @@ function CreateDoctor() {
     registrationYear: "",
     registrationExpiryDate: "",
     experienceStart: "",
-    department: "", designation: "Consultant", employeeId: "",
+    employeeId: "",
     consultationFee: "", consultationDuration: "15",
-    maxAppointmentsPerDay: "20", room: "",
-    bio: "", profilePic: "", signature: "",
+    maxAppointmentsPerDay: "20",
+    bio: "",
     languages: [],
     awards: [],
     bankName: "", accountNumber: "", accountName: "", ifscCode: "",
@@ -184,9 +175,6 @@ function CreateDoctor() {
     { days: [], startTime: "09:00", breakStart: "13:00", breakEnd: "14:00", endTime: "17:00" }
   ]);
 
-  const [tempSpecialty, setTempSpecialty] = useState("");
-  const [tempQualification, setTempQualification] = useState("");
-  const [tempLanguage, setTempLanguage] = useState("");
   const [tempAward, setTempAward] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -209,39 +197,25 @@ function CreateDoctor() {
     if (name === "ifscCode" && value.length > 11) return;
     
     if (["consultationFee", "maxAppointmentsPerDay", "consultationDuration", "baseSalary"].includes(name) && !/^\d*$/.test(value)) return;
+    
+    if (name === "honorific") {
+      let gender = formData.gender;
+      if (value === "Mr") gender = "male";
+      else if (value === "Mrs" || value === "Ms") gender = "female";
+      setFormData(prev => ({ ...prev, [name]: value, gender }));
+      if (touched[name]) setErrors(p => ({ ...p, [name]: dValidate(name, value) }));
+      return;
+    }
 
     setFormData(prev => ({ ...prev, [name]: value }));
     if (touched[name]) setErrors(p => ({ ...p, [name]: dValidate(name, value) }));
   };
 
 
-  const addItem = (type: 'specialty' | 'qualification' | 'language' | 'award', value: string) => {
-    const tempValue = type === 'specialty' ? tempSpecialty : 
-                     type === 'qualification' ? tempQualification :
-                     type === 'language' ? tempLanguage : tempAward;
-    
-    const key: 'specialties' | 'qualifications' | 'languages' | 'awards' = 
-      type === 'specialty' ? 'specialties' : 
-      type === 'qualification' ? 'qualifications' :
-      type === 'language' ? 'languages' : 'awards';
-    
-    if (tempValue && !formData[key].includes(tempValue)) {
-      setFormData(prev => ({
-        ...prev,
-        [key]: [...prev[key], tempValue]
-      }));
-      
-      if (type === 'specialty') setTempSpecialty("");
-      else if (type === 'qualification') setTempQualification("");
-      else if (type === 'language') setTempLanguage("");
-      else setTempAward("");
-    }
-  };
-
-  const removeItem = (type: 'specialties' | 'qualifications' | 'languages' | 'awards', item: string) => {
+  const removeAward = (item: string) => {
     setFormData(prev => ({
       ...prev,
-      [type]: prev[type].filter((i: string) => i !== item)
+      awards: prev.awards.filter((i: string) => i !== item)
     }));
   };
 
@@ -274,7 +248,7 @@ function CreateDoctor() {
   };
 
   const touchAll = () => {
-    const fields = ["name","email","mobile","password","medicalRegistrationNumber","consultationFee","panNumber","aadharNumber","ifscCode","accountNumber","pincode"];
+    const fields = ["name","email","mobile","password","medicalRegistrationNumber","employeeId","consultationFee","panNumber","aadharNumber","ifscCode","accountNumber","pincode"];
     const nt: Record<string,boolean> = {}, ne: Errors = {};
     fields.forEach(f => { nt[f]=true; ne[f]=dValidate(f,(formData as any)[f]??""); });
     // extra checks
@@ -296,6 +270,7 @@ function CreateDoctor() {
 
     try {
       const doctorData: any = {
+        honorific: formData.honorific,
         name: formData.name.trim(),
         email: formData.email.trim(),
         mobile: formData.mobile,
@@ -319,20 +294,15 @@ function CreateDoctor() {
         registrationExpiryDate: formData.registrationExpiryDate || undefined,
         experienceStart: formData.experienceStart,
         
-        department: formData.department || undefined,
-        designation: formData.designation || "Consultant",
         employeeId: formData.employeeId || undefined,
         
         consultationFee: parseInt(formData.consultationFee),
         consultationDuration: parseInt(formData.consultationDuration) || 15,
         maxAppointmentsPerDay: formData.maxAppointmentsPerDay ? parseInt(formData.maxAppointmentsPerDay) : undefined,
         availability: availability.filter(slot => slot.days.length > 0),
-        room: formData.room || undefined,
         
         
         bio: formData.bio,
-      profilePic: formData.profilePic,
-      signature: formData.signature,
       languages: formData.languages,
       awards: formData.awards,
       
@@ -368,7 +338,7 @@ function CreateDoctor() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto pb-12">
+    <div className="max-w-7xl mx-auto pb-12 space-y-6">
       <PageHeader
         icon={<UserPlus className="text-blue-500" />}
         title="Create New Doctor"
@@ -377,8 +347,16 @@ function CreateDoctor() {
 
       <form onSubmit={handleSubmit} noValidate className="space-y-6">
         {/* 1. Personal Information */}
-        <Card title="Personal Information" icon={<User className="text-blue-500" />} padding="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card title="Personal Information" icon={<User className="text-blue-500" />} padding="p-2 md:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{color:'var(--text-color)'}}>Honorific<span className="text-red-500 ml-0.5">*</span></label>
+              <select name="honorific" value={formData.honorific} onChange={handleChange} required
+                className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{backgroundColor:'var(--card-bg)',color:'var(--text-color)',borderColor:'var(--border-color)'}}>
+                {HONORIFIC_OPTIONS.map(opt=><option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </select>
+            </div>
             <DField label="Full Name" name="name" value={formData.name} onChange={handleChange}
               onBlur={e=>handleBlur("name",e.target.value)} error={errors.name} touched={touched.name}
               required placeholder="Dr. John Smith"/>
@@ -402,7 +380,7 @@ function CreateDoctor() {
         </Card>
 
         {/* 2. Contact Information */}
-        <Card title="Contact Information" icon={<Mail className="text-green-500" />} padding="p-6">
+        <Card title="Contact Information" icon={<Mail className="text-green-500" />} padding="p-2 md:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <DField label="Email Address" name="email" value={formData.email} onChange={handleChange}
               onBlur={e=>handleBlur("email",e.target.value)} error={errors.email} touched={touched.email}
@@ -438,10 +416,10 @@ function CreateDoctor() {
         </Card>
 
         {/* 3. Professional & Clinical Details */}
-        <Card title="Professional & Clinical Details" icon={<Briefcase className="text-purple-500" />} padding="p-6">
+        <Card title="Professional & Clinical Details" icon={<Briefcase className="text-purple-500" />} padding="p-2 md:p-6">
           <div className="space-y-6">
             {/* Medical Registration - MANDATORY */}
-            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl border border-yellow-200 dark:border-yellow-800">
+            <div className="p-2 md:p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl border border-yellow-200 dark:border-yellow-800">
               <h4 className="font-semibold text-yellow-800 dark:text-yellow-400 mb-3 flex items-center gap-2">
                 <CreditCard size={18} /> Medical Registration (Mandatory in India)
               </h4>
@@ -464,48 +442,27 @@ function CreateDoctor() {
             </div>
 
             {/* Specialties */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Specialties <span className="text-red-500">*</span></label>
-              <div className="flex gap-2 mb-3">
-                <select value={tempSpecialty} onChange={(e) => setTempSpecialty(e.target.value)}
-                  className="flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }}>
-                  <option value="">Select Specialty</option>
-                  {SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-                <Button type="button" variant="secondary" onClick={() => addItem('specialty', tempSpecialty)} disabled={!tempSpecialty}>Add</Button>
-              </div>
-              {formData.specialties.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {formData.specialties.map(s => (
-                    <span key={s} className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-lg text-sm font-medium flex items-center gap-2">
-                      {s} <button type="button" onClick={() => removeItem('specialties', s)} className="hover:text-red-500">×</button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
+            <TagInput
+              label="Medical Specialties"
+              placeholder="Search and select specialties (e.g. Cardiology)..."
+              options={COMMON_SPECIALTIES}
+              selectedItems={formData.specialties}
+              onAdd={(val) => setFormData((prev: any) => ({ ...prev, specialties: [...prev.specialties, val] }))}
+              onRemove={(val) => setFormData((prev: any) => ({ ...prev, specialties: prev.specialties.filter((i: string) => i !== val) }))}
+              accentColor="indigo"
+            />
 
             {/* Qualifications */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Qualifications</label>
-              <div className="flex gap-2 mb-3">
-                <input type="text" value={tempQualification} onChange={(e) => setTempQualification(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addItem('qualification', tempQualification))}
-                  placeholder="e.g., MBBS, MD, MS" className="flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }} />
-                <Button type="button" variant="secondary" onClick={() => addItem('qualification', tempQualification)} disabled={!tempQualification}>Add</Button>
-              </div>
-              {formData.qualifications.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {formData.qualifications.map(q => (
-                    <span key={q} className="px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-lg text-sm flex items-center gap-2">
-                      <Award size={14} /> {q} <button type="button" onClick={() => removeItem('qualifications', q)} className="hover:text-red-500">×</button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
+            <TagInput
+              label="Medical Qualifications"
+              placeholder="Search and select qualifications (e.g. MBBS, MD)..."
+              options={COMMON_QUALIFICATIONS}
+              selectedItems={formData.qualifications}
+              onAdd={(val) => setFormData((prev: any) => ({ ...prev, qualifications: [...prev.qualifications, val] }))}
+              onRemove={(val) => setFormData((prev: any) => ({ ...prev, qualifications: prev.qualifications.filter((i: string) => i !== val) }))}
+              accentColor="emerald"
+              icon={<Award size={20} className="mb-2 opacity-20" />}
+            />
 
             {/* Experience Start & Department */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -517,33 +474,15 @@ function CreateDoctor() {
                   style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }} />
               </div>
               
-              <div>
-                <label className="block text-sm font-medium mb-2">Department</label>
-                <select name="department" value={formData.department} onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }}>
-                  <option value="">Select Department</option>
-                  {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Designation</label>
-                <select name="designation" value={formData.designation} onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }}>
-                  {DESIGNATION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
-              </div>
-
-              <FormInput label="Employee ID (Optional)" type="text" name="employeeId" 
-                value={formData.employeeId} onChange={handleChange} placeholder="Hospital Employee ID" />
+              <DField label="Employee ID" name="employeeId" value={formData.employeeId} onChange={handleChange}
+                onBlur={e=>handleBlur("employeeId",e.target.value)} error={errors.employeeId}
+                touched={touched.employeeId} required placeholder="Hospital Employee ID" />
             </div>
           </div>
         </Card>
 
         {/* 4. Scheduling & Availability */}
-        <Card title="Scheduling & Availability" icon={<Clock className="text-orange-500" />} padding="p-6">
+        <Card title="Scheduling & Availability" icon={<Clock className="text-orange-500" />} padding="p-2 md:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="space-y-1.5">
               <label className="block text-sm font-medium" style={{color:'var(--text-color)'}}>Consultation Fee (₹)<span className="text-red-500 ml-0.5">*</span></label>
@@ -552,7 +491,7 @@ function CreateDoctor() {
                   onChange={handleChange} onBlur={e=>handleBlur("consultationFee",e.target.value)} placeholder="500"
                   className={`w-full px-4 py-3 pl-10 pr-9 rounded-xl border focus:outline-none focus:ring-2 transition-all ${touched.consultationFee&&errors.consultationFee?"border-rose-400 bg-rose-50/20 focus:ring-rose-400/20":touched.consultationFee&&!errors.consultationFee&&formData.consultationFee?"border-emerald-400 focus:ring-emerald-400/20":"focus:ring-blue-500"}`}
                   style={touched.consultationFee&&!errors.consultationFee&&formData.consultationFee?{borderColor:'#34d399',backgroundColor:'var(--card-bg)',color:'var(--text-color)'}:{backgroundColor:'var(--card-bg)',color:'var(--text-color)',borderColor:touched.consultationFee&&errors.consultationFee?undefined:'var(--border-color)'}}/>
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
+                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
                 {touched.consultationFee&&!errors.consultationFee&&formData.consultationFee&&<CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500"/>}
               </div>
               <DErr msg={touched.consultationFee?errors.consultationFee:undefined}/>
@@ -562,8 +501,6 @@ function CreateDoctor() {
               value={formData.consultationDuration} onChange={handleChange} placeholder="15" />
             <FormInput label="Max Appointments/Day" type="text" name="maxAppointmentsPerDay"
               value={formData.maxAppointmentsPerDay} onChange={handleChange} placeholder="20" />
-            <FormInput label="Room/Chamber" type="text" name="room"
-              value={formData.room} onChange={handleChange} placeholder="Room 101" />
           </div>
 
           <div>
@@ -574,7 +511,7 @@ function CreateDoctor() {
             
             <div className="space-y-4">
               {availability.map((slot, index) => (
-                <div key={index} className="p-4 border rounded-xl" style={{ borderColor: 'var(--border-color)' }}>
+                <div key={index} className="p-2 md:p-4 border rounded-xl" style={{ borderColor: 'var(--border-color)' }}>
                   <div className="flex justify-between items-start mb-3">
                     <h5 className="font-medium text-sm">Schedule {index + 1}</h5>
                     {availability.length > 1 && (
@@ -597,13 +534,14 @@ function CreateDoctor() {
                     ))}
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-4 gap-3">
                     <div>
                       <label className="block text-xs font-medium mb-1">Start</label>
                       <input type="time" value={slot.startTime}
                         onChange={(e) => updateAvailability(index, 'startTime', e.target.value)}
                         className="w-full px-3 py-2 rounded-lg border text-sm"
                         style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }} />
+                      <p className="text-[10px] text-gray-400 mt-1">{formatAMPM(slot.startTime)}</p>
                     </div>
                     <div>
                       <label className="block text-xs font-medium mb-1">Break Start</label>
@@ -611,6 +549,7 @@ function CreateDoctor() {
                         onChange={(e) => updateAvailability(index, 'breakStart', e.target.value)}
                         className="w-full px-3 py-2 rounded-lg border text-sm"
                         style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }} />
+                      <p className="text-[10px] text-gray-400 mt-1">{formatAMPM(slot.breakStart)}</p>
                     </div>
                     <div>
                       <label className="block text-xs font-medium mb-1">Break End</label>
@@ -618,6 +557,7 @@ function CreateDoctor() {
                         onChange={(e) => updateAvailability(index, 'breakEnd', e.target.value)}
                         className="w-full px-3 py-2 rounded-lg border text-sm"
                         style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }} />
+                      <p className="text-[10px] text-gray-400 mt-1">{formatAMPM(slot.breakEnd)}</p>
                     </div>
                     <div>
                       <label className="block text-xs font-medium mb-1">End</label>
@@ -625,6 +565,7 @@ function CreateDoctor() {
                         onChange={(e) => updateAvailability(index, 'endTime', e.target.value)}
                         className="w-full px-3 py-2 rounded-lg border text-sm"
                         style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }} />
+                      <p className="text-[10px] text-gray-400 mt-1">{formatAMPM(slot.endTime)}</p>
                     </div>
                   </div>
                 </div>
@@ -635,7 +576,7 @@ function CreateDoctor() {
 
 
         {/* 6. Additional Information */}
-        <Card title="Additional Information" icon={<FileText className="text-indigo-500" />} padding="p-6">
+        <Card title="Additional Information" icon={<FileText className="text-indigo-500" />} padding="p-2 md:p-6">
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">Bio / About</label>
@@ -645,59 +586,30 @@ function CreateDoctor() {
                 style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }} />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="relative">
-                <label className="block text-sm font-medium mb-2">Profile Picture URL</label>
-                <input type="url" name="profilePic" value={formData.profilePic} onChange={handleChange}
-                  placeholder="https://example.com/photo.jpg"
-                  className="w-full px-4 py-3 pl-10 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }} />
-                <ImageIcon className="absolute left-3 top-10 text-gray-400" size={18} />
-              </div>
-              
-              <div className="relative">
-                <label className="block text-sm font-medium mb-2">Digital Signature URL</label>
-                <input type="url" name="signature" value={formData.signature} onChange={handleChange}
-                  placeholder="https://example.com/signature.png"
-                  className="w-full px-4 py-3 pl-10 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }} />
-                <FileText className="absolute left-3 top-10 text-gray-400" size={18} />
-              </div>
-            </div>
+
 
             {/* Languages */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Languages Spoken</label>
-              <div className="flex gap-2 mb-3">
-                <select value={tempLanguage} onChange={(e) => setTempLanguage(e.target.value)}
-                  className="flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }}>
-                  <option value="">Select Language</option>
-                  {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
-                </select>
-                <Button type="button" variant="secondary" onClick={() => addItem('language', tempLanguage)} disabled={!tempLanguage}>Add</Button>
-              </div>
-              {formData.languages.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {formData.languages.map(l => (
-                    <span key={l} className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 rounded-lg text-sm flex items-center gap-2">
-                      <Globe size={14} /> {l} <button type="button" onClick={() => removeItem('languages', l)} className="hover:text-red-500">×</button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
+            <TagInput
+              label="Languages Spoken"
+              placeholder="Search and select languages..."
+              options={COMMON_LANGUAGES}
+              selectedItems={formData.languages}
+              onAdd={(val) => setFormData((prev: any) => ({ ...prev, languages: [...prev.languages, val] }))}
+              onRemove={(val) => setFormData((prev: any) => ({ ...prev, languages: prev.languages.filter((i: string) => i !== val) }))}
+              accentColor="blue"
+              icon={<Globe size={20} className="mb-2 opacity-20" />}
+            />
 
             {/* Awards */}
             <div>
               <label className="block text-sm font-medium mb-2">Awards & Recognition</label>
               <div className="flex gap-2 mb-3">
                 <input type="text" value={tempAward} onChange={(e) => setTempAward(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addItem('award', tempAward))}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), setFormData(prev => ({ ...prev, awards: [...prev.awards, tempAward] })), setTempAward(""))}
                   placeholder="e.g., Best Doctor Award 2023"
                   className="flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
                   style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--border-color)' }} />
-                <Button type="button" variant="secondary" onClick={() => addItem('award', tempAward)} disabled={!tempAward}>Add</Button>
+                <Button type="button" variant="secondary" onClick={() => { if(tempAward) { setFormData(prev => ({ ...prev, awards: [...prev.awards, tempAward] })); setTempAward(""); } }} disabled={!tempAward}>Add</Button>
               </div>
               {formData.awards.length > 0 && (
                 <div className="space-y-2">
@@ -706,7 +618,7 @@ function CreateDoctor() {
                       <span className="text-sm flex items-center gap-2">
                         <Award className="text-amber-600" size={16} /> {a}
                       </span>
-                      <button type="button" onClick={() => removeItem('awards', a)} className="text-red-500 hover:text-red-700">×</button>
+                      <button type="button" onClick={() => removeAward(a)} className="text-red-500 hover:text-red-700">×</button>
                     </div>
                   ))}
                 </div>
@@ -716,7 +628,7 @@ function CreateDoctor() {
         </Card>
 
         {/* 6. Bank & Payroll Details */}
-        <Card title="Bank & Payroll Details (Mandatory for Payslips)" icon={<Landmark className="text-emerald-500" />} padding="p-6">
+        <Card title="Bank & Payroll Details (Mandatory for Payslips)" icon={<Landmark className="text-emerald-500" />} padding="p-2 md:p-6">
           <div className="space-y-6">
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <FormInput label="Account Holder Name" type="text" name="accountName" value={formData.accountName} onChange={handleChange} placeholder="As per bank records"/>
@@ -743,9 +655,9 @@ function CreateDoctor() {
         {/* Action Buttons */}
         <div className="flex justify-end gap-4 pt-4">
           <Button type="button" variant="secondary" onClick={() => router.push("/hospital-admin/doctors")}
-            disabled={loading} className="px-8">Cancel</Button>
+            disabled={loading} className="px-2 md:px-8">Cancel</Button>
           <Button type="submit" variant="primary" loading={loading} icon={<UserPlus size={18} />}
-            className="px-12 py-4 text-lg shadow-lg hover:shadow-xl">
+            className="px-12 py-4 text-xs md:text-base md:text-lg shadow-lg hover:shadow-xl">
             Create Doctor Profile
           </Button>
         </div>

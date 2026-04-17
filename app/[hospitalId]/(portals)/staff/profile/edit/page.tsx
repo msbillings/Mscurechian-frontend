@@ -12,6 +12,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { getStaffProfileAction, updateStaffProfileAction } from '@/lib/integrations/actions/staff.actions';
 import { useAuthStore } from '@/stores/authStore';
+import { clearApiCache } from '@/lib/integrations/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, ChevronDown, Camera } from 'lucide-react';
 import ImageCropper from '@/components/ui/ImageCropper';
@@ -88,6 +89,7 @@ export default function EditStaffProfilePage() {
     const [files, setFiles] = useState<Record<string, File>>({});
     const [viewer, setViewer] = useState({ isOpen: false, url: '', title: '' });
     const [isIFSCValidating, setIsIFSCValidating] = useState(false);
+    const [isPhotoUploading, setIsPhotoUploading] = useState(false);
     const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
 
     const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; docId: string; label: string }>({ isOpen: false, docId: '', label: '' });
@@ -420,20 +422,60 @@ export default function EditStaffProfilePage() {
     };
 
     const handleCropComplete = async (croppedDataUrl: string) => {
-        setFormData((prev: any) => ({ ...prev, profilePic: croppedDataUrl }));
-
-        // Convert data URL to File object for submission
         try {
-            const res = await fetch(croppedDataUrl);
-            const blob = await res.blob();
+            setCropper({ isOpen: false, image: '' });
+            setIsPhotoUploading(true);
+            
+            // Optimistic update for immediate visual feedback
+            setFormData((prev: any) => ({ ...prev, profilePic: croppedDataUrl }));
+            if (setUser && user) {
+                setUser({ 
+                    ...user, 
+                    image: croppedDataUrl,
+                    avatar: croppedDataUrl,
+                    profilePic: croppedDataUrl 
+                } as any);
+            }
+
+            // Convert data URL to File object for submission
+            const resBlob = await fetch(croppedDataUrl);
+            const blob = await resBlob.blob();
             const file = new File([blob], "profile-pic.png", { type: "image/png" });
-            setFiles(prev => ({ ...prev, profilePic: file }));
+            
+            const photoData = new FormData();
+            photoData.append("profilePic", file);
+
+            const uploadToast = toast.loading("Uploading cropped photo...");
+            const res = await updateStaffProfileAction(photoData);
+
+            if (res.success && res.data) {
+                // Staff data is nested: res.data.staff.user.image
+                const staffData = res.data.staff;
+                const newImage = staffData?.user?.image || staffData?.user?.avatar || res.data.profilePic;
+                
+                if (newImage) {
+                    const cacheBustedImage = `${newImage}${newImage.includes('?') ? '&' : '?'}t=${Date.now()}`;
+                    setFormData((prev: any) => ({ ...prev, profilePic: cacheBustedImage }));
+                    
+                    if (setUser && user) {
+                        setUser({ 
+                            ...user, 
+                            image: cacheBustedImage,
+                            avatar: cacheBustedImage,
+                            profilePic: cacheBustedImage
+                        } as any);
+                    }
+                }
+                toast.success('Profile photo updated', { id: uploadToast });
+            } else {
+                toast.error(res.error || 'Failed to update photo', { id: uploadToast });
+            }
         } catch (error) {
             console.error("Error processing cropped image", error);
+            toast.error("An error occurred while uploading");
+        } finally {
+            setIsPhotoUploading(false);
         }
-
-        setCropper({ isOpen: false, image: '' });
-        toast.success("Photo cropped successfully");
     };
 
     const handleDeleteDocument = (docId: string, label: string) => {
@@ -545,18 +587,28 @@ export default function EditStaffProfilePage() {
                 toast.success('Profile updated successfully');
 
                 // ✅ MANUAL SYNC: Update the auth store with the new image URL (if it changed)
-                // We add a timestamp to bust browser/CDN cache
+                // Staff data is nested: res.data.staff.user.image
                 if (res.data && res.data.staff && setUser && user) {
-                    const newImage = res.data.staff.profilePic;
+                    const staffData = res.data.staff;
+                    const newImage = staffData?.user?.image || staffData?.user?.avatar || staffData?.profilePic;
                     if (newImage) {
                         const cacheBustedImage = `${newImage}${newImage.includes('?') ? '&' : '?'}t=${Date.now()}`;
-                        setUser({ ...user, image: cacheBustedImage });
+                        setUser({ 
+                            ...user, 
+                            image: cacheBustedImage,
+                            avatar: cacheBustedImage,
+                            profilePic: cacheBustedImage
+                        } as any);
                     }
                 }
 
-                // Force-refresh auth store as a backup
-                await checkAuth(true);
-                router.push(`/${hospitalId}/staff/profile`);
+                // ✅ CLEAR LOCAL CACHE
+                clearApiCache();
+                
+                // Allow store and session storage to settle before redirecting
+                setTimeout(() => {
+                    router.push(`/${hospitalId}/staff/profile`);
+                }, 300);
             } else {
                 toast.error(res.error || 'Failed to update profile');
             }
@@ -583,7 +635,7 @@ export default function EditStaffProfilePage() {
     ];
 
     return (
-        <div className="max-w-7xl mx-auto py-1 sm:py-8 px-1 sm:px-4 min-h-[calc(100vh-100px)]">
+        <div className="max-w-7xl mx-auto sm:px-1 min-h-[calc(100vh-100px)] overflow-x-hidden">
             <DocumentViewerModal
                 isOpen={viewer.isOpen}
                 onClose={() => setViewer({ ...viewer, isOpen: false })}
@@ -610,7 +662,7 @@ export default function EditStaffProfilePage() {
                         <ArrowLeft size={14} className="sm:size-5" />
                     </button>
                     <div>
-                        <h1 className="text-xs sm:text-2xl font-black text-gray-900 dark:text-white tracking-tighter uppercase">Edit Profile</h1>
+                        <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white tracking-tighter uppercase">Edit Profile</h1>
                         <p className="text-[7px] sm:text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5 sm:mt-1">Staff Management Registry</p>
                     </div>
                 </div>
@@ -661,7 +713,7 @@ export default function EditStaffProfilePage() {
                 </div>
 
                 {/* Main Form Content */}
-                <div className="flex-1 bg-white dark:bg-[#111] rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 p-2 sm:p-8 shadow-sm">
+                <div className="flex-1 bg-white dark:bg-[#111] rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 p-4 sm:p-8 shadow-sm overflow-hidden">
                     {activeTab === 'personal' && (
                         <div className="space-y-4 sm:space-y-8 animate-in fade-in duration-300">
                             <div>
@@ -738,10 +790,19 @@ export default function EditStaffProfilePage() {
                                     </div>
                                     <div className="flex-1 space-y-2 w-full max-w-[180px]">
                                         <div className="flex items-center gap-3">
-                                            <label className="w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-900/50 border border-dashed border-indigo-200 dark:border-indigo-900 rounded-lg cursor-pointer hover:bg-indigo-50/50 transition-all group">
-                                                <Camera size={12} className="text-indigo-500 group-hover:scale-110 transition-transform" />
-                                                <span className="text-[8px] font-black uppercase tracking-widest text-indigo-600">Update Photo</span>
-                                                <input type="file" name="profilePic" onChange={handleFileChange} className="hidden" accept="image/*" />
+                                            <label className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 border border-dashed rounded-lg transition-all group ${isPhotoUploading ? 'bg-indigo-100 border-indigo-300 cursor-not-allowed text-indigo-400' : 'bg-gray-50 dark:bg-gray-900/50 border-indigo-200 dark:border-indigo-900 cursor-pointer hover:bg-indigo-50/50 text-indigo-600'}`}>
+                                                {isPhotoUploading ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                                                        <span className="text-[8px] font-black uppercase tracking-widest">Processing...</span>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <Camera size={12} className="text-indigo-500 group-hover:scale-110 transition-transform" />
+                                                        <span className="text-[8px] font-black uppercase tracking-widest">Update Photo</span>
+                                                        <input type="file" name="profilePic" onChange={handleFileChange} className="hidden" accept="image/*" disabled={isPhotoUploading} />
+                                                    </>
+                                                )}
                                             </label>
                                         </div>
                                         <p className="text-[9px] text-gray-500 font-bold uppercase tracking-tighter">Only PDF and any type of image (JPG, PNG). Max 5MB.</p>
@@ -813,8 +874,8 @@ export default function EditStaffProfilePage() {
                     {activeTab === 'qualifications' && (
                         <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-300">
                             <div>
-                                <h3 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                                    <Award className="text-indigo-500" size={16} /> Professional Qualifications
+                                <h3 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center flex-wrap gap-2">
+                                    <Award className="text-indigo-500 shrink-0" size={16} /> Professional Qualifications
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                                     <div className="space-y-1">
@@ -835,14 +896,14 @@ export default function EditStaffProfilePage() {
                             </div>
 
                             <div className="pt-4 border-t border-gray-50 dark:border-gray-800">
-                                <div className="flex items-center justify-between mb-3">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
                                     <h3 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                        <Award className="text-indigo-500" size={16} /> Professional Certificates
+                                        <Award className="text-indigo-500 shrink-0" size={16} /> Professional Certificates
                                     </h3>
                                     <button
                                         type="button"
                                         onClick={addQualification}
-                                        className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all"
+                                        className="w-fit flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all"
                                     >
                                         <Plus size={12} /> Add More
                                     </button>
@@ -850,7 +911,7 @@ export default function EditStaffProfilePage() {
 
                                 <div className="space-y-4">
                                     {formData.qualifications.map((qual: string, index: number) => (
-                                        <div key={index} className="flex items-center gap-2 sm:gap-3 animate-in fade-in slide-in-from-left-4 duration-300 w-full overflow-hidden">
+                                        <div key={index} className="flex items-center gap-2 sm:gap-3 animate-in fade-in sm:slide-in-from-left-4 duration-300 w-full overflow-hidden">
                                             <div className="flex-1 relative min-w-0">
                                                 <input
                                                     type="text"
@@ -870,8 +931,8 @@ export default function EditStaffProfilePage() {
                                         </div>
                                     ))}
                                     {formData.qualifications.length === 0 && (
-                                        <div className="py-12 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-[2rem] text-center">
-                                            <p className="text-sm text-gray-400 italic font-medium">No qualifications added yet. Click 'Add Degree' to begin.</p>
+                                        <div className="py-8 sm:py-12 px-4 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-[2rem] text-center">
+                                            <p className="text-xs sm:text-sm text-gray-400 italic font-medium">No qualifications added yet. Click 'Add Degree' to begin.</p>
                                         </div>
                                     )}
                                 </div>
@@ -879,10 +940,10 @@ export default function EditStaffProfilePage() {
 
                             <div className="pt-4 border-t border-gray-50 dark:border-gray-800">
                                 {/* Header */}
-                                <div className="flex items-center justify-between mb-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-8 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl flex items-center justify-center border border-indigo-100 dark:border-indigo-500/20">
-                                            <Shield className="text-indigo-600 dark:text-indigo-400" size={16} />
+                                            <Shield className="text-indigo-600 dark:text-indigo-400 shrink-0" size={16} />
                                         </div>
                                         <div>
                                             <h3 className="text-xs sm:text-base font-black text-gray-900 dark:text-white tracking-tight uppercase">Registry Credentials</h3>
@@ -914,7 +975,7 @@ export default function EditStaffProfilePage() {
 
                                         return (
                                             <div key={docType.id}
-                                                className={`flex items-center gap-2 px-3 py-2.5 transition-all ${hasDoc ? 'bg-white dark:bg-[#111]' : 'bg-gray-50/70 dark:bg-gray-900/30'}`}
+                                                className={`flex items-center flex-wrap sm:flex-nowrap gap-3 px-3 py-3 sm:py-2.5 transition-all ${hasDoc ? 'bg-white dark:bg-[#111]' : 'bg-gray-50/70 dark:bg-gray-900/30'}`}
                                             >
                                                 <div className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border text-[10px] font-black ${hasDoc ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 text-emerald-600' : 'bg-gray-100 dark:bg-gray-800 border-gray-200 text-gray-400'}`}>
                                                     {isUploading ? <div className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" /> : hasDoc ? <CheckCircle2 size={12} /> : <FileText size={12} />}
@@ -925,7 +986,7 @@ export default function EditStaffProfilePage() {
                                                     {hasDoc && <p className="text-[7px] text-gray-400 truncate">{fileName}</p>}
                                                 </div>
 
-                                                <div className="flex items-center gap-1">
+                                                <div className="flex items-center justify-end gap-1 ml-auto">
                                                     {hasDoc && (
                                                         <>
                                                             <button type="button" onClick={() => setViewer({ isOpen: true, url: doc.url, title: docType.label })} className="p-1.5 hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 rounded-md transition-all"><Eye size={12} /></button>

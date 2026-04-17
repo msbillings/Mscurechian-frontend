@@ -5,7 +5,7 @@ import { LabBillingService } from '@/lib/integrations/services/labBilling.servic
 import { BillResponse } from '@/lib/integrations/types/labBilling';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { Download, Eye, Printer, Filter, Calendar, Receipt, ChevronLeft, ChevronRight, Search, X, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Download, Eye, Printer, Filter, Calendar, Receipt, ChevronLeft, ChevronRight, Search, X, RefreshCw } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import BillPrintView from '@/components/lab/BillPrintView';
 import { toast } from 'react-hot-toast';
@@ -25,8 +25,6 @@ function TransactionsPage() {
     // Auto-refresh state
     const [isAutoRefreshed, setIsAutoRefreshed] = useState(false);
 
-    // Delete state
-    const [deletingId, setDeletingId] = useState<string | null>(null);
 
     const printRef = useRef<HTMLDivElement>(null);
 
@@ -70,18 +68,6 @@ function TransactionsPage() {
         }
     };
 
-    const confirmDelete = async () => {
-        if (!deletingId) return;
-        try {
-            await LabBillingService.deleteBill(deletingId);
-            toast.success('Transaction deleted successfully');
-            setDeletingId(null);
-            fetchBills(page, true);
-        } catch (error) {
-            console.error(error);
-            toast.error('Failed to delete transaction');
-        }
-    };
 
     // Initial Fetch & Date Filter Change
     useEffect(() => {
@@ -308,15 +294,15 @@ function TransactionsPage() {
     };
 
     return (
-        <div className="max-w-full mx-auto pb-12 px-6 bg-slate-50/50 dark:bg-gray-900 min-h-screen">
+        <div className="max-w-full mx-auto pb-12 bg-slate-50/50 dark:bg-gray-900 min-h-screen">
             {/* Professional Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-8 border-b border-gray-200 dark:border-gray-800 mb-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-4 border-b border-gray-200 dark:border-gray-800 mb-6">
                 <div>
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 bg-indigo-600 rounded-lg shadow-lg shadow-indigo-200 dark:shadow-none">
                             <Receipt className="w-5 h-5 text-white" />
                         </div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Billing History</h1>
+                        <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white tracking-tight">Billing History</h1>
                     </div>
                     <div className="flex items-center gap-2">
                         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -459,13 +445,6 @@ function TransactionsPage() {
                                                 >
                                                     <Printer className="w-4 h-4" />
                                                 </button>
-                                                <button
-                                                    onClick={() => setDeletingId(bill._id)}
-                                                    className="p-2 text-rose-600 bg-white hover:bg-rose-50 border border-gray-200 hover:border-rose-200 rounded-lg transition-colors shadow-sm"
-                                                    title="Delete"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -531,24 +510,6 @@ function TransactionsPage() {
                 </div>
             )}
 
-            {/* Delete Modal */}
-            {deletingId && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-sm w-full shadow-xl animate-in zoom-in-95">
-                        <div className="flex flex-col items-center text-center gap-3">
-                            <div className="p-3 bg-rose-100 rounded-full">
-                                <AlertTriangle className="w-6 h-6 text-rose-600" />
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Delete Transaction?</h3>
-                            <p className="text-sm text-gray-500">This action cannot be undone.</p>
-                            <div className="flex gap-3 w-full mt-4">
-                                <button onClick={() => setDeletingId(null)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold text-sm">Cancel</button>
-                                <button onClick={confirmDelete} className="flex-1 py-2 bg-rose-600 text-white rounded-lg font-bold text-sm shadow-md">Delete</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Hidden Print Content */}
             <div style={{ display: 'none' }}>

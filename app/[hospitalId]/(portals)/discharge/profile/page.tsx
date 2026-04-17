@@ -283,6 +283,10 @@ const DischargeProfile = () => {
                 ...user,
                 ...response,
                 id: (response.id || response._id || user?.id || '').toString(),
+                // Sync all image fields for Navbar consistency
+                image: profileImage || response.image || user?.image,
+                avatar: profileImage || response.image || user?.image,
+                profilePic: profileImage || response.image || user?.image
             } as any;
 
             // Update local storage and session storage via authStore

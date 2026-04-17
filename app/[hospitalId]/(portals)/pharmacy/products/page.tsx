@@ -258,68 +258,91 @@ const ProductsPage = () => {
     }))).filter(Boolean)];
 
     return (
-        <div className="space-y-6 pb-20 w-full max-w-[100vw] overflow-x-hidden pt-4">
+        <div className="space-y-4 md:space-y-6 pb-20 w-full max-w-7xl mx-auto overflow-x-hidden pt-2 md:pt-4">
             {/* Header Area from Model */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 px-2">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Products</h1>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 md:gap-4 w-full lg:w-auto">
+                    <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white shrink-0">Products</h1>
 
-                <div className="flex flex-wrap items-center gap-2">
                     {/* Search Bar - Integrated in Header */}
-                    <div className="relative min-w-[300px] xl:min-w-[450px]">
-                        <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                    <div className="relative w-full sm:min-w-[200px] xl:min-w-[400px]">
+                        <Search className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400 absolute left-3 md:left-4 top-1/2 -translate-y-1/2" />
                         <input
                             type="text"
-                            placeholder="Search products by name, brand, generic, or SKU..."
+                            placeholder="Search by name, brand, SKU..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-11 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:text-white shadow-sm"
+                            className="w-full pl-9 md:pl-11 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs md:text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:text-white shadow-sm"
                         />
                     </div>
+                </div>
 
+                <div className="flex flex-wrap items-center gap-2">
                     <Link
                         href="/pharmacy/products/add"
-                        className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-colors shadow-sm"
+                        className="flex items-center gap-1.5 px-3 py-2 bg-teal-600 text-white rounded-lg text-xs font-semibold hover:bg-teal-700 transition-colors shadow-sm"
                     >
-                        <Plus size={18} />
-                        Add Product
+                        <Plus size={16} />
+                        <span className="hidden sm:inline">Add Product</span>
                     </Link>
 
                     <button
                         onClick={() => setIsFilterOpen(!isFilterOpen)}
-                        className={`flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-semibold transition-colors shadow-sm ${isFilterOpen ? 'text-blue-600 border-blue-200 bg-blue-50' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50'}`}
+                        className={`flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold transition-colors shadow-sm ${isFilterOpen ? 'text-blue-600 border-blue-200 bg-blue-50' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50'}`}
                     >
-                        <Filter size={16} />
-                        Filters
+                        <Filter size={14} />
+                        <span className="hidden sm:inline">Filters</span>
                     </button>
 
                     <button
                         onClick={() => fetchProducts(currentPage)}
-                        className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 transition-colors shadow-sm"
+                        className="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 transition-colors shadow-sm"
                     >
-                        <RefreshCcw size={18} className={isLoading ? 'animate-spin' : ''} />
+                        <RefreshCcw size={16} className={isLoading ? 'animate-spin' : ''} />
                     </button>
 
                     <button
                         onClick={handleExportExcel}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors shadow-sm"
+                        className="flex items-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 transition-colors shadow-sm"
                     >
-                        <Download size={18} />
-                        Export Data
+                        <Download size={16} />
+                        <span className="hidden sm:inline">Export</span>
                     </button>
 
                     <button
                         onClick={() => setIsBulkModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 transition-colors shadow-sm"
+                        className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 transition-colors shadow-sm"
                     >
-                        <FileSpreadsheet size={18} />
-                        Import
+                        <FileSpreadsheet size={16} />
+                        <span className="hidden sm:inline">Import</span>
                     </button>
+
+                    {/* Pagination Box */}
+                    <div className="flex items-center gap-1 ml-auto lg:ml-2">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1 || isLoading}
+                            className="p-1 px-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 border border-gray-200 dark:border-gray-700"
+                        >
+                            <ChevronDown className="rotate-90" size={16} />
+                        </button>
+                        <div className="bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">
+                            {currentPage} / {totalPages}
+                        </div>
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages || isLoading}
+                            className="p-1 px-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 border border-gray-200 dark:border-gray-700"
+                        >
+                            <ChevronDown className="-rotate-90" size={16} />
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* Filters Section (Optional/Expandable) */}
             {isFilterOpen && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm mx-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 bg-white dark:bg-gray-800 p-3 md:p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm mx-1 md:mx-2">
                     <div>
                         <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Stock Status</label>
                         <select
@@ -360,38 +383,7 @@ const ProductsPage = () => {
             )}
 
             {/* Table Container with Pagination Info at Top */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mx-2 overflow-hidden">
-                <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
-                    <div className="flex items-center gap-4">
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                            Page <span className="font-bold text-blue-600 dark:text-blue-400">{currentPage}</span> of {totalPages}
-                            <span className="ml-2 text-gray-400">
-                                ({((currentPage - 1) * 20) + 1}-{Math.min(currentPage * 20, totalProducts)} of {totalProducts})
-                            </span>
-                        </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1 || isLoading}
-                            className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 border border-gray-200 dark:border-gray-700"
-                        >
-                            <ChevronDown className="rotate-90" size={18} />
-                        </button>
-                        <div className="bg-green-600 text-white px-3 py-1 rounded text-sm font-bold">
-                            {currentPage} / {totalPages}
-                        </div>
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages || isLoading}
-                            className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 border border-gray-200 dark:border-gray-700"
-                        >
-                            <ChevronDown className="-rotate-90" size={18} />
-                        </button>
-                    </div>
-                </div>
-
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mx-1 md:mx-2 overflow-hidden mt-2">
                 <ProductTable
                     products={products}
                     onEdit={handleEditProduct}

@@ -53,6 +53,7 @@ export default function IPDIssuancePage() {
     const searchParams = useSearchParams();
     const hospitalId = params?.hospitalId as string;
     const urlAdmissionId = searchParams.get("admissionId");
+    const pName = searchParams.get("patientName");
     const queryClient = useQueryClient();
     const { getPath } = useTenantLink();
 
@@ -79,47 +80,37 @@ export default function IPDIssuancePage() {
         refetchInterval: 30000,
     });
 
-    // Derive selected admission from URL or manual state
-    const foundInActive = useMemo(() => {
-        const id = urlAdmissionId || manualSelectionId;
-        if (!id) return null;
-        return (admissions as any[]).find((a: any) => a.admissionId === id) || null;
-    }, [urlAdmissionId, manualSelectionId, admissions]);
-
-    // Fallback: if admissionId is in URL but NOT in active admissions (e.g. discharged),
-    // fetch the admission details directly so the correct patient's history is shown
-    const { data: fallbackAdmissionRaw } = useQuery({
-        queryKey: ["ipd", "admission-detail", urlAdmissionId],
+    // Fetch specific admission if urlAdmissionId is provided but not in the active list
+    const { data: specificAdmission } = useQuery({
+        queryKey: ["ipd", "admission", urlAdmissionId],
         queryFn: () => ipdService.getAdmissionDetails(urlAdmissionId!),
-        enabled: !!urlAdmissionId && !loadingAdmissions && !foundInActive,
+        enabled: !!urlAdmissionId && !admissions.some((a: any) => a.admissionId === urlAdmissionId),
     });
 
-    // Normalize the flattened getAdmissionDetails response into the nested shape the component expects
-    const fallbackAdmission = useMemo(() => {
-        const raw = fallbackAdmissionRaw as any;
-        if (!raw) return null;
-        // If the API already returns nested shape (has patient as an object), use it directly
-        if (raw.patient && typeof raw.patient === "object") return raw;
-        // Otherwise, normalize the flattened discharge-summary style response
-        return {
-            _id: raw._id,
-            admissionId: raw.admissionId,
-            status: raw.status || "DISCHARGED",
-            pharmacyClearanceStatus: raw.pharmacyClearanceStatus,
-            patient: {
-                _id: raw.patientId || raw._id,
-                name: raw.patientName || "",
-                mobile: raw.phone || raw.mobile || "",
-                mrn: raw.mrn || "",
-            },
-            primaryDoctor: raw.primaryDoctor
-                ? { user: { name: raw.primaryDoctor } }
-                : undefined,
-            bed: { bedId: raw.bedNo || "", type: raw.roomType || "" },
-        };
-    }, [fallbackAdmissionRaw]);
+    // Derive selected admission from URL or manual state
+    const selectedAdmission = useMemo(() => {
+        const id = urlAdmissionId || manualSelectionId;
+        if (!id) return null;
 
-    const selectedAdmission = foundInActive || fallbackAdmission || null;
+        // Try active list first
+        const active = (admissions as any[]).find((a: any) => a.admissionId === id);
+        if (active) return active;
+
+        // Try specifically fetched admission (supports discharged/inactive records)
+        const fetched = (specificAdmission as any)?.data || specificAdmission;
+        if (fetched && (fetched.admissionId === id || fetched._id === id)) {
+            // Apply fallback name from URL if name is not in the object (e.g. unpopulated patient)
+            const obj = { ...fetched };
+            if (!obj.patient || typeof obj.patient === 'string') {
+                obj.patient = { _id: obj.patient || "", name: pName || "Patient" };
+            } else if (!obj.patient.name && pName) {
+                obj.patient.name = pName;
+            }
+            return obj;
+        }
+
+        return null;
+    }, [urlAdmissionId, manualSelectionId, admissions, specificAdmission, pName]);
 
     const filteredAdmissions = (admissions as IPDPatient[]).filter((a) => {
         if (!patientSearch.trim()) return true;
@@ -324,104 +315,104 @@ export default function IPDIssuancePage() {
     // ── Render ───────────────────────────────────────────────────────────────
 
     return (
-        <div className="space-y-6 pb-20">
+        <div className="space-y-4 md:space-y-6 pb-10">
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">IPD Medicine Issuance</h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <div className="pt-2 px-1">
+                <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white uppercase tracking-tight">IPD Medicine Issuance</h1>
+                <p className="text-[10px] md:text-xs font-bold text-gray-400 dark:text-gray-500 mt-1 uppercase tracking-widest">
                     Select an admitted patient to issue medicines and track pharmacy clearance.
                 </p>
             </div>
 
             {/* ══ PATIENT LIST VIEW (no patient selected) ══════════════════════════════ */}
             {!selectedAdmission && (
-                <div className="space-y-5">
+                <div className="space-y-4">
                     {/* Search - Reduced Width */}
-                    <div className="relative max-w-md group">
-                        <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                    <div className="relative w-full md:max-w-md group px-1">
+                        <Search size={15} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                         <input
-                            className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-[12px] font-bold outline-none focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-gray-400"
-                            placeholder="Search by Name, MRN or ID..."
+                            className="w-full pl-11 pr-10 py-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl text-[11px] md:text-[12px] font-black uppercase outline-none focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-gray-400 shadow-sm"
+                            placeholder="Find records..."
                             value={patientSearch}
                             onChange={(e) => setPatientSearch(e.target.value)}
                         />
                         {patientSearch && (
                             <button
                                 onClick={() => setPatientSearch("")}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 text-lg"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 text-lg"
                             >×</button>
                         )}
                     </div>
 
                     {/* Table View */}
-                    <div className="bg-white dark:bg-[#111] rounded-4xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+                    <div className="bg-white dark:bg-[#111] rounded-2xl md:rounded-4xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
+                            <table className="w-full text-left border-collapse min-w-[900px]">
                                 <thead>
                                     <tr className="bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-800">
-                                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Patient / Reference</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Bed Info</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Primary Doctor</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Dept Status</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Clearance</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
+                                        <th className="px-6 py-5 text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Patient / Reference</th>
+                                        <th className="px-6 py-5 text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest text-center whitespace-nowrap">Bed Info</th>
+                                        <th className="px-6 py-5 text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest text-center whitespace-nowrap">Primary Doctor</th>
+                                        <th className="px-6 py-5 text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest text-center whitespace-nowrap">Dept Status</th>
+                                        <th className="px-6 py-5 text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest text-center whitespace-nowrap">Clearance</th>
+                                        <th className="px-6 py-5 text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest text-right whitespace-nowrap">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
                                     {loadingAdmissions ? (
                                         <tr>
-                                            <td colSpan={6} className="py-20 text-center">
+                                            <td colSpan={6} className="py-16 md:py-20 text-center">
                                                 <div className="flex flex-col items-center gap-3">
                                                     <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Fetching Active Admissions...</span>
+                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Fetching Admissions...</span>
                                                 </div>
                                             </td>
                                         </tr>
                                     ) : filteredAdmissions.length === 0 ? (
                                         <tr>
-                                            <td colSpan={6} className="py-20 text-center italic text-gray-400 font-bold uppercase tracking-widest text-[10px]">
+                                            <td colSpan={6} className="py-16 md:py-20 text-center italic text-gray-400 font-bold uppercase tracking-widest text-[9px] md:text-[10px]">
                                                 No clinical records match your search
                                             </td>
                                         </tr>
                                     ) : (
                                         filteredAdmissions.map((adm) => (
                                             <tr key={adm._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-all group cursor-pointer" onClick={() => handleSelectAdmission(adm)}>
-                                                <td className="px-6 py-4">
+                                                <td className="px-4 md:px-6 py-3 md:py-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/10 flex items-center justify-center text-blue-600 border border-blue-100 dark:border-blue-800/50 font-black text-xs">
+                                                        <div className="w-8 h-8 md:w-9 md:h-9 rounded-lg md:rounded-xl bg-blue-50 dark:bg-blue-900/10 flex items-center justify-center text-blue-600 border border-blue-100 dark:border-blue-800/50 font-black text-xs">
                                                             {adm.patient?.name?.[0]}
                                                         </div>
                                                         <div>
-                                                            <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase tracking-tight">{adm.patient?.name}</p>
-                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                            <p className="text-[10px] md:text-[11px] font-black text-gray-900 dark:text-white uppercase tracking-tight">{adm.patient?.name}</p>
+                                                            <div className="flex items-center gap-1.5 mt-0.5">
                                                                 <Fingerprint size={10} className="text-gray-400" />
-                                                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">
+                                                                <p className="text-[8px] md:text-[9px] font-bold text-gray-400 uppercase tracking-tighter">
                                                                     MRN: {(adm.patient as any)?.mrn || 'N/A'}
-                                                                    <span className="mx-1.5 opacity-30">|</span>
+                                                                    <span className="mx-1 opacity-30">|</span>
                                                                     ADM: {adm.admissionId}
                                                                 </p>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
+                                                <td className="px-4 md:px-6 py-3 md:py-4 text-center">
+                                                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 md:py-1 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
                                                         <BedDouble size={10} className="text-blue-500" />
-                                                        <span className="text-[10px] font-black text-gray-600 dark:text-gray-400">{adm.bed?.bedId || '—'}</span>
+                                                        <span className="text-[9px] md:text-[10px] font-black text-gray-600 dark:text-gray-400">{adm.bed?.bedId || '—'}</span>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <p className="text-[10px] font-bold text-gray-500 uppercase">
+                                                <td className="px-4 md:px-6 py-3 md:py-4 text-center">
+                                                    <p className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase">
                                                         {adm.primaryDoctor?.user?.name || 'Not Assigned'}
                                                     </p>
                                                 </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.05em]">
+                                                <td className="px-4 md:px-6 py-3 md:py-4 text-center">
+                                                    <span className="text-[9px] md:text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.05em]">
                                                         {adm.status}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${adm.pharmacyClearanceStatus === "CLEARED"
+                                                <td className="px-4 md:px-6 py-3 md:py-4 text-center">
+                                                    <span className={`px-2 py-0.5 md:py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${adm.pharmacyClearanceStatus === "CLEARED"
                                                         ? "bg-emerald-50 text-emerald-600 border-emerald-200"
                                                         : adm.pharmacyClearanceStatus === "PENDING"
                                                             ? "bg-rose-50 text-rose-600 border-rose-200 animate-pulse"
@@ -430,14 +421,14 @@ export default function IPDIssuancePage() {
                                                         {adm.pharmacyClearanceStatus === "CLEARED" ? "CLEARED" : adm.pharmacyClearanceStatus || "NOT REQUIRED"}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 text-right">
+                                                <td className="px-4 md:px-6 py-3 md:py-4 text-right">
                                                     <div className="flex items-center justify-end gap-2">
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 router.push(getPath(`/pharmacy/ipd-billing?admissionId=${adm.admissionId}`));
                                                             }}
-                                                            className="px-3 py-1.5 bg-teal-50 dark:bg-teal-900/20 text-teal-600 rounded-lg hover:bg-teal-600 hover:text-white transition-all border border-teal-100 dark:border-teal-800/30 text-[9px] font-black uppercase flex items-center gap-2"
+                                                            className="px-2.5 md:px-3 py-1.5 bg-teal-50 dark:bg-teal-900/20 text-teal-600 rounded-lg hover:bg-teal-600 hover:text-white transition-all border border-teal-100 dark:border-teal-800/30 text-[8px] md:text-[9px] font-black uppercase flex items-center gap-1.5 md:gap-2 shadow-sm"
                                                         >
                                                             <Pencil size={10} />
                                                             Edit Bill
@@ -456,44 +447,50 @@ export default function IPDIssuancePage() {
 
             {/* ══ PATIENT DETAIL VIEW (patient selected) ════════════════════════════ */}
             {selectedAdmission && (
-                <div>
+                <div className="animate-in slide-in-from-bottom-2 duration-500">
                     {/* Back button */}
                     <button
                         onClick={handleBack}
-                        className="flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-gray-600 mb-5"
+                        className="flex items-center gap-2 text-[10px] md:text-sm font-bold text-gray-400 hover:text-gray-600 mb-4 md:mb-5 uppercase tracking-widest transition-colors px-1"
                     >
-                        <ArrowLeft size={15} /> Back to all patients
+                        <ArrowLeft size={14} className="md:w-[15px]" /> Back to all patients
                     </button>
 
-                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
                         {/* LEFT col */}
-                        <div className="xl:col-span-2 space-y-5">
+                        <div className="xl:col-span-2 space-y-4 md:space-y-5">
 
                             {/* ── Patient Card ── */}
-                            <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-                                <div className="bg-linear-to-r from-blue-600 to-indigo-600 p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
-                                                <User size={24} className="text-white" />
+                            <div className="bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+                                <div className="bg-linear-to-r from-blue-600 to-indigo-600 p-5 md:p-8 text-white relative overflow-hidden">
+                                    <div className="absolute right-0 top-0 w-32 md:w-64 h-32 md:h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none" />
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                                        <div className="flex items-center gap-4 md:gap-6">
+                                            <div className="w-14 h-14 md:w-20 md:h-20 bg-white/20 rounded-2xl md:rounded-3xl flex items-center justify-center shrink-0 shadow-lg backdrop-blur-sm border border-white/10">
+                                                <User size={24} className="md:w-8 md:h-8" />
                                             </div>
-                                            <div>
-                                                <p className="text-white/70 text-xs font-semibold uppercase tracking-wider">Selected Patient</p>
-                                                <p className="text-white text-2xl font-bold">{selectedAdmission.patient?.name}</p>
-                                                <p className="text-white/60 text-xs mt-1 font-mono">{selectedAdmission.admissionId}</p>
-                                                {selectedAdmission.patient?.mobile && (
-                                                    <p className="text-white/60 text-xs">📞 {selectedAdmission.patient.mobile}</p>
-                                                )}
+                                            <div className="min-w-0">
+                                                <p className="text-white/70 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] mb-1">Selected Patient Registry</p>
+                                                <h2 className="text-xl md:text-3xl font-black leading-none uppercase tracking-tight truncate">{selectedAdmission.patient?.name}</h2>
+                                                <div className="flex items-center gap-3 mt-2">
+                                                    <p className="text-white/60 text-[10px] md:text-xs font-black uppercase tracking-widest">{selectedAdmission.admissionId}</p>
+                                                    {selectedAdmission.patient?.mobile && (
+                                                        <>
+                                                            <span className="w-1 h-1 bg-white/30 rounded-full" />
+                                                            <p className="text-white/60 text-[10px] md:text-xs font-black uppercase tracking-widest">📞 {selectedAdmission.patient.mobile}</p>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="text-right space-y-2">
+                                        <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center md:text-right gap-3 border-t border-white/10 md:border-0 pt-4 md:pt-0">
                                             {selectedAdmission.bed?.bedId && (
-                                                <div className="bg-white/10 rounded-2xl px-4 py-2 flex items-center gap-2">
-                                                    <BedDouble size={14} className="text-white/70" />
-                                                    <span className="text-white font-bold text-sm">{selectedAdmission.bed.bedId}</span>
+                                                <div className="bg-white text-indigo-600 rounded-xl px-4 py-2 flex items-center gap-2 shadow-xl shadow-indigo-900/20">
+                                                    <BedDouble size={14} />
+                                                    <span className="font-black text-[11px] md:text-sm uppercase tracking-widest">{selectedAdmission.bed.bedId}</span>
                                                 </div>
                                             )}
-                                            <span className={`px-3 py-1.5 rounded-full text-xs font-bold block text-center ${getClearanceColor(selectedAdmission.pharmacyClearanceStatus)}`}>
+                                            <span className={`px-3 py-1.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest border backdrop-blur-sm ${getClearanceColor(selectedAdmission.pharmacyClearanceStatus).replace('bg-green-100', 'bg-white/10').replace('bg-red-100', 'bg-white/10').replace('text-green-700', 'text-white').replace('text-red-700', 'text-white').replace('border-green-200', 'border-white/20').replace('border-red-200', 'border-white/20')}`}>
                                                 {selectedAdmission.pharmacyClearanceStatus || "NOT_REQUIRED"}
                                             </span>
                                         </div>
@@ -502,16 +499,16 @@ export default function IPDIssuancePage() {
 
                                 {/* Summary stats */}
                                 {summary && (
-                                    <div className="grid grid-cols-4 divide-x dark:divide-gray-700">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 dark:divide-gray-700 border-b border-gray-50 dark:border-gray-700">
                                         {[
                                             { label: "Issued", val: (summary as any).totalIssued ?? 0, color: "text-blue-600" },
                                             { label: "Returned", val: (summary as any).totalReturned ?? 0, color: "text-orange-500" },
                                             { label: "Consumed", val: (summary as any).totalConsumed ?? 0, color: "text-green-600" },
                                             { label: "Net Bill", val: `₹${((summary as any).netBillableAmount ?? 0).toFixed(2)}`, color: "text-purple-600" },
                                         ].map((s) => (
-                                            <div key={s.label} className="p-4 text-center">
-                                                <p className="text-xs text-gray-400 mb-1">{s.label}</p>
-                                                <p className={`text-lg font-bold ${s.color}`}>{s.val}</p>
+                                            <div key={s.label} className="p-3 md:p-4 text-center">
+                                                <p className="text-[9px] md:text-xs text-gray-400 uppercase font-black tracking-widest mb-1">{s.label}</p>
+                                                <p className={`text-base md:text-lg font-bold tabular-nums ${s.color}`}>{s.val}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -519,82 +516,84 @@ export default function IPDIssuancePage() {
 
                                 {/* Warning */}
                                 {(summary as any)?.pendingReturnRequests > 0 && (
-                                    <div className="mx-5 mb-4 mt-1 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 rounded-2xl px-4 py-2.5 flex items-center gap-2 text-xs text-amber-700">
-                                        <AlertTriangle size={13} className="shrink-0" />
-                                        {(summary as any).pendingReturnRequests} pending return request(s).
+                                    <div className="mx-4 md:mx-5 mb-4 mt-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 rounded-xl md:rounded-2xl px-3 py-2 md:px-4 md:py-2.5 flex items-start md:items-center gap-2 text-[10px] md:text-xs text-amber-700">
+                                        <AlertTriangle size={14} className="shrink-0 mt-0.5 md:mt-0" />
+                                        <span className="font-bold">{(summary as any).pendingReturnRequests} pending return request(s) require action.</span>
                                     </div>
                                 )}
 
                                 {(summary as any)?.pharmacyClearanceStatus === "PENDING" && (
-                                    <div className="px-5 pb-5">
+                                    <div className="px-4 md:px-5 pb-4 md:pb-5 pt-1">
                                         {!overrideMismatch ? (
                                             <button
                                                 onClick={() => signoffMutation.mutate({ admissionId: admId })}
                                                 disabled={signoffMutation.isPending}
-                                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-2xl text-sm font-bold uppercase tracking-wider transition-colors disabled:opacity-60 w-full justify-center"
+                                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-3 md:py-3.5 rounded-xl md:rounded-2xl text-[10px] md:text-sm font-bold uppercase tracking-widest transition-all disabled:opacity-60 w-full justify-center shadow-lg shadow-green-100 dark:shadow-none active:scale-95"
                                             >
                                                 <CheckCircle2 size={16} />
-                                                {signoffMutation.isPending ? "Verifying Stock..." : "Verify & Sign-Off"}
+                                                {signoffMutation.isPending ? "Verifying Ledger..." : "Sign-Off Pharmacy Clearance"}
                                             </button>
                                         ) : (
-                                            <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-3xl p-5 mb-4">
-                                                <h4 className="text-red-700 dark:text-red-400 font-bold mb-3 flex items-center gap-2">
+                                            <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-2xl md:rounded-3xl p-4 md:p-5 mb-4">
+                                                <h4 className="text-red-700 dark:text-red-400 font-bold mb-2 md:mb-3 flex items-center gap-2 text-xs md:text-sm">
                                                     <AlertTriangle size={18} />
                                                     Discrepancy Detected
                                                 </h4>
-                                                <p className="text-red-600 dark:text-red-300 text-xs mb-4 leading-relaxed">
-                                                    The system found medicines that were issued but neither consumed nor physically returned. You cannot normally sign off until these are verified or a return request is submitted.
+                                                <p className="text-red-600 dark:text-red-300 text-[10px] md:text-xs mb-4 leading-relaxed font-semibold">
+                                                    The system found medicines that were issued but neither consumed nor physically returned. Verify stock or submit return requests.
                                                 </p>
 
-                                                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-red-100 dark:border-red-900 overflow-hidden mb-4">
-                                                    <table className="w-full text-xs text-left">
-                                                        <thead className="bg-red-100/50 dark:bg-red-900/40 text-red-700 dark:text-red-400">
-                                                            <tr>
-                                                                <th className="px-4 py-2 font-bold">Missing Medicine</th>
-                                                                <th className="px-2 py-2 text-center font-bold">Issued</th>
-                                                                <th className="px-2 py-2 text-center font-bold">Consumed</th>
-                                                                <th className="px-2 py-2 text-center font-bold">Returned</th>
-                                                                <th className="px-2 py-2 text-center text-red-600 font-bold">Variance</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-red-100 dark:divide-red-900/50">
-                                                            {overrideMismatch.missingItems.map((m: any, i: number) => (
-                                                                <tr key={i} className="dark:text-gray-300 hover:bg-red-50/50 dark:hover:bg-red-900/20">
-                                                                    <td className="px-4 py-2.5 font-bold">{m.medicine}</td>
-                                                                    <td className="px-2 py-2.5 text-center text-blue-600 font-bold">{m.issued}</td>
-                                                                    <td className="px-2 py-2.5 text-center text-green-600 font-bold">{m.consumed}</td>
-                                                                    <td className="px-2 py-2.5 text-center text-orange-500 font-bold">{m.returned}</td>
-                                                                    <td className="px-2 py-2.5 text-center text-red-600 font-bold text-sm bg-red-100/30 dark:bg-red-900/30">{m.missing}</td>
+                                                <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl border border-red-100 dark:border-red-900 overflow-hidden mb-4 shadow-sm">
+                                                    <div className="overflow-x-auto">
+                                                        <table className="w-full text-[10px] md:text-xs text-left min-w-[500px]">
+                                                            <thead className="bg-red-100/50 dark:bg-red-900/40 text-red-700 dark:text-red-400">
+                                                                <tr>
+                                                                    <th className="px-4 py-2 font-bold uppercase tracking-wider">Medicine</th>
+                                                                    <th className="px-2 py-2 text-center font-bold uppercase tracking-wider">Issued</th>
+                                                                    <th className="px-2 py-2 text-center font-bold uppercase tracking-wider">Cons.</th>
+                                                                    <th className="px-2 py-2 text-center font-bold uppercase tracking-wider">Ret.</th>
+                                                                    <th className="px-2 py-2 text-center text-red-600 font-bold uppercase tracking-wider">Variance</th>
                                                                 </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-red-100 dark:divide-red-900/50">
+                                                                {overrideMismatch.missingItems.map((m: any, i: number) => (
+                                                                    <tr key={`${m.medicine}-${i}`} className="dark:text-gray-300 hover:bg-red-50/50 dark:hover:bg-red-900/20">
+                                                                        <td className="px-4 py-2.5 font-bold">{m.medicine}</td>
+                                                                        <td className="px-2 py-2.5 text-center text-blue-600 font-bold tabular-nums">{m.issued}</td>
+                                                                        <td className="px-2 py-2.5 text-center text-green-600 font-bold tabular-nums">{m.consumed}</td>
+                                                                        <td className="px-2 py-2.5 text-center text-orange-500 font-bold tabular-nums">{m.returned}</td>
+                                                                        <td className="px-2 py-2.5 text-center text-red-600 font-black tabular-nums bg-red-100/30 dark:bg-red-900/30">{m.missing}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                 </div>
 
-                                                <label className="block text-xs font-bold text-red-800 dark:text-red-300 mb-1">Override Reason (Mandatory if forcing sign-off)</label>
+                                                <label className="block text-[10px] md:text-xs font-bold text-red-800 dark:text-red-300 mb-1.5 uppercase tracking-widest">Override Reason (Required)</label>
                                                 <textarea
                                                     value={overrideReason}
                                                     onChange={e => setOverrideReason(e.target.value)}
                                                     placeholder="Specify why you are clearing this physically missing stock..."
-                                                    className="w-full text-sm p-3 rounded-2xl border border-red-200 dark:border-red-800 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 mb-4 h-20"
+                                                    className="w-full text-xs md:text-sm p-3 rounded-xl md:rounded-2xl border border-red-200 dark:border-red-800 bg-white dark:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-red-500 mb-4 h-20 shadow-sm"
                                                 />
 
-                                                <div className="flex gap-3">
+                                                <div className="flex flex-col sm:flex-row gap-3">
                                                     <button
                                                         onClick={() => {
                                                             setOverrideMismatch(null);
                                                             setOverrideReason("");
                                                         }}
-                                                        className="flex-1 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 py-3 rounded-2xl text-xs font-bold hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                        className="flex-1 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 py-3 rounded-xl md:rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                                     >
-                                                        Cancel & Check with Nurse
+                                                        Cancel
                                                     </button>
                                                     <button
                                                         onClick={() => signoffMutation.mutate({ admissionId: admId, forceOverride: true, overrideReason })}
                                                         disabled={signoffMutation.isPending || !overrideReason.trim()}
-                                                        className="flex-1 bg-red-600 text-white py-3 rounded-2xl text-xs font-bold hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                                                        className="flex-1 bg-red-600 text-white py-3 rounded-xl md:rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-red-100 dark:shadow-none active:scale-95 transition-all"
                                                     >
-                                                        {signoffMutation.isPending ? "Forcing..." : "Force Sign-Off Anyway"}
+                                                        {signoffMutation.isPending ? "Forcing..." : "Force Sign-Off"}
                                                     </button>
                                                 </div>
                                             </div>
@@ -603,73 +602,78 @@ export default function IPDIssuancePage() {
                                 )}
                             </div>
 
-                            {/* The manual generic issuance form was removed. Medicines are issued dynamically from IPD Billing. */}
-
                             {/* ── Return Requests ── */}
                             {(returns as any[]).length > 0 && (
-                                <div className="bg-white dark:bg-gray-800 rounded-3xl border border-orange-200 dark:border-orange-800/40 shadow-sm p-6 mb-6">
-                                    <div className="flex items-center gap-3 mb-5">
-                                        <div className="p-2.5 bg-orange-50 dark:bg-orange-900/20 text-orange-600 rounded-2xl">
-                                            <RotateCcw size={18} />
+                                <div className="bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl border border-orange-200 dark:border-orange-800/40 shadow-sm p-4 md:p-8">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="p-3 bg-orange-50 dark:bg-orange-900/20 text-orange-600 rounded-2xl">
+                                            <RotateCcw size={20} />
                                         </div>
-                                        <h3 className="text-base font-bold text-gray-800 dark:text-white">Medicine Return Requests</h3>
+                                        <div>
+                                            <h3 className="text-base md:text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">Active Return Requests</h3>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Awaiting pharmacist verification</p>
+                                        </div>
                                     </div>
-                                    <div className="space-y-4">
+                                    <div className="space-y-6">
                                         {(returns as any[]).map((ret: any) => (
-                                            <div key={ret._id} className="border border-orange-100 dark:border-orange-900/40 rounded-2xl overflow-hidden bg-orange-50/30 dark:bg-orange-900/10">
-                                                <div className="px-5 py-3 flex items-center justify-between border-b border-orange-100 dark:border-orange-900/30">
+                                            <div key={ret._id} className="border border-orange-100 dark:border-orange-900/40 rounded-2xl md:rounded-3xl overflow-hidden bg-orange-50/10 dark:bg-orange-900/5 hover:border-orange-300 transition-all shadow-sm">
+                                                <div className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-orange-100 dark:border-orange-900/20">
                                                     <div>
-                                                        <p className="text-xs font-bold text-orange-800 dark:text-orange-400">
-                                                            Returned By: {ret.returnedBy?.name || "Nurse"}
+                                                        <p className="text-[11px] md:text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest">
+                                                            Unit: <span className="text-orange-600">{ret.returnedBy?.name || "WARD staff"}</span>
                                                         </p>
-                                                        <p className="text-xs text-orange-500/70 mt-0.5">
-                                                            {new Date(ret.createdAt).toLocaleString()}
+                                                        <p className="text-[9px] md:text-xs text-gray-400 font-bold mt-1 uppercase tracking-tighter">
+                                                            📅 {new Date(ret.createdAt).toLocaleString()}
                                                         </p>
                                                     </div>
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-3">
                                                         {ret.status === "PENDING" ? (
-                                                            <>
+                                                            <div className="flex items-center gap-2 w-full sm:w-auto">
                                                                 <button
                                                                     onClick={() => approveReturnMutation.mutate(ret._id)}
                                                                     disabled={approveReturnMutation.isPending}
-                                                                    className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+                                                                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50 active:scale-95 shadow-lg shadow-teal-500/10"
                                                                 >
-                                                                    <Check size={14} /> Approve & Update Stock
+                                                                    <Check size={14} /> Approve
                                                                 </button>
                                                                 <button
                                                                     onClick={() => rejectReturnMutation.mutate(ret._id)}
                                                                     disabled={rejectReturnMutation.isPending}
-                                                                    className="flex items-center gap-1.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+                                                                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50 active:scale-95"
                                                                 >
                                                                     <X size={14} /> Reject
                                                                 </button>
-                                                            </>
+                                                            </div>
                                                         ) : (
-                                                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${ret.status === "APPROVED" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                                                            <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${ret.status === "APPROVED" ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-rose-50 text-rose-600 border border-rose-100"
                                                                 }`}>
                                                                 {ret.status}
                                                             </span>
                                                         )}
                                                     </div>
                                                 </div>
-                                                <table className="w-full text-xs">
-                                                    <thead className="bg-orange-100/50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 uppercase text-[10px] tracking-wider">
-                                                        <tr>
-                                                            <th className="px-5 py-2 text-left font-bold">Medicine</th>
-                                                            <th className="px-4 py-2 text-center font-bold">Qty Returned</th>
-                                                            <th className="px-5 py-2 text-left font-bold">Reason</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-orange-100 dark:divide-orange-900/30">
-                                                        {(ret.items || []).map((item: any, i: number) => (
-                                                            <tr key={i}>
-                                                                <td className="px-5 py-2.5 font-bold text-gray-700 dark:text-gray-300">{item.productName}</td>
-                                                                <td className="px-4 py-2.5 text-center font-bold text-orange-600">{item.returnedQty}</td>
-                                                                <td className="px-5 py-2.5 text-gray-500">{item.reason || "—"}</td>
+                                                <div className="overflow-x-auto p-2">
+                                                    <table className="w-full text-[11px] md:text-xs min-w-[500px]">
+                                                        <thead className="text-gray-400 uppercase text-[9px] md:text-[10px] font-black tracking-widest border-b dark:border-gray-800">
+                                                            <tr>
+                                                                <th className="px-5 py-3 text-left">Medicine Registry</th>
+                                                                <th className="px-4 py-3 text-center">Qty</th>
+                                                                <th className="px-5 py-3 text-left">Internal Reason</th>
                                                             </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-orange-100/30 dark:divide-orange-900/20">
+                                                            {(ret.items || []).map((item: any, i: number) => (
+                                                                <tr key={`${item.productName}-${i}`} className="hover:bg-orange-100/20 transition-colors">
+                                                                    <td className="px-5 py-4 font-black text-gray-900 dark:text-white uppercase tracking-tight">{item.productName}</td>
+                                                                    <td className="px-4 py-4 text-center font-black text-orange-600 tabular-nums">
+                                                                        <span className="bg-orange-100 text-orange-700 px-2.5 py-1 rounded-lg text-[10px]">{item.returnedQty}</span>
+                                                                    </td>
+                                                                    <td className="px-5 py-4 text-gray-500 font-bold italic">{item.reason || "—"}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -677,104 +681,122 @@ export default function IPDIssuancePage() {
                             )}
 
                             {/* ── Issuance History ── */}
-                            <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm p-6">
-                                <div className="flex items-center gap-3 mb-5">
-                                    <div className="p-2.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-2xl">
-                                        <ClipboardList size={18} />
+                            <div className="bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 md:p-8 mb-6">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 rounded-2xl">
+                                        <ClipboardList size={20} />
                                     </div>
-                                    <h3 className="text-base font-bold text-gray-800 dark:text-white">Medicines Issued to Patient</h3>
+                                    <div>
+                                        <h3 className="text-base md:text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">Medicine Issuance Ledger</h3>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Full chronological history</p>
+                                    </div>
                                 </div>
 
                                 {loadingIssuances ? (
-                                    <div className="flex items-center justify-center py-8 gap-2 text-gray-400 text-sm">
-                                        <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-                                        Loading...
+                                    <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-400">
+                                        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                                        <span className="text-[10px] font-black uppercase tracking-[0.3em]">Syncing nodes...</span>
                                     </div>
                                 ) : (issuances as any[]).length === 0 ? (
-                                    <div className="text-center py-10 text-gray-400">
-                                        <Pill size={36} className="mx-auto mb-3 opacity-20" />
-                                        <p className="text-sm">No medicines issued yet.</p>
-                                        <button onClick={() => setShowIssueForm(true)} className="mt-4 bg-blue-600 text-white px-5 py-2.5 rounded-2xl text-sm font-bold hover:bg-blue-700">
-                                            Issue First Batch
-                                        </button>
+                                    <div className="text-center py-20 bg-gray-50/30 dark:bg-gray-900/10 rounded-3xl border border-dashed border-gray-200 dark:border-gray-800">
+                                        <Pill size={40} className="mx-auto mb-4 text-gray-200" />
+                                        <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">No issuance records</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-4">
+                                    <div className="space-y-6">
                                         {(issuances as any[]).map((iss: any) => (
-                                            <div key={iss._id} className="border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden">
-                                                <div className="bg-gray-50 dark:bg-gray-700/30 px-5 py-3 flex items-center justify-between">
-                                                    <div>
-                                                        <p className="text-xs font-bold text-gray-500">
-                                                            By: <span className="text-gray-700 dark:text-gray-300">{iss.issuedBy?.name || "—"}</span>
-                                                            {iss.issuedToNurse?.name && (
-                                                                <span className="ml-2 text-blue-600">→ Nurse: {iss.issuedToNurse.name}</span>
-                                                            )}
-                                                        </p>
-                                                        <p className="text-xs text-gray-400 mt-0.5">
-                                                            {new Date(iss.issuedAt).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                                                        </p>
+                                            <div key={iss._id} className="border border-gray-100 dark:border-gray-700/50 rounded-2xl md:rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all group">
+                                                <div className="bg-gray-50/50 dark:bg-gray-800/20 px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b dark:border-gray-700">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center justify-center shadow-sm">
+                                                            <User size={16} className="text-indigo-600" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[11px] md:text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest">
+                                                                Operator: <span className="text-indigo-600">{iss.issuedBy?.name || "STAFF"}</span>
+                                                            </p>
+                                                            <p className="text-[10px] text-gray-400 font-bold mt-0.5">
+                                                                🕒 {new Date(iss.issuedAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusBadge(iss.status)}`}>
+                                                    <span className={`px-4 py-1.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest border self-start sm:self-center shadow-lg shadow-gray-100 dark:shadow-none ${getStatusBadge(iss.status)}`}>
                                                         {iss.status?.replace(/_/g, " ")}
                                                     </span>
                                                 </div>
-                                                <table className="w-full text-xs">
-                                                    <thead className="text-gray-400 uppercase border-b dark:border-gray-700">
-                                                        <tr>
-                                                            <th className="px-5 py-2.5 text-left">Medicine</th>
-                                                            <th className="px-4 py-2.5 text-center">Batch</th>
-                                                            <th className="px-4 py-2.5 text-center">Issued</th>
-                                                            <th className="px-4 py-2.5 text-center text-orange-500">Returned</th>
-                                                            <th className="px-4 py-2.5 text-right">Unit Rate</th>
-                                                            <th className="px-4 py-2.5 text-right">Total</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {iss.items?.map((item: any, i: number) => {
-                                                            const returnedAmt = (item.returnedQty || 0) * (item.unitRate || item.totalAmount / item.issuedQty);
-                                                            return (
-                                                                <tr key={i} className="border-t dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/20">
-                                                                    <td className="px-5 py-3 font-semibold text-gray-700 dark:text-gray-300">{item.productName}</td>
-                                                                    <td className="px-4 py-3 text-center text-gray-400 font-mono">{item.batchNo || "—"}</td>
-                                                                    <td className="px-4 py-3 text-center font-bold text-blue-600">{item.issuedQty}</td>
-                                                                    <td className={`px-4 py-3 text-center font-bold ${item.returnedQty > 0 ? "text-orange-500 bg-orange-50/30" : "text-gray-300"}`}>
-                                                                        {item.returnedQty || 0}
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-right text-gray-500">₹{(item.unitRate || item.totalAmount / item.issuedQty).toFixed(2)}</td>
-                                                                    <td className="px-4 py-3 text-right font-bold text-gray-700 dark:text-gray-300">
-                                                                        <div>₹{item.totalAmount.toFixed(2)}</div>
-                                                                        {item.returnedQty > 0 && (
-                                                                            <div className="text-[10px] text-orange-600">- ₹{returnedAmt.toFixed(2)}</div>
-                                                                        )}
+                                                <div className="overflow-x-auto p-2">
+                                                    <table className="w-full text-[11px] md:text-xs min-w-[800px]">
+                                                        <thead className="text-gray-400 uppercase text-[9px] font-black tracking-widest border-b dark:border-gray-800">
+                                                            <tr>
+                                                                <th className="px-5 py-4 text-left">SKU Description</th>
+                                                                <th className="px-4 py-4 text-center">Node Batch</th>
+                                                                <th className="px-4 py-4 text-center">Issued</th>
+                                                                <th className="px-4 py-4 text-center text-orange-600">Ret.</th>
+                                                                <th className="px-4 py-4 text-right">Cycle Rate</th>
+                                                                <th className="px-4 py-4 text-right">Aggregate</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-gray-50 dark:divide-gray-800/30">
+                                                            {iss.items?.map((item: any, i: number) => {
+                                                                const returnedAmt = (item.returnedQty || 0) * (item.unitRate || item.totalAmount / item.issuedQty);
+                                                                return (
+                                                                    <tr key={`${item.productName}-${i}`} className="hover:bg-gray-50/30 dark:hover:bg-gray-900/10 transition-colors">
+                                                                        <td className="px-5 py-5">
+                                                                            <p className="font-black text-gray-900 dark:text-white uppercase tracking-tight">{item.productName}</p>
+                                                                            {iss.issuedToNurse?.name && (
+                                                                                <div className="flex items-center gap-1.5 mt-1.5">
+                                                                                    <div className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-pulse" />
+                                                                                    <p className="text-[10px] text-teal-600 font-black uppercase tracking-widest">Chain: {iss.issuedToNurse.name}</p>
+                                                                                </div>
+                                                                            )}
+                                                                        </td>
+                                                                        <td className="px-4 py-5 text-center text-gray-500 font-black font-mono text-[10px] uppercase">{item.batchNo || "—"}</td>
+                                                                        <td className="px-4 py-5 text-center font-black text-indigo-600 tabular-nums">
+                                                                            <span className="bg-indigo-50 dark:bg-indigo-900/20 px-2 py-1 rounded-lg">{item.issuedQty}</span>
+                                                                        </td>
+                                                                        <td className={`px-4 py-5 text-center font-black tabular-nums ${item.returnedQty > 0 ? "text-orange-500" : "text-gray-200"}`}>
+                                                                            {item.returnedQty > 0 ? (
+                                                                                <span className="bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-lg">{item.returnedQty}</span>
+                                                                            ) : "0"}
+                                                                        </td>
+                                                                        <td className="px-4 py-5 text-right text-gray-500 font-bold tabular-nums">₹{(item.unitRate || item.totalAmount / item.issuedQty).toFixed(2)}</td>
+                                                                        <td className="px-4 py-5 text-right">
+                                                                            <p className="font-black text-gray-900 dark:text-white tabular-nums">₹{item.totalAmount.toFixed(2)}</p>
+                                                                            {item.returnedQty > 0 && (
+                                                                                <p className="text-[10px] text-rose-500 font-black mt-0.5">-₹{returnedAmt.toFixed(2)}</p>
+                                                                            )}
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })}
+                                                        </tbody>
+                                                        <tfoot className="bg-gray-50/30 dark:bg-gray-900/20">
+                                                            <tr className="border-t border-gray-100 dark:border-gray-800">
+                                                                <td colSpan={5} className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase text-right tracking-[0.2em]">Gross Cycle Value</td>
+                                                                <td className="px-6 py-3 text-right font-black text-gray-900 dark:text-white tabular-nums">₹{iss.totalAmount.toFixed(2)}</td>
+                                                            </tr>
+                                                            {iss.items?.some((it: any) => it.returnedQty > 0) && (
+                                                                <tr>
+                                                                    <td colSpan={5} className="px-6 py-3 text-[10px] font-black text-rose-500 uppercase text-right tracking-[0.2em]">Liquidated Return</td>
+                                                                    <td className="px-6 py-3 text-right font-black text-rose-500 tabular-nums">
+                                                                        - ₹{iss.items.reduce((sum: number, it: any) => sum + ((it.returnedQty || 0) * (it.unitRate || it.totalAmount / it.issuedQty)), 0).toFixed(2)}
                                                                     </td>
                                                                 </tr>
-                                                            );
-                                                        })}
-                                                    </tbody>
-                                                    <tfoot>
-                                                        <tr className="border-t-2 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/20">
-                                                            <td colSpan={5} className="px-5 py-2.5 text-xs font-bold text-gray-500 uppercase text-right">Issuance Subtotal</td>
-                                                            <td className="px-4 py-2.5 text-right font-bold text-gray-800 dark:text-white">₹{iss.totalAmount.toFixed(2)}</td>
-                                                        </tr>
-                                                        {iss.items?.some((it: any) => it.returnedQty > 0) && (
-                                                            <tr className="bg-orange-50/20 dark:bg-orange-900/10">
-                                                                <td colSpan={5} className="px-5 py-2.5 text-xs font-bold text-orange-600 uppercase text-right">(-) Total Return Credit</td>
-                                                                <td className="px-4 py-2.5 text-right font-bold text-orange-600">
-                                                                    - ₹{iss.items.reduce((sum: number, it: any) => sum + ((it.returnedQty || 0) * (it.unitRate || it.totalAmount / it.issuedQty)), 0).toFixed(2)}
+                                                            )}
+                                                            <tr className="bg-indigo-600 text-white shadow-xl">
+                                                                <td colSpan={5} className="px-6 py-4 text-[11px] font-black uppercase text-right tracking-[0.3em]">Final Settled Ledger</td>
+                                                                <td className="px-6 py-4 text-right font-black text-sm md:text-base tabular-nums">
+                                                                    ₹{(iss.totalAmount - iss.items.reduce((sum: number, it: any) => sum + ((it.returnedQty || 0) * (it.unitRate || it.totalAmount / it.issuedQty)), 0)).toFixed(2)}
                                                                 </td>
                                                             </tr>
-                                                        )}
-                                                        <tr className="bg-blue-50/30 dark:bg-blue-900/10 border-t border-blue-100 dark:border-blue-900">
-                                                            <td colSpan={5} className="px-5 py-3 text-xs font-black text-blue-700 dark:text-blue-400 uppercase text-right tracking-widest">Net Payable</td>
-                                                            <td className="px-4 py-3 text-right font-black text-blue-800 dark:text-blue-300 text-sm">
-                                                                ₹{(iss.totalAmount - iss.items.reduce((sum: number, it: any) => sum + ((it.returnedQty || 0) * (it.unitRate || it.totalAmount / it.issuedQty)), 0)).toFixed(2)}
-                                                            </td>
-                                                        </tr>
-                                                    </tfoot>
-                                                </table>
+                                                        </tfoot>
+                                                    </table>
+                                                </div>
                                                 {iss.notes && (
-                                                    <div className="px-5 py-2.5 border-t dark:border-gray-700 text-xs text-gray-400">
-                                                        📝 {iss.notes}
+                                                    <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-800/40 border-t dark:border-gray-700">
+                                                        <p className="text-[10px] text-gray-500 font-bold leading-relaxed">
+                                                            <span className="text-indigo-600 font-black uppercase tracking-widest mr-2">Audit Comment:</span> {iss.notes}
+                                                        </p>
                                                     </div>
                                                 )}
                                             </div>
@@ -784,28 +806,29 @@ export default function IPDIssuancePage() {
                             </div>
                         </div>
 
-                        {/* RIGHT: Nurse quick-pick */}
-                        <div className="space-y-4">
+                        {/* RIGHT: Financials & Staff */}
+                        <div className="space-y-4 md:space-y-6">
+                            {/* Nurse quick-pick */}
                             {nurses.length > 0 && (
-                                <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm p-5">
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                                        <UserCheck size={12} /> On-Duty Nurses
+                                <div className="bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 md:p-5">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                        <UserCheck size={12} className="text-blue-500" /> Authorized Staff
                                     </p>
-                                    <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2 max-h-[300px] overflow-y-auto pr-1">
                                         {nurses.slice(0, 10).map((nurse: any) => (
                                             <button
                                                 key={nurse._id}
                                                 onClick={() => setSelectedNurseId(n => n === nurse._id ? "" : nurse._id)}
-                                                className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors text-left ${selectedNurseId === nurse._id
-                                                    ? "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30"
-                                                    : "hover:bg-gray-50 dark:hover:bg-gray-700/30"}`}
+                                                className={`flex items-center gap-3 p-2 md:p-2.5 rounded-xl transition-all border ${selectedNurseId === nurse._id
+                                                    ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 shadow-sm"
+                                                    : "bg-white dark:bg-gray-800 border-gray-50 dark:border-gray-700 hover:border-gray-200 shadow-xs"}`}
                                             >
-                                                <div className="w-7 h-7 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 rounded-lg flex items-center justify-center shrink-0">
-                                                    <User size={12} />
+                                                <div className="w-8 h-8 md:w-9 md:h-9 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 rounded-lg flex items-center justify-center shrink-0 font-black text-xs">
+                                                    {nurse.name?.[0] || 'N'}
                                                 </div>
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="text-xs font-bold text-gray-700 dark:text-gray-200 truncate">{nurse.name || nurse.user?.name}</p>
-                                                    {nurse.department && <p className="text-xs text-gray-400">{nurse.department}</p>}
+                                                    <p className="text-[11px] font-black text-gray-700 dark:text-gray-200 truncate uppercase">{nurse.name || nurse.user?.name}</p>
+                                                    {nurse.department && <p className="text-[9px] text-gray-400 font-bold">{nurse.department}</p>}
                                                 </div>
                                                 {selectedNurseId === nurse._id && <CheckCircle2 size={14} className="text-blue-500 shrink-0" />}
                                             </button>
@@ -813,13 +836,11 @@ export default function IPDIssuancePage() {
                                     </div>
 
                                     {selectedNurseId && (
-                                        <div className="mt-3 pt-3 border-t dark:border-gray-700">
-                                            <p className="text-xs text-blue-600 font-bold">
-                                                ✓ Selected: {nurses.find(n => n._id === selectedNurseId)?.name || "Nurse"}
-                                            </p>
-                                            <button onClick={() => setSelectedNurseId("")} className="text-xs text-gray-400 hover:text-gray-600 mt-1">
-                                                Clear selection
-                                            </button>
+                                        <div className="mt-3 pt-3 border-t border-dashed border-gray-100 dark:border-gray-700">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-[10px] text-blue-600 font-black uppercase tracking-tight">Active: {nurses.find(n => n._id === selectedNurseId)?.name || "Nurse"}</p>
+                                                <button onClick={() => setSelectedNurseId("")} className="text-[9px] font-black text-gray-400 hover:text-red-500 uppercase transition-colors">Clear</button>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -827,69 +848,58 @@ export default function IPDIssuancePage() {
 
                             {/* ── Financial Summary ── */}
                             {summary && (
-                                <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-xl overflow-hidden animate-in fade-in slide-in-from-right-4 duration-500">
+                                <div className="bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl border border-gray-100 dark:border-gray-700 shadow-xl overflow-hidden shadow-blue-50 dark:shadow-none">
                                     <div className="px-5 py-4 bg-gray-50 dark:bg-gray-900/40 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block"></span>
-                                            Bill Preview
+                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                                            Bill Summary
                                         </span>
                                         <Wallet size={14} className="text-blue-500" />
                                     </div>
 
                                     {/* Patient Info Section */}
                                     <div className="px-5 py-4 bg-blue-50/30 dark:bg-blue-900/10 border-b border-gray-100 dark:border-gray-700">
-                                        <div className="space-y-2">
+                                        <div className="space-y-3">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-1 h-1 rounded-full bg-blue-400"></div>
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Patient Details</p>
+                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Statement For</p>
                                             </div>
-                                            <div className="grid grid-cols-1 gap-y-2">
-                                                <div>
-                                                    <p className="text-sm font-black text-gray-800 dark:text-white leading-tight">{selectedAdmission.patient?.name}</p>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <div>
-                                                        <p className="text-[8px] font-bold text-gray-400 uppercase">MRN Number</p>
-                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-300">{(selectedAdmission.patient as any)?.mrn || "N/A"}</p>
+                                            <div className="space-y-1">
+                                                <p className="text-sm md:text-base font-black text-gray-800 dark:text-white leading-tight uppercase tracking-tight">{selectedAdmission.patient?.name}</p>
+                                                <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1">
+                                                    <div className="flex flex-col">
+                                                        <p className="text-[7px] font-black text-gray-400 uppercase">MRN Number</p>
+                                                        <p className="text-[9px] font-bold text-gray-600 dark:text-gray-300">{(selectedAdmission.patient as any)?.mrn || "N/A"}</p>
                                                     </div>
-                                                    <div>
-                                                        <p className="text-[8px] font-bold text-gray-400 uppercase">Mobile</p>
-                                                        <p className="text-[10px] font-black text-gray-600 dark:text-gray-300">{selectedAdmission.patient?.mobile || "N/A"}</p>
+                                                    <div className="w-[1px] h-6 bg-gray-100 dark:bg-gray-800 hidden sm:block"></div>
+                                                    <div className="flex flex-col">
+                                                        <p className="text-[7px] font-black text-gray-400 uppercase">Admission ID</p>
+                                                        <p className="text-[9px] font-mono font-bold text-blue-600 dark:text-blue-400">{selectedAdmission.admissionId}</p>
                                                     </div>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[8px] font-bold text-gray-400 uppercase">Admission#</p>
-                                                    <p className="text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400">{selectedAdmission.admissionId}</p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
                                     <div className="p-5 space-y-4">
-                                        <div className="flex justify-between items-center text-sm">
-                                            <span className="text-gray-500 font-medium flex items-center gap-2">
-                                                <span className="w-1 h-1 rounded-full bg-gray-300 inline-block"></span>
-                                                Total Issued
-                                            </span>
-                                            <span className="font-bold text-gray-800 dark:text-white">₹{((summary as any).totalIssuedAmount ?? 0).toFixed(2)}</span>
+                                        <div className="flex justify-between items-center text-xs md:text-sm">
+                                            <span className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Total Issued</span>
+                                            <span className="font-black text-gray-800 dark:text-white tabular-nums">₹{((summary as any).totalIssuedAmount ?? 0).toFixed(2)}</span>
                                         </div>
-                                        <div className="flex justify-between items-center text-sm">
-                                            <span className="text-orange-500 font-medium flex items-center gap-2">
-                                                <span className="w-1 h-1 rounded-full bg-orange-400 inline-block"></span>
-                                                Total Returned
-                                            </span>
-                                            <span className="font-bold text-orange-600">-₹{((summary as any).totalReturnedAmount ?? 0).toFixed(2)}</span>
+                                        <div className="flex justify-between items-center text-xs md:text-sm">
+                                            <span className="text-orange-500 font-bold uppercase tracking-widest text-[10px]">Return Credit</span>
+                                            <span className="font-black text-orange-600 tabular-nums">-₹{((summary as any).totalReturnedAmount ?? 0).toFixed(2)}</span>
                                         </div>
                                         <div className="pt-4 border-t border-dashed border-gray-200 dark:border-gray-700 flex justify-between items-end">
                                             <div>
-                                                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                                                <p className="text-[10px] md:text-[11px] font-black text-blue-600 uppercase tracking-widest mb-1 flex items-center gap-1.5">
                                                     <IndianRupee size={10} />
                                                     Net Payable
                                                 </p>
-                                                <p className="text-[9px] text-gray-400 italic font-medium leading-none">Pharmacy Statement</p>
+                                                <p className="text-[8px] md:text-[9px] text-gray-400 italic font-bold leading-none uppercase tracking-tighter">Verified Pharmacy Ledger</p>
                                             </div>
                                             <div className="text-right">
-                                                <span className="text-2xl font-black text-blue-700 dark:text-blue-400 leading-none">
+                                                <span className="text-xl md:text-2xl font-black text-blue-700 dark:text-blue-400 leading-none tabular-nums">
                                                     ₹{((summary as any).netBillableAmount ?? 0).toFixed(2)}
                                                 </span>
                                             </div>

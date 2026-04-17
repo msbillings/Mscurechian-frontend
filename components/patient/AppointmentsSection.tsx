@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Calendar, Clock, MapPin, User, FileText, ChevronRight, X, CheckCircle2, Building2, Stethoscope, Info } from 'lucide-react';
 import { Card } from '@/components/admin';
 import { format } from 'date-fns';
@@ -197,7 +197,7 @@ function AppointmentsSection({
                                             <div className="grid grid-cols-3 gap-1.5">
                                                 {[
                                                     { l: 'BP', v: appointment.vitals?.bloodPressure },
-                                                    { l: 'Temp', v: appointment.vitals?.temperature, u: '°F' },
+                                                    { l: 'Temp', v: appointment.vitals?.temperature, u: 'Â°F' },
                                                     { l: 'Pulse', v: appointment.vitals?.pulse, u: 'bpm' },
                                                     { l: 'SpO2', v: appointment.vitals?.spO2, u: '%' },
                                                     { l: 'Glucose', v: appointment.vitals?.glucose, u: 'mg/dl' },

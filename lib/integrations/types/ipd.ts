@@ -1,4 +1,4 @@
-export interface Bed {
+﻿export interface Bed {
     _id: string;
     bedId: string;
     type: string;
@@ -14,6 +14,12 @@ export interface Bed {
         admissionDate?: string | Date;
         condition?: string;
         lastVitalsRecordedAt?: string | Date;
+        reasonForAdmission?: string;
+        chiefComplaints?: string;
+        symptoms?: string;
+        reason?: string;
+        notes?: string;
+        clinicalNotes?: string;
     };
     hospital: string;
     createdAt?: string;
@@ -52,6 +58,11 @@ export interface BedDetailsResponse {
         vitals: any;
         medications?: string;
         diet?: string;
+        reasonForAdmission?: string;
+        chiefComplaints?: string;
+        symptoms?: string;
+        reason?: string;
+        notes?: string;
         clinicalNotes?: string;
         condition?: string;
         lastVitalsRecordedAt?: string | Date;

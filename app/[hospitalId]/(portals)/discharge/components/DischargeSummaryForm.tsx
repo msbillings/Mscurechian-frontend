@@ -8,9 +8,14 @@ import toast from 'react-hot-toast';
 import { useReactToPrint } from 'react-to-print';
 import { useQueryClient } from '@tanstack/react-query';
 import { dischargeService } from '@/lib/integrations/services/discharge.service';
+import { ipdService } from '@/lib/integrations/services/ipd.service';
 import { useDischargeRecord } from '@/lib/hooks/discharge/useDischargeRecord';
 import { PrintableDischargeSummary } from './PrintableDischargeSummary';
 import { useAuthStore } from '@/stores/authStore';
+import { spellCheckService } from '@/lib/integrations';
+import type { SpellMatch, SpellState, SpellPopupState, ExtendedSpellState } from '@/lib/integrations/types';
+import { SpellCheck, AlertCircle, CheckCircle2, Loader2, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const INITIAL_FORM_STATE = {
     patientName: '',
@@ -21,6 +26,7 @@ const INITIAL_FORM_STATE = {
     roomNo: '',
     mrn: '',
     roomType: '',
+    dischargeType: '',
     admissionDate: '',
     dischargeDate: '',
     department: '',
@@ -90,6 +96,7 @@ const SAMPLE_DATA = {
     roomNo: 'ICU-B12',
     mrn: 'MRN-882941',
     roomType: 'Critical Care (ICU)',
+    dischargeType: 'Recovered / Cured',
     admissionDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
     dischargeDate: new Date().toISOString().slice(0, 16),
     department: 'Cardiology',
@@ -184,6 +191,19 @@ export function DischargeSummaryForm() {
     });
 
     const [formData, setFormData] = useState(INITIAL_FORM_STATE);
+    const [unitTypes, setUnitTypes] = useState<any[]>([]); // NEW
+
+    useEffect(() => {
+        const fetchUnitTypes = async () => {
+            try {
+                const types = await ipdService.getUnitTypes();
+                setUnitTypes(types);
+            } catch (error) {
+                console.error("Failed to fetch unit types for discharge form", error);
+            }
+        };
+        fetchUnitTypes();
+    }, []);
 
     useEffect(() => {
         if (!initializedRef.current) {
@@ -239,6 +259,88 @@ export function DischargeSummaryForm() {
         if (mediumFields.includes(name)) return 200;
         if (smallFields.includes(name)) return 150;
         return 200;
+    };
+
+    // --- SPELL CHECK LOGIC ---
+    const SPELL_FIELDS = [
+        'reasonForAdmission', 'chiefComplaints', 'historyOfPresentIllness',
+        'pastMedicalHistory', 'provisionalDiagnosis', 'diagnosis',
+        'allergyHistory', 'generalAppearance', 'treatmentGiven',
+        'surgicalProcedures', 'surgeryNotes', 'investigationsPerformed',
+        'hospitalCourse', 'adviceAtDischarge', 'dietInstructions',
+        'activityRestrictions', 'warningSigns', 'followUpInstructions', 'address'
+    ];
+
+    const [spellStates, setSpellStates] = useState<ExtendedSpellState>({});
+    const [activePopup, setActivePopup] = useState<SpellPopupState>(null);
+    const [isSpellChecking, setIsSpellChecking] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            const fieldsToCheck = SPELL_FIELDS.filter(field => {
+                const value = (formData as any)[field];
+                return value && value.trim().length > 3;
+            });
+
+            if (fieldsToCheck.length === 0) {
+                setSpellStates({});
+                setIsSpellChecking(false);
+                return;
+            }
+
+            setIsSpellChecking(true);
+            const newStates: ExtendedSpellState = { ...spellStates };
+
+            try {
+                await Promise.all(fieldsToCheck.map(async (field) => {
+                    const value = (formData as any)[field];
+                    // Skip if value hasn't changed since last check (simple optimization)
+                    if (spellStates[field]?.lastCheckedValue === value) return;
+
+                    const matches = await spellCheckService.check(value);
+                    newStates[field] = {
+                        matches,
+                        lastCheckedValue: value,
+                        isDirty: false
+                    };
+                }));
+                setSpellStates(newStates);
+            } catch (error) {
+                console.error("Spell check failed:", error);
+            } finally {
+                setIsSpellChecking(false);
+            }
+        }, 800);
+
+        return () => clearTimeout(timer);
+    }, [formData]);
+
+    const totalSpellingErrors = Object.values(spellStates).reduce(
+        (acc, state) => acc + state.matches.length, 0
+    );
+
+    const applyCorrection = (field: string, match: SpellMatch, suggestion: string) => {
+        const currentValue = (formData as any)[field] || '';
+        const newValue = spellCheckService.applyCorrection(currentValue, match, suggestion);
+
+        setFormData(prev => ({ ...prev, [field]: newValue }));
+
+        // Update local matches to remove the one we just fixed
+        setSpellStates(prev => {
+            const fieldState = prev[field];
+            if (!fieldState) return prev;
+
+            return {
+                ...prev,
+                [field]: {
+                    ...fieldState,
+                    matches: fieldState.matches.filter(m => m.offset !== match.offset),
+                    lastCheckedValue: newValue
+                }
+            };
+        });
+
+        setActivePopup(null);
     };
 
     const getCharCount = (name: string, formDataRef: typeof formData): number => {
@@ -441,6 +543,8 @@ export function DischargeSummaryForm() {
                         suggestedDoctorName: response.suggestedDoctorName || '',
                         specialistType: response.specialistType || '',
                         ipdHistory: response.ipdHistory || [],
+                        reasonForAdmission: response.reason || response.reasonForAdmission || '',
+                        chiefComplaints: response.reason || response.chiefComplaints || '', // Fill this too as it is often identical on intake
                         // Auto-fill condition from vitals condition (Nurse's selection) or status
                         conditionAtDischarge: response.vitals?.condition
                             ? (response.vitals.condition.charAt(0).toUpperCase() + response.vitals.condition.slice(1).toLowerCase())
@@ -562,7 +666,7 @@ export function DischargeSummaryForm() {
         }
 
         if (['totalBillAmount', 'advanceAmount', 'finalPayment'].includes(name)) {
-            const numVal = parseFloat(value) || 0;
+            const numVal = Math.round(parseFloat(value) || 0);
             const updatedData = { ...formData, [name]: numVal };
             setFormData(prev => ({ ...prev, [name]: numVal }));
             const error = validateField(name, numVal, updatedData);
@@ -650,6 +754,13 @@ export function DischargeSummaryForm() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        // SAMPLE MODE: Never save to backend — just print/preview
+        if (searchParams.get('mode') === 'sample') {
+            toast.success("Sample preview only — no data saved to backend", { id: 'sample-print-toast', icon: '🖨️' });
+            setTimeout(() => handlePrint(), 300);
+            return;
+        }
+
         const newErrors: Record<string, string> = {};
         const requiredFields = ['patientName', 'mrn', 'diagnosis', 'chiefComplaints', 'treatmentGiven', 'conditionAtDischarge'];
 
@@ -661,6 +772,19 @@ export function DischargeSummaryForm() {
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
             toast.error("Please fill all required fields correctly");
+            return;
+        }
+
+        if (totalSpellingErrors > 0) {
+            toast.error(`Please resolve the ${totalSpellingErrors} spelling issues before committing.`, {
+                icon: '✍️',
+                duration: 4000
+            });
+            return;
+        }
+
+        if (isSpellChecking) {
+            toast.error("Checking spelling... please wait a moment.");
             return;
         }
 
@@ -816,9 +940,27 @@ export function DischargeSummaryForm() {
                                     onChange={handleChange}
                                     placeholder="Complete residential address"
                                     rows={2}
-                                    className="w-full p-2.5 rounded-xl border border-gray-400 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none"
+                                    className={`w-full p-2.5 rounded-xl border outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none ${spellStates['address']?.matches.length > 0 ? 'border-amber-400 bg-amber-50/30' : 'border-gray-400'}`}
                                     style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}
                                 />
+                                {spellStates['address']?.matches.length > 0 && (
+                                    <div className="mt-2 flex flex-wrap gap-1.5">
+                                        {spellStates['address'].matches.slice(0, 3).map((match, mIdx) => (
+                                            <button
+                                                key={mIdx}
+                                                type="button"
+                                                onClick={(e) => {
+                                                    const rect = e.currentTarget.getBoundingClientRect();
+                                                    setActivePopup({ match, field: 'address', x: rect.left, y: rect.top });
+                                                }}
+                                                className="flex items-center gap-1.5 px-2 py-1 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 hover:bg-amber-100 transition-colors shadow-sm"
+                                            >
+                                                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                <span className="text-[10px] font-bold">"{formData.address.substring(match.offset, match.offset + match.length)}"</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -946,6 +1088,22 @@ export function DischargeSummaryForm() {
                             <h2 className="text-lg font-black text-gray-900">Admission Details</h2>
                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Hospitalization and routing</p>
                         </div>
+                        <div className="ml-auto flex bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest gap-1 border border-blue-200">
+                            Stay Duration: {(() => {
+                                if (!formData.admissionDate) return 'N/A';
+                                const startTime = new Date(formData.admissionDate).getTime();
+                                const endTime = formData.dischargeDate ? new Date(formData.dischargeDate).getTime() : new Date().getTime();
+                                const diffInMs = Math.max(0, endTime - startTime);
+                                const hours = Math.floor(diffInMs / (1000 * 60 * 60));
+                                const minutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
+                                if (hours >= 24) {
+                                    const days = Math.floor(hours / 24);
+                                    const remainingHours = hours % 24;
+                                    return `${days} Day${days !== 1 ? 's' : ''}${remainingHours > 0 ? ` ${remainingHours} Hrs` : ''}`;
+                                }
+                                return `${hours} Hrs, ${minutes} Mins`;
+                            })()}
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -972,10 +1130,8 @@ export function DischargeSummaryForm() {
                             onChange={handleChange}
                             className="border-gray-400 font-bold"
                             options={[
-                                { value: 'General Ward', label: 'General Ward' },
-                                { value: 'Private Room', label: 'Private Room' },
-                                { value: 'ICU', label: 'ICU' },
-                                { value: 'Semi-Private', label: 'Semi-Private' }
+                                { value: '', label: 'Select Room Type' },
+                                ...unitTypes.map(ut => ({ value: ut, label: ut }))
                             ]}
                         />
                         <FormInput
@@ -1027,6 +1183,24 @@ export function DischargeSummaryForm() {
                                 { value: 'Emergency', label: 'Emergency' },
                                 { value: 'ICU', label: 'ICU' },
                                 { value: 'Day Care', label: 'Day Care' }
+                            ]}
+                        />
+                        <FormSelect
+                            label="Discharge Type *"
+                            name="dischargeType"
+                            value={formData.dischargeType}
+                            onChange={handleChange}
+                            className="border-gray-400 font-bold"
+                            options={[
+                                { value: '', label: 'Select Discharge Type' },
+                                { value: 'Recovered / Cured', label: 'Recovered / Cured' },
+                                { value: 'Referred to Another Hospital', label: 'Referred to Another Hospital' },
+                                { value: 'Discharged Against Medical Advice (DAMA / LAMA)', label: 'Discharged Against Medical Advice (DAMA / LAMA)' },
+                                { value: 'Absconded / Left Without Notice', label: 'Absconded / Left Without Notice' },
+                                { value: 'Death / Expired', label: 'Death / Expired' },
+                                { value: 'Brought Dead (Dead on Arrival)', label: 'Brought Dead (Dead on Arrival)' },
+                                { value: 'Terminal Discharge (Palliative / End-of-life)', label: 'Terminal Discharge (Palliative / End-of-life)' },
+                                { value: 'DOR (Discharge on request)', label: 'DOR (Discharge on request)' }
                             ]}
                         />
                         <FormInput
@@ -1095,9 +1269,27 @@ export function DischargeSummaryForm() {
                                         placeholder={placeholder}
                                         rows={rows}
                                         required={req}
-                                        className={`w-full p-2.5 rounded-xl border outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none ${errMsg ? 'border-red-400' : 'border-gray-400'}`}
+                                        className={`w-full p-2.5 rounded-xl border outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none ${errMsg ? 'border-red-400' : (spellStates[name]?.matches.length > 0 ? 'border-amber-400 bg-amber-50/30' : 'border-gray-400')}`}
                                         style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}
                                     />
+                                    {spellStates[name]?.matches.length > 0 && (
+                                        <div className="mt-2 flex flex-wrap gap-1.5">
+                                            {spellStates[name].matches.slice(0, 3).map((match, mIdx) => (
+                                                <button
+                                                    key={mIdx}
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        const rect = e.currentTarget.getBoundingClientRect();
+                                                        setActivePopup({ match, field: name, x: rect.left, y: rect.top });
+                                                    }}
+                                                    className="flex items-center gap-1.5 px-2 py-1 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 hover:bg-amber-100 transition-colors shadow-sm"
+                                                >
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                    <span className="text-[10px] font-bold">"{val.substring(match.offset, match.offset + match.length)}"</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                     {errMsg && <p className="text-xs text-red-600 mt-1 font-semibold">{errMsg}</p>}
                                 </div>
                             );
@@ -1159,9 +1351,27 @@ export function DischargeSummaryForm() {
                                         placeholder={placeholder}
                                         rows={rows}
                                         required={req}
-                                        className={`w-full p-2.5 rounded-xl border outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none ${errMsg ? 'border-red-400' : 'border-gray-400'}`}
+                                        className={`w-full p-2.5 rounded-xl border outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none ${errMsg ? 'border-red-400' : (spellStates[name]?.matches.length > 0 ? 'border-amber-400 bg-amber-50/30' : 'border-gray-400')}`}
                                         style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}
                                     />
+                                    {spellStates[name]?.matches.length > 0 && (
+                                        <div className="mt-2 flex flex-wrap gap-1.5">
+                                            {spellStates[name].matches.slice(0, 3).map((match, mIdx) => (
+                                                <button
+                                                    key={mIdx}
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        const rect = e.currentTarget.getBoundingClientRect();
+                                                        setActivePopup({ match, field: name, x: rect.left, y: rect.top });
+                                                    }}
+                                                    className="flex items-center gap-1.5 px-2 py-1 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 hover:bg-amber-100 transition-colors shadow-sm"
+                                                >
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                    <span className="text-[10px] font-bold">"{val.substring(match.offset, match.offset + match.length)}"</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                     {errMsg && <p className="text-xs text-red-600 mt-1 font-semibold">{errMsg}</p>}
                                 </div>
                             );
@@ -1211,7 +1421,33 @@ export function DischargeSummaryForm() {
                                             <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--secondary-color)' }}>{label}</span>
                                             <span className={`text-[10px] font-bold ${val.length >= limit * 0.9 ? (val.length >= limit ? 'text-red-600' : 'text-orange-500') : 'text-gray-400'}`}>{val.length}/{limit}</span>
                                         </div>
-                                        <textarea name={name} value={val} onChange={handleChange} placeholder={placeholder} rows={2} className="w-full p-2.5 rounded-xl border border-gray-400 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }} />
+                                        <textarea
+                                            name={name}
+                                            value={val}
+                                            onChange={handleChange}
+                                            placeholder={placeholder}
+                                            rows={2}
+                                            className={`w-full p-2.5 rounded-xl border outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none ${spellStates[name]?.matches.length > 0 ? 'border-amber-400 bg-amber-50/30' : 'border-gray-400'}`}
+                                            style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}
+                                        />
+                                        {spellStates[name]?.matches.length > 0 && (
+                                            <div className="mt-2 flex flex-wrap gap-1.5">
+                                                {spellStates[name].matches.slice(0, 3).map((match, mIdx) => (
+                                                    <button
+                                                        key={mIdx}
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            const rect = e.currentTarget.getBoundingClientRect();
+                                                            setActivePopup({ match, field: name, x: rect.left, y: rect.top });
+                                                        }}
+                                                        className="flex items-center gap-1.5 px-2 py-1 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 hover:bg-amber-100 transition-colors shadow-sm"
+                                                    >
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                        <span className="text-[10px] font-bold">"{val.substring(match.offset, match.offset + match.length)}"</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
@@ -1227,7 +1463,33 @@ export function DischargeSummaryForm() {
                                             <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--secondary-color)' }}>{label}</span>
                                             <span className={`text-[10px] font-bold ${val.length >= limit * 0.9 ? (val.length >= limit ? 'text-red-600' : 'text-orange-500') : 'text-gray-400'}`}>{val.length}/{limit}</span>
                                         </div>
-                                        <textarea name={name} value={val} onChange={handleChange} placeholder={placeholder} rows={2} className="w-full p-2.5 rounded-xl border border-gray-400 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }} />
+                                        <textarea
+                                            name={name}
+                                            value={val}
+                                            onChange={handleChange}
+                                            placeholder={placeholder}
+                                            rows={2}
+                                            className={`w-full p-2.5 rounded-xl border outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none ${spellStates[name]?.matches.length > 0 ? 'border-amber-400 bg-amber-50/30' : 'border-gray-400'}`}
+                                            style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}
+                                        />
+                                        {spellStates[name]?.matches.length > 0 && (
+                                            <div className="mt-2 flex flex-wrap gap-1.5">
+                                                {spellStates[name].matches.slice(0, 3).map((match, mIdx) => (
+                                                    <button
+                                                        key={mIdx}
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            const rect = e.currentTarget.getBoundingClientRect();
+                                                            setActivePopup({ match, field: name, x: rect.left, y: rect.top });
+                                                        }}
+                                                        className="flex items-center gap-1.5 px-2 py-1 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 hover:bg-amber-100 transition-colors shadow-sm"
+                                                    >
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                        <span className="text-[10px] font-bold">"{val.substring(match.offset, match.offset + match.length)}"</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
@@ -1238,7 +1500,33 @@ export function DischargeSummaryForm() {
                                     <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--secondary-color)' }}>Follow-up Instructions</span>
                                     <span className={`text-[10px] font-bold ${formData.followUpInstructions.length >= 360 ? 'text-red-600' : 'text-gray-400'}`}>{formData.followUpInstructions.length}/400</span>
                                 </div>
-                                <textarea name="followUpInstructions" value={formData.followUpInstructions} onChange={handleChange} placeholder="When and where to follow up" rows={2} className="w-full p-2.5 rounded-xl border border-gray-400 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }} />
+                                <textarea
+                                    name="followUpInstructions"
+                                    value={formData.followUpInstructions}
+                                    onChange={handleChange}
+                                    placeholder="When and where to follow up"
+                                    rows={2}
+                                    className={`w-full p-2.5 rounded-xl border outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-bold resize-none ${spellStates['followUpInstructions']?.matches.length > 0 ? 'border-amber-400 bg-amber-50/30' : 'border-gray-400'}`}
+                                    style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}
+                                />
+                                {spellStates['followUpInstructions']?.matches.length > 0 && (
+                                    <div className="mt-2 flex flex-wrap gap-1.5">
+                                        {spellStates['followUpInstructions'].matches.slice(0, 3).map((match, mIdx) => (
+                                            <button
+                                                key={mIdx}
+                                                type="button"
+                                                onClick={(e) => {
+                                                    const rect = e.currentTarget.getBoundingClientRect();
+                                                    setActivePopup({ match, field: 'followUpInstructions', x: rect.left, y: rect.top });
+                                                }}
+                                                className="flex items-center gap-1.5 px-2 py-1 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 hover:bg-amber-100 transition-colors shadow-sm"
+                                            >
+                                                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                <span className="text-[10px] font-bold">"{formData.followUpInstructions.substring(match.offset, match.offset + match.length)}"</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <FormInput
@@ -1386,8 +1674,9 @@ export function DischargeSummaryForm() {
                                 options={[
                                     { value: 'Cash', label: 'Cash' },
                                     { value: 'Card', label: 'Card' },
+                                    { value: 'UPI', label: 'UPI' },
                                     { value: 'Insurance', label: 'Insurance' },
-                                    { value: 'UPI', label: 'UPI' }
+                                    { value: 'Bank Transfer', label: 'Bank Transfer' }
                                 ]}
                             />
                             <div className="md:col-span-4">
@@ -1405,6 +1694,28 @@ export function DischargeSummaryForm() {
                         </div>
                     </Card>
                 )}
+
+                {/* Spell Check Status Bar */}
+                <div className="flex items-center justify-between bg-white border border-slate-100 rounded-2xl px-6 py-4 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-xl ${isSpellChecking ? 'bg-blue-50 text-blue-500' : totalSpellingErrors > 0 ? 'bg-amber-50 text-amber-500' : 'bg-emerald-50 text-emerald-500'}`}>
+                            {isSpellChecking ? <Loader2 size={18} className="animate-spin" /> : totalSpellingErrors > 0 ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
+                        </div>
+                        <div>
+                            <p className="text-xs font-black text-slate-900 uppercase tracking-tight">
+                                {isSpellChecking ? 'Analyzing content...' : totalSpellingErrors > 0 ? `${totalSpellingErrors} issues identified` : 'Content Verified'}
+                            </p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase">
+                                {isSpellChecking ? 'Checking for errors' : totalSpellingErrors > 0 ? 'Click underlined words for suggestions' : 'No spelling errors found'}
+                            </p>
+                        </div>
+                    </div>
+                    {totalSpellingErrors > 0 && (
+                        <div className="text-[10px] font-black text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 uppercase tracking-widest">
+                            Fix issues to Commit
+                        </div>
+                    )}
+                </div>
 
                 {/* Footer Actions */}
                 <div className="flex flex-row items-center justify-center gap-1.5 sm:gap-4 pt-4 sm:pt-8 border-t border-gray-100 mt-4 sm:mt-8">
@@ -1465,6 +1776,71 @@ export function DischargeSummaryForm() {
                     consultants={consultants}
                 />
             </div>
+
+            {/* Spell Correction Popup */}
+            <AnimatePresence>
+                {activePopup && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setActivePopup(null)}
+                            className="fixed inset-0 z-[100] bg-slate-900/5 backdrop-blur-[1px]"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            style={{
+                                position: 'fixed',
+                                top: Math.min(window.innerHeight - 250, activePopup.y + 40),
+                                left: Math.min(window.innerWidth - 320, activePopup.x),
+                                zIndex: 101,
+                            }}
+                            className="w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
+                        >
+                            <div className="bg-slate-50 border-b border-slate-100 px-4 py-3 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <SpellCheck size={14} className="text-blue-500" />
+                                    <span className="text-[10px] font-black text-slate-900 uppercase tracking-wider">Spelling Correction</span>
+                                </div>
+                                <button onClick={() => setActivePopup(null)} className="p-1 hover:bg-slate-200 rounded-lg text-slate-400 transition-colors">
+                                    <X size={14} />
+                                </button>
+                            </div>
+                            <div className="p-4 space-y-3">
+                                <div className="p-2.5 bg-amber-50 border border-amber-100 rounded-xl">
+                                    <p className="text-[10px] font-bold text-amber-700 uppercase mb-1 tracking-tighter">Current Text</p>
+                                    <p className="text-sm font-bold text-slate-900 leading-tight">
+                                        "{(formData as any)[activePopup.field].substring(activePopup.match.offset, activePopup.match.offset + activePopup.match.length)}"
+                                    </p>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Suggestions</p>
+                                    <div className="grid grid-cols-1 gap-1.5">
+                                        {activePopup.match.replacements.slice(0, 4).map((s, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => applyCorrection(activePopup.field, activePopup.match, s.value)}
+                                                className="flex items-center justify-between w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:bg-blue-50/50 transition-all text-left group"
+                                            >
+                                                <span className="text-xs font-bold text-slate-700 group-hover:text-blue-600">{s.value}</span>
+                                                <CheckCircle2 size={12} className="text-slate-300 group-hover:text-blue-500" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-slate-50 px-4 py-2 border-t border-slate-100">
+                                <p className="text-[9px] font-bold text-slate-400 text-center tracking-tight uppercase">
+                                    LanguageTool Integrated
+                                </p>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </>
     );
 }

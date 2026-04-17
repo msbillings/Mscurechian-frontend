@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import {
-    DollarSign,
+    IndianRupee,
     Package,
     AlertTriangle,
     FileText,
@@ -78,7 +78,7 @@ const HRHospitalPharma = () => {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {[
-                    { label: "Cycle Revenue", value: formatCurrency(stats?.todayStats.revenue || 0), sub: `${stats?.todayStats.billCount || 0} Invoices`, icon: DollarSign, color: "text-blue-600", bg: "bg-blue-50" },
+                    { label: "Cycle Revenue", value: formatCurrency(stats?.todayStats.revenue || 0), sub: `${stats?.todayStats.billCount || 0} Invoices`, icon: IndianRupee, color: "text-blue-600", bg: "bg-blue-50" },
                     { label: "Stock Registry", value: stats?.inventoryStats.totalProducts.toString() || "0", sub: "Active SKU Units", icon: Package, color: "text-indigo-600", bg: "bg-indigo-50" },
                     { label: "Critical Stock", value: stats?.inventoryStats.lowStockCount.toString() || "0", sub: stats?.inventoryStats.outOfStockCount ? `${stats.inventoryStats.outOfStockCount} Depleted` : "Status Stable", icon: AlertTriangle, color: "text-rose-600", bg: "bg-rose-50" },
                     { label: "Session Volume", value: stats?.todayStats.billCount.toString() || "0", sub: "Dispatched Assets", icon: FileText, color: "text-emerald-600", bg: "bg-emerald-50" },

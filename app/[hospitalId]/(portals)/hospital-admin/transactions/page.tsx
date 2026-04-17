@@ -11,7 +11,7 @@ import {
   Filter,
   CreditCard,
   TrendingUp,
-  DollarSign,
+  IndianRupee,
   Clock,
   ArrowUpRight,
   Download,
@@ -319,18 +319,18 @@ function TransactionContent() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Compiling Financial Ledger...</p>
+        <p className="mt-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Loading Transactions...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-4 space-y-4 bg-slate-50/50 min-h-screen">
+    <div className="space-y-4 bg-slate-50/50 min-h-screen">
       {/* Simple Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Institutional Ledger</h1>
-          <p className="text-sm text-slate-500 font-medium mt-1 italic tracking-tight">Global Revenue Streams & Financial Audit Logs</p>
+          <h1 className="text-lg md:text-xl font-bold text-slate-900 tracking-tight">Transactions</h1>
+          <p className="text-sm text-slate-500 font-medium mt-1 italic tracking-tight">Track payments and billing records</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="px-5 py-2 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest leading-none">
@@ -340,35 +340,35 @@ function TransactionContent() {
       </div>
 
       {/* Simple Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
         {[
-          { label: "Gross Revenue", value: `₹${Math.round(totalGlobalRevenue).toLocaleString()}`, icon: DollarSign, color: "text-blue-600", bg: "bg-blue-50" },
-          { label: "Operation Volume", value: totalCount, icon: TrendingUp, color: "text-indigo-600", bg: "bg-indigo-50" },
-          { label: "Quantum Density", value: `₹${totalCount > 0 ? (totalGlobalRevenue / totalCount).toFixed(0) : 0}`, icon: CreditCard, color: "text-emerald-600", bg: "bg-emerald-50" }
+          { label: "Total Revenue", value: `₹${Math.round(totalGlobalRevenue).toLocaleString()}`, icon: IndianRupee, color: "text-blue-600", bg: "bg-blue-50" },
+          { label: "Total Transactions", value: totalCount, icon: TrendingUp, color: "text-indigo-600", bg: "bg-indigo-50" },
+          { label: "Average Bill Value", value: `₹${totalCount > 0 ? (totalGlobalRevenue / totalCount).toFixed(0) : 0}`, icon: CreditCard, color: "text-emerald-600", bg: "bg-emerald-50" }
         ].map((stat, i) => (
-          <div key={i} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
-            <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} w-fit mb-4`}>
-              <stat.icon size={20} strokeWidth={3} />
+          <div key={i} className={`bg-white p-3 md:p-4 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md ${i === 0 ? 'col-span-2 md:col-span-1' : ''}`}>
+            <div className={`p-2.5 md:p-3 rounded-xl ${stat.bg} ${stat.color} w-fit mb-3 md:mb-4`}>
+              <stat.icon size={18} className="md:w-[20px] md:h-[20px]" strokeWidth={3} />
             </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase mb-1">{stat.label}</p>
-            <h3 className="text-xl font-black text-slate-900 leading-none ">{stat.value}</h3>
+            <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase mb-1">{stat.label}</p>
+            <h3 className="text-sm md:text-xl font-black text-slate-900 leading-none break-all md:break-normal">{stat.value}</h3>
           </div>
         ))}
       </div>
 
       {/* Simple Controller */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
+      <div className="bg-white p-2 md:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
         <div className="relative flex-1 w-full">
           <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search by patient identity or gateway nomenclature..."
+            placeholder="Search by patient name or payment method..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
           />
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto mt-3 md:mt-0">
           <div className="flex items-center gap-2">
             <input
               type="date"
@@ -438,10 +438,10 @@ function TransactionContent() {
           <button
             onClick={handleExport}
             disabled={isExporting}
-            className="flex items-center gap-2 px-6 py-2.5 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase  hover:bg-primary-theme/80 transition-all disabled:opacity-50 shadow-sm"
+            className="flex items-center gap-2 px-3 md:px-6 py-2.5 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase  hover:bg-primary-theme/80 transition-all disabled:opacity-50 shadow-sm"
           >
             {isExporting ? <RefreshCw size={14} strokeWidth={3} className="animate-spin" /> : <FileSpreadsheet size={14} strokeWidth={3} />}
-            {isExporting ? 'Exporting...' : 'Export Audit'}
+            {isExporting ? 'Exporting...' : 'Export Data'}
           </button>
 
           {/* Pagination Controls */}
@@ -471,17 +471,17 @@ function TransactionContent() {
       {/* Clean Transactions Registry */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full text-left">
             <thead>
               <tr className="border-b border-slate-50 bg-slate-50/30">
-                <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Entity Signature</th>
-                <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Service Type</th>
-                <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Clinical Detail</th>
-                <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Doctor / Status</th>
-                <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Gateway</th>
-                <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Quantum</th>
-                <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Timestamp</th>
-                <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Audit</th>
+                <th className="px-2 md:px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Patient Name</th>
+                <th className="px-2 md:px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Service</th>
+                <th className="px-2 md:px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Diagnosis / Service Details</th>
+                <th className="px-2 md:px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Doctor</th>
+                <th className="px-2 md:px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Payment Method</th>
+                <th className="px-2 md:px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</th>
+                <th className="px-2 md:px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date & Time</th>
+                <th className="px-2 md:px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -566,7 +566,7 @@ function TransactionContent() {
 
                 return (
                   <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-3">
+                    <td className="px-2 md:px-6 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 font-black text-[10px] uppercase">
                           {tx.patientName?.charAt(0)}
@@ -574,7 +574,7 @@ function TransactionContent() {
                         <span className="font-thin text-slate-900 text-xs ">{tx.patientName}</span>
                       </div>
                     </td>
-                    <td className="px-8 py-4">
+                    <td className="px-2 md:px-8 py-4">
                       <div className="flex flex-col">
                         <span className={`inline-flex items-center w-fit px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${serviceType === 'IPD' ? 'bg-rose-50 text-rose-600 border-rose-100' :
                           serviceType === 'OPD' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
@@ -585,10 +585,10 @@ function TransactionContent() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-8 py-4">
+                    <td className="px-2 md:px-8 py-4">
                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{clinicalDetail}</span>
                     </td>
-                    <td className="px-8 py-4">
+                    <td className="px-2 md:px-8 py-4">
                       <div className="space-y-1">
                         {appointmentData.primaryDoctor || appointmentData.suggestedDoctorName ? (
                           <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
@@ -612,13 +612,13 @@ function TransactionContent() {
                         )}
                       </div>
                     </td>
-                    <td className="px-8 py-4">
+                    <td className="px-2 md:px-8 py-4">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                        {tx.paymentMethod === 'cash' ? <DollarSign size={12} strokeWidth={3} /> : <CreditCard size={12} strokeWidth={3} />}
+                        {tx.paymentMethod === 'cash' ? <IndianRupee size={12} strokeWidth={3} /> : <CreditCard size={12} strokeWidth={3} />}
                         {tx.paymentMethod}
                       </span>
                     </td>
-                    <td className="px-8 py-4">
+                    <td className="px-2 md:px-8 py-4">
                       {isDischargeTransaction && (ipdPaymentType === 'discharge' || ipdPaymentType === 'all') ? (
                         <div className="flex flex-row items-center gap-2 justify-start">
                           <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-slate-100 rounded text-[10px] font-bold whitespace-nowrap">
@@ -636,7 +636,7 @@ function TransactionContent() {
                         </span>
                       )}
                     </td>
-                    <td className="px-8 py-4">
+                    <td className="px-2 md:px-8 py-4">
                       <div className="flex flex-col">
                         <span className="text-xs font-thin text-slate-900 leading-none">
                           {new Date(tx.transactionTime).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
@@ -646,7 +646,7 @@ function TransactionContent() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-8 py-4 text-center">
+                    <td className="px-2 md:px-8 py-4 text-center">
                       <button
                         onClick={() => {
                           setSelectedTransaction(tx);
@@ -661,7 +661,7 @@ function TransactionContent() {
                 );
               })}
             </tbody>
-          </table>
+          </table></div>
         </div>
 
         {filteredTransactions.length === 0 && (
@@ -669,9 +669,9 @@ function TransactionContent() {
             <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
               <CreditCard className="text-slate-200 w-8 h-8" />
             </div>
-            <h3 className="text-lg font-black text-slate-900 ">Registry Void</h3>
+            <h3 className="text-sm md:text-lg font-black text-slate-900 ">No Transactions Found</h3>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 max-w-[240px] mx-auto">
-              No transactions detected within current search parameters.
+              No records match your current filters.
             </p>
           </div>
         )}
@@ -679,8 +679,8 @@ function TransactionContent() {
 
       {/* Payment Details Modal */}
       {showDetailsModal && selectedTransaction && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowDetailsModal(false)}>
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 md:p-4" onClick={() => setShowDetailsModal(false)}>
+          <div className="bg-white rounded-2xl p-3 md:p-6 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-black text-slate-900 ">Payment Details</h3>
               <button
@@ -709,7 +709,7 @@ function TransactionContent() {
 
               <div className="flex justify-between items-center py-3 border-b border-slate-100">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount Paid</span>
-                <span className="text-lg font-black text-slate-900 ">₹{Math.round(Number(selectedTransaction.amount)).toLocaleString()}</span>
+                <span className="text-sm md:text-lg font-black text-slate-900 ">₹{Math.round(Number(selectedTransaction.amount)).toLocaleString()}</span>
               </div>
 
               <div className="flex justify-between items-center py-3 border-b border-slate-100">

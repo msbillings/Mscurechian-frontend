@@ -107,30 +107,62 @@ export default function NurseProfilePage() {
         try {
             setUploadingPic(true);
             setCropper({ isOpen: false, image: '' });
+            
+            const { user, setUser } = useAuthStore.getState();
+
+            // Optimistic Update
+            if (profile) {
+                setProfile({
+                    ...profile,
+                    user: { ...profile.user, image: croppedDataUrl } as any,
+                });
+            }
+            if (setUser && user) {
+                setUser({ 
+                    ...user, 
+                    image: croppedDataUrl,
+                    avatar: croppedDataUrl,
+                    profilePic: croppedDataUrl 
+                } as any);
+            }
 
             // Convert data URL to File
             const resBlob = await fetch(croppedDataUrl);
             const blob = await resBlob.blob();
             const file = new File([blob], "profile-pic.png", { type: "image/png" });
 
+            const uploadToast = toast.loading("Uploading cropped photo...");
+
             // Step 1: Upload to Cloudinary
             const uploadRes = await staffService.uploadDocument(file, `profile_${Date.now()}`);
-            if (!uploadRes.success || !uploadRes.url) throw new Error('Upload failed');
+            if (!uploadRes.success || !uploadRes.url) {
+                throw new Error('Upload failed');
+            }
 
             // Step 2: Save URL
-            await staffService.updateProfile({ image: uploadRes.url });
+            const finalUrl = `${uploadRes.url}${uploadRes.url.includes('?') ? '&' : '?'}t=${Date.now()}`;
+            await staffService.updateProfile({ image: finalUrl });
 
             // Step 3: Local Sync
             if (profile) {
                 setProfile({
                     ...profile,
-                    user: { ...profile.user, image: uploadRes.url } as any,
+                    user: { ...profile.user, image: finalUrl } as any,
                 });
             }
+            if (setUser && user) {
+                setUser({ 
+                    ...user, 
+                    image: finalUrl,
+                    avatar: finalUrl,
+                    profilePic: finalUrl 
+                } as any);
+            }
 
-            toast.success('Profile picture updated!');
+            toast.success('Profile picture updated!', { id: uploadToast });
             queryClient.invalidateQueries({ queryKey: ['staff-profile', 'my'] });
         } catch (err: any) {
+            console.error('Nurse profile pic upload error:', err);
             toast.error(err.message || 'Failed to upload cropped image');
         } finally {
             setUploadingPic(false);
@@ -371,7 +403,7 @@ export default function NurseProfilePage() {
 
     return (
         <div className="min-h-screen bg-slate-50 pb-20">
-            <div className="max-w-7xl mx-auto space-y-4 sm:space-y-8 p-1 sm:p-6">
+            <div className="max-w-7xl mx-auto space-y-3 sm:space-y-6 lg:space-y-4">
                 {cropper.isOpen && (
                     <ImageCropper
                         src={cropper.image}
@@ -383,16 +415,20 @@ export default function NurseProfilePage() {
                 )}
 
                 {/* 1. HEADER / OVERVIEW CARD */}
-                <div className="bg-white rounded-2xl sm:rounded-[32px] p-4 sm:p-8 border border-slate-200 shadow-sm relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-50 rounded-full blur-3xl -mr-20 -mt-20 group-hover:bg-emerald-100 transition-colors"></div>
+                <div className="bg-white rounded-2xl lg:rounded-[1.5rem] p-4 lg:p-6 border border-slate-200 shadow-sm relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-48 h-48 lg:w-64 lg:h-64 bg-emerald-50 rounded-full blur-3xl -mr-20 -mt-20 group-hover:bg-emerald-100 transition-colors"></div>
 
-                    <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-8 text-center sm:text-left">
+                    <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-4 lg:gap-6 text-center sm:text-left">
                         <div className="shrink-0">
                             {/* Static Avatar — upload is done via Edit Personal */}
-                            <div className="w-20 h-20 sm:w-32 sm:h-32 rounded-2xl sm:rounded-[24px] bg-slate-100 border-2 sm:border-4 border-white shadow-lg overflow-hidden flex items-center justify-center text-slate-300">
+                            <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl lg:rounded-[1.25rem] bg-slate-100 border-2 sm:border-4 border-white shadow-lg overflow-hidden flex items-center justify-center text-slate-300">
                                 {((profile.user as any).image || (profile.user as any).avatar) ? (
                                     <img
-                                        src={(profile.user as any).image || (profile.user as any).avatar}
+                                        src={
+                                          ((profile.user as any).image || (profile.user as any).avatar).includes('t=')
+                                            ? ((profile.user as any).image || (profile.user as any).avatar)
+                                            : `${((profile.user as any).image || (profile.user as any).avatar)}${((profile.user as any).image || (profile.user as any).avatar).includes('?') ? '&' : '?'}t=${Date.now()}`
+                                        }
                                         alt="Profile"
                                         className="w-full h-full object-cover"
                                     />
@@ -402,7 +438,7 @@ export default function NurseProfilePage() {
 
                         <div className="flex-1 space-y-2 sm:space-y-4 w-full">
                             <div>
-                                <h1 className="text-sm sm:text-3xl font-black text-slate-900 tracking-tight uppercase leading-tight">{profile.user.name}</h1>
+                                <h1 className="text-lg md:text-xl lg:text-xl font-black text-slate-900 tracking-tight uppercase leading-tight">{profile.user.name}</h1>
                                 <p className="text-[10px] sm:text-base text-slate-500 font-bold uppercase tracking-widest mt-1">{profile.designation || 'Staff Nurse'} <span className="hidden sm:inline">•</span> <span className="block sm:inline">{profile.hospital?.name}</span></p>
                             </div>
 
@@ -421,14 +457,14 @@ export default function NurseProfilePage() {
                         </button>
                     </div>
 
-                    <div className="mt-4 sm:mt-8 pt-4 sm:pt-8 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 relative z-10">
+                    <div className="mt-4 lg:mt-6 pt-4 lg:pt-6 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 relative z-10">
                         <InfoItem icon={<Mail size={14} className="sm:size-[16px]" />} label="Email" value={profile.user.email} />
                         <InfoItem icon={<Phone size={14} className="sm:size-[16px]" />} label="Mobile" value={profile.user.mobile} />
                         <InfoItem icon={<Building size={14} className="sm:size-[16px]" />} label="Emp ID" value={profile.employeeId} />
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4 xl:gap-6">
 
                     {/* 2. QUALIFICATIONS */}
                     <SectionCard title="Qualifications" icon={<Award size={16} className="text-purple-500 sm:size-[20px]" />} onEdit={() => handleEdit('qualifications')}>
@@ -487,8 +523,8 @@ export default function NurseProfilePage() {
                 </div>
 
                 {/* 4. DOCUMENTS */}
-                <div className="bg-white rounded-2xl sm:rounded-[32px] p-4 sm:p-8 border border-slate-200 shadow-sm relative">
-                    <div className="flex items-center justify-between mb-4 sm:mb-8">
+                <div className="bg-white rounded-2xl lg:rounded-[1.5rem] p-4 lg:p-6 border border-slate-200 shadow-sm relative">
+                    <div className="flex items-center justify-between mb-3 lg:mb-4">
                         <h2 className="text-xs sm:text-lg font-black text-slate-900 flex items-center gap-2 sm:gap-3 uppercase">
                             <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-blue-50 text-blue-600"><FileText size={16} className="sm:size-[20px]" /></div>
                             Legal Documents
@@ -539,8 +575,8 @@ export default function NurseProfilePage() {
                 </div>
 
                 {/* 6. INTERNSHIP & TRAINING HISTORY */}
-                <div className="bg-white rounded-2xl sm:rounded-[32px] p-4 sm:p-8 border border-slate-200 shadow-sm relative">
-                    <div className="flex items-center justify-between mb-4 sm:mb-8">
+                <div className="bg-white rounded-2xl lg:rounded-[1.5rem] p-4 lg:p-6 border border-slate-200 shadow-sm relative">
+                    <div className="flex items-center justify-between mb-4 lg:mb-6">
                         <h2 className="text-xs sm:text-lg font-black text-slate-900 flex items-center gap-2 sm:gap-3 uppercase">
                             <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-indigo-50 text-indigo-600"><History size={16} className="sm:size-[20px]" /></div>
                             Training History
@@ -707,10 +743,10 @@ export default function NurseProfilePage() {
 // Subcomponents
 function SectionCard({ title, icon, children, onEdit }: any) {
     return (
-        <div className="bg-white rounded-2xl sm:rounded-[32px] p-4 sm:p-8 border border-slate-200 shadow-sm relative group h-full">
-            <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <div className="bg-white rounded-2xl lg:rounded-[1.5rem] p-4 lg:p-5 xl:p-6 border border-slate-200 shadow-sm relative group h-full">
+            <div className="flex items-center justify-between mb-4 lg:mb-5">
                 <h2 className="text-xs sm:text-lg font-black text-slate-900 flex items-center gap-2 sm:gap-3 uppercase">
-                    <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-slate-50">{icon}</div>
+                    <div className="p-1.5 sm:p-2 rounded-lg lg:rounded-xl bg-slate-50">{icon}</div>
                     {title}
                 </h2>
                 <button onClick={onEdit} className="p-2 rounded-xl text-slate-300 hover:bg-slate-50 hover:text-slate-600 transition-colors">
@@ -877,9 +913,9 @@ function HospitalStructureView() {
             const h = hRes.hospital;
             return {
                 ...h,
-                numberOfBeds: beds.length || h.numberOfBeds || 0,
+                totalBeds: beds.length || 0,
                 availableBeds: beds.filter(b => b.status === "Vacant").length || 0,
-                medicalStaffCount: staffCounts.total || h.numberOfDoctors || 0
+                medicalStaffCount: staffCounts.total || 0
             };
         }
     });
@@ -896,9 +932,10 @@ function HospitalStructureView() {
     const hospital = hospitalRes;
 
     const occupancyRate = React.useMemo(() => {
-        if (!hospital?.numberOfBeds || hospital.numberOfBeds === 0) return 0;
-        const available = hospital.availableBeds || 0;
-        return Math.min(100, Math.round(((hospital.numberOfBeds - available) / hospital.numberOfBeds) * 100));
+        const total = (hospital as any)?.totalBeds || 0;
+        if (!total) return 0;
+        const available = (hospital as any).availableBeds || 0;
+        return Math.min(100, Math.round(((total - available) / total) * 100));
     }, [hospital]);
 
     if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-slate-300" /></div>;
@@ -928,28 +965,9 @@ function HospitalStructureView() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
                                 <div className="space-y-1">
-                                    <p className="text-5xl sm:text-6xl font-black">{hospital.numberOfBeds || 0}</p>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Inpatient Bed Matrix</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Institutional Operations Active</p>
                                 </div>
 
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                                        <span className="text-slate-400">Occupancy Status</span>
-                                        <span className="text-emerald-400">{occupancyRate}%</span>
-                                    </div>
-                                    <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-1000 ease-out"
-                                            style={{ width: `${occupancyRate}%` }}
-                                        />
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                        <span className="text-[9px] font-bold text-emerald-400/80 uppercase tracking-wider">
-                                            {hospital.availableBeds || 0} Nodes Available
-                                        </span>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -957,13 +975,13 @@ function HospitalStructureView() {
 
                 {/* Quick Stats Grid */}
                 <div className="lg:col-span-12">
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                         <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                             <div className="flex items-center gap-2 mb-3">
                                 <Activity size={14} className="text-rose-500" />
                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">ICU Core</span>
                             </div>
-                            <p className="text-2xl font-black text-slate-900">{hospital.ICUBeds || 0}</p>
+                            <p className="text-2xl font-black text-slate-900">{(hospital as any).ICUBeds || 0}</p>
                         </div>
                         <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                             <div className="flex items-center gap-2 mb-3">
@@ -978,13 +996,6 @@ function HospitalStructureView() {
                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Divisions</span>
                             </div>
                             <p className="text-2xl font-black text-slate-900">{hospitalMeta?.departments?.length || hospital.departmentCount || 0}</p>
-                        </div>
-                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                            <div className="flex items-center gap-2 mb-3">
-                                <Stethoscope size={14} className="text-emerald-500" />
-                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Medical Staff</span>
-                            </div>
-                            <p className="text-2xl font-black text-slate-900">{hospital.medicalStaffCount || hospital.numberOfDoctors || 0}</p>
                         </div>
                     </div>
                 </div>

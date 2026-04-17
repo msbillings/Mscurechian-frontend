@@ -7,7 +7,7 @@ import {
     Save,
     Info,
     Warehouse,
-    DollarSign,
+    IndianRupee,
     Calendar,
     Box,
     Pill,
@@ -180,7 +180,7 @@ const AddProductPage = () => {
     const labelClasses = "text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 block flex items-center gap-2";
 
     return (
-        <div className="max-w-4xl mx-auto pb-20 pt-8 px-4">
+        <div className="max-w-7xl mx-auto pb-20 pt-8 px-4">
             {/* Back Button */}
             <button
                 onClick={() => router.back()}
@@ -191,7 +191,7 @@ const AddProductPage = () => {
             </button>
 
             <div className="mb-10">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Register New Medicine</h1>
+                <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-2">Register New Medicine</h1>
                 <p className="text-sm text-gray-500">Add detailed information to register a new product in your pharmacy inventory.</p>
             </div>
 
@@ -260,7 +260,7 @@ const AddProductPage = () => {
                 {/* ============ SECTION 2: Pricing & Taxation ============ */}
                 <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
                     <div className="flex items-center gap-2 mb-6 text-emerald-600">
-                        <DollarSign size={18} />
+                        <IndianRupee size={18} />
                         <h3 className="font-bold">Pricing & Taxation</h3>
                     </div>
 

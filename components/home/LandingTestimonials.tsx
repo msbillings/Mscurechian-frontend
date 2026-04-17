@@ -103,12 +103,16 @@ const LandingTestimonials = () => {
 
           <div className="flex gap-2">
             <button
+              type="button"
+              suppressHydrationWarning
               onClick={() => paginate(-1)}
               className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-primary-theme hover:border-primary-theme/50 transition-all shadow-sm active:scale-95"
             >
               <ChevronLeft size={18} />
             </button>
             <button
+              type="button"
+              suppressHydrationWarning
               onClick={() => paginate(1)}
               className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-primary-theme hover:border-primary-theme/50 transition-all shadow-sm active:scale-95"
             >
@@ -167,7 +171,7 @@ const LandingTestimonials = () => {
                               {item.name}
                             </h4>
                             <p className="text-[9px] text-primary-theme font-black uppercase tracking-[0.2em] opacity-70">
-                              {item.designation} {item.company && `• ${item.company}`}
+                               {item.designation} {item.company && `• ${item.company}`}
                             </p>
                           </div>
                         </div>
@@ -209,6 +213,8 @@ const LandingTestimonials = () => {
             {testimonials.map((_, i) => (
                 <button
                     key={i}
+                    type="button"
+                    suppressHydrationWarning
                     onClick={() => {
                         setDirection(i > currentIndex ? 1 : -1);
                         setCurrentIndex(i);

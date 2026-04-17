@@ -9,7 +9,7 @@ import {
 import DoctorDashboardContainer from '@/components/doctor/DoctorDashboardContainer';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 30; // Background re-validation for instant subsequent navigations
 
 export default async function DoctorDashboard() {
    // Parallel data fetching

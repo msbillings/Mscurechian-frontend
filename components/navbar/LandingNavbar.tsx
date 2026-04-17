@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from "react";
 import {
@@ -7,7 +7,9 @@ import {
     ArrowLeft
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 import Link from "next/link";
+import ProgressBar from "@/components/ui/ProgressBar";
 
 interface LandingNavbarProps {
     variant?: 'home' | 'about' | 'detail' | 'pricing';
@@ -17,6 +19,7 @@ interface LandingNavbarProps {
 
 function LandingNavbar({ variant = 'home', title, onProtectedClick }: LandingNavbarProps) {
     const router = useRouter();
+    const [isPending, startTransition] = useTransition();
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [hasAgreed, setHasAgreed] = useState(false);
@@ -71,13 +74,17 @@ function LandingNavbar({ variant = 'home', title, onProtectedClick }: LandingNav
         }
 
         if (hasAgreed) {
-            router.push(path);
+            startTransition(() => {
+                router.push(path);
+            });
         } else {
             const element = document.getElementById('terms-section');
             if (element) {
                 element.scrollIntoView({ behavior: 'smooth' });
             } else {
-                router.push('/#terms-section');
+                startTransition(() => {
+                    router.push('/#terms-section');
+                });
             }
         }
     };
@@ -98,16 +105,17 @@ function LandingNavbar({ variant = 'home', title, onProtectedClick }: LandingNav
             ? 'bg-white/95 backdrop-blur-md  shadow-sm py-3'
             : 'bg-transparent py-5'
             }`}>
+            <ProgressBar isPending={isPending} color="primary-theme" />
             <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
                 {/* Logo Section */}
                 <div
-                    className="flex items-center gap-2 lg:gap-3 group cursor-pointer"
-                    onClick={() => router.push('/')}
+                    className="flex items-center gap-2 group cursor-pointer"
+                    onClick={() => startTransition(() => router.push('/'))}
                 >
-                    <div className="flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
-                        <img src="/assets/logo.png" alt="Logo" className="w-12 h-12 sm:w-14 sm:h-14 object-contain" />
+                    <div className="w-10 h-10 bg-primary-theme/10 rounded-xl flex items-center justify-center group-hover:scale-110">
+                        <img src="/assets/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
                     </div>
-                    <span className="text-2xl font-bold bg-linear-to-r from-primary-theme to-blue-400 bg-clip-text text-transparent tracking-tight">
+                    <span className="text-xl font-bold bg-linear-to-r from-primary-theme to-blue-400 bg-clip-text text-transparent">
                         MSCureChain
                     </span>
                 </div>

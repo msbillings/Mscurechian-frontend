@@ -14,7 +14,7 @@ export default function LiveFeedbackWidget() {
             // Play a subtle sound? Maybe too much.
             toast.custom((t) => (
                 <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}>
-                    <div className="flex-1 w-0 p-4">
+                    <div className="flex-1 w-0 p-2 md:p-4">
                         <div className="flex items-start">
                             <div className="shrink-0 pt-0.5">
                                 <Star className="h-10 w-10 text-amber-400 fill-amber-400" />
@@ -47,7 +47,7 @@ export default function LiveFeedbackWidget() {
     }, []);
 
     return (
-        <Card className="p-6 border-slate-200 shadow-sm bg-white">
+        <Card className="p-2 md:p-6 border-slate-200 shadow-sm bg-white">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
                     <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
@@ -71,7 +71,7 @@ export default function LiveFeedbackWidget() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {feedbacks.map((fb, i) => (
-                        <div key={fb._id || i} className="p-4 bg-slate-50 border border-slate-100 rounded-xl transition-all">
+                        <div key={fb._id || i} className="p-2 md:p-4 bg-slate-50 border border-slate-100 rounded-xl transition-all">
                             <div className="flex justify-between items-center mb-2">
                                 <div className="flex gap-0.5">
                                     {[...Array(5)].map((_, idx) => (

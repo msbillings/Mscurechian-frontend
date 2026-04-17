@@ -1,31 +1,31 @@
 'use client';
 
 import React, { useEffect, useState, use } from "react";
-import { 
-  Building2, 
-  User, 
-  Stethoscope, 
-  MapPin, 
-  Mail, 
-  ShieldCheck, 
-  Users, 
-  ArrowLeft,
-  ChevronRight,
-  ClipboardList,
-  FlaskConical,
-  Pill,
-  Ambulance,
-  Headphones,
-  Lock,
-  Smartphone,
-  Search
+import {
+    Building2,
+    User,
+    Stethoscope,
+    MapPin,
+    Mail,
+    ShieldCheck,
+    Users,
+    ArrowLeft,
+    ChevronRight,
+    ClipboardList,
+    FlaskConical,
+    Pill,
+    Ambulance,
+    Headphones,
+    Lock,
+    Smartphone,
+    Search
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { adminService } from '@/lib/integrations';
-import { 
-  Badge, 
-  Button 
+import {
+    Badge,
+    Button
 } from '@/components/admin';
 import Link from "next/link";
 
@@ -91,43 +91,43 @@ const HospitalPersonnelPage = ({ params }: { params: Promise<{ id: string }> }) 
         { id: 'staff', label: 'Support Staff', icon: <ClipboardList size={18} />, count: personnel.staff?.length || 0 },
     ];
 
-    const currentPersonnel = (personnel[activeTab] || []).filter((person: any) => 
+    const currentPersonnel = (personnel[activeTab] || []).filter((person: any) =>
         person.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         person.mobile?.includes(searchQuery) ||
         person.email?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
-        <div className="max-w-6xl mx-auto py-6 px-4 space-y-8">
+        <div className="max-w-7xl mx-auto py-4 md:py-6 space-y-6 md:space-y-8">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6 md:pb-8 px-4 md:px-4 lg:px-0">
                 <div>
-                    <button 
+                    <button
                         onClick={() => router.back()}
                         className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 font-medium mb-3 transition-colors"
                     >
                         <ArrowLeft size={16} /> Back to Hospitals
                     </button>
-                    <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
-                            <Building2 size={32} />
+                    <div className="flex items-start md:items-center gap-3 md:gap-4">
+                        <div className="w-12 h-12 md:w-16 md:h-16 bg-blue-50 rounded-xl md:rounded-2xl flex items-center justify-center text-blue-600 shrink-0 mt-1 md:mt-0">
+                            <Building2 size={24} className="md:w-8 md:h-8" />
                         </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900">{hospital.name}</h1>
-                            <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                                <span className="flex items-center gap-1.5"><MapPin size={14} /> {hospital.address}</span>
-                                <span className="flex items-center gap-1.5"><Smartphone size={14} /> {hospital.phone}</span>
+                        <div className="min-w-0 pr-2">
+                            <h1 className="text-lg md:text-2xl font-bold text-gray-900 leading-tight mb-1.5 line-clamp-2 md:line-clamp-none">{hospital.name}</h1>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4 text-[10px] md:text-sm text-gray-500">
+                                <span className="flex items-start sm:items-center gap-1.5"><MapPin size={12} className="mt-0.5 sm:mt-0 shrink-0" /> <span className="line-clamp-2">{hospital.address}</span></span>
+                                <span className="flex items-center gap-1.5 shrink-0"><Smartphone size={12} className="shrink-0" /> {hospital.phone}</span>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Badge className="bg-green-100 text-green-700 border-green-200 px-3 py-1 text-xs font-bold uppercase tracking-wider">
+                <div className="flex items-center gap-3 mt-2 md:mt-0">
+                    <Badge className="bg-green-100 text-green-700 border-green-200 px-3 py-1 text-[10px] md:text-xs font-bold uppercase tracking-wider shrink-0">
                         {hospital.status || 'Active'}
                     </Badge>
-                    <div className="bg-gray-100 px-4 py-2 rounded-xl text-center">
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest leading-tight">Total Staff</p>
-                        <p className="text-lg font-bold text-gray-900 leading-tight">
+                    <div className="bg-gray-100 px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-center flex md:block items-center gap-3 md:gap-0 grow md:grow-0 justify-center">
+                        <p className="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase tracking-widest leading-tight">Total Staff</p>
+                        <p className="text-sm md:text-lg font-bold text-gray-900 leading-tight">
                             {Object.values(personnel).reduce((acc: number, curr: any) => acc + (curr?.length || 0), 0)}
                         </p>
                     </div>
@@ -135,9 +135,9 @@ const HospitalPersonnelPage = ({ params }: { params: Promise<{ id: string }> }) 
             </div>
 
             {/* Content Hub */}
-            <div className="flex flex-col lg:flex-row gap-8">
+            <div className="flex flex-col lg:flex-row gap-6 md:gap-8">
                 {/* Left Tabs */}
-                <div className="w-full lg:w-64 shrink-0 space-y-1">
+                <div className="flex overflow-x-auto lg:flex-col w-full lg:w-64 shrink-0 gap-2 lg:gap-0 lg:space-y-1 pb-2 px-4 md:px-4 lg:px-0 no-scrollbar">
                     {tabs.map((tab) => (
                         <button
                             key={tab.id}
@@ -145,17 +145,16 @@ const HospitalPersonnelPage = ({ params }: { params: Promise<{ id: string }> }) 
                                 setActiveTab(tab.id);
                                 setSearchQuery('');
                             }}
-                            className={`w-full flex items-center justify-between p-3.5 rounded-xl transition-all text-sm font-semibold ${
-                                activeTab === tab.id 
-                                ? 'bg-blue-600 text-white shadow-md' 
-                                : 'text-gray-600 hover:bg-gray-100'
-                            }`}
+                            className={`shrink-0 lg:w-full flex items-center justify-between p-2.5 md:p-3.5 rounded-xl transition-all text-xs md:text-sm font-semibold border lg:border-none ${activeTab === tab.id
+                                    ? 'bg-blue-600 text-white shadow-md border-blue-600'
+                                    : 'text-gray-600 hover:bg-gray-100 border-gray-200 bg-white lg:bg-transparent'
+                                }`}
                         >
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
                                 {tab.icon}
                                 <span>{tab.label}</span>
                             </div>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-400'}`}>
+                            <span className={`ml-3 text-[10px] md:text-xs px-2 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-400'}`}>
                                 {tab.count}
                             </span>
                         </button>
@@ -163,14 +162,14 @@ const HospitalPersonnelPage = ({ params }: { params: Promise<{ id: string }> }) 
                 </div>
 
                 {/* Right Personnel Panel */}
-                <div className="flex-1 space-y-6">
+                <div className="flex-1 space-y-6 md:px-4 lg:px-0">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                             List of {tabs.find(t => t.id === activeTab)?.label}
+                            List of {tabs.find(t => t.id === activeTab)?.label}
                         </h2>
                         <div className="relative w-full sm:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                            <input 
+                            <input
                                 type="text"
                                 placeholder="Search by name or ID..."
                                 value={searchQuery}
@@ -183,26 +182,26 @@ const HospitalPersonnelPage = ({ params }: { params: Promise<{ id: string }> }) 
                     {currentPersonnel.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {currentPersonnel.map((person: any) => (
-                                <div key={person._id} className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex items-start gap-4 group">
-                                    <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors shrink-0">
-                                        <User size={24} />
+                                <div key={person._id} className="p-4 md:p-5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex items-start gap-3 md:gap-4 group">
+                                    <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors shrink-0">
+                                        <User size={20} className="md:w-6 md:h-6" />
                                     </div>
                                     <div className="grow min-w-0">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <h3 className="font-bold text-gray-900 truncate">{person.name}</h3>
-                                            <Badge className="bg-green-50 text-green-600 border-0 text-[10px] uppercase font-black px-2">
+                                        <div className="flex items-start md:items-center justify-between mb-1 gap-2 flex-col md:flex-row">
+                                            <h3 className="font-bold text-xs md:text-base text-gray-900 truncate w-full">{person.name}</h3>
+                                            <Badge className="bg-green-50 text-green-600 border-0 text-[8px] md:text-[10px] uppercase font-black px-2 shrink-0 self-start md:self-auto">
                                                 Active
                                             </Badge>
                                         </div>
                                         
-                                        <div className="space-y-1.5 mt-3">
-                                            <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                <Smartphone size={12} className="text-gray-400" />
-                                                <span className="font-mono font-bold text-blue-600">{person.mobile}</span>
-                                                <span className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">(Login ID)</span>
+                                        <div className="space-y-1.5 mt-2 md:mt-3">
+                                            <div className="flex items-center gap-1.5 md:gap-2 text-[9px] md:text-xs text-gray-600">
+                                                <Smartphone size={10} className="text-gray-400 shrink-0 md:w-3 md:h-3" />
+                                                <span className="font-mono font-bold text-blue-600 truncate">{person.mobile}</span>
+                                                <span className="text-[8px] md:text-[10px] text-gray-400 font-medium uppercase tracking-widest shrink-0">(Login ID)</span>
                                             </div>
-                                            <div className="flex items-center gap-2 text-xs text-gray-600">
-                                                <Mail size={12} className="text-gray-400" />
+                                            <div className="flex items-center gap-1.5 md:gap-2 text-[9px] md:text-xs text-gray-600">
+                                                <Mail size={10} className="text-gray-400 shrink-0 md:w-3 md:h-3" />
                                                 <span className="truncate">{person.email || 'No email registered'}</span>
                                             </div>
                                         </div>

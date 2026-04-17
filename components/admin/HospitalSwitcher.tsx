@@ -96,8 +96,8 @@ export default function HospitalSwitcher() {
     const handleSwitch = (hospital: Hospital) => {
         const hospitalId = hospital._id;
 
-        // Store in sessionStorage and cookie for tenant context
-        sessionStorage.setItem('activeHospitalId', hospitalId);
+        // Store in localStorage and cookie for tenant context
+        localStorage.setItem('activeHospitalId', hospitalId);
         document.cookie = `hospitalId=${hospitalId}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
 
         setActiveHospitalId(hospitalId);

@@ -104,7 +104,7 @@ export default function HRHospitalNurses() {
     });
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 p-8">
+        <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <PageHeader
                     icon={<Users className="text-emerald-500" />}

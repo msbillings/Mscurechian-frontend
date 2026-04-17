@@ -1,4 +1,4 @@
-export interface IQualityIndicator {
+﻿export interface IQualityIndicator {
     _id: string;
     name: string;
     department: 'OPD' | 'IPD' | 'ICU' | 'Hospital-wide';

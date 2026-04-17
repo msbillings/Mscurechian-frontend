@@ -100,39 +100,39 @@ export default function FeedbacksPage() {
 
     if (error) {
         return (
-            <div className="p-8 text-center bg-red-50 text-red-600 rounded-xl">
+            <div className="p-3 md:p-8 text-center bg-red-50 text-red-600 rounded-xl">
                 Failed to load feedbacks. Could be a network issue.
             </div>
         );
     }
 
     return (
-        <div className="p-8 space-y-6 bg-slate-50/50 min-h-screen">
+        <div className="space-y-6 bg-slate-50/50 min-h-screen">
             {/* Header */}
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
+                    <h1 className="text-xl md:text-2xl font-bold text-slate-900 flex items-center gap-3">
                         <MessageSquare className="text-blue-600" />
                         Patient Feedbacks
                     </h1>
-                    <p className="text-slate-500 text-sm mt-1">
+                    <p className="text-slate-500 text-xs md:text-sm mt-1">
                         Manage and review patient satisfaction and concerns.
                     </p>
                 </div>
 
                 {/* Summary Card */}
                 {feedbacks.length > 0 && (
-                    <div className="flex items-center gap-6 bg-white px-6 py-3 rounded-xl shadow-sm border border-slate-200">
+                    <div className="flex items-center gap-4 md:gap-6 bg-white px-3 md:px-6 py-2 md:py-3 rounded-xl shadow-sm border border-slate-200">
                         <div className="text-center">
-                            <p className="text-xs font-bold text-slate-400 uppercase">Total Feedbacks</p>
-                            <p className="text-2xl font-black text-slate-900">{feedbacks.length}</p>
+                            <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase">Total Feedbacks</p>
+                            <p className="text-lg md:text-2xl font-black text-slate-900">{feedbacks.length}</p>
                         </div>
-                        <div className="w-px h-8 bg-slate-100"></div>
+                        <div className="w-px h-6 md:h-8 bg-slate-100"></div>
                         <div className="text-center">
-                            <p className="text-xs font-bold text-slate-400 uppercase">Average Hospital Rating</p>
-                            <div className="flex items-center gap-2 justify-center">
-                                <p className="text-2xl font-black text-primary-theme">{averageRating}</p>
-                                <Star size={16} className="fill-primary-theme text-primary-theme" />
+                            <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase">Average Hospital Rating</p>
+                            <div className="flex items-center gap-1.5 md:gap-2 justify-center">
+                                <p className="text-lg md:text-2xl font-black text-primary-theme">{averageRating}</p>
+                                <Star size={14} className="fill-primary-theme text-primary-theme" />
                             </div>
                         </div>
                     </div>
@@ -144,7 +144,7 @@ export default function FeedbacksPage() {
                 {feedbacks.length === 0 ? (
                     <div className="py-20 text-center bg-white rounded-2xl border border-dashed border-slate-300">
                         <MessageSquare size={48} className="mx-auto text-slate-200 mb-4" />
-                        <h3 className="text-lg font-bold text-slate-900">No Feedbacks Yet</h3>
+                        <h3 className="text-sm md:text-lg font-bold text-slate-900">No Feedbacks Yet</h3>
                         <p className="text-slate-500">Patient reviews and ratings will appear here.</p>
                     </div>
                 ) : (
@@ -185,7 +185,7 @@ export default function FeedbacksPage() {
                                     </div>
 
                                     {/* Action Header */}
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-col items-end gap-2 shrink-0">
                                         {/* Status Pill */}
                                         <div className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border ${fb.status === 'Resolved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                                             fb.status === 'In Progress' ? 'bg-blue-50 text-blue-600 border-blue-100' :
@@ -195,12 +195,12 @@ export default function FeedbacksPage() {
                                             {fb.status}
                                         </div>
 
-                                        {/* Dropdown-style actions (visible on hover) */}
-                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pl-2 border-l border-slate-100 bg-white">
+                                        {/* Fixed: Always visible actions, and positioned better for mobile */}
+                                        <div className="flex items-center gap-1 justify-end w-full">
                                             {fb.status !== 'Closed' && (
                                                 <button
                                                     onClick={() => updateStatusMutation.mutate({ id: fb._id, status: 'Closed' })}
-                                                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                    className="p-1 md:p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                                     title="Close Feedback"
                                                 >
                                                     <XCircle size={16} />
@@ -212,7 +212,7 @@ export default function FeedbacksPage() {
                                                         deleteFeedbackMutation.mutate(fb._id);
                                                     }
                                                 }}
-                                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                className="p-1 md:p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                                 title="Delete"
                                             >
                                                 <Trash2 size={16} />
@@ -222,7 +222,7 @@ export default function FeedbacksPage() {
                                 </div>
 
                                 {/* Content Block */}
-                                <div className="pl-[52px]"> {/* Align with text name start: 40px avatar + 12px gap */}
+                                <div className="pl-0 md:pl-[52px]"> {/* Adjust alignment for mobile */}
 
                                     {/* Rating & Categories */}
                                     <div className="flex flex-wrap items-center gap-2 mb-2">

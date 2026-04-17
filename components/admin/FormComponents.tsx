@@ -12,7 +12,7 @@ export const FormInput: React.FC<FormInputProps> = ({ label, error, icon, classN
       <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--secondary-color)' }}>
         {label}
       </label>
-      <div className="relative">
+    <div className="relative">
         {icon && (
           <div className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50">
             {icon}
@@ -24,6 +24,7 @@ export const FormInput: React.FC<FormInputProps> = ({ label, error, icon, classN
             backgroundColor: 'var(--bg-color)',
             color: 'var(--text-color)',
           }}
+          autoComplete="off"
           {...props}
         />
       </div>
@@ -52,8 +53,8 @@ export const FormSelect: React.FC<FormSelectProps> = ({ label, options, error, c
         }}
         {...props}
       >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
+        {options.map((option, index) => (
+          <option key={`${option.value}-${index}`} value={option.value}>
             {option.label}
           </option>
         ))}

@@ -30,7 +30,7 @@ export default function StaffIncidentPage() {
             {/* Header Area */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 px-1 sm:px-0 mt-2 sm:mt-0">
                 <div>
-                    <h1 className="text-xs sm:text-lg font-black text-gray-900 dark:text-white tracking-tighter uppercase">Safety Portal</h1>
+                    <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white tracking-tighter uppercase">Safety Portal</h1>
                     <p className="text-gray-500 dark:text-gray-400 font-bold mt-0.5 uppercase tracking-widest text-[6px] sm:text-[9px] sm:ml-0.5 flex items-center gap-1">
                         <AlertTriangle className="w-2.5 sm:h-3 text-red-500 animate-pulse" />
                         Governance
@@ -91,7 +91,7 @@ export default function StaffIncidentPage() {
                     {/* History Table */}
                     <div className="space-y-4 sm:space-y-6">
                         <div className="flex items-center gap-3 px-2 sm:px-0">
-                            <h3 className="text-xs sm:text-lg font-black text-gray-900 dark:text-white uppercase tracking-tighter">Recent Logs</h3>
+                            <h3 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white uppercase tracking-tighter">Recent Logs</h3>
                         </div>
 
                         <IncidentActivityLog

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, Pill, FlaskConical, FileCheck, Activity, Loader2, UserCircle, AlertTriangle, Building2, ChevronDown, Check, Globe } from 'lucide-react';
+import { Calendar, Pill, FlaskConical, FileCheck, Activity, Loader2, UserCircle, AlertTriangle, Building2, ChevronDown, Check, Globe, Search } from 'lucide-react';
 import { patientService } from '@/lib/integrations/services/patient.service';
 import AppointmentsSection from './AppointmentsSection';
 import PrescriptionsSection from './PrescriptionsSection';
@@ -37,6 +37,7 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
     const [hospitals, setHospitals] = useState<any[]>([]);
     const [selectedHospitalId, setSelectedHospitalId] = useState<string>(''); // empty means All Hospitals
     const [isHospitalDropdownOpen, setIsHospitalDropdownOpen] = useState(false);
+    const [hospitalSearch, setHospitalSearch] = useState('');
     const [initialized, setInitialized] = useState(false);
     const [activeEmergencyId, setActiveEmergencyId] = useState<string | null>(null);
 
@@ -231,8 +232,14 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
         );
     }
 
+    const filteredHospitals = hospitals.filter(h => 
+        h.name.toLowerCase().includes(hospitalSearch.toLowerCase()) || 
+        (h.city && h.city.toLowerCase().includes(hospitalSearch.toLowerCase())) ||
+        (h.address && h.address.toLowerCase().includes(hospitalSearch.toLowerCase()))
+    );
+
     return (
-        <div className="max-w-7xl mx-auto px-0 sm:px-4 lg:px-6 py-2 sm:py-6 space-y-3 sm:space-y-6">
+        <div className="w-full py-2 sm:py-6 space-y-3 sm:space-y-6">
             {/* Simple Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 pb-3 sm:pb-6 border-b border-gray-100 dark:border-white/5">
                 <div className="flex items-center justify-between sm:block">
@@ -325,47 +332,68 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
 
                     {isHospitalDropdownOpen && (
                         <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-900 border border-slate-100 dark:border-white/10 rounded-3xl shadow-2xl p-2 z-100 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="p-2 border-b border-slate-100 dark:border-white/5 mb-2">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search hospitals or cities..."
+                                        value={hospitalSearch}
+                                        onChange={(e) => setHospitalSearch(e.target.value)}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:font-medium placeholder:uppercase placeholder:tracking-wider placeholder:text-[9px] dark:text-white"
+                                    />
+                                </div>
+                            </div>
                             <div className="max-h-64 overflow-y-auto no-scrollbar space-y-1">
-                                <button
-                                    onClick={() => {
-                                        setSelectedHospitalId('');
-                                        setIsHospitalDropdownOpen(false);
-                                    }}
-                                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-left transition-colors ${selectedHospitalId === '' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-400'}`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <Globe className={`w-4 h-4 ${selectedHospitalId === '' ? 'text-blue-600' : 'text-slate-400'}`} />
-                                        <div>
-                                            <p className="text-xs font-black uppercase tracking-tight">Global History</p>
-                                            <p className="text-[9px] font-bold opacity-60">Unified view of all hospitals</p>
-                                        </div>
-                                    </div>
-                                    {selectedHospitalId === '' && <Check className="w-4 h-4" />}
-                                </button>
+                                {(hospitalSearch === '') && (
+                                    <>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedHospitalId('');
+                                                setIsHospitalDropdownOpen(false);
+                                                setHospitalSearch('');
+                                            }}
+                                            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-left transition-colors ${selectedHospitalId === '' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-400'}`}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Globe className={`w-4 h-4 ${selectedHospitalId === '' ? 'text-blue-600' : 'text-slate-400'}`} />
+                                                <div>
+                                                    <p className="text-xs font-black uppercase tracking-tight">Global History</p>
+                                                    <p className="text-[9px] font-bold opacity-60">Unified view of all hospitals</p>
+                                                </div>
+                                            </div>
+                                            {selectedHospitalId === '' && <Check className="w-4 h-4" />}
+                                        </button>
 
-                                <div className="h-px bg-slate-100 dark:bg-white/5 my-2 mx-2" />
+                                        <div className="h-px bg-slate-100 dark:bg-white/5 my-2 mx-2" />
+                                    </>
+                                )}
 
-                                {hospitals.length > 0 ? hospitals.map((h) => (
+                                {filteredHospitals.length > 0 ? filteredHospitals.map((h) => (
                                     <button
                                         key={h._id}
                                         onClick={() => {
                                             setSelectedHospitalId(h._id);
                                             setIsHospitalDropdownOpen(false);
+                                            setHospitalSearch('');
                                         }}
                                         className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-left transition-colors ${selectedHospitalId === h._id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-400'}`}
                                     >
                                         <div className="flex items-center gap-3 overflow-hidden">
-                                            <Building2 className={`w-4 h-4 shrink-0 ${selectedHospitalId === h._id ? 'text-blue-600' : 'text-slate-400'}`} />
+                                            <Building2 className={`w-4 h-4 shrink-0 mt-0.5 ${selectedHospitalId === h._id ? 'text-blue-600' : 'text-slate-400'}`} />
                                             <div className="overflow-hidden">
                                                 <p className="text-xs font-black uppercase tracking-tight truncate">{h.name}</p>
-                                                <p className="text-[9px] font-bold opacity-60 truncate">{h.city} • {h.visitCount} Visits</p>
+                                                <p className="text-[9px] font-bold opacity-80 text-slate-500 dark:text-slate-400 truncate">
+                                                    {h.address ? `${h.address}, ` : ''}{h.city} • {h.visitCount || 0} Visits
+                                                </p>
                                             </div>
                                         </div>
                                         {selectedHospitalId === h._id && <Check className="w-4 h-4 shrink-0" />}
                                     </button>
                                 )) : (
                                     <div className="p-4 text-center">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No other hospitals found</p>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No hospitals found</p>
                                     </div>
                                 )}
                             </div>

@@ -124,50 +124,65 @@ function HRDoctorDetailPage() {
   if (!doctor) return null;
 
   return (
-    <div className="max-w-6xl mx-auto pb-12 p-8">
-      <button
-        onClick={() => router.push(`/${hospitalId}/hr/hospital/doctors`)}
-        className="flex items-center gap-2 mb-6 text-gray-500 hover:text-blue-600 font-medium text-sm"
-      >
-        <ArrowLeft size={16} />
-        Back to Doctors
-      </button>
+    <div className="max-w-7xl mx-auto pb-12">
+      {/* Unified Header Section */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 bg-white dark:bg-gray-800/40 p-4 md:p-6 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm">
+        <div className="flex flex-wrap items-center gap-4 md:gap-8">
+          {/* Back Button */}
+          <button
+            onClick={() => router.push(`/${hospitalId}/hr/hospital/doctors`)}
+            className="flex items-center gap-2 text-gray-500 hover:text-blue-600 font-medium text-sm transition-all pr-4 md:border-r border-gray-200 dark:border-gray-700 group"
+          >
+            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+            <span>Back</span>
+          </button>
 
-      <PageHeader
-        icon={<Stethoscope className="text-blue-500" />}
-        title={doctor.name}
-        subtitle={doctor.doctorId || 'Doctor Profile'}
-      />
+          {/* Doctor Identity Header */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 text-blue-600 shadow-inner">
+              <Stethoscope size={24} />
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+                {doctor.name}
+              </h1>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] bg-gray-50 dark:bg-gray-800/50 px-2 py-1 rounded-md border border-gray-100 dark:border-gray-700">
+                  {doctor.doctorId || 'DOCTOR PROFILE'}
+                </span>
+                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border shadow-xs ${doctor.status === 'inactive'
+                  ? 'bg-red-50 text-red-600 border-red-100 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800'
+                  : 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800'
+                  }`}>
+                  {doctor.status === 'inactive' ? 'Inactive' : 'Active'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-      <div className="flex justify-start mb-6 -mt-4">
-        <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${doctor.status === 'inactive'
-          ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800'
-          : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800'
-          }`}>
-          {doctor.status === 'inactive' ? 'Inactive' : 'Active'}
-        </span>
-      </div>
-
-      <div className="flex gap-3 mb-8">
-        <Button
-          onClick={() => router.push(`/${hospitalId}/hr/hospital/doctors/edit/${id}`)}
-          icon={<Edit size={16} />}
-          variant="secondary"
-          className="!text-sm !py-2 !rounded-lg"
-        >
-          Edit Profile
-        </Button>
-        <Button
-          onClick={handleToggleStatus}
-          loading={deleteLoading}
-          icon={doctor.status === 'inactive' ? <UserCheck size={16} /> : <Ban size={16} />}
-          className={doctor.status === 'inactive'
-            ? "bg-emerald-600 hover:bg-emerald-700 text-white !text-sm !py-2 !rounded-lg border border-emerald-700 shadow-sm"
-            : "bg-amber-500 hover:bg-amber-600 text-white !text-sm !py-2 !rounded-lg border border-amber-600 shadow-sm"
-          }
-        >
-          {doctor.status === 'inactive' ? 'Reactivate' : 'Deactivate'} Account
-        </Button>
+        {/* Action Controls */}
+        <div className="flex items-center gap-3 shrink-0">
+          <Button
+            onClick={() => router.push(`/${hospitalId}/hr/hospital/doctors/edit/${id}`)}
+            icon={<Edit size={16} />}
+            variant="secondary"
+            className="!text-xs !py-2.5 !px-5 !rounded-xl border-gray-200 transition-all hover:border-blue-300 hover:bg-blue-50/50"
+          >
+            Edit Profile
+          </Button>
+          <Button
+            onClick={handleToggleStatus}
+            loading={deleteLoading}
+            icon={doctor.status === 'inactive' ? <UserCheck size={16} /> : <Ban size={16} />}
+            className={doctor.status === 'inactive'
+              ? "bg-emerald-600 hover:bg-emerald-700 text-white !text-xs !py-2.5 !px-5 !rounded-xl border-none shadow-lg shadow-emerald-200/50 dark:shadow-none transition-all active:scale-95"
+              : "bg-amber-500 hover:bg-amber-600 text-white !text-xs !py-2.5 !px-5 !rounded-xl border-none shadow-lg shadow-amber-200/50 dark:shadow-none transition-all active:scale-95"
+            }
+          >
+            {doctor.status === 'inactive' ? 'Reactivate' : 'Deactivate'} Account
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -300,16 +315,29 @@ function HRDoctorDetailPage() {
             </h3>
             {doctor.availability?.length > 0 ? (
               <div className="space-y-3">
-                {doctor.availability.map((slot: any, idx: number) => (
-                  <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {slot.days?.map((day: string) => (
-                        <span key={day} className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[10px] font-bold uppercase">{day}</span>
-                      ))}
+                {doctor.availability.map((slot: any, idx: number) => {
+                  const formatAMPM = (time: string) => {
+                    if (!time) return "N/A";
+                    if (time.toLowerCase().includes('am') || time.toLowerCase().includes('pm')) return time;
+                    const [hours, minutes] = time.split(':');
+                    let h = parseInt(hours);
+                    const m = minutes || "00";
+                    const ampm = h >= 12 ? 'PM' : 'AM';
+                    h = h % 12;
+                    h = h ? h : 12;
+                    return `${h}:${m} ${ampm}`;
+                  };
+                  return (
+                    <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {slot.days?.map((day: string) => (
+                          <span key={day} className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[10px] font-bold uppercase">{day}</span>
+                        ))}
+                      </div>
+                      <p className="text-xs font-bold text-gray-700">{formatAMPM(slot.startTime)} - {formatAMPM(slot.endTime)}</p>
                     </div>
-                    <p className="text-xs font-bold text-gray-700">{slot.startTime} - {slot.endTime}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <p className="text-xs text-gray-400 italic">No slots registered</p>

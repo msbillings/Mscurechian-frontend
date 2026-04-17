@@ -55,9 +55,70 @@ export default function Home() {
     const audioRef = React.useRef<HTMLAudioElement>(null);
     const [progress, setProgress] = useState(0);
     const [showFloatingPlayer, setShowFloatingPlayer] = useState(true);
-    const [pendingPath, setPendingPath] = useState('');
+    // pendingPath removed - redirect is stored in sessionStorage and handled by TermsSection
     const [hasAgreed, setHasAgreed] = useState(false);
     const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    // Custom smooth scroll with proportional duration (3500ms for full-page distance, scales down for shorter)
+    const smoothScrollTo = (targetY: number) => {
+        const startY = window.scrollY;
+        const distance = targetY - startY;
+        const maxScrollable = Math.max(
+            document.documentElement.scrollHeight - window.innerHeight,
+            1
+        );
+        // Duration scales with distance: full page = 3500ms, half = 1750ms, etc. Min 600ms.
+        const duration = Math.max(600, (Math.abs(distance) / maxScrollable) * 3500);
+        const startTime = performance.now();
+
+        const easeInOutCubic = (t: number) =>
+            t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+        const step = (currentTime: number) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            window.scrollTo(0, startY + distance * easeInOutCubic(progress));
+            if (progress < 1) requestAnimationFrame(step);
+        };
+
+        requestAnimationFrame(step);
+    };
+
+    // Smooth scroll to terms-section when arriving via ?scrollTo=terms param
+    // (used by portals page - avoids browser's auto-jump on # hash)
+    // Reads window.location.search directly to avoid needing useSearchParams + Suspense
+    useEffect(() => {
+        if (!isMounted || typeof window === 'undefined') return;
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('scrollTo') !== 'terms') return;
+
+        let attempts = 0;
+        const maxAttempts = 25; // poll up to ~5 seconds
+
+        const poll = setInterval(() => {
+            attempts++;
+            const el = document.getElementById('terms-section');
+            if (el) {
+                clearInterval(poll);
+                // Settle delay so layout is stable, then distance-proportional smooth scroll
+                setTimeout(() => {
+                    const top = el.getBoundingClientRect().top + window.scrollY - 80;
+                    smoothScrollTo(top);
+                }, 150);
+                // Clean the URL param after scrolling (keep URL tidy)
+                window.history.replaceState(null, '', '/');
+            } else if (attempts >= maxAttempts) {
+                clearInterval(poll);
+            }
+        }, 200);
+
+        return () => clearInterval(poll);
+    }, [isMounted]);
 
     useEffect(() => {
         const agreed = localStorage.getItem('mscurechain_terms_accepted');
@@ -70,12 +131,15 @@ export default function Home() {
         if (hasAgreed) {
             router.push(path);
         } else {
-            setPendingPath(path);
+            // Store intended destination; TermsSection will redirect there after acceptance
+            sessionStorage.setItem('mscurechain_pending_portal', path);
             const element = document.getElementById('terms-section');
             if (element) {
-                element.scrollIntoView({ behavior: 'smooth' });
+                // Already on landing page — distance-proportional smooth scroll, offset for navbar
+                const top = element.getBoundingClientRect().top + window.scrollY - 80;
+                smoothScrollTo(top);
             } else {
-                router.push('/#terms-section');
+                router.push('/?scrollTo=terms');
             }
         }
     };
@@ -83,9 +147,7 @@ export default function Home() {
     const handleTermsAccept = () => {
         localStorage.setItem('mscurechain_terms_accepted', 'true');
         setHasAgreed(true);
-        if (pendingPath) {
-            router.push(pendingPath);
-        }
+        // Navigation is now handled entirely by TermsSection (reads sessionStorage)
     };
     useEffect(() => {
         const audio = audioRef.current;
@@ -142,8 +204,21 @@ export default function Home() {
         setProgress(parseFloat(e.target.value));
     };
 
+    if (!isMounted) {
+        return (
+            <div className="min-h-screen bg-white" suppressHydrationWarning>
+                <div className="h-20" /> {/* Navbar Placeholder */}
+                <div className="max-w-7xl mx-auto px-6 py-20 animate-pulse">
+                    <div className="h-12 w-64 bg-gray-100 rounded-lg mb-6" />
+                    <div className="h-6 w-full max-w-2xl bg-gray-50 rounded-md mb-12" />
+                    <div className="h-60 w-full bg-gray-50 rounded-2xl" />
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="min-h-screen bg-background text-foreground selection:bg-primary-theme/30">
+        <div className="min-h-screen bg-background text-foreground selection:bg-primary-theme/30" suppressHydrationWarning>
             <header>
                 <LandingNavbar variant="home" onProtectedClick={handleProtectedClick} />
             </header>
@@ -151,8 +226,6 @@ export default function Home() {
             <main>
                 {/* Hidden Audio Element */}
                 <audio ref={audioRef} src="/assets/voiceMS.mp3" preload="auto" autoPlay aria-hidden="true" />
-
-
 
                 {/* Hero Section */}
                 <Hero />
@@ -190,7 +263,7 @@ export default function Home() {
                                             </div>
                                         </div>
                                         <div className="space-y-4">
-                                            <p className="text-sm text-muted leading-relaxed italic opacity-90">
+                                            <p suppressHydrationWarning className="text-sm text-muted leading-relaxed italic opacity-90">
                                                 &quot;Listen to our founder&apos;s vision for revolutionizing healthcare.&quot;
                                             </p>
                                             <div className="flex items-center gap-4">
@@ -662,6 +735,8 @@ export default function Home() {
 
                         <div className="mt-16 text-center">
                             <button
+                                type="button"
+                                suppressHydrationWarning
                                 onClick={() => router.push('/contact')}
                                 className="inline-flex items-center gap-3 bg-primary-theme text-white px-10 py-5 rounded-2xl font-bold shadow-xl shadow-primary-theme/20 hover:scale-105 transition-all active:scale-95"
                             >
@@ -899,6 +974,8 @@ const BedManagementMarvel = () => {
                             {steps.map((_, i) => (
                                 <button
                                     key={i}
+                                    type="button"
+                                    suppressHydrationWarning
                                     onClick={() => setCurrentIndex(i)}
                                     className={`w-1 h-6 transition-all duration-500 rounded-full cursor-pointer ${i === currentIndex ? 'bg-white scale-y-150 shadow-md' : 'bg-white/30 hover:bg-white/50'}`}
                                 />

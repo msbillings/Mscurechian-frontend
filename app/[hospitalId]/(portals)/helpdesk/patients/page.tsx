@@ -98,6 +98,7 @@ export default function PatientsPage() {
 
     const debouncedSearch = useDebouncedValue(searchTerm, 300);
 
+
     const { data: patientsRaw, isLoading, isFetching, refetch } = useHelpdeskPatients(
         debouncedSearch,
         page,
@@ -277,7 +278,7 @@ export default function PatientsPage() {
                     amount: Number(appt.payment?.amount || appt.amount || 0),
                     method: appt.payment?.paymentMethod || appt.paymentMethod || 'cash',
                     status: appt.payment?.paymentStatus || appt.paymentStatus || 'not_required',
-                    receiptNumber: appt.payment?.transactionId || appt.transactionId || `REC-${Date.now().toString().slice(-6)}`
+                    receiptNumber: appt.payment?.transactionId || appt.transactionId || appt.appointmentId || `REC-${Date.now().toString().slice(-6)}`
                 }
             };
 
@@ -314,57 +315,67 @@ export default function PatientsPage() {
                                 <ArrowLeft size={20} />
                             </Link>
                             <div>
-                                <h1 className="text-lg md:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                                <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
                                     Patient Registry
                                 </h1>
                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Medical Records • Document Manifest</p>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                            <div className="relative w-full md:w-80 group">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                            <div className="relative flex-1 sm:w-80 group">
+                                <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-slate-400 size-[14px] sm:size-[16px]" />
                                 <input
                                     type="text"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    placeholder="SEARCH PATIENTS..."
-                                    className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold uppercase tracking-tight outline-none focus:bg-white focus:border-teal-500 shadow-inner transition-all"
+                                    placeholder="SEARCH..."
+                                    className="w-full pl-9 sm:pl-11 pr-3 sm:pr-4 py-2 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-tight outline-none focus:bg-white focus:border-teal-500 shadow-inner transition-all"
                                 />
                             </div>
 
                             <button
                                 onClick={() => refetch()}
                                 disabled={isFetching}
-                                className="p-2.5 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-teal-600 shadow-sm active:scale-95 disabled:opacity-50"
+                                className="p-2 sm:p-2.5 bg-white border border-slate-200 text-slate-400 rounded-lg sm:rounded-xl hover:text-teal-600 shadow-sm active:scale-95 disabled:opacity-50"
                                 aria-label="Refresh Patients"
                             >
-                                <RefreshCw size={18} className={showRefreshing ? 'animate-spin' : ''} />
+                                <RefreshCw size={16} className={`${showRefreshing ? 'animate-spin' : ''} sm:size-[18px]`} />
                             </button>
                             <Link
                                 href="/helpdesk/patient-registration"
-                                className="flex items-center gap-2 px-5 py-2.5 bg-teal-600  text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-800 shadow-lg shadow-slate-900/10 transition-all active:scale-95"
+                                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-teal-600  text-white rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-widest hover:bg-slate-800 shadow-lg shadow-slate-900/10 transition-all active:scale-95"
                             >
-                                <Plus size={16} /> Register
+                                <Plus size={14} className="sm:size-[16px]" /> <span className="hidden sm:inline">Register</span><span className="sm:hidden">Reg</span>
                             </Link>
                         </div>
                     </div>
 
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-t border-slate-100 pt-3 px-2">
-                        {/* FILTER TOGGLE */}
-                        <div className="flex items-center gap-1 p-1 bg-slate-100 border border-slate-200 rounded-xl shadow-inner shadow-slate-200/50">
-                            {(['all', 'ipd', 'opd'] as const).map((f) => (
-                                <button
-                                    key={f}
-                                    onClick={() => { setActiveFilter(f); setPage(1); }}
-                                    className={`px-5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${activeFilter === f
-                                        ? 'bg-white text-teal-600 shadow-sm border border-slate-200'
-                                        : 'text-slate-400 hover:text-slate-600'
-                                        }`}
-                                >
-                                    {f === 'all' ? 'All Objects' : f === 'ipd' ? 'IPD Records' : 'OPD Registry'}
-                                </button>
-                            ))}
+                        {/* FILTER TOGGLE & COUNT - HORIZONTAL ON MOBILE */}
+                        <div className="flex flex-row items-center justify-between sm:justify-start gap-2 sm:gap-4 w-full sm:w-auto overflow-x-auto no-scrollbar">
+                            <div className="flex items-center gap-0.5 p-1 bg-slate-100 border border-slate-200 rounded-lg sm:rounded-xl shadow-inner shadow-slate-200/50 shrink-0">
+                                {(['all', 'ipd', 'opd'] as const).map((f) => (
+                                    <button
+                                        key={f}
+                                        onClick={() => { setActiveFilter(f); setPage(1); }}
+                                        className={`px-2 sm:px-5 py-1.5 rounded-md sm:rounded-lg text-[8px] sm:text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${activeFilter === f
+                                            ? 'bg-white text-teal-600 shadow-sm border border-slate-200'
+                                            : 'text-slate-400 hover:text-slate-600'
+                                            }`}
+                                    >
+                                        {f === 'all' ? 'All' : f === 'ipd' ? 'IPD' : 'OPD'}<span className="hidden sm:inline"> {f === 'all' ? 'Objects' : f === 'ipd' ? 'Records' : 'Registry'}</span>
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* DYNAMIC PATIENT COUNT */}
+                            <div className="px-2 sm:px-3 py-1.5 bg-teal-50 border border-teal-100 rounded-lg flex items-center gap-1.5 sm:gap-2 shadow-sm shrink-0 whitespace-nowrap">
+                                <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-teal-500 animate-pulse" />
+                                <span className="text-[8px] sm:text-[10px] font-black text-teal-700 uppercase tracking-widest">
+                                    {total} {activeFilter === 'all' ? 'Total' : activeFilter.toUpperCase()} <span className="hidden xs:inline">Patients</span>
+                                </span>
+                            </div>
                         </div>
 
                         {/* COMPACT PAGINATION */}
@@ -394,66 +405,79 @@ export default function PatientsPage() {
 
                 {/* LISTING PANEL */}
                 <div className="max-w-full mx-auto">
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[500px]">
-                        <div className="overflow-x-auto">
+                    <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[500px]">
+                        <div className="overflow-x-auto w-full no-scrollbar">
                             {isFetching && patients.length === 0 ? (
                                 <div className="py-40 flex flex-col items-center justify-center gap-4">
                                     <RefreshCw className="w-8 h-8 text-teal-600 animate-spin" />
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest animate-pulse">Syncing Registry...</p>
                                 </div>
                             ) : patients.length > 0 ? (
-                                <table className="w-full">
+                                <table className="w-full min-w-[700px] table-auto">
                                     <thead>
-                                        <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                                            <th className="px-6 py-4 text-left">Reference Node</th>
-                                            <th className="px-6 py-4 text-left">Clinical Object</th>
-                                            <th className="px-6 py-4 text-center">Actions</th>
+                                        <tr className="bg-slate-50 border-b border-slate-200 text-[10px] lg:text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
+                                            <th className="w-16 px-4 py-3 sm:py-4 text-center">#</th>
+                                            <th className="px-4 sm:px-6 py-3 sm:py-4 text-left w-64 lg:w-80">MRN Number</th>
+                                            <th className="px-4 sm:px-6 py-3 sm:py-4 text-left min-w-[200px]">Patient Name</th>
+                                            <th className="px-4 sm:px-6 py-3 sm:py-4 text-center w-24">Age</th>
+                                            <th className="px-4 sm:px-6 py-3 sm:py-4 text-center w-24">Gender</th>
+                                            <th className="px-4 sm:px-6 py-3 sm:py-4 text-left w-auto">Phone Number</th>
+                                            <th className="w-[120px] px-4 py-3 sm:py-4 text-center">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {patients.map((patient: any, idx: number) => {
                                             const patientId = patient._id || patient.id;
                                             const isIPD = patient.isIPD;
+                                            const serialNo = ((page - 1) * limit) + idx + 1;
 
                                             return (
                                                 <tr key={`${patientId}-${idx}`} className="group hover:bg-slate-50 transition-colors">
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex flex-col gap-1.5">
-                                                            <span className="text-sm font-bold text-slate-900 uppercase tracking-tight">#{patient.profile?.mrn || patient.mrn || `P${idx + 1}`}</span>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-[9px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-md w-fit uppercase tracking-widest border border-teal-100 shadow-sm">Verified</span>
-                                                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md w-fit uppercase tracking-widest border ${isIPD
-                                                                    ? 'text-rose-600 bg-rose-50 border-rose-100'
-                                                                    : 'text-sky-600 bg-sky-50 border-sky-100'
-                                                                    }`}>
-                                                                    {isIPD ? 'IPD NODE' : 'OPD NODE'}
-                                                                </span>
-                                                            </div>
-                                                        </div>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-[11px] lg:text-[13px] font-black text-slate-300 group-hover:text-teal-500 transition-colors">
+                                                            {serialNo.toString().padStart(2, '0')}
+                                                        </span>
                                                     </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex items-center gap-4">
-                                                            <div className={`w-11 h-11 rounded-xl transition-all flex items-center justify-center font-bold text-xl shadow-sm border shrink-0 ${isIPD
+                                                    <td className="px-4 sm:px-6 py-4">
+                                                        <span className="text-[12px] lg:text-[14px] font-extra-bold text-slate-700 uppercase tracking-widest bg-slate-100/50 px-2.5 py-1 rounded-md border border-slate-100 block truncate">
+                                                            {patient.profile?.mrn || patient.mrn}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 sm:px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-9 h-9 lg:w-10 lg:h-10 rounded-lg lg:rounded-xl transition-all flex items-center justify-center font-bold text-sm shadow-sm border shrink-0 ${isIPD
                                                                 ? 'bg-rose-50 text-rose-300 group-hover:bg-rose-600 group-hover:text-white border-rose-100'
                                                                 : 'bg-slate-50 text-slate-300 group-hover:bg-teal-600 group-hover:text-white border-slate-100'
                                                                 }`}>
                                                                 {(patient.name || patient.user?.name || "P").charAt(0).toUpperCase()}
                                                             </div>
-                                                            <div className="flex flex-col gap-1 min-w-0">
-                                                                <span className="text-sm font-bold text-slate-900 uppercase tracking-tight truncate max-w-[250px]">{patient.name || patient.user?.name}</span>
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded uppercase">{patient.profile?.age || patient.age} Years • {patient.profile?.gender || patient.gender}</span>
-                                                                    <div className="w-1 h-1 bg-slate-300 rounded-full" />
-                                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{patient.mobile || patient.user?.mobile}</span>
-                                                                </div>
+                                                            <div className="min-w-0">
+                                                                <span className="text-[13px] lg:text-[15px] font-[550] text-slate-700 uppercase tracking-tight truncate block">
+                                                                    {patient.name || patient.user?.name}
+                                                                </span>
                                                             </div>
                                                         </div>
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-[12px] lg:text-[13px] font-bold text-slate-600 bg-slate-50 border border-slate-200/50 px-2 py-1 rounded-lg">
+                                                            {patient.profile?.age || patient.age} <span className="text-[9px] text-slate-400">YRS</span>
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-[10px] lg:text-[12px] font-black text-slate-500 uppercase tracking-widest bg-slate-200/10 px-2 py-0.5 rounded-full border border-slate-200/20">
+                                                            {patient.profile?.gender || patient.gender}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-4">
+                                                        <span className="text-[11px] lg:text-[13px] font-bold text-slate-600 uppercase tracking-wider font-mono">
+                                                            {patient.mobile || patient.user?.mobile}
+                                                        </span>
                                                     </td>
                                                     <td className="px-4 py-4">
                                                         <div className="flex items-center justify-center gap-1.5">
                                                             <button
                                                                 onClick={() => router.push(`/helpdesk/patients/${patientId}`)}
-                                                                className="p-1.5 bg-slate-100 text-slate-500 rounded-lg hover:bg-slate-900 hover:text-white transition-all"
+                                                                className="p-1.5 bg-slate-100 text-slate-500 rounded-lg hover:bg-slate-900 hover:text-white transition-all shadow-sm"
                                                                 title="View Profile"
                                                             >
                                                                 <ExternalLink size={14} />

@@ -24,6 +24,7 @@ import { useQuery } from '@tanstack/react-query';
 import { renderToStaticMarkup } from 'react-dom/server';
 import MainHeader from '@/components/printers/MainHeader';
 import MainFooter from '@/components/printers/MainFooter';
+import { useTenantLink } from '@/hooks/useTenantLink';
 
 function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }> }) {
   const resolvedParams = use(params);
@@ -35,6 +36,7 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
     queryFn: () => hospitalAdminService.getHospital(),
   });
   const hospitalData = hospitalDataRaw?.hospital;
+  const { getPath } = useTenantLink();
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -515,44 +517,44 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans">
-      <div className="max-w-4xl mx-auto p-6 print:hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans pb-24">
+      <div className="max-w-4xl mx-auto p-3 sm:p-6 print:hidden">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <button
               onClick={() => router.back()}
-              className="p-2 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"
+              className="p-2 sm:p-2.5 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-all active:scale-95"
             >
               <ArrowLeft size={20} />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <Beaker className="text-purple-600" size={28} />
-                Lab Investigation Request
+              <h1 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2 uppercase tracking-tighter italic">
+                <Beaker className="text-purple-600" size={24} />
+                Lab Request
               </h1>
-              <p className="text-sm text-gray-500">Create token for laboratory tests</p>
+              <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest leading-none mt-1">Create token for laboratory tests</p>
             </div>
           </div>
         </div>
 
         {/* Form Body */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Priority */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Request Priority</label>
-            <div className="grid grid-cols-3 gap-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-8">
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 italic">Request Priority</label>
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
               {[
                 { value: 'routine', label: 'Routine', color: 'blue' },
                 { value: 'urgent', label: 'Urgent', color: 'orange' },
-                { value: 'stat', label: 'Immediate', color: 'red' }
+                { value: 'stat', label: 'Stat', color: 'red' }
               ].map((p) => (
                 <button
                   key={p.value}
                   onClick={() => setPriority(p.value as any)}
-                  className={`p-4 rounded-xl border-2 font-bold text-sm ${priority === p.value
-                    ? `border-${p.color}-600 bg-${p.color}-50 dark:bg-${p.color}-900/20 text-${p.color}-700 dark:text-${p.color}-400`
-                    : 'border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600'
+                  className={`py-3 sm:py-4 px-2 sm:px-4 rounded-xl sm:rounded-2xl border-2 font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all ${priority === p.value
+                    ? `border-${p.color}-600 bg-${p.color}-50 dark:bg-${p.color}-900/20 text-${p.color}-700 dark:text-${p.color}-400 shadow-lg shadow-${p.color}-500/10 scale-[1.02]`
+                    : 'border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600 text-gray-400'
                     }`}
                 >
                   {p.label}
@@ -562,26 +564,26 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
           </div>
 
           {/* Tests */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-8">
             <div className="flex items-center justify-between mb-6">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Selected Investigations</label>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Investigations</label>
               <button
                 onClick={addTest}
-                className="flex items-center gap-1.5 text-xs text-purple-600 hover:text-purple-700 font-bold bg-purple-50 dark:bg-purple-900/20 px-3 py-1.5 rounded-full"
+                className="flex items-center gap-1.5 text-[10px] sm:text-xs text-purple-600 hover:text-purple-700 font-black bg-purple-50 dark:bg-purple-900/20 px-4 py-2 rounded-full uppercase tracking-widest transition-all active:scale-95"
               >
                 <Plus size={14} />
-                Add Test
+                Add Node
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 sm:space-y-6">
               {tests.map((test, index) => (
-                <div key={index} className="group relative bg-gray-50 dark:bg-gray-900/50 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-purple-200 dark:hover:border-purple-900/50">
-                  <div className="flex gap-4">
+                <div key={index} className="group relative bg-gray-50 dark:bg-gray-900/50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 hover:border-purple-200 dark:hover:border-purple-900/50 transition-all">
+                  <div className="flex flex-col gap-4">
                     <div className="flex-1 space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Test Name *</label>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 italic">Investigation Name *</label>
                           <div className="relative">
                             {activeSearchIndex === index && (
                               <div
@@ -595,21 +597,21 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
                               onChange={(e) => handleSearch(e.target.value, index)}
                               onFocus={() => handleSearch(test.name, index)}
                               placeholder="Search test..."
-                              className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-sm font-medium relative z-50"
+                              className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-purple-500 outline-none text-xs sm:text-sm font-bold placeholder:text-gray-300 relative z-50 transition-all"
                             />
                             {activeSearchIndex === index && searchResults.length > 0 && (
-                              <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                              <div className="absolute top-full left-0 right-0 z-50 mt-2 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2">
                                 {searchResults.map((res: any) => (
                                   <button
                                     key={res._id}
                                     onClick={() => selectTest(res, index)}
-                                    className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-50 last:border-0 flex justify-between items-center group"
+                                    className="w-full text-left px-5 py-4 hover:bg-purple-50 dark:hover:bg-purple-900/20 border-b border-gray-50 dark:border-gray-800 last:border-0 flex justify-between items-center group transition-colors"
                                   >
                                     <div>
-                                      <div className="text-sm font-bold text-slate-700 group-hover:text-purple-600">{res.testName || res.name}</div>
-                                      <div className="text-xs text-slate-400">{res.departmentId?.name || 'General'}</div>
+                                      <div className="text-[11px] font-black text-gray-800 dark:text-gray-200 group-hover:text-purple-600 uppercase tracking-tight">{res.testName || res.name}</div>
+                                      <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{res.departmentId?.name || 'General'}</div>
                                     </div>
-                                    <div className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded">
+                                    <div className="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1 rounded-lg uppercase tracking-widest">
                                       ₹{res.price}
                                     </div>
                                   </button>
@@ -618,12 +620,12 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
                             )}
                           </div>
                         </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Category</label>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 italic">Category</label>
                           <select
                             value={test.category}
                             onChange={(e) => updateTest(index, 'category', e.target.value)}
-                            className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-sm font-medium"
+                            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-purple-500 outline-none text-xs sm:text-sm font-bold appearance-none transition-all cursor-pointer"
                           >
                             {testCategories.map(cat => (
                               <option key={cat} value={cat}>{cat}</option>
@@ -631,25 +633,25 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
                           </select>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Instructions</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 italic">Special Instructions</label>
                           <input
                             type="text"
                             value={test.instructions}
                             onChange={(e) => updateTest(index, 'instructions', e.target.value)}
                             placeholder="e.g. Fasting required"
-                            className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-sm font-medium"
+                            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-purple-500 outline-none text-xs sm:text-sm font-medium placeholder:text-gray-300 transition-all"
                           />
                         </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Price (₹)</label>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 italic">Unit Cost (₹)</label>
                           <input
                             type="number"
                             value={test.price}
                             readOnly
                             placeholder="0.00"
-                            className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-medium cursor-not-allowed"
+                            className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl sm:rounded-2xl outline-none text-xs sm:text-sm font-black text-gray-400 cursor-not-allowed"
                           />
                         </div>
                       </div>
@@ -657,7 +659,15 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
                     {tests.length > 1 && (
                       <button
                         onClick={() => removeTest(index)}
-                        className="self-start mt-7 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl"
+                        className="flex items-center justify-center gap-2 w-full py-3 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest sm:hidden border border-rose-100 dark:border-rose-900/30"
+                      >
+                        <Trash2 size={14} /> Remove Investigation
+                      </button>
+                    )}
+                    {tests.length > 1 && (
+                      <button
+                        onClick={() => removeTest(index)}
+                        className="hidden sm:flex absolute -top-2 -right-2 w-10 h-10 items-center justify-center bg-white dark:bg-gray-800 text-gray-400 hover:text-rose-500 hover:shadow-lg rounded-xl border border-gray-100 dark:border-gray-700 transition-all active:scale-95"
                       >
                         <Trash2 size={18} />
                       </button>
@@ -668,51 +678,51 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
             </div>
 
             {/* Billing Summary */}
-            <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800">
+            <div className="mt-8 pt-8 border-t border-gray-100 dark:border-gray-800">
               <div className="flex justify-between items-center">
                 <div>
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Amount</div>
-                  <div className="text-xs text-slate-400 font-medium italic">No tax applied to lab investigations</div>
+                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 italic">Total Aggregate</div>
+                  <div className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">No tax applied to diagnostic procedures</div>
                 </div>
-                <div className="text-3xl font-black text-rose-600 tracking-tighter">₹{subtotal.toFixed(2)}</div>
+                <div className="text-2xl sm:text-3xl font-black text-rose-600 tracking-tighter">₹{subtotal.toFixed(2)}</div>
               </div>
             </div>
           </div>
 
           {/* Clinical Notes */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Additional Clinical Notes</label>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-8">
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 italic">Clinical Annotations</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Any specific information for the pathologist or radiologist..."
-              rows={3}
-              className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-purple-500 outline-none resize-none text-sm"
+              rows={4}
+              className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl sm:rounded-[2rem] focus:ring-2 focus:ring-purple-500 outline-none resize-none text-xs sm:text-sm font-medium placeholder:text-gray-300 transition-all"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex gap-4 pt-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
             <button
               onClick={() => router.back()}
-              className="flex-1 px-8 py-4 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-2xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center gap-2"
+              className="px-8 py-4 bg-white dark:bg-gray-800 text-gray-500 font-black text-[10px] sm:text-xs uppercase tracking-widest rounded-2xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all active:scale-95 flex items-center justify-center gap-2"
             >
-              Cancel
+              Protocol Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={isSaving}
-              className="flex-2 px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl shadow-lg shadow-purple-200 dark:shadow-none flex items-center justify-center gap-2 disabled:opacity-50"
+              className="flex-2 px-8 py-4 sm:py-5 bg-purple-600 hover:bg-purple-700 text-white font-black text-[10px] sm:text-xs uppercase tracking-[0.2em] rounded-2xl sm:rounded-[2rem] shadow-xl shadow-purple-500/20 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 transition-all hover:gap-5"
             >
               {isSaving ? (
                 <>
                   <Loader2 className="animate-spin" size={20} />
-                  Processing...
+                  Synchronizing...
                 </>
               ) : (
                 <>
-                  <Save size={20} />
-                  Send Details to Lab
+                  <Save size={18} />
+                  Deploy Token to Lab
                 </>
               )}
             </button>
@@ -761,11 +771,11 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
               <button
                 onClick={() => {
                   if (appointmentId) {
-                    router.push(`/doctor/appointment/${appointmentId}`);
+                    router.push(getPath(`/doctor/appointment/${appointmentId}`));
                   } else if (patientId) {
-                    router.push(`/doctor/patients/${patientId}`);
+                    router.push(getPath(`/doctor/patients/${patientId}`));
                   } else {
-                    router.push('/doctor');
+                    router.push(getPath('/doctor'));
                   }
                 }}
                 className="w-full py-3 px-4 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl"

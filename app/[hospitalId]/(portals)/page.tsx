@@ -11,7 +11,7 @@ import { useTenantLink } from '@/hooks/useTenantLink';
  * This page handles routes like /{hospitalId}/
  * It:
  * 1. Extracts the hospitalId from the URL
- * 2. Stores it in sessionStorage for the apiClient
+ * 2. Stores it in localStorage for the apiClient
  * 3. Redirects the user to their respective portal (doctor, nurse, etc.)
  */
 export default function TenantPortalRedirect() {
@@ -24,13 +24,16 @@ export default function TenantPortalRedirect() {
   useEffect(() => {
     if (hospitalId && typeof window !== 'undefined') {
       // Store hospitalId for apiClient
-      sessionStorage.setItem('activeHospitalId', hospitalId);
+      localStorage.setItem('activeHospitalId', hospitalId);
     }
   }, [hospitalId]);
 
   useEffect(() => {
-    if (isInitialized && isAuthenticated && user) {
-      const role = user.role;
+    // 🚀 Instant redirect using cookie role — no need to wait for auth store init
+    const cookieMatch = document.cookie.match(/userRole=([^;]*)/);
+    const cookieRole = cookieMatch ? cookieMatch[1] : null;
+
+    if (cookieRole) {
       const portalMap: Record<string, string> = {
         'doctor': '/doctor',
         'hospital-admin': '/hospital-admin',
@@ -43,12 +46,12 @@ export default function TenantPortalRedirect() {
         'hr': '/hr',
       };
 
-      const targetPath = portalMap[role] || '/auth/login';
+      const targetPath = portalMap[cookieRole] || '/auth/login';
       router.replace(getPath(targetPath));
-    } else if (isInitialized && !isAuthenticated) {
+    } else {
       router.replace('/auth/login');
     }
-  }, [isInitialized, isAuthenticated, user, router, getPath]);
+  }, [router, getPath]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">

@@ -1,4 +1,4 @@
-export interface Hospital {
+﻿export interface Hospital {
   _id: string;
   hospitalId?: string; // Human readable ID if available
   name: string;
@@ -18,11 +18,7 @@ export interface Hospital {
     lng: number | string;
   };
   totalBeds?: number;
-  numberOfBeds?: number; // Compatibility
-  icuBeds?: number;
-  ICUBeds?: number; // Compatibility
   numDoctors?: number;
-  numberOfDoctors?: number; // Compatibility
   ambulanceAvailable?: boolean;
   ambulanceAvailability?: boolean; // Compatibility
   specialties: string[];
@@ -363,12 +359,6 @@ export interface CreateHospitalRequest {
   location?: { lat: string | number; lng: string | number };
   lat?: number; // legacy
   lng?: number; // legacy
-  numberOfBeds?: number;
-  totalBeds?: number; // legacy
-  ICUBeds?: number;
-  icuBeds?: number; // legacy
-  numberOfDoctors?: number;
-  numDoctors?: number; // legacy
   ambulanceAvailability?: boolean;
   ambulanceAvailable?: boolean; // legacy
   specialities?: string[];

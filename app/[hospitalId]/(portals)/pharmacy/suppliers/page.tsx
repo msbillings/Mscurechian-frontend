@@ -115,29 +115,29 @@ const PurchaseTransactionsTab = ({ suppliers }: { suppliers: Supplier[] }) => {
     return (
         <div className="space-y-6">
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Total Records</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6">
+                <div className="bg-white dark:bg-gray-800 p-4 md:p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Total Records</p>
                     <div className="flex items-end justify-between">
-                        <h3 className="text-2xl font-black text-gray-900 dark:text-white">{totalRecords}</h3>
+                        <h3 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white">{totalRecords}</h3>
                         <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600">
                             <FileText size={18} />
                         </div>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Total Qty (This Page)</p>
+                <div className="bg-white dark:bg-gray-800 p-4 md:p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Total Qty (This Page)</p>
                     <div className="flex items-end justify-between">
-                        <h3 className="text-2xl font-black text-gray-900 dark:text-white">{totalQty.toLocaleString()}</h3>
+                        <h3 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white">{totalQty.toLocaleString()}</h3>
                         <div className="p-2 bg-teal-50 dark:bg-teal-900/20 rounded-lg text-teal-600">
                             <Package size={18} />
                         </div>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Purchase Value (This Page)</p>
+                <div className="bg-white dark:bg-gray-800 p-4 md:p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Purchase Value (This Page)</p>
                     <div className="flex items-end justify-between">
-                        <h3 className="text-2xl font-black text-gray-900 dark:text-white">{formatCurrency(totalValue)}</h3>
+                        <h3 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white">{formatCurrency(totalValue)}</h3>
                         <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-emerald-600">
                             <ShoppingCart size={18} />
                         </div>
@@ -146,12 +146,12 @@ const PurchaseTransactionsTab = ({ suppliers }: { suppliers: Supplier[] }) => {
             </div>
 
             {/* Filters */}
-            <div className="bg-white dark:bg-gray-800 p-4 md:p-5 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col gap-4">
-                <div className="flex flex-col md:flex-row w-full gap-3 items-center">
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-5 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col gap-3 md:gap-4">
+                <div className="flex flex-col lg:flex-row w-full gap-3 items-stretch lg:items-center">
                     {/* Supplier Filter */}
-                    <div className="relative w-full md:w-auto min-w-[180px]">
+                    <div className="relative w-full lg:w-auto md:min-w-[200px]">
                         <select
-                            className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-xl px-4 py-3 text-xs font-bold outline-none ring-1 ring-gray-100 dark:ring-gray-700 focus:ring-2 focus:ring-teal-500 dark:text-white cursor-pointer appearance-none"
+                            className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-xl px-4 py-2.5 md:py-3 text-[11px] md:text-xs font-bold outline-none ring-1 ring-gray-100 dark:ring-gray-700 focus:ring-2 focus:ring-teal-500 dark:text-white cursor-pointer appearance-none"
                             value={supplierFilter}
                             onChange={e => setSupplierFilter(e.target.value)}
                         >
@@ -162,29 +162,29 @@ const PurchaseTransactionsTab = ({ suppliers }: { suppliers: Supplier[] }) => {
                         </select>
                     </div>
 
-                    {/* Date Filters */}
-                    <div className="relative w-full md:w-auto min-w-[150px]">
-                        <Calendar className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            placeholder="Start Date"
-                            className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-none rounded-xl text-xs font-bold focus:ring-2 focus:ring-teal-500 outline-none dark:text-white"
-                        />
-                    </div>
-                    <div className="relative w-full md:w-auto min-w-[150px]">
-                        <Calendar className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            placeholder="End Date"
-                            className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-none rounded-xl text-xs font-bold focus:ring-2 focus:ring-teal-500 outline-none dark:text-white"
-                        />
+                    <div className="flex flex-row w-full lg:w-auto gap-3">
+                        {/* Date Filters */}
+                        <div className="relative w-full md:w-auto lg:min-w-[150px]">
+                            <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="w-full pl-9 md:pl-10 pr-2 md:pr-4 py-2.5 md:py-3 bg-gray-50 dark:bg-gray-700/50 border-none rounded-xl text-[11px] md:text-xs font-bold focus:ring-2 focus:ring-teal-500 outline-none dark:text-white"
+                            />
+                        </div>
+                        <div className="relative w-full md:w-auto lg:min-w-[150px]">
+                            <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="w-full pl-9 md:pl-10 pr-2 md:pr-4 py-2.5 md:py-3 bg-gray-50 dark:bg-gray-700/50 border-none rounded-xl text-[11px] md:text-xs font-bold focus:ring-2 focus:ring-teal-500 outline-none dark:text-white"
+                            />
+                        </div>
                     </div>
 
-                    <div className="h-10 w-px bg-gray-100 dark:bg-gray-700 hidden md:block" />
+                    <div className="h-10 w-px bg-gray-100 dark:bg-gray-700 hidden lg:block" />
 
                     {/* Search */}
                     <div className="relative flex-1 w-full">
@@ -194,16 +194,16 @@ const PurchaseTransactionsTab = ({ suppliers }: { suppliers: Supplier[] }) => {
                             placeholder="Search by batch no or invoice..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-none rounded-xl text-xs font-bold focus:ring-2 focus:ring-teal-500 outline-none dark:text-white"
+                            className="w-full pl-11 pr-4 py-2.5 md:py-3 bg-gray-50 dark:bg-gray-700/50 border-none rounded-xl text-[11px] md:text-xs font-bold focus:ring-2 focus:ring-teal-500 outline-none dark:text-white"
                         />
                     </div>
 
                     {/* Refresh */}
                     <button
                         onClick={() => fetchTransactions(1)}
-                        className="p-3 w-full md:w-auto flex justify-center bg-gray-50 dark:bg-gray-700/50 text-gray-400 rounded-xl hover:text-teal-500 border border-gray-100 dark:border-gray-700"
+                        className="p-2.5 md:py-3 md:px-4 w-full md:w-auto flex justify-center bg-gray-50 dark:bg-gray-700/50 text-gray-500 rounded-xl hover:text-teal-500 border border-gray-100 dark:border-gray-700 transition-colors"
                     >
-                        <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`w-4 h-4 md:w-5 md:h-5 ${loading ? 'animate-spin' : ''}`} />
                     </button>
                 </div>
             </div>
@@ -217,14 +217,14 @@ const PurchaseTransactionsTab = ({ suppliers }: { suppliers: Supplier[] }) => {
                         <table className="w-full min-w-[1100px]">
                             <thead>
                                 <tr className="bg-gray-50 dark:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700">
-                                    <th className="px-5 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest">GRN Date</th>
-                                    <th className="px-5 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest">Batch No</th>
-                                    <th className="px-5 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest">Product</th>
-                                    <th className="px-5 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest">Supplier</th>
-                                    <th className="px-5 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Qty</th>
-                                    <th className="px-5 py-4 text-right text-xs font-black text-gray-400 uppercase tracking-widest">Unit Cost</th>
-                                    <th className="px-5 py-4 text-right text-xs font-black text-gray-400 uppercase tracking-widest">Total</th>
-                                    <th className="px-5 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Expiry</th>
+                                    <th className="px-4 md:px-5 py-3 md:py-4 text-left text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest leading-tight">GRN Date</th>
+                                    <th className="px-4 md:px-5 py-3 md:py-4 text-left text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest leading-tight">Batch No</th>
+                                    <th className="px-4 md:px-5 py-3 md:py-4 text-left text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest leading-tight">Product</th>
+                                    <th className="px-4 md:px-5 py-3 md:py-4 text-left text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest leading-tight">Supplier</th>
+                                    <th className="px-4 md:px-5 py-3 md:py-4 text-center text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest leading-tight">Qty</th>
+                                    <th className="px-4 md:px-5 py-3 md:py-4 text-right text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest leading-tight">Unit Cost</th>
+                                    <th className="px-4 md:px-5 py-3 md:py-4 text-right text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest leading-tight">Total</th>
+                                    <th className="px-4 md:px-5 py-3 md:py-4 text-center text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest leading-tight">Expiry</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
@@ -241,60 +241,60 @@ const PurchaseTransactionsTab = ({ suppliers }: { suppliers: Supplier[] }) => {
                                 ) : (
                                     transactions.map((txn) => (
                                         <tr key={txn._id} className="group hover:bg-gray-50 dark:hover:bg-gray-700/20">
-                                            <td className="px-5 py-4">
-                                                <span className="font-bold text-xs text-gray-700 dark:text-gray-300">{formatDate(txn.grnDate)}</span>
+                                            <td className="px-4 md:px-5 py-4 align-top">
+                                                <span className="font-bold text-[11px] md:text-xs text-gray-700 dark:text-gray-300">{formatDate(txn.grnDate)}</span>
                                             </td>
-                                            <td className="px-5 py-4">
+                                            <td className="px-4 md:px-5 py-4 align-top">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-lg">
-                                                        <Hash size={12} />
+                                                    <div className="p-1 md:p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-lg">
+                                                        <Hash size={12} className="md:w-3.5 md:h-3.5" />
                                                     </div>
-                                                    <span className="font-black text-xs text-gray-900 dark:text-white uppercase tracking-tight">{txn.batchNo}</span>
+                                                    <span className="font-black text-[11px] md:text-sm text-gray-900 dark:text-white uppercase tracking-tight">{txn.batchNo}</span>
                                                 </div>
                                                 {txn.invoiceNo && (
-                                                    <p className="text-[10px] text-gray-400 font-bold mt-0.5 ml-8">INV: {txn.invoiceNo}</p>
+                                                    <p className="text-[10px] text-gray-400 font-bold mt-1 ml-7 md:ml-8">INV: {txn.invoiceNo}</p>
                                                 )}
                                             </td>
-                                            <td className="px-5 py-4">
-                                                <p className="font-black text-xs text-gray-900 dark:text-white uppercase tracking-tight">
+                                            <td className="px-4 md:px-5 py-4 align-top">
+                                                <p className="font-black text-[11px] md:text-xs text-gray-900 dark:text-white uppercase tracking-tight">
                                                     {txn.product?.brand || txn.product?.name || 'N/A'}
                                                 </p>
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
+                                                <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
                                                     {txn.product?.generic || ''} {txn.product?.strength ? `• ${txn.product.strength}` : ''} {txn.product?.form ? `• ${txn.product.form}` : ''}
                                                 </p>
                                                 {txn.product?.sku && (
-                                                    <p className="text-[10px] font-semibold text-gray-400 mt-0.5">SKU: {txn.product.sku}</p>
+                                                    <p className="text-[9px] font-semibold text-gray-400 mt-0.5">SKU: {txn.product.sku}</p>
                                                 )}
                                             </td>
-                                            <td className="px-5 py-4">
-                                                <p className="font-bold text-xs text-gray-700 dark:text-gray-300 uppercase">{txn.supplier?.name || 'Unknown'}</p>
+                                            <td className="px-4 md:px-5 py-4 align-top">
+                                                <p className="font-bold text-[11px] md:text-xs text-gray-700 dark:text-gray-300 uppercase leading-snug">{txn.supplier?.name || 'Unknown'}</p>
                                                 {txn.supplier?.phone && (
-                                                    <p className="text-[10px] text-gray-400 font-bold mt-0.5">{txn.supplier.phone}</p>
+                                                    <p className="text-[9px] md:text-[10px] text-gray-400 font-bold mt-0.5">{txn.supplier.phone}</p>
                                                 )}
                                             </td>
-                                            <td className="px-5 py-4 text-center">
-                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30">
+                                            <td className="px-4 md:px-5 py-4 text-center align-top">
+                                                <span className="inline-flex items-center px-2 md:px-2.5 py-0.5 md:py-1 rounded-md md:rounded-lg text-[11px] md:text-xs font-black bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30">
                                                     {txn.qtyReceived}
                                                 </span>
                                                 {txn.qtySold > 0 && (
-                                                    <p className="text-[10px] font-bold text-gray-400 mt-1">Sold: {txn.qtySold}</p>
+                                                    <p className="text-[9px] md:text-[10px] font-bold text-gray-400 mt-1">Sold: {txn.qtySold}</p>
                                                 )}
                                             </td>
-                                            <td className="px-5 py-4 text-right">
-                                                <p className="font-bold text-xs text-gray-700 dark:text-gray-300">{formatCurrency(txn.unitCost)}</p>
+                                            <td className="px-4 md:px-5 py-4 text-right align-top">
+                                                <p className="font-bold text-[11px] md:text-xs text-gray-700 dark:text-gray-300">{formatCurrency(txn.unitCost)}</p>
                                                 {txn.unitGst > 0 && (
-                                                    <p className="text-[10px] text-gray-400 font-bold mt-0.5">+GST {formatCurrency(txn.unitGst)}</p>
+                                                    <p className="text-[9px] md:text-[10px] text-gray-400 font-bold mt-0.5">+GST {formatCurrency(txn.unitGst)}</p>
                                                 )}
                                             </td>
-                                            <td className="px-5 py-4 text-right">
-                                                <p className="font-black text-sm text-gray-900 dark:text-white">{formatCurrency(txn.totalCost)}</p>
+                                            <td className="px-4 md:px-5 py-4 text-right align-top">
+                                                <p className="font-black text-[12px] md:text-sm text-gray-900 dark:text-white tabular-nums leading-none">{formatCurrency(txn.totalCost)}</p>
                                                 {txn.totalWithGst > txn.totalCost && (
-                                                    <p className="text-[10px] font-bold text-teal-600 mt-0.5">incl. GST: {formatCurrency(txn.totalWithGst)}</p>
+                                                    <p className="text-[9px] md:text-[10px] font-bold text-teal-600 mt-1 uppercase tracking-wider">in. GST: {formatCurrency(txn.totalWithGst)}</p>
                                                 )}
                                             </td>
-                                            <td className="px-5 py-4 text-center">
+                                            <td className="px-4 md:px-5 py-4 text-center align-top">
                                                 {txn.expiry ? (
-                                                    <span className={`text-xs font-bold ${new Date(txn.expiry) < new Date() ? 'text-red-500' : new Date(txn.expiry) < new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) ? 'text-amber-500' : 'text-gray-500'}`}>
+                                                    <span className={`text-[10px] md:text-xs font-black tracking-wide ${new Date(txn.expiry) < new Date() ? 'text-red-500' : new Date(txn.expiry) < new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) ? 'text-amber-500' : 'text-gray-500'}`}>
                                                         {formatDate(txn.expiry)}
                                                     </span>
                                                 ) : (
@@ -409,34 +409,34 @@ const SuppliersPage = () => {
     ];
 
     return (
-        <div className="space-y-6 md:space-y-8 pb-20 w-full max-w-[100vw] overflow-x-hidden">
+        <div className="space-y-6 md:space-y-8 pb-20 w-full max-w-7xl mx-auto overflow-x-hidden">
             {/* Header Section */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 px-2">
-                <div>
-                    <h1 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Suppliers</h1>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Vendor Management & Network</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
+                <div className="flex-1">
+                    <h1 className="text-xl md:text-xl lg: font-bold text-gray-900 dark:text-white uppercase tracking-tight">Suppliers</h1>
+                    <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Vendor Management & Network</p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
                     {activeTab === 'suppliers' && (
                         <>
                             {/* Search Bar */}
-                            <div className="relative min-w-[300px] xl:min-w-[450px]">
-                                <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                            <div className="relative w-full sm:min-w-[250px] xl:min-w-[400px]">
+                                <Search className="w-4 h-4 text-gray-400 absolute left-3 md:left-4 top-1/2 -translate-y-1/2" />
                                 <input
                                     type="text"
-                                    placeholder="Search suppliers by name, phone, or GST..."
+                                    placeholder="Search suppliers..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-11 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none dark:text-white shadow-sm font-medium"
+                                    className="w-full pl-10 md:pl-11 pr-4 py-2.5 md:py-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-[11px] md:text-xs font-bold uppercase tracking-widest focus:ring-2 focus:ring-teal-500 outline-none dark:text-white shadow-sm placeholder:text-gray-400"
                                 />
                             </div>
 
                             <button
                                 onClick={() => setIsAddModalOpen(true)}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-colors shadow-sm"
+                                className="flex items-center justify-center gap-2 px-4 py-2.5 md:py-3 bg-teal-600 text-white rounded-xl text-[11px] md:text-xs font-black uppercase tracking-widest hover:bg-teal-700 transition-colors shadow-sm w-full sm:w-auto"
                             >
-                                <Plus size={18} />
+                                <Plus size={16} />
                                 Add Vendor
                             </button>
                         </>
@@ -444,33 +444,35 @@ const SuppliersPage = () => {
 
                     <button
                         onClick={fetchSuppliers}
-                        className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-500 hover:text-teal-600 hover:border-teal-200 transition-all shadow-sm"
+                        className="p-2.5 md:py-3 md:px-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-gray-500 hover:text-teal-600 transition-all shadow-sm flex items-center justify-center w-full sm:w-auto"
                         title="Refresh List"
                     >
-                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`w-4 h-4 md:w-5 md:h-5 ${loading ? 'animate-spin' : ''}`} />
                     </button>
                 </div>
             </div>
 
             {/* Tab Navigation */}
-            <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit">
-                {tabs.map(tab => {
-                    const Icon = tab.icon;
-                    return (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
-                                activeTab === tab.id
-                                    ? 'bg-white dark:bg-gray-700 text-teal-600 shadow-sm'
-                                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                            }`}
-                        >
-                            <Icon size={16} />
-                            {tab.label}
-                        </button>
-                    );
-                })}
+            <div className="flex gap-1 overflow-x-auto pb-1 -mb-1 w-full md:w-fit custom-scrollbar">
+                <div className="flex gap-1 bg-gray-50 dark:bg-gray-800/50 p-1 md:p-1.5 rounded-xl md:rounded-2xl min-w-max border border-gray-100 dark:border-gray-700/50">
+                    {tabs.map(tab => {
+                        const Icon = tab.icon;
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex items-center gap-2 px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all ${
+                                    activeTab === tab.id
+                                        ? 'bg-white dark:bg-gray-700 text-teal-600 shadow-sm border border-gray-100 dark:border-gray-600'
+                                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/80'
+                                }`}
+                            >
+                                <Icon size={14} className="md:w-[16px] md:h-[16px]" />
+                                {tab.label}
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* Tab Content */}

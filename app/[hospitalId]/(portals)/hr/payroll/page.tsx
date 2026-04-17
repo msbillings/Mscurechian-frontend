@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-    DollarSign, Download, CheckCircle, Clock, AlertCircle,
+    IndianRupee, Download, CheckCircle, Clock, AlertCircle,
     ChevronLeft, ChevronRight, RefreshCw, Search, Banknote,
     Calendar, Printer, Edit, UserCheck, Users, CalendarDays,
     TrendingUp, FileText, Trash2, X, ChevronDown, Loader2,
@@ -48,11 +48,13 @@ export default function HRPayrollPage() {
     // ── Period State ─────────────────────────────────────────────────────────
     const [fromDate, setFromDate] = useState(() => {
         const d = new Date();
-        return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split("T")[0];
+        const dateObj = new Date(d.getFullYear(), d.getMonth(), 1);
+        return new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000).toISOString().split("T")[0];
     });
     const [toDate, setToDate] = useState(() => {
         const d = new Date();
-        return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split("T")[0];
+        const dateObj = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        return new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000).toISOString().split("T")[0];
     });
 
     // ── Employee State ───────────────────────────────────────────────────────
@@ -114,7 +116,7 @@ export default function HRPayrollPage() {
     const fetchPayroll = async () => {
         try {
             setLoading(true);
-            const res = await hrService.getPayroll(fromDate, toDate, page);
+            const res = await hrService.getPayrollByDateRange(fromDate, toDate, page);
             setPayrolls((res as any).payrolls || (res as any).data || []);
             if ((res as any).hospital) setHospital((res as any).hospital);
             setTotalPages((res as any).pagination?.pages || 1);
@@ -186,6 +188,10 @@ export default function HRPayrollPage() {
     };
 
     const handleMarkAsPaid = async (id: string) => {
+        if (id.startsWith("virtual_")) {
+            toast.error("Please process this payroll record first before recording payment");
+            return;
+        }
         try {
             setPayrolls(prev => prev.map(p => p._id === id ? { ...p, status: "paid", paymentStatus: "PAID" } : p));
             await hrService.updatePayrollStatus(id, "paid");
@@ -198,6 +204,10 @@ export default function HRPayrollPage() {
     };
 
     const handleUpdatePayroll = async (id: string, updatedData: any) => {
+        if (id.startsWith("virtual_")) {
+            toast.error("Please process this payroll record first before editing");
+            return;
+        }
         try {
             await hrService.updatePayroll(id, updatedData);
             toast.success("Payroll record updated");
@@ -210,6 +220,10 @@ export default function HRPayrollPage() {
     };
 
     const handleDeletePayroll = async (id: string) => {
+        if (id.startsWith("virtual_")) {
+            toast.error("Cannot delete an unprocessed record");
+            return;
+        }
         if (!confirm("Delete this payroll record? This cannot be undone.")) return;
         try {
             await hrService.deletePayroll(id);
@@ -273,8 +287,16 @@ export default function HRPayrollPage() {
     const setMonthPreset = (offset: number) => {
         const d = new Date();
         const target = new Date(d.getFullYear(), d.getMonth() + offset, 1);
-        setFromDate(new Date(target.getFullYear(), target.getMonth(), 1).toISOString().split("T")[0]);
-        setToDate(new Date(target.getFullYear(), target.getMonth() + 1, 0).toISOString().split("T")[0]);
+        
+        const toLocalISO = (dateStr: Date) => {
+            return new Date(dateStr.getTime() - dateStr.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        };
+        
+        const from = toLocalISO(new Date(target.getFullYear(), target.getMonth(), 1));
+        const to = toLocalISO(new Date(target.getFullYear(), target.getMonth() + 1, 0));
+        
+        setFromDate(from);
+        setToDate(to);
     };
 
     const monthLabel = (offset: number) => {
@@ -283,21 +305,21 @@ export default function HRPayrollPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50/50 p-6 space-y-6">
+        <div className="min-h-screen bg-slate-50/50 space-y-6">
 
             {/* Header */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="bg-white rounded-3xl sm:rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight">HR Payroll Management</h1>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-1">HR &amp; Salary Disbursement System</p>
+                    <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight">HR Payroll Management</h1>
+                    <p className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-0.5 sm:mt-1">HR &amp; Salary Disbursement System</p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                    <button onClick={exportToExcel} className="flex items-center gap-2 px-4 py-2.5 bg-white text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-slate-200 hover:bg-slate-50 transition-all active:scale-95">
-                        <Download size={13} /> Export XLS
+                <div className="flex w-full sm:w-auto gap-2">
+                    <button onClick={exportToExcel} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-white text-slate-600 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-slate-200 hover:bg-slate-50 transition-all active:scale-95">
+                        <Download size={13} /> <span className="hidden xs:inline">Export</span> XLS
                     </button>
-                    <button onClick={handleGeneratePayroll} disabled={processing} className="flex items-center gap-2 px-5 py-2.5 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all shadow-sm active:scale-95 disabled:opacity-50">
+                    <button onClick={handleGeneratePayroll} disabled={processing} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-sm active:scale-95 disabled:opacity-50">
                         {processing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} strokeWidth={3} />}
-                        Process All Staff
+                        <span className="hidden xs:inline">Process All Staff</span><span className="xs:hidden">Process All</span>
                     </button>
                 </div>
             </div>
@@ -324,24 +346,24 @@ export default function HRPayrollPage() {
                             </button>
                         ))}
                     </div>
-                    <div className="flex items-center gap-2 ml-auto">
+                    <div className="flex items-center flex-wrap gap-2 w-full xl:w-auto xl:ml-auto">
                         <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)}
-                            className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-black outline-none focus:ring-2 focus:ring-primary-theme/20" />
+                            className="flex-1 min-w-[110px] px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-black outline-none focus:ring-2 focus:ring-primary-theme/20" />
                         <span className="text-slate-300 font-bold text-xs">→</span>
                         <input type="date" value={toDate} onChange={e => setToDate(e.target.value)}
-                            className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-black outline-none focus:ring-2 focus:ring-primary-theme/20" />
+                            className="flex-1 min-w-[110px] px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-black outline-none focus:ring-2 focus:ring-primary-theme/20" />
                     </div>
                 </div>
             </div>
 
             {/* Tab Bar */}
-            <div className="flex gap-1 bg-white p-1 rounded-2xl border border-slate-200 shadow-sm w-fit">
+            <div className="flex flex-col sm:flex-row gap-1 bg-white p-1 rounded-2xl border border-slate-200 shadow-sm w-full sm:w-fit">
                 {[
                     { key: "overview", label: "All Staff Overview", icon: Users },
                     { key: "employee", label: "Employee Payroll", icon: UserCheck },
                 ].map(tab => (
                     <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                        className={`flex justify-center items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                             activeTab === tab.key ? "bg-primary-theme text-white shadow-sm" : "text-slate-500 hover:bg-slate-50"
                         }`}>
                         <tab.icon size={13} /> {tab.label}
@@ -352,9 +374,9 @@ export default function HRPayrollPage() {
             {/* Tab 1: Overview */}
             {activeTab === "overview" && (
                 <div className="space-y-6">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                         <StatCard label="Total Staff" value={globalStats.count} sub="Payroll Records" color={{ bg: "bg-blue-50", text: "text-blue-600" }} icon={Users} />
-                        <StatCard label="Total Liability" value={`₹${globalStats.total.toLocaleString()}`} sub="Gross Net Payable" color={{ bg: "bg-slate-100", text: "text-slate-700" }} icon={DollarSign} />
+                        <StatCard label="Total Liability" value={`₹${globalStats.total.toLocaleString()}`} sub="Gross Net Payable" color={{ bg: "bg-slate-100", text: "text-slate-700" }} icon={IndianRupee} />
                         <StatCard label="Settled Amount" value={`₹${globalStats.paid.toLocaleString()}`} sub="Disbursed" color={{ bg: "bg-emerald-50", text: "text-emerald-600" }} icon={CheckCircle} />
                         <StatCard label="Pending Payout" value={`₹${globalStats.pending.toLocaleString()}`} sub="Unpaid" color={{ bg: "bg-rose-50", text: "text-rose-600" }} icon={Clock} />
                     </div>
@@ -395,7 +417,7 @@ export default function HRPayrollPage() {
                                         <tr>
                                             <td colSpan={6} className="py-24 text-center">
                                                 <div className="flex flex-col items-center gap-4">
-                                                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-300"><DollarSign size={40} /></div>
+                                                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-300"><IndianRupee size={40} /></div>
                                                     <div>
                                                         <p className="text-sm font-bold text-slate-400">No payroll records found</p>
                                                         <p className="text-[10px] text-slate-300 mt-1">Click &quot;Process All Staff&quot; to generate payroll for this period</p>
@@ -696,8 +718,8 @@ export default function HRPayrollPage() {
                             </div>
                             <button onClick={() => setPreviewPayroll(null)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors"><X size={20} /></button>
                         </div>
-                        <div className="flex-1 overflow-y-auto bg-slate-50/50 p-8 flex justify-center">
-                            <div className="bg-white shadow-lg border border-slate-100">
+                        <div className="flex-1 overflow-auto bg-slate-50/50 p-4 sm:p-8">
+                            <div className="w-max mx-auto bg-white shadow-lg border border-slate-100">
                                 <PrintablePayslip payroll={previewPayroll} hospital={hospital} />
                             </div>
                         </div>

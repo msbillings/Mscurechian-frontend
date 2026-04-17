@@ -60,9 +60,9 @@ export const PayrollEditModal: React.FC<PayrollEditModalProps> = ({ payroll, onC
   };
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-900 w-full max-w-xl rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-white/5 flex items-center justify-between">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-2 md:p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white dark:bg-gray-900 w-full max-w-xl max-h-[90vh] flex flex-col rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="shrink-0 px-2 md:px-6 py-4 border-b border-gray-100 dark:border-white/5 flex items-center justify-between">
           <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
             Edit Payroll: {payroll.user?.name}
           </h3>
@@ -71,7 +71,7 @@ export const PayrollEditModal: React.FC<PayrollEditModalProps> = ({ payroll, onC
           </button>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-[10px] font-bold uppercase text-gray-400">Base Salary</label>
@@ -128,7 +128,7 @@ export const PayrollEditModal: React.FC<PayrollEditModalProps> = ({ payroll, onC
           </div>
         </div>
 
-        <div className="px-6 py-4 bg-gray-50 dark:bg-white/5 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
+        <div className="shrink-0 px-2 md:px-6 py-4 bg-gray-50 dark:bg-white/5 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
           <button onClick={handleFullPresent} className="px-5 py-2 whitespace-nowrap bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-lg text-[10px] font-black uppercase tracking-widest border border-gray-200 dark:border-white/10 hover:bg-emerald-50 hover:text-emerald-600 transition-all active:scale-95 shadow-xs">
             Full Presence
           </button>

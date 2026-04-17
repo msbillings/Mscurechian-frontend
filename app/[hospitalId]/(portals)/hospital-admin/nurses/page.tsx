@@ -24,9 +24,12 @@ import {
     Shield
 } from "lucide-react";
 import { PageHeader } from "@/components/admin";
+import { RegistrySkeleton } from "@/components/admin/Skeletons";
+import { useTenantLink } from "@/hooks/useTenantLink";
 
 export default function HospitalAdminNurses() {
     const router = useRouter();
+    const { getPath } = useTenantLink();
     const [searchTerm, setSearchTerm] = useState("");
     const [filterDepartment, setFilterDepartment] = useState("");
     const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
@@ -50,8 +53,8 @@ export default function HospitalAdminNurses() {
                 unitTypes: typesData || []
             };
         },
-        staleTime: 0,
-        refetchOnMount: 'always',
+        staleTime: 30000,
+        placeholderData: (previousData) => previousData,
     });
 
     const nurses = nursesData?.nurses || [];
@@ -122,7 +125,7 @@ export default function HospitalAdminNurses() {
     });
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 p-2">
+        <div className="space-y-6 animate-in fade-in duration-500 space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <PageHeader
                     icon={<Users className="text-emerald-500" />}
@@ -130,14 +133,14 @@ export default function HospitalAdminNurses() {
                     subtitle={`Command & Control for ${nurses.length} active clinical nursing nodes`}
                 />
                 <button
-                    onClick={() => router.push('/hospital-admin/nurses/create')}
-                    className="flex items-center gap-2 px-6 py-2.5 text-xs font-semibold text-white bg-primary-theme rounded-xl hover:bg-primary-theme/80 active:scale-95 transition-all "
+                    onClick={() => router.push(getPath('/hospital-admin/nurses/create'))}
+                    className="flex items-center gap-2 px-3 md:px-6 py-2.5 text-xs font-semibold text-white bg-primary-theme rounded-xl hover:bg-primary-theme/80 active:scale-95 transition-all "
                 >
                     <Plus className="w-4 h-4" /> Add Nurse
                 </button>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col md:flex-row items-center gap-4">
+            <div className="bg-white dark:bg-gray-800 p-2 md:p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col md:flex-row items-center gap-4">
                 <div className="relative flex-1 w-full lg:w-auto">
                     <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
@@ -165,29 +168,26 @@ export default function HospitalAdminNurses() {
                 </div>
             </div>
 
-            {loading ? (
-                <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto mb-3"></div>
-                    <p className="text-sm text-gray-500">Accessing secure nodes...</p>
-                </div>
+            {loading && !nursesData ? (
+                <RegistrySkeleton count={6} />
             ) : filteredNurses.length === 0 ? (
                 <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                     <Users className="mx-auto mb-4 text-gray-300" size={48} />
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">No personnel found</h3>
+                    <h3 className="text-sm md:text-lg font-semibold text-gray-900 dark:text-white">No personnel found</h3>
                     <p className="text-sm text-gray-500 mt-1">Registry is empty for current criteria.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredNurses.map((nurse) => (
                         <div key={nurse._id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-xl hover:shadow-emerald-500/5 transition-all group">
-                            <div className="p-6">
+                            <div className="p-2 md:p-6">
                                 <div className="flex items-start justify-between mb-6">
                                     <div className="flex items-center gap-4">
                                         <div className="w-14 h-14 rounded-2xl bg-primary-theme/40 dark:bg-primary-theme/20 flex items-center justify-center text-xl font-black text-primary-theme dark:text-primary-theme border border-primary-theme/10 dark:border-primary-theme/80 shadow-sm">
                                             {nurse.name.charAt(0)}
                                         </div>
                                         <div>
-                                            <h3 className="text-lg font-black text-slate-900 dark:text-white truncate max-w-[180px]">
+                                            <h3 className="text-sm md:text-lg font-black text-slate-900 dark:text-white truncate max-w-[180px]">
                                                 {nurse.name}
                                             </h3>
                                             <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary-theme mt-1">
@@ -234,17 +234,35 @@ export default function HospitalAdminNurses() {
                                             </div>
                                         </div>
                                     </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-700/50 flex items-center justify-center text-slate-400">
+                                            <Phone size={14} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Phone Number</p>
+                                            <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{nurse.mobile || nurse.phone || 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-700/50 flex items-center justify-center text-slate-400">
+                                            <Mail size={14} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Email Address</p>
+                                            <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate max-w-[150px]">{nurse.email || 'N/A'}</p>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className="flex gap-2 pt-4 border-t border-slate-50 dark:border-slate-700">
                                     <button
-                                        onClick={() => router.push(`/hospital-admin/staff/${nurse._id}`)}
+                                        onClick={() => router.push(getPath(`/hospital-admin/staff/${nurse._id}`))}
                                         className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-primary-theme/80 hover:text-white transition-all text-xs font-black uppercase tracking-widest"
                                     >
                                         <Eye size={14} /> Profile
                                     </button>
                                     <button
-                                        onClick={() => router.push(`/hospital-admin/staff/edit/${nurse._id}`)}
+                                        onClick={() => router.push(getPath(`/hospital-admin/staff/edit/${nurse._id}`))}
                                         className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-400 hover:bg-blue-500 hover:text-white transition-all"
                                     >
                                         <Edit size={16} />

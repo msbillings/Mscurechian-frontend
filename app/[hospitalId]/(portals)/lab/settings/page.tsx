@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { LabSettingsService, LabSettings } from '@/lib/integrations/services/labSettings.service';
 import { toast } from 'react-hot-toast';
 import { Save, Building2, Phone, Mail, Globe, MapPin, FileText, ImageIcon } from 'lucide-react';
+import ImageCropper from '@/components/ui/ImageCropper';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function LabSettingsPage() {
     const [settings, setSettings] = useState<LabSettings>({
@@ -19,6 +21,16 @@ export default function LabSettingsPage() {
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const { user, setUser } = useAuthStore();
+
+    // Cropper State
+    const [cropper, setCropper] = useState<{
+        isOpen: boolean;
+        image: string;
+    }>({
+        isOpen: false,
+        image: ''
+    });
 
     useEffect(() => {
         fetchSettings();
@@ -61,6 +73,18 @@ export default function LabSettingsPage() {
         setSaving(true);
         try {
             await LabSettingsService.updateSettings(settings);
+            
+            // Sync with store for navbar
+            if (setUser && user) {
+                setUser({
+                    ...user,
+                    logo: settings.logo,
+                    image: settings.logo,
+                    avatar: settings.logo,
+                    profilePic: settings.logo
+                } as any);
+            }
+
             toast.success('Lab settings updated successfully');
         } catch (error) {
             console.error('Failed to update settings:', error);
@@ -70,15 +94,43 @@ export default function LabSettingsPage() {
         }
     };
 
-    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handlePhotoSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (!file) return;
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                setCropper({
+                    isOpen: true,
+                    image: reader.result as string
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
+    const handleCropComplete = async (blob: Blob) => {
+        setCropper(prev => ({ ...prev, isOpen: false }));
         setSaving(true);
         const toastId = toast.loading('Uploading logo...');
+
         try {
+            const file = new File([blob], `lab_logo_${Date.now()}.png`, { type: 'image/png' });
             const { url } = await LabSettingsService.uploadLogo(file);
-            setSettings(prev => ({ ...prev, logo: url }));
+            
+            const cacheBustedLogo = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
+            setSettings(prev => ({ ...prev, logo: cacheBustedLogo }));
+
+            // Sync with store for navbar
+            if (setUser && user) {
+                setUser({
+                    ...user,
+                    logo: cacheBustedLogo,
+                    image: cacheBustedLogo,
+                    avatar: cacheBustedLogo,
+                    profilePic: cacheBustedLogo
+                } as any);
+            }
+
             toast.success('Logo uploaded successfully', { id: toastId });
         } catch (error) {
             console.error('Logo upload failed:', error);
@@ -86,6 +138,10 @@ export default function LabSettingsPage() {
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        handlePhotoSelected(e);
     };
 
     if (loading) {
@@ -97,45 +153,46 @@ export default function LabSettingsPage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-8">
-                <div className="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-gray-700 pb-4">
-                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+        <>
+        <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 pb-12">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-4 sm:p-6 lg:p-8">
+                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 border-b border-slate-100 dark:border-gray-700 pb-3 sm:pb-4">
+                    <div className="p-2.5 sm:p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl shrink-0">
                         <Building2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Lab Settings</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Manage your laboratory details, branding, and report configurations.</p>
+                        <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white">Lab Settings</h1>
+                        <p className="text-xs md:text-sm lg:text-base text-gray-500 dark:text-gray-400">Manage your laboratory details, branding, and report configurations.</p>
                     </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-8">
                     {/* Basic Information */}
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                            <FileText className="w-5 h-5 text-gray-400" /> Basic Details
+                        <h3 className="text-base sm:text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                            <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500" /> Basic Details
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Lab Name *</label>
+                                <label className="text-[10px] sm:text-xs md:text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Lab Name *</label>
                                 <input
                                     type="text"
                                     name="name"
                                     required
                                     value={settings.name}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                    className="w-full px-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm sm:text-base font-medium"
                                     placeholder="e.g. Medi Lab Laboratory"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Tagline</label>
+                                <label className="text-[10px] sm:text-xs md:text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Tagline</label>
                                 <input
                                     type="text"
                                     name="tagline"
                                     value={settings.tagline}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                    className="w-full px-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm sm:text-base font-medium"
                                     placeholder="e.g. Advanced Diagnostic Center"
                                 />
                             </div>
@@ -144,24 +201,24 @@ export default function LabSettingsPage() {
 
                     {/* Contact Information */}
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                            <MapPin className="w-5 h-5 text-gray-400" /> Contact Information
+                        <h3 className="text-base sm:text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                            <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500" /> Contact Information
                         </h3>
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Complete Address</label>
+                                <label className="text-[10px] sm:text-xs md:text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Complete Address</label>
                                 <textarea
                                     name="address"
                                     rows={3}
                                     value={settings.address}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm sm:text-base font-medium resize-none"
                                     placeholder="Lab full address..."
                                 />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                                    <label className="text-[10px] sm:text-xs md:text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-2">
                                         <Phone className="w-3.5 h-3.5" /> Phone Number
                                     </label>
                                     <input
@@ -169,12 +226,12 @@ export default function LabSettingsPage() {
                                         name="phone"
                                         value={settings.phone}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                        className="w-full px-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm sm:text-base font-medium"
                                         placeholder="+91..."
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                                    <label className="text-[10px] sm:text-xs md:text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-2">
                                         <Mail className="w-3.5 h-3.5" /> Email Address
                                     </label>
                                     <input
@@ -182,12 +239,12 @@ export default function LabSettingsPage() {
                                         name="email"
                                         value={settings.email}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                        className="w-full px-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm sm:text-base font-medium"
                                         placeholder="lab@example.com"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                                    <label className="text-[10px] sm:text-xs md:text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-2">
                                         <Globe className="w-3.5 h-3.5" /> Website
                                     </label>
                                     <input
@@ -195,7 +252,7 @@ export default function LabSettingsPage() {
                                         name="website"
                                         value={settings.website}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                        className="w-full px-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm sm:text-base font-medium"
                                         placeholder="www.example.com"
                                     />
                                 </div>
@@ -205,33 +262,33 @@ export default function LabSettingsPage() {
 
                     {/* Legal \u0026 Branding */}
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                            <ImageIcon className="w-5 h-5 text-gray-400" /> Legal \u0026 Branding
+                        <h3 className="text-base sm:text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                            <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500" /> Legal \u0026 Branding
                         </h3>
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">GSTIN / Tax ID</label>
+                                <label className="text-[10px] sm:text-xs md:text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">GSTIN / Tax ID</label>
                                 <input
                                     type="text"
                                     name="gstin"
                                     value={settings.gstin}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                    className="w-full px-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm sm:text-base font-medium"
                                     placeholder="22AAAAA0000A1Z5"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Logo URL or Upload</label>
-                                <div className="flex gap-4">
+                                <label className="text-[10px] sm:text-xs md:text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Logo URL or Upload</label>
+                                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                                     <input
                                         type="text"
                                         name="logo"
                                         value={settings.logo}
                                         onChange={handleChange}
-                                        className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                        className="flex-1 px-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm sm:text-base font-medium"
                                         placeholder="https://..."
                                     />
-                                    <div className="relative">
+                                    <div className="relative shrink-0">
                                         <input
                                             type="file"
                                             accept="image/*"
@@ -241,7 +298,7 @@ export default function LabSettingsPage() {
                                         <button
                                             type="button"
                                             disabled={saving}
-                                            className="px-4 py-2.5 bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300 rounded-lg hover:bg-slate-200 dark:hover:bg-gray-600 transition-all border border-slate-200 dark:border-gray-600 font-medium whitespace-nowrap"
+                                            className="w-full sm:w-auto px-6 py-2.5 bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300 rounded-xl hover:bg-slate-200 dark:hover:bg-gray-600 transition-all border border-slate-200 dark:border-gray-600 font-bold text-sm whitespace-nowrap shadow-sm"
                                         >
                                             Upload Image
                                         </button>
@@ -257,18 +314,34 @@ export default function LabSettingsPage() {
                     </div>
 
                     {/* Submit Button */}
-                    <div className="pt-6 border-t border-slate-100 dark:border-gray-700 flex justify-end">
+                    <div className="pt-8 border-t border-slate-100 dark:border-gray-700">
                         <button
                             type="submit"
                             disabled={saving}
-                            className={`px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-md transition-all flex items-center gap-2 ${saving ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            className={`w-full sm:w-auto sm:ml-auto px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-100 dark:shadow-none transition-all flex items-center justify-center gap-2 ${saving ? 'opacity-70 cursor-not-allowed' : 'hover:-translate-y-0.5 active:translate-y-0'}`}
                         >
-                            <Save className="w-4 h-4" />
+                            <Save className={`${saving ? 'animate-spin' : ''} w-5 h-5`} />
                             {saving ? 'Saving...' : 'Save Settings'}
                         </button>
                     </div>
                 </form>
             </div>
         </div>
+        
+        {/* IMAGE CROPPER MODAL */}
+        {cropper.isOpen && (
+            <ImageCropper
+                src={cropper.image}
+                onCancel={() => setCropper(prev => ({ ...prev, isOpen: false }))}
+                onCrop={(dataUrl) => {
+                    // Convert dataUrl to blob and call handleCropComplete
+                    fetch(dataUrl)
+                        .then(res => res.blob())
+                        .then(handleCropComplete);
+                }}
+                isUploading={saving}
+            />
+        )}
+        </>
     );
 }

@@ -134,10 +134,10 @@ function DoctorLeaveRequest() {
         additionalNotes: formData.additionalNotes.trim() || undefined,
         emergencyContact: formData.emergencyContactName.trim()
           ? {
-              name: formData.emergencyContactName.trim(),
-              mobile: formData.emergencyContactMobile.trim(),
-              relationship: formData.emergencyContactRelationship.trim()
-            }
+            name: formData.emergencyContactName.trim(),
+            mobile: formData.emergencyContactMobile.trim(),
+            relationship: formData.emergencyContactRelationship.trim()
+          }
           : undefined,
         handoverNotes: formData.handoverNotes.trim() || undefined
       };
@@ -173,21 +173,23 @@ function DoctorLeaveRequest() {
   const reasonLength = formData.reason.trim().length;
 
   return (
-    <div className="max-w-4xl mx-auto pb-12">
-      <PageHeader
-        icon={<Calendar className="text-blue-500" />}
-        title="Request Leave"
-        subtitle="Submit a leave application for approval"
-      />
+    <div className="max-w-7xl mx-auto pb-12">
+      <div className="pt-4 sm:pt-8">
+        <PageHeader
+          icon={<Calendar className="text-blue-500" />}
+          title="Request Leave"
+          subtitle="Submit a leave application for approval"
+        />
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6" noValidate>
         {/* ── Leave Details ─────────────────────────────────────── */}
-        <Card title="Leave Details" icon={<FileText className="text-blue-500" />} padding="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card title="Leave Details" icon={<FileText className="text-blue-500" />} padding="p-4 sm:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Leave Type */}
             <div>
               <label
-                className="block text-sm font-medium mb-2"
+                className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2"
                 style={{ color: "var(--text-color)" }}
               >
                 Leave Type <span className="text-red-500">*</span>
@@ -196,9 +198,8 @@ function DoctorLeaveRequest() {
                 name="leaveType"
                 value={formData.leaveType}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.leaveType ? "border-red-500" : ""
-                }`}
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.leaveType ? "border-red-500" : ""
+                  }`}
                 style={{
                   backgroundColor: "var(--card-bg)",
                   color: "var(--text-color)",
@@ -215,8 +216,8 @@ function DoctorLeaveRequest() {
                 ))}
               </select>
               {errors.leaveType && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <AlertCircle size={12} /> {errors.leaveType}
+                <p className="text-red-500 text-[10px] mt-1 flex items-center gap-1">
+                  <AlertCircle size={10} /> {errors.leaveType}
                 </p>
               )}
             </div>
@@ -224,7 +225,7 @@ function DoctorLeaveRequest() {
             {/* Start Date */}
             <div>
               <label
-                className="block text-sm font-medium mb-2"
+                className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2"
                 style={{ color: "var(--text-color)" }}
               >
                 Start Date <span className="text-red-500">*</span>
@@ -235,9 +236,8 @@ function DoctorLeaveRequest() {
                 value={formData.startDate}
                 onChange={handleChange}
                 min={new Date().toISOString().split("T")[0]}
-                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.startDate ? "border-red-500" : ""
-                }`}
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.startDate ? "border-red-500" : ""
+                  }`}
                 style={{
                   backgroundColor: "var(--card-bg)",
                   color: "var(--text-color)",
@@ -247,8 +247,8 @@ function DoctorLeaveRequest() {
                 }}
               />
               {errors.startDate && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <AlertCircle size={12} /> {errors.startDate}
+                <p className="text-red-500 text-[10px] mt-1 flex items-center gap-1">
+                  <AlertCircle size={10} /> {errors.startDate}
                 </p>
               )}
             </div>
@@ -256,7 +256,7 @@ function DoctorLeaveRequest() {
             {/* End Date */}
             <div>
               <label
-                className="block text-sm font-medium mb-2"
+                className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2"
                 style={{ color: "var(--text-color)" }}
               >
                 End Date <span className="text-red-500">*</span>
@@ -267,9 +267,8 @@ function DoctorLeaveRequest() {
                 value={formData.endDate}
                 onChange={handleChange}
                 min={formData.startDate || new Date().toISOString().split("T")[0]}
-                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.endDate ? "border-red-500" : ""
-                }`}
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.endDate ? "border-red-500" : ""
+                  }`}
                 style={{
                   backgroundColor: "var(--card-bg)",
                   color: "var(--text-color)",
@@ -279,8 +278,8 @@ function DoctorLeaveRequest() {
                 }}
               />
               {errors.endDate && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <AlertCircle size={12} /> {errors.endDate}
+                <p className="text-red-500 text-[10px] mt-1 flex items-center gap-1">
+                  <AlertCircle size={10} /> {errors.endDate}
                 </p>
               )}
             </div>
@@ -289,7 +288,7 @@ function DoctorLeaveRequest() {
           {/* Reason */}
           <div className="mt-4">
             <label
-              className="block text-sm font-medium mb-2"
+              className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2"
               style={{ color: "var(--text-color)" }}
             >
               Reason <span className="text-red-500">*</span>
@@ -300,9 +299,8 @@ function DoctorLeaveRequest() {
               onChange={handleChange}
               rows={3}
               placeholder="Please provide a detailed reason for leave (minimum 10 characters)..."
-              className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${
-                errors.reason ? "border-red-500" : ""
-              }`}
+              className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${errors.reason ? "border-red-500" : ""
+                }`}
               style={{
                 backgroundColor: "var(--card-bg)",
                 color: "var(--text-color)",
@@ -314,20 +312,19 @@ function DoctorLeaveRequest() {
             {/* Character counter + error row */}
             <div className="flex items-center justify-between mt-1">
               {errors.reason ? (
-                <p className="text-red-500 text-xs flex items-center gap-1">
-                  <AlertCircle size={12} /> {errors.reason}
+                <p className="text-red-500 text-[10px] flex items-center gap-1">
+                  <AlertCircle size={10} /> {errors.reason}
                 </p>
               ) : (
                 <span />
               )}
               <span
-                className={`text-xs font-medium ml-auto ${
-                  reasonLength === 0
+                className={`text-[10px] font-medium ml-auto ${reasonLength === 0
                     ? "text-gray-400"
                     : reasonLength < 10
-                    ? "text-amber-500"
-                    : "text-green-500"
-                }`}
+                      ? "text-amber-500"
+                      : "text-green-500"
+                  }`}
               >
                 {reasonLength} / 10 min
               </span>
@@ -337,7 +334,7 @@ function DoctorLeaveRequest() {
           {/* Additional Notes */}
           <div className="mt-4">
             <label
-              className="block text-sm font-medium mb-2"
+              className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2"
               style={{ color: "var(--text-color)" }}
             >
               Additional Notes
@@ -348,7 +345,7 @@ function DoctorLeaveRequest() {
               onChange={handleChange}
               rows={2}
               placeholder="Any additional information..."
-              className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               style={{
                 backgroundColor: "var(--card-bg)",
                 color: "var(--text-color)",
@@ -362,16 +359,16 @@ function DoctorLeaveRequest() {
         <Card
           title="Emergency Contact"
           icon={<Phone className="text-red-500" />}
-          padding="p-6"
+          padding="p-4 sm:p-6"
         >
-          <p className="text-xs text-gray-500 mb-4 italic">
+          <p className="text-[10px] sm:text-xs text-gray-500 mb-4 italic">
             Optional — if any field below is filled, all three become required.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Contact Name */}
             <div>
               <label
-                className="block text-sm font-medium mb-2"
+                className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2"
                 style={{ color: "var(--text-color)" }}
               >
                 Contact Name
@@ -382,9 +379,8 @@ function DoctorLeaveRequest() {
                 value={formData.emergencyContactName}
                 onChange={handleChange}
                 placeholder="Emergency contact name"
-                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.emergencyContactName ? "border-red-500" : ""
-                }`}
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.emergencyContactName ? "border-red-500" : ""
+                  }`}
                 style={{
                   backgroundColor: "var(--card-bg)",
                   color: "var(--text-color)",
@@ -394,8 +390,8 @@ function DoctorLeaveRequest() {
                 }}
               />
               {errors.emergencyContactName && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <AlertCircle size={12} /> {errors.emergencyContactName}
+                <p className="text-red-500 text-[10px] mt-1 flex items-center gap-1">
+                  <AlertCircle size={10} /> {errors.emergencyContactName}
                 </p>
               )}
             </div>
@@ -403,7 +399,7 @@ function DoctorLeaveRequest() {
             {/* Contact Mobile */}
             <div>
               <label
-                className="block text-sm font-medium mb-2"
+                className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2"
                 style={{ color: "var(--text-color)" }}
               >
                 Contact Mobile
@@ -415,9 +411,8 @@ function DoctorLeaveRequest() {
                 onChange={handleChange}
                 placeholder="10-digit mobile number"
                 maxLength={10}
-                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.emergencyContactMobile ? "border-red-500" : ""
-                }`}
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.emergencyContactMobile ? "border-red-500" : ""
+                  }`}
                 style={{
                   backgroundColor: "var(--card-bg)",
                   color: "var(--text-color)",
@@ -427,16 +422,16 @@ function DoctorLeaveRequest() {
                 }}
               />
               {errors.emergencyContactMobile && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <AlertCircle size={12} /> {errors.emergencyContactMobile}
+                <p className="text-red-500 text-[10px] mt-1 flex items-center gap-1">
+                  <AlertCircle size={10} /> {errors.emergencyContactMobile}
                 </p>
               )}
             </div>
 
             {/* Relationship */}
-            <div>
+            <div className="sm:col-span-2 lg:col-span-1">
               <label
-                className="block text-sm font-medium mb-2"
+                className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2"
                 style={{ color: "var(--text-color)" }}
               >
                 Relationship
@@ -447,9 +442,8 @@ function DoctorLeaveRequest() {
                 value={formData.emergencyContactRelationship}
                 onChange={handleChange}
                 placeholder="e.g., Spouse, Parent"
-                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.emergencyContactRelationship ? "border-red-500" : ""
-                }`}
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.emergencyContactRelationship ? "border-red-500" : ""
+                  }`}
                 style={{
                   backgroundColor: "var(--card-bg)",
                   color: "var(--text-color)",
@@ -459,8 +453,8 @@ function DoctorLeaveRequest() {
                 }}
               />
               {errors.emergencyContactRelationship && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <AlertCircle size={12} /> {errors.emergencyContactRelationship}
+                <p className="text-red-500 text-[10px] mt-1 flex items-center gap-1">
+                  <AlertCircle size={10} /> {errors.emergencyContactRelationship}
                 </p>
               )}
             </div>
@@ -471,11 +465,11 @@ function DoctorLeaveRequest() {
         <Card
           title="Work Handover"
           icon={<User className="text-green-500" />}
-          padding="p-6"
+          padding="p-4 sm:p-6"
         >
           <div>
             <label
-              className="block text-sm font-medium mb-2"
+              className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2"
               style={{ color: "var(--text-color)" }}
             >
               Handover Notes
@@ -486,7 +480,7 @@ function DoctorLeaveRequest() {
               onChange={handleChange}
               rows={3}
               placeholder="Please provide details about work handover, patient assignments, or any important notes for colleagues covering your duties..."
-              className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               style={{
                 backgroundColor: "var(--card-bg)",
                 color: "var(--text-color)",
@@ -497,13 +491,13 @@ function DoctorLeaveRequest() {
         </Card>
 
         {/* ── Action Buttons ────────────────────────────────────── */}
-        <div className="flex justify-end gap-4 pt-4">
+        <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-4 pb-8 sm:pb-0">
           <Button
             type="button"
             variant="secondary"
             onClick={() => router.push("/doctor/leaves")}
             disabled={loading}
-            className="px-8"
+            className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 text-sm"
           >
             View My Leaves
           </Button>
@@ -511,8 +505,8 @@ function DoctorLeaveRequest() {
             type="submit"
             variant="primary"
             loading={loading}
-            icon={<Send size={18} />}
-            className="px-12 py-4 text-lg shadow-lg hover:shadow-xl"
+            icon={<Send size={16} />}
+            className="w-full sm:w-auto px-8 sm:px-12 py-3 sm:py-4 text-sm sm:text-lg shadow-lg hover:shadow-xl"
           >
             Submit Leave Request
           </Button>

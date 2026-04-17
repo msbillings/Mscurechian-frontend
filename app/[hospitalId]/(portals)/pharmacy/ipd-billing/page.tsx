@@ -28,7 +28,148 @@ import { useAuthStore } from "@/stores/authStore";
 import { useTenantLink } from "@/hooks/useTenantLink";
 import { ipdService } from "@/lib/integrations/services/ipd.service";
 import { ipdIssuanceService } from "@/lib/integrations/services/pharmacy.service";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Clock } from "lucide-react";
+import { Frequency, FoodTiming, StandardFrequency, CustomFrequency, INITIAL_FREQUENCY, mapFrequency, formatFrequency } from "@/lib/frequencyUtils";
+
+const FrequencySelector = ({ value, onChange }: { value: Frequency, onChange: (val: Frequency) => void }) => {
+    const freq = mapFrequency(value);
+
+    const toggleStandard = (slot: keyof StandardFrequency) => {
+        const current = freq.standard[slot];
+        const nextMap: Record<string, FoodTiming | 'off'> = {
+            off: 'after',
+            after: 'before',
+            before: 'with',
+            with: 'anytime',
+            anytime: 'off'
+        };
+        onChange({
+            ...freq,
+            standard: {
+                ...freq.standard,
+                [slot]: nextMap[current] || 'anytime'
+            }
+        });
+    };
+
+    const setCustomInterval = (hours: number) => {
+        onChange({
+            ...freq,
+            type: 'custom',
+            custom: {
+                ...freq.custom,
+                interval: hours
+            }
+        });
+    };
+
+    const setCustomTiming = (timing: FoodTiming) => {
+        onChange({
+            ...freq,
+            type: 'custom',
+            custom: {
+                ...freq.custom,
+                timing
+            }
+        });
+    };
+
+    const timingColors: Record<string, string> = {
+        anytime: 'bg-slate-500',
+        before: 'bg-amber-500',
+        after: 'bg-emerald-500',
+        with: 'bg-blue-500'
+    };
+
+    const timingLabels: Record<string, string> = {
+        anytime: 'Anytime',
+        before: 'Before Food',
+        after: 'After Food',
+        with: 'With Food'
+    };
+
+    return (
+        <div className="flex flex-col sm:flex-row items-center gap-1.5 p-1 bg-white border border-slate-200 rounded-lg w-full max-w-full min-w-0 flex-1 h-8 shadow-sm transition-all relative overflow-visible">
+            {/* Type Toggle */}
+            <div className="flex p-0.5 bg-slate-100 rounded-md shrink-0">
+                <button
+                    onClick={() => onChange({ ...INITIAL_FREQUENCY, type: 'standard' })}
+                    className={`px-1.5 py-0.5 text-[7px] font-black uppercase tracking-tighter rounded transition-all ${freq.type === 'standard' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500'}`}
+                >
+                    Std
+                </button>
+                <button
+                    onClick={() => onChange({ ...INITIAL_FREQUENCY, type: 'custom' })}
+                    className={`px-1.5 py-0.5 text-[7px] font-black uppercase tracking-tighter rounded transition-all ${freq.type === 'custom' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500'}`}
+                >
+                    Cst
+                </button>
+            </div>
+
+            <div className="w-[1px] h-3 bg-slate-200 mx-0.5 shrink-0" />
+
+            {freq.type === 'standard' ? (
+                <div className="flex items-center gap-1 flex-1 overflow-x-auto no-scrollbar scroll-smooth px-0.5">
+                    {(['morning', 'afternoon', 'evening', 'night'] as const).map((slot) => {
+                        const timing = freq.standard[slot];
+                        const isActive = timing !== 'off';
+                        const slotLabels = {
+                            morning: 'Morning',
+                            afternoon: 'Afternoon',
+                            evening: 'Evening',
+                            night: 'Night'
+                        };
+                        return (
+                            <div key={slot} className="relative group/tooltip shrink-0">
+                                <button
+                                    onClick={() => toggleStandard(slot)}
+                                    className={`h-6 px-1.5 rounded-md border text-[7px] font-black uppercase transition-all flex items-center gap-1 whitespace-nowrap ${isActive ? 'bg-teal-50 border-teal-200 text-teal-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}
+                                >
+                                    <span className={isActive ? 'text-teal-600' : 'text-slate-300'}>{slotLabels[slot]}</span>
+                                    {isActive && (
+                                        <span className={`px-1 rounded-[2px] text-white text-[6px] py-0 font-bold ${timingColors[timing]}`}>
+                                            {timingLabels[timing].split(' ')[0]}
+                                        </span>
+                                    )}
+                                </button>
+                            </div>
+                        );
+                    })}
+                </div>
+            ) : (
+                <div className="flex items-center gap-1.5 flex-1 px-0.5 overflow-x-auto no-scrollbar">
+                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded-md shrink-0">
+                        <Clock size={8} className="text-slate-400" />
+                        <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">Every</span>
+                        <input
+                            type="text"
+                            value={freq.custom.interval === 0 ? '' : freq.custom.interval}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '' || /^\d+$/.test(val)) {
+                                    setCustomInterval(val === '' ? 0 : parseInt(val));
+                                }
+                            }}
+                            placeholder="8"
+                            className="w-5 bg-transparent text-[8px] font-black text-teal-600 outline-none text-center"
+                        />
+                        <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">Hrs</span>
+                    </div>
+                    <select
+                        value={freq.custom.timing}
+                        onChange={(e) => setCustomTiming(e.target.value as any)}
+                        className="h-6 px-1 bg-slate-50 border border-slate-200 rounded text-[7px] font-black uppercase focus:outline-none"
+                    >
+                        <option value="anytime">Anytime</option>
+                        <option value="before">Before Food</option>
+                        <option value="after">After Food</option>
+                        <option value="with">With Food</option>
+                    </select>
+                </div>
+            )}
+        </div>
+    );
+};
 
 const IPDBillingPage = () => {
     const router = useRouter();
@@ -61,7 +202,7 @@ const IPDBillingPage = () => {
     const [selectedProduct, setSelectedProduct] = useState<any>(null);
     const [quantity, setQuantity] = useState(1);
     const [price, setPrice] = useState(0);
-    const [frequency, setFrequency] = useState("1-1-1");
+    const [frequency, setFrequency] = useState<Frequency>(INITIAL_FREQUENCY);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -246,7 +387,7 @@ const IPDBillingPage = () => {
         setSearchTerm("");
         setQuantity(1);
         setPrice(0);
-        setFrequency("1-1-1");
+        setFrequency(INITIAL_FREQUENCY);
     };
 
     const removeItem = (index: number) => {
@@ -324,43 +465,46 @@ const IPDBillingPage = () => {
     );
 
     return (
-        <div className="max-w-7xl mx-auto space-y-6 pb-20">
+        <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 pb-20 sm:pb-10">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => router.back()} className="p-3 bg-white border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all">
-                        <ArrowLeft size={20} />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3 md:gap-4">
+                    <button onClick={() => router.back()} className="p-2.5 md:p-3 bg-white border border-slate-100 rounded-xl md:rounded-2xl hover:bg-slate-50 transition-all shadow-sm shrink-0">
+                        <ArrowLeft size={18} className="md:w-5 md:h-5" />
                     </button>
                     <div>
-                        <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                            <CreditCard className="text-primary-theme" size={28} />
-                            IPD PHARMACY BILLING
+                        <h1 className="text-lg md:text-xl lg:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2 md:gap-3 uppercase">
+                            <CreditCard className="text-blue-600 w-5 h-5 md:w-7 md:h-7 shrink-0" />
+                            IPD BILLING
                         </h1>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Deferred Billing for Admitted Patients</p>
+                        <p className="text-[10px] md:text-xm font-black text-slate-400 uppercase tracking-widest mt-0.5 md:mt-1 italic">Deferred pharmaceutical Billing System</p>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div className="xl:col-span-2 space-y-6">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
+                <div className="xl:col-span-2 space-y-4 md:space-y-6">
                     {/* Patient Card */}
-                    <div className="bg-white rounded-4xl border border-slate-100 p-8 shadow-sm">
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="w-16 h-16 bg-primary-theme/10 text-primary-theme rounded-2xl flex items-center justify-center">
-                                <User size={32} />
+                    <div className="bg-white rounded-2xl md:rounded-4xl border border-slate-100 p-5 md:p-8 shadow-sm transition-all hover:shadow-md">
+                        <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
+                            <div className="w-12 h-12 md:w-16 md:h-16 bg-primary-theme/10 text-primary-theme rounded-xl md:rounded-2xl flex items-center justify-center shrink-0">
+                                <User size={24} className="md:w-8 md:h-8" />
                             </div>
-                            <div>
-                                <h3 className="text-xl font-black text-slate-900 uppercase">{order?.patient?.name || "Unknown Patient"}</h3>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                    {order?.patient?.age && `${order.patient.age}Y • `} {order?.patient?.gender && `${order.patient.gender} • `} ADMISSION: {order?.admission?.admissionId || "N/A"} • WARD: {order?.admission?.bedDetails?.wardType || order?.admission?.wardType || "N/A"} {order?.admission?.bedDetails?.bedId && `[BED: ${order.admission.bedDetails.bedId}]`}
+                            <div className="min-w-0">
+                                <h3 className="text-xs md:text-lg font-black text-slate-900 uppercase tracking-tight">{order?.patient?.name || "Unknown Patient"}</h3>
+                                <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5 leading-relaxed">
+                                    {order?.patient?.age && `${order.patient.age}Y • `} {order?.patient?.gender && `${order.patient.gender} • `}
+                                    <span className="hidden sm:inline">ADMISSION: </span>{order?.admission?.admissionId || "N/A"}
+                                    <br className="sm:hidden" />
+                                    <span className="hidden sm:inline"> • </span>WARD: {order?.admission?.bedDetails?.wardType || order?.admission?.wardType || "N/A"} {order?.admission?.bedDetails?.bedId && `[BED: ${order.admission.bedDetails.bedId}]`}
                                 </p>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-4xl border border-slate-100">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 bg-slate-50 p-4 md:p-6 rounded-2xl md:rounded-4xl border border-slate-100">
                             <div>
-                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Doctor</p>
-                                <p className="text-xs font-black text-slate-700 uppercase">
+                                <p className="text-[7px] md:text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Primary Physician</p>
+                                <p className="text-[10px] md:text-xs font-black text-slate-700 uppercase">
                                     {(() => {
                                         const docName = order?.doctor?.user?.name || order?.doctor?.name || "N/A";
                                         return docName.toLowerCase().startsWith("dr.") ? docName : `Dr. ${docName}`;
@@ -368,30 +512,30 @@ const IPDBillingPage = () => {
                                 </p>
                             </div>
                             <div>
-                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Token Number</p>
-                                <p className="text-xs font-black text-slate-700 uppercase">{order?.tokenNumber || "N/A"}</p>
+                                <p className="text-[7px] md:text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Billing Identifier</p>
+                                <p className="text-[10px] md:text-xs font-black text-slate-700 uppercase">{order?.tokenNumber || "Direct IPD Flow"}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Prescribed Medicines List */}
                     {prescribedMedicines.length > 0 && (
-                        <div className="bg-primary-theme/5 rounded-4xl border border-primary-theme/10 p-8 shadow-sm">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2 bg-primary-theme/10 text-primary-theme rounded-xl">
-                                    <Pill size={18} />
+                        <div className="bg-primary-theme/5 rounded-2xl md:rounded-4xl border border-primary-theme/10 p-5 md:p-8 shadow-sm">
+                            <div className="flex items-center gap-3 mb-5 md:mb-6">
+                                <div className="p-2 bg-primary-theme/10 text-primary-theme rounded-lg md:rounded-xl">
+                                    <Pill size={16} className="md:w-[18px] md:h-[18px]" />
                                 </div>
-                                <h3 className="text-sm font-black text-slate-900 uppercase">Prescribed Medicines</h3>
+                                <h3 className="text-xs md:text-sm font-black text-slate-900 uppercase tracking-tight">Prescribed Formulations</h3>
                             </div>
                             <div className="space-y-3">
                                 {prescribedMedicines.map((med, i) => {
                                     const prescribedFreq = med.freq || med.frequency || "1-1-1";
                                     return (
-                                        <div key={i} className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                                            <div>
-                                                <p className="text-xs font-black text-slate-700 uppercase">{med.name}</p>
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                                    {med.dosage} • Freq: <span className="text-primary-theme">{prescribedFreq}</span> • qty: {med.quantity}
+                                        <div key={`${med.name}-${i}`} className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3 md:p-4 rounded-xl md:rounded-2xl border border-slate-100 shadow-sm gap-3">
+                                            <div className="min-w-0">
+                                                <p className="text-[11px] md:text-xs font-black text-slate-700 uppercase">{med.name}</p>
+                                                <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
+                                                    {med.dosage} • Freq: <span className="text-primary-theme">{formatFrequency(med.freq || med.frequency)}</span> • qty: {med.quantity}
                                                 </p>
                                             </div>
                                             <button
@@ -399,19 +543,18 @@ const IPDBillingPage = () => {
                                                 onClick={() => {
                                                     setSearchTerm(med.name.split(' (')[0]);
                                                     setQuantity(Number(med.quantity) || 1);
-                                                    // Fix: PharmacyOrder.medicines stores field as `freq` not `frequency`
-                                                    setFrequency(med.freq || med.frequency || "1-1-1");
+                                                    setFrequency(mapFrequency(med.freq || med.frequency));
                                                     setProcessingMedIndex(i);
                                                 }}
-                                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${med.processed ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-primary-theme text-white hover:bg-primary-theme/90'}`}
+                                                className={`w-full sm:w-auto px-4 py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${med.processed ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-primary-theme text-white hover:bg-primary-theme/90 active:scale-95'}`}
                                             >
                                                 {med.processed ? "Processed" :
                                                     processingMedIndex === i ? (
-                                                        <div className="flex items-center gap-2">
+                                                        <div className="flex items-center justify-center gap-2">
                                                             <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                                                             Processing...
                                                         </div>
-                                                    ) : "Process"
+                                                    ) : "Issue Now"
                                                 }
                                             </button>
                                         </div>
@@ -423,39 +566,39 @@ const IPDBillingPage = () => {
 
                     {/* Previous Issuances / Medicines List */}
                     {previousIssuances.length > 0 && (
-                        <div className="bg-amber-50/50 dark:bg-amber-900/10 rounded-4xl border border-amber-100 dark:border-amber-900/30 p-8 shadow-sm">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-xl">
-                                    <ClipboardList size={18} />
+                        <div className="bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl md:rounded-4xl border border-amber-100 dark:border-amber-900/30 p-5 md:p-8 shadow-sm">
+                            <div className="flex items-center gap-3 mb-5 md:mb-6">
+                                <div className="p-2 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-lg md:rounded-xl">
+                                    <ClipboardList size={16} className="md:w-[18px] md:h-[18px]" />
                                 </div>
-                                <div>
-                                    <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase">Previously Issued Medicines</h3>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Review prior medicine distributions</p>
+                                <div className="min-w-0">
+                                    <h3 className="text-xs md:text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Admission Billing History</h3>
+                                    <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Prior pharmaceutical distributions</p>
                                 </div>
                             </div>
                             <div className="space-y-4">
                                 {previousIssuances.map((iss, idx) => (
-                                    <div key={iss._id} className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-amber-100/50 dark:border-amber-900/30 shadow-sm">
-                                        <div className="flex justify-between items-center border-b border-slate-50 dark:border-slate-700 pb-3 mb-3">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                    <div key={iss._id} className="bg-white dark:bg-slate-800 p-4 md:p-5 rounded-xl md:rounded-2xl border border-amber-100/50 dark:border-amber-900/30 shadow-sm overflow-hidden">
+                                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-slate-50 dark:border-slate-700 pb-3 mb-3 gap-2">
+                                            <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest italic font-mono">
                                                 {new Date(iss.issuedAt).toLocaleString()}
                                             </p>
-                                            <div className="flex items-center gap-2">
-                                                <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded">
-                                                    By: {iss.nurseNote || (iss.receivedByNurse?.name) || "Direct Issue"}
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <p className="text-[8px] md:text-[9px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded">
+                                                    Receiv: {iss.nurseNote || (iss.receivedByNurse?.name) || "Direct"}
                                                 </p>
-                                                <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest bg-rose-50 dark:bg-rose-900/30 px-2 py-1 rounded">
-                                                    ₹{Number(iss.totalAmount || 0).toFixed(2)}
+                                                <p className="text-[8px] md:text-[9px] font-black text-rose-600 uppercase tracking-widest bg-rose-50 dark:bg-rose-900/30 px-2 py-1 rounded">
+                                                    ₹{Math.round(iss.totalAmount || 0).toLocaleString()}
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="flex flex-col gap-2.5">
+                                        <div className="flex flex-col gap-2">
                                             {iss.items.map((item: any, i: number) => (
-                                                <div key={i} className="flex justify-between items-center text-xs bg-slate-50/50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50">
-                                                    <span className="font-bold text-slate-700 dark:text-slate-300 uppercase truncate pr-4">{item.productName}</span>
-                                                    <div className="flex items-center gap-4 shrink-0">
-                                                        <span className="font-black text-blue-600 dark:text-blue-400">{item.issuedQty} QTY</span>
-                                                        <span className="font-black text-slate-500 w-16 text-right">₹{Number(item.totalAmount || 0).toFixed(2)}</span>
+                                                <div key={`${item.productName}-${i}`} className="flex justify-between items-center text-[10px] md:text-xs bg-slate-50/50 dark:bg-slate-800/50 p-2.5 md:p-3 rounded-lg md:rounded-xl border border-slate-100 dark:border-slate-700/50">
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300 uppercase pr-4">{item.productName}</span>
+                                                    <div className="flex items-center gap-3 md:gap-4 shrink-0 font-black">
+                                                        <span className="text-blue-600 dark:text-blue-400">{item.issuedQty} QTY</span>
+                                                        <span className="text-slate-500 min-w-[60px] text-right">₹{Math.round(item.totalAmount || 0).toLocaleString()}</span>
                                                     </div>
                                                 </div>
                                             ))}
@@ -467,135 +610,170 @@ const IPDBillingPage = () => {
                     )}
 
                     {/* Entry Section */}
-                    <div className="bg-white rounded-4xl border border-slate-100 p-8 shadow-sm">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-slate-50 text-slate-400 rounded-xl">
-                                <Plus size={18} />
+                    <div className="bg-white rounded-2xl md:rounded-4xl border border-slate-100 p-5 md:p-8 shadow-sm">
+                        <div className="flex items-center gap-3 mb-5 md:mb-6">
+                            <div className="p-2 bg-slate-50 text-slate-400 rounded-lg md:rounded-xl">
+                                <Plus size={16} className="md:w-[18px] md:h-[18px]" />
                             </div>
-                            <h3 className="text-sm font-black text-slate-900 uppercase">Add Medicine</h3>
+                            <h3 className="text-xs md:text-sm font-black text-slate-900 uppercase tracking-tight">Item Acquisition</h3>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                            <div className="md:col-span-2 relative">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-2.5 md:gap-3 items-center">
+                            <div className="sm:col-span-1 md:col-span-4 relative group">
+                                <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none z-10">
+                                    <Search className="w-3 md:w-3.5 text-slate-400" />
+                                </div>
                                 <input
                                     type="text"
-                                    placeholder="Search medicine..."
+                                    placeholder="SEARCH PHARMA INVENTORY..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black uppercase outline-none focus:border-primary-theme"
+                                    className="w-full pl-9 md:pl-10 pr-3 py-2.5 md:py-3 bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase outline-none focus:border-primary-theme focus:bg-white focus:ring-2 focus:ring-primary-theme/20 transition-all shadow-sm"
                                 />
                                 {searchResults.length > 0 && (
-                                    <div className="absolute z-10 w-full mt-2 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden max-h-60 overflow-y-auto">
+                                    <div className="absolute z-20 w-full mt-1 bg-white border border-slate-100 rounded-xl md:rounded-2xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
                                         {searchResults.map((p) => (
                                             <button
                                                 key={p._id}
                                                 onClick={() => handleSelectProduct(p)}
-                                                className="w-full px-6 py-4 text-left hover:bg-slate-50 border-b border-slate-50 last:border-none flex justify-between"
+                                                className="w-full px-4 md:px-5 py-2.5 md:py-3 text-left hover:bg-slate-50 border-b border-slate-50 last:border-none flex items-center justify-between gap-4 transition-colors"
                                             >
-                                                <div>
-                                                    <p className="text-xs font-black text-slate-700 uppercase">{p.brandName}</p>
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase">{p.strength} • Units/Pack: {p.unitsPerPack || 1}</p>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-[10px] md:text-[11px] font-black text-slate-700 uppercase leading-tight">{p.brandName}</p>
+                                                    <p className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                                                        {p.strength} • Units: {p.unitsPerPack || 1}
+                                                    </p>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className="text-xs font-black text-primary-theme">₹{p.mrp}</p>
-                                                    <p className="text-[9px] font-bold text-teal-600">₹{Math.round(p.mrp / (p.unitsPerPack || 1)).toLocaleString()} / unit</p>
+                                                <div className="text-right shrink-0">
+                                                    <p className="text-[10px] md:text-[11px] font-black text-primary-theme">₹{p.mrp}</p>
+                                                    <p className="text-[7px] md:text-[8px] font-bold text-teal-600">₹{Math.round(p.mrp / (p.unitsPerPack || 1))} / unit</p>
                                                 </div>
                                             </button>
                                         ))}
                                     </div>
                                 )}
                             </div>
-                            <input
-                                type="number"
-                                placeholder="Qty"
-                                value={quantity || ""}
-                                onChange={(e) => setQuantity(Number(e.target.value))}
-                                className="px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-primary-theme"
-                            />
-                            <input
-                                type="text"
-                                placeholder="Frequency (e.g. 1-1-1)"
-                                value={frequency}
-                                onChange={(e) => setFrequency(e.target.value)}
-                                className="px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black outline-none focus:border-primary-theme"
-                            />
+                            <div className="md:col-span-2">
+                                <input
+                                    type="number"
+                                    placeholder="QTY"
+                                    value={quantity || ""}
+                                    onChange={(e) => setQuantity(Number(e.target.value))}
+                                    className="w-full px-3 py-2.5 md:py-3 bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl text-[10px] md:text-[11px] font-black outline-none focus:border-primary-theme focus:bg-white focus:ring-2 focus:ring-primary-theme/20 transition-all uppercase shadow-sm"
+                                />
+                            </div>
+                            <div className="sm:col-span-1 md:col-span-4">
+                                <FrequencySelector value={frequency} onChange={setFrequency} />
+                            </div>
                             <button
                                 onClick={handleAddItem}
-                                className="px-5 py-4 bg-slate-900 text-white rounded-2xl text-xs font-black uppercase hover:bg-slate-800 transition-all"
+                                className="w-full sm:col-span-1 md:col-span-2 px-3 py-2 md:py-3 bg-slate-900 text-white rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 active:scale-95 transition-all shadow-md flex items-center justify-center gap-1.5"
                             >
-                                Add Item
+                                <ShoppingCart size={12} className="md:w-3 md:h-3" />
+                                Queue Item
                             </button>
                         </div>
                     </div>
 
                     {/* Cart Table */}
-                    <div className="bg-white rounded-4xl border border-slate-100 shadow-sm overflow-hidden">
-                        <table className="w-full">
-                            <thead className="bg-slate-50 border-b border-slate-100">
-                                <tr>
-                                    <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Item Name</th>
-                                    <th className="px-8 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Freq</th>
-                                    <th className="px-8 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Qty</th>
-                                    <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Rate</th>
-                                    <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Total</th>
-                                    <th className="px-8 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Act</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                                {cart.map((item, i) => (
-                                    <tr key={i} className="hover:bg-slate-50/50">
-                                        <td className="px-8 py-5 text-xs font-black text-slate-700 uppercase">{item.productName}</td>
-                                        <td className="px-8 py-5 text-center text-xs font-black text-primary-theme leading-none">{item.frequency || "1-1-1"}</td>
-                                        <td className="px-8 py-5 text-center text-xs font-black text-slate-700">{item.qty}</td>
-                                        <td className="px-8 py-5 text-right text-xs font-black text-slate-700">₹{Math.round(item.unitRate || 0).toLocaleString()}</td>
-                                        <td className="px-8 py-5 text-right text-xs font-black text-primary-theme">₹{Math.round(item.total || 0).toLocaleString()}</td>
-                                        <td className="px-8 py-5 text-center">
-                                            <button onClick={() => removeItem(i)} className="p-2 text-slate-300 hover:text-rose-500 transition-all">
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {cart.length === 0 && (
+                    <div className="bg-white rounded-2xl md:rounded-4xl border border-slate-100 shadow-sm overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[500px]">
+                                <thead className="bg-slate-50 border-b border-slate-100">
                                     <tr>
-                                        <td colSpan={5} className="py-20 text-center">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">No items in billing queue</p>
-                                        </td>
+                                        <th className="px-4 md:px-6 xl:px-8 py-3 md:py-5 text-left text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-widest">Description</th>
+                                        <th className="px-4 md:px-6 xl:px-8 py-3 md:py-5 text-center text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-widest">Freq</th>
+                                        <th className="px-4 md:px-6 xl:px-8 py-3 md:py-5 text-center text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-widest">Qty</th>
+                                        <th className="px-4 md:px-6 xl:px-8 py-3 md:py-5 text-right text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-widest">Rate</th>
+                                        <th className="px-4 md:px-6 xl:px-8 py-3 md:py-5 text-right text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-widest">Total</th>
+                                        <th className="px-4 md:px-6 xl:px-8 py-3 md:py-5 text-center text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-widest">X</th>
                                     </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {cart.map((item, i) => (
+                                        <tr key={`${item.productId}-${i}`} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="px-4 md:px-6 xl:px-8 py-4 md:py-5 text-[11px] md:text-xs font-black text-slate-700 uppercase tracking-tight">{item.productName}</td>
+                                            <td className="px-4 md:px-6 xl:px-8 py-4 md:py-5 text-center">
+                                                <span className="px-2 py-1 bg-primary-theme/10 text-primary-theme rounded text-[10px] md:text-[11px] font-black">{formatFrequency(item.frequency)}</span>
+                                            </td>
+                                            <td className="px-4 md:px-6 xl:px-8 py-4 md:py-5 text-center text-[11px] md:text-xs font-extrabold text-slate-700 tabular-nums">{item.qty}</td>
+                                            <td className="px-4 md:px-6 xl:px-8 py-4 md:py-5 text-right text-[11px] md:text-xs font-bold text-slate-500 tabular-nums">₹{Number(item.unitRate || 0).toLocaleString()}</td>
+                                            <td className="px-4 md:px-6 xl:px-8 py-4 md:py-5 text-right text-[11px] md:text-xs font-black text-primary-theme tabular-nums">₹{Number(item.total || 0).toLocaleString()}</td>
+                                            <td className="px-4 md:px-6 xl:px-8 py-4 md:py-5 text-center">
+                                                <button onClick={() => removeItem(i)} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all active:scale-90">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {cart.length === 0 && (
+                                        <tr>
+                                            <td colSpan={6} className="py-16 md:py-24 text-center">
+                                                <ShoppingCart className="w-10 h-10 md:w-12 md:h-12 text-slate-100 mx-auto mb-4" />
+                                                <p className="text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] italic">Billing queue is currently empty</p>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
                 {/* Summary Sidebar */}
                 <div className="space-y-6">
-                    <div className="bg-white rounded-4xl border border-slate-100 p-8 shadow-sm space-y-8">
+                    <div className="bg-white rounded-2xl md:rounded-4xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-6 md:space-y-8 sticky top-24">
                         <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                            <div className="p-3 bg-primary-theme/10 text-primary-theme rounded-2xl">
+                            <div className="p-2.5 md:p-3 bg-blue-600/10 text-blue-600 rounded-xl md:rounded-2xl">
                                 <Calculator size={20} />
                             </div>
-                            <h3 className="text-sm font-black text-slate-900 uppercase">Bill Summary</h3>
+                            <h3 className="text-xs md:text-sm font-black text-slate-900 uppercase tracking-tight">Ledger Summary</h3>
                         </div>
 
-                        {/* ✅ NURSE SELECTION (MOVED TO BILL SUMMARY) */}
+                        {order?.admission?.bedHistory && order.admission.bedHistory.length > 0 && (
+                            <div className="bg-slate-50 rounded-2xl border border-slate-200 p-4 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Bed Assignment Log</h4>
+                                    <Clock size={12} className="text-slate-400" />
+                                </div>
+                                <div className="space-y-3">
+                                    {order.admission.bedHistory.map((item: any, idx: number) => (
+                                        <div key={idx} className="flex items-center justify-between gap-3 bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm">
+                                            <div className="min-w-0">
+                                                <p className="text-[10px] font-black text-slate-700 uppercase leading-none">{item.bedId}</p>
+                                                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{item.room} / {item.type}</p>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <p className="text-[8px] font-black text-blue-600 uppercase">
+                                                    {new Date(item.startDate).toLocaleDateString([], { day: '2-digit', month: 'short' })}
+                                                    {item.endDate ? ` - ${new Date(item.endDate).toLocaleDateString([], { day: '2-digit', month: 'short' })}` : ' (Current)'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ✅ NURSE SELECTION */}
                         <div className="space-y-3">
-                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 mt-4">Assign Nurse</h4>
+                            <h4 className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 mt-4 flex items-center gap-1.5">
+                                <UserCheck size={12} className="text-teal-500" /> Authorized Receiver
+                            </h4>
                             <div className="relative nurse-dropdown-container">
-                                {/* Selected Nurse Badge */}
                                 {selectedNurse ? (
-                                    <div className="flex flex-col gap-2 bg-teal-50 border border-teal-200 rounded-2xl p-4">
+                                    <div className="flex flex-col gap-2 bg-teal-50 border border-teal-200 rounded-xl md:rounded-2xl p-3 md:p-4 shadow-sm shadow-teal-100/50">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 bg-teal-600 text-white rounded-xl flex items-center justify-center font-black text-sm shrink-0">
+                                            <div className="w-8 h-8 md:w-10 md:h-10 bg-teal-600 text-white rounded-lg md:rounded-xl flex items-center justify-center font-black text-xs md:text-sm shrink-0 shadow-lg shadow-teal-600/20">
                                                 {selectedNurse.name?.charAt(0)?.toUpperCase()}
                                             </div>
                                             <div className="min-w-0 flex-1">
-                                                <p className="text-xs font-black text-teal-800 uppercase truncate">{selectedNurse.name}</p>
-                                                <p className="text-[9px] font-bold text-teal-500 uppercase tracking-widest truncate">{selectedNurse.email || "Nurse"}</p>
+                                                <p className="text-[10px] md:text-xs font-black text-teal-800 uppercase leading-tight">{selectedNurse.name}</p>
+                                                <p className="text-[8px] md:text-[9px] font-bold text-teal-500 uppercase tracking-widest">{selectedNurse.email || "AUTHORIZED STAFF"}</p>
                                             </div>
                                             <button
                                                 onClick={() => { setSelectedNurse(null); setNurseSearch(""); }}
-                                                className="p-1.5 text-teal-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all shrink-0"
+                                                className="p-1.5 text-teal-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all shrink-0 active:scale-90"
                                             >
                                                 <X size={14} />
                                             </button>
@@ -604,30 +782,27 @@ const IPDBillingPage = () => {
                                 ) : (
                                     <button
                                         onClick={() => setShowNurseDropdown(!showNurseDropdown)}
-                                        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-left hover:border-teal-300 hover:bg-teal-50/30 transition-all"
+                                        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl text-left hover:border-teal-300 hover:bg-teal-50/30 transition-all group"
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 bg-slate-200 text-slate-400 rounded-xl flex items-center justify-center shrink-0">
+                                            <div className="w-8 h-8 bg-slate-200 group-hover:bg-teal-100 text-slate-400 group-hover:text-teal-600 rounded-lg md:rounded-xl flex items-center justify-center shrink-0 transition-colors">
                                                 <User size={14} />
                                             </div>
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">
-                                                {loadingNurses ? "Loading..." : "Select nurse..."}
+                                            <span className="text-[9px] md:text-[10px] font-black text-slate-400 group-hover:text-teal-600 uppercase tracking-widest">
+                                                {loadingNurses ? "SEARCHING..." : "SELECT NURSE..."}
                                             </span>
                                         </div>
-                                        <ChevronDown size={14} className={`text-slate-400 transition-transform ${showNurseDropdown ? "rotate-180" : ""}`} />
+                                        <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 ${showNurseDropdown ? "rotate-180" : ""}`} />
                                     </button>
                                 )}
 
-                                {/* Nurse Dropdown */}
                                 {showNurseDropdown && !selectedNurse && (
-                                    <div className="absolute z-30 top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="absolute z-30 top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                                         <div className="max-h-52 overflow-y-auto">
                                             {nurses.length === 0 ? (
-                                                <div className="py-6 text-center">
+                                                <div className="py-8 text-center bg-slate-50/50">
                                                     <Users size={20} className="mx-auto text-slate-200 mb-2" />
-                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                                                        No nurses found
-                                                    </p>
+                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">No Authorized Staff Found</p>
                                                 </div>
                                             ) : (
                                                 nurses.map((nurse) => (
@@ -636,16 +811,16 @@ const IPDBillingPage = () => {
                                                         onClick={() => {
                                                             setSelectedNurse(nurse);
                                                             setShowNurseDropdown(false);
-                                                            toast.success(`Assigned to ${nurse.name}`);
+                                                            toast.success(`Context assigned to ${nurse.name.split(' ')[0]}`);
                                                         }}
-                                                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-teal-50 transition-colors border-b border-slate-50 last:border-none text-left"
+                                                        className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-teal-50 transition-colors border-b border-slate-50 last:border-none text-left"
                                                     >
-                                                        <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-teal-600 text-white rounded-xl flex items-center justify-center font-black text-xs shrink-0">
+                                                        <div className="w-8 h-8 md:w-9 md:h-9 bg-gradient-to-br from-teal-400 to-teal-600 text-white rounded-lg md:rounded-xl flex items-center justify-center font-black text-xs shrink-0 shadow-sm">
                                                             {nurse.name?.charAt(0)?.toUpperCase()}
                                                         </div>
                                                         <div className="min-w-0 flex-1">
-                                                            <p className="text-[10px] font-black text-slate-800 uppercase truncate">{nurse.name}</p>
-                                                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest truncate">{nurse.email || "Nurse"}</p>
+                                                            <p className="text-[10px] md:text-xs font-black text-slate-800 uppercase truncate leading-tight font-mono">{nurse.name}</p>
+                                                            <p className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate">{nurse.email || "Nursing Staff"}</p>
                                                         </div>
                                                     </button>
                                                 ))
@@ -655,31 +830,31 @@ const IPDBillingPage = () => {
                                 )}
                             </div>
                             {!selectedNurse && (
-                                <p className="text-[8px] font-bold text-amber-600 uppercase tracking-widest flex items-center gap-1 mt-1">
+                                <p className="text-[8px] font-bold text-amber-600 uppercase tracking-widest flex items-center gap-1 mt-1.5 font-mono">
                                     <AlertCircle size={10} />
-                                    Medicines won't appear in return portal if empty
+                                    Meds will not appear in return queue if unassigned
                                 </p>
                             )}
                         </div>
 
                         <div className="space-y-4 pt-4 border-t border-slate-100">
                             {previousIssuances.length > 0 && (
-                                <div className="flex justify-between items-center text-[10px] font-black text-rose-500 uppercase tracking-widest">
-                                    <span>Previously Billed</span>
-                                    <span className="text-rose-600">₹{previousIssuances.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0).toLocaleString()}</span>
+                                <div className="flex justify-between items-center text-[9px] md:text-[10px] font-black text-rose-500 uppercase tracking-widest">
+                                    <span>Previously Settled</span>
+                                    <span className="text-rose-600 font-mono tracking-tighter tabular-nums text-xs md:text-sm">₹{Math.round(previousIssuances.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0)).toLocaleString()}</span>
                                 </div>
                             )}
-                            <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                <span>Cart Items</span>
-                                <span className="text-slate-900">{cart.length}</span>
+                            <div className="flex justify-between items-center text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                <span>Cart Item Count</span>
+                                <span className="text-slate-900 font-mono text-xs md:text-sm">{cart.length}</span>
                             </div>
-                            <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                <span>Current Session Payable</span>
-                                <span className="text-slate-900">₹{Math.round(subtotal).toLocaleString()}</span>
+                            <div className="flex justify-between items-center text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                <span>Current Payable</span>
+                                <span className="text-slate-900 font-mono tracking-tighter tabular-nums text-xs md:text-sm">₹{Math.round(subtotal).toLocaleString()}</span>
                             </div>
-                            <div className="pt-4 border-t border-slate-100">
-                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Final Accumulative Amount</p>
-                                <p className="text-4xl font-black text-slate-900 tracking-tighter">
+                            <div className="pt-5 border-t border-dashed border-slate-200">
+                                <p className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 leading-none">Cumulative Discharge Balance</p>
+                                <p className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter tabular-nums leading-none">
                                     ₹{Math.round(subtotal + previousIssuances.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0)).toLocaleString()}
                                 </p>
                             </div>
@@ -688,21 +863,21 @@ const IPDBillingPage = () => {
                         <button
                             onClick={handleChargeToIPD}
                             disabled={submitting || cart.length === 0}
-                            className="w-full bg-primary-theme text-white py-5 rounded-4xl font-black text-xs uppercase tracking-widest hover:bg-primary-theme/90 transition-all shadow-lg shadow-primary-theme/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                            className="w-full bg-primary-theme text-white py-4 md:py-6 rounded-2xl md:rounded-4xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em] hover:bg-primary-theme/90 transition-all shadow-xl shadow-primary-theme/20 disabled:opacity-50 flex items-center justify-center gap-2.5 active:scale-95 group"
                         >
                             {submitting ? (
-                                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                             ) : (
-                                <Save size={18} />
+                                <Save size={20} className="group-hover:rotate-12 transition-transform" />
                             )}
-                            {selectedNurse ? `Charge & Assign to ${selectedNurse.name.split(' ')[0]}` : "Charge to IPD Bill"}
+                            {selectedNurse ? `Settle & Assign` : "Finalize IPD Charge"}
                         </button>
 
-                        <div className="bg-amber-50 border border-amber-100 p-6 rounded-2xl flex items-start gap-4">
+                        <div className="bg-amber-50/50 border border-amber-100 p-4 md:p-6 rounded-xl md:rounded-2xl flex items-start gap-3 md:gap-4">
                             <AlertCircle className="text-amber-500 shrink-0" size={18} />
-                            <p className="text-[9px] font-bold text-amber-700 uppercase leading-relaxed">
-                                Charging to IPD will add these items as "Pharmacy Charges" to the patient's admission statement. Stock will be adjusted immediately.
-                                {selectedNurse && ` Medicines will appear in ${selectedNurse.name}'s return portal.`}
+                            <p className="text-[8px] md:text-[9px] font-bold text-amber-700 uppercase leading-relaxed tracking-tight">
+                                Settlement will append these items to the master admission statement. Stock deductions are immediate and non-reversible from this interface.
+                                {selectedNurse && <span className="text-teal-600 ml-1">Assigned receiver protocol activated.</span>}
                             </p>
                         </div>
                     </div>

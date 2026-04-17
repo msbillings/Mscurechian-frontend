@@ -22,6 +22,7 @@ import {
   ExternalLink,
   BookOpenCheck,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 import LogoutModal from "@/components/auth/LogoutModal";
 import SharedNavbar from "@/components/navbar/SharedNavbar";
@@ -35,6 +36,8 @@ import ClinicalTeamDropdown from "./components/ClinicalTeamDropdown";
 import HospitalAdminSupportFloatingBox from "./components/HospitalAdminSupportFloatingBox";
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
 import { useTenantLink } from "@/hooks/useTenantLink";
+import ProgressBar from "@/components/ui/ProgressBar";
+import { useRealtime } from '@/hooks/useRealtime';
 
 interface MenuItem {
   icon: any;
@@ -57,15 +60,13 @@ const hospitalAdminMenu: MenuItem[] = [
     icon: ClipboardCheck,
     label: "Management",
     subItems: [
-
-
+      { label: "Patient Hourly Record", path: "/hospital-admin/patient-hourly-record" },
       { label: "Leave Requests", path: "/hospital-admin/leaves" },
       { label: "Attendance Logs", path: "/hospital-admin/attendance" },
       { label: "Internship Training", path: "/hospital-admin/training" },
       { label: "Payroll Management", path: "/hospital-admin/payroll" },
       { label: "Recruitment Registry", path: "/hospital-admin/recruitment" },
       { label: "SOP & Policies", path: "/hospital-admin/sop" },
-      { label: "HR Management", path: "/hospital-admin/management/hr" },
       {
         label: "Shift Management",
         path: "/hospital-admin/attendance/schedules",
@@ -82,31 +83,30 @@ const hospitalAdminMenu: MenuItem[] = [
   // },
   {
     icon: Building2,
-    label: "Hospital Meta",
+    label: "Hospital Setup",
     subItems: [
-      { label: "Profile & Identity", path: "/hospital-admin/hospital/details" },
+      { label: "Hospital Profile", path: "/hospital-admin/hospital/details" },
       { label: "Departments", path: "/hospital-admin/management/departments" },
       { label: "Room Master", path: "/hospital-admin/management/rooms" },
       { label: "Bed Inventory", path: "/hospital-admin/management/beds" },
       { label: "Vitals Thresholds", path: "/hospital-admin/management/vitals-thresholds" },
     ],
   },
-  { icon: Headphones, label: "Helpdesk Support", path: "/hospital-admin/helpdesks" },
   { icon: ClipboardCheck, label: "Discharge Audit", path: "/hospital-admin/discharge/history" },
   { icon: Bell, label: "Notice Board", path: "/hospital-admin/announcements" },
   {
     icon: Pill,
     label: "Pharmacy Unit",
     subItems: [
-      { label: "Overview", path: "/hospital-admin/pharma/dashboard" },
+      { label: "Dashboard", path: "/hospital-admin/pharma/dashboard" },
       { label: "Medicine Inventory", path: "/hospital-admin/pharma/products" },
-      { label: "Vendor Network", path: "/hospital-admin/pharma/suppliers" },
+      { label: "Suppliers", path: "/hospital-admin/pharma/suppliers" },
       { label: "Pharmacy Settings", path: "/hospital-admin/management/pharmacy-settings" },
     ],
   },
   {
     icon: FlaskConical,
-    label: "Diagnostics Lab",
+    label: "Lab Unit",
     subItems: [
       { label: "Dashboard", path: "/hospital-admin/labs/dashboard" },
 
@@ -135,9 +135,18 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
   const checkAuth = useAuthStore(state => state.checkAuth);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { getPath } = useTenantLink(); // ✅ MULTI-TENANCY
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // ✅ REAL-TIME: Subscribe to all domains relevant to the hospital-admin portal
+  useRealtime(['system', 'staff', 'hr', 'billing', 'patients', 'appointments', 'lab', 'pharmacy', 'beds', 'emergency', 'helpdesk']);
 
   const hasInitialized = useRef(false);
   const isInitializing = useRef(false);
@@ -156,6 +165,7 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
     if (!isInitialized) return;
 
     if (!isAuthenticated) {
+      console.warn(`[Layout: hospital-admin] 🚫 Not authenticated. Redirecting to login.`);
       router.replace("/auth/login");
       return;
     }
@@ -167,15 +177,25 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
         lab: "/lab/dashboard",
         pharmacy: "/pharmacy/dashboard",
         "pharma-owner": "/pharmacy/dashboard",
+        pharmacist: "/pharmacy/dashboard",
+        pharma: "/pharmacy/dashboard",
         admin: "/admin",
         "super-admin": "/admin",
         patient: "/patient/dashboard",
         doctor: "/doctor",
+        nurse: "/nurse",
+        emergency: "/emergency",
+        hr: "/hr",
+        frontdesk: "/frontdesk"
       };
 
-      router.replace(routeMap[userRole || ""] || "/auth/login");
+      const redirectPath = routeMap[userRole || ""] || "/auth/login";
+      console.warn(`[Layout: hospital-admin] 🔄 Role mismatch (${userRole}). Redirecting to: ${redirectPath}`);
+      router.replace(redirectPath);
+    } else {
+      console.log(`[Layout: hospital-admin] ✅ Access Granted. Role: ${userRole}`);
     }
-  }, [isAuthenticated, isInitialized, userRole]);
+  }, [isAuthenticated, isInitialized, userRole, router]);
 
   /** 📡 Realtime Governance Sync */
   useEffect(() => {
@@ -282,7 +302,7 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
     };
   }, [isAuthenticated, userId, userRole, queryClient]);
 
-  if (!isInitialized || isLoading) {
+  if (!isMounted || !isInitialized || isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="h-10 w-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
@@ -295,6 +315,7 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex min-h-screen bg-background">
       <LogoutModal
+        key="logout-modal"
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirm={async () => {
@@ -305,49 +326,54 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
       />
 
       <SharedSidebar
+        key="shared-sidebar"
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         menuItems={hospitalAdminMenu}
         branding={{ logo: Building2, title: "CureChain", subtitle: "Hospital Admin" }}
         currentPath={pathname}
+        onHoverChange={(expanded) => setIsSidebarHovered(expanded)}
         onMenuItemClick={path => {
           setIsSidebarOpen(false);
           startTransition(() => router.push(getPath(path)));
         }}
       />
 
-      <div className="flex flex-col flex-1 lg:ml-64 min-h-screen">
+      {/* Content Wrapper: Dynamic margin removed because Sidebar is now sticky/flex in desktop */}
+      <div key="main-content-wrapper" className="flex flex-col flex-1 min-h-screen min-w-0 relative">
 
         <SharedNavbar
+          key="shared-navbar"
           onMenuClick={() => setIsSidebarOpen(true)}
           centerActions={
             <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-2xl border border-slate-200/50 backdrop-blur-sm shadow-sm">
-              <ClinicalTeamDropdown />
-              <div className="w-px h-4 bg-slate-300 mx-1"></div>
-              <TransactionDropdown />
+              <ClinicalTeamDropdown key="clinical-dropdown" startTransition={startTransition} />
+              <div key="sep-1" className="w-px h-4 bg-slate-300 mx-1"></div>
+              <TransactionDropdown key="transaction-dropdown" startTransition={startTransition} />
             </div>
           }
           profileLinks={[
             { label: "Official Profile", path: getPath('/hospital-admin/profile'), icon: User },
-            { label: "System Settings", path: getPath('/hospital-admin/settings'), icon: Settings },
           ]}
           onLogout={() => setIsLogoutModalOpen(true)}
+          progressBarColor="#10b981"
+          className="sticky top-0 z-30" // Sticky navbar
         />
 
-        <main className="relative flex-1 p-4 sm:p-6 mt-16">
-          {isPending && (
-            <div className="absolute inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50">
-              <div className="h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-          )}
-          {children}
+        <main key="hospital-admin-main-content" className="relative flex-1 p-2 md:p-6 mt-0 max-w-full overflow-x-hidden">
+          <ProgressBar key="hospital-admin-progress-bar" isPending={isPending} color="#10b981" />
+          <div className="max-w-[1600px] mx-auto">
+            <React.Fragment key="hospital-admin-layout-children">
+              {children}
+            </React.Fragment>
+          </div>
         </main>
 
         {/* Floating Support & Feedback Box */}
-        <HospitalAdminSupportFloatingBox />
+        <HospitalAdminSupportFloatingBox key="hospital-admin-support-floating-box" />
       </div>
     </div>
   );
 };
 
-export default HospitalAdminLayout;
+export default React.memo(HospitalAdminLayout);

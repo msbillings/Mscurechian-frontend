@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { hospitalAdminService } from "@/lib/integrations";
 import {
@@ -13,6 +13,7 @@ import { Card } from "@/components/admin";
 
 /* ─────────────────────────── types ─────────────────────────── */
 interface FormData {
+  honorific: string;
   name: string; email: string; mobile: string; password: string;
   gender: string; dateOfBirth: string;
   street: string; city: string; state: string; pincode: string;
@@ -49,6 +50,7 @@ const validators: Record<string, (v: string) => string> = {
   aadharNumber: v => v && v.toUpperCase() !== "N/A" && v.length !== 12 ? `${v.length}/12 digits — must be exactly 12` : "",
   ifscCode: v => v && v.toUpperCase() !== "N/A" && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(v.toUpperCase()) ? "Invalid IFSC — e.g. HDFC0001234" : "",
   accountNumber: v => v && v.toUpperCase() !== "N/A" && (v.length < 9 || v.length > 18) ? "Account no. must be 9–18 digits" : "",
+  employeeId: v => !v.trim() ? "Employee ID is required" : "",
 };
 
 function validate(name: string, value: string): string {
@@ -107,6 +109,7 @@ function Field({ label, name, value, onChange, error, touched, type = "text",
 /* ─────────────────────────── page ──────────────────────────── */
 function CreateNurse() {
   const router = useRouter();
+  const { hospitalId } = useParams();
   const queryClient = useQueryClient();
 
   const [shifts, setShifts] = useState<any[]>([]);
@@ -115,7 +118,7 @@ function CreateNurse() {
   const [loadingShifts, setLoadingShifts] = useState(true);
 
   const [formData, setFormData] = useState<FormData>({
-    name: "", email: "", mobile: "", password: "", gender: "", dateOfBirth: "",
+    honorific: "Ms", name: "", email: "", mobile: "", password: "", gender: "", dateOfBirth: "",
     street: "", city: "", state: "", pincode: "",
     department: [], assignedRoom: [], designation: "Nurse", employeeId: "",
     employmentType: "full-time", experienceYears: "", joiningDate: "",
@@ -173,6 +176,16 @@ function CreateNurse() {
       const s = shifts.find(s => s._id === value);
       if (s) { setFormData(p => ({ ...p, shift: value, startTime: s.startTime, endTime: s.endTime })); return; }
     }
+
+    if (name === "honorific") {
+      let gender = formData.gender;
+      if (value === "Mr") gender = "male";
+      else if (value === "Mrs" || value === "Ms") gender = "female";
+      setFormData(prev => ({ ...prev, [name]: value, gender }));
+      if (touched[name]) setErrors(p => ({ ...p, [name]: validate(name, value) }));
+      return;
+    }
+
     setFormData(p => ({ ...p, [name]: (name === "panNumber" || value.toUpperCase() === "N/A") ? value.toUpperCase() : value }));
     if (touched[name]) setErrors(p => ({ ...p, [name]: validate(name, value) }));
   };
@@ -241,7 +254,7 @@ function CreateNurse() {
 
   /* touch all + validate before submit */
   const touchAll = () => {
-    const fields = ["name", "email", "mobile", "password", "designation", "pincode",
+    const fields = ["name", "email", "mobile", "password", "designation", "employeeId", "pincode",
       "emergencyContactMobile", "panNumber", "aadharNumber", "ifscCode", "accountNumber"];
     const newTouched: Record<string, boolean> = {};
     const newErrors: Errors = {};
@@ -264,6 +277,7 @@ function CreateNurse() {
     setLoading(true);
     try {
       const nurseData: any = {
+        honorific: formData.honorific,
         name: formData.name.trim(), email: formData.email.trim(), mobile: formData.mobile,
         password: formData.password, gender: formData.gender || undefined,
         dateOfBirth: formData.dateOfBirth || undefined,
@@ -288,7 +302,7 @@ function CreateNurse() {
       toast.success(`Nurse "${formData.name}" added to registry successfully!`, { duration: 4000 });
       queryClient.invalidateQueries({ queryKey: ['hospital-admin-nurses'] });
       queryClient.invalidateQueries({ queryKey: ['hospital-admin', 'dashboard'] });
-      router.push("/hospital-admin/nurses");
+      router.push(`/${hospitalId}/hospital-admin/nurses`);
     } catch (err: any) {
       toast.error(err.message || "Failed to add nurse to registry", { duration: 5000 });
     } finally { setLoading(false); }
@@ -306,9 +320,9 @@ function CreateNurse() {
   return (
     <div className="max-w-7xl mx-auto pb-12 space-y-6">
       {/* header */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-white/5 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 md:p-6 border border-gray-100 dark:border-white/5 shadow-sm">
         <div className="flex items-center gap-4">
-          <button onClick={() => router.push('/hospital-admin/nurses')}
+          <button onClick={() => router.push(`/${hospitalId}/hospital-admin/nurses`)}
             className="p-2 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-all">
             <ArrowLeft size={16} />
           </button>
@@ -324,8 +338,18 @@ function CreateNurse() {
         <div className="lg:col-span-2 space-y-6">
 
           {/* Personal Info */}
-          <Card title="Personal Information" icon={<User className="text-emerald-500" />} padding="p-6">
+          <Card title="Personal Information" icon={<User className="text-emerald-500" />} padding="p-2 md:p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Honorific<span className="text-rose-500 ml-0.5">*</span></label>
+                <select name="honorific" value={formData.honorific} onChange={handleChange} required
+                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all">
+                  <option value="Mr">Mr</option>
+                  <option value="Mrs">Mrs</option>
+                  <option value="Ms">Ms</option>
+                  <option value="Dr">Dr</option>
+                </select>
+              </div>
               <Field label="Full Name" {...f("name")} required placeholder="e.g. Priya Sharma" />
 
               {/* Gender */}
@@ -351,9 +375,6 @@ function CreateNurse() {
                   max={new Date().toISOString().split('T')[0]}
                   className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all" />
               </div>
-
-              <Field label="Work Location" {...f("workLocation")} placeholder="e.g. Ward 3, ICU" />
-
               {/* Password */}
               <div className="relative space-y-1.5 md:col-span-2">
                 <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">
@@ -389,7 +410,7 @@ function CreateNurse() {
           </Card>
 
           {/* Clinical Employment */}
-          <Card title="Clinical Employment Details" icon={<Briefcase className="text-indigo-500" />} padding="p-6">
+          <Card title="Clinical Employment Details" icon={<Briefcase className="text-indigo-500" />} padding="p-2 md:p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
               {/* ── Assigned Department(s) ── multi-chip picker */}
@@ -445,7 +466,7 @@ function CreateNurse() {
               </div>
 
               <Field label="Designation" {...f("designation")} required placeholder="e.g. Staff Nurse" />
-              <Field label="Nursing License / Employee ID" {...f("employeeId")} placeholder="Optional" inputClass="font-bold text-indigo-600" />
+              <Field label="Nursing License / Employee ID" {...f("employeeId")} required placeholder="Hospital Employee ID" inputClass="font-bold text-indigo-600" />
 
               {/* Contract Type */}
               <div className="space-y-1.5">
@@ -461,7 +482,7 @@ function CreateNurse() {
           </Card>
 
           {/* Shift */}
-          <Card title="Clinical Shift Registry" icon={<Clock className="text-amber-500" />} padding="p-6">
+          <Card title="Clinical Shift Registry" icon={<Clock className="text-amber-500" />} padding="p-2 md:p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Active Duty Shift<span className="text-rose-500 ml-0.5">*</span></label>
@@ -471,7 +492,7 @@ function CreateNurse() {
                   {shifts.map((s: any) => <option key={s._id} value={s._id}>{s.name} [{s.startTime} - {s.endTime}]</option>)}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[["Check-in", formData.startTime], ["Check-out", formData.endTime]].map(([lbl, val]) => (
                   <div key={lbl} className="space-y-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">{lbl}</label>
@@ -497,7 +518,7 @@ function CreateNurse() {
           <Card
             title="Financial Disclosure & Bank Registry"
             icon={<CreditCard className="text-emerald-600" />}
-            padding="p-6"
+            padding="p-2 md:p-6"
             extra={<button type="button" onClick={markFinancialNA} className="text-[9px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition-all border border-emerald-100">Mark all as N/A</button>}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -609,7 +630,7 @@ function CreateNurse() {
         {/* RIGHT COLUMN */}
         <div className="space-y-6">
           {/* Emergency Contact */}
-          <Card title="Emergency Contact" icon={<Activity className="text-rose-500" />} padding="p-6">
+          <Card title="Emergency Contact" icon={<Activity className="text-rose-500" />} padding="p-2 md:p-6">
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Full Name</label>
@@ -644,7 +665,7 @@ function CreateNurse() {
           </Card>
 
           {/* Qualifications */}
-          <Card title="Academic Qualifications" icon={<Globe className="text-indigo-500" />} padding="p-6">
+          <Card title="Academic Qualifications" icon={<Globe className="text-indigo-500" />} padding="p-2 md:p-6">
             <div className="space-y-6">
               {[
                 { label: "Nursing Degrees / Diplomas", temp: tempQ, setTemp: setTempQ, type: 'qualification' as const, items: formData.qualifications, key: 'qualifications' as const, placeholder: "e.g. B.Sc Nursing, GNM" },
@@ -673,7 +694,7 @@ function CreateNurse() {
           </Card>
 
           {/* Skills */}
-          <Card title="Clinical Skills & Certs" icon={<FileText className="text-emerald-500" />} padding="p-6">
+          <Card title="Clinical Skills & Certs" icon={<FileText className="text-emerald-500" />} padding="p-2 md:p-6">
             <div className="space-y-3">
               <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Add Specialized Skill</label>
               <div className="flex gap-2">
@@ -695,7 +716,7 @@ function CreateNurse() {
           </Card>
 
           {/* Status */}
-          <Card title="Registry Status" icon={<Activity className="text-emerald-500" />} padding="p-6">
+          <Card title="Registry Status" icon={<Activity className="text-emerald-500" />} padding="p-2 md:p-6">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Duty Status</label>
               <select name="status" value={formData.status} onChange={handleChange}
@@ -712,7 +733,7 @@ function CreateNurse() {
               className="w-full flex items-center justify-center gap-2 py-3.5 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-emerald-500/20">
               {loading ? <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Plus size={18} /> Confirm Registry Addition</>}
             </button>
-            <button type="button" onClick={() => router.push("/hospital-admin/nurses")} disabled={loading}
+            <button type="button" onClick={() => router.push(`/${hospitalId}/hospital-admin/nurses`)} disabled={loading}
               className="w-full mt-3 py-3 text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors">
               Abort Registration
             </button>

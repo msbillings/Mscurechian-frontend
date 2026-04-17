@@ -168,25 +168,24 @@ export default function HospitalAdminIncidentPage() {
             // 1. Add Title
             worksheet.mergeCells('A2:H2');
             const titleCell = worksheet.getCell('A2');
-            titleCell.value = 'Incident Governance Logs';
-            titleCell.font = { name: 'Arial Black', size: 24, bold: true, color: { argb: 'FF1C4E80' } }; // Adjusted to a professional blue
+            titleCell.value = 'Incident Records';
+            titleCell.font = { name: 'Arial Black', size: 24, bold: true, color: { argb: 'FF1C4E80' } };
             titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
 
             // 2. Add Subtitle
             worksheet.mergeCells('A3:H3');
             const subtitleCell = worksheet.getCell('A3');
-            subtitleCell.value = 'Hospital Administrator Safety Audit Manifest';
+            subtitleCell.value = 'Track and manage hospital incidents';
             subtitleCell.font = { name: 'Arial', size: 12, italic: true, color: { argb: 'FF808080' } };
             subtitleCell.alignment = { vertical: 'middle', horizontal: 'center' };
 
             // 3. Add Filter Info (Consolidated in columns A & B)
             const filterInfo = [
-                ['Report Period Start', startDate || 'ALL_TIME_START'],
-                ['Report Period End', endDate || 'CURRENT'],
-                ['Department Sector', deptFilter === 'all' ? 'Global Sectors' : `${deptFilter} Unit`],
-                ['Audit Status', statusFilter === 'all' ? 'Global Status' :
-                    statusFilter === 'OPEN' ? 'Open Protocol' :
-                        statusFilter === 'IN REVIEW' ? 'Institutional Review' : 'Case Finalized']
+                ['Report Date Range', startDate || 'All Time'],
+                ['Department', deptFilter === 'all' ? 'All Departments' : `${deptFilter}`],
+                ['Status', statusFilter === 'all' ? 'All' :
+                    statusFilter === 'OPEN' ? 'Open Cases' :
+                        statusFilter === 'IN REVIEW' ? 'In Review' : 'Closed Cases']
             ];
 
             filterInfo.forEach((info, idx) => {
@@ -201,7 +200,7 @@ export default function HospitalAdminIncidentPage() {
             // 3.5 Add Monthly Volume Stats (Starting Row 5, Column D)
             const statsStartRow = 5;
             const statsHeaderCell = worksheet.getCell(`D${statsStartRow}`);
-            statsHeaderCell.value = 'MONTHLY VOLUME BREAKDOWN';
+            statsHeaderCell.value = 'TOTAL INCIDENTS';
             statsHeaderCell.font = { bold: true, color: { argb: 'FF1C4E80' }, size: 12 };
 
             Object.entries(summaryMetrics.monthlyStats).forEach(([month, count], idx) => {
@@ -274,7 +273,7 @@ export default function HospitalAdminIncidentPage() {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `Incident_Governance_Logs_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`;
+            a.download = `Incident_Records_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`;
             a.click();
             window.URL.revokeObjectURL(url);
             toast.success("Excel Export Complete", { id: toastId });
@@ -301,7 +300,7 @@ export default function HospitalAdminIncidentPage() {
             doc.setFontSize(22);
             doc.setTextColor(220, 38, 38); // red-600
             doc.setFont('helvetica', 'bold');
-            doc.text('INCIDENT GOVERNANCE AUDIT', 14, 20);
+            doc.text('INCIDENT MANAGEMENT', 14, 20);
 
             doc.setFontSize(8);
             doc.setTextColor(150);
@@ -317,7 +316,7 @@ export default function HospitalAdminIncidentPage() {
             doc.setFontSize(10);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(28, 78, 128); // Professional blue
-            doc.text('MONTHLY INCIDENT VOLUME BREAKDOWN', 14, y);
+            doc.text('TOTAL INCIDENTS', 14, y);
             y += 5;
 
             doc.setFontSize(8);
@@ -416,7 +415,7 @@ export default function HospitalAdminIncidentPage() {
             doc.setDrawColor(180);
             doc.line(14, y - 6, 283, y - 6);
 
-            doc.save(`Incident_Safety_Audit_${format(new Date(), 'yyyyMMdd')}.pdf`);
+            doc.save(`Incident_Report_${format(new Date(), 'yyyyMMdd')}.pdf`);
             toast.success("PDF Export Complete", { id: toastId });
         } catch (error) {
             console.error(error);
@@ -427,14 +426,14 @@ export default function HospitalAdminIncidentPage() {
     };
 
     return (
-        <div className="p-8 space-y-10 max-w-7xl mx-auto">
+        <div className="space-y-10 max-w-7xl mx-auto">
             {/* Header Tier */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div>
-                    <h1 className="text-2xl font-black text-gray-900 dark:text-white  uppercase">Incident Governance</h1>
-                    <p className="text-gray-500 dark:text-gray-400 font-bold mt-2 uppercase tracking-[0.2em] text-[10px] ml-1 flex items-center gap-2">
+                    <h1 className="text-lg md:text-xl lg:text-xl font-black text-gray-900 dark:text-white  uppercase">Incident Management</h1>
+                    <p className="text-gray-500 dark:text-gray-400 font-bold mt-2 uppercase tracking-[0.2em] text-[8px] md:text-[10px] ml-1 flex items-center gap-2">
                         <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                        Institutional Safety Oversight & Response Matrix
+                        Track and manage hospital incidents
                     </p>
                 </div>
 
@@ -443,7 +442,7 @@ export default function HospitalAdminIncidentPage() {
                     <button
                         onClick={() => setShowExportMenu(!showExportMenu)}
                         disabled={isExporting}
-                        className="flex items-center gap-2 px-6 py-3 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all active:scale-95 disabled:opacity-50 min-w-[160px] justify-between"
+                        className="flex items-center gap-2 px-3 md:px-6 py-3 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all active:scale-95 disabled:opacity-50 min-w-[160px] justify-between"
                     >
                         <span className="flex items-center gap-2">
                             <Download size={16} /> Export
@@ -462,7 +461,7 @@ export default function HospitalAdminIncidentPage() {
                                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                     animate={{ opacity: 1, y: 5, scale: 1 }}
                                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-20"
+                                    className="absolute left-0 md:left-auto md:right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-20"
                                 >
                                     <div className="p-2 space-y-1">
                                         <button
@@ -472,7 +471,7 @@ export default function HospitalAdminIncidentPage() {
                                             }}
                                             className="w-full flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-gray-700 dark:text-gray-300 rounded-xl transition-colors group"
                                         >
-                                            <div className="p-2 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 rounded-lg group-hover:scale-110 transition-transform">
+                                            <div className="p-2 shrink-0 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 rounded-lg group-hover:scale-110 transition-transform">
                                                 <FileSpreadsheet size={16} />
                                             </div>
                                             <div className="text-left">
@@ -488,7 +487,7 @@ export default function HospitalAdminIncidentPage() {
                                             }}
                                             className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300 rounded-xl transition-colors group"
                                         >
-                                            <div className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg group-hover:scale-110 transition-transform">
+                                            <div className="p-2 shrink-0 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg group-hover:scale-110 transition-transform">
                                                 <Download size={16} />
                                             </div>
                                             <div className="text-left">
@@ -505,7 +504,7 @@ export default function HospitalAdminIncidentPage() {
             </div>
 
             {/* Advanced Filters Section */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 ml-1">
                         <Calendar size={12} /> Date Range
@@ -528,7 +527,7 @@ export default function HospitalAdminIncidentPage() {
 
                 <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 ml-1">
-                        <Building size={12} /> Department Sector
+                        <Building size={12} /> Department
                     </label>
                     <select
                         value={deptFilter}
@@ -544,29 +543,29 @@ export default function HospitalAdminIncidentPage() {
 
                 <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 ml-1">
-                        <ShieldCheck size={12} /> Audit Status
+                        <ShieldCheck size={12} /> Status
                     </label>
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
                         className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-xs font-bold outline-none ring-2 ring-transparent focus:ring-emerald-500/20 appearance-none"
                     >
-                        <option value="all">Global Status</option>
-                        <option value="OPEN">Open Protocol</option>
-                        <option value="IN REVIEW">Institutional Review</option>
-                        <option value="CLOSED">Case Finalized</option>
+                        <option value="all">Status</option>
+                        <option value="OPEN">Open Cases</option>
+                        <option value="IN REVIEW">In Review</option>
+                        <option value="CLOSED">Closed Cases</option>
                     </select>
                 </div>
 
                 <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 ml-1">
-                        <Search size={12} /> Dynamic Search
+                        <Search size={12} /> Search
                     </label>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
                         <input
                             type="text"
-                            placeholder="Filter registry..."
+                            placeholder="Search incidents..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-9 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-xs font-bold outline-none ring-2 ring-transparent focus:ring-emerald-500/20"
@@ -576,94 +575,94 @@ export default function HospitalAdminIncidentPage() {
             </div>
 
             {/* Insights / Metrics View */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 group">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 group">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="p-2 bg-gray-900 text-white rounded-lg">
                             <TrendingUp size={16} />
                         </div>
-                        <span className="text-[10px] font-black uppercase font-semibold text-gray-400">Monthly Volume</span>
+                        <span className="text-[10px] font-black uppercase font-semibold text-gray-400">Total Incidents</span>
                     </div>
                     <div className="text-3xl font-black  ">
                         {Object.values(summaryMetrics.monthlyStats)[0] || 0}
                         <span className="text-[10px] block font-bold text-gray-400 uppercase  mt-1">
-                            Current Cycle
+                            This Month
                         </span>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700  group">
+                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700  group">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="p-2 bg-red-600 text-white rounded-lg">
                             <AlertCircle size={16} />
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Open Protocol</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Open Cases</span>
                     </div>
                     <div className="text-3xl font-black ">
                         {summaryMetrics.openCount}
                         <span className="text-[10px] block font-bold text-gray-400 uppercase mt-1">
-                            Awaiting Response
+                            Pending Action
                         </span>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 group">
+                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 group">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="p-2 bg-emerald-600 text-white rounded-lg">
                             <CheckCircle2 size={16} />
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Case Finalized</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Closed Cases</span>
                     </div>
                     <div className="text-3xl font-black ">
                         {summaryMetrics.closedCount}
                         <span className="text-[10px] block font-bold text-gray-400 uppercase mt-1">
-                            Governance Approved
+                            Resolved
                         </span>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 group">
+                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 group">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="p-2 bg-indigo-600 text-white rounded-lg">
                             <Building size={16} />
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Hot Sector</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">High-Risk Department</span>
                     </div>
                     <div className="text-2xl font-black  uppercase">
                         {summaryMetrics.topDept[0]}
                         <span className="text-[10px] block font-bold text-gray-400 uppercase  mt-1">
-                            {summaryMetrics.topDept[1] as number} Incident Logs
+                            {summaryMetrics.topDept[1] as number} Incident Records
                         </span>
                     </div>
                 </div>
             </div>
 
             {/* Main Interface */}
-            <div className="bg-white dark:bg-gray-800 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 overflow-hidden min-h-[600px] flex flex-col lg:flex-row">
+            <div className="bg-white dark:bg-gray-800 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 overflow-hidden min-h-[500px] flex flex-col lg:flex-row">
 
                 {/* List Side */}
                 <div className={`flex-1 border-r border-gray-100 dark:border-gray-700 flex flex-col ${selectedIncident ? 'hidden lg:flex' : 'flex'}`}>
-                    <div className="p-8 border-b border-gray-100 dark:border-gray-700">
-                        <h3 className="text-xl font-black uppercase font-semibold">Audit Registry</h3>
+                    <div className="p-3 md:p-8 border-b border-gray-100 dark:border-gray-700">
+                        <h3 className="text-xl font-black uppercase font-semibold">Incident List</h3>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[700px] hide-scrollbar">
+                    <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-3 max-h-[700px] hide-scrollbar">
                         {isLoading ? (
                             <div className="flex flex-col items-center justify-center py-20 gap-4">
                                 <Loader2 className="animate-spin text-emerald-500" size={32} />
-                                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Syncing Protocol Matrix...</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Loading Incidents...</p>
                             </div>
                         ) : filteredIncidents.length === 0 ? (
                             <div className="text-center py-20 space-y-3">
                                 <AlertCircle className="mx-auto text-gray-200" size={48} />
-                                <p className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.2em]">No matching protocol entries found</p>
+                                <p className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.2em]">No incidents found</p>
                             </div>
                         ) : (
                             filteredIncidents.map((incident) => (
                                 <button
                                     key={incident._id}
                                     onClick={() => setSelectedIncident(incident)}
-                                    className={`w-full text-left p-6 rounded-[1rem] transition-all border-2 ${selectedIncident?._id === incident._id
+                                    className={`w-full text-left p-3 md:p-6 rounded-[1rem] transition-all border-2 ${selectedIncident?._id === incident._id
                                         ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500'
                                         : 'bg-white dark:bg-gray-800/50 border-transparent hover:border-gray-100 dark:hover:border-gray-700'
                                         }`}
@@ -719,14 +718,14 @@ export default function HospitalAdminIncidentPage() {
                     {selectedIncident ? (
                         <div className="flex-1 flex flex-col h-full animate-in fade-in slide-in-from-right-4 duration-500">
                             {/* Detail Header */}
-                            <div className="p-8 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 flex items-center justify-between">
+                            <div className="p-3 md:p-8 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 flex items-center justify-between">
                                 <div className="flex items-center gap-4">
                                     <button onClick={() => setSelectedIncident(null)} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg">
                                         <X size={20} />
                                     </button>
                                     <div>
                                         <h3 className="text-xl font-black font-thin uppercase">{selectedIncident.incidentId}</h3>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase ">Protocol Detailed View</p>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase ">Incident Details</p>
                                     </div>
                                 </div>
                                 <div className={`px-4 py-2 rounded-xl text-white font-black text-[10px] uppercase ${selectedIncident.severity === 'High' ? 'bg-red-600' :
@@ -737,21 +736,21 @@ export default function HospitalAdminIncidentPage() {
                                 </div>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-8 space-y-8 hide-scrollbar">
+                            <div className="flex-1 overflow-y-auto p-2 md:p-4 md:p-8 space-y-8 hide-scrollbar">
                                 {/* Core Info Cards */}
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="p-4 bg-white dark:bg-gray-800 rounded-[0.5rem] ">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="p-2 md:p-4 bg-white dark:bg-gray-800 rounded-[0.5rem] ">
                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Incident Type</p>
                                         <p className="text-sm font-bold text-gray-900 dark:text-white uppercase">{selectedIncident.incidentType}</p>
                                     </div>
-                                    <div className="p-4 bg-white dark:bg-gray-800 rounded-[0.5rem] ">
+                                    <div className="p-2 md:p-4 bg-white dark:bg-gray-800 rounded-[0.5rem] ">
                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Department</p>
                                         <p className="text-sm font-bold text-gray-900 dark:text-white uppercase ">{selectedIncident.department}</p>
                                     </div>
                                 </div>
 
                                 {/* Reporter Profile */}
-                                <div className="p-6 bg-white dark:bg-gray-800 rounded-[0.5rem] border border-gray-100 dark:border-gray-700">
+                                <div className="p-2 md:p-6 bg-white dark:bg-gray-800 rounded-[0.5rem] border border-gray-100 dark:border-gray-700">
                                     <div className="flex items-center gap-4 mb-4">
                                         <div className="w-12 h-12 bg-gray-100 dark:bg-gray-900 rounded-2xl flex items-center justify-center text-gray-400 font-black ">
                                             {selectedIncident.reportedBy.name.charAt(0)}
@@ -761,7 +760,7 @@ export default function HospitalAdminIncidentPage() {
                                             <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">{selectedIncident.reportedBy.role}</p>
                                         </div>
                                     </div>
-                                    <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl">
+                                    <div className="mt-4 p-2 md:p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl">
                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Narrative / Description</p>
                                         <p className="text-sm text-gray-700 dark:text-gray-300 font-medium leading-relaxed">{selectedIncident.description}</p>
                                     </div>
@@ -769,14 +768,14 @@ export default function HospitalAdminIncidentPage() {
 
                                 {/* Conditional Data Blocks */}
                                 {(selectedIncident.incidentType === 'Patient Fall' && selectedIncident.patientFallDetails) && (
-                                    <div className="p-6 bg-emerald-50 dark:bg-emerald-500/5 rounded-3xl border border-emerald-100 dark:border-emerald-500/20">
+                                    <div className="p-2 md:p-6 bg-emerald-50 dark:bg-emerald-500/5 rounded-3xl border border-emerald-100 dark:border-emerald-500/20">
                                         <div className="flex items-center gap-3 mb-4">
                                             <div className="p-2 bg-emerald-500 text-white rounded-lg">
                                                 <Building size={16} />
                                             </div>
-                                            <h4 className="text-xs font-black uppercase  text-emerald-700 dark:text-emerald-400">Patient Detail Supplement</h4>
+                                            <h4 className="text-xs font-black uppercase  text-emerald-700 dark:text-emerald-400">Patient Details</h4>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
                                                 <p className="text-[8px] font-black text-emerald-600/60 uppercase">Patient Name</p>
                                                 <p className="text-xs font-bold">{selectedIncident.patientFallDetails.patientName}</p>
@@ -794,12 +793,12 @@ export default function HospitalAdminIncidentPage() {
                                 )}
 
                                 {(selectedIncident.incidentType === 'Medication Error' && selectedIncident.medicationErrorDetails) && (
-                                    <div className="p-6 bg-indigo-50 dark:bg-indigo-500/5 rounded-3xl border border-indigo-100 dark:border-indigo-500/20">
+                                    <div className="p-2 md:p-6 bg-indigo-50 dark:bg-indigo-500/5 rounded-3xl border border-indigo-100 dark:border-indigo-500/20">
                                         <div className="flex items-center gap-3 mb-4">
                                             <div className="p-2 bg-indigo-500 text-white rounded-lg">
                                                 <Pill size={16} />
                                             </div>
-                                            <h4 className="text-xs font-black uppercase  text-indigo-700 dark:text-indigo-400">Pharmaceutical Audit Supplement</h4>
+                                            <h4 className="text-xs font-black uppercase  text-indigo-700 dark:text-indigo-400">Medication Details</h4>
                                         </div>
                                         <div>
                                             <p className="text-[8px] font-black text-indigo-600/60 uppercase">Drug / Prescription Detail</p>
@@ -809,12 +808,12 @@ export default function HospitalAdminIncidentPage() {
                                 )}
 
                                 {(selectedIncident.incidentType === 'Equipment Failure' && selectedIncident.equipmentFailureDetails) && (
-                                    <div className="p-6 bg-amber-50 dark:bg-amber-500/5 rounded-3xl border border-amber-100 dark:border-amber-500/20">
+                                    <div className="p-2 md:p-6 bg-amber-50 dark:bg-amber-500/5 rounded-3xl border border-amber-100 dark:border-amber-500/20">
                                         <div className="flex items-center gap-3 mb-4">
                                             <div className="p-2 bg-amber-500 text-white rounded-lg">
                                                 <Package size={16} />
                                             </div>
-                                            <h4 className="text-xs font-black uppercase  text-amber-700 dark:text-amber-400">Technical Asset Protocol</h4>
+                                            <h4 className="text-xs font-black uppercase  text-amber-700 dark:text-amber-400">Equipment Details</h4>
                                         </div>
                                         <div className="grid grid-cols-1 gap-4">
                                             <div>
@@ -833,7 +832,7 @@ export default function HospitalAdminIncidentPage() {
 
                                 {/* Photo Evidence Section */}
                                 {selectedIncident.attachments && selectedIncident.attachments.length > 0 && (
-                                    <div className="p-6 bg-purple-50 dark:bg-purple-500/5 rounded-3xl border border-purple-100 dark:border-purple-500/20">
+                                    <div className="p-2 md:p-6 bg-purple-50 dark:bg-purple-500/5 rounded-3xl border border-purple-100 dark:border-purple-500/20">
                                         <div className="flex items-center gap-3 mb-4">
                                             <div className="p-2 bg-purple-500 text-white rounded-lg">
                                                 <ImageIcon size={16} />
@@ -843,7 +842,7 @@ export default function HospitalAdminIncidentPage() {
                                                 {selectedIncident.attachments.length} {selectedIncident.attachments.length === 1 ? 'Image' : 'Images'}
                                             </span>
                                         </div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-3 gap-3">
                                             {selectedIncident.attachments.map((attachment: any, index: number) => (
                                                 <a
                                                     key={attachment._id || index}
@@ -881,14 +880,14 @@ export default function HospitalAdminIncidentPage() {
 
                                 {/* Admin Response Matrix */}
                                 {selectedIncident.status === 'CLOSED' && selectedIncident.adminResponse ? (
-                                    <div className="p-8 bg-blue-600 rounded-[0.5rem] text-white">
+                                    <div className="p-3 md:p-8 bg-blue-600 rounded-[0.5rem] text-white">
                                         <div className="flex items-center gap-3 mb-6">
                                             <CheckCircle2 size={24} />
-                                            <h3 className="text-lg font-black uppercase">Resolution Finalized</h3>
+                                            <h3 className="text-sm md:text-lg font-black uppercase">Incident Resolved</h3>
                                         </div>
                                         <div className="space-y-4">
                                             <div>
-                                                <p className="text-[9px] font-black text-white/60 uppercase tracking-widest">Administrator Msg</p>
+                                                <p className="text-[9px] font-black text-white/60 uppercase tracking-widest">Response</p>
                                                 <p className="text-sm font-bold ">"{selectedIncident.adminResponse.message}"</p>
                                             </div>
                                             <div>
@@ -902,17 +901,17 @@ export default function HospitalAdminIncidentPage() {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="p-8 bg-white dark:bg-gray-800 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 space-y-6">
+                                    <div className="p-3 md:p-8 bg-white dark:bg-gray-800 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 space-y-6">
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 bg-emerald-500 text-white rounded-lg">
                                                 <MessageSquare size={18} />
                                             </div>
-                                            <h3 className="text-lg font-black uppercase">Governance Action</h3>
+                                            <h3 className="text-sm md:text-lg font-black uppercase">Admin Action</h3>
                                         </div>
 
                                         <div className="space-y-4">
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Update Protocol Status</label>
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Update Status</label>
                                                 <div className="flex gap-2">
                                                     {['OPEN', 'IN REVIEW', 'CLOSED'].map((s) => (
                                                         <button
@@ -930,18 +929,18 @@ export default function HospitalAdminIncidentPage() {
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Official Response</label>
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Response</label>
                                                 <textarea
                                                     value={responseMsg}
                                                     onChange={(e) => setResponseMsg(e.target.value)}
                                                     rows={3}
-                                                    placeholder="Input administrative response..."
+                                                    placeholder="Enter response..."
                                                     className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-emerald-500 rounded-2xl outline-none text-sm font-bold"
                                                 ></textarea>
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Remediation Action Taken</label>
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Action Taken</label>
                                                 <input
                                                     type="text"
                                                     value={actionTaken}
@@ -973,8 +972,8 @@ export default function HospitalAdminIncidentPage() {
                                 <AlertTriangle size={48} />
                             </div>
                             <div>
-                                <h3 className="text-xl font-black uppercase ">Select Protocol</h3>
-                                <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mt-1">Initialize governance audit from the registry</p>
+                                <h3 className="text-xl font-black uppercase ">Select Incident</h3>
+                                <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mt-1">Select an incident from the list to view details</p>
                             </div>
                         </div>
                     )}

@@ -12,7 +12,7 @@ import {
   MapPin,
   Award,
   Calendar,
-  DollarSign,
+  IndianRupee,
   Clock,
   Building,
   CreditCard,
@@ -26,7 +26,7 @@ import {
   Briefcase,
   Eye
 } from "lucide-react";
-import { PageHeader, Card, Button } from "@/components/admin";
+import { Card, Button } from "@/components/admin";
 
 function DoctorDetailPage() {
   const router = useRouter();
@@ -121,68 +121,78 @@ function DoctorDetailPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto pb-12 p-2 ">
-      {/* Back Button */}
-      <button
-        onClick={() => router.push('/hospital-admin/doctors')}
-        className="flex items-center gap-2 mb-6 text-gray-500 hover:text-blue-600 font-medium text-sm"
-      >
-        <ArrowLeft size={16} />
-        Back to Doctors
-      </button>
+    <div className="max-w-7xl mx-auto pb-12 p-2 ">
+      {/* Unified Header Section */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 bg-white dark:bg-gray-800/40 p-4 md:p-6 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm">
+        <div className="flex flex-wrap items-center gap-4 md:gap-8">
+          {/* Back Button */}
+          <button
+            onClick={() => router.push('/hospital-admin/doctors')}
+            className="flex items-center gap-2 text-gray-500 hover:text-blue-600 font-medium text-sm transition-all pr-4 md:border-r border-gray-200 dark:border-gray-700 group"
+          >
+            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+            <span>Back</span>
+          </button>
 
-      <PageHeader
-        icon={<Stethoscope className="text-blue-500" />}
-        title={doctor.name}
-        subtitle={doctor.doctorId || 'Doctor Profile'}
-      />
-
-      {/* Status Badge */}
-      <div className="flex justify-start mb-6 -mt-4">
-        <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${doctor.status === 'inactive'
-          ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800'
-          : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800'
-          }`}>
-          {doctor.status === 'inactive' ? 'Inactive Doctor' : 'Active Doctor'}
-        </span>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-3 mb-8">
-        {doctor.status !== 'inactive' && (
-          <>
-            <Button
-              onClick={() => router.push(`/hospital-admin/doctors/edit/${id}`)}
-              icon={<Edit size={16} />}
-              variant="secondary"
-              className="!text-sm !py-2 !rounded-lg"
-            >
-              Edit Profile
-            </Button>
-            <Button
-              onClick={handleDelete}
-              loading={deleteLoading}
-              icon={<Trash2 size={16} />}
-              className="bg-red-600 hover:bg-red-700 text-white !text-sm !py-2 !rounded-lg border border-red-700 shadow-sm"
-            >
-              Deactivate Doctor
-            </Button>
-          </>
-        )}
-        {doctor.status === 'inactive' && (
-          <div className="w-full text-center py-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
-              This doctor has been deactivated and is no longer active in the system.
-            </p>
+          {/* Doctor Identity Header */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 text-blue-600 shadow-inner">
+              <Stethoscope size={24} />
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+                {doctor.name}
+              </h1>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] bg-gray-50 dark:bg-gray-800/50 px-2 py-1 rounded-md border border-gray-100 dark:border-gray-700">
+                  {doctor.doctorId || 'DOCTOR PROFILE'}
+                </span>
+                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border shadow-xs ${doctor.status === 'inactive'
+                  ? 'bg-red-50 text-red-600 border-red-100 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800'
+                  : 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800'
+                  }`}>
+                  {doctor.status === 'inactive' ? 'Inactive' : 'Active'}
+                </span>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
+
+        {/* Action Controls */}
+        <div className="flex items-center gap-3 shrink-0">
+          {doctor.status !== 'inactive' ? (
+            <>
+              <Button
+                onClick={() => router.push(`/hospital-admin/doctors/edit/${id}`)}
+                icon={<Edit size={16} />}
+                variant="secondary"
+                className="!text-xs !py-2.5 !px-5 !rounded-xl border-gray-200 transition-all hover:border-blue-300 hover:bg-blue-50/50"
+              >
+                Edit Profile
+              </Button>
+              <Button
+                onClick={handleDelete}
+                loading={deleteLoading}
+                icon={<Trash2 size={16} />}
+                className="bg-red-600 hover:bg-red-700 text-white !text-xs !py-2.5 !px-5 !rounded-xl border-none shadow-lg shadow-red-200/50 dark:shadow-none transition-all active:scale-95"
+              >
+                Deactivate
+              </Button>
+            </>
+          ) : (
+            <div className="px-4 py-2 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-100 dark:border-gray-700">
+              <p className="text-gray-400 text-[11px] font-medium italic">Profile Deactivated</p>
+            </div>
+          )}
+        </div>
       </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Profile Overview */}
         <div className="lg:col-span-1 space-y-6">
           {/* Profile Card */}
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm text-center">
+          <div className="bg-white dark:bg-gray-800 p-2 md:p-4 md:p-8 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm text-center">
             {doctor.profilePic ? (
               <img
                 src={doctor.profilePic}
@@ -206,7 +216,7 @@ function DoctorDetailPage() {
           </div>
 
           {/* Contact Information */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Mail size={16} className="text-green-500" /> Contact Information
             </h3>
@@ -284,7 +294,7 @@ function DoctorDetailPage() {
           </div>
 
           {/* Quick Stats */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Briefcase size={16} className="text-blue-500" /> Quick Stats
             </h3>
@@ -317,7 +327,7 @@ function DoctorDetailPage() {
         {/* Right Column - Detailed Information */}
         <div className="lg:col-span-2 space-y-6">
           {/* Professional Details */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <Award size={16} className="text-purple-500" /> Professional Details
             </h3>
@@ -414,7 +424,7 @@ function DoctorDetailPage() {
           </div>
 
           {/* Medical Registration */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden">
             {/* Decorative background element */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-50 dark:bg-yellow-900/10 rounded-bl-[100px] pointer-events-none -mr-16 -mt-16"></div>
 
@@ -464,7 +474,7 @@ function DoctorDetailPage() {
           </div>
 
           {/* Department & Scheduling */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <Building size={16} className="text-indigo-500" /> Department & Scheduling
             </h3>
@@ -489,47 +499,63 @@ function DoctorDetailPage() {
             </div>
 
             {doctor.availability && doctor.availability.length > 0 && (
-              <div className="bg-gray-50 dark:bg-gray-700/20 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+              <div className="bg-gray-50 dark:bg-gray-700/20 p-2 md:p-4 rounded-xl border border-gray-100 dark:border-gray-700">
                 <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
                   <Clock size={14} /> Weekly Schedule
                 </h4>
                 <div className="space-y-3">
-                  {doctor.availability.map((slot: any, idx: number) => (
-                    <div
-                      key={idx}
-                      className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm"
-                    >
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {slot.days?.map((day: string) => (
-                          <span
-                            key={day}
-                            className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 rounded text-[10px] font-bold uppercase"
-                          >
-                            {day}
-                          </span>
-                        ))}
+                  {doctor.availability.map((slot: any, idx: number) => {
+                    const formatAMPM = (time: string) => {
+                      if (!time) return "N/A";
+                      // If it already has AM/PM, return it
+                      if (time.toLowerCase().includes('am') || time.toLowerCase().includes('pm')) return time;
+                      
+                      const [hours, minutes] = time.split(':');
+                      let h = parseInt(hours);
+                      const m = minutes || "00";
+                      const ampm = h >= 12 ? 'PM' : 'AM';
+                      h = h % 12;
+                      h = h ? h : 12;
+                      return `${h}:${m} ${ampm}`;
+                    };
+
+                    return (
+                      <div
+                        key={idx}
+                        className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm"
+                      >
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {slot.days?.map((day: string) => (
+                            <span
+                              key={day}
+                              className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 rounded text-[10px] font-bold uppercase"
+                            >
+                              {day}
+                            </span>
+                          ))}
+                        </div>
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                          {formatAMPM(slot.startTime)} - {formatAMPM(slot.endTime)}
+                          {slot.breakStart && slot.breakEnd && (
+                            <span className="text-gray-400 ml-2 text-xs">
+                              (Break: {formatAMPM(slot.breakStart)} - {formatAMPM(slot.breakEnd)})
+                            </span>
+                          )}
+                        </p>
                       </div>
-                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                        {slot.startTime} - {slot.endTime}
-                        {slot.breakStart && slot.breakEnd && (
-                          <span className="text-gray-400 ml-2 text-xs">
-                            (Break: {slot.breakStart} - {slot.breakEnd})
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
           </div>
 
           {/* System Permissions */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Shield size={16} className="text-red-500" /> System Permissions
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-3 gap-3">
               {Object.entries(doctor.permissions || {
                 canAccessEMR: true,
                 canAccessBilling: false,
@@ -557,7 +583,7 @@ function DoctorDetailPage() {
           </div>
 
           {/* Bio */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <FileText size={16} className="text-blue-500" /> About
             </h3>
@@ -569,7 +595,7 @@ function DoctorDetailPage() {
           {/* Languages & Awards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {doctor.languages && doctor.languages.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+              <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                   <Globe size={16} className="text-blue-500" /> Languages
                 </h3>
@@ -587,7 +613,7 @@ function DoctorDetailPage() {
             )}
 
             {doctor.awards && doctor.awards.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+              <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                   <Award size={16} className="text-amber-500" /> Awards
                 </h3>
@@ -608,14 +634,14 @@ function DoctorDetailPage() {
 
           {/* Signature */}
           {doctor.signature && (
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
               <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <FileText size={16} className="text-purple-500" /> Digital Signature
               </h3>
               <img
                 src={doctor.signature}
                 alt="Doctor's Signature"
-                className="max-w-xs h-auto border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-white"
+                className="max-w-xs h-auto border border-gray-200 dark:border-gray-600 rounded-lg p-2 md:p-4 bg-white"
               />
             </div>
           )}

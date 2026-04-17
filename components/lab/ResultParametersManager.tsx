@@ -190,7 +190,7 @@ export default function ResultParametersManager({ parameters, onChange }: Result
                         {/* Form Header */}
                         <div className="flex items-center justify-between px-5 py-4 bg-slate-50 dark:bg-gray-900/50 border-b border-slate-200/60 dark:border-gray-700/50">
                             <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
-                                {editingIndex !== null ? '✏️ Edit Field' : '➕ Add New Field'}
+                                {editingIndex !== null ? '✍️ Edit Field' : '➕ Add New Field'}
                             </h3>
                             <button
                                 type="button"

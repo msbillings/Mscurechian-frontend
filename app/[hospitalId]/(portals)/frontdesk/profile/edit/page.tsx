@@ -424,7 +424,7 @@ export default function EditFrontdeskProfilePage() {
                         <ArrowLeft size={20} className="sm:size-6" />
                     </button>
                     <div>
-                        <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter">Frontdesk Profile</h1>
+                        <h1 className="md:text-xl text-xm font-black text-gray-900 dark:text-white tracking-tighter">Frontdesk Profile</h1>
                         <p className="text-[10px] sm:text-xs text-gray-500 font-bold uppercase tracking-widest mt-0.5 sm:mt-1">Healthcare Administration Registry</p>
                     </div>
                 </div>
@@ -433,26 +433,48 @@ export default function EditFrontdeskProfilePage() {
                     disabled={isSaving}
                     className="flex items-center gap-2 px-4 sm:px-8 py-2.5 sm:py-3 bg-teal-600 hover:bg-teal-700 text-white text-[10px] sm:text-sm font-black uppercase tracking-widest rounded-xl sm:rounded-2xl shadow-xl shadow-teal-500/20 active:scale-95 transition-all disabled:opacity-50"
                 >
-                    {isSaving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Save size={16} className="sm:size-5" />}
+                    {isSaving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Save size={16} className="sm:size-4" />}
                     Save Changes
                 </button>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-8">
-                <div className="lg:w-64 flex flex-row lg:flex-col gap-1.5 sm:gap-2 overflow-x-auto pb-2 lg:pb-0 px-1 sm:px-0 no-scrollbar">
-                    {tabs.map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`whitespace-nowrap flex items-center gap-2.5 sm:gap-3 px-4 sm:px-5 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab.id
-                                ? 'bg-teal-600 text-white shadow-lg shadow-teal-500/20'
-                                : 'bg-white dark:bg-[#111] text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900 border border-gray-100 dark:border-gray-800 lg:border-none'
-                                }`}
-                        >
-                            <span className="shrink-0">{tab.icon}</span>
-                            {tab.label}
-                        </button>
-                    ))}
+                <div className="lg:w-64 shrink-0">
+                    {/* Mobile Tab Selector */}
+                    <div className="lg:hidden mb-6">
+                        <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] mb-3 block px-1">Navigation Registry</label>
+                        <div className="relative">
+                            <select 
+                                value={activeTab}
+                                onChange={(e) => setActiveTab(e.target.value)}
+                                className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-5 py-4 text-xs font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-teal-500 shadow-sm appearance-none"
+                            >
+                                {tabs.map(tab => (
+                                    <option key={tab.id} value={tab.id}>{tab.label}</option>
+                                ))}
+                            </select>
+                            <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                <Plus size={16} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Desktop Sidebar Navigation */}
+                    <div className="hidden lg:flex lg:flex-col gap-2">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab.id
+                                    ? 'bg-teal-600 text-white shadow-lg shadow-teal-500/20 translate-x-1'
+                                    : 'bg-white dark:bg-[#111] text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900 border border-gray-100 dark:border-gray-800'
+                                    }`}
+                            >
+                                <span className={`shrink-0 ${activeTab === tab.id ? 'text-white' : 'text-teal-600'}`}>{tab.icon}</span>
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="flex-1 bg-white dark:bg-[#111] rounded-3xl border border-gray-100 dark:border-gray-800 p-3 sm:p-8 shadow-sm">

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import MainHeader from '../printers/MainHeader';
 import MainFooter from '../printers/MainFooter';
 

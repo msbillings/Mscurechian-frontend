@@ -470,7 +470,7 @@ export default function NurseHourlyRecordClient() {
                         >
                             <div className="flex items-center gap-3">
                                 <Search size={16} className="text-slate-400" />
-                                <span className="truncate">
+                                <span className="">
                                     {selectedAdmissionId ?
                                         admissions?.find((a: any) => a.admissionId === selectedAdmissionId)?.patient?.name || 'Selected'
                                         : 'Search & Choose Patient...'}
@@ -604,7 +604,7 @@ export default function NurseHourlyRecordClient() {
                                                 <Stethoscope size={8} className="text-blue-500 sm:w-[10px] sm:h-[10px]" />
                                                 Primary Doctor
                                             </p>
-                                            <p className="text-[10px] sm:text-sm font-black text-slate-700 truncate">
+                                            <p className="text-[10px] sm:text-sm font-black text-slate-700">
                                                 {hourlyData.data.admission.doctorName?.startsWith('Dr.') ? hourlyData.data.admission.doctorName : `Dr. ${hourlyData.data.admission.doctorName}`}
                                             </p>
                                         </div>
@@ -613,7 +613,7 @@ export default function NurseHourlyRecordClient() {
                                                 <ClipboardList size={8} className="text-indigo-500 sm:w-[10px] sm:h-[10px]" />
                                                 Ward Details
                                             </p>
-                                            <p className="text-[10px] sm:text-sm font-black text-slate-700 truncate">
+                                            <p className="text-[10px] sm:text-sm font-black text-slate-700">
                                                 {hourlyData.data.admission.wardName ? (
                                                     <span>
                                                         {hourlyData.data.admission.wardName}
@@ -672,6 +672,75 @@ export default function NurseHourlyRecordClient() {
                             </Card>
                         </div>
                     </div>
+                    
+                    {/* Bed Transfer History */}
+                    {hourlyData.data.admission.bedHistory && hourlyData.data.admission.bedHistory.length > 1 && (
+                        <div className="bg-white rounded-2xl sm:rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm">
+                            <div className="p-2 sm:p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                <div className="flex items-center gap-2 sm:gap-3">
+                                    <div className="p-1 sm:p-1.5 bg-indigo-50 text-indigo-600 rounded-lg sm:rounded-xl">
+                                        <ClipboardList size={14} className="sm:w-[18px] sm:h-[18px]" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <h3 className="text-[10px] sm:text-sm font-black text-slate-900 uppercase tracking-tight">Bed Transfer History</h3>
+                                        <p className="text-[7px] sm:text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Room & Bed Movements</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase">
+                                    Total Changes: <span className="text-indigo-600 font-black">{hourlyData.data.admission.bedHistory.length - 1}</span>
+                                </div>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="bg-slate-50 border-b border-slate-100">
+                                        <tr>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Ward/Type</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Room</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Bed ID</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Start Date</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">End Date</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Daily Rate</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {hourlyData.data.admission.bedHistory.map((bh: any, idx: number) => (
+                                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                                                <td className="px-6 py-4">
+                                                    <span className="text-xs font-black text-slate-700 uppercase">{bh.ward}</span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className="text-xs font-bold text-slate-700">{bh.room}</span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 uppercase">{bh.bed}</span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[10px] font-black text-slate-700">{format(new Date(bh.startDate), 'dd MMM yyyy')}</span>
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase">{format(new Date(bh.startDate), 'HH:mm')}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {bh.endDate === 'Current' ? (
+                                                        <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 uppercase tracking-widest">Active Now</span>
+                                                    ) : (
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[10px] font-black text-slate-700">{format(new Date(bh.endDate), 'dd MMM yyyy')}</span>
+                                                            <span className="text-[9px] font-bold text-slate-400 uppercase">{format(new Date(bh.endDate), 'HH:mm')}</span>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <span className="text-xs font-black text-slate-700">₹{bh.rate}</span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
 
                     {/* Vitals Log */}
                     <div className="bg-white rounded-2xl sm:rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm">
@@ -735,7 +804,7 @@ export default function NurseHourlyRecordClient() {
                                         [...hourlyData.data.vitals].reverse().map((v: any, idx: number) => {
                                             const isPageRecord = idx >= (currentPage - 1) * itemsPerPage && idx < currentPage * itemsPerPage;
                                             return (
-                                                <tr key={idx} className={`hover:bg-slate-50/50 transition-colors group ${!isPageRecord ? 'hidden-on-ui' : ''}`}>
+                                                <tr key={`${v._id || v.timestamp || idx}`} className={`hover:bg-slate-50/50 transition-colors group ${!isPageRecord ? 'hidden-on-ui' : ''}`}>
                                                     <td className="px-2 sm:px-6 py-2 sm:py-4">
                                                         <div className="flex items-center gap-1 sm:gap-2">
                                                             <span className="text-[10px] sm:text-xs font-black text-slate-700">{format(new Date(v.timestamp), 'HH:mm')}</span>
@@ -778,7 +847,7 @@ export default function NurseHourlyRecordClient() {
                                                             <div className="w-5 h-5 sm:w-7 sm:h-7 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center text-[7px] sm:text-[10px] font-black uppercase border border-indigo-100">
                                                                 {v.recordedBy?.name?.charAt(0)}
                                                             </div>
-                                                            <span className="text-[9px] sm:text-xs font-bold text-slate-600 truncate max-w-[100px] sm:max-w-none">{v.recordedBy?.name}</span>
+                                                            <span className="text-[9px] sm:text-xs font-bold text-slate-600 sm:max-w-none">{v.recordedBy?.name}</span>
                                                         </div>
                                                     </td>
                                                     <td className="px-2 sm:px-6 py-2 sm:py-4">
@@ -833,10 +902,10 @@ export default function NurseHourlyRecordClient() {
                                             [...hourlyData.data.meds].map((m: any, idx: number) => {
                                                 const rawDrugName = m.drugName || '';
                                                 return (
-                                                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                                    <tr key={`${m._id || m.timestamp || idx}`} className="hover:bg-slate-50/50 transition-colors">
                                                         <td className="px-2 sm:px-6 py-2 sm:py-4">
                                                             <div className="flex flex-col">
-                                                                <span className="text-[10px] sm:text-xs font-black text-slate-800 line-clamp-1">{rawDrugName}</span>
+                                                                <span className="text-[10px] sm:text-xs font-black text-slate-800">{rawDrugName}</span>
                                                                 <span className="text-[8px] sm:text-[10px] font-bold text-slate-500">{m.route || '-'}</span>
                                                             </div>
                                                         </td>
@@ -849,7 +918,7 @@ export default function NurseHourlyRecordClient() {
                                                             </div>
                                                         </td>
                                                         <td className="px-2 sm:px-6 py-2 sm:py-4">
-                                                            <span className="text-[9px] sm:text-xs font-bold text-slate-600 max-w-[100px] truncate block">{m.administeredBy?.name}</span>
+                                                            <span className="text-[9px] sm:text-xs font-bold text-slate-600 block">{m.administeredBy?.name}</span>
                                                         </td>
                                                     </tr>
                                                 );
@@ -887,10 +956,10 @@ export default function NurseHourlyRecordClient() {
                                     <tbody className="divide-y divide-slate-50">
                                         {hourlyData.data.diet?.length > 0 ? (
                                             [...hourlyData.data.diet].map((d: any, idx: number) => (
-                                                <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                                <tr key={`${d._id || idx}`} className="hover:bg-slate-50/50 transition-colors">
                                                     <td className="px-2 sm:px-6 py-2 sm:py-4">
                                                         <div className="flex flex-col">
-                                                            <span className="text-[10px] sm:text-xs font-black text-slate-800 line-clamp-1">
+                                                            <span className="text-[10px] sm:text-xs font-black text-slate-800">
                                                                 {d.items?.map((item: any) => `${item.name || item}`).join(', ')}
                                                             </span>
                                                             {d.items?.some((item: any) => item.calories) && (
@@ -939,7 +1008,7 @@ export default function NurseHourlyRecordClient() {
                                     {hourlyData.data.labOrders.length > 0 ? (
                                         <div className="space-y-2 sm:space-y-4 w-full">
                                             {hourlyData.data.labOrders.map((order: any, idx: number) => (
-                                                <div key={idx} className="p-2 sm:p-5 rounded-2xl sm:rounded-3xl bg-slate-50 border border-slate-100 group hover:border-indigo-200 transition-all shadow-sm">
+                                                <div key={order._id || idx} className="p-2 sm:p-5 rounded-2xl sm:rounded-3xl bg-slate-50 border border-slate-100 group hover:border-indigo-200 transition-all shadow-sm">
                                                     <div className="flex justify-between items-start mb-2 sm:mb-4">
                                                         <div className="flex gap-2 sm:gap-3">
                                                             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-lg sm:rounded-xl shadow-sm flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform flex-shrink-0">
@@ -948,12 +1017,12 @@ export default function NurseHourlyRecordClient() {
                                                             <div>
                                                                 <div className="flex flex-wrap gap-1 sm:gap-2 mb-0.5 sm:mb-1">
                                                                     {order.tests?.map((t: any, tidx: number) => (
-                                                                        <span key={tidx} className="text-[9px] sm:text-xs font-black text-slate-800 bg-white px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-lg border border-slate-200 shadow-sm line-clamp-1">
+                                                                        <span key={`${t.testId || tidx}`} className="text-[9px] sm:text-xs font-black text-slate-800 bg-white px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-lg border border-slate-200 shadow-sm">
                                                                             {t.testName || t.test?.testName || 'Lab investigation'}
                                                                         </span>
                                                                     ))}
                                                                 </div>
-                                                                <p className="text-[7px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest truncate max-w-[150px]">
+                                                                <p className="text-[7px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                                                     By {hourlyData.data.admission.doctorName}
                                                                 </p>
                                                             </div>
@@ -970,13 +1039,13 @@ export default function NurseHourlyRecordClient() {
                                                     {/* Lab Results Detail Display */}
                                                     <div className="mt-2 sm:mt-4 pt-2 sm:pt-4 border-t border-slate-200/50 space-y-1 sm:space-y-3">
                                                         {order.tests?.map((test: any, testIdx: number) => (
-                                                            <div key={testIdx} className="space-y-1 sm:space-y-2">
+                                                            <div key={`${testIdx}-${test.testName}`} className="space-y-1 sm:space-y-2">
                                                                 {(test.subTests && test.subTests.length > 0) ? (
                                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
                                                                         {test.subTests.map((st: any, stIdx: number) => (
                                                                             st.result !== undefined && st.result !== null && st.result !== '' ? (
-                                                                                <div key={stIdx} className="flex justify-between items-center bg-white/50 p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl border border-slate-100 transition-colors hover:bg-white">
-                                                                                    <span className="text-[8px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-tight truncate max-w-[80px] sm:max-w-none">{st.name}</span>
+                                                                                <div key={`${st.name}-${stIdx}`} className="flex justify-between items-center bg-white/50 p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl border border-slate-100 transition-colors hover:bg-white">
+                                                                                    <span className="text-[8px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-tight sm:max-w-none">{st.name}</span>
                                                                                     <div className="flex items-center gap-1 sm:gap-1.5">
                                                                                         <span className="text-[10px] sm:text-xs font-black text-slate-900">{st.result}</span>
                                                                                         <span className="text-[7px] sm:text-[9px] font-bold text-slate-400 uppercase">{st.unit || '-'}</span>

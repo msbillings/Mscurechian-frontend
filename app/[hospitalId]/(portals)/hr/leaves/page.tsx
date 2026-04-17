@@ -76,21 +76,21 @@ const LeaveRow = React.memo(({
       <tr className="hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-50 dark:border-gray-800 last:border-0 group">
          <td className="py-5 px-6">
             <div className="flex items-center gap-4">
-               <div className="w-10 h-10 rounded-xl bg-linear-to-br from-indigo-500/10 to-blue-600/10 flex items-center justify-center text-blue-600 font-black text-sm">
+               <div className="w-10 h-10 rounded-xl bg-linear-to-br from-indigo-500/10 to-blue-600/10 flex items-center justify-center text-blue-600 font-black text-[10px] md:text-sm">
                   {(leave.requester?.name || "A")?.charAt(0).toUpperCase()}
                </div>
                <div>
-                  <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                  <h3 className="text-[10px] md:text-sm font-bold text-gray-900 dark:text-white uppercase tracking-tight">
                      {leave.requester?.name || "Anonymous User"} {isOwnLeave && <span className="ml-2 text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full">YOU</span>}
                   </h3>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                     {leave.requester?.role?.replace('-', ' ') || 'Staff Member'}
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                     {leave.requester?.role?.replace('-',   ' ') || 'Staff Member'}
                   </p>
                </div>
             </div>
          </td>
          <td className="py-5 px-6">
-            <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase">
+            <p className="text-[10px] font-bold text-gray-900 dark:text-white uppercase">
                {LEAVE_TYPE_LABELS[leave.leaveType] || leave.leaveType}
             </p>
          </td>
@@ -110,7 +110,7 @@ const LeaveRow = React.memo(({
             </p>
          </td>
          <td className="py-5 px-6">
-            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase border ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}>
+            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase border ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}>
                <StatusIcon size={12} />
                {statusConfig.label}
             </div>
@@ -141,7 +141,7 @@ const LeaveRow = React.memo(({
                   Awaiting Admin Approval
                </span>
             ) : (
-               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+               <span className="text-[10px] md:text-sm font-black text-gray-400 uppercase tracking-widest">
                   Logged: {new Date(leave.createdAt).toLocaleDateString()}
                </span>
             )}
@@ -293,49 +293,49 @@ export default function HRLeaveManagement() {
       };
    }, [leaves]);
 
-   return (
-      <div className="space-y-8 pb-12 p-8 bg-gray-50 min-h-screen">
-         {/* Header */}
-         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div>
-               <h1 className="text-2xl font-bold text-gray-900 dark:text-white uppercase leading-none">HR Leave Intelligence</h1>
-               <p className="text-gray-500 font-bold mt-2 uppercase tracking-[0.2em] text-[10px] flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse" />
-                  Governance Panel: {leaves.length} Total Records
-               </p>
+    return (
+        <div className="space-y-6 pb-12 bg-gray-50 min-h-screen">
+            {/* Header */}
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 sm:gap-6">
+                <div className="w-full xl:w-auto">
+                    <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white uppercase leading-none">HR Leave Intelligence</h1>
+                    <p className="text-gray-500 font-bold mt-2 uppercase tracking-[0.2em] text-[8px] sm:text-[10px] flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse" />
+                        Governance Panel: {leaves.length} Total Records
+                    </p>
+                </div>
+                <div className="flex flex-row items-center gap-3 sm:gap-4 w-full xl:w-auto">
+                    <button
+                        onClick={() => setShowRequestModal(true)}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-4 sm:py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+                    >
+                        <Plus size={16} /> <span className="hidden xs:inline">Apply for My Leave</span><span className="xs:hidden">Apply</span>
+                    </button>
+                    <button
+                        onClick={() => queryClient.invalidateQueries({ queryKey: ['hr', 'leaves'] })}
+                        className="p-4 sm:p-3 bg-white text-gray-400 rounded-xl border border-gray-100 hover:text-indigo-600 shadow-sm transition-all"
+                    >
+                        <Clock className="w-5 h-5" />
+                    </button>
+                </div>
             </div>
-            <div className="flex items-center gap-4">
-               <button 
-                  onClick={() => setShowRequestModal(true)}
-                  className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
-               >
-                  <Plus size={16} /> Apply for My Leave
-               </button>
-               <button 
-                  onClick={() => queryClient.invalidateQueries({ queryKey: ['hr', 'leaves'] })} 
-                  className="p-3.5 bg-white text-gray-400 rounded-xl border border-gray-100 hover:text-indigo-600 shadow-sm transition-all"
-               >
-                  <Clock className="w-5 h-5" />
-               </button>
-            </div>
-         </div>
 
          {/* Stats Summary */}
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {[
                { label: 'Total Requests', value: stats.total, icon: ClipboardList, color: 'text-indigo-600', bg: 'bg-indigo-50' },
                { label: 'Pending Review', value: stats.pending, icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50' },
                { label: 'Approved Logs', value: stats.approved, icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' },
                { label: 'Denied Actions', value: stats.rejected, icon: XCircle, color: 'text-rose-600', bg: 'bg-rose-50' }
             ].map((stat, i) => (
-               <div key={i} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 group hover:border-indigo-200 transition-colors">
-                  <div className="flex items-center gap-4">
-                     <div className={`w-12 h-12 ${stat.bg} rounded-xl flex items-center justify-center ${stat.color} group-hover:scale-110 transition-transform`}>
-                        <stat.icon className="w-6 h-6" />
+               <div key={i} className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 group hover:border-indigo-200 transition-colors">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-center gap-3 sm:gap-4 text-center sm:text-left">
+                     <div className={`w-10 h-10 sm:w-12 sm:h-12 ${stat.bg} rounded-xl flex items-center justify-center ${stat.color} group-hover:scale-110 transition-transform shrink-0`}>
+                        <stat.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                      </div>
                      <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{stat.label}</p>
-                        <h3 className="text-2xl font-black text-gray-900 tracking-tighter">{stat.value}</h3>
+                        <p className="text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">{stat.label}</p>
+                        <h3 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tighter">{stat.value}</h3>
                      </div>
                   </div>
                </div>
@@ -343,27 +343,27 @@ export default function HRLeaveManagement() {
          </div>
 
          {/* Navigation Tabs */}
-         <div className="flex items-center gap-2 p-1 bg-white rounded-xl border border-gray-100 w-fit">
+         <div className="flex items-center gap-2 p-1 bg-white rounded-xl border border-gray-100 w-full sm:w-fit overflow-x-auto no-scrollbar">
             <button
                onClick={() => setActiveTab('active')}
-               className={`flex items-center gap-2 px-8 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'active'
+               className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-8 py-2.5 sm:py-3 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'active'
                   ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100'
                   : 'text-gray-400 hover:text-gray-600'}`}
             >
-               <AlertCircle size={14} /> Active Requests ({stats.pending})
+               <AlertCircle size={14} /> Active <span className="hidden xs:inline">Requests</span> ({stats.pending})
             </button>
             <button
                onClick={() => setActiveTab('history')}
-               className={`flex items-center gap-2 px-8 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'history'
+               className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-8 py-2.5 sm:py-3 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'history'
                   ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100'
                   : 'text-gray-400 hover:text-gray-600'}`}
             >
-               <History size={14} /> Application History ({stats.total - stats.pending})
+               <History size={14} /> History ({stats.total - stats.pending})
             </button>
          </div>
 
          {/* Filter Bar */}
-         <div className="bg-white p-5 rounded-2xl border border-gray-100 flex flex-col md:flex-row items-center gap-4">
+         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 flex flex-col md:flex-row items-center gap-4">
             <div className="relative flex-1 w-full lg:w-auto">
                <Search className="w-4 h-4 text-gray-400 absolute left-5 top-1/2 -translate-y-1/2" />
                <input
@@ -397,12 +397,12 @@ export default function HRLeaveManagement() {
                <table className="w-full text-left border-collapse">
                   <thead>
                      <tr className="bg-gray-50 border-b border-gray-100">
-                        <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Applicant Identity</th>
-                        <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Category</th>
-                        <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Temporal Range</th>
-                        <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Justification</th>
-                        <th className="py-4 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Matrix Status</th>
-                        <th className="py-4 px-6 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Governance</th>
+                        <th className="py-4 px-6 text-[7px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">Applicant Identity</th>
+                        <th className="py-4 px-6 text-[7px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">Category</th>
+                        <th className="py-4 px-6 text-[7px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">Temporal Range</th>
+                        <th className="py-4 px-6 text-[7px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">Justification</th>
+                        <th className="py-4 px-6 text-[7px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">Matrix Status</th>
+                        <th className="py-4 px-6 text-right text-[7px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">Governance</th>
                      </tr>
                   </thead>
                   <tbody>
@@ -466,7 +466,7 @@ export default function HRLeaveManagement() {
                <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                   <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-indigo-50/30">
                      <div>
-                        <h2 className="text-xl font-extrabold text-gray-900 uppercase">Personal Leave Request</h2>
+                        <h2 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 uppercase">Personal Leave Request</h2>
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">HR Secondary Protocol Initiation</p>
                      </div>
                      <button onClick={() => setShowRequestModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400">

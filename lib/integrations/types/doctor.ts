@@ -1,4 +1,4 @@
-export interface DoctorStats {
+﻿export interface DoctorStats {
   totalPatients: number;
   appointmentsToday: number;
   pendingReports: number;

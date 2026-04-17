@@ -379,103 +379,103 @@ function AnalyticsPage() {
    }
 
    return (
-      <div className="max-w-7xl mx-auto space-y-10 pb-24 pt-10 px-4 xl:px-0">
+      <div className="max-w-7xl mx-auto space-y-4 lg:space-y-6 pb-16 pt-3 lg:pt-6">
 
          {/* Clinical Header */}
-         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 border-b border-border-theme pb-10">
-            <div className="space-y-2">
-               <div className="flex items-center gap-3">
-                  <div className="p-2 bg-emerald-500/10 rounded-xl">
-                     <Activity className="text-emerald-500" size={24} />
+         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border-theme pb-4 sm:pb-6 lg:pb-6">
+            <div className="space-y-1">
+               <div className="flex items-center gap-2">
+                  <div className="p-1.5 sm:p-2 bg-emerald-500/10 rounded-xl">
+                     <Activity className="text-emerald-500 sm:w-5 sm:h-5" size={18} />
                   </div>
-                  <h1 className="text-2xl font-bold text-foreground">Clinical Analytics</h1>
+                  <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground transition-all">Clinical Analytics</h1>
                </div>
-               <p className="text-muted font-bold uppercase tracking-[0.3em] text-[10px] pl-1">Professional Practice Insight & Patient Flux</p>
+               <p className="text-muted font-bold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[8px] sm:text-[9px] pl-1">Professional Practice Insight & Patient Flux</p>
             </div>
 
             <button
                onClick={loadData}
-               className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary-theme text-white text-[11px] font-bold uppercase tracking-widest rounded-xl hover:opacity-95 transition-all shadow-sm"
+               className="inline-flex items-center gap-2 px-4 py-3 sm:px-6 sm:py-2.5 bg-primary-theme text-white text-[10px] sm:text-[11px] font-black uppercase tracking-widest rounded-xl hover:opacity-95 transition-all shadow-lg shadow-primary-theme/20 w-full sm:w-auto justify-center active:scale-95"
             >
-               <Activity size={14} /> Refresh Clinical Data
+               <Activity size={13} /> Refresh Intelligence
             </button>
          </div>
 
          {/* Accuracy-Focus Metrics */}
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {[
-               { label: "Total Prescriptions", value: stats.prescriptions, icon: FileText, color: "emerald", sub: "Clinical Output" },
+               { label: "Prescriptions", value: stats.prescriptions, icon: FileText, color: "emerald", sub: "Clinical Output" },
                { label: "Lab Recommendations", value: stats.labTokens, icon: Activity, color: "blue", sub: "Diagnostic Load" },
-               { label: "Patient Satisfaction", value: `${stats.satisfaction}/5.0`, icon: Target, color: "rose", sub: "Patient Feedback" },
-               { label: "Avg. Consult Time", value: stats.avgWaitTime, icon: Clock, color: "indigo", sub: "Time Efficiency" }
+               { label: "Satisfaction", value: `${stats.satisfaction}/5.0`, icon: Target, color: "rose", sub: "Patient Feedback" },
+               { label: "Consult Time", value: stats.avgWaitTime, icon: Clock, color: "indigo", sub: "Efficiency" }
             ].map((stat, i) => (
-               <div key={i} className="relative group overflow-hidden bg-white dark:bg-card p-8 rounded-lg border border-border-theme hover:border-primary-theme transition-all duration-500 shadow-sm">
+               <div key={i} className="relative group overflow-hidden bg-white dark:bg-card p-3 sm:p-6 rounded-xl sm:rounded-2xl border border-border-theme hover:border-primary-theme transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-primary-theme/5">
                   <div className="relative z-10">
-                     <div className="flex items-center justify-between mb-6">
-                        <div className={`p-3 rounded-2xl bg-${stat.color}-500/10 text-${stat.color}-500`}>
-                           <stat.icon size={22} />
+                     <div className="flex items-center justify-between mb-2 sm:mb-4">
+                        <div className={`p-1.5 sm:p-2.5 rounded-xl bg-${stat.color}-500/10 text-${stat.color}-500`}>
+                           <stat.icon size={16} className="sm:w-5 sm:h-5" />
                         </div>
-                        <span className="text-[9px] font-black text-muted uppercase tracking-widest bg-secondary-theme px-3 py-1 rounded-full">{stat.sub}</span>
+                        <span className="hidden sm:block text-[8px] font-black text-muted uppercase tracking-widest bg-secondary-theme px-2 py-1 rounded-full">{stat.sub}</span>
                      </div>
-                     <p className="text-[11px] font-bold text-muted uppercase tracking-widest mb-1">{stat.label}</p>
-                     <h3 className="text-2xl font-black text-foreground">{stat.value}</h3>
+                     <p className="text-[8px] sm:text-[10px] font-black text-muted uppercase tracking-widest mb-1">{stat.label}</p>
+                     <h3 className="text-base sm:text-2xl font-black text-foreground tracking-tighter">{stat.value}</h3>
                   </div>
                </div>
             ))}
          </div>
 
-         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {/* Flux Tracking - Area Chart */}
-            <div className="lg:col-span-2 bg-card rounded-2xl border border-border-theme p-8 shadow-sm">
-               <div className="flex items-center justify-between mb-8 border-b border-border-theme pb-6">
+            <div className="lg:col-span-2 bg-card rounded-2xl sm:rounded-3xl border border-border-theme p-3 sm:p-6 shadow-sm">
+               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 border-b border-border-theme pb-4 gap-3">
                   <div>
-                     <h3 className="text-2xl font-bold text-foreground">Patient Flux Analysis</h3>
-                     <p className="text-[10px] font-black text-muted uppercase tracking-widest mt-1">Daily clinical volume distribution (Last 30 Days)</p>
+                     <h3 className="text-base sm:text-xl font-black text-foreground uppercase tracking-tight">Patient Flux Analysis</h3>
+                     <p className="text-[8px] sm:text-[9px] font-black text-muted uppercase tracking-widest mt-1">Daily clinical volume (Last 30 Days)</p>
                   </div>
-                  <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-4 bg-secondary-theme/50 p-2 rounded-xl border border-border-theme/50">
                      <div className="text-right">
-                        <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Outpatient</p>
-                        <p className="text-lg font-bold text-blue-500">{distribution.opd}</p>
+                        <p className="text-[8px] font-black text-muted uppercase tracking-tight">Outpatient</p>
+                        <p className="text-sm sm:text-base font-black text-blue-500">{distribution.opd}</p>
                      </div>
-                     <div className="w-px h-8 bg-border-theme opacity-50" />
+                     <div className="w-px h-6 bg-border-theme opacity-50" />
                      <div className="text-right">
-                        <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Inpatient</p>
-                        <p className="text-lg font-bold text-emerald-500">{distribution.ipd}</p>
+                        <p className="text-[8px] font-black text-muted uppercase tracking-tight">Inpatient</p>
+                        <p className="text-sm sm:text-base font-black text-emerald-500">{distribution.ipd}</p>
                      </div>
                   </div>
                </div>
-               <div className="h-[350px] -ml-4">
+               <div className="h-[200px] sm:h-[280px] lg:h-[350px] -ml-4">
                   <DashboardCharts type="area" data={chartData} colors={['#3b82f6']} />
                </div>
             </div>
 
             {/* Demographic Index */}
-            <div className="bg-white dark:bg-card p-10 rounded-5xl border border-border-theme shadow-sm flex flex-col justify-between">
+            <div className="bg-white dark:bg-card p-4 sm:p-8 lg:p-10 rounded-2xl sm:rounded-[2.5rem] border border-border-theme shadow-sm flex flex-col justify-between overflow-hidden">
                <div>
-                  <h3 className="text-xl font-bold text-foreground mb-6">Demographic Index</h3>
-                  <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-10">Strategic Age & Practice Profiling</p>
+                  <h3 className="text-lg sm:text-xl font-black text-foreground uppercase tracking-tight mb-2 sm:mb-4 italic">Demographic Index</h3>
+                  <p className="text-[8px] sm:text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-6 sm:mb-10">Strategic Age & Practice Profiling</p>
 
-                  <div className="space-y-10">
+                  <div className="space-y-6 sm:space-y-10">
                      <div className="flex flex-col items-center">
-                        <div className="flex p-1 bg-secondary-theme rounded-2xl mb-8 w-full max-w-[240px]">
-                           <button onClick={() => setFluxType('OPD')} className={`flex-1 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${fluxType === 'OPD' ? 'bg-white shadow-md text-primary-theme' : 'text-muted'}`}>Outpatient</button>
-                           <button onClick={() => setFluxType('IPD')} className={`flex-1 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${fluxType === 'IPD' ? 'bg-white shadow-md text-rose-500' : 'text-muted'}`}>Inpatient</button>
+                        <div className="flex p-1 bg-secondary-theme rounded-2xl mb-6 sm:mb-8 w-full max-w-[240px]">
+                           <button onClick={() => setFluxType('OPD')} className={`flex-1 py-1.5 text-[8px] sm:text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${fluxType === 'OPD' ? 'bg-white shadow-md text-primary-theme' : 'text-muted'}`}>Outpatient</button>
+                           <button onClick={() => setFluxType('IPD')} className={`flex-1 py-1.5 text-[8px] sm:text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${fluxType === 'IPD' ? 'bg-white shadow-md text-rose-500' : 'text-muted'}`}>Inpatient</button>
                         </div>
 
-                        <div className="relative group cursor-pointer" onClick={() => setFluxType(fluxType === 'OPD' ? 'IPD' : 'OPD')}>
-                           <div className={`w-36 h-36 rounded-full border-12 border-primary-theme/10 flex items-center justify-center relative shadow-inner transition-all duration-700 ${fluxType === 'IPD' ? 'border-rose-500/10' : ''}`}>
+                        <div className="relative group cursor-pointer active:scale-95 transition-transform" onClick={() => setFluxType(fluxType === 'OPD' ? 'IPD' : 'OPD')}>
+                           <div className={`w-28 h-28 sm:w-36 sm:h-36 rounded-full border-[8px] sm:border-[12px] border-primary-theme/10 flex items-center justify-center relative shadow-inner transition-all duration-700 ${fluxType === 'IPD' ? 'border-rose-500/10' : ''}`}>
                               <div className="text-center transition-all duration-500">
-                                 <p className={`text-4xl font-black tracking-tighter ${fluxType === 'IPD' ? 'text-rose-500' : 'text-foreground'}`}>{displayPercentage || 0}%</p>
-                                 <p className="text-[9px] font-black text-muted uppercase">{fluxType} CAP</p>
+                                 <p className={`text-2xl sm:text-4xl font-black tracking-tighter ${fluxType === 'IPD' ? 'text-rose-500' : 'text-foreground'}`}>{displayPercentage || 0}%</p>
+                                 <p className="text-[8px] sm:text-[9px] font-black text-muted uppercase">{fluxType} CAP</p>
                               </div>
                               <svg className="absolute inset-0 w-full h-full -rotate-90">
-                                 <circle cx="72" cy="72" r="66" fill="none" stroke="currentColor" strokeWidth="12" className={`transition-all duration-1000 ${fluxType === 'IPD' ? 'text-rose-500' : 'text-primary-theme'}`} strokeDasharray={415} strokeDashoffset={415 * (1 - (displayPercentage || 0) / 100)} strokeLinecap="round" />
+                                 <circle cx={typeof window !== 'undefined' && window.innerWidth < 640 ? "56" : "72"} cy={typeof window !== 'undefined' && window.innerWidth < 640 ? "56" : "72"} r={typeof window !== 'undefined' && window.innerWidth < 640 ? "48" : "66"} fill="none" stroke="currentColor" strokeWidth={typeof window !== 'undefined' && window.innerWidth < 640 ? "8" : "12"} className={`transition-all duration-1000 ${fluxType === 'IPD' ? 'text-rose-500' : 'text-primary-theme'}`} strokeDasharray={typeof window !== 'undefined' && window.innerWidth < 640 ? 301.5 : 415} strokeDashoffset={(typeof window !== 'undefined' && window.innerWidth < 640 ? 301.5 : 415) * (1 - (displayPercentage || 0) / 100)} strokeLinecap="round" />
                               </svg>
                            </div>
                         </div>
                      </div>
 
-                     <div className="space-y-6">
+                     <div className="space-y-4 sm:space-y-6">
                         <DemographicBar label="Adult (18-45)" value={Math.round((distribution.adult / totalDemographics) * 100)} color="bg-primary-theme" />
                         <DemographicBar label="Senior (45+)" value={Math.round((distribution.senior / totalDemographics) * 100)} color="bg-rose-500" />
                         <DemographicBar label="Junior (0-17)" value={Math.round((distribution.junior / totalDemographics) * 100)} color="bg-emerald-500" />
@@ -486,98 +486,98 @@ function AnalyticsPage() {
          </div>
 
          {/* Distribution Models */}
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             <CardModel title="Retention Profile" sub="New vs Returning patients" icon={<Users size={16} />} color="blue">
-               <div className="h-[220px]">
+               <div className="h-[180px] sm:h-[220px]">
                   <DashboardCharts type="pie" data={registrationData} colors={['#3b82f6', '#10b981']} />
                </div>
             </CardModel>
 
             <CardModel title="Age Segments" sub="Distribution by age category" icon={<BarChart size={16} />} color="emerald">
-               <div className="h-[220px]">
+               <div className="h-[180px] sm:h-[220px]">
                   <DashboardCharts type="bar" data={ageData} colors={['#10b981']} />
                </div>
             </CardModel>
 
             <CardModel title="Clinical Incidence" sub="Top recurring diagnoses" icon={<Layers size={16} />} color="blue">
-               <div className="h-[220px]">
+               <div className="h-[180px] sm:h-[220px]">
                   <DashboardCharts type="line" data={diagnosisChartData} colors={['#3b82f6']} />
                </div>
             </CardModel>
          </div>
 
          {/* Detailed Clinical Distribution */}
-         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
             {/* Top Diagnoses */}
-            <div className="bg-white dark:bg-card p-10 rounded-5xl border border-border-theme shadow-sm">
-               <div className="flex items-center justify-between mb-8 pb-4 border-b border-border-theme">
+            <div className="bg-white dark:bg-card p-4 sm:p-8 lg:p-10 rounded-2xl sm:rounded-[2.5rem] border border-border-theme shadow-sm">
+               <div className="flex items-center justify-between mb-6 sm:mb-8 pb-4 border-b border-border-theme">
                   <div>
-                     <h3 className="text-xl font-bold text-foreground">Disease Profile</h3>
-                     <p className="text-[10px] font-black text-muted uppercase tracking-widest mt-1">Top Recurring Clinical Conditions</p>
+                     <h3 className="text-base sm:text-xl font-black text-foreground uppercase tracking-tight italic">Disease Profile</h3>
+                     <p className="text-[8px] sm:text-[10px] font-black text-muted uppercase tracking-widest mt-1">Top Recurring Clinical Conditions</p>
                   </div>
-                  <BarChart className="text-muted" size={20} />
+                  <BarChart className="text-muted" size={18} />
                </div>
 
-               <div className="space-y-8">
+               <div className="space-y-4 sm:space-y-8">
                   {diagnosisStats.length > 0 ? diagnosisStats.map((item, i) => (
-                     <div key={i} className="flex items-center gap-6">
-                        <div className="w-12 h-12 rounded-2xl bg-secondary-theme flex items-center justify-center text-[11px] font-black text-foreground shrink-0 border border-border-theme">
+                     <div key={i} className="flex items-center gap-3 sm:gap-6">
+                        <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-2xl bg-secondary-theme flex items-center justify-center text-[9px] sm:text-[11px] font-black text-foreground shrink-0 border border-border-theme">
                            {i + 1}
                         </div>
-                        <div className="flex-1">
-                           <div className="flex justify-between items-center mb-2">
-                              <span className="text-sm font-thin text-foreground uppercase">{item.name}</span>
-                              <span className="text-[10px] font-bold text-muted uppercase ">{item.count} Cases</span>
+                        <div className="flex-1 min-w-0">
+                           <div className="flex justify-between items-center mb-1 sm:mb-2">
+                              <span className="text-[10px] sm:text-sm font-black text-foreground uppercase tracking-tight truncate">{item.name}</span>
+                              <span className="text-[8px] sm:text-[10px] font-black text-muted uppercase shrink-0">{item.count} Cases</span>
                            </div>
-                           <div className="h-2 bg-secondary-theme rounded-full overflow-hidden">
-                              <div className="h-full bg-rose-500" style={{ width: `${(item.count / (diagnosisStats[0]?.count || 1)) * 100}%` }}></div>
+                           <div className="h-1.5 sm:h-2 bg-secondary-theme rounded-full overflow-hidden shadow-inner">
+                              <div className="h-full bg-rose-500 transition-all duration-1000" style={{ width: `${(item.count / (diagnosisStats[0]?.count || 1)) * 100}%` }}></div>
                            </div>
                         </div>
                      </div>
                   )) : (
-                     <div className="py-20 text-center flex flex-col items-center gap-4">
-                        <div className="w-16 h-16 bg-secondary-theme rounded-full flex items-center justify-center text-muted">
-                           <TrendingUp size={32} />
+                     <div className="py-12 sm:py-20 text-center flex flex-col items-center gap-4">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-secondary-theme rounded-full flex items-center justify-center text-muted">
+                           <TrendingUp size={24} className="sm:w-8 sm:h-8" />
                         </div>
-                        <p className="text-[10px] font-bold text-muted uppercase tracking-[0.3em]">Insufficient Diagnosis Data</p>
+                        <p className="text-[8px] sm:text-[10px] font-bold text-muted uppercase tracking-[0.2em]">Insufficient Diagnosis Data</p>
                      </div>
                   )}
                </div>
             </div>
 
             {/* Pharmaco-Dynamics */}
-            <div className="bg-white dark:bg-card p-10 rounded-5xl border border-border-theme shadow-sm">
-               <div className="flex items-center justify-between mb-8 pb-4 border-b border-border-theme">
+            <div className="bg-white dark:bg-card p-4 sm:p-8 lg:p-10 rounded-2xl sm:rounded-[2.5rem] border border-border-theme shadow-sm">
+               <div className="flex items-center justify-between mb-6 sm:mb-8 pb-4 border-b border-border-theme">
                   <div>
-                     <h3 className="text-xl font-bold text-foreground">Pharmacology Insight</h3>
-                     <p className="text-[10px] font-black text-muted uppercase tracking-widest mt-1">Primary Medication Utilization</p>
+                     <h3 className="text-base sm:text-xl font-black text-foreground uppercase tracking-tight italic">Pharmacology Insight</h3>
+                     <p className="text-[8px] sm:text-[10px] font-black text-muted uppercase tracking-widest mt-1">Primary Medication Utilization</p>
                   </div>
-                  <PieIcon className="text-muted" size={20} />
+                  <PieIcon className="text-muted" size={18} />
                </div>
 
-               <div className="grid grid-cols-1 gap-4">
+               <div className="grid grid-cols-1 gap-3 sm:gap-4">
                   {topMedicines.length > 0 ? topMedicines.map((item, i) => (
-                     <div key={i} className="flex items-center justify-between p-6 bg-secondary-theme/20 rounded-3xl border border-transparent hover:border-primary-theme transition-all group">
-                        <div className="flex items-center gap-4">
-                           <div className="w-12 h-12 rounded-2xl bg-white dark:bg-card flex items-center justify-center text-primary-theme shadow-sm group-hover:bg-primary-theme group-hover:text-white transition-all">
-                              <Activity size={20} />
+                     <div key={i} className="flex items-center justify-between p-3 sm:p-6 bg-secondary-theme/20 rounded-xl sm:rounded-3xl border border-transparent hover:border-primary-theme transition-all group overflow-hidden">
+                        <div className="flex items-center gap-3 sm:gap-4 truncate">
+                           <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-2xl bg-white dark:bg-card flex items-center justify-center text-primary-theme shadow-sm group-hover:bg-primary-theme group-hover:text-white transition-all shrink-0">
+                              <Activity size={16} className="sm:w-5 sm:h-5" />
                            </div>
-                           <div>
-                              <p className="text-sm font-thin text-foreground uppercase">{item.name}</p>
-                              <p className="text-[9px] font-black text-muted uppercase tracking-tighter">Clinical Standardized Units</p>
+                           <div className="truncate">
+                              <p className="text-[10px] sm:text-sm font-black text-foreground uppercase tracking-tight truncate">{item.name}</p>
+                              <p className="text-[8px] font-black text-muted uppercase tracking-tighter opacity-60">Clinical Standard Units</p>
                            </div>
                         </div>
-                        <div className="text-right">
-                           <p className="text-lg font-black text-foreground">{item.count}</p>
-                           <p className="text-[9px] font-black text-muted uppercase tracking-widest">Units Issued</p>
+                        <div className="text-right shrink-0">
+                           <p className="text-sm sm:text-lg font-black text-foreground leading-none">{item.count}</p>
+                           <p className="text-[7px] sm:text-[9px] font-black text-muted uppercase tracking-widest mt-1">Units Issued</p>
                         </div>
                      </div>
                   )) : (
-                     <div className="py-20 text-center flex flex-col items-center gap-4">
-                        <div className="w-16 h-16 bg-secondary-theme rounded-full flex items-center justify-center text-muted">
-                           <Sparkles size={32} />
+                     <div className="py-12 sm:py-20 text-center flex flex-col items-center gap-4">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-secondary-theme rounded-full flex items-center justify-center text-muted">
+                           <Sparkles size={24} className="sm:w-8 sm:h-8" />
                         </div>
-                        <p className="text-[10px] font-bold text-muted uppercase tracking-[0.3em]">No Medication Data Found</p>
+                        <p className="text-[8px] sm:text-[10px] font-bold text-muted uppercase tracking-[0.2em]">No Medication Data Found</p>
                      </div>
                   )}
                </div>
@@ -589,14 +589,14 @@ function AnalyticsPage() {
 
 function CardModel({ title, sub, icon, color, children }: any) {
    return (
-      <div className="bg-card rounded-2xl border border-border-theme p-8 shadow-sm">
-         <div className="flex items-center gap-3 mb-8">
-            <div className={`p-2 rounded-lg bg-secondary-theme text-foreground`}>
-               {icon}
+      <div className="bg-card rounded-2xl sm:rounded-3xl border border-border-theme p-4 sm:p-8 shadow-sm">
+         <div className="flex items-center gap-3 mb-6 sm:mb-8">
+            <div className={`p-1.5 sm:p-2 rounded-lg bg-secondary-theme text-foreground`}>
+               {React.cloneElement(icon as React.ReactElement<any>, { size: 18, className: 'sm:w-6 sm:h-6' })}
             </div>
             <div>
-               <h4 className="text-sm font-bold text-foreground leading-none">{title}</h4>
-               <p className="text-[10px] font-medium text-muted mt-1 uppercase tracking-tight">{sub}</p>
+               <h4 className="text-xs sm:text-sm font-black text-foreground leading-none uppercase tracking-tight">{title}</h4>
+               <p className="text-[8px] sm:text-[10px] font-black text-muted mt-1 uppercase tracking-widest opacity-60">{sub}</p>
             </div>
          </div>
          {children}
@@ -606,13 +606,13 @@ function CardModel({ title, sub, icon, color, children }: any) {
 
 function DemographicBar({ label, value, color }: any) {
    return (
-      <div className="space-y-2">
-         <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
-            <span className="text-muted">{label}</span>
+      <div className="space-y-1.5 sm:space-y-2">
+         <div className="flex justify-between items-center text-[8px] sm:text-[10px] font-black uppercase tracking-widest">
+            <span className="text-muted italic">{label}</span>
             <span className="text-foreground">{value || 0}%</span>
          </div>
-         <div className="h-1.5 bg-secondary-theme rounded-full overflow-hidden">
-            <div className={`h-full ${color} transition-all duration-1000`} style={{ width: `${value || 0}%` }}></div>
+         <div className="h-1 sm:h-1.5 bg-secondary-theme rounded-full overflow-hidden shadow-inner">
+            <div className={`h-full ${color} transition-all duration-1000 shadow-[0_0_10px_rgba(0,0,0,0.1)]`} style={{ width: `${value || 0}%` }}></div>
          </div>
       </div>
    );

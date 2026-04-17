@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Activity, Heart, Thermometer, Wind, Droplets, CheckCircle2, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ipdService } from '@/lib/integrations';
@@ -22,6 +22,7 @@ export default function VitalsEntryModal({ isOpen, onClose, admissionId, patient
     const [thresholds, setThresholds] = useState<any>(null);
     const [wardType, setWardType] = useState<string>('');
     const [fetchingThresholds, setFetchingThresholds] = useState(false);
+    const autoConditionRef = useRef('Stable');
 
     const [formData, setFormData] = useState({
         heartRate: '',
@@ -109,6 +110,15 @@ export default function VitalsEntryModal({ isOpen, onClose, admissionId, patient
 
         setSeverities(newSeverities);
         setErrors(newErrors);
+
+        // Auto-toggle condition suggestion
+        if (!readOnly) {
+            const suggested = updateConditionSuggestion(newSeverities);
+            if (suggested !== autoConditionRef.current) {
+                autoConditionRef.current = suggested;
+                setFormData(prev => ({ ...prev, condition: suggested }));
+            }
+        }
     }, [thresholds, formData.heartRate, formData.spO2, formData.systolicBP, formData.diastolicBP, formData.temperature, formData.respiratoryRate, formData.glucose, formData.glucoseType]);
 
     const getFieldSeverity = (name: string, value: string, currentData: any): { severity: 'normal' | 'warning' | 'critical' | 'impossible', message: string } => {
@@ -175,14 +185,29 @@ export default function VitalsEntryModal({ isOpen, onClose, admissionId, patient
         return { severity, message };
     };
 
-    const updateConditionSuggestion = (newSeverities: Record<string, string>, currentCondition: string) => {
+    const updateConditionSuggestion = (newSeverities: Record<string, string>) => {
         const severityValues = Object.values(newSeverities);
+        
+        // Priority 1: Any critical value
         if (severityValues.includes('critical')) {
             return 'Critical';
-        } else if (severityValues.includes('warning')) {
-            if (currentCondition === 'Stable') return 'Serious';
         }
-        return currentCondition;
+
+        // Count abnormal (warning) values
+        const warningCount = severityValues.filter(s => s === 'warning').length;
+
+        // Priority 2: More than one abnormal value
+        if (warningCount > 1) {
+            return 'Serious';
+        }
+        
+        // Priority 3: Exactly one abnormal value
+        if (warningCount === 1) {
+            return 'Fair';
+        }
+
+        // Default: Stable
+        return 'Stable';
     };
 
     const getMissingFields = () => {
@@ -217,14 +242,7 @@ export default function VitalsEntryModal({ isOpen, onClose, admissionId, patient
             // Real-time clinical validation
             const { severity, message } = getFieldSeverity(name, value, next);
 
-            setSeverities(sPrev => {
-                const updated = { ...sPrev, [name]: severity };
-                const suggested = updateConditionSuggestion(updated, next.condition);
-                if (suggested !== next.condition) {
-                    setTimeout(() => setFormData(f => ({ ...f, condition: suggested })), 0);
-                }
-                return updated;
-            });
+            setSeverities(sPrev => ({ ...sPrev, [name]: severity }));
 
             setErrors(ePrev => ({ ...ePrev, [name]: severity === 'impossible' ? message : '' }));
 
@@ -595,9 +613,8 @@ export default function VitalsEntryModal({ isOpen, onClose, admissionId, patient
                                             const next = { ...prev, glucoseType: type };
                                             // Re-validate glucose when type changes
                                             if (next.glucose) {
-                                                const { severity, message } = getFieldSeverity('glucose', next.glucose, next);
+                                                const { severity } = getFieldSeverity('glucose', next.glucose, next);
                                                 setSeverities(sPrev => ({ ...sPrev, glucose: severity }));
-                                                setErrors(ePrev => ({ ...ePrev, glucose: severity === 'impossible' ? message : '' }));
                                             }
                                             return next;
                                         });

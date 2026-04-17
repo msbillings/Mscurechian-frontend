@@ -1,4 +1,4 @@
-import { HR_ENDPOINTS, STAFF_ENDPOINTS } from "../config";
+import { HR_ENDPOINTS, STAFF_ENDPOINTS, HOSPITAL_ADMIN_ENDPOINTS } from "../config";
 import { apiClient } from "../api";
 
 export interface HRStats {
@@ -117,6 +117,7 @@ export const hrService = {
 
   getAttendance: (params?: {
     date?: string;
+    month?: string;
     startDate?: string;
     endDate?: string;
     role?: string;
@@ -127,14 +128,27 @@ export const hrService = {
   }) => {
     const url = new URL(HR_ENDPOINTS.ATTENDANCE, window.location.origin);
     if (params?.date) url.searchParams.set("date", params.date);
-    if (params?.startDate) url.searchParams.set("startDate", params.startDate);
-    if (params?.endDate) url.searchParams.set("endDate", params.endDate);
+    if (params?.month) url.searchParams.set("month", params.month);
+    
+    // Pass ranges using multiple common naming conventions to ensure backend compatibility
+    if (params?.startDate) {
+      url.searchParams.set("startDate", params.startDate);
+      url.searchParams.set("fromDate", params.startDate);
+      url.searchParams.set("from", params.startDate);
+    }
+    if (params?.endDate) {
+      url.searchParams.set("endDate", params.endDate);
+      url.searchParams.set("toDate", params.endDate);
+      url.searchParams.set("to", params.endDate);
+    }
+    
     if (params?.role) url.searchParams.set("role", params.role);
     if (params?.status) url.searchParams.set("status", params.status);
     if (params?.search) url.searchParams.set("search", params.search);
     if (params?.page) url.searchParams.set("page", params.page.toString());
     if (params?.limit) url.searchParams.set("limit", params.limit.toString());
-    return apiClient<{ data: any[]; stats: any; pagination: any }>(
+    
+    return apiClient<{ attendance: any[]; data: any[]; stats: any; pagination: any }>(
       url.pathname + url.search,
     );
   },
@@ -454,3 +468,4 @@ export const hrService = {
     };
   },
 };
+

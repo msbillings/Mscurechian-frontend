@@ -1,4 +1,4 @@
-import { apiClient } from "../api";
+﻿import { apiClient } from "../api";
 
 export const analyticsService = {
   getQualityIndicators: async (params?: { month?: number; year?: number }) => {

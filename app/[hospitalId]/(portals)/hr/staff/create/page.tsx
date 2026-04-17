@@ -14,6 +14,7 @@ import toast from "react-hot-toast";
 interface BankDetails { accountName: string; accountNumber: string; bankName: string; ifscCode: string; }
 
 interface FormData {
+  honorific: string;
   name: string; email: string; mobile: string; password: string; gender: string; dateOfBirth: string;
   street: string; city: string; state: string; pincode: string;
   department: string; designation: string; employeeId: string; employmentType: string;
@@ -74,6 +75,7 @@ const VALIDATORS: Record<string, (v: string) => string | undefined> = {
   uanNumber: v => v && !/^\d{0,12}$/.test(v) ? "Only digits allowed" : undefined,
   pfNumber: v => v && v.length > 22 ? "Max 22 characters" : undefined,
   fatherName: v => v && v.length > 60 ? "Max 60 characters" : undefined,
+  employeeId: v => !v.trim() ? "Employee ID is required" : undefined,
 };
 
 export default function HRCreateStaff() {
@@ -88,6 +90,7 @@ export default function HRCreateStaff() {
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState<FormData>({
+    honorific: "Mr",
     name: "", email: "", mobile: "", password: "", gender: "", dateOfBirth: "",
     street: "", city: "", state: "", pincode: "",
     department: "", designation: "Nurse", employeeId: "", employmentType: "full-time",
@@ -139,6 +142,15 @@ export default function HRCreateStaff() {
     if (name === "ifscCode" && value.length > 11) return;
     if (["sickLeaveQuota", "emergencyLeaveQuota", "baseSalary", "experienceYears"].includes(name) && !/^\d*$/.test(value)) return;
 
+    if (name === "honorific") {
+      let gender = formData.gender;
+      if (value === "Mr") gender = "male";
+      else if (value === "Mrs" || value === "Ms") gender = "female";
+      setFormData(prev => ({ ...prev, [name]: value, gender }));
+      if (touched[name]) validateField(name, value);
+      return;
+    }
+
     const finalValue = name === "panNumber" ? value.toUpperCase() : value;
 
     if (name === "shift") {
@@ -181,7 +193,7 @@ export default function HRCreateStaff() {
     setFormData(p => ({ ...p, [arr]: p[arr].filter(i => i !== item) }));
 
   const validateAll = (): boolean => {
-    const fields = ['name', 'email', 'mobile', 'password', 'panNumber', 'aadharNumber', 'emergencyContactMobile', 'pincode', 'accountNumber', 'ifscCode', 'accountName', 'bankName'];
+    const fields = ['name', 'email', 'mobile', 'password', 'employeeId', 'panNumber', 'aadharNumber', 'emergencyContactMobile', 'pincode', 'accountNumber', 'ifscCode', 'accountName', 'bankName'];
     const newErrors: FieldErrors = {};
     let ok = true;
     fields.forEach(f => {
@@ -205,6 +217,7 @@ export default function HRCreateStaff() {
     setLoading(true);
     try {
       await hospitalAdminService.createStaff({
+        honorific: formData.honorific,
         name: formData.name.trim(), email: formData.email.trim(), mobile: formData.mobile,
         password: formData.password, gender: formData.gender || undefined,
         dateOfBirth: formData.dateOfBirth || undefined,
@@ -236,7 +249,7 @@ export default function HRCreateStaff() {
 
   /* ───────── RENDER ───────── */
   return (
-    <div className="max-w-7xl mx-auto pb-12 space-y-5 pt-6 px-4 md:px-6">
+    <div className="max-w-7xl mx-auto pb-12 space-y-5 pt-1">
       {/* Page Header */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-4">
         <button onClick={() => router.push(`/${hospitalId}/hr/staff`)}
@@ -244,7 +257,7 @@ export default function HRCreateStaff() {
           <ArrowLeft size={16} />
         </button>
         <div>
-          <h1 className="text-lg font-black text-gray-900 tracking-tight">Add New Staff Member</h1>
+          <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 tracking-tight uppercase">Add New Staff Member</h1>
           <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Personnel Registration · HR Portal</p>
         </div>
       </div>
@@ -256,7 +269,12 @@ export default function HRCreateStaff() {
           {/* Personal Information */}
           <SectionCard title="Personal Information" icon={<User size={14} className="text-blue-500" />}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Honorific <span className="text-red-400">*</span></label>
+                <select name="honorific" value={formData.honorific} onChange={handleChange} className={inputOk}>
+                  <option value="Mr">Mr</option><option value="Mrs">Mrs</option><option value="Ms">Ms</option><option value="Dr">Dr</option>
+                </select>
+              </div>
               {/* Name */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Full Name <span className="text-red-400">*</span></label>
@@ -315,14 +333,6 @@ export default function HRCreateStaff() {
                   onChange={handleChange} className={inputOk} />
               </div>
 
-              {/* Work Location */}
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Work Location</label>
-                <input name="workLocation" value={formData.workLocation} maxLength={80}
-                  onChange={handleChange} placeholder="e.g. Main Campus, Block B"
-                  className={inputOk} />
-              </div>
-
               {/* Password */}
               <div className="space-y-1 md:col-span-2">
                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Password <span className="text-red-400">*</span></label>
@@ -357,9 +367,12 @@ export default function HRCreateStaff() {
                   onChange={handleChange} className={inputOk} placeholder="e.g. Nurse, Doctor" />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Employee ID</label>
+                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Employee ID <span className="text-red-400">*</span></label>
                 <input name="employeeId" value={formData.employeeId} maxLength={20}
-                  onChange={handleChange} className={inputOk} placeholder="Optional" />
+                  onChange={handleChange} onBlur={handleBlur}
+                  placeholder="e.g. EMP-001"
+                  className={getInputClass("employeeId", formData.employeeId)} />
+                <FieldStatus error={errors.employeeId} value={touched.employeeId ? formData.employeeId : ""} />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Contract Type</label>

@@ -419,33 +419,32 @@ export default function SOPManagementPage() {
     };
 
     return (
-        <div className="p-8 space-y-10 max-w-7xl mx-auto min-h-screen">
+        <div className="space-y-10 max-w-7xl mx-auto min-h-screen">
             {/* Header Tier */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div className="space-y-4">
 
                     <div>
-                        <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">SOP & Policy Governance</h1>
+                        <h1 className="text-lg font-bold text-gray-900 dark:text-white uppercase tracking-tight">SOP & Policies</h1>
                         <p className="text-gray-500 dark:text-gray-400 font-bold mt-2 uppercase tracking-[0.2em] text-[10px] ml-1 flex items-center gap-2">
                             <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                            Institutional Compliance & NABH Audit Matrix
+                            Manage hospital policies and procedures
                         </p>
                     </div>
                 </div>
 
-                <div className="flex gap-3">
-                    <div className="relative">
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    <div className="relative w-full sm:w-auto">
                         <button
                             onClick={() => setShowFilters(!showFilters)}
-                            className={`flex items-center gap-3 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all active:scale-95 ${showFilters
+                            className={`flex items-center justify-center gap-3 w-full sm:px-6 py-3.5 md:py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all active:scale-95 ${showFilters
                                 ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white'
                                 : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-500 hover:border-emerald-500/50 hover:text-emerald-600'
                                 }`}
                         >
-                            <Search size={16} />
                             {activeCategory === 'all' ? 'Filters' : activeCategory}
                         </button>
-
+                        
                         <AnimatePresence>
                             {showFilters && (
                                 <motion.div
@@ -489,32 +488,32 @@ export default function SOPManagementPage() {
 
                     <button
                         onClick={() => setIsUploadModalOpen(true)}
-                        className="flex items-center gap-3 px-8 py-4 bg-primary-theme text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all active:scale-95"
+                        className="flex items-center justify-center gap-3 w-full sm:px-8 py-3.5 md:py-4 bg-primary-theme text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all active:scale-95"
                     >
-                        <FilePlus size={18} />
-                        Upload Document
+                        <FilePlus size={16} />
+                        Upload Policy
                     </button>
                 </div>
             </div>
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Active Protocols</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Active Policies</p>
                     <div className="flex items-end justify-between">
                         <h2 className="text-3xl font-black">{sops.filter((s: SOP) => s.status === 'Active').length}</h2>
-                        <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded-lg">LIVE</span>
+                        <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded-lg">Active</span>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700">
+                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700">
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Total Versions</p>
                     <h2 className="text-3xl font-black">{sops.length}</h2>
                 </div>
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Last Audit</p>
+                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Last Updated</p>
                     <p className="text-sm font-black uppercase">{sops.length > 0 ? 'Today' : 'Pending'}</p>
                 </div>
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700">
+                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700">
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Departments</p>
                     <h2 className="text-3xl font-black">{categories.length - 1}</h2>
                 </div>
@@ -524,16 +523,16 @@ export default function SOPManagementPage() {
             {/* Main Content: Table View */}
             <div className="bg-white dark:bg-gray-800 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full">
                         <thead>
                             <tr className="bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Protocol Name</th>
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Category</th>
-                                <th className="px-6 py-5 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Ver</th>
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Updated</th>
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">By</th>
-                                <th className="px-6 py-5 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
-                                <th className="px-6 py-5 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
+                                <th className="px-2 md:px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Protocol Name</th>
+                                <th className="px-2 md:px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Category</th>
+                                <th className="px-2 md:px-6 py-5 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Ver</th>
+                                <th className="px-2 md:px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Updated</th>
+                                <th className="px-2 md:px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">By</th>
+                                <th className="px-2 md:px-6 py-5 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                                <th className="px-2 md:px-6 py-5 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -554,7 +553,7 @@ export default function SOPManagementPage() {
                             ) : (
                                 paginatedSops.map((sop: SOP) => (
                                     <tr key={sop._id} className="group border-b border-gray-100 dark:border-gray-700 transition-colors">
-                                        <td className="px-6 py-4">
+                                        <td className="px-2 md:px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-lg">
                                                     <FilePlus size={16} />
@@ -562,15 +561,15 @@ export default function SOPManagementPage() {
                                                 <span className="font-bold text-gray-900 dark:text-white text-sm">{sop.name}</span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-2 md:px-6 py-4">
                                             <span className="px-2 py-1 bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 text-[10px] font-black uppercase rounded-lg">
                                                 {sop.category}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
+                                        <td className="px-2 md:px-6 py-4 text-center">
                                             <span className="text-xs font-mono text-gray-500 dark:text-gray-400">v{sop.version}</span>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-2 md:px-6 py-4">
                                             <p className="text-xs font-bold text-gray-700 dark:text-gray-300">
                                                 {format(new Date(sop.lastUpdated), 'MMM dd, yyyy')}
                                             </p>
@@ -578,7 +577,7 @@ export default function SOPManagementPage() {
                                                 {format(new Date(sop.lastUpdated), 'HH:mm')}
                                             </p>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-2 md:px-6 py-4">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-6 h-6 rounded-full bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-[9px] font-black text-indigo-500">
                                                     {(sop.uploadedBy?.name || 'A')[0]}
@@ -588,7 +587,7 @@ export default function SOPManagementPage() {
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
+                                        <td className="px-2 md:px-6 py-4 text-center">
                                             <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase ${sop.status === 'Active'
                                                 ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600'
                                                 : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600'
@@ -596,12 +595,12 @@ export default function SOPManagementPage() {
                                                 {sop.status}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-right">
+                                        <td className="px-2 md:px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2 transition-opacity">
                                                 <button
                                                     onClick={() => handleView(sop)}
                                                     disabled={downloadingId === sop._id}
-                                                    title="View Protocol"
+                                                    title="View Policy"
                                                     className="p-2.5 rounded-xl transition-all text-gray-400 bg-gray-50 hover:text-emerald-500 hover:bg-emerald-50 dark:bg-gray-800 dark:hover:bg-emerald-500/10"
                                                 >
                                                     {downloadingId === sop._id ? <Loader2 size={16} className="animate-spin" /> : <Eye size={16} />}
@@ -610,7 +609,7 @@ export default function SOPManagementPage() {
                                                 {sop.status === 'Active' && (
                                                     <button
                                                         onClick={() => openEditModal(sop)}
-                                                        title="Edit Protocol"
+                                                        title="Edit Policy"
                                                         className="p-2.5 text-gray-400 bg-gray-50 hover:text-amber-500 hover:bg-amber-50 dark:bg-gray-800 dark:hover:bg-amber-500/10 rounded-xl transition-all"
                                                     >
                                                         <FileEdit size={16} />
@@ -647,7 +646,7 @@ export default function SOPManagementPage() {
                                                             setSopToDelete(sop);
                                                             setIsDeleteConfirmOpen(true);
                                                         }}
-                                                        title="Archive Protocol"
+                                                        title="Archive Policy"
                                                         className="p-2.5 text-gray-400 bg-gray-50 hover:text-red-500 hover:bg-red-50 dark:bg-gray-800 dark:hover:bg-red-500/10 rounded-xl transition-all"
                                                     >
                                                         <Trash2 size={16} />
@@ -659,12 +658,12 @@ export default function SOPManagementPage() {
                                 ))
                             )}
                         </tbody>
-                    </table>
+                    </table></div>
                 </div>
 
                 {/* Pagination UI */}
                 {totalPages > 1 && (
-                    <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center justify-between px-3 md:px-6 py-4 bg-gray-50/50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700">
                         <div className="text-[10px] font-black pointer-events-none text-gray-400 uppercase tracking-widest">
                             Showing Page {currentPage} of {totalPages}
                         </div>
@@ -693,7 +692,7 @@ export default function SOPManagementPage() {
             {/* Upload Modal */}
             <AnimatePresence>
                 {isUploadModalOpen && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 md:p-4">
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -705,9 +704,9 @@ export default function SOPManagementPage() {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-[0.5rem] p-6 shadow-2xl overflow-hidden"
+                            className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-[0.5rem] p-3 md:p-6 shadow-2xl overflow-hidden"
                         >
-                            <div className="absolute top-0 right-0 p-4">
+                            <div className="absolute top-0 right-0 p-2 md:p-4">
                                 <button onClick={() => setIsUploadModalOpen(false)} className="p-2 bg-gray-50 dark:bg-gray-900 rounded-xl hover:bg-black hover:text-white transition-all">
                                     <X size={18} />
                                 </button>
@@ -715,8 +714,8 @@ export default function SOPManagementPage() {
 
                             <div className="space-y-6">
                                 <div>
-                                    <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">New Protocol Entry</h3>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Document Versioning System</p>
+                                    <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">New Policy</h3>
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Upload a new policy document</p>
                                 </div>
 
                                 <form onSubmit={handleFileUpload} className="space-y-4">
@@ -727,17 +726,17 @@ export default function SOPManagementPage() {
                                             placeholder="e.g. Infection Control Protocol 2026"
                                             value={uploadData.name}
                                             onChange={(e) => setUploadData({ ...uploadData, name: e.target.value })}
-                                            className="w-full px-6 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                            className="w-full px-3 md:px-6 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Governance Category</label>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Category</label>
                                             <select
                                                 value={uploadData.category}
                                                 onChange={(e) => setUploadData({ ...uploadData, category: e.target.value })}
-                                                className="w-full px-6 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20 appearance-none"
+                                                className="w-full px-3 md:px-6 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20 appearance-none"
                                             >
                                                 {['OPD', 'IPD', 'Billing', 'Infection Control', 'Emergency', 'HR', 'Pharmacy', 'Lab', 'General'].map(c => (
                                                     <option key={c} value={c}>{c}</option>
@@ -819,7 +818,7 @@ export default function SOPManagementPage() {
             {/* Edit Modal */}
             <AnimatePresence>
                 {isEditModalOpen && selectedSOPForEdit && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 md:p-4">
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -831,9 +830,9 @@ export default function SOPManagementPage() {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-[0.5rem] p-6 shadow-2xl overflow-hidden"
+                            className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-[0.5rem] p-3 md:p-6 shadow-2xl overflow-hidden"
                         >
-                            <div className="absolute top-0 right-0 p-4">
+                            <div className="absolute top-0 right-0 p-2 md:p-4">
                                 <button onClick={() => setIsEditModalOpen(false)} className="p-2 bg-gray-50 dark:bg-gray-900 rounded-xl hover:bg-black hover:text-white transition-all">
                                     <X size={18} />
                                 </button>
@@ -841,7 +840,7 @@ export default function SOPManagementPage() {
 
                             <div className="space-y-6">
                                 <div>
-                                    <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Edit Protocol</h3>
+                                    <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Edit Policy</h3>
                                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
                                         Current Version: v{selectedSOPForEdit.version}
                                     </p>
@@ -855,17 +854,17 @@ export default function SOPManagementPage() {
                                             placeholder="e.g. Infection Control Protocol 2026"
                                             value={editData.name}
                                             onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                                            className="w-full px-6 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                            className="w-full px-3 md:px-6 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-1">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Governance Category</label>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Category</label>
                                             <select
                                                 value={editData.category}
                                                 onChange={(e) => setEditData({ ...editData, category: e.target.value })}
-                                                className="w-full px-6 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20 appearance-none"
+                                                className="w-full px-3 md:px-6 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20 appearance-none"
                                             >
                                                 {['OPD', 'IPD', 'Billing', 'Infection Control', 'Emergency', 'HR', 'Pharmacy', 'Lab', 'General'].map(c => (
                                                     <option key={c} value={c}>{c}</option>
@@ -878,7 +877,7 @@ export default function SOPManagementPage() {
                                             <select
                                                 value={editData.role}
                                                 onChange={(e) => setEditData({ ...editData, role: e.target.value })}
-                                                className="w-full px-6 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20 appearance-none"
+                                                className="w-full px-3 md:px-6 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20 appearance-none"
                                             >
                                                 {['Staff', 'Doctor', 'Nurse'].map(r => (
                                                     <option key={r} value={r}>{r}</option>
@@ -924,7 +923,7 @@ export default function SOPManagementPage() {
                                         className="w-full py-4 bg-primary-theme text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-primary-theme/80 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3"
                                     >
                                         {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <FileEdit size={16} />}
-                                        {editData.file ? 'Update & Publish New Version' : 'Update Protocol'}
+                                        {editData.file ? 'Update & Publish New Version' : 'Update Policy'}
                                     </button>
                                 </form>
                             </div>
@@ -936,7 +935,7 @@ export default function SOPManagementPage() {
             {/* History Modal */}
             <AnimatePresence>
                 {isHistoryModalOpen && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 md:p-4">
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -953,7 +952,7 @@ export default function SOPManagementPage() {
                             <div className="flex items-center justify-between mb-8">
                                 <div>
                                     <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">{selectedSOPName}</h3>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Audit Traceability Log</p>
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Version History</p>
                                 </div>
                                 <button onClick={() => setIsHistoryModalOpen(false)} className="p-3 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:bg-black hover:text-white transition-all">
                                     <X size={20} />
@@ -969,7 +968,7 @@ export default function SOPManagementPage() {
                                     <p className="text-center text-gray-400 py-10 uppercase text-[10px] font-black">No history found</p>
                                 ) : (
                                     history.map((h, idx) => (
-                                        <div key={h._id} className="relative p-6 bg-gray-50 dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 flex items-center justify-between group">
+                                        <div key={h._id} className="relative p-3 md:p-6 bg-gray-50 dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 flex items-center justify-between group">
                                             {idx !== history.length - 1 && (
                                                 <div className="absolute left-1/2 -bottom-4 w-px h-4 bg-gray-200 dark:bg-gray-700" />
                                             )}
@@ -998,7 +997,7 @@ export default function SOPManagementPage() {
             {/* Compliance Report Modal */}
             <AnimatePresence>
                 {isReportModalOpen && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 md:p-4">
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -1014,7 +1013,7 @@ export default function SOPManagementPage() {
                         >
                             <div className="flex items-center justify-between mb-8">
                                 <div>
-                                    <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Compliance Report</h3>
+                                    <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Acknowledgement Report</h3>
                                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
                                         {report?.sopName} • {report?.assignedRole} Registry
                                     </p>
@@ -1033,15 +1032,15 @@ export default function SOPManagementPage() {
                                 <>
                                     {/* Stats Grid */}
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                                        <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                        <div className="p-2 md:p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
                                             <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Assigned</p>
                                             <p className="text-2xl font-black text-gray-900 dark:text-white">{report.stats.total}</p>
                                         </div>
-                                        <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl border border-emerald-100 dark:border-emerald-500/20">
+                                        <div className="p-2 md:p-4 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl border border-emerald-100 dark:border-emerald-500/20">
                                             <p className="text-[8px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Acknowledged</p>
                                             <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400">{report.stats.acknowledged}</p>
                                         </div>
-                                        <div className="p-4 bg-amber-50 dark:bg-amber-500/10 rounded-2xl border border-amber-100 dark:border-amber-500/20">
+                                        <div className="p-2 md:p-4 bg-amber-50 dark:bg-amber-500/10 rounded-2xl border border-amber-100 dark:border-amber-500/20">
                                             <p className="text-[8px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1">Pending</p>
                                             <p className="text-2xl font-black text-amber-700 dark:text-amber-400">{report.stats.pending}</p>
                                         </div>
@@ -1050,7 +1049,7 @@ export default function SOPManagementPage() {
                                     {/* Report Table */}
                                     <div className="flex-1 overflow-hidden flex flex-col">
                                         <div className="overflow-y-auto custom-scrollbar flex-1">
-                                            <table className="w-full">
+                                            <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full">
                                                 <thead className="sticky top-0 bg-white dark:bg-gray-800 z-10">
                                                     <tr className="border-b border-gray-100 dark:border-gray-700">
                                                         <th className="py-4 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Staff Member</th>
@@ -1099,7 +1098,7 @@ export default function SOPManagementPage() {
                                                         </tr>
                                                     ))}
                                                 </tbody>
-                                            </table>
+                                            </table></div>
                                         </div>
                                     </div>
                                 </>
@@ -1127,7 +1126,7 @@ export default function SOPManagementPage() {
             {/* Delete Confirmation Modal */}
             <AnimatePresence>
                 {isDeleteConfirmOpen && sopToDelete && (
-                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-2 md:p-4">
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -1142,14 +1141,14 @@ export default function SOPManagementPage() {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="relative w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl"
+                            className="relative w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl p-2 md:p-4 md:p-8 shadow-2xl"
                         >
                             {/* Warning Icon */}
                             <div className="flex items-center justify-center w-16 h-16 bg-red-50 dark:bg-red-500/10 rounded-2xl mx-auto mb-6">
                                 <Trash2 size={32} className="text-red-500" />
                             </div>
 
-                            <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight text-center">Archive Protocol?</h3>
+                            <h3 className="text-sm md:text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight text-center">Archive Protocol?</h3>
                             <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center mt-2">
                                 This action cannot be undone
                             </p>
@@ -1164,7 +1163,7 @@ export default function SOPManagementPage() {
                             </div>
 
                             <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
-                                Archiving this protocol will make it unavailable to staff. The history will be preserved for audit purposes.
+                                Archiving this policy will make it unavailable to staff. The history will be preserved for reference.
                             </p>
 
                             <div className="flex gap-3 mt-6">

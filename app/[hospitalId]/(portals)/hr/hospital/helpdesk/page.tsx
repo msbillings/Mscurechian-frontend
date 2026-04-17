@@ -15,7 +15,7 @@ import {
 
 export default function HRHospitalHelpdesk() {
   const [search, setSearch] = useState("");
-  
+
   const { data: helpdesks = [], isLoading: isHelpdesksLoading } = useQuery({
     queryKey: ['helpdesks'],
     queryFn: async () => {
@@ -33,30 +33,30 @@ export default function HRHospitalHelpdesk() {
     toast.success("Copied to clipboard");
   };
 
-  const filtered = helpdesks.filter(h => 
+  const filtered = helpdesks.filter(h =>
     h.name?.toLowerCase().includes(search.toLowerCase()) ||
     h.loginId?.toLowerCase().includes(search.toLowerCase()) ||
     h.mobile?.includes(search)
   );
 
   return (
-    <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
+    <div className="space-y-6 bg-slate-50/50 min-h-screen">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Helpdesk Staff Directory</h1>
+          <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight">Helpdesk Staff Directory</h1>
           <p className="text-sm text-slate-500 font-medium mt-1">Personnel overview of support hub accounts (Read-Only)</p>
         </div>
         <div className="bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl flex items-center gap-2">
-            <Info className="w-4 h-4 text-amber-500" />
-            <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Governance Mode</span>
+          <Info className="w-4 h-4 text-amber-500" />
+          <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Governance Mode</span>
         </div>
       </div>
 
       {/* Search */}
       <div className="relative group">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
-        <input 
+        <input
           type="text"
           placeholder="Filter by name, ID, or mobile number..."
           value={search}

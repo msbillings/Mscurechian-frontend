@@ -1,4 +1,4 @@
-export interface PharmacyProduct {
+﻿export interface PharmacyProduct {
   _id: string;
   pharmacyId: string;
   sku: string;

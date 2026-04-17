@@ -4,33 +4,30 @@ import React, { useState, useEffect, useTransition } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import {
-    LayoutDashboard,
     User,
     Settings,
-    LogOut,
-    Activity
+    LogOut
 } from 'lucide-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LogoutModal from '@/components/auth/LogoutModal';
 import SharedNavbar from '@/components/navbar/SharedNavbar';
-import SharedSidebar from '@/components/navbar/SharedSidebar';
+import ProgressBar from '@/components/ui/ProgressBar';
 
 
 const queryClient = new QueryClient();
 
-const patientMenuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/patient/dashboard' },
-];
+
 
 function PatientPortalLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const { user, logout, isAuthenticated, checkAuth, isLoading, isInitialized } = useAuthStore();
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
+    const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
+        setIsMounted(true);
         useAuthStore.getState().initEvents();
         checkAuth();
     }, []);
@@ -63,7 +60,7 @@ function PatientPortalLayout({ children }: { children: React.ReactNode }) {
         router.push('/auth/login');
     };
 
-    if (isLoading || !isInitialized) {
+    if (!isMounted || isLoading || !isInitialized) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-background">
                 <div className="flex flex-col items-center gap-6">
@@ -82,52 +79,34 @@ function PatientPortalLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex min-h-screen bg-white">
             <LogoutModal
+                key="logout-modal"
                 isOpen={isLogoutModalOpen}
                 onClose={() => setIsLogoutModalOpen(false)}
                 onConfirm={handleConfirmLogout}
                 userName={user?.name}
             />
 
-            <SharedSidebar
-                isOpen={isSidebarOpen}
-                onClose={() => setIsSidebarOpen(false)}
-                menuItems={patientMenuItems}
-                branding={{
-                    logo: Activity,
-                    title: "CureChain",
-                    subtitle: "Patient Portal"
-                }}
-                onMenuItemClick={(path) => {
-                    setIsSidebarOpen(false);
-                    startTransition(() => {
-                        router.push(path);
-                    });
-                }}
-                currentPath={pathname}
-            />
-
-            <div className="flex-1 flex flex-col lg:ml-64 min-h-screen transition-all duration-300 w-full max-w-full">
+            <div key="main-content-wrapper" className="flex-1 flex flex-col min-h-screen min-w-0 relative">
                 <SharedNavbar
-                    onMenuClick={() => setIsSidebarOpen(true)}
+                    key="shared-navbar"
+                    hideMenuButton={true}
                     title="Patient Dashboard"
                     description="Personal Health & Medical Records"
                     profileLinks={[
                         { label: "My Profile", path: "/patient/dashboard?tab=profile", icon: User },
                     ]}
                     onLogout={() => setIsLogoutModalOpen(true)}
+                    className="sticky top-0 z-30"
                 />
 
-                <main className="p-2 sm:p-6 flex-1 bg-white relative mt-16">
-                    {isPending && (
-                        <div className="absolute inset-0 bg-white/10 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-300">
-                            <div className="flex flex-col items-center gap-4">
-                                <div className="h-10 w-10 border-4 border-slate-100 border-t-indigo-600 rounded-full animate-spin"></div>
-                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Bridging Data...</p>
-                            </div>
+                <main key="patient-layout-main" className="p-2 md:p-6 flex-1 bg-white relative mt-0 overflow-x-hidden">
+                    <ProgressBar key="patient-layout-progress" isPending={isPending} color="indigo" />
+                    <QueryClientProvider key="patient-layout-query-client" client={queryClient}>
+                        <div className="w-full">
+                            <React.Fragment key="patient-layout-children">
+                                {children}
+                            </React.Fragment>
                         </div>
-                    )}
-                    <QueryClientProvider client={queryClient}>
-                        {children}
                     </QueryClientProvider>
                 </main>
             </div>
@@ -135,4 +114,4 @@ function PatientPortalLayout({ children }: { children: React.ReactNode }) {
     );
 }
 
-export default React.memo(PatientPortalLayout);
+export default PatientPortalLayout;

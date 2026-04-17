@@ -15,16 +15,18 @@ import type { CreateHospitalRequest } from "@/lib/integrations";
 function CreateHospital() {
     const [formData, setFormData] = useState({
         name: "",
-        address: "",
+        street: "",
+        landmark: "",
+        city: "",
+        area: "",
+        state: "",
+        address: "", // Will be computed
         phone: "",
         email: "",
         pincode: "",
         establishedYear: "",
         website: "",
         operatingHours: "24/7",
-        numberOfBeds: "",
-        ICUBeds: "",
-        numberOfDoctors: "",
         ambulanceAvailability: true,
         rating: "4.5",
         location: { lat: "", lng: "" },
@@ -47,9 +49,8 @@ function CreateHospital() {
         }
 
         if (name === "name") {
-            // Assume "Hospital Name" should be characters/spaces only as requested
-            // Note: Hospital names often have numbers, but user strictly requested "characters only"
-            if (/^[a-zA-Z\s]*$/.test(value)) {
+            // "it take characters only" - let's be a bit more flexible for punctuation (dots, apostrophes) etc.
+            if (/^[a-zA-Z\s.'&-]*$/.test(value)) {
                 setFormData(prev => ({ ...prev, [name]: value }));
             }
             return;
@@ -114,19 +115,32 @@ function CreateHospital() {
         }
 
         setLoading(true);
+        const loadingToast = toast.loading("Creating hospital...");
 
         try {
-            // Prepare payload similar to old frontend - send data directly, backend handles conversion
+            // Compute full address string
+            const fullAddress = [
+                formData.street,
+                formData.landmark,
+                formData.area,
+                formData.city,
+                formData.state,
+                formData.pincode
+            ].filter(Boolean).join(", ");
+
+            // Prepare payload
             const payload: any = {
                 name: formData.name.trim(),
-                address: formData.address.trim(),
+                street: formData.street.trim(),
+                landmark: formData.landmark.trim(),
+                city: formData.city.trim(),
+                area: formData.area.trim(),
+                state: formData.state.trim(),
+                address: fullAddress.trim(),
                 phone: formData.phone.trim(),
                 email: formData.email?.trim() || "",
                 pincode: formData.pincode?.trim() || "",
                 establishedYear: formData.establishedYear || "",
-                numberOfBeds: formData.numberOfBeds || "",
-                ICUBeds: formData.ICUBeds || "",
-                numberOfDoctors: formData.numberOfDoctors || "",
                 website: formData.website?.trim() || "",
                 operatingHours: formData.operatingHours?.trim() || "24/7",
                 ambulanceAvailability: formData.ambulanceAvailability,
@@ -138,24 +152,43 @@ function CreateHospital() {
             // Add location only if both lat and lng are provided
             if (formData.location.lat && formData.location.lng) {
                 payload.location = {
-                    lat: formData.location.lat,
-                    lng: formData.location.lng
+                    lat: parseFloat(formData.location.lat.toString()) || 0,
+                    lng: parseFloat(formData.location.lng.toString()) || 0
                 };
             }
 
+            console.log("[CreateHospital] Submitting payload:", payload);
             const result = await adminService.createHospitalClient(payload);
-            const hospitalId = result?.hospitalId || "Unknown ID";
+            
+            toast.dismiss(loadingToast);
+            console.log("[CreateHospital] Success result:", result);
+
+            // Robustly extract hospitalId from multiple possible field names/formats
+            const resData = result as any;
+            const hospitalId = 
+                resData?.hospitalId || 
+                (typeof resData?._id === 'string' ? resData._id : resData?._id?.$oid) || 
+                resData?.id || 
+                "ID stored in db";
+
             toast.success(`Hospital created successfully! ID: ${hospitalId}`, { duration: 5000 });
 
             // Reset form
             setFormData({
-                name: "", address: "", phone: "", email: "", pincode: "",
+                name: "", 
+                street: "",
+                landmark: "",
+                city: "",
+                area: "",
+                state: "",
+                address: "",
+                phone: "", email: "", pincode: "",
                 establishedYear: "", website: "", operatingHours: "24/7",
-                numberOfBeds: "", ICUBeds: "", numberOfDoctors: "",
                 ambulanceAvailability: true, rating: "4.5",
                 location: { lat: "", lng: "" }, specialities: [], services: []
             });
         } catch (err: any) {
+            toast.dismiss(loadingToast);
             console.error("Create hospital error:", err);
             // Show detailed error message from backend
             const errorMessage = err.message || err.error || "Failed to create hospital";
@@ -244,16 +277,51 @@ function CreateHospital() {
                 {/* Location Info */}
                 <Card title="Location & Address" padding="p-8">
                     <div className="space-y-6">
-                        <FormInput
-                            label="Physical Street Address"
-                            name="address"
-                            required
-                            value={formData.address}
-                            onChange={handleChange}
-                            placeholder="Street, Landmark, City"
-                            icon={<MapPin size={18} className="text-gray-400" />}
-                        />
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <FormInput
+                                label="Street / Colony"
+                                name="street"
+                                required
+                                value={formData.street}
+                                onChange={handleChange}
+                                placeholder="Eg. Yellama Colony"
+                                icon={<MapPin size={18} className="text-gray-400" />}
+                            />
+                            <FormInput
+                                label="Landmark"
+                                name="landmark"
+                                value={formData.landmark}
+                                onChange={handleChange}
+                                placeholder="Eg. Apsara Theatre"
+                                icon={<MapPin size={18} className="text-gray-400" />}
+                            />
+                            <FormInput
+                                label="Area"
+                                name="area"
+                                required
+                                value={formData.area}
+                                onChange={handleChange}
+                                placeholder="Eg. NGO Colony"
+                                icon={<MapPin size={18} className="text-gray-400" />}
+                            />
+                            <FormInput
+                                label="City"
+                                name="city"
+                                required
+                                value={formData.city}
+                                onChange={handleChange}
+                                placeholder="Eg. Kadapa"
+                                icon={<MapPin size={18} className="text-gray-400" />}
+                            />
+                            <FormInput
+                                label="State"
+                                name="state"
+                                required
+                                value={formData.state}
+                                onChange={handleChange}
+                                placeholder="Eg. Andhra Pradesh"
+                                icon={<MapPin size={18} className="text-gray-400" />}
+                            />
                             <FormInput
                                 label="Pincode"
                                 name="pincode"
@@ -261,7 +329,10 @@ function CreateHospital() {
                                 value={formData.pincode}
                                 onChange={handleChange}
                                 placeholder="6-digit PIN"
+                                icon={<MapPin size={18} className="text-gray-400" />}
                             />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <FormInput
                                 label="Latitude"
                                 name="location.lat"
@@ -282,35 +353,8 @@ function CreateHospital() {
 
                 {/* Infrastructure Info */}
                 <Card title="Infrastructure & Capacity" padding="p-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <FormInput
-                            label="Total Bed Count"
-                            name="numberOfBeds"
-                            type="number"
-                            value={formData.numberOfBeds}
-                            onChange={handleChange}
-                            placeholder="Eg. 100"
-                            icon={<Bed size={18} className="text-blue-500" />}
-                        />
-                        <FormInput
-                            label="ICU Bed Count"
-                            name="ICUBeds"
-                            type="number"
-                            value={formData.ICUBeds}
-                            onChange={handleChange}
-                            placeholder="Eg. 20"
-                            icon={<Bed size={18} className="text-red-500" />}
-                        />
-                        <FormInput
-                            label="Total Doctors"
-                            name="numberOfDoctors"
-                            type="number"
-                            value={formData.numberOfDoctors}
-                            onChange={handleChange}
-                            placeholder="Eg. 15"
-                            icon={<Activity size={18} className="text-green-500" />}
-                        />
-                        <div className="flex flex-col justify-end">
+                    <div className="flex items-center gap-6">
+                        <div className="flex flex-col">
                             <label className="flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 group" style={{ borderColor: 'var(--border-color)' }}>
                                 <input
                                     type="checkbox"

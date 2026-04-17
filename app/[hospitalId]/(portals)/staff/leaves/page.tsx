@@ -126,25 +126,28 @@ function LeavesPage() {
   }
 
   return (
-    <div className="space-y-1 sm:space-y-2 max-w-7xl mx-auto">
+    <div className="space-y-3 sm:space-y-6 w-full min-w-0 max-w-full overflow-x-hidden mx-auto pb-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 sm:gap-2 px-1 sm:px-0">
-        <div>
-          <h1 className="text-sm sm:text-base font-black text-gray-900 tracking-tighter uppercase leading-none">Leave Management</h1>
-          <p className="text-gray-500 font-bold mt-0.5 uppercase tracking-widest text-[6px] sm:text-[8px] leading-none">Registry: Full Leave Lifecycle Protocol</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 px-1 sm:px-0">
+        <div className="space-y-0.5 sm:space-y-1">
+          <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 tracking-tight uppercase leading-none">Leave Management</h1>
+          <p className="text-gray-500 font-bold flex items-center gap-1.5 text-[9px] sm:text-xs uppercase tracking-widest leading-none mt-1">
+            <Clock className="w-3 h-3 text-indigo-600" />
+            Registry: Full Leave Lifecycle Protocol
+          </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={refreshData}
-            className="p-3 bg-white text-gray-400 rounded-[0.5rem] border border-gray-100 hover:text-indigo-600 shadow-sm transition-all active:scale-95"
+            className="p-2 sm:p-3 bg-white text-gray-400 rounded-lg sm:rounded-xl border border-gray-100 hover:text-indigo-600 shadow-sm transition-all active:scale-95"
           >
             <Clock className="w-4 h-4" />
           </button>
           <button
             onClick={() => setActiveTab(activeTab === 'history' ? 'request' : 'history')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg border font-black uppercase text-[9px] tracking-widest ${activeTab === 'request'
-              ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100'
-              : 'bg-white text-gray-600 border-gray-100 hover:border-gray-200 shadow-sm'
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border font-black uppercase text-[9px] sm:text-xs tracking-widest transition-all ${activeTab === 'request'
+              ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200'
+              : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-600 hover:text-indigo-600 shadow-sm'
               }`}
           >
             {activeTab === 'history' ? (
@@ -157,58 +160,58 @@ function LeavesPage() {
       </div>
 
       {/* Leave Balance Cards */}
-      <div className="flex flex-nowrap overflow-x-auto custom-scrollbar gap-1 sm:gap-2 px-1 sm:px-0 min-w-0">
-        <div className="flex-1 min-w-[30%] bg-white p-1 sm:p-2 rounded shadow-sm border border-gray-100 flex items-center justify-start gap-1 sm:gap-2 group hover:border-indigo-500 transition-all shrink-0">
-          <div className="w-5 h-5 sm:w-8 sm:h-8 bg-indigo-50 rounded flex items-center justify-center text-indigo-600 group-hover:scale-110 shrink-0">
-            <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+      <div className="flex flex-nowrap overflow-x-auto custom-scrollbar gap-2 sm:gap-4 px-1 sm:px-0 min-w-0 pb-2">
+        <div className="flex-1 min-w-[40%] sm:min-w-[30%] bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 flex items-center justify-start gap-2 sm:gap-4 group hover:border-indigo-500 transition-all shrink-0">
+          <div className="w-8 h-8 sm:w-12 sm:h-12 bg-indigo-50 rounded-lg sm:rounded-xl flex items-center justify-center text-indigo-600 group-hover:scale-110 shrink-0 transition-transform">
+            <Calendar className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
           <div className="min-w-0">
-            <p className="text-[5px] sm:text-[7px] font-black text-gray-400 uppercase truncate leading-none mb-0.5">Medical</p>
-            <h3 className="text-[10px] sm:text-xs font-black text-gray-900 truncate leading-none">
-              {balance?.sick ?? 0}<span className="text-[6px] sm:text-[8px] font-bold text-gray-300">/{balance?.totalSick ?? 0}</span>
+            <p className="text-[8px] sm:text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest truncate leading-none mb-1">Medical</p>
+            <h3 className="text-base sm:text-xl lg:text-2xl font-black text-gray-900 truncate leading-none">
+              {balance?.sick ?? 0}<span className="text-[10px] sm:text-xs md:text-sm font-bold text-gray-400 ml-1">/{balance?.totalSick ?? 0}</span>
             </h3>
           </div>
         </div>
-        <div className="flex-1 min-w-[30%] bg-white p-1 sm:p-2 rounded shadow-sm border border-gray-100 flex items-center justify-start gap-1 sm:gap-2 group hover:border-emerald-500 transition-all shrink-0">
-          <div className="w-5 h-5 sm:w-8 sm:h-8 bg-emerald-50 rounded flex items-center justify-center text-emerald-600 group-hover:scale-110 shrink-0">
-            <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+        <div className="flex-1 min-w-[40%] sm:min-w-[30%] bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 flex items-center justify-start gap-2 sm:gap-4 group hover:border-emerald-500 transition-all shrink-0">
+          <div className="w-8 h-8 sm:w-12 sm:h-12 bg-emerald-50 rounded-lg sm:rounded-xl flex items-center justify-center text-emerald-600 group-hover:scale-110 shrink-0 transition-transform">
+            <AlertCircle className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
           <div className="min-w-0">
-            <p className="text-[5px] sm:text-[7px] font-black text-gray-400 uppercase truncate leading-none mb-0.5">Urgent</p>
-            <h3 className="text-[10px] sm:text-xs font-black text-gray-900 truncate leading-none">
-              {balance?.emergency ?? 0}<span className="text-[6px] sm:text-[8px] font-bold text-gray-300">/{balance?.totalEmergency ?? 0}</span>
+            <p className="text-[8px] sm:text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest truncate leading-none mb-1">Urgent</p>
+            <h3 className="text-base sm:text-xl lg:text-2xl font-black text-gray-900 truncate leading-none">
+              {balance?.emergency ?? 0}<span className="text-[10px] sm:text-xs md:text-sm font-bold text-gray-400 ml-1">/{balance?.totalEmergency ?? 0}</span>
             </h3>
           </div>
         </div>
-        <div className="flex-1 min-w-[30%] bg-white p-1 sm:p-2 rounded shadow-sm border border-gray-100 flex items-center justify-start gap-1 sm:gap-2 group hover:border-amber-500 transition-all shrink-0">
-          <div className="w-5 h-5 sm:w-8 sm:h-8 bg-amber-50 rounded flex items-center justify-center text-amber-600 group-hover:scale-110 shrink-0">
-            <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
+        <div className="flex-1 min-w-[40%] sm:min-w-[30%] bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 flex items-center justify-start gap-2 sm:gap-4 group hover:border-amber-500 transition-all shrink-0">
+          <div className="w-8 h-8 sm:w-12 sm:h-12 bg-amber-50 rounded-lg sm:rounded-xl flex items-center justify-center text-amber-600 group-hover:scale-110 shrink-0 transition-transform">
+            <Clock className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
           <div className="min-w-0">
-            <p className="text-[5px] sm:text-[7px] font-black text-gray-400 uppercase truncate leading-none mb-0.5">Other</p>
-            <h3 className="text-[10px] sm:text-xs font-black text-gray-900 truncate leading-none">
-              {balance?.other ?? 0}<span className="text-[6px] sm:text-[8px] font-bold text-gray-300">D</span>
+            <p className="text-[8px] sm:text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest truncate leading-none mb-1">Other</p>
+            <h3 className="text-base sm:text-xl lg:text-2xl font-black text-gray-900 truncate leading-none">
+              {balance?.other ?? 0}<span className="text-[10px] sm:text-xs md:text-sm font-bold text-gray-400 ml-1">D</span>
             </h3>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-2">
+      <div className="flex flex-col lg:flex-row gap-3 sm:gap-6 mt-2 w-full min-w-0">
         {/* Left Column: Form or Stats */}
-        <div className="lg:w-1/3 w-full">
+        <div className="lg:w-1/3 w-full min-w-0">
           {activeTab === 'request' ? (
-            <div className="bg-white p-2 sm:p-4 rounded shadow-sm border border-gray-100 sticky top-20">
-              <div className="mb-2 sm:mb-4">
-                <h2 className="text-xs sm:text-sm font-bold text-gray-900 uppercase leading-none">Request Protocol</h2>
-                <p className="text-[6px] sm:text-[8px] font-black text-gray-400 uppercase tracking-widest leading-none mt-1">Initialize New Leave Application</p>
+            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-20">
+              <div className="mb-4 sm:mb-6">
+                <h2 className="text-base sm:text-lg font-black text-gray-900 uppercase leading-none tracking-tight">Request Protocol</h2>
+                <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest leading-none mt-2">Initialize New Leave Application</p>
               </div>
-              <form onSubmit={handleSubmit} className="space-y-2 sm:space-y-4">
-                <div className="space-y-1">
-                  <label className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Application Category</label>
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] sm:text-xs font-black text-gray-500 uppercase tracking-widest">Application Category</label>
                   <select
                     value={formData.leaveType}
                     onChange={(e) => setFormData({ ...formData, leaveType: e.target.value })}
-                    className="w-full bg-gray-50 border border-gray-100 rounded px-2 py-1.5 text-[10px] font-bold text-gray-900 focus:ring-1 focus:ring-indigo-500 outline-none"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs sm:text-sm font-bold text-gray-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
                   >
                     <option value="sick">Sick Leave</option>
                     <option value="casual">Casual Leave</option>
@@ -218,9 +221,9 @@ function LeavesPage() {
                   </select>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Temporal Selection</label>
-                  <div className="scale-95 origin-top-left w-[105%]">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] sm:text-xs font-black text-gray-500 uppercase tracking-widest">Temporal Selection</label>
+                  <div className="w-full">
                     <CalendarPicker
                       startDate={formData.startDate}
                       endDate={formData.endDate}
@@ -229,66 +232,69 @@ function LeavesPage() {
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Subject Justification</label>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] sm:text-xs font-black text-gray-500 uppercase tracking-widest">Subject Justification</label>
                   <textarea
-                    rows={3}
+                    rows={4}
                     value={formData.reason}
                     onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                     placeholder="Provide justification protocol for this leave..."
-                    className="w-full bg-gray-50 border border-gray-100 rounded px-2 py-1.5 text-[10px] font-bold text-gray-900 focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs sm:text-sm font-bold text-gray-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none resize-none transition-all"
                   ></textarea>
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[9px] py-1.5 rounded shadow-sm hover:shadow-indigo-200 transform active:scale-95 tracking-widest"
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-xs sm:text-sm py-3 rounded-xl shadow-md hover:shadow-indigo-500/30 transform active:scale-95 tracking-widest transition-all mt-4"
                 >
                   Authorize Leave Request
                 </button>
               </form>
             </div>
           ) : (
-            <div className="bg-white p-2 sm:p-4 rounded shadow-sm border border-gray-100 group">
-              <h2 className="text-[10px] sm:text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 leading-none">Leave Guidelines</h2>
-              <div className="space-y-2">
-                <div className="flex gap-2 group/item">
-                  <div className="h-4 w-4 rounded bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-[8px] shrink-0 group-hover/item:bg-indigo-600 group-hover/item:text-white">1</div>
-                  <p className="text-[9px] font-bold text-gray-600 group-hover/item:text-gray-900 pt-0.5 leading-tight">Apply at least 2 days in advance for casual leaves.</p>
+            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 group sticky top-20">
+              <h2 className="text-sm sm:text-base font-black text-gray-900 uppercase tracking-widest mb-4 leading-none flex items-center gap-2">
+                <FileText className="w-5 h-5 text-indigo-600" />
+                Leave Guidelines
+              </h2>
+              <div className="space-y-3 sm:space-y-4">
+                <div className="flex gap-2 sm:gap-3 group/item">
+                  <div className="h-5 w-5 sm:h-6 sm:w-6 rounded-md sm:rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-[10px] sm:text-xs shrink-0 group-hover/item:bg-indigo-600 group-hover/item:text-white transition-colors">1</div>
+                  <p className="text-[10px] sm:text-xs md:text-sm font-bold text-gray-600 group-hover/item:text-gray-900 pt-0.5 leading-tight transition-colors">Apply at least 2 days in advance for casual leaves.</p>
                 </div>
-                <div className="flex gap-2 group/item">
-                  <div className="h-4 w-4 rounded bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-[8px] shrink-0 group-hover/item:bg-indigo-600 group-hover/item:text-white">2</div>
-                  <p className="text-[9px] font-bold text-gray-600 group-hover/item:text-gray-900 pt-0.5 leading-tight">Medical certificates required for sick leaves &gt; 3 days.</p>
+                <div className="flex gap-2 sm:gap-3 group/item">
+                  <div className="h-5 w-5 sm:h-6 sm:w-6 rounded-md sm:rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-[10px] sm:text-xs shrink-0 group-hover/item:bg-indigo-600 group-hover/item:text-white transition-colors">2</div>
+                  <p className="text-[10px] sm:text-xs md:text-sm font-bold text-gray-600 group-hover/item:text-gray-900 pt-0.5 leading-tight transition-colors">Medical certificates required for sick leaves &gt; 3 days.</p>
                 </div>
-                <div className="flex gap-2 group/item">
-                  <div className="h-4 w-4 rounded bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-[8px] shrink-0 group-hover/item:bg-indigo-600 group-hover/item:text-white">3</div>
-                  <p className="text-[9px] font-bold text-gray-600 group-hover/item:text-gray-900 pt-0.5 leading-tight">Approval dependent on unit operational capacity.</p>
+                <div className="flex gap-2 sm:gap-3 group/item">
+                  <div className="h-5 w-5 sm:h-6 sm:w-6 rounded-md sm:rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-[10px] sm:text-xs shrink-0 group-hover/item:bg-indigo-600 group-hover/item:text-white transition-colors">3</div>
+                  <p className="text-[10px] sm:text-xs md:text-sm font-bold text-gray-600 group-hover/item:text-gray-900 pt-0.5 leading-tight transition-colors">Approval dependent on unit operational capacity.</p>
                 </div>
               </div>
 
-              <div className="mt-4 p-2 bg-amber-50/50 rounded border border-amber-100 flex gap-2">
-                <AlertCircle className="w-3 h-3 text-amber-600 shrink-0" />
-                <p className="text-[8px] font-bold text-amber-700 leading-tight italic">For urgent emergency protocols, contact leadership directly.</p>
+              <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50/50 rounded-lg sm:rounded-xl border border-amber-100 flex gap-2 sm:gap-3">
+                <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 shrink-0" />
+                <p className="text-[10px] sm:text-xs md:text-sm font-bold text-amber-800 leading-tight italic">For urgent emergency protocols, contact leadership directly.</p>
               </div>
             </div>
           )}
         </div>
 
         {/* Right Column: History with Tabs */}
-        <div className="lg:w-2/3 w-full">
-          <div className="bg-white rounded shadow-sm border border-gray-100 overflow-hidden min-h-[400px] flex flex-col">
+        <div className="lg:w-2/3 w-full min-w-0 flex flex-col">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden min-h-[400px] sm:min-h-[500px] flex flex-col w-full min-w-0">
             {/* Tab Header */}
-            <div className="p-2 sm:p-4 border-b border-gray-50 bg-gray-50/30 flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4">
+            <div className="p-3 sm:p-6 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 min-w-0">
               <div>
-                <h2 className="text-[10px] sm:text-xs font-black text-gray-900 uppercase tracking-tighter leading-none">Application Ledger</h2>
-                <div className="flex items-center gap-1 mt-1">
+                <h2 className="text-base sm:text-lg lg:text-xl font-black text-gray-900 uppercase tracking-tight leading-none">Application Ledger</h2>
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-2 sm:mt-3">
                   {['all', 'approved', 'rejected'].map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setHistoryTab(tab as any)}
-                      className={`px-2 py-1.5 rounded text-[8px] font-black uppercase tracking-widest leading-none ${historyTab === tab
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                      className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md sm:rounded-lg text-[9px] sm:text-[10px] md:text-xs font-black uppercase tracking-widest leading-none transition-all ${historyTab === tab
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
+                        : 'text-gray-500 hover:text-indigo-600 bg-white border border-gray-200 hover:border-indigo-200'
                         }`}
                     >
                       {tab === 'all' ? 'Recent' : tab}
@@ -296,77 +302,77 @@ function LeavesPage() {
                   ))}
                 </div>
               </div>
-              <div className="relative">
-                <Search className="w-3 h-3 text-gray-300 absolute left-2 top-1/2 -translate-y-1/2" />
+              <div className="relative w-full md:w-auto">
+                <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Search ledger..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-white border border-gray-100 rounded pl-7 pr-2 py-1.5 text-[9px] font-bold focus:ring-1 focus:ring-indigo-500 outline-none w-full md:w-48 shadow-xs"
+                  className="bg-white border border-gray-200 rounded-lg sm:rounded-xl pl-8 sm:pl-9 pr-3 sm:pr-4 py-2 sm:py-2.5 text-[10px] sm:text-xs md:text-sm font-bold text-gray-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none w-full md:w-64 shadow-sm transition-all"
                 />
               </div>
             </div>
 
-            <div className="flex-1 overflow-auto custom-scrollbar">
+            <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar w-full min-w-0">
               {filteredLeaves.length > 0 ? (
-                <div className="w-full">
+                <div className="w-full min-w-[500px] md:min-w-[700px]">
                   <table className="w-full border-collapse">
-                    <thead className="bg-gray-50/50 sticky top-0 z-10">
+                    <thead className="bg-gray-50/80 backdrop-blur-sm sticky top-0 z-10 border-b border-gray-200">
                       <tr>
-                        <th className="px-2 py-2 text-left text-[8px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 leading-none">Leave Type</th>
-                        <th className="px-2 py-2 text-left text-[8px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 leading-none">Period Date</th>
-                        <th className="px-2 py-2 text-left text-[8px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 leading-none">Reason</th>
-                        <th className="px-2 py-2 text-left text-[8px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-center leading-none">Status</th>
+                        <th className="px-4 py-4 text-left text-[10px] sm:text-xs font-black text-gray-500 uppercase tracking-widest leading-none">Leave Type</th>
+                        <th className="px-4 py-4 text-left text-[10px] sm:text-xs font-black text-gray-500 uppercase tracking-widest leading-none">Period Date</th>
+                        <th className="px-4 py-4 text-left text-[10px] sm:text-xs font-black text-gray-500 uppercase tracking-widest leading-none">Reason</th>
+                        <th className="px-4 py-4 text-center text-[10px] sm:text-xs font-black text-gray-500 uppercase tracking-widest leading-none">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50">
+                    <tbody className="divide-y divide-gray-100">
                       {paginatedLeaves.map((leave) => (
-                        <tr key={leave._id} className="hover:bg-gray-50/50 group transition-colors">
-                          <td className="px-2 py-1.5 whitespace-nowrap">
-                            <div className="flex items-center gap-1.5">
-                              <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 shadow-xs ${leave.leaveType === 'sick' ? 'bg-orange-50 text-orange-600' :
+                        <tr key={leave._id} className="hover:bg-indigo-50/30 group transition-colors">
+                          <td className="px-3 sm:px-4 py-2.5 sm:py-3 whitespace-nowrap">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-md sm:rounded-lg flex items-center justify-center shrink-0 shadow-sm ${leave.leaveType === 'sick' ? 'bg-orange-50 text-orange-600' :
                                 leave.leaveType === 'casual' ? 'bg-indigo-50 text-indigo-600' :
                                   'bg-emerald-50 text-emerald-600'
                                 }`}>
-                                <Calendar size={10} />
+                                <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               </div>
-                              <span className="text-[9px] font-bold text-gray-900 uppercase leading-none">{leave.leaveType}</span>
+                              <span className="text-[10px] sm:text-[11px] md:text-sm font-bold text-gray-900 uppercase tracking-tight">{leave.leaveType}</span>
                             </div>
                           </td>
-                          <td className="px-2 py-1.5 whitespace-nowrap">
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-[9px] font-bold text-gray-900 leading-none">
+                          <td className="px-3 sm:px-4 py-2.5 sm:py-3 whitespace-nowrap">
+                            <div className="flex flex-col gap-0.5 sm:gap-1">
+                              <span className="text-[10px] sm:text-xs md:text-sm font-bold text-gray-900 leading-none">
                                 {new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}
                               </span>
-                              <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-0.5 leading-none">
-                                <Clock3 size={8} /> {new Date(leave.createdAt).toLocaleDateString()}
+                              <span className="text-[8px] sm:text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1 sm:gap-1.5 mt-0.5 sm:mt-1 leading-none">
+                                <Clock3 size={10} className="sm:w-3 sm:h-3" /> {new Date(leave.createdAt).toLocaleDateString()}
                               </span>
                             </div>
                           </td>
-                          <td className="px-2 py-1.5 max-w-xs">
+                          <td className="px-3 sm:px-4 py-2.5 sm:py-3 max-w-[120px] sm:max-w-xs">
                             <p
-                              className="text-[9px] font-bold text-gray-600 italic leading-tight cursor-help hover:text-indigo-600 transition-colors"
+                              className="text-[10px] sm:text-xs md:text-sm font-bold text-gray-600 italic leading-tight cursor-help hover:text-indigo-600 transition-colors truncate"
                               title={leave.reason}
                             >
                               "{truncateReason(leave.reason)}"
                             </p>
                             {leave.status === 'rejected' && (leave as any).rejectionReason && (
-                              <div className="mt-0.5 flex items-start gap-1 text-rose-600">
-                                <AlertCircle className="w-2.5 h-2.5 shrink-0 mt-0.5" />
-                                <span className="text-[7px] font-bold italic truncate max-w-[100px] leading-tight">{(leave as any).rejectionReason}</span>
+                              <div className="mt-1 flex items-start gap-1 sm:gap-1.5 text-rose-600 bg-rose-50 p-1 sm:p-1.5 rounded-md sm:rounded-lg border border-rose-100">
+                                <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
+                                <span className="text-[8px] sm:text-[10px] font-bold italic line-clamp-1 sm:line-clamp-2 leading-tight">{(leave as any).rejectionReason}</span>
                               </div>
                             )}
                           </td>
-                          <td className="px-2 py-1.5 whitespace-nowrap text-center">
-                            <div className="flex flex-col items-center gap-0.5">
-                              <span className={`px-1.5 py-0.5 rounded text-[7px] uppercase font-black tracking-widest border flex items-center gap-1 ${getStatusColor(leave.status)}`}>
+                          <td className="px-3 sm:px-4 py-2.5 sm:py-3 whitespace-nowrap text-center">
+                            <div className="flex flex-col items-center gap-1 sm:gap-1.5">
+                              <span className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[8px] sm:text-[9px] md:text-[10px] uppercase font-black tracking-widest border flex items-center gap-1 sm:gap-1.5 shadow-sm ${getStatusColor(leave.status)}`}>
                                 {getStatusIcon(leave.status)}
                                 {leave.status}
                               </span>
                               {leave.status === 'approved' && (
-                                <span className="text-[6px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-0.5">
-                                  <CheckCircle2 size={6} /> Validated
+                                <span className="text-[7px] sm:text-[8px] md:text-[9px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-0.5 sm:gap-1 mt-0.5">
+                                  <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Validated
                                 </span>
                               )}
                             </div>
@@ -377,27 +383,27 @@ function LeavesPage() {
                   </table>
 
                   {/* Enhanced Pagination Controls */}
-                  <div className="px-2 py-2 bg-gray-50/50 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-2">
-                    <p className="text-[7px] font-black text-gray-400 uppercase tracking-widest leading-none">
+                  <div className="px-4 py-4 bg-gray-50/50 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4 mt-auto">
+                    <p className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest leading-none">
                       Showing <span className="text-gray-900">{filteredLeaves.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0}</span> to <span className="text-gray-900">{Math.min(currentPage * itemsPerPage, filteredLeaves.length)}</span> of <span className="text-gray-900">{filteredLeaves.length}</span> entries
                     </p>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <button
                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                         disabled={currentPage === 1 || totalPages <= 1}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-2xl text-[10px] font-black text-gray-600 uppercase tracking-widest hover:border-indigo-600 hover:text-indigo-600 shadow-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95"
+                        className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 rounded-xl text-[10px] sm:text-xs font-black text-gray-600 uppercase tracking-widest hover:border-indigo-600 hover:text-indigo-600 shadow-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95"
                       >
                         Previous
                       </button>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         {totalPages > 0 ? (
                           [...Array(totalPages)].map((_, i) => (
                             <button
                               key={i + 1}
                               onClick={() => setCurrentPage(i + 1)}
-                              className={`w-6 h-6 flex items-center justify-center rounded text-[8px] font-black transition-all transform active:scale-95 ${currentPage === i + 1
-                                ? 'bg-indigo-600 text-white shadow-xs scale-105'
-                                : 'bg-white text-gray-400 hover:text-gray-600 border border-gray-100 shadow-xs'
+                              className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-black transition-all transform active:scale-95 ${currentPage === i + 1
+                                ? 'bg-indigo-600 text-white shadow-md scale-105'
+                                : 'bg-white text-gray-500 hover:text-indigo-600 border border-gray-200 hover:border-indigo-200 shadow-sm'
                                 }`}
                             >
                               {i + 1}
@@ -406,7 +412,7 @@ function LeavesPage() {
                         ) : (
                           <button
                             disabled
-                            className="w-6 h-6 flex items-center justify-center rounded text-[8px] font-black bg-indigo-600 text-white shadow-xs scale-105"
+                            className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-[8px] sm:rounded-lg text-[10px] sm:text-[12px] font-black bg-indigo-600 text-white shadow-md scale-105"
                           >
                             1
                           </button>
@@ -415,7 +421,7 @@ function LeavesPage() {
                       <button
                         onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                         disabled={currentPage === totalPages || totalPages <= 1}
-                        className="flex items-center gap-1 px-2 py-1 bg-white border border-gray-100 rounded text-[7px] font-black text-gray-600 uppercase tracking-widest hover:border-indigo-600 hover:text-indigo-600 shadow-xs disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95"
+                        className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 rounded-xl text-[10px] sm:text-xs font-black text-gray-600 uppercase tracking-widest hover:border-indigo-600 hover:text-indigo-600 shadow-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95"
                       >
                         Next
                       </button>
@@ -423,15 +429,15 @@ function LeavesPage() {
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-10 text-center">
-                  <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-2 text-gray-200">
-                    <Inbox className="w-6 h-6" />
+                <div className="flex-1 flex flex-col items-center justify-center p-8 sm:p-16 text-center h-full">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4 text-gray-300 border border-gray-100">
+                    <Inbox className="w-8 h-8 sm:w-10 sm:h-10" />
                   </div>
-                  <h3 className="text-sm font-black text-gray-900 italic tracking-tight">Ledger Empty</h3>
-                  <p className="text-gray-500 font-bold text-[8px] mt-1 max-w-sm">No leave applications detected in the current matrix filter.</p>
+                  <h3 className="text-base sm:text-lg font-black text-gray-900 italic tracking-tight mb-1">Ledger Empty</h3>
+                  <p className="text-gray-500 font-bold text-[10px] sm:text-xs max-w-sm uppercase tracking-widest">No leave applications detected in the current matrix filter.</p>
                   <button
                     onClick={() => setActiveTab('request')}
-                    className="mt-3 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded text-[8px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-xs"
+                    className="mt-6 px-4 py-2 sm:px-6 sm:py-2.5 bg-indigo-50 text-indigo-700 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-indigo-100 hover:border-indigo-600"
                   >
                     Initiate Request
                   </button>

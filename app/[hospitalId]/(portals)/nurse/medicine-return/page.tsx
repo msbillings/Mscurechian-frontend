@@ -270,11 +270,11 @@ export default function NurseMedicineReturnPage() {
     };
 
     return (
-        <div className="space-y-3 sm:space-y-6 max-w-7xl mx-auto pb-20 p-[1px] sm:p-4">
+        <div className="space-y-3 sm:space-y-6 max-w-7xl mx-auto">
             {/* Header */}
             <div className="pt-2 sm:pt-4">
-                <h1 className="text-sm sm:text-2xl font-black text-slate-900 tracking-tight uppercase leading-tight">Medicine Return Protocol</h1>
-                <p className="text-slate-500 font-bold flex items-center gap-1.5 text-[8px] sm:text-sm uppercase tracking-widest mt-0.5">
+                <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight leading-none mb-1 sm:mb-2 uppercase">Medicine Return Protocol</h1>
+                <p className="text-slate-500 font-bold flex items-center gap-1.5 text-[7px] md:text-[8px] max-w-xl leading-relaxed uppercase tracking-widest mt-0.5">
                     <ClipboardList className="w-2.5 h-2.5 sm:w-4 sm:h-4 text-blue-600" />
                     Select a patient to initiate clinical medicine returns
                 </p>

@@ -355,41 +355,47 @@ const TransactionsPage = () => {
 
 
     return (
-        <div className="space-y-8 text-gray-900 dark:text-white w-full max-w-[100vw] overflow-x-hidden">
+        <div className="space-y-4 md:space-y-6 lg:space-y-8 text-gray-900 dark:text-white w-full max-w-[100vw] overflow-x-hidden pt-2">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-6 px-1">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Sales History</h1>
-                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-1 uppercase tracking-wider">View and manage your pharmacy sales</p>
+                    <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Sales History</h1>
+                    <p className="text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 mt-1 uppercase tracking-wider">Pharmacy Sales Ledger</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 md:gap-3">
                     <button
                         onClick={handleExportExcel}
                         disabled={isExporting}
-                        className="flex items-center gap-2 px-6 py-3 bg-teal-50 text-teal-600 border border-teal-100 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-teal-100 shadow-sm dark:bg-teal-950/20 dark:border-teal-900/30 disabled:opacity-50"
+                        className="flex items-center gap-1.5 md:gap-2 px-3 md:px-6 py-2 md:py-3 bg-teal-50 text-teal-600 border border-teal-100 rounded-lg text-[10px] md:text-xs font-bold uppercase tracking-wider hover:bg-teal-100 shadow-sm dark:bg-teal-950/20 dark:border-teal-900/30 disabled:opacity-50 transition-colors"
                     >
-                        <Download size={16} />
-                        {isExporting ? 'Exporting...' : 'Export Ledger'}
+                        <Download size={14} className="md:w-4 md:h-4" />
+                        <span>{isExporting ? 'Exporting...' : 'Export'}</span>
+                    </button>
+                    <button
+                        onClick={() => fetchBills(currentPage)}
+                        className="p-2 md:p-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-gray-400 hover:text-teal-600 shadow-sm transition-colors"
+                    >
+                        <RefreshCcw size={16} className={loading ? 'animate-spin' : ''} />
                     </button>
                 </div>
             </div>
 
             {/* Summary Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-white dark:bg-gray-800 p-5 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Transactions Today</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 px-1">
+                <div className="bg-white dark:bg-gray-800 p-4 md:p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
+                    <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Transactions Today</p>
                     <div className="flex items-end justify-between mt-auto">
-                        <h3 className="text-2xl font-black text-gray-900 dark:text-white">{stats?.todayStats.billCount || 0}</h3>
+                        <h3 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white">{stats?.todayStats.billCount || 0}</h3>
                         <div className="p-2 bg-teal-50 dark:bg-teal-900/20 rounded-lg text-teal-600">
                             <FileText size={18} />
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-5 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Total Amount (Today)</p>
+                <div className="bg-white dark:bg-gray-800 p-4 md:p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
+                    <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Revenue Today</p>
                     <div className="flex items-end justify-between mt-auto">
-                        <h3 className="text-2xl font-black text-gray-900 dark:text-white">
+                        <h3 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white">
                             {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(stats?.todayStats.revenue || 0)}
                         </h3>
                         <div className="p-2 bg-teal-50 dark:bg-teal-900/20 rounded-lg text-teal-600">
@@ -398,10 +404,10 @@ const TransactionsPage = () => {
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-5 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Items Sold Today</p>
+                <div className="bg-white dark:bg-gray-800 p-4 md:p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col sm:col-span-2 lg:col-span-1">
+                    <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Items Sold Today</p>
                     <div className="flex items-end justify-between mt-auto">
-                        <h3 className="text-2xl font-black text-gray-900 dark:text-white">{stats?.todayStats.itemsSold || 0}</h3>
+                        <h3 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white">{stats?.todayStats.itemsSold || 0}</h3>
                         <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-purple-600">
                             <Package size={18} />
                         </div>
@@ -410,24 +416,24 @@ const TransactionsPage = () => {
             </div>
 
             {/* Controller Area */}
-            <div className="bg-white dark:bg-gray-800 p-4 md:p-5 rounded-lg md:rounded-lg  border border-gray-100 dark:border-gray-700 flex flex-col gap-4">
-                <div className="flex flex-col md:flex-row w-full gap-4 items-center">
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-5 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col gap-3 md:gap-4 px-1 mx-1">
+                <div className="flex flex-col lg:flex-row w-full gap-3 md:gap-4 items-center">
 
                     {/* Date Filter */}
-                    <div className="relative w-full md:w-auto min-w-[160px]">
-                        <Calendar className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <div className="relative w-full lg:w-auto min-w-[160px]">
+                        <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                         <input
                             type="date"
                             value={dateFilter}
                             onChange={(e) => setDateFilter(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-none rounded-xl text-xs font-bold focus:ring-2 focus:ring-teal-500 outline-none dark:text-white"
+                            className="w-full pl-9 md:pl-10 pr-4 py-2.5 md:py-3 bg-gray-50 dark:bg-gray-700/50 border-none rounded-xl text-[10px] md:text-xs font-bold focus:ring-2 focus:ring-teal-500 outline-none dark:text-white"
                         />
                     </div>
 
                     {/* Payment Filter */}
-                    <div className="relative w-full md:w-auto min-w-[160px]">
+                    <div className="relative w-full lg:w-auto min-w-[160px]">
                         <select
-                            className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-xl px-4 py-3 text-xs font-bold outline-none ring-1 ring-gray-100 dark:ring-gray-700 focus:ring-2 focus:ring-teal-500 dark:text-white cursor-pointer appearance-none"
+                            className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-xl px-3 md:px-4 py-2.5 md:py-3 text-[10px] md:text-xs font-bold outline-none ring-1 ring-gray-100 dark:ring-gray-700 focus:ring-2 focus:ring-teal-500 dark:text-white cursor-pointer appearance-none"
                             value={paymentFilter}
                             onChange={e => setPaymentFilter(e.target.value)}
                         >
@@ -438,30 +444,22 @@ const TransactionsPage = () => {
                             <option>Mixed</option>
                             <option>Credit</option>
                         </select>
-                        <ChevronLeft className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 -rotate-90 pointer-events-none" />
+                        <ChevronLeft className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 -rotate-90 pointer-events-none" />
                     </div>
 
-                    <div className="h-10 w-px bg-gray-100 dark:bg-gray-700 hidden md:block" />
+                    <div className="h-8 md:h-10 w-px bg-gray-100 dark:bg-gray-700 hidden lg:block" />
 
                     {/* Search */}
-                    <div className="relative flex-1 w-full">
-                        <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                    <div className="relative flex-1 w-full text-black dark:text-white">
+                        <Search className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
                         <input
                             type="text"
-                            placeholder="Search by ID, patient name, or mobile..."
+                            placeholder="Patient name, or mobile..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-teal-500 outline-none dark:text-white"
+                            className="w-full pl-10 md:pl-11 pr-4 py-2.5 md:py-3 bg-gray-50 dark:bg-gray-700/50 border-none rounded-xl text-[10px] md:text-xs font-bold focus:ring-2 focus:ring-teal-500 outline-none dark:text-white"
                         />
                     </div>
-
-                    {/* Refresh Button */}
-                    <button
-                        onClick={() => fetchBills(1)}
-                        className="p-3 w-full md:w-auto flex justify-center bg-gray-50 dark:bg-gray-700/50 text-gray-400 rounded-xl hover:text-teal-500 border border-gray-100 dark:border-gray-700"
-                    >
-                        <RefreshCcw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-                    </button>
                 </div>
             </div>
 
@@ -469,18 +467,18 @@ const TransactionsPage = () => {
             {loading ? (
                 <PharmacyTableSkeleton rows={8} />
             ) : (
-                <div className="w-full max-w-full bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">
+                <div className="w-full max-w-full bg-white dark:bg-gray-800 rounded-xl md:rounded-3xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm mx-1">
                     <div className="overflow-x-auto">
                         <table className="w-full min-w-[1000px]">
                             <thead>
                                 <tr className="bg-gray-50 dark:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700">
-                                    <th className="px-6 md:px-8 py-5 text-left text-xs font-black text-gray-400 uppercase tracking-widest">Invoice ID</th>
-                                    <th className="px-6 md:px-8 py-5 text-left text-xs font-black text-gray-400 uppercase tracking-widest">Date</th>
-                                    <th className="px-6 md:px-8 py-5 text-left text-xs font-black text-gray-400 uppercase tracking-widest">Patient</th>
-                                    <th className="px-6 md:px-8 py-5 text-left text-xs font-black text-gray-400 uppercase tracking-widest">Items</th>
-                                    <th className="px-6 md:px-8 py-5 text-right text-xs font-black text-gray-400 uppercase tracking-widest">Amount</th>
-                                    <th className="px-6 md:px-8 py-5 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Status</th>
-                                    <th className="px-6 md:px-8 py-5 text-center text-xs font-black text-gray-400 uppercase tracking-widest md:w-32">Actions</th>
+                                    <th className="px-4 md:px-8 py-4 md:py-5 text-left text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest">Invoice ID</th>
+                                    <th className="px-4 md:px-8 py-4 md:py-5 text-left text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest">Date</th>
+                                    <th className="px-4 md:px-8 py-4 md:py-5 text-left text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest">Patient</th>
+                                    <th className="px-4 md:px-8 py-4 md:py-5 text-left text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest">Items</th>
+                                    <th className="px-4 md:px-8 py-4 md:py-5 text-right text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest">Amount</th>
+                                    <th className="px-4 md:px-8 py-4 md:py-5 text-center text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest">Status</th>
+                                    <th className="px-4 md:px-8 py-4 md:py-5 text-center text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest md:w-32">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
@@ -560,25 +558,25 @@ const TransactionsPage = () => {
 
                     {/* Pagination Controls */}
                     {!loading && bills.length > 0 && (
-                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 md:p-6 bg-white dark:bg-gray-800 rounded-lg md:rounded-lg border border-gray-100 dark:border-gray-700">
+                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 md:p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 mx-1">
                             <div className="flex items-center gap-2 order-2 sm:order-1">
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                     disabled={currentPage === 1}
-                                    className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-gray-50 rounded-xl hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700/50 dark:text-gray-300 dark:hover:bg-gray-600"
+                                    className="px-4 md:px-6 py-2.5 md:py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-gray-50 rounded-xl hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700/50 dark:text-gray-300 dark:hover:bg-gray-600 border border-gray-100 dark:border-gray-700"
                                 >
-                                    Previous
+                                    Prev
                                 </button>
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                     disabled={currentPage === totalPages}
-                                    className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-gray-50 rounded-xl hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700/50 dark:text-gray-300 dark:hover:bg-gray-600"
+                                    className="px-4 md:px-6 py-2.5 md:py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-gray-50 rounded-xl hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700/50 dark:text-gray-300 dark:hover:bg-gray-600 border border-gray-100 dark:border-gray-700"
                                 >
                                     Next
                                 </button>
                             </div>
                             <div className="flex items-center gap-3 order-1 sm:order-2">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                <span className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest">
                                     Page <span className="text-teal-600">{currentPage}</span> of {totalPages}
                                 </span>
                             </div>
@@ -603,26 +601,27 @@ const TransactionsPage = () => {
             {
                 selectedBill && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                        <div className="bg-white rounded-2xl md:rounded-3xl shadow-2xl w-full max-w-[900px] max-h-[90vh] overflow-y-auto relative">
-                            <div className="sticky top-0 bg-white border-b z-10 p-4 flex justify-between items-center text-black">
+                        <div className="bg-white rounded-2xl md:rounded-3xl shadow-2xl w-full max-w-[900px] max-h-[90vh] flex flex-col relative overflow-hidden">
+                            {/* Header */}
+                            <div className="bg-white border-b z-10 p-4 shrink-0 flex justify-between items-center text-black">
                                 <h3 className="font-black uppercase tracking-wider text-sm">Invoice Details</h3>
-                                <div className="flex gap-2">
-
-                                    <button
-                                        onClick={() => setSelectedBill(null)}
-                                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-black"
-                                    >
-                                        Close
-                                    </button>
-                                </div>
+                                <button
+                                    onClick={() => setSelectedBill(null)}
+                                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-black"
+                                >
+                                    Close
+                                </button>
                             </div>
-                            <div className="p-4 md:p-8 flex justify-center bg-gray-50 overflow-x-auto">
-                                <div className="min-w-[600px] bg-white shadow-lg" ref={modalPrintRef}>
-                                    {/* Use PharmacyBillPrint for standardized viewing */}
-                                    <PharmacyBillPrint
-                                        billData={selectedBill}
-                                        shopDetails={shopDetails}
-                                    />
+
+                            {/* Scrollable Area */}
+                            <div className="flex-1 overflow-auto bg-gray-50">
+                                <div className="w-full min-w-max p-2 md:p-8">
+                                    <div className="bg-white shadow-lg" style={{ width: '210mm', margin: '0 auto' }} ref={modalPrintRef}>
+                                        <PharmacyBillPrint
+                                            billData={selectedBill}
+                                            shopDetails={shopDetails}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>

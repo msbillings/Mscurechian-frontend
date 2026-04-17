@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+﻿import { useQuery } from '@tanstack/react-query';
 import { getDoctorInpatientsAction } from '../actions/doctor.actions';
 
 // Roles that are allowed to access doctor-specific IPD inpatient data

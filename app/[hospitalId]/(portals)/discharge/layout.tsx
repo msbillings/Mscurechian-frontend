@@ -1,18 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import Navbar from '@/components/navbar/Navbar';
-import Sidebar, { SidebarItem } from '@/components/slidebar/Sidebar';
-import { LayoutDashboard, FileText, ClipboardList, LogOut, Settings, User } from 'lucide-react';
+import { FileText, ClipboardList, User } from 'lucide-react';
 import LogoutModal from '@/components/auth/LogoutModal';
 import { useAuthStore } from '@/stores/authStore';
+import { useRealtime } from '@/hooks/useRealtime';
+import Navbar from '@/components/navbar/Navbar';
+import SharedSidebar from "@/components/navbar/SharedSidebar";
 
-
-const dischargeMenuItems: SidebarItem[] = [
-    { icon: FileText, label: 'Discharge Form', href: '/discharge' },
-    { icon: ClipboardList, label: 'Discharge History', href: '/discharge/history' },
-    { icon: User, label: 'My Profile', href: '/discharge/profile' },
+const dischargeMenuItems: any[] = [
+    { icon: FileText, label: 'Discharge Form', path: '/discharge' },
+    { icon: ClipboardList, label: 'Discharge History', path: '/discharge/history' },
+    { icon: User, label: 'My Profile', path: '/discharge/profile' },
 ];
 
 function DischargeLayout({ children }: { children: React.ReactNode }) {
@@ -22,20 +22,21 @@ function DischargeLayout({ children }: { children: React.ReactNode }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [isPending, startTransition] = React.useTransition();
 
     const isLoginPage = pathname === '/discharge/login';
 
+    useRealtime(['patients', 'billing', 'beds', 'appointments', 'system']);
+
     useEffect(() => {
-        // Only run auth check if not on login page
         if (isLoginPage) {
-            setTimeout(() => setIsLoading(false), 0);
+            setIsLoading(false);
             return;
         }
 
-        const storedUser = sessionStorage.getItem("user");
-        let userRole = sessionStorage.getItem("userRole");
+        const storedUser = localStorage.getItem("user");
+        let userRole = localStorage.getItem("userRole");
 
-        // If userRole is missing (common when coming from helpdesk), extract it from user object
         if (!userRole && storedUser) {
             try {
                 const parsedUser = JSON.parse(storedUser);
@@ -52,51 +53,32 @@ function DischargeLayout({ children }: { children: React.ReactNode }) {
             return;
         }
 
-        // Initialize auth store
         checkAuth().finally(() => setIsLoading(false));
     }, [router, isLoginPage, checkAuth]);
 
-    // Listen for storage changes (when profile is updated)
     useEffect(() => {
-        const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === 'user' && e.newValue) {
-                // Refresh auth when user data changes
-                checkAuth();
-            }
-        };
-
-        // Custom event for same-tab updates (storage event doesn't fire in same tab)
-        const handleCustomStorageChange = () => {
-            checkAuth();
-        };
-
+        const handleStorageChange = (e: StorageEvent) => { if (e.key === 'user' && e.newValue) checkAuth(); };
+        const handleCustomStorageChange = () => checkAuth();
         window.addEventListener('storage', handleStorageChange);
         window.addEventListener('userUpdated', handleCustomStorageChange);
-
         return () => {
             window.removeEventListener('storage', handleStorageChange);
             window.removeEventListener('userUpdated', handleCustomStorageChange);
         };
     }, [checkAuth]);
 
-    const handleLogout = () => {
-        sessionStorage.removeItem("accessToken");
-        sessionStorage.removeItem("refreshToken");
-        sessionStorage.removeItem("userRole");
-        sessionStorage.removeItem("user");
-        router.push("/");
-    };
-
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center gap-6">
-                    <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-slate-500 font-bold uppercase tracking-widest">Checking Credentials</p>
+                    <div className="w-16 h-16 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+                    <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Checking Credentials</p>
                 </div>
             </div>
         );
     }
+
+    if (isLoginPage) return <>{children}</>;
 
     const navUser = {
         name: authUser?.name || "User",
@@ -104,38 +86,50 @@ function DischargeLayout({ children }: { children: React.ReactNode }) {
         image: authUser?.image || ""
     };
 
-    if (isLoginPage) {
-        return <>{children}</>;
-    }
-
     return (
-        <div className="flex min-h-screen bg-[#f8fafc]">
+        <div className="flex min-h-screen bg-gray-50">
             <LogoutModal
                 isOpen={isLogoutModalOpen}
                 onClose={() => setIsLogoutModalOpen(false)}
-                onConfirm={handleLogout}
+                onConfirm={() => {
+                    localStorage.removeItem("accessToken");
+                    localStorage.removeItem("refreshToken");
+                    localStorage.removeItem("userRole");
+                    localStorage.removeItem("user");
+                    router.push("/");
+                }}
                 userName={authUser?.name}
             />
 
-            <Sidebar
+            <SharedSidebar
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
-                items={dischargeMenuItems}
-                onLogout={() => setIsLogoutModalOpen(true)}
+                menuItems={dischargeMenuItems}
+                branding={{ logo: FileText, title: "CureChain", subtitle: "Discharge Node" }}
+                currentPath={pathname}
+                onMenuItemClick={(path) => {
+                    startTransition(() => {
+                        router.push(path);
+                        setIsSidebarOpen(false);
+                    });
+                }}
             />
 
-            <div className="flex-1 flex flex-col lg:ml-64">
+            <div className="flex-1 flex flex-col min-h-screen min-w-0 relative">
                 <Navbar
-                    title="Discharge Portal"
                     user={navUser}
                     onMenuClick={() => setIsSidebarOpen(true)}
                     onLogout={() => setIsLogoutModalOpen(true)}
-                    className="fixed! top-0 left-0 lg:left-64 right-0 z-40 w-auto!"
+                    className="sticky top-0 z-30 shrink-0"
                     profileHref="/discharge/profile"
                 />
 
-                <main className="p-6 lg:p-10 pt-24 flex-1">
-                    {children}
+                <main className="p-2 md:p-6 flex-1 overflow-y-auto relative bg-white">
+                    <div className="max-w-[1600px] mx-auto w-full">
+                        <React.Fragment>
+                            {children}
+                        </React.Fragment>
+                    </div>
                 </main>
             </div>
         </div>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -106,7 +106,7 @@ const servicePortals = [
       shadow: 'hover:shadow-red-500/20',
       iconBg: 'bg-red-50',
     },
-    path: '/emergency-login',
+    path: '/emergency/login',
   },
 
 ];

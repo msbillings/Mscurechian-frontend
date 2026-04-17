@@ -12,21 +12,28 @@ import {
 
 import NotificationCenter from "@/components/navbar/NotificationCenter";
 import HelpdeskQuickActions from "@/app/[hospitalId]/(portals)/helpdesk/components/HelpdeskQuickActions";
+import ProgressBar from "@/components/ui/ProgressBar";
 import { useTenantLink } from "@/hooks/useTenantLink";
+import { PrefetchLink } from "@/components/ui/PrefetchLink";
+import { usePrefetchDashboard } from "@/lib/integrations/hooks/useUnifiedDashboard";
 
 interface HelpdeskNavbarProps {
     onMenuClick: () => void;
     onLogoutClick: () => void;
+    startTransition: (callback: () => void) => void;
 }
 
-const HelpdeskNavbar: React.FC<HelpdeskNavbarProps> = ({ onMenuClick, onLogoutClick }) => {
+const HelpdeskNavbar: React.FC<HelpdeskNavbarProps> = ({ onMenuClick, onLogoutClick, startTransition }) => {
     const router = useRouter();
     const { user } = useAuthStore();
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+    const [isPending, startTransitionLocal] = React.useTransition();
     const { getPath } = useTenantLink();
+    const prefetchDashboard = usePrefetchDashboard('helpdesk');
 
     return (
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 fixed top-0 left-0 lg:left-64 right-0 z-40 shadow-sm">
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 sticky top-0 w-full z-40 shadow-sm shrink-0">
+            <ProgressBar isPending={isPending} color="#14b8a6" />
             <button
                 onClick={onMenuClick}
                 className="lg:hidden p-2 text-slate-600"
@@ -34,8 +41,8 @@ const HelpdeskNavbar: React.FC<HelpdeskNavbarProps> = ({ onMenuClick, onLogoutCl
                 <Menu size={20} />
             </button>
 
-            <div className="flex-1 hidden lg:flex justify-center">
-                <HelpdeskQuickActions />
+            <div className="flex-1 flex justify-center">
+                <HelpdeskQuickActions startTransition={startTransition} />
             </div>
 
             <div className="flex items-center gap-6">
@@ -77,13 +84,14 @@ const HelpdeskNavbar: React.FC<HelpdeskNavbarProps> = ({ onMenuClick, onLogoutCl
                                     </div>
                                 </div>
                                 <div className="p-4 space-y-1">
-                                    <button
-                                        onClick={() => { router.push(getPath('/helpdesk/profile')); setIsProfileDropdownOpen(false); }}
+                                    <PrefetchLink
+                                        href={getPath('/helpdesk/profile')}
+                                        onClick={() => setIsProfileDropdownOpen(false)}
                                         className="w-full flex items-center gap-4 px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 hover:text-teal-600 rounded-2xl transition-all"
                                     >
                                         <User size={18} className="text-slate-300" />
                                         <span>My Profile</span>
-                                    </button>
+                                    </PrefetchLink>
                                     <button
                                         onClick={() => { onLogoutClick(); setIsProfileDropdownOpen(false); }}
                                         className="w-full flex items-center gap-4 px-6 py-4 text-[10px] font-black uppercase tracking-widest text-rose-500 hover:bg-rose-50 rounded-2xl transition-all"

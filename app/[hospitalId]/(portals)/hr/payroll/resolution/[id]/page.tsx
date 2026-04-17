@@ -8,7 +8,7 @@ import {
   Edit3,
   Activity,
   FileText,
-  DollarSign
+  IndianRupee
 } from "lucide-react";
 import { hrService } from "@/lib/integrations/services/hr.service";
 import { toast } from "react-hot-toast";
@@ -79,16 +79,16 @@ export default function PayrollResolutionPage() {
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20">
       {/* Action Bar */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-50 print:hidden px-8 py-4 flex items-center justify-between shadow-xs">
+      <div className="bg-white border-b border-gray-100 sticky top-0 z-50 print:hidden px-4 md:px-8 py-2 md:py-4 flex items-center justify-between shadow-xs">
          <div className="flex items-center gap-4">
             <button onClick={() => router.back()} className="p-2 hover:bg-gray-50 rounded-lg transition-all text-gray-400 hover:text-indigo-600"><ArrowLeft size={20} /></button>
             <h1 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Payroll Resolution Protocol</h1>
          </div>
          <div className="flex gap-3">
-            <button onClick={() => router.push(`/${hospitalId}/hr/payroll/resolution/${id}/edit`)} className="px-6 py-2.5 bg-gray-50 text-gray-700 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-gray-100">
+            <button onClick={() => router.push(`/${hospitalId}/hr/payroll/resolution/${id}/edit`)} className="px-2 md:px-6 py-2 md:py-2.5 bg-gray-50 text-gray-700 rounded-lg text-[8px] md:text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-gray-100">
                <Edit3 size={14} className="inline mr-2" /> Modify Entry
             </button>
-            <button onClick={handlePrint} className="px-8 py-2.5 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 active:scale-95 transition-all">
+            <button onClick={handlePrint} className="px-2 md:px-8 py-2 md:py-2.5 bg-indigo-600 text-white rounded-lg text-[8px] md:text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 active:scale-95 transition-all">
                <Printer size={14} className="inline mr-2" /> Execute Print
             </button>
          </div>
@@ -96,7 +96,7 @@ export default function PayrollResolutionPage() {
 
        {/* Payslip Preview Container */}
        <div className="max-w-7xl mx-auto mt-8 flex flex-col items-center px-4">
-          <div className="shadow-2xl print:hidden bg-white p-10 rounded-xl border border-gray-100 w-full max-w-4xl">
+          <div className="shadow-2xl print:hidden bg-white p-4 md:p-10 rounded-xl border border-gray-100 w-full max-w-4xl">
              <div className="text-center mb-10">
                 <div className="w-16 h-16 bg-indigo-600 rounded-xl flex items-center justify-center text-white mx-auto mb-4 shadow-lg shadow-indigo-600/20">
                    <Activity size={32} />
@@ -164,7 +164,7 @@ export default function PayrollResolutionPage() {
              {/* Salary Breakdown */}
              <div className="bg-white p-6 rounded-xl mb-6 border border-gray-100">
                 <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-widest mb-6 flex items-center gap-2">
-                   <DollarSign size={14} className="text-indigo-500" /> Resolution Breakdown
+                   <IndianRupee size={14} className="text-indigo-500" /> Resolution Breakdown
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10 text-sm">
                    <div className="space-y-4">
@@ -193,9 +193,9 @@ export default function PayrollResolutionPage() {
                       <span className="font-black text-[10px] text-gray-400 uppercase tracking-widest">Aggregate Deductions:</span>
                       <span className="font-black text-rose-600 text-lg">₹{payroll?.totalDeductions?.toLocaleString() || '0'}</span>
                    </div>
-                   <div className="flex justify-between items-center bg-indigo-600 p-6 rounded-xl mt-6 shadow-lg shadow-indigo-500/20 text-white">
-                      <span className="font-black text-white uppercase tracking-[0.2em] text-sm">Final Net Resolution:</span>
-                      <span className="font-black text-white text-3xl">₹{payroll?.netSalary?.toLocaleString() || '0'}</span>
+                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-indigo-600 p-3 md:p-6 rounded-xl mt-6 shadow-lg shadow-indigo-500/20 text-white gap-2 md:gap-0">
+                      <span className="font-black text-white uppercase tracking-[0.2em] text-[10px] md:text-sm">Final Net Resolution:</span>
+                      <span className="font-black text-white text-2xl md:text-3xl">₹{payroll?.netSalary?.toLocaleString() || '0'}</span>
                    </div>
                 </div>
              </div>

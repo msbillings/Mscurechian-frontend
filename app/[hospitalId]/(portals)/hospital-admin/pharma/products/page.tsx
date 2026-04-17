@@ -220,91 +220,111 @@ const ProductsPage = () => {
     }))).filter(Boolean)];
 
     return (
-        <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
-            {/* Simple Header */}
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Institutional Registry</h1>
-                    <p className="text-sm text-slate-500 font-medium mt-1 italic tracking-tight">Global SKU Management & Stock Oversight</p>
+        <div className="space-y-4 md:space-y-6 pb-20 w-full max-w-[100vw] overflow-x-hidden pt-2 md:pt-4">
+            {/* Header Area */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 md:gap-4 w-full lg:w-auto">
+                    <h1 className="px-1 md:px-3 text-lg md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white shrink-0">Products</h1>
+
+                    {/* Search Bar - Integrated in Header */}
+                    <div className="relative w-full sm:min-w-[200px] xl:min-w-[400px]">
+                        <Search className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400 absolute left-3 md:left-4 top-1/2 -translate-y-1/2" />
+                        <input
+                            type="text"
+                            placeholder="Search by name, brand, SKU..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-9 md:pl-11 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs md:text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:text-white shadow-sm"
+                        />
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setIsBulkModalOpen(true)}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all"
-                    >
-                        <FileSpreadsheet size={14} strokeWidth={3} /> Bulk Manifest
-                    </button>
-                    <button
-                        onClick={handleExportExcel}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all"
-                    >
-                        <Download size={14} strokeWidth={3} /> Export Audit
-                    </button>
+
+                <div className="flex flex-wrap items-center gap-2">
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all shadow-sm"
+                        className="flex items-center gap-1.5 px-3 py-2 bg-teal-600 text-white rounded-lg text-xs font-semibold hover:bg-teal-700 transition-colors shadow-sm"
                     >
-                        <Plus size={14} strokeWidth={3} /> Onboard SKU
+                        <Plus size={16} />
+                        <span className="hidden sm:inline">Add Product</span>
                     </button>
-                </div>
-            </div>
 
-            {/* Simple Controller */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
-                <div className="relative flex-1 w-full">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                    <input
-                        type="text"
-                        placeholder="Search by nomenclature, composition, or SKU signature..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                    />
-                </div>
-                <div className="flex items-center gap-3 w-full md:w-auto">
                     <button
                         onClick={() => setIsFilterOpen(!isFilterOpen)}
-                        className={`p-2.5 rounded-xl border transition-all ${isFilterOpen ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-200 hover:text-slate-900'}`}
+                        className={`flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold transition-colors shadow-sm ${isFilterOpen ? 'text-blue-600 border-blue-200 bg-blue-50' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50'}`}
                     >
-                        <Filter size={18} strokeWidth={2.5} />
+                        <Filter size={14} />
+                        <span className="hidden sm:inline">Filters</span>
                     </button>
+
                     <button
                         onClick={() => refetch()}
-                        className="p-2.5 bg-white text-slate-400 border border-slate-200 rounded-xl hover:text-slate-900 transition-all"
+                        className="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 transition-colors shadow-sm"
                     >
-                        <RefreshCcw size={18} strokeWidth={2.5} className={isLoading ? 'animate-spin' : ''} />
+                        <RefreshCcw size={16} className={isLoading ? 'animate-spin' : ''} />
                     </button>
-                    <div className="h-8 w-px bg-slate-100 hidden md:block mx-1" />
-                    <button className="p-2.5 bg-white text-slate-400 border border-slate-200 rounded-xl hover:text-slate-900 transition-all">
-                        <LayoutGrid size={18} strokeWidth={2.5} />
+
+                    <button
+                        onClick={handleExportExcel}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 transition-colors shadow-sm"
+                    >
+                        <Download size={16} />
+                        <span className="hidden sm:inline">Export</span>
+                    </button>
+
+                    <button
+                        onClick={() => setIsBulkModalOpen(true)}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 transition-colors shadow-sm"
+                    >
+                        <FileSpreadsheet size={16} />
+                        <span className="hidden sm:inline">Import</span>
                     </button>
                 </div>
             </div>
 
-            {/* Simple Filters Grid */}
+            {/* Filters Section (Optional/Expandable) */}
             {isFilterOpen && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-4 duration-300">
-                    {[
-                        { label: 'Stock Threshold', value: statusFilter, setter: setStatusFilter, options: ['All Stock', 'In Stock', 'Low Stock', 'Out of Stock'] },
-                        { label: 'Vendor Origin', value: supplierFilter, setter: setSupplierFilter, options: suppliers },
-                        { label: 'Stability Status', value: expiryStatusFilter, setter: setExpiryStatusFilter, options: ['All', 'Expired', 'Expiring Soon (30 days)', 'Expiring in 3 months'] }
-                    ].map((filter, i) => (
-                        <div key={i} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 leading-none">{filter.label}</p>
-                            <select
-                                className="w-full bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tight outline-none focus:ring-2 focus:ring-blue-500/10 cursor-pointer appearance-none"
-                                value={filter.value}
-                                onChange={(e) => filter.setter(e.target.value)}
-                            >
-                                {filter.options.map(opt => <option key={opt}>{opt}</option>)}
-                            </select>
-                        </div>
-                    ))}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 bg-white dark:bg-gray-800 p-3 md:p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm mx-1 md:mx-2">
+                    <div>
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Stock Status</label>
+                        <select
+                            className="w-full bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                            <option>All Stock</option>
+                            <option>In Stock</option>
+                            <option>Low Stock</option>
+                            <option>Out of Stock</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Supplier</label>
+                        <select
+                            className="w-full bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                            value={supplierFilter}
+                            onChange={(e) => setSupplierFilter(e.target.value)}
+                        >
+                            {suppliers.map(s => <option key={s}>{s}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Expiry Timeline</label>
+                        <select
+                            className="w-full bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                            value={expiryStatusFilter}
+                            onChange={(e) => setExpiryStatusFilter(e.target.value)}
+                        >
+                            <option>All</option>
+                            <option>Expired</option>
+                            <option>Expiring Soon (30 days)</option>
+                            <option>Expiring in 3 months</option>
+                        </select>
+                    </div>
                 </div>
             )}
 
-            {/* Clean Registry */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            {/* Table Container */}
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mx-1 md:mx-2 overflow-hidden mt-2">
                 <ProductTable
                     products={products}
                     onEdit={handleEditProduct}
@@ -313,7 +333,7 @@ const ProductsPage = () => {
                 />
             </div>
 
-            {/* Registry Modals */}
+            {/* Modals */}
             <AddProductModal
                 isOpen={isModalOpen}
                 onClose={() => {

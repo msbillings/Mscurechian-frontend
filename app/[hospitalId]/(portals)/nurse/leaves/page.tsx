@@ -120,14 +120,14 @@ function NurseLeavesPage() {
     }
 
     return (
-        <div className="space-y-8 max-w-[1600px] mx-auto pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="space-y-8 max-w-7xl mx-auto pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* HEADER */}
-            <div className="relative overflow-hidden rounded-xl bg-white shadow-sm p-4 sm:p-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6 border border-slate-100">
+            <div className="relative overflow-hidden rounded-xl bg-white shadow-sm p-4 flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6 border border-slate-100">
                 <div className="relative z-10">
-                    <h1 className="text-xs sm:text-2xl font-black text-gray-900 tracking-tight leading-none mb-1 sm:mb-2 uppercase">
+                    <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 tracking-tight leading-none mb-1 sm:mb-2 uppercase">
                         Service <span className="text-primary-theme">Exemption</span> Registry
                     </h1>
-                    <p className="text-slate-400 font-bold text-[8px] sm:text-sm max-w-xl leading-relaxed uppercase tracking-widest">
+                    <p className="text-slate-400 font-bold text-[7px] md:text-[8px] max-w-xl leading-relaxed uppercase tracking-widest">
                         Exemption records, balance ledger & approval portal
                     </p>
                 </div>
@@ -245,7 +245,7 @@ function NurseLeavesPage() {
                         </div>
                     ) : (
                         <div className="bg-white p-4 sm:p-8 rounded-xl sm:rounded-2xl border border-slate-100 shadow-sm sticky top-24">
-                            <h2 className="text-[10px] sm:text-lg font-black text-slate-900 uppercase tracking-tight mb-4 flex items-center gap-2">
+                            <h2 className="text-[10px] sm:text-lg font-bold text-slate-900 uppercase tracking-tight mb-4 flex items-center gap-2">
                                 <AlertCircle size={14} className="text-emerald-500 sm:size-[20px]" />
                                 Compliance Guidelines
                             </h2>

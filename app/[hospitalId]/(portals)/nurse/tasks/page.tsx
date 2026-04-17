@@ -159,7 +159,7 @@ export default function DailyTasksPage() {
                             <Calendar size={24} />
                         </div>
                         <div>
-                            <h1 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight leading-none">
+                            <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 uppercase tracking-tighter sm:tracking-tight">
                                 Nurse Dashboard
                             </h1>
                             <p className="text-[10px] sm:text-sm text-slate-500 mt-1">

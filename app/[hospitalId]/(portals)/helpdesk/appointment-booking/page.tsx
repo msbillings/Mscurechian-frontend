@@ -25,7 +25,8 @@ import {
     Receipt,
     Check,
     Phone,
-    X
+    X,
+    Droplets
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -58,7 +59,17 @@ export default function AppointmentBooking() {
 
     const [selectedDoctor, setSelectedDoctor] = useState<HelpdeskDoctor | null>(null);
     const [selectedDept, setSelectedDept] = useState("");
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedDate, setSelectedDate] = useState(() => {
+        const today = new Date();
+        today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+        return today.toISOString().split('T')[0];
+    });
+    const [selectedTime, setSelectedTime] = useState(() => {
+        const now = new Date();
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        return `${h}:${m}`;
+    });
     const [availableSlots, setAvailableSlots] = useState<any[]>([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
@@ -118,6 +129,7 @@ export default function AppointmentBooking() {
 
     const validateVital = (field: string, value: string) => {
         let error = '';
+        if (!value) return ''; // No longer required
         const num = Number(value);
         if (!value) {
             return '';
@@ -216,7 +228,7 @@ export default function AppointmentBooking() {
                             dob: profileData.dob || patientData.dob || 'N/A',
                             address: profileData.address || patientData.address || 'N/A',
                             email: patientData.user?.email || profileData.emergencyContactEmail || profileData.email || 'N/A',
-                            bloodGroup: profileData.bloodGroup || patientData.bloodGroup || 'N/A',
+                            bloodGroup: profileData.bloodGroup || patientData.bloodGroup || '',
                             emergencyContact: profileData.alternateNumber || profileData.emergencyContact || patientData.emergencyContact || 'N/A',
                             allergies: profileData.allergies || patientData.allergies || [],
                             medicalHistory: profileData.medicalHistory || profileData.conditions || patientData.medicalHistory || '',
@@ -260,8 +272,8 @@ export default function AppointmentBooking() {
                     // Extraction of departments is still needed here OR in the other effect
                 }
                 else {
-                    // Extract unique departments from physicians anyway
-                    const uniqueDepts = Array.from(new Set(validDocs.map(d => d.department || d.specialties?.[0]).filter(Boolean)));
+                    // Extract unique departments/specialties from physicians anyway
+                    const uniqueDepts = Array.from(new Set(validDocs.map(d => d.specialty || d.specialties?.[0]).filter(Boolean)));
                     setDepartments(uniqueDepts as string[]);
                     // Still fetch unit types for the dropdown if registration type changes
                     ipdService.getUnitTypes().then(setUnitTypes).catch(() => []);
@@ -360,7 +372,7 @@ export default function AppointmentBooking() {
     }, [patientSearch]);
 
     const filteredDoctors = selectedDept
-        ? doctors.filter(d => (d.department === selectedDept || d.specialties?.[0] === selectedDept))
+        ? doctors.filter(d => (d.specialty === selectedDept || d.specialties?.[0] === selectedDept))
         : doctors;
 
     const fetchSlots = useCallback(async () => {
@@ -387,6 +399,7 @@ export default function AppointmentBooking() {
     const isBookingValid = () => {
         if (!selectedPatient || !selectedDoctor) return false;
 
+        const hasEmptyRequired = false; // Vitals are no longer required
         const hasVitalErrors = Object.values(vitalsErrors).some(err => !!err);
 
         const hasNotesLimit = notes.length > 400;
@@ -408,6 +421,12 @@ export default function AppointmentBooking() {
             toast.error("Please correct the highlighted errors and fill all required fields.");
             return;
         }
+
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write('<html><body><div style="font-family:sans-serif;padding:20px;text-align:center;margin-top:20vh;"><h2>Processing Appointment...</h2><p>Please wait while we generate your receipt.</p></div></body></html>');
+        }
+
         try {
             setSubmitting(true);
             const backendPaymentStatus = paymentStatus === 'unpaid' ? 'pending' : 'paid';
@@ -440,7 +459,7 @@ export default function AppointmentBooking() {
                 // Pass extended details to ensure profile is updated/corrected
                 honorific: selectedPatient.honorific || selectedPatient.profile?.honorific,
                 address: selectedPatient.address || selectedPatient.profile?.address,
-                bloodGroup: selectedPatient.bloodGroup || selectedPatient.profile?.bloodGroup,
+                bloodGroup: (selectedPatient.bloodGroup && selectedPatient.bloodGroup !== 'N/A') ? selectedPatient.bloodGroup : undefined,
                 emergencyContact: selectedPatient.emergencyContact || selectedPatient.profile?.alternateNumber,
                 allergies: Array.isArray(selectedPatient.allergies) ? selectedPatient.allergies.join(', ') : selectedPatient.allergies,
                 medicalHistory: selectedPatient.medicalHistory,
@@ -455,6 +474,16 @@ export default function AppointmentBooking() {
                 }
             };
 
+            // 1. Create Appointment first (especially for IPD to generate the admissionId linkage)
+            const response = await helpdeskService.createAppointment({
+                ...payload,
+                type: registrationType === 'IPD' ? 'IPD' : appointmentType,
+                amount: registrationType === 'IPD' ? parseFloat(ipdFee) : (selectedDoctor?.consultationFee || 0),
+                paymentStatus: registrationType === 'IPD' ? backendPaymentStatus : payload.paymentStatus
+            });
+            const appointment = response.appointment || response;
+
+            // 2. Then initiate admission if IPD
             if (registrationType === 'IPD') {
                 if (!admissionData.bedId) {
                     toast.error("Please select a bed for IPD admission");
@@ -486,6 +515,12 @@ export default function AppointmentBooking() {
                     paymentStatus: backendPaymentStatus
                 });
                 toast.success("IPD Admission Initiated");
+            }
+
+            if (sendToDoctor && (appointment._id || appointment.id)) {
+                try {
+                    await helpdeskService.updateAppointmentStatus(appointment._id || appointment.id, 'confirmed');
+                } catch (e) { }
             }
 
             // 1. Fetch Hospital Branding
@@ -562,15 +597,25 @@ export default function AppointmentBooking() {
                     specialization: selectedDoctor.specialties?.[0] || 'General Physician',
                     qualification: selectedDoctor.qualifications?.[0] || 'MBBS, DM',
                     date: new Date(selectedDate).toLocaleDateString(),
-                    time: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                    time: bookingMode === 'slot' ? selectedSlot : (() => {
+                        const [h, m] = selectedTime.split(':');
+                        const d = new Date();
+                        d.setHours(parseInt(h, 10));
+                        d.setMinutes(parseInt(m, 10));
+                        return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    })(),
                     type: appointmentType.toUpperCase(),
                     notes: notes,
                     appointmentId: 'PENDING'
                 },
                 payment: {
                     amount: registrationType === 'IPD' ? parseFloat(ipdFee) : (selectedDoctor?.consultationFee || 0),
+                    totalBillAmount: registrationType === 'IPD' ? parseFloat(ipdFee) : (selectedDoctor?.consultationFee || 0),
+                    totalPaidAmount: registrationType === 'IPD' ? parseFloat(ipdFee) : (selectedDoctor?.consultationFee || 0),
+                    advanceAmount: registrationType === 'IPD' ? parseFloat(ipdFee) : 0,
                     method: paymentMethod.toUpperCase(),
-                    status: (paymentStatus === 'unpaid' ? 'pending' : paymentStatus).toUpperCase()
+                    status: (paymentStatus === 'unpaid' ? 'pending' : paymentStatus).toUpperCase(),
+                    date: new Date().toISOString()
                 },
                 registrationType: registrationType,
                 headerHtml: headerHtml,
@@ -578,102 +623,15 @@ export default function AppointmentBooking() {
                 returnUrl: '/helpdesk'
             };
 
-            console.time("BookingFullProcess");
-            let appointment: any;
-            try {
-                if (registrationType === 'IPD') {
-                    const selectedBed = beds.find(b => b._id === admissionData.bedId);
-                    const finalAdmissionType = (selectedBed?.type || admissionData.roomType || 'GENERAL').toUpperCase();
-
-                    await ipdService.initiateAdmission({
-                        patientId: selectedPatient?._id || selectedPatient?.id,
-                        doctorId: selectedDoctor?._id,
-                        bedId: admissionData.bedId,
-                        admissionType: finalAdmissionType,
-                        diet: admissionData.diet,
-                        clinicalNotes: admissionData.clinicalNotes,
-                        reason: notes,
-                        vitals: {
-                            height: vitals.height,
-                            weight: vitals.weight,
-                            bloodPressure: vitals.bp,
-                            temperature: vitals.temperature,
-                            pulse: vitals.pulse,
-                            spO2: vitals.spo2,
-                            glucose: vitals.glucose
-                        },
-                        amount: parseFloat(ipdFee),
-                        paymentMethod: paymentMethod,
-                        paymentStatus: backendPaymentStatus
-                    });
-
-                    const regPayload = {
-                        ...payload,
-                        ...admissionData,
-                        name: selectedPatient.name,
-                        mobile: selectedPatient.mobile,
-                        age: selectedPatient.age,
-                        gender: selectedPatient.gender,
-                        dob: selectedPatient.dob,
-                        type: 'IPD',
-                        visitType: 'IPD'
-                    };
-                    console.log("[DEBUG] Calling registerPatient API...");
-                    const regResponse = await helpdeskService.registerPatient(regPayload as any);
-                    if (regResponse.success === false) throw new Error(regResponse.message || "Registration failed");
-                    appointment = (regResponse as any).appointment || regResponse;
-                } else {
-                    console.log("[DEBUG] Calling createAppointment API...");
-                    const bookResponse = await helpdeskService.createAppointment({
-                        ...payload,
-                        type: appointmentType,
-                        amount: selectedDoctor?.consultationFee || 0,
-                        paymentStatus: payload.paymentStatus
-                    });
-                    if (bookResponse.success === false) throw new Error(bookResponse.message || "Booking failed");
-                    appointment = bookResponse.appointment || bookResponse;
-                }
-            } catch (apiErr: any) {
-                if (printWindow) printWindow.close();
-                throw apiErr;
-            }
-            console.timeEnd("BookingFullProcess");
-
-            if (sendToDoctor && (appointment._id || appointment.id)) {
-                try {
-                    await helpdeskService.updateAppointmentStatus(appointment._id || appointment.id, 'confirmed');
-                } catch (e) { }
-            }
-
-            // Update receiptData with the actual appointment ID if returned
-            const finalReceiptData = {
-                ...receiptData,
-                appointment: {
-                    ...receiptData.appointment,
-                    appointmentId: appointment.appointmentId || appointment.id || appointment._id || 'APT-' + Math.random().toString(36).substr(2, 9).toUpperCase()
-                }
-            };
-
-            console.log("[DEBUG] Finalizing print window content...");
             if (printWindow) {
-                try {
-                   printWindow.document.open();
-                   printWindow.document.write(generateClinicalReceiptHtml(finalReceiptData));
-                   printWindow.document.close();
-                   toast.success("Booking Indexed & Receipt Generated");
-                } catch(e) { 
-                    console.error("Print write error:", e);
-                    toast.error("Failed to write to print window.");
-                }
-                router.push('/helpdesk');
-            } else {
-                console.warn("[DEBUG] Popup blocked.");
-                toast.error("Popup blocked! Receipt could not be opened.");
-                toast.success("Booking Indexed successfully");
-                router.push('/helpdesk');
+                printWindow.document.open();
+                printWindow.document.write(generateClinicalReceiptHtml(receiptData));
+                printWindow.document.close();
             }
+            toast.success("Booking Indexed & Receipt Generated");
+            router.push('/helpdesk');
         } catch (error: any) {
-            console.error("[DEBUG] Booking logic error:", error);
+            if (printWindow) printWindow.close();
             toast.error(error.message || "Execution failure during booking");
         } finally {
             setSubmitting(false);
@@ -695,30 +653,28 @@ export default function AppointmentBooking() {
         <div className="max-w-full mx-auto space-y-4 animate-in fade-in duration-500">
 
             {/* HEADER */}
-            <div className="relative flex items-center border-b border-slate-200 pb-2 px-4 md:px-0 min-h-[52px]">
+            <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-2 px-1 sm:px-0 min-h-fit sm:min-h-[52px] gap-2">
                 {/* LEFT: Breadcrumb */}
                 <div className="flex items-center gap-2 z-10">
                     <Link href="/helpdesk" className="p-1.5 bg-slate-100 rounded-lg text-slate-400 hover:text-teal-600 transition-all">
                         <ArrowLeft size={14} />
                     </Link>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Medical Scheduling / Appointment Booking</span>
+                    <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Medical Scheduling / Booking</span>
                 </div>
-                {/* CENTER: Title + Subtitle — absolutely centered in the full row */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                    <h1 className="text-xl font-black text-slate-900 tracking-tight">
-                        {registrationType === 'IPD' ? 'IPD Patient Admission' : 'Schedule Appointment'}
+                {/* CENTER/TITLE: Title + Subtitle */}
+                <div className="sm:absolute sm:inset-0 flex flex-col items-center justify-center text-center sm:pointer-events-none">
+                    <h1 className="text-lg md:text-xl lg:text-xl font-black text-slate-900 tracking-tight">
+                        {registrationType === 'IPD' ? 'IPD PATIENT ADMISSION' : 'SCHEDULE APPOINTMENT'}
                     </h1>
-                    <p className="text-[9px] font-medium text-slate-500 uppercase tracking-widest mt-0.5">
-                        {registrationType === 'IPD' ? 'Initiate clinical admission and bed allocation' : 'Register new clinical engagement for patient'}
-                    </p>
+                    <p className="hidden sm:block text-[9px] font-bold text-teal-600 uppercase tracking-[0.2em]">Clinical Manifest Gateway</p>
                 </div>
             </div>
 
             <div className="bg-white rounded-[24px] border border-slate-200 shadow-sm overflow-hidden p-4 md:p-6 lg:p-8">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="flex flex-col lg:grid lg:grid-cols-12 gap-8">
 
                     {/* LEFT SIDE: SELECTION & DATA */}
-                    <div className="lg:col-span-8 space-y-12">
+                    <div className="lg:col-start-1 lg:col-span-8 space-y-12 order-1 lg:order-1">
 
                         {/* 1. PATIENT OBJECT */}
                         <section className="space-y-4">
@@ -741,6 +697,11 @@ export default function AppointmentBooking() {
                                                 <span className="flex items-center gap-1.5 px-2 py-0.5 bg-white rounded-lg border border-slate-200 text-slate-600"><Hash size={10} className="text-teal-600" /> {selectedPatient.mrn}</span>
                                                 <span className="flex items-center gap-1.5 px-2 py-0.5 bg-white rounded-lg border border-slate-200 text-slate-600"><Phone size={10} className="text-teal-600" /> {selectedPatient.mobile}</span>
                                                 <span className="flex items-center gap-1.5 px-2 py-0.5 bg-white rounded-lg border border-slate-200 text-slate-600"><Activity size={10} className="text-teal-600" /> {selectedPatient.age} / {selectedPatient.gender}</span>
+                                                {selectedPatient.bloodGroup && selectedPatient.bloodGroup !== 'N/A' && (
+                                                    <span className="flex items-center gap-1.5 px-2 py-0.5 bg-rose-50 rounded-lg border border-rose-100 text-rose-600">
+                                                        <Droplets size={10} className="text-rose-500" /> {selectedPatient.bloodGroup}
+                                                    </span>
+                                                )}
                                                 {selectedPatient.activeAdmission && (
                                                     <span className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-50 rounded-lg border border-amber-200 text-amber-700 animate-pulse">
                                                         <Activity size={10} className="text-amber-600" /> ADMITTED (Bed Assigned)
@@ -829,13 +790,13 @@ export default function AppointmentBooking() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="relative group max-w-2xl">
-                                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-600 transition-colors" size={20} />
+                                <div className="relative group w-full max-w-2xl px-2 sm:px-0">
+                                    <Search className="absolute left-6 sm:left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-600 transition-colors sm:size-[20px]" size={18} />
                                     <input
                                         value={patientSearch}
                                         onChange={(e) => setPatientSearch(e.target.value)}
-                                        placeholder="Search by name, ID number or mobile prefix..."
-                                        className="w-full pl-14 pr-12 py-5 bg-slate-50 border border-slate-200 rounded-[20px] focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 focus:bg-white outline-none transition-all text-xs font-bold uppercase placeholder:text-slate-300"
+                                        placeholder="SEARCH PATIENT..."
+                                        className="w-full pl-12 sm:pl-14 pr-10 sm:pr-12 py-3 sm:py-5 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-[20px] focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 focus:bg-white outline-none transition-all text-[10px] sm:text-xs font-bold uppercase placeholder:text-slate-300"
                                     />
                                     <div className="absolute right-5 top-1/2 -translate-x-0 -translate-y-1/2 flex items-center gap-3">
                                         {searchingPatients && <Loader2 className="animate-spin text-teal-600" size={20} />}
@@ -882,7 +843,7 @@ export default function AppointmentBooking() {
                                                                 dob: profileData.dob || full.dob || 'N/A',
                                                                 address: profileData.address || full.address || 'N/A',
                                                                 email: full.user?.email || profileData.emergencyContactEmail || profileData.email || 'N/A',
-                                                                bloodGroup: profileData.bloodGroup || full.bloodGroup || 'N/A',
+                                                                bloodGroup: profileData.bloodGroup || full.bloodGroup || '',
                                                                 emergencyContact: profileData.alternateNumber || profileData.emergencyContact || full.emergencyContact || 'N/A',
                                                                 allergies: profileData.allergies || full.allergies || [],
                                                                 medicalHistory: profileData.medicalHistory || profileData.conditions || full.medicalHistory || '',
@@ -964,18 +925,15 @@ export default function AppointmentBooking() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div className="space-y-2">
                                     <FormLabel label="Appointment Date" />
-                                    <div className="relative group">
-                                        <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-600 transition-colors" size={16} />
+                                    <div className="relative group opacity-80">
+                                        <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                         <input
                                             type="date"
                                             value={selectedDate}
-                                            min={new Date().toISOString().split('T')[0]}
-                                            max={new Date().toISOString().split('T')[0]}
-                                            onChange={(e) => {
-                                                const today = new Date().toISOString().split('T')[0];
-                                                if (e.target.value === today) setSelectedDate(today);
-                                            }}
-                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold uppercase focus:border-teal-500 outline-none transition-all cursor-pointer hover:bg-white"
+                                            readOnly
+                                            disabled
+                                            className="w-full pl-10 pr-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-xs font-black uppercase outline-none cursor-not-allowed"
+                                            style={{ colorScheme: 'light' }}
                                         />
                                     </div>
                                 </div>
@@ -1074,7 +1032,7 @@ export default function AppointmentBooking() {
                     </div>
 
                     {/* RIGHT SIDE: FINALIZATION & REVENUE */}
-                    <div className={`lg:col-span-4 space-y-4 transition-all duration-700 ${!selectedPatient ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
+                    <div className={`lg:col-start-9 lg:col-span-4 space-y-4 transition-all duration-700 order-3 lg:order-2 lg:row-start-1 lg:row-span-2 ${!selectedPatient ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
                         <div className="lg:sticky lg:top-24 space-y-4">
                             {/* REVENUE CYCLE */}
                             <div className="bg-slate-900 rounded-[20px] p-5 text-white space-y-4 shadow-xl">
@@ -1230,11 +1188,10 @@ export default function AppointmentBooking() {
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* 4. IPD ADMISSION FLOW (IPD ONLY) */}
-                {registrationType === 'IPD' && (
-                    <section className="space-y-6 mt-8 pt-8 border-t border-slate-100 animate-in slide-in-from-top-4 duration-500">
+                    {/* 4. IPD ADMISSION FLOW (IPD ONLY) */}
+                    {registrationType === 'IPD' && (
+                        <div className="lg:col-start-1 lg:col-span-8 space-y-6 order-2 lg:order-3 pt-8 border-t border-slate-100 animate-in slide-in-from-top-4 duration-500">
                         <div className="flex items-center gap-2 pb-2">
                             <div className="w-6 h-6 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600">
                                 <Activity size={14} />
@@ -1393,16 +1350,17 @@ export default function AppointmentBooking() {
                                 />
                             </div>
                         </div>
-                    </section>
-                )}
-            </div>
+                        </div>
+                    )}
+                </div>
 
-            <style jsx global>{`
-        ::-webkit-calendar-picker-indicator {
-            filter: invert(0.5);
-            cursor: pointer;
-        }
-      `}</style>
+                <style jsx global>{`
+                    ::-webkit-calendar-picker-indicator {
+                        filter: invert(0.5);
+                        cursor: pointer;
+                    }
+                `}</style>
+            </div>
         </div>
     );
 }

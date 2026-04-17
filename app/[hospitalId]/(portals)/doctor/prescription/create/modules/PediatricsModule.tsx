@@ -26,7 +26,7 @@ export const PediatricsModule: React.FC<PediatricsModuleProps> = ({ formData, se
 
         // 1. Weight Validation
         if (!weight || weight <= 0) {
-            newAlerts.push({ type: 'error', message: "Weight is MANDATORY for pediatric patients." });
+            newAlerts.push({ type: 'error', message: "Weight is recommended for accurate pediatric dosing." });
         } else if (weight > 100) {
             newAlerts.push({ type: 'warning', message: "Weight exceeds typical pediatric range." });
         }
@@ -359,26 +359,8 @@ export const PediatricsModule: React.FC<PediatricsModuleProps> = ({ formData, se
                 </div>
             </div>
 
-            {/* F. Symptoms & G. Red Flags */}
+            {/* G. Red Flags */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-                    <div className="flex items-center gap-2 mb-4 text-slate-600">
-                        <Info size={18} />
-                        <h3 className="text-[11px] font-black uppercase tracking-[0.1em]">Patient Symptoms</h3>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {['Fever', 'Cough', 'Vomiting', 'Diarrhea', 'Poor Feeding', 'Lethargy', 'Seizures'].map((s) => (
-                            <button
-                                key={s}
-                                onClick={() => toggleListItem('symptoms', s)}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${pediatricData.symptoms?.includes(s) ? 'bg-slate-800 text-white shadow-md' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
-                            >
-                                {s}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
                 <div className="bg-white rounded-2xl border border-rose-100 p-6 shadow-sm ring-1 ring-rose-50">
                     <div className="flex items-center gap-2 mb-4 text-rose-600">
                         <AlertTriangle size={18} />

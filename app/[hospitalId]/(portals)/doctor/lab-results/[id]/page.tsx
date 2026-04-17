@@ -8,6 +8,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { Download, ArrowLeft, FileText, Clock, FlaskConical, CheckCircle2, ShieldCheck, Calendar, User } from 'lucide-react';
 import { API_CONFIG } from '@/lib/integrations/config/api-config';
+import { apiClient } from '@/lib/integrations/api/apiClient';
 import LabReportTemplate from '@/components/lab/LabReportTemplate';
 
 export default function DoctorLabResultDetailPage() {
@@ -31,15 +32,8 @@ export default function DoctorLabResultDetailPage() {
 
     const fetchOrderDetails = async () => {
         try {
-            const token = sessionStorage.getItem('accessToken');
-            const response = await fetch(`${API_CONFIG.BASE_URL}/lab/orders/${id}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                }
-            });
-
-            const data = await response.json();
-            if (response.ok) {
+            const data = await apiClient<any>(`/lab/orders/${id}`);
+            if (data) {
                 const rawOrder = data;
 
                 // Construct patient details with better fallbacks and official MRN from profile if available
@@ -84,14 +78,8 @@ export default function DoctorLabResultDetailPage() {
 
     const fetchLabSettings = async () => {
         try {
-            const token = sessionStorage.getItem('accessToken');
-            const response = await fetch(`${API_CONFIG.BASE_URL}/lab/settings`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            const data = await response.json();
-            if (response.ok) {
+            const data = await apiClient<any>('/lab/settings');
+            if (data) {
                 setLabInfo(data);
             }
         } catch (error) {
@@ -162,53 +150,54 @@ export default function DoctorLabResultDetailPage() {
         );
     }
 
-    // Logic to show "Report Pending" if not released/completed
-    // A report should only be visible to a doctor if it's Completed AND released (Notified)
-    // A report should be visible to a doctor if it's Completed
-    const isReleased = order.status?.toLowerCase() === 'completed';
+    // A report is ONLY accessible to the doctor when:
+    // 1. The order is completed (results entered), AND
+    // 2. The lab technician has explicitly clicked "Notify Doctor" (doctorNotified: true)
+    // Direct URL access is blocked by this check — the backend also enforces this.
+    const isReleased = order.status?.toLowerCase() === 'completed' && order.doctorNotified === true;
     const showReport = isReleased;
 
     if (!showReport) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-center p-6">
-                <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-[32px] shadow-2xl p-10 text-center border border-gray-100 dark:border-gray-800">
-                    <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/20 rounded-3xl flex items-center justify-center mx-auto mb-8 transform rotate-3">
-                        <Clock className="w-10 h-10 text-blue-600 animate-pulse" />
+            <div className="min-h-screen bg-secondary-theme flex flex-col items-center justify-center p-4 sm:p-6">
+                <div className="max-w-md w-full bg-card rounded-2xl sm:rounded-[32px] shadow-2xl p-6 sm:p-10 text-center border border-border-theme">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-50 dark:bg-blue-900/20 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-6 sm:mb-8 transform rotate-3">
+                        <Clock className="w-8 h-8 sm:w-10 sm:h-10 text-blue-600 animate-pulse" />
                     </div>
 
-                    <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-3 tracking-tight">
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground mb-2 sm:mb-3 tracking-tight">
                         Report Pending
                     </h2>
-                    <p className="text-gray-500 dark:text-gray-400 mb-10 leading-relaxed font-medium">
-                        The lab results for <span className="font-bold text-gray-900 dark:text-white">{order.patientDetails?.name}</span> are currently being processed. You will be notified once the final report is ready.
+                    <p className="text-xs sm:text-sm text-muted mb-6 sm:mb-10 leading-relaxed font-medium">
+                        The lab results for <span className="font-bold text-foreground">{order.patientDetails?.name}</span> are currently being processed. You will be notified once the final report is ready.
                     </p>
 
-                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-3xl p-6 mb-10 text-left border border-gray-100 dark:border-gray-700/30">
-                        <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-200/50 dark:border-gray-700/50">
-                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Current Status</span>
-                            <span className="text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full uppercase tracking-wide">
+                    <div className="bg-secondary-theme rounded-xl sm:rounded-3xl p-4 sm:p-6 mb-6 sm:mb-10 text-left border border-border-theme">
+                        <div className="flex justify-between items-center mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-border-theme">
+                            <span className="text-[10px] sm:text-xs font-bold text-muted uppercase tracking-wider">Status</span>
+                            <span className="text-[10px] sm:text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full uppercase tracking-wide">
                                 {order.status}
                             </span>
                         </div>
-                        <div className="flex justify-between items-center mb-4">
-                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Requested At</span>
-                            <span className="text-[13px] font-bold text-gray-700 dark:text-gray-200">
-                                {new Date(order.collectionDate || order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                        <div className="flex justify-between items-center mb-3 sm:mb-4">
+                            <span className="text-[10px] sm:text-xs font-bold text-muted uppercase tracking-wider">Requested</span>
+                            <span className="text-[11px] sm:text-[13px] font-bold text-foreground">
+                                {new Date(order.collectionDate || order.createdAt).toLocaleDateString([], { day: '2-digit', month: 'short' })}
                                 <span className="mx-1 opacity-30">•</span>
-                                {new Date(order.collectionDate || order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                {new Date(order.collectionDate || order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                         </div>
                         <div className="flex justify-between items-center">
-                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Sample ID</span>
-                            <span className="text-[13px] font-mono font-bold text-gray-700 dark:text-gray-200">#{order.sampleId}</span>
+                            <span className="text-[10px] sm:text-xs font-bold text-muted uppercase tracking-wider">Sample ID</span>
+                            <span className="text-[11px] sm:text-[13px] font-mono font-bold text-foreground">#{order.sampleId}</span>
                         </div>
                     </div>
 
                     <button
                         onClick={() => router.back()}
-                        className="w-full py-4 px-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-2xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all"
+                        className="w-full py-3 sm:py-4 px-4 sm:px-6 bg-foreground text-background font-bold rounded-xl sm:rounded-2xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all text-sm sm:text-base"
                     >
-                        Return to Lab Results
+                        Back to Results
                     </button>
                 </div>
             </div>
@@ -216,34 +205,38 @@ export default function DoctorLabResultDetailPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-8 pt-4 lg:pt-6">
+        <div className="min-h-screen bg-secondary-theme p-3 sm:p-6 md:p-8 pt-4 lg:pt-6">
             {/* Header Actions */}
-            <div className="max-w-[210mm] mx-auto mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div className="max-w-[210mm] mx-auto mb-4 sm:mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <button
                     onClick={() => router.back()}
-                    className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
+                    className="inline-flex items-center gap-2 text-muted hover:text-foreground font-bold text-xs sm:text-sm transition-colors w-full sm:w-auto"
                 >
-                    <ArrowLeft size={18} />
+                    <ArrowLeft size={16} className="sm:size-[18px]" />
                     Back to Results
                 </button>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 w-full sm:w-auto">
                     <button
                         onClick={handleDownload}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20 transition-all font-bold text-sm tracking-wide active:scale-95"
+                        className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg sm:rounded-xl shadow-lg shadow-blue-500/20 transition-all font-bold text-xs sm:text-sm tracking-wide active:scale-95"
                     >
-                        <Download size={18} />
-                        Download Report PDF
+                        <Download size={16} className="sm:size-[18px]" />
+                        Download PDF
                     </button>
                 </div>
             </div>
 
             {/* Report Content */}
-            <div className="max-w-[210mm] mx-auto bg-white shadow-xl rounded-sm overflow-hidden ring-1 ring-gray-200">
-                <LabReportTemplate ref={printRef} sample={order} labInfo={labInfo} />
+            <div className="max-w-[210mm] mx-auto bg-white shadow-xl rounded-sm overflow-hidden ring-1 ring-border-theme p-1 sm:p-0">
+                <div className="overflow-x-auto no-scrollbar">
+                    <div className="min-w-[700px] sm:min-w-0">
+                        <LabReportTemplate ref={printRef} sample={order} labInfo={labInfo} />
+                    </div>
+                </div>
             </div>
 
-            <p className="mt-8 text-center text-xs text-gray-400">
+            <p className="mt-8 text-center text-[10px] sm:text-xs text-muted">
                 This report is electronically generated and verified by the MS CURE CHAIN Laboratory System.
             </p>
         </div>

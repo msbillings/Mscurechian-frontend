@@ -58,7 +58,7 @@ function HospitalAdminPatients() {
   }
 
     return (
-        <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
+        <div className="p-3 md:p-8 space-y-8 bg-slate-50/50 min-h-screen">
             {/* Simple Header */}
             <div className="flex justify-between items-center">
                 <div>
@@ -78,7 +78,7 @@ function HospitalAdminPatients() {
                     { label: "Registry Growth", value: "+12.4%", icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50" },
                     { label: "Operational Flow", value: "Balanced", icon: Activity, color: "text-amber-600", bg: "bg-amber-50" }
                 ].map((stat, i) => (
-                    <div key={i} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+                    <div key={i} className="bg-white p-3 md:p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
                         <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
                             <stat.icon size={24} />
                         </div>
@@ -91,7 +91,7 @@ function HospitalAdminPatients() {
             </div>
 
             {/* Simple Filter Bar */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
+            <div className="bg-white p-2 md:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
                 <div className="relative flex-1 w-full">
                     <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
                     <input 
@@ -102,7 +102,7 @@ function HospitalAdminPatients() {
                         className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 outline-none transition-all" 
                     />
                 </div>
-                <button className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all">
+                <button className="flex items-center gap-2 px-3 md:px-6 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all">
                     <Filter className="w-3.5 h-3.5" /> Filter Results
                 </button>
             </div>
@@ -110,13 +110,13 @@ function HospitalAdminPatients() {
             {/* Clean Patient Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredPatients.map((patient) => (
-                    <div key={patient._id} className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col group relative overflow-hidden">
+                    <div key={patient._id} className="bg-white rounded-2xl p-3 md:p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col group relative overflow-hidden">
                         <div className="flex items-center gap-4 mb-6">
                             <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
                                 <User size={24} strokeWidth={2.5} />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <h3 className="text-lg font-black text-slate-900 truncate leading-tight">{patient.name}</h3>
+                                <h3 className="text-sm md:text-lg font-black text-slate-900 truncate leading-tight">{patient.name}</h3>
                                 <p className="text-[10px] font-bold text-blue-600 uppercase tracking-tighter mt-1 inline-flex items-center gap-1.5">
                                     <BadgeCheck size={10} /> PID: {patient._id.slice(-8).toUpperCase()}
                                 </p>
@@ -138,7 +138,7 @@ function HospitalAdminPatients() {
                             </div>
                         </div>
 
-                        <div className="flex justify-between items-center bg-slate-50/50 p-4 rounded-xl mb-4">
+                        <div className="flex justify-between items-center bg-slate-50/50 p-2 md:p-4 rounded-xl mb-4">
                             <div className="text-center flex-1 border-r border-slate-100">
                                 <p className="text-[10px] font-bold text-slate-400 uppercase mb-0.5">Visits</p>
                                 <p className="text-sm font-black text-slate-900">{patient.totalAppointments || 0}</p>

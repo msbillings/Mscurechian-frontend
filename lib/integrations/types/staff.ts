@@ -1,4 +1,4 @@
-// Staff Dashboard Types
+﻿// Staff Dashboard Types
 export interface StaffDashboard {
   staff: StaffProfile;
   stats: StaffStats;

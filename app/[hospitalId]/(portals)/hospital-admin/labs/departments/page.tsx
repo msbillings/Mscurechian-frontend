@@ -1,72 +1,104 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Search, Building2, Building, Trash, Edit3, X, Network, Database, Layers } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Plus, Trash2, Search, Building2, Edit3, X, FlaskConical, Upload, FileSpreadsheet, Download, CheckCircle2, AlertTriangle, SkipForward, Info } from 'lucide-react';
 import { DepartmentService } from '@/lib/integrations/services/department.service';
-import { LabTestService } from '@/lib/integrations/services/labTest.service';
 import { Department } from '@/lib/integrations/types/department';
 import { toast } from 'react-hot-toast';
+import * as XLSX from 'xlsx';
+import { apiClient } from '@/lib/integrations/api/apiClient';
 import DeleteConfirmationModal from '@/components/common/DeleteConfirmationModal';
 
+// ─── helpers ─────────────────────────────────────────────────────────────────
+function downloadDeptTemplate() {
+    const headers = ['Name', 'Code', 'Description', 'IsActive'];
+    const examples = [
+        ['Biochemistry', 'BIO01', 'Handles blood chemistry and metabolic panels', 'TRUE'],
+        ['Hematology', 'HEM01', 'Handles blood cell counts and coagulation', 'TRUE'],
+        ['Microbiology', 'MIC01', 'Deals with cultures and infectious diseases', 'TRUE'],
+        ['Pathology', 'PAT01', 'General disease diagnosis through lab analysis', 'TRUE'],
+        ['Immunology', 'IMM01', 'Handles immune system related testing', 'TRUE'],
+        ['Serology', 'SER01', 'Tests for antibodies and antigens in blood', 'TRUE'],
+        ['Molecular Diagnostics', 'MOL01', 'Performs DNA and RNA based diagnostic tools', 'TRUE'],
+        ['Cytology', 'CYT01', 'Studies cells for disease diagnosis', 'TRUE'],
+        ['Histopathology', 'HIS01', 'Examines tissue under microscope', 'TRUE'],
+        ['Clinical Chemistry', 'CHE01', 'Analyses chemical components of blood', 'TRUE'],
+    ];
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...examples]);
+    ws['!cols'] = headers.map(() => ({ wch: 26 }));
+    XLSX.utils.book_append_sheet(wb, ws, 'Departments');
+    XLSX.writeFile(wb, 'lab_departments_template.xlsx');
+}
+
+// ─── component ───────────────────────────────────────────────────────────────
 function HospitalAdminDepartmentMasterPage() {
-    const queryClient = useQueryClient();
+    const [departments, setDepartments] = useState<Department[]>([]);
+    const [suggestedDepts, setSuggestedDepts] = useState<string[]>([]);
     const [formData, setFormData] = useState({ name: '', description: '' });
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
 
-    // Initial Delete State
+    // Bulk import state
+    const [showBulk, setShowBulk] = useState(false);
+    const [dragging, setDragging] = useState(false);
+    const [bulkFileName, setBulkFileName] = useState('');
+    const [bulkRows, setBulkRows] = useState<any[]>([]);
+    const [importing, setImporting] = useState(false);
+    const [importResult, setImportResult] = useState<{ created: number; skipped: number; errors: string[] } | null>(null);
+
+    // Delete modal state
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [departmentToDelete, setDepartmentToDelete] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // ✅ CRITICAL FIX: Use React Query for departments
-    const { data: departments = [], isLoading: deptLoading, refetch: refetchDepts } = useQuery<Department[]>({
-        queryKey: ['hospital-admin-lab-departments'],
-        queryFn: async () => {
-            const apiStartTime = performance.now();
-            console.log(`[API] Starting departments fetch`);
-            try {
-                const data = await DepartmentService.getDepartments();
-                const apiEndTime = performance.now();
-                console.log(`[API] Departments fetch completed in ${(apiEndTime - apiStartTime).toFixed(2)}ms, returned ${data?.length || 0} departments`);
-                return data || [];
-            } catch (error) {
-                console.error("Failed to fetch departments", error);
-                throw error;
-            }
-        },
-        staleTime: 30 * 1000, // Reduced to 30 seconds for better consistency
-        gcTime: 15 * 60 * 1000,
-        retry: 1,
-    });
+    useEffect(() => {
+        fetchInitialData();
+    }, []);
 
-    // ✅ Derive unique department names for dropdown from the fetched departments
-    const suggestedDepts = useMemo(() => {
-        if (!departments) return [];
-        return Array.from(new Set(departments.map(d => d.name))).sort();
-    }, [departments]);
+    const fetchInitialData = async () => {
+        try {
+            const [deptData, meta] = await Promise.all([
+                DepartmentService.getDepartments(),
+                DepartmentService.getMeta()
+            ]);
+            setDepartments(deptData);
+            if (meta?.departmentNames) {
+                setSuggestedDepts(meta.departmentNames);
+            }
+        } catch (error) {
+            console.error("Failed to fetch initial data", error);
+        }
+    };
+
+    const fetchDepartments = async () => {
+        try {
+            const data = await DepartmentService.getDepartments();
+            setDepartments(data);
+        } catch (error) {
+            console.error("Failed to fetch departments", error);
+        }
+    };
 
     const handleAddDepartment = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.name.trim()) return;
-
         setLoading(true);
         try {
             if (editingId) {
                 await DepartmentService.updateDepartment(editingId, formData);
-                toast.success("Department hierarchy updated");
+                toast.success("Department updated successfully!");
             } else {
                 await DepartmentService.addDepartment(formData);
-                toast.success("New department node created");
+                toast.success("Department created successfully!");
             }
             setFormData({ name: '', description: '' });
             setEditingId(null);
-            queryClient.invalidateQueries({ queryKey: ['hospital-admin-lab-departments'] });
+            fetchDepartments();
         } catch (error: any) {
-            toast.error(error.message || "Protocol operation failed");
+            toast.error(error.message || "Operation failed");
         } finally {
             setLoading(false);
         }
@@ -79,77 +111,298 @@ function HospitalAdminDepartmentMasterPage() {
 
     const confirmDelete = async () => {
         if (!departmentToDelete) return;
-
         setIsDeleting(true);
         try {
             await DepartmentService.deleteDepartment(departmentToDelete);
-            toast.success("Department node purged");
-            queryClient.invalidateQueries({ queryKey: ['hospital-admin-lab-departments'] });
+            toast.success("Department deleted successfully");
+            fetchDepartments();
             setDeleteModalOpen(false);
             setDepartmentToDelete(null);
         } catch (error: any) {
-            toast.error(error.message || "Node purge failed");
+            toast.error(error.message || "Failed to delete department");
         } finally {
             setIsDeleting(false);
         }
     };
 
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 7;
+    // ── bulk file processing ──────────────────────────────────────────────────
+    const processFile = useCallback((file: File) => {
+        setImportResult(null);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                const wb = XLSX.read(data, { type: 'array' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: '' });
+                const normalised = rows.map(row => {
+                    const out: any = {};
+                    for (const [k, v] of Object.entries(row)) {
+                        const lk = k.trim().toLowerCase();
+                        if (lk === 'name') out.name = v;
+                        else if (lk === 'code') out.code = v;
+                        else if (lk === 'description') out.description = v;
+                        else if (lk === 'isactive') out.isActive = String(v).toUpperCase() !== 'FALSE';
+                        else out[k] = v;
+                    }
+                    return out;
+                });
+                setBulkRows(normalised);
+                setBulkFileName(file.name);
+                toast.success(`Loaded ${normalised.length} rows from ${file.name}`);
+            } catch {
+                toast.error('Failed to parse file. Use .xlsx or .csv.');
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }, []);
 
-    const filteredDepartments = useMemo(() => {
-        return departments.filter(dept =>
-            dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (dept.description && dept.description.toLowerCase().includes(searchTerm.toLowerCase()))
-        );
-    }, [departments, searchTerm]);
+    const handleDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setDragging(false);
+        const file = e.dataTransfer.files[0];
+        if (file) processFile(file);
+    }, [processFile]);
 
-    const totalPages = Math.ceil(filteredDepartments.length / itemsPerPage);
-    const paginatedDepartments = useMemo(() => {
-        return filteredDepartments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-    }, [filteredDepartments, currentPage]);
+    const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) processFile(file);
+    };
+
+    const handleBulkImport = async () => {
+        if (bulkRows.length === 0) { toast.error('No data to import'); return; }
+        setImporting(true);
+        const toastId = toast.loading(`Importing ${bulkRows.length} departments...`);
+        try {
+            const res: any = await apiClient('/lab/departments/bulk', {
+                method: 'POST',
+                body: JSON.stringify({ departments: bulkRows }),
+            });
+            setImportResult(res);
+            toast.success(`Done! Created: ${res.created}, Skipped: ${res.skipped}`, { id: toastId });
+            fetchDepartments();
+        } catch (err: any) {
+            toast.error(err.message || 'Import failed', { id: toastId });
+        } finally {
+            setImporting(false);
+        }
+    };
+
+    const resetBulk = () => {
+        setBulkRows([]);
+        setBulkFileName('');
+        setImportResult(null);
+    };
+
+    // ── derived ───────────────────────────────────────────────────────────────
+    const filteredDepartments = useMemo(() => departments.filter(dept =>
+        dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (dept.description && dept.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    ), [departments, searchTerm]);
+
+    const totalTests = departments.reduce((sum, dept) => sum + (dept.testCount || 0), 0);
 
     return (
-        <div className="space-y-10 ">
-            {/* Header Tier */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white uppercase">Department Master</h1>
-                    <p className="text-gray-500 dark:text-gray-400 font-bold mt-2 uppercase tracking-[0.2em] text-[10px] ml-1 flex items-center gap-2">
-                        <Network className="w-3 h-3 text-blue-500" />
-                        Strategic Lab Infrastructure & Node Hierarchy
-                    </p>
+        <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 pb-12 animate-in fade-in duration-700">
+
+            {/* ── Header ── */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 p-4 sm:p-6 md:p-8 shadow-sm">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 md:gap-6">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-blue-600 rounded-xl shadow-lg shadow-blue-100 dark:shadow-none">
+                            <Building2 className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white tracking-tight">Laboratory Divisions</h1>
+                            <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400">Manage department configurations and test mappings</p>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-4 lg:mt-0">
+                        <div className="flex-1 sm:flex-none px-4 sm:px-5 py-2 sm:py-3 bg-slate-50 dark:bg-gray-700/50 rounded-xl border border-slate-100 dark:border-gray-600 text-center">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Total Units</p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{departments.length}</p>
+                        </div>
+                        <div className="flex-1 sm:flex-none px-4 sm:px-5 py-2 sm:py-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/30 text-center">
+                            <p className="text-[10px] sm:text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide mb-0.5 sm:mb-1">Active Tests</p>
+                            <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">{totalTests}</p>
+                        </div>
+
+                        {/* Bulk Import toggle */}
+                        <button
+                            onClick={() => { setShowBulk(v => !v); resetBulk(); }}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border transition-all ${showBulk
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-100 dark:shadow-none'
+                                : 'bg-white dark:bg-gray-800 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
+                                }`}
+                        >
+                            <FileSpreadsheet className="w-4 h-4" />
+                            Bulk Import
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                {/* Left: Input Console */}
-                <div className="lg:col-span-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm dark:shadow-none border border-gray-100 dark:border-gray-700 overflow-hidden sticky top-24">
+            {/* ── Bulk Import Panel ── */}
+            {showBulk && (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-emerald-200 dark:border-emerald-800 shadow-sm overflow-hidden">
+                    <div className="flex items-center justify-between px-6 py-4 bg-emerald-50 dark:bg-emerald-900/20 border-b border-emerald-100 dark:border-emerald-800">
+                        <div className="flex items-center gap-3">
+                            <FileSpreadsheet className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
+                            <div>
+                                <p className="text-sm font-bold text-emerald-900 dark:text-emerald-200">Bulk Import Departments</p>
+                                <p className="text-xs text-emerald-700 dark:text-emerald-400">Upload an Excel / CSV file to import multiple departments at once</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={downloadDeptTemplate}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-emerald-300 dark:border-emerald-700 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all"
+                            >
+                                <Download className="w-3.5 h-3.5" />
+                                Download Template
+                            </button>
+                            <button onClick={() => { setShowBulk(false); resetBulk(); }} className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-white/60 dark:hover:bg-gray-700 transition-all">
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
 
-                        <div className="p-8">
-                            <div className="flex items-center gap-4 mb-10">
-                                <div className="p-3 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-2xl">
-                                    {editingId ? <Edit3 size={24} /> : <Plus size={24} />}
+                    <div className="p-6 space-y-5">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-semibold"><Info className="w-3.5 h-3.5" /> Required columns:</span>
+                            {['Name *', 'Code', 'Description', 'IsActive (TRUE/FALSE)'].map(c => (
+                                <span key={c} className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-xs font-mono font-semibold text-blue-800 dark:text-blue-300">{c}</span>
+                            ))}
+                        </div>
+
+                        {bulkRows.length === 0 ? (
+                            <label
+                                onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                                onDragLeave={() => setDragging(false)}
+                                onDrop={handleDrop}
+                                className={`flex flex-col items-center justify-center w-full min-h-[180px] rounded-xl border-2 border-dashed cursor-pointer transition-all ${dragging
+                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                                    : 'border-slate-300 dark:border-gray-600 hover:border-emerald-400 hover:bg-emerald-50/30 dark:hover:bg-emerald-900/10'
+                                    }`}
+                            >
+                                <input type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFileInput} />
+                                <Upload className={`w-8 h-8 mb-3 transition-colors ${dragging ? 'text-emerald-600' : 'text-slate-400'}`} />
+                                <p className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-1">Drop your file here or <span className="text-emerald-600">click to browse</span></p>
+                                <p className="text-xs text-gray-400">.xlsx, .xls, .csv accepted</p>
+                            </label>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between bg-slate-50 dark:bg-gray-900/50 rounded-xl px-4 py-3 border border-slate-200 dark:border-gray-700">
+                                    <div className="flex items-center gap-3">
+                                        <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-900 dark:text-white">{bulkFileName}</p>
+                                            <p className="text-xs text-gray-500">{bulkRows.length} rows ready</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={handleBulkImport}
+                                            disabled={importing}
+                                            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white rounded-lg text-sm font-bold shadow-sm transition-all"
+                                        >
+                                            {importing ? (
+                                                <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />Importing...</>
+                                            ) : (
+                                                <><Upload className="w-3.5 h-3.5" />Import {bulkRows.length} Departments</>
+                                            )}
+                                        </button>
+                                        <button onClick={resetBulk} className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg border border-slate-200 dark:border-gray-700 transition-all">
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h2 className="text-lg font-thin text-gray-900 dark:text-white uppercase ">
-                                        {editingId ? 'Modify Node' : 'Initialize Node'}
-                                    </h2>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Department registry Entry</p>
+
+                                {importResult && (
+                                    <div className={`flex flex-wrap items-center gap-5 px-5 py-3 rounded-xl border text-sm font-semibold ${importResult.errors.length > 0
+                                        ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300'
+                                        : 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+                                        }`}>
+                                        <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4" /> Created: <strong>{importResult.created}</strong></span>
+                                        <span className="flex items-center gap-1.5"><SkipForward className="w-4 h-4" /> Skipped: <strong>{importResult.skipped}</strong></span>
+                                        {importResult.errors.length > 0 && (
+                                            <details className="w-full mt-1 text-xs">
+                                                <summary className="cursor-pointer font-bold flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> {importResult.errors.length} errors — click to expand</summary>
+                                                <ul className="mt-2 space-y-1">
+                                                    {importResult.errors.map((e, i) => <li key={i} className="text-rose-600">• {e}</li>)}
+                                                </ul>
+                                            </details>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="rounded-xl border border-slate-200 dark:border-gray-700 overflow-hidden">
+                                    <div className="px-4 py-3 bg-slate-50 dark:bg-gray-900/40 border-b border-slate-100 dark:border-gray-700 flex items-center justify-between">
+                                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300">Preview (first 15 rows)</span>
+                                        <span className="text-xs text-gray-400">{bulkRows.length} total</span>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-slate-50 dark:bg-gray-900/30">
+                                                <tr>
+                                                    <th className="px-4 py-2.5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">#</th>
+                                                    {['name', 'code', 'description', 'isActive'].map(col => (
+                                                        <th key={col} className="px-4 py-2.5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">{col}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-50 dark:divide-gray-700">
+                                                {bulkRows.slice(0, 15).map((row, i) => (
+                                                    <tr key={i} className="hover:bg-slate-50/80 dark:hover:bg-gray-700/20 transition-colors">
+                                                        <td className="px-4 py-2.5 text-xs text-gray-400 font-mono">{i + 1}</td>
+                                                        {['name', 'code', 'description', 'isActive'].map(col => (
+                                                            <td key={col} className="px-4 py-2.5 text-xs text-gray-700 dark:text-gray-300 max-w-[200px] truncate">
+                                                                {row[col] !== undefined && row[col] !== '' ? String(row[col]) : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                        {bulkRows.length > 15 && (
+                                            <div className="px-4 py-2 bg-slate-50 dark:bg-gray-900/30 border-t border-slate-100 dark:border-gray-700 text-center text-xs text-gray-400">
+                                                +{bulkRows.length - 15} more rows not shown
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
-                            <form onSubmit={handleAddDepartment} className="space-y-8">
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nomenclature Hub *</label>
+            {/* ── Main Content Grid ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* Configuration Panel */}
+                <div className="lg:col-span-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm sticky top-24">
+                        <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
+                            <h2 className="font-bold text-gray-900 dark:text-white">
+                                {editingId ? 'Edit Division' : 'Add New Division'}
+                            </h2>
+                            <span className="px-2 py-1 bg-slate-100 dark:bg-gray-700 text-xs font-medium text-slate-600 dark:text-slate-300 rounded-md">
+                                {editingId ? 'Updating' : 'Creating'}
+                            </span>
+                        </div>
+
+                        <div className="p-6">
+                            <form onSubmit={handleAddDepartment} className="space-y-5">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Division Name <span className="text-rose-500">*</span></label>
                                     {suggestedDepts.length > 0 && !editingId && (
                                         <select
-                                            className="w-full p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-xs font-black dark:text-white appearance-none"
+                                            className="w-full px-4 py-2.5 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all mb-3"
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                             value={formData.name}
                                         >
-                                            <option value="">-- Choose Common Node --</option>
+                                            <option value="">Select a template...</option>
                                             {suggestedDepts.map(name => (
                                                 <option key={name} value={name}>{name}</option>
                                             ))}
@@ -157,41 +410,45 @@ function HospitalAdminDepartmentMasterPage() {
                                     )}
                                     <input
                                         type="text"
-                                        placeholder="CUSTOM_DEPT_ID..."
-                                        className="w-full p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-black dark:text-white"
+                                        placeholder="e.g. Hematology, Biochemistry..."
+                                        className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         required
                                     />
                                 </div>
 
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Functional Description</label>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
                                     <textarea
-                                        placeholder="OPERATIONAL_PROTOCOL_DETAILS..."
-                                        rows={5}
-                                        className="w-full p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold dark:text-white resize-none tracking-tight leading-relaxed"
+                                        placeholder="Brief description of the department's function..."
+                                        rows={4}
+                                        className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all resize-none"
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     />
                                 </div>
 
-                                <div className="flex gap-4">
+                                <div className="flex gap-3 pt-2">
                                     {editingId && (
                                         <button
                                             type="button"
                                             onClick={() => { setEditingId(null); setFormData({ name: '', description: '' }); }}
-                                            className="flex-1 py-4 bg-gray-100 dark:bg-gray-700 text-gray-400 rounded-2xl font-black uppercase tracking-widest text-[9px] active:scale-95"
+                                            className="flex-1 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-slate-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors"
                                         >
-                                            Abort
+                                            Cancel
                                         </button>
                                     )}
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="flex-2 py-4 bg-primary-theme text-white rounded-2xl font-black uppercase  text-[10px] dark:shadow-none active:scale-95 disabled:opacity-50"
+                                        className="flex-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 dark:disabled:bg-indigo-900 text-white rounded-lg text-sm font-medium shadow-sm transition-all flex items-center justify-center gap-2"
                                     >
-                                        {loading ? 'Processing...' : editingId ? 'Update Node' : 'Initialize Node'}
+                                        {loading ? (
+                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        ) : (
+                                            editingId ? 'Save Changes' : 'Create Division'
+                                        )}
                                     </button>
                                 </div>
                             </form>
@@ -199,216 +456,174 @@ function HospitalAdminDepartmentMasterPage() {
                     </div>
                 </div>
 
-                {/* Right: Registry Terminal - Converted to Table */}
-                <div className="lg:col-span-8 space-y-8">
-                    {/* Search Control */}
-                    <div className="bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col md:flex-row justify-between items-center gap-8">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-2xl">
-                                <Database size={24} />
-                            </div>
+                {/* Explorer Panel */}
+                <div className="lg:col-span-8">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm flex flex-col min-h-[600px]">
+                        <div className="p-6 border-b border-slate-100 dark:border-gray-700 flex flex-col md:flex-row justify-between items-center gap-4">
                             <div>
-                                <h2 className="text-xl font-thin text-gray-900 dark:text-white uppercase">Global Hierarchy</h2>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{filteredDepartments.length} Departments Online</p>
+                                <h3 className="font-bold text-gray-900 dark:text-white">Department List</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                                    {filteredDepartments.length} active departments found
+                                </p>
+                            </div>
+                            <div className="relative w-full md:w-72">
+                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                <input
+                                    type="text"
+                                    placeholder="Search departments..."
+                                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
                             </div>
                         </div>
-                        <div className="relative w-full md:w-80">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder="SEARCH_MANIFEST..."
-                                className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl outline-none focus:ring-2 focus:ring-purple-500 text-[10px] font-black tracking-[0.2em] dark:text-white uppercase"
-                                value={searchTerm}
-                                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                            />
-                        </div>
-                    </div>
 
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
-                                        <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Department Node</th>
-                                        <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Functional Abstract</th>
-                                        <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Protocols</th>
-                                        <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Operations</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
-                                    {paginatedDepartments.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={4} className="px-8 py-20 text-center">
-                                                <div className="flex flex-col items-center gap-4 opacity-30">
-                                                    <Building2 size={64} className="text-gray-400" />
-                                                    <p className="font-black uppercase tracking-[5px] text-xs text-gray-400">Node Database Empty</p>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        paginatedDepartments.map((dept) => (
-                                            <tr
-                                                key={dept._id}
-                                                onClick={() => setSelectedDepartment(dept)}
-                                                className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 group cursor-pointer transition-colors"
-                                            >
-                                                <td className="px-8 py-6">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center font-black group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                                            {dept.name.charAt(0)}
-                                                        </div>
-                                                        <span className="font-thin text-gray-900 dark:text-white text-[12px] uppercase">{dept.name}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-8 py-6">
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium line-clamp-1 max-w-[250px]">
-                                                        {dept.description || 'No description provided.'}
-                                                    </p>
-                                                </td>
-                                                <td className="px-8 py-6">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-sm font-black text-blue-600 dark:text-blue-400">{(dept.testCount || 0).toString().padStart(2, '0')}</span>
-                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Nodes</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-8 py-6 text-right">
-                                                    <div className="flex justify-end gap-2 transition-opacity">
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); setEditingId(dept._id); setFormData({ name: dept.name, description: dept.description || '' }); }}
-                                                            className="p-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                                                            title="Edit Department"
-                                                        >
-                                                            <Edit3 size={16} />
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); handleDelete(dept._id); }}
-                                                            className="p-2 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-900/30 transition-colors"
-                                                            title="Delete Department"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </div>
-                                                </td>
+                        <div className="flex-1 overflow-hidden flex flex-col">
+                            {filteredDepartments.length === 0 ? (
+                                <div className="h-full flex flex-col items-center justify-center p-12 text-center">
+                                    <div className="w-16 h-16 bg-slate-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                                        <Building2 className="w-5 h-5 text-indigo-100 shrink-0" />
+                                    </div>
+                                    <h3 className="text-gray-900 dark:text-white font-medium mb-1">No departments found</h3>
+                                    <p className="text-sm text-gray-500 max-w-xs">
+                                        Add a department manually or use <strong>Bulk Import</strong> to upload many at once.
+                                    </p>
+                                    <button
+                                        onClick={() => setShowBulk(true)}
+                                        className="mt-4 flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all"
+                                    >
+                                        <FileSpreadsheet className="w-4 h-4" /> Open Bulk Import
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto flex-1">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="bg-slate-50/50 dark:bg-gray-900/50 border-b border-slate-100 dark:border-gray-700">
+                                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400">Department</th>
+                                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400">Description</th>
+                                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-400">Tests</th>
+                                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-400">Status</th>
+                                                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400">Actions</th>
                                             </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-gray-700">
+                                            {filteredDepartments.map((dept) => (
+                                                <tr
+                                                    key={dept._id}
+                                                    className="hover:bg-slate-50/80 dark:hover:bg-gray-700/20 transition-colors cursor-pointer group"
+                                                    onClick={() => setSelectedDepartment(dept)}
+                                                >
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-sm border border-indigo-100 dark:border-indigo-800 flex-shrink-0">
+                                                                {dept.name.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <span className="font-medium text-gray-900 dark:text-white text-sm group-hover:text-indigo-600 transition-colors">
+                                                                {dept.name}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1 max-w-md">
+                                                            {dept.description || 'No description provided'}
+                                                        </p>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-gray-700 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                                            {dept.testCount || 0}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-500">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                            Active
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center justify-end gap-1">
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); setEditingId(dept._id); setFormData({ name: dept.name, description: dept.description || '' }); }}
+                                                                className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+                                                                title="Edit"
+                                                            >
+                                                                <Edit3 size={16} />
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleDelete(dept._id); }}
+                                                                className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
+                                                                title="Delete"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
-
-                        {/* Pagination */}
-                        {totalPages > 1 && (
-                            <div className="p-6 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-                                <button
-                                    disabled={currentPage === 1}
-                                    onClick={() => setCurrentPage(p => p - 1)}
-                                    className="px-6 py-3 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 border border-gray-100 dark:border-gray-700 shadow-sm"
-                                >
-                                    Previous
-                                </button>
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                    Page <span className="text-blue-600 dark:text-blue-400">{currentPage}</span> of {totalPages}
-                                </span>
-                                <button
-                                    disabled={currentPage === totalPages}
-                                    onClick={() => setCurrentPage(p => p + 1)}
-                                    className="px-6 py-3 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 border border-gray-100 dark:border-gray-700 shadow-sm"
-                                >
-                                    Next
-                                </button>
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Department Details Modal */}
+            {/* ── Department Detail Modal ── */}
             {selectedDepartment && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in" onClick={() => setSelectedDepartment(null)}>
-                    <div
-                        className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-md lg:max-w-lg max-h-[80vh] flex flex-col shadow-2xl border border-gray-100 dark:border-gray-700 zoom-in "
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* Modal Header */}
-                        <div className="p-8 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50 rounded-t-3xl">
-                            <div className="flex items-center gap-6">
-                                <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-blue-500/20">
-                                    {selectedDepartment.name.charAt(0)}
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedDepartment(null)}>
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 dark:border-gray-700 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 border-b border-slate-100 dark:border-gray-700 flex justify-between items-center">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-xl font-bold text-white shadow-md">
+                                    {selectedDepartment.name.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tighter italic">{selectedDepartment.name}</h3>
-                                    <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-1 flex items-center gap-2">
-                                        <Layers className="w-3 h-3 text-blue-500" />
-                                        {selectedDepartment.testCount || 0} Registered Protocols
-                                    </p>
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">{selectedDepartment.name}</h3>
+                                    <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Department Details</p>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => setSelectedDepartment(null)}
-                                className="p-3 bg-white dark:bg-gray-700 text-gray-400 hover:text-rose-500 dark:text-gray-400 dark:hover:text-rose-400 rounded-xl shadow-sm hover:shadow-lg"
-                            >
+                            <button onClick={() => setSelectedDepartment(null)} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                                 <X size={20} />
                             </button>
                         </div>
 
-                        {/* Modal Body / Scrollable List */}
-                        <div className="p-8 overflow-y-auto custom-scrollbar flex-1">
-                            {selectedDepartment.description && (
-                                <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border border-gray-100 dark:border-gray-700">
-                                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                        <Network className="w-3 h-3" />
-                                        Functional Abstract
-                                    </h4>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed font-medium">
-                                        {selectedDepartment.description}
-                                    </p>
+                        <div className="p-6 overflow-y-auto">
+                            <div className="mb-8">
+                                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">About Division</h4>
+                                <div className="p-4 bg-slate-50 dark:bg-gray-900 rounded-xl border border-slate-100 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                                    {selectedDepartment.description || 'No detailed description available for this department.'}
                                 </div>
-                            )}
-
-                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-4">
-                                Configured Test Protocols
-                                <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700 border-dashed border-b border-gray-200"></div>
-                            </h4>
+                            </div>
 
                             {selectedDepartment.tests && selectedDepartment.tests.length > 0 ? (
-                                <div className="grid grid-cols-1 gap-4">
-                                    {selectedDepartment.tests.map((test: any, index: number) => (
-                                        <div
-                                            key={index}
-                                            className="flex items-center justify-between p-5 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm hover:border-blue-200 dark:hover:border-blue-800 group"
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-xs font-black text-blue-600 dark:text-blue-400">
-                                                    {(index + 1).toString().padStart(2, '0')}
+                                <div>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Associated Tests</h4>
+                                        <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-semibold">{selectedDepartment.tests.length} Total</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {selectedDepartment.tests.map((test: any, i: number) => (
+                                            <div key={i} className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg hover:border-indigo-300 transition-colors">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-xs font-mono text-gray-400 w-5">{String(i + 1).padStart(2, '0')}</span>
+                                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{test.testName}</span>
                                                 </div>
-                                                <div>
-                                                    <div className="font-bold text-gray-900 dark:text-gray-100 text-sm">{test.testName}</div>
-                                                    <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Parameter Configuration Active</div>
-                                                </div>
+                                                <span className="text-sm font-bold text-emerald-600">₹{test.price.toLocaleString()}</span>
                                             </div>
-                                            <div className="text-right">
-                                                <span className="block font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-lg text-xs">₹{test.price}</span>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
                             ) : (
-                                <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-3xl bg-gray-50/50 dark:bg-gray-800/50">
-                                    <Database size={40} className="text-gray-300 dark:text-gray-600 mb-4" />
-                                    <p className="font-bold text-gray-400 dark:text-gray-500 mb-1 text-xs uppercase tracking-wider">No Protocols Linked</p>
-                                    <p className="text-[10px] text-gray-400">Navigate to Test Master to assign protocols to this node.</p>
+                                <div className="text-center py-8 border-2 border-dashed border-slate-200 dark:border-gray-700 rounded-xl">
+                                    <FlaskConical className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                                    <p className="text-sm text-gray-500">No tests assigned to this department yet.</p>
                                 </div>
                             )}
                         </div>
 
-                        {/* Modal Footer */}
-                        <div className="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-900/30 rounded-b-3xl">
-                            <button
-                                onClick={() => setSelectedDepartment(null)}
-                                className="w-full py-4 bg-gray-900 dark:bg-gray-700 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] hover:bg-black dark:hover:bg-gray-600 shadow-xl shadow-gray-200 dark:shadow-none hover:-translate-y-1"
-                            >
-                                Terminate Session
-                            </button>
+                        <div className="p-4 bg-slate-50 dark:bg-gray-900 border-t border-slate-200 dark:border-gray-700 text-center rounded-b-2xl">
+                            <p className="text-xs text-gray-400 font-mono">ID: {selectedDepartment._id}</p>
                         </div>
                     </div>
                 </div>
@@ -420,13 +635,12 @@ function HospitalAdminDepartmentMasterPage() {
                 onClose={() => setDeleteModalOpen(false)}
                 onConfirm={confirmDelete}
                 isDeleting={isDeleting}
-                title="Delete Department Node"
-                message="Warning: Are you sure you want to delete this department node?"
-                confirmText="Yes"
+                title="Delete Department"
+                message="Delete this department? Active tests in this department might be affected."
+                confirmText="Delete"
             />
         </div>
     );
 }
 
-// ✅ OPTIMIZED: Memoized component
 export default React.memo(HospitalAdminDepartmentMasterPage);

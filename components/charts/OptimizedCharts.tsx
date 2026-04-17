@@ -62,3 +62,5 @@ export const AttendancePieChart = React.memo<AttendancePieChartProps>(({
 });
 
 AttendancePieChart.displayName = 'AttendancePieChart';
+
+export default AttendancePieChart;

@@ -23,6 +23,18 @@ function PharmacyLogin() {
     const [mobileError, setMobileError] = useState("");
     const [passwordError, setPasswordError] = useState("");
 
+    // ✅ AUTO-REDIRECT
+    React.useEffect(() => {
+        const isAuth = useAuthStore.getState().isAuthenticated;
+        const user = useAuthStore.getState().user;
+        const rawId = (user as any)?.hospital || (user as any)?.hospitalId;
+        const userHospitalId = (rawId && typeof rawId === 'object') ? ((rawId as any)._id || (rawId as any).id) : rawId;
+
+        if (isAuth && userHospitalId && (user?.role === 'pharmacy' || user?.role === 'pharmacist' || user?.role === 'pharma-owner' || user?.role === 'pharma')) {
+            router.replace(`/${userHospitalId}/pharmacy/dashboard`);
+        }
+    }, [router]);
+
     const handleIdentifierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setMobileError(""); // Clear error on change

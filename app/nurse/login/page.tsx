@@ -16,13 +16,26 @@ import {
     ChevronRight,
     Heart
 } from "lucide-react";
+import { useTransition } from "react";
+import ProgressBar from "@/components/ui/ProgressBar";
 
 const NurseLoginPage = () => {
     const { setUser } = useAuthStore();
     const router = useRouter();
+    const [isPending, startTransition] = useTransition();
 
-    // ✅ SPEED FIX: Prefetch dashboard
+    // ✅ SPEED FIX: Prefetch dashboard & AUTO-REDIRECT
     React.useEffect(() => {
+        const isAuth = useAuthStore.getState().isAuthenticated;
+        const user = useAuthStore.getState().user;
+        const rawId = (user as any)?.hospital || (user as any)?.hospitalId;
+        const userHospitalId = (rawId && typeof rawId === 'object') ? ((rawId as any)._id || (rawId as any).id) : rawId;
+
+        if (isAuth && userHospitalId && user?.role === 'nurse') {
+            setIsNavigating(true);
+            router.replace(`/${userHospitalId}/nurse`);
+        }
+        
         router.prefetch('/nurse');
     }, [router]);
 
@@ -86,30 +99,23 @@ const NurseLoginPage = () => {
                 password: form.password,
             });
 
-            const { tokens, user } = response;
+            const { accessToken, user, sessionId } = response as any;
 
-            // Normalize _id → id
+            if (accessToken) {
+                const { setAccessToken } = await import('@/lib/integrations');
+                setAccessToken(accessToken);
+            }
+
+            // Normalize _id â†’ id
             if ((user as any)._id && !(user as any).id) {
                 (user as any).id = (user as any)._id;
             }
 
-            // Store tokens in session + cookies (mirrors authStore.login pattern)
-            sessionStorage.setItem("accessToken", tokens.accessToken);
-            sessionStorage.setItem("refreshToken", tokens.refreshToken);
-            sessionStorage.setItem("user", JSON.stringify(user));
-            sessionStorage.setItem("lastAuthCheck", Date.now().toString());
-
-            // ✅ MULTI-TENANCY: Store hospitalId in sessionStorage and cookie
-            const rawId = (user as any).hospital || (user as any).hospitalId;
-            const userHospitalIdStr = (rawId && typeof rawId === 'object') ? (rawId._id || rawId.id) : rawId;
-            if (userHospitalIdStr) {
-                const hospitalIdStr = userHospitalIdStr.toString();
-                sessionStorage.setItem("activeHospitalId", hospitalIdStr);
-                document.cookie = `hospitalId=${hospitalIdStr}; path=/; max-age=86400; SameSite=Lax`;
-            }
-
-            document.cookie = `accessToken=${tokens.accessToken}; path=/; max-age=86400; SameSite=Lax`;
-            document.cookie = `refreshToken=${tokens.refreshToken}; path=/; max-age=604800; SameSite=Lax`;
+            // Store user session (mirrors authStore.login pattern)
+            localStorage.setItem("user", JSON.stringify(user));
+            localStorage.setItem("lastAuthCheck", Date.now().toString());
+            if (sessionId) localStorage.setItem("sessionId", sessionId);
+            localStorage.setItem("tabAuthorized", "true");
 
             // Update store
             setUser(user as any);
@@ -127,7 +133,9 @@ const NurseLoginPage = () => {
             setIsNavigating(true);
             const rawIdVal = (user as any).hospital || (user as any).hospitalId;
             const userHospitalId = (rawIdVal && typeof rawIdVal === 'object') ? (rawIdVal._id || rawIdVal.id) : rawIdVal;
-            router.replace(`/${userHospitalId}/nurse`);
+            startTransition(() => {
+                router.replace(`/${userHospitalId}/nurse`);
+            });
         } catch (err: any) {
             const errorMessage = err?.message || err?.response?.data?.message || 'Login failed. Please check your credentials.';
             setServerMsg(errorMessage);
@@ -138,6 +146,7 @@ const NurseLoginPage = () => {
 
     return (
         <div className="min-h-screen w-full flex justify-center items-center p-0 sm:p-4 lg:p-8 bg-background">
+            <ProgressBar isPending={isPending} color="primary-theme" />
             <div className="flex w-full max-w-6xl bg-card sm:rounded-[0.5rem] overflow-hidden shadow-2xl border-0 sm:border border-primary-theme/30 min-h-screen sm:min-h-[600px] lg:min-h-[700px]">
 
                 {/* Left Side: Illustration & Branding */}
@@ -148,7 +157,7 @@ const NurseLoginPage = () => {
                         <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-pink-400/5 rounded-full blur-[80px]" />
                     </div>
 
-                    <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push('/')}>
+                    <div className="flex items-center gap-3 cursor-pointer" onClick={() => startTransition(() => router.push('/'))}>
                         <span className="text-2xl absolute top- left-40  max-ms:top-5 max-ms:left-5 font-bold bg-linear-to-r from-primary-theme to-blue-400 bg-clip-text text-transparent">
                             MSCureChain
                         </span>
@@ -182,7 +191,7 @@ const NurseLoginPage = () => {
                     {/* Header for mobile only */}
                     <div className="flex lg:hidden items-center gap-2 mb-8 absolute top-6 left-6">
                         <div
-                            onClick={() => router.push('/')}
+                            onClick={() => startTransition(() => router.push('/'))}
                             className="p-2 rounded-xl bg-muted/10 text-muted flex items-center justify-center"
                         >
                             <ArrowLeft size={18} />
@@ -192,7 +201,7 @@ const NurseLoginPage = () => {
                     </div>
 
                     <button
-                        onClick={() => router.push('/')}
+                        onClick={() => startTransition(() => router.push('/'))}
                         className="hidden lg:flex absolute top-8 left-8 p-2 rounded-xl hover:bg-muted/10 text-muted items-center gap-2 text-xs font-bold"
                     >
                         <ArrowLeft size={16} /> Back to Home

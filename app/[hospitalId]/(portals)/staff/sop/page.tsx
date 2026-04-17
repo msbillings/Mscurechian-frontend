@@ -129,13 +129,13 @@ export default function GeneralStaffSOPPage() {
     };
 
     return (
-        <div className="p-0 sm:p-2 space-y-1 sm:space-y-10 max-w-7xl mx-auto min-h-screen">
+        <div className="space-y-3 sm:space-y-6 w-full max-w-full overflow-x-hidden mx-auto pb-4 sm:pb-8">
             {/* Header Tier */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-3 px-1 sm:px-0">
                 <div className="space-y-1 sm:space-y-4">
 
                     <div>
-                        <h1 className="text-[10px] sm:text-base font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none">Institutional Registry</h1>
+                        <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white uppercase tracking-tighter leading-none">Institutional Registry</h1>
                         <p className="text-gray-500 dark:text-gray-400 font-bold mt-0.5 uppercase tracking-widest text-[6px] sm:text-[8px] sm:ml-0.5 flex items-center gap-1">
                             <ShieldCheck className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-500" />
                             Compliance Protocols

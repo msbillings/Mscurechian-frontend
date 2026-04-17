@@ -240,11 +240,11 @@ const EnhancedQualityDashboard = () => {
     const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date(selectedDate.year, selectedDate.month - 1));
 
     return (
-        <div className="p-4 space-y-6 bg-slate-50/50 min-h-screen">
+        <div className="p-2 md:p-4 space-y-6 bg-slate-50/50 min-h-screen">
             {/* Master Header */}
-            <div className="flex flex-col lg:flex-row justify-between items-center gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+            <div className="flex flex-col lg:flex-row justify-between items-center gap-4 bg-white p-3 md:p-6 rounded-3xl border border-slate-200 shadow-sm">
                 <div className="flex items-center gap-5">
-                    <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200">
+                    <div className="p-2 md:p-4 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200">
                         <BarChart3 size={28} />
                     </div>
                     <div>
@@ -261,7 +261,7 @@ const EnhancedQualityDashboard = () => {
                         <button onClick={() => handleDateChange(-1)} className="p-2 hover:bg-white rounded-xl text-slate-500 transition-all shadow-sm">
                             <ChevronLeft size={18} />
                         </button>
-                        <div className="px-6 text-sm font-black text-slate-700 uppercase flex items-center gap-3 min-w-[180px] justify-center">
+                        <div className="px-2 md:px-6 text-sm font-black text-slate-700 uppercase flex items-center gap-3 min-w-[180px] justify-center">
                             <CalendarDays size={16} className="text-blue-600" />
                             {monthName} {selectedDate.year}
                         </div>
@@ -270,7 +270,7 @@ const EnhancedQualityDashboard = () => {
                         </button>
                     </div>
 
-                    <button onClick={handleExport} className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl">
+                    <button onClick={handleExport} className="flex items-center gap-2 px-3 md:px-6 py-3 bg-slate-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl">
                         <Download size={16} />
                         Audit Export
                     </button>
@@ -287,7 +287,7 @@ const EnhancedQualityDashboard = () => {
                         <div
                             key={i}
                             onClick={() => setSelectedIndicator({ ...INDICATOR_METADATA[card.id], ...card })}
-                            className="bg-white border-slate-200 shadow-sm hover:translate-y-[-4px] hover:shadow-xl transition-all cursor-pointer group rounded-3xl border p-6 relative overflow-hidden"
+                            className="bg-white border-slate-200 shadow-sm hover:translate-y-[-4px] hover:shadow-xl transition-all cursor-pointer group rounded-3xl border p-3 md:p-6 relative overflow-hidden"
                         >
                             <div className="flex justify-between items-start mb-6">
                                 <div className={`p-3 rounded-2xl bg-${card.color}-50 text-${card.color}-600 group-hover:scale-110 transition-transform`}>
@@ -327,7 +327,7 @@ const EnhancedQualityDashboard = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 {/* Audit Trend Center */}
-                <Card className="lg:col-span-3 p-8 bg-white border-slate-200 shadow-sm flex flex-col h-[450px] rounded-3xl">
+                <Card className="lg:col-span-3 p-2 md:p-4 md:p-8 bg-white border-slate-200 shadow-sm flex flex-col h-[450px] rounded-3xl">
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
@@ -383,8 +383,8 @@ const EnhancedQualityDashboard = () => {
 
                 {/* Audit Evidence and Governance */}
                 <div className="space-y-6">
-                    <Card className="p-8 bg-slate-900 border-none shadow-2xl text-white relative overflow-hidden rounded-3xl">
-                        <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none rotate-12">
+                    <Card className="p-3 md:p-8 bg-slate-900 border-none shadow-2xl text-white relative overflow-hidden rounded-3xl">
+                        <div className="absolute top-0 right-0 p-3 md:p-6 opacity-10 pointer-events-none rotate-12">
                             <ShieldAlert size={120} />
                         </div>
                         <div className="relative z-10">
@@ -403,7 +403,7 @@ const EnhancedQualityDashboard = () => {
                                 </div>
 
                                 {metrics?.status === 'locked' && (
-                                    <div className="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-3">
+                                    <div className="p-2 md:p-4 bg-white/5 rounded-2xl border border-white/10 space-y-3">
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 bg-blue-500/20 rounded-lg">
                                                 <User size={14} className="text-blue-400" />
@@ -439,7 +439,7 @@ const EnhancedQualityDashboard = () => {
                         </div>
                     </Card>
 
-                    <Card className="p-8 bg-white border-slate-200 shadow-sm rounded-3xl">
+                    <Card className="p-3 md:p-8 bg-white border-slate-200 shadow-sm rounded-3xl">
                         <h3 className="text-xs font-black text-slate-900 uppercase tracking-tight mb-6 flex items-center gap-3">
                             <AlertTriangle className="text-amber-500" size={18} />
                             Critical Audit Gaps

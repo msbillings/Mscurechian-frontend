@@ -25,7 +25,7 @@ function NotificationCenter({ showAuditHistory = true }: NotificationCenterProps
     const initSocket = async () => {
       try {
         const { getSocket, subscribeToSocket } = await import('@/lib/integrations/api/socket');
-        const userData = sessionStorage.getItem('user') || localStorage.getItem('user');
+        const userData = localStorage.getItem('user') || localStorage.getItem('user');
         if (!userData) return;
 
         const user = JSON.parse(userData);
@@ -80,26 +80,27 @@ function NotificationCenter({ showAuditHistory = true }: NotificationCenterProps
           });
 
           // ✅ NEW: Listen for high-priority doctoral vital alerts globally
+          // ✅ NEW: Listen for high-priority doctoral vital alerts globally
           subscribeToSocket(`user_${currentUserId}`, 'doctoral_vital_alert', (data: any) => {
             console.log('🚨 [SOCKET] High-priority vital alert:', data);
             if (isMounted) {
               if (data.severity === 'CRITICAL') {
                 toast.error(`${data.patientName}: ${data.message}`, {
                   duration: 10000,
-                  icon: '🚨',
+                   icon: '🚨',
                   className: 'text-[10px] sm:text-xs',
                   style: { background: '#dc2626', color: '#fff', fontWeight: 'bold' }
                 });
               } else {
                 toast.error(`${data.patientName}: ${data.message}`, {
                   duration: 6000,
-                  icon: '⚠️',
+                   icon: '⚠️',
                   className: 'text-[10px] sm:text-xs',
                   style: { background: '#f59e0b', color: '#fff', fontWeight: 'bold' }
                 });
               }
 
-              // 🎵 Play emergency notification sound for docs
+              // 🎶 Play emergency notification sound for docs
               try {
                 const audio = new Audio('/assets/emergency.mp3');
                 audio.play().catch(e => console.warn('Audio play failed:', e));

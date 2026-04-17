@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { X, Pill, CheckCircle2, Clock, Calendar, AlertCircle, ChevronRight, Beaker, Coffee, Utensils, Trash2, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ipdService, hospitalAdminService } from '@/lib/integrations';
+import { mapFrequency, isSlotRequired, formatFrequency, StandardFrequency, FoodTiming } from '@/lib/frequencyUtils';
 
 interface MedicationAdministrationModalProps {
     isOpen: boolean;
@@ -16,7 +17,7 @@ interface MedicationAdministrationModalProps {
     onSuccess?: () => void;
 }
 
-const TIME_SLOTS = ['Morning', 'Afternoon', 'Night'] as const;
+const TIME_SLOTS = ['Morning', 'Afternoon', 'Evening', 'Night'] as const;
 
 export default function MedicationAdministrationModal({ isOpen, onClose, admissionId, patientName, patientAge, patientGender, mrn, onSuccess }: MedicationAdministrationModalProps) {
     const [loading, setLoading] = useState(true);
@@ -34,7 +35,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
     const [dietForm, setDietForm] = useState({
         category: 'Morning',
         recordedDate: new Date().toISOString().split('T')[0],
-        recordedTime: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+        recordedTime: new Date().toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit' }),
         notes: ''
     });
 
@@ -164,7 +165,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
             setDietForm({
                 ...dietForm,
                 notes: '',
-                recordedTime: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+                recordedTime: new Date().toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit' }),
             });
             await fetchData(true);
             onSuccess?.();
@@ -197,16 +198,29 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
         );
     };
 
-    const getFrequencySlots = (freqStr: string) => {
-        if (!freqStr?.includes('-')) {
-            return { Morning: true, Afternoon: true, Night: true };
-        }
-        const parts = freqStr.split('-').map(p => p.trim());
+    const getFrequencySlots = (freq: any) => {
+        const f = mapFrequency(freq);
+        if (f.type === 'custom') return {};
         return {
-            Morning: parts[0] !== '0',
-            Afternoon: parts[1] !== '0',
-            Night: parts[2] !== '0'
+            Morning: f.standard?.morning !== 'off',
+            Afternoon: f.standard?.afternoon !== 'off',
+            Evening: f.standard?.evening !== 'off',
+            Night: f.standard?.night !== 'off'
         };
+    };
+
+    const getNextCustomDose = (med: any) => {
+        const f = mapFrequency(med.frequency);
+        if (f.type !== 'custom' || !f.custom?.interval) return null;
+
+        const lastAdmin = allHistory
+            .filter(h => h.drugName?.toLowerCase() === med.name?.toLowerCase())
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+
+        const baseTime = lastAdmin ? new Date(lastAdmin.timestamp) : new Date(prescriptions.find(p => p._id === med.prescId)?.createdAt || Date.now());
+        const nextTime = new Date(baseTime.getTime() + f.custom.interval * 60 * 60 * 1000);
+
+        return nextTime;
     };
 
     const calculateRemaining = (med: any) => {
@@ -281,7 +295,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                             ) : (
                                 <div className="space-y-2">
                                     {allHistory.map((rec, rIdx) => (
-                                        <div key={rIdx} className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center justify-between group hover:border-blue-100 transition-all">
+                                        <div key={rec._id || rIdx} className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center justify-between group hover:border-blue-100 transition-all">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
                                                     <Clock size={14} />
@@ -289,7 +303,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                                                 <div>
                                                     <p className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{rec.drugName}</p>
                                                     <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
-                                                        {new Date(rec.timestamp).toLocaleDateString()} at {new Date(rec.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {rec.timeSlot}
+                                                        {new Date(rec.timestamp).toLocaleDateString()} at {new Date(rec.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })} • {rec.timeSlot}
                                                     </p>
                                                 </div>
                                             </div>
@@ -380,7 +394,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                                                     }
 
                                                     return (
-                                                        <div key={idx} className={`bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-sm p-3 sm:p-4 transition-all ${isFullyReturnedOrConsumed ? 'opacity-60' : 'hover:shadow-md'}`}>
+                                                        <div key={`${med.name}-${med.dosage}-${idx}`} className={`bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-sm p-3 sm:p-4 transition-all ${isFullyReturnedOrConsumed ? 'opacity-60' : 'hover:shadow-md'}`}>
                                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                                                                 <div className="flex items-center gap-2 sm:gap-4">
                                                                     <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-2xl bg-blue-50/50 flex items-center justify-center shrink-0">
@@ -389,7 +403,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                                                                     <div className="min-w-0">
                                                                         <h4 className="text-[10px] sm:text-xs font-black text-slate-800 uppercase tracking-tight truncate leading-none mb-1">{med.name}</h4>
                                                                         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                                                                            <p className="text-[8px] sm:text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">{med.dosage} • {med.frequency}</p>
+                                                                            <p className="text-[8px] sm:text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">{med.dosage} • {formatFrequency(med.frequency)}</p>
                                                                             {med.sourceType === 'pharma-issuance' && (
                                                                                 <span className="px-1 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[6px] sm:text-[7px] font-black uppercase tracking-widest border border-indigo-100">
                                                                                     Extra
@@ -418,44 +432,99 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                                                                 </div>
 
                                                                 <div className="flex items-center gap-2">
-                                                                    {TIME_SLOTS.map((slot) => {
-                                                                        const slots = getFrequencySlots(med.frequency);
-                                                                        const isRequired = slots[slot];
-                                                                        const record = getAdministrationData(med.prescId, med.name, slot);
-                                                                        const isSubmitting = submitting === `${med.prescId}-${med.name}-${slot}` || (record && submitting === record._id);
+                                                                    {(() => {
+                                                                        const f = mapFrequency(med.frequency);
+                                                                        if (f.type === 'custom') {
+                                                                            const nextDose = getNextCustomDose(med);
+                                                                            const isDue = nextDose && nextDose <= new Date();
+                                                                            const slot = 'Custom';
+                                                                            const record = getAdministrationData(med.prescId, med.name, slot);
+                                                                            const isSubmitting = submitting === `${med.prescId}-${med.name}-${slot}` || (record && submitting === record._id);
 
-                                                                        if (!isRequired) return null;
+                                                                            return (
+                                                                                <div className="flex flex-col items-end gap-1">
+                                                                                    {nextDose && (
+                                                                                        <span className={`text-[7px] font-black uppercase tracking-widest ${isDue ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`}>
+                                                                                            {isDue ? 'Due Now' : `Next: ${nextDose.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}`}
+                                                                                        </span>
+                                                                                    )}
+                                                                                    <div className="relative group">
+                                                                                        <button
+                                                                                            disabled={!!record || !!submitting || remaining === 0}
+                                                                                            onClick={() => handleAdminister(med.prescId, med, slot)}
+                                                                                            className={`
+                                                                                                px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all border
+                                                                                                flex items-center gap-1.5
+                                                                                                ${record
+                                                                                                    ? 'bg-green-50 text-green-600 border-green-100 cursor-default'
+                                                                                                    : isDue
+                                                                                                        ? 'bg-rose-50 text-rose-600 border-rose-100 hover:bg-rose-600 hover:text-white'
+                                                                                                        : 'hover:bg-slate-900 hover:text-white border-slate-100 bg-slate-50 text-slate-500'
+                                                                                                }
+                                                                                                ${isSubmitting ? 'animate-pulse opacity-50' : ''}
+                                                                                            `}
+                                                                                        >
+                                                                                            {record ? <CheckCircle2 size={10} /> : <Clock size={10} />}
+                                                                                            {record ? 'Administered' : 'Mark Dose'}
+                                                                                        </button>
+                                                                                        {record && (
+                                                                                            <button
+                                                                                                onClick={() => handleUndo(record._id, med.name)}
+                                                                                                className="absolute -top-2 -right-2 w-5 h-5 bg-white border border-slate-200 text-slate-400 rounded-full flex items-center justify-center hover:bg-rose-50 hover:text-rose-600 transition-all shadow-sm opacity-0 group-hover:opacity-100"
+                                                                                            >
+                                                                                                <X size={10} />
+                                                                                            </button>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                            );
+                                                                        }
 
-                                                                        return (
-                                                                            <div key={slot} className="relative group">
-                                                                                <button
-                                                                                    disabled={!!record || !!submitting || remaining === 0}
-                                                                                    onClick={() => handleAdminister(med.prescId, med, slot)}
-                                                                                    className={`
-                                                                                    px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all border
-                                                                                    flex items-center gap-1.5
-                                                                                    ${record
-                                                                                            ? 'bg-green-50 text-green-600 border-green-100 cursor-default'
-                                                                                            : 'hover:bg-slate-900 hover:text-white border-slate-100 bg-slate-50 text-slate-500'
-                                                                                        }
-                                                                                    ${isSubmitting ? 'animate-pulse opacity-50' : ''}
-                                                                                    ${!record && remaining === 0 ? 'opacity-50 cursor-not-allowed hidden' : ''}
-                                                                                `}
-                                                                                >
-                                                                                    {record ? <CheckCircle2 size={10} /> : <div className="w-1.5 h-1.5 rounded-full bg-current opacity-20"></div>}
-                                                                                    {slot}
-                                                                                </button>
-                                                                                {record && (
+                                                                        return TIME_SLOTS.map((slot) => {
+                                                                            const f = mapFrequency(med.frequency);
+                                                                            const slotKey = slot.toLowerCase() as keyof StandardFrequency;
+                                                                            const isRequired = f.standard?.[slotKey] && f.standard?.[slotKey] !== 'off';
+                                                                            const record = getAdministrationData(med.prescId, med.name, slot);
+                                                                            const isSubmitting = submitting === `${med.prescId}-${med.name}-${slot}` || (record && submitting === record._id);
+
+                                                                            if (!isRequired) return null;
+
+                                                                            return (
+                                                                                <div key={slot} className="relative group">
                                                                                     <button
-                                                                                        onClick={() => handleUndo(record._id, med.name)}
-                                                                                        className="absolute -top-2 -right-2 w-5 h-5 bg-white border border-slate-200 text-slate-400 rounded-full flex items-center justify-center hover:bg-rose-50 hover:text-rose-600 transition-all shadow-sm opacity-0 group-hover:opacity-100"
+                                                                                        disabled={!!record || !!submitting || remaining === 0}
+                                                                                        onClick={() => handleAdminister(med.prescId, med, slot)}
+                                                                                        className={`
+                                                                                        px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all border
+                                                                                        flex items-center gap-1.5
+                                                                                        ${record
+                                                                                                ? 'bg-green-50 text-green-600 border-green-100 cursor-default'
+                                                                                                : 'hover:bg-slate-900 hover:text-white border-slate-100 bg-slate-50 text-slate-500'
+                                                                                            }
+                                                                                        ${isSubmitting ? 'animate-pulse opacity-50' : ''}
+                                                                                        ${!record && remaining === 0 ? 'opacity-50 cursor-not-allowed hidden' : ''}
+                                                                                    `}
                                                                                     >
-                                                                                        <X size={10} />
+                                                                                        {record ? <CheckCircle2 size={10} /> : <div className="w-1.5 h-1.5 rounded-full bg-current opacity-20"></div>}
+                                                                                        {slot}
+                                                                                        {!record && f.standard?.[slotKey] !== 'anytime' && f.standard?.[slotKey] && (
+                                                                                            <span className="text-[6.5px] opacity-70 ml-1 font-bold whitespace-nowrap">
+                                                                                                ({f.standard[slotKey] === 'before' ? 'Before Food' : f.standard[slotKey] === 'after' ? 'After Food' : 'With Food'})
+                                                                                             </span>
+                                                                                        )}
                                                                                     </button>
-                                                                                )}
-                                                                            </div>
-                                                                        );
-                                                                    })}
+                                                                                    {record && (
+                                                                                        <button
+                                                                                            onClick={() => handleUndo(record._id, med.name)}
+                                                                                            className="absolute -top-2 -right-2 w-5 h-5 bg-white border border-slate-200 text-slate-400 rounded-full flex items-center justify-center hover:bg-rose-50 hover:text-rose-600 transition-all shadow-sm opacity-0 group-hover:opacity-100"
+                                                                                        >
+                                                                                            <X size={10} />
+                                                                                        </button>
+                                                                                    )}
+                                                                                </div>
+                                                                            );
+                                                                        });
+                                                                    })()}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -493,7 +562,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                                                             <p className="text-[9px] lg:text-[8px] font-black text-emerald-500 uppercase tracking-widest mb-1">Dietary Instructions</p>
                                                             <div className="flex flex-wrap gap-2">
                                                                 {presc.dietAdvice?.length > 0 ? presc.dietAdvice.map((diet: string, i: number) => (
-                                                                    <span key={i} className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-emerald-100">
+                                                                    <span key={`${diet}-${i}`} className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-emerald-100">
                                                                         {diet}
                                                                     </span>
                                                                 )) : <span className="text-[10px] font-bold text-slate-400 uppercase italic">No diet specified</span>}
@@ -535,7 +604,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                                         <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Suggested Tests (From Prescription)</h4>
                                         <div className="flex flex-wrap gap-2">
                                             {prescriptions[0]?.suggestedTests?.length > 0 ? prescriptions[0].suggestedTests.map((test: string, i: number) => (
-                                                <span key={i} className="px-4 py-2 bg-purple-50 text-purple-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-purple-100 flex items-center gap-2">
+                                                <span key={`${test}-${i}`} className="px-4 py-2 bg-purple-50 text-purple-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-purple-100 flex items-center gap-2">
                                                     <Beaker size={12} />
                                                     {test}
                                                 </span>
@@ -559,7 +628,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                                                         </div>
                                                         <div className="space-y-2">
                                                             {report.tests?.map((t: any, idx: number) => (
-                                                                <div key={idx} className="flex justify-between items-center p-2 bg-slate-50 rounded-xl">
+                                                                <div key={`${t.testId || t._id || idx}`} className="flex justify-between items-center p-2 bg-slate-50 rounded-xl">
                                                                     <span className="text-[9px] font-bold text-slate-600 uppercase">{t.test?.name || t.test?.testName}</span>
                                                                     <span className="text-[10px] font-black text-slate-900 uppercase">{t.result || t.status}</span>
                                                                 </div>
@@ -730,7 +799,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                                         ) : (
                                             <div className="space-y-3">
                                                 {dietHistory.map((log, idx) => (
-                                                    <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center justify-between group hover:border-emerald-100 transition-all shadow-sm">
+                                                    <div key={log._id || idx} className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center justify-between group hover:border-emerald-100 transition-all shadow-sm">
                                                         <div className="flex items-center gap-4">
                                                             <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
                                                                 <Utensils size={18} />

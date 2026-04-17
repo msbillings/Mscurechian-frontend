@@ -44,8 +44,6 @@ function ShiftManagement() {
         throw error;
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes cache
-    gcTime: 15 * 60 * 1000,
     retry: 1,
   });
 
@@ -178,12 +176,12 @@ function ShiftManagement() {
 
 
   return (
-    <div className="space-y-6 p-2">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Shift Management</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Configure and monitor workforce shifts.</p>
+          <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white">Shift Management</h1>
+          <p className="text-[10px] md:text-xm lg:text-xm text-gray-500 dark:text-gray-400 mt-1">Configure and monitor workforce shifts.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
@@ -210,7 +208,7 @@ function ShiftManagement() {
       </div>
 
       {/* Control Bar */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col lg:flex-row items-center gap-4">
+      <div className="bg-white dark:bg-gray-800 p-2 md:p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col lg:flex-row items-center gap-4">
         <div className="relative flex-1 w-full lg:w-auto">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input 
@@ -237,8 +235,8 @@ function ShiftManagement() {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full shadow-xl zoom-in ">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-3 md:p-6 max-w-md w-full shadow-xl zoom-in ">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">{isEditMode ? 'Update Shift' : 'Create New Shift'}</h2>
             <div className="space-y-4">
               <div>
@@ -251,7 +249,7 @@ function ShiftManagement() {
                   className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Start Time</label>
                   <input 
@@ -313,7 +311,7 @@ function ShiftManagement() {
       {view === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
           {filteredShifts.map((shift) => (
-            <div key={shift._id} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col group hover:shadow-md relative overflow-hidden h-full">
+            <div key={shift._id} className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col group hover:shadow-md relative overflow-hidden h-full">
               <div className="absolute top-4 right-4 flex gap-1">
                 <button 
                   onClick={() => handleEditShift(shift)}
@@ -348,7 +346,7 @@ function ShiftManagement() {
 
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">{shift.name}</h3>
+                  <h3 className="text-sm md:text-lg font-bold text-gray-900 dark:text-white">{shift.name}</h3>
                   <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                 </div>
                 <p className="text-sm font-medium text-gray-500">
@@ -377,37 +375,37 @@ function ShiftManagement() {
           {/* New Shift Placeholder */}
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 flex flex-col items-center justify-center gap-4 group hover:border-blue-500 hover:bg-blue-50/50 min-h-[250px]"
+            className="bg-gray-50 dark:bg-gray-800/50 p-3 md:p-6 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 flex flex-col items-center justify-center gap-4 group hover:border-blue-500 hover:bg-blue-50/50 min-h-[250px]"
           >
             <div className="w-16 h-16 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center text-gray-400 group-hover:text-blue-500 group-hover:scale-110 shadow-sm">
               <Plus className="w-8 h-8" />
             </div>
             <div className="text-center">
-              <h3 className="text-base font-semibold text-gray-500 group-hover:text-blue-600">Add Shift</h3>
+              <h3 className="text-xs md:text-base font-semibold text-gray-500 group-hover:text-blue-600">Add Shift</h3>
               <p className="text-xs text-gray-400 mt-1">Create a new schedule</p>
             </div>
           </button>
         </div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-          <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-            <h3 className="text-base font-bold text-gray-900 dark:text-white">Shift List</h3>
+          <div className="p-2 md:p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+            <h3 className="text-xs md:text-base font-bold text-gray-900 dark:text-white">Shift List</h3>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full text-left">
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-700/30">
-                  <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</th>
-                  <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Time</th>
-                  <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Staffing</th>
-                  <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                  <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Actions</th>
+                  <th className="px-2 md:px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</th>
+                  <th className="px-2 md:px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Time</th>
+                  <th className="px-2 md:px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Staffing</th>
+                  <th className="px-2 md:px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                  <th className="px-2 md:px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {filteredShifts.map(shift => (
                   <tr key={shift._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/10">
-                    <td className="px-6 py-4">
+                    <td className="px-2 md:px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                           shift.color === 'blue' ? 'bg-blue-500/10 text-blue-500' :
@@ -419,10 +417,10 @@ function ShiftManagement() {
                         <span className="text-sm font-medium text-gray-900 dark:text-white">{shift.name}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-2 md:px-6 py-4">
                       <span className="text-sm text-gray-500">{shift.startTime} - {shift.endTime}</span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-2 md:px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-24 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                            <div className={`h-full bg-blue-500 rounded-full`} style={{ width: `${Math.min((shift.staff/40)*100, 100)}%` }}></div>
@@ -430,13 +428,13 @@ function ShiftManagement() {
                         <span className="text-xs text-gray-500">{shift.staff || 0} staff</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-2 md:px-6 py-4">
                       <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-full w-fit">
                         <CheckCircle2 className="w-3 h-3" />
                         <span className="text-xs font-medium">Active</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-2 md:px-6 py-4 text-right">
                        <div className="flex items-center justify-end gap-2">
                          <button 
                            onClick={() => handleEditShift(shift)}
@@ -462,15 +460,15 @@ function ShiftManagement() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </div>
         </div>
       )}
 
       {/* Staff Assignment Modal */}
       {isStaffModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-900 rounded-xl p-6 max-w-4xl w-full shadow-2xl zoom-in max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-3 md:p-6 max-w-4xl w-full shadow-2xl zoom-in max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
@@ -491,7 +489,7 @@ function ShiftManagement() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 overflow-hidden">
               {/* Assigned Staff */}
-              <div className="flex flex-col h-full overflow-hidden bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+              <div className="flex flex-col h-full overflow-hidden bg-gray-50 dark:bg-gray-800/50 p-2 md:p-4 rounded-xl border border-gray-100 dark:border-gray-800">
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Assigned Staff ({assignedStaff.length})
                 </h3>
@@ -527,7 +525,7 @@ function ShiftManagement() {
               </div>
 
               {/* Available Staff */}
-              <div className="flex flex-col h-full overflow-hidden bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+              <div className="flex flex-col h-full overflow-hidden bg-gray-50 dark:bg-gray-800/50 p-2 md:p-4 rounded-xl border border-gray-100 dark:border-gray-800">
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
                   <Plus className="w-4 h-4 text-blue-500" /> Available Staff
                 </h3>

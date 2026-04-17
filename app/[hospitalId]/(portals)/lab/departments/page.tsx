@@ -187,28 +187,28 @@ function DepartmentMasterPage() {
     const totalTests = departments.reduce((sum, dept) => sum + (dept.testCount || 0), 0);
 
     return (
-        <div className="max-w-[1600px] mx-auto space-y-6 pb-12 px-4 md:px-8 animate-in fade-in duration-700">
+        <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 pb-12 animate-in fade-in duration-700">
 
             {/* ── Header ── */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 p-8 shadow-sm">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 p-4 shadow-sm">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 md:gap-6">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-blue-600 rounded-xl shadow-lg shadow-blue-100 dark:shadow-none">
                             <Building2 className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Laboratory Divisions</h1>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Manage department configurations and test mappings</p>
+                            <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white tracking-tight">Laboratory Divisions</h1>
+                            <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400">Manage department configurations and test mappings</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <div className="px-5 py-3 bg-slate-50 dark:bg-gray-700/50 rounded-xl border border-slate-100 dark:border-gray-600 text-center">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-4 lg:mt-0">
+                        <div className="flex-1 sm:flex-none px-4 sm:px-5 py-2 sm:py-3 bg-slate-50 dark:bg-gray-700/50 rounded-xl border border-slate-100 dark:border-gray-600 text-center">
                             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Total Units</p>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white">{departments.length}</p>
                         </div>
-                        <div className="px-5 py-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/30 text-center">
-                            <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide mb-1">Active Tests</p>
+                        <div className="flex-1 sm:flex-none px-4 sm:px-5 py-2 sm:py-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/30 text-center">
+                            <p className="text-[10px] sm:text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide mb-0.5 sm:mb-1">Active Tests</p>
                             <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">{totalTests}</p>
                         </div>
 
@@ -373,7 +373,7 @@ function DepartmentMasterPage() {
                 {/* Configuration Panel */}
                 <div className="lg:col-span-4">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm sticky top-24">
-                        <div className="p-6 border-b border-slate-100 dark:border-gray-700 flex items-center justify-between">
+                        <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
                             <h2 className="font-bold text-gray-900 dark:text-white">
                                 {editingId ? 'Edit Division' : 'Add New Division'}
                             </h2>

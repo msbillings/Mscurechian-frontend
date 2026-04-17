@@ -111,23 +111,25 @@ const ClinicalNotesManagement = () => {
     };
 
     return (
-        <div className="p-8 max-w-5xl mx-auto min-h-screen bg-slate-50/50">
+        <div className="p-2 md:p-4 md:p-8 max-w-5xl mx-auto min-h-screen bg-slate-50/50">
             {/* Header Area */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 md:mb-10">
                 <div>
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                        <Settings2 className="text-primary-theme" size={28} />
+                    <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                        <div className="p-2 bg-primary-theme rounded-xl text-white shadow-lg shadow-blue-200">
+                            <Settings2 size={24} />
+                        </div>
                         CLINICAL NOTE SETTINGS
                     </h1>
-                    <p className="text-slate-500 font-bold text-[10px] tracking-widest mt-1 uppercase opacity-70">
+                    <p className="text-slate-500 font-bold text-[10px] md:text-xs tracking-widest mt-1 uppercase opacity-70">
                         Customize note types and visibility parameters
                     </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
                     <button
                         onClick={handleReset}
-                        className="px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm"
+                        className="w-full sm:w-auto px-3 md:px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-sm"
                     >
                         <RotateCcw size={16} />
                         Reset Defaults
@@ -135,7 +137,7 @@ const ClinicalNotesManagement = () => {
                     <button
                         onClick={handleSave}
                         disabled={submitting}
-                        className="px-8 py-3 bg-primary-theme text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary-theme/90 transition-all flex items-center gap-2 shadow-lg shadow-primary-theme/20 disabled:opacity-50"
+                        className="w-full sm:w-auto px-4 md:px-8 py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-200 disabled:opacity-50"
                     >
                         {submitting ? (
                             <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
@@ -158,17 +160,17 @@ const ClinicalNotesManagement = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Note Types Section */}
                     <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden flex flex-col">
-                        <div className="p-8 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
+                        <div className="p-2 md:p-6 md:p-8 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
                             <div>
                                 <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2 text-primary-theme">
                                     <FileText size={18} />
                                     Note Types
                                 </h3>
-                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Available categories for clinical documentation</p>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Available categories for clinical documentation</p>
                             </div>
                         </div>
 
-                        <div className="p-8 space-y-6 flex-1">
+                        <div className="p-2 md:p-6 md:p-8 space-y-6 flex-1">
                             <div className="flex gap-3">
                                 <input
                                     type="text"
@@ -190,7 +192,7 @@ const ClinicalNotesManagement = () => {
                                 {noteTypes.map((type) => (
                                     <div
                                         key={type}
-                                        className="group flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-primary-theme/30 hover:shadow-md transition-all animate-in slide-in-from-bottom-2 duration-300"
+                                        className="group flex items-center justify-between p-2 md:p-4 bg-white border border-slate-100 rounded-2xl hover:border-primary-theme/30 hover:shadow-md transition-all animate-in slide-in-from-bottom-2 duration-300"
                                     >
                                         <div className="flex items-center gap-4">
                                             <div className="w-8 h-8 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-primary-theme/10 group-hover:text-primary-theme transition-colors">
@@ -212,17 +214,17 @@ const ClinicalNotesManagement = () => {
 
                     {/* Visibility Options Section */}
                     <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden flex flex-col">
-                        <div className="p-8 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
+                        <div className="p-2 md:p-6 md:p-8 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
                             <div>
                                 <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2 text-emerald-600">
                                     <Eye size={18} />
                                     Visibility Scopes
                                 </h3>
-                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Control who can access these notes</p>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Control who can access these notes</p>
                             </div>
                         </div>
 
-                        <div className="p-8 space-y-6 flex-1">
+                        <div className="p-2 md:p-6 md:p-8 space-y-6 flex-1">
                             <div className="flex gap-3">
                                 <input
                                     type="text"
@@ -244,7 +246,7 @@ const ClinicalNotesManagement = () => {
                                 {visibilities.map((vis) => (
                                     <div
                                         key={vis}
-                                        className="group flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-emerald-200 hover:shadow-md transition-all animate-in slide-in-from-bottom-2 duration-300"
+                                        className="group flex items-center justify-between p-2 md:p-4 bg-white border border-slate-100 rounded-2xl hover:border-emerald-200 hover:shadow-md transition-all animate-in slide-in-from-bottom-2 duration-300"
                                     >
                                         <div className="flex items-center gap-4">
                                             <div className="w-8 h-8 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
@@ -272,7 +274,7 @@ const ClinicalNotesManagement = () => {
             )}
 
             {/* Info Banner */}
-            <div className="mt-8 bg-blue-50 border border-blue-100 p-6 rounded-[2rem] flex items-start gap-4">
+            <div className="mt-8 bg-blue-50 border border-blue-100 p-3 md:p-6 rounded-[2rem] flex items-start gap-4">
                 <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg shrink-0">
                     <AlertCircle size={20} />
                 </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Save, Plus, X, Database, FlaskConical, Clock, AlertCircle, Settings, Edit2, Trash2, Check } from 'lucide-react';
 import { LabTestService } from '@/lib/integrations/services/labTest.service';
@@ -28,6 +28,7 @@ function ManageTestPage() {
 
     const [modalState, setModalState] = useState<{ type: string | null, title: string }>({ type: null, title: '' });
     const [newItemName, setNewItemName] = useState('');
+    const [isNavigating, startNavigation] = useTransition();
 
     // Method manager state
     const [showMethodManager, setShowMethodManager] = useState(false);
@@ -155,7 +156,9 @@ function ManageTestPage() {
                 } catch (error) {
                     console.error("Failed to fetch test details", error);
                     toast.error("Failed to load test details");
-                    router.push('/lab/tests');
+                    startNavigation(() => {
+                        router.push('/lab/tests');
+                    });
                 } finally {
                     setInitialLoading(false);
                 }
@@ -199,7 +202,9 @@ function ManageTestPage() {
                 await LabTestService.addTest(payload);
                 toast.success("Test added successfully");
             }
-            router.push('/lab/tests');
+            startNavigation(() => {
+                router.push('/lab/tests');
+            });
         } catch (error: any) {
             toast.error(error.message || "Failed to save test");
         } finally {
@@ -268,17 +273,16 @@ function ManageTestPage() {
     );
 
     return (
-        <div className="max-w-[1400px] mx-auto space-y-6 pb-12 px-4 md:px-8 animate-in fade-in duration-700">
-            {/* Header */}
+        <div className="max-w-7xl mx-auto space-y-6 pb-12 animate-in fade-in duration-700">
             <div className="flex items-center gap-4">
-                <button onClick={() => router.back()} className="p-2.5 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-slate-200 dark:border-gray-700">
+                <button disabled={isNavigating} onClick={() => startNavigation(() => router.back())} className={`p-2.5 bg-white dark:bg-gray-800 rounded-lg transition-colors border border-slate-200 dark:border-gray-700 ${isNavigating ? 'opacity-50' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
                     <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                 </button>
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white">
                         {isEditMode ? 'Edit Test' : 'Add New Test'}
                     </h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                    <p className="text-[10px] md:text-xs lg:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                         Configure test parameters and pricing
                     </p>
                 </div>
@@ -296,7 +300,7 @@ function ManageTestPage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                <label className="block text-[10px] md:text-xs lg:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                                     Test Name <span className="text-rose-500">*</span>
                                 </label>
                                 <input
@@ -363,11 +367,11 @@ function ManageTestPage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                <label className="block text-[9px] md:text-xs text-gray-700 dark:text-gray-300 mb-1.5">
                                     Sample Type <span className="text-rose-500">*</span>
                                 </label>
                                 <select
-                                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none cursor-pointer"
+                                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none cursor-pointer"
                                     value={formData.sampleType}
                                     onChange={e => setFormData({ ...formData, sampleType: e.target.value })}
                                     required
@@ -535,8 +539,9 @@ function ManageTestPage() {
                         </button>
                         <button
                             type="button"
-                            onClick={() => router.back()}
-                            className="w-full py-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 font-medium text-sm transition-colors"
+                            disabled={isNavigating}
+                            onClick={() => startNavigation(() => router.back())}
+                            className={`w-full py-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 font-medium text-sm transition-colors ${isNavigating ? 'opacity-50' : ''}`}
                         >
                             Cancel
                         </button>

@@ -116,16 +116,16 @@ function EmergencyAccept() {
             </Link>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Protocol Delta / Case Reception</span>
           </div>
-          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
+          <h1 className="text-lg lg:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
             {activeTab === 'pending' ? 'Emergency Requests' : 'Active List'}
           </h1>
           <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest mt-1">Hospital Node / Critical Dispatch Control</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex p-1 bg-white border border-slate-200 rounded-xl shadow-sm">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex p-0.5 sm:p-1 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm">
             <button
               onClick={() => setActiveTab('pending')}
-              className={`px-5 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest ${activeTab === 'pending'
+              className={`px-3 sm:px-5 py-1.5 sm:py-2 rounded-md sm:rounded-lg text-[8px] sm:text-[9px] font-bold uppercase tracking-widest ${activeTab === 'pending'
                 ? 'bg-rose-600 text-white shadow-lg shadow-rose-900/20'
                 : 'text-slate-400 hover:text-slate-600'
                 }`}
@@ -134,7 +134,7 @@ function EmergencyAccept() {
             </button>
             <button
               onClick={() => setActiveTab('active')}
-              className={`px-5 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest ${activeTab === 'active'
+              className={`px-3 sm:px-5 py-1.5 sm:py-2 rounded-md sm:rounded-lg text-[8px] sm:text-[9px] font-bold uppercase tracking-widest ${activeTab === 'active'
                 ? 'bg-teal-600 text-white shadow-lg shadow-teal-900/20'
                 : 'text-slate-400 hover:text-slate-600'
                 }`}
@@ -142,8 +142,8 @@ function EmergencyAccept() {
               Closed ({emergencies.length - pendingRequests.length})
             </button>
           </div>
-          <button onClick={fetchEmergencies} className="p-2.5 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-teal-600 shadow-sm" aria-label="Refresh Grid">
-            <RefreshCw size={18} />
+          <button onClick={fetchEmergencies} className="p-2 sm:p-2.5 bg-white border border-slate-200 text-slate-400 rounded-lg sm:rounded-xl hover:text-teal-600 shadow-sm" aria-label="Refresh Grid">
+            <RefreshCw size={16} className="sm:size-[18px]" />
           </button>
         </div>
       </div>

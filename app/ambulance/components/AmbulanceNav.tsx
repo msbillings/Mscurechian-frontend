@@ -8,12 +8,12 @@ export default function AmbulanceNav() {
     const [showProfileMenu, setShowProfileMenu] = useState(false);
 
     useEffect(() => {
-        // Check auth from sessionStorage
-        const userRole = sessionStorage.getItem("userRole");
-        const userData = sessionStorage.getItem("user");
+        // Check auth from localStorage
+        const userRole = localStorage.getItem("userRole");
+        const userData = localStorage.getItem("user");
 
         if (userRole !== "ambulance") {
-            router.push("/emergency-login");
+            router.push("/emergency/login");
             return;
         }
 
@@ -23,11 +23,11 @@ export default function AmbulanceNav() {
     }, [router]);
 
     const handleLogout = () => {
-        sessionStorage.removeItem("accessToken");
-        sessionStorage.removeItem("refreshToken");
-        sessionStorage.removeItem("userRole");
-        sessionStorage.removeItem("user");
-        router.push("/emergency-login");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("user");
+        router.push("/emergency/login");
     };
 
     if (!user) {

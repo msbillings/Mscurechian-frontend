@@ -16,6 +16,7 @@ import { Card, FormInput } from "@/components/admin";
 
 interface FormData {
   // Personal
+  honorific: string;
   name: string;
   email: string;
   mobile: string;
@@ -70,6 +71,7 @@ export default function EditStaffPage() {
   const [allRooms, setAllRooms] = useState<any[]>([]);
 
   const [formData, setFormData] = useState<FormData>({
+    honorific: "Mr",
     name: "", email: "", mobile: "", gender: "",
     dateOfBirth: "",
     department: [], assignedRoom: [], designation: "", employeeId: "", employmentType: "full-time",
@@ -137,6 +139,7 @@ export default function EditStaffPage() {
       }
 
       setFormData({
+        honorific: staff.honorific || "Mr",
         name: staff.name || "",
         email: staff.email || "",
         mobile: staff.mobile || "",
@@ -191,6 +194,14 @@ export default function EditStaffPage() {
     if (name === "panNumber" && value.toUpperCase() !== "N/A" && (value.length > 10)) return;
     if (name === "baseSalary" && value.toUpperCase() !== "N/A" && !/^\d*$/.test(value)) return;
     if (name.includes("Number") && !name.includes("pan") && value.toUpperCase() !== "N/A" && !/^\d*$/.test(value)) return; // Generic number check for other IDs
+
+    if (name === "honorific") {
+      let gender = formData.gender;
+      if (value === "Mr") gender = "male";
+      else if (value === "Mrs" || value === "Ms") gender = "female";
+      setFormData(prev => ({ ...prev, [name]: value, gender }));
+      return;
+    }
 
     setFormData(prev => ({ ...prev, [name]: (name === "panNumber" || value.toUpperCase() === "N/A") ? value.toUpperCase() : value }));
   };
@@ -251,6 +262,7 @@ export default function EditStaffPage() {
     }
     if (name === "panNumber" && value && value.toUpperCase() !== "N/A" && value.length !== 10) error = "Invalid PAN (Must be 10 chars)";
     if (name === "aadharNumber" && value && value.toUpperCase() !== "N/A" && value.length !== 12) error = "Invalid Aadhar (Must be 12 digits)";
+    if (name === "employeeId" && !value) error = "Employee ID is required";
 
     if (error) toast.error(error);
     return !error;
@@ -262,7 +274,7 @@ export default function EditStaffPage() {
   };
 
   const validateForm = () => {
-    const requiredFields = ['name', 'email', 'mobile'] as const;
+    const requiredFields = ['name', 'email', 'mobile', 'employeeId'] as const;
     let isValid = true;
     requiredFields.forEach(field => {
       if (!validateField(field, formData[field])) isValid = false;
@@ -317,7 +329,7 @@ export default function EditStaffPage() {
 
   return (
     <div className="max-w-7xl mx-auto pb-20 space-y-6">
-      <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-center justify-between gap-4">
+      <div className="bg-white rounded-3xl p-3 md:p-6 border border-gray-100 shadow-sm flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button onClick={() => router.back()} className="p-2 hover:bg-gray-50 rounded-xl transition-all">
             <ArrowLeft size={18} />
@@ -340,8 +352,15 @@ export default function EditStaffPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Compact 3-Column Layout for Personal Info */}
-        <Card title="Personnel Profile" icon={<User className="text-gray-400" />} padding="p-6">
+        <Card title="Personnel Profile" icon={<User className="text-gray-400" />} padding="p-2 md:p-6">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+            <div className="md:col-span-2 space-y-1.5">
+              <label className="text-xs font-semibold text-gray-700 ml-1">Honorific<span className="text-rose-500 ml-0.5">*</span></label>
+              <select name="honorific" value={formData.honorific} onChange={handleChange} required
+                className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/10 outline-none">
+                <option value="Mr">Mr</option><option value="Mrs">Mrs</option><option value="Ms">Ms</option><option value="Dr">Dr</option>
+              </select>
+            </div>
             <div className="md:col-span-4">
               <FormInput label="Full Name" type="text" name="name" required value={formData.name} onChange={handleChange} onBlur={handleBlur} className="rounded-xl font-bold" />
             </div>
@@ -375,7 +394,7 @@ export default function EditStaffPage() {
         </Card>
 
         {/* Compact Layout for Institutional */}
-        <Card title="Institutional Registry" icon={<Building className="text-indigo-400" />} padding="p-6">
+        <Card title="Institutional Registry" icon={<Building className="text-indigo-400" />} padding="p-2 md:p-6">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
             <div className="md:col-span-5 space-y-1.5">
               <label className="text-xs font-semibold text-gray-700 ml-1">Assigned Department(s)</label>
@@ -428,7 +447,7 @@ export default function EditStaffPage() {
               <FormInput label="Designation" name="designation" value={formData.designation} onChange={handleChange} className="rounded-xl font-bold" />
             </div>
             <div className="md:col-span-2">
-              <FormInput label="Staff ID" name="employeeId" value={formData.employeeId} onChange={handleChange} className="rounded-xl font-bold text-indigo-600" />
+              <FormInput label="Staff ID" name="employeeId" required value={formData.employeeId} onChange={handleChange} onBlur={handleBlur} className="rounded-xl font-bold text-indigo-600" />
             </div>
 
             <div className="md:col-span-2 space-y-1.5">
@@ -447,7 +466,7 @@ export default function EditStaffPage() {
         <Card
           title="Financial & Bank Disclosure"
           icon={<CreditCard className="text-blue-600" />}
-          padding="p-6"
+          padding="p-2 md:p-6"
           extra={
             <button
               type="button"
@@ -485,13 +504,13 @@ export default function EditStaffPage() {
         </Card>
 
         {/* Save Bar */}
-        <div className="sticky bottom-8 bg-white/80 backdrop-blur-md p-4 rounded-3xl border border-gray-100 shadow-xl flex items-center justify-between z-10">
+        <div className="sticky bottom-8 bg-white/80 backdrop-blur-md p-2 md:p-4 rounded-3xl border border-gray-100 shadow-xl flex items-center justify-between z-10">
           <div className="flex items-center gap-3 ml-4">
             <ShieldCheck className="text-blue-500" size={20} />
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none hidden sm:block">Institutional Data Security Enabled</p>
           </div>
           <div className="flex gap-4">
-            <button type="button" onClick={() => router.back()} className="px-6 py-3 text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-gray-900 transition-all">Discard</button>
+            <button type="button" onClick={() => router.back()} className="px-2 md:px-6 py-3 text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-gray-900 transition-all">Discard</button>
             <button type="submit" disabled={loading} className="px-10 py-3 bg-primary-theme text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-gray-900/20 hover:bg-primary-theme/80 hover:scale-[1.02] active:scale-[0.98] transition-all">
               {loading ? "Updating..." : "Save Changes"}
             </button>

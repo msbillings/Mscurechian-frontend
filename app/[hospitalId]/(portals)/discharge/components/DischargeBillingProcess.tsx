@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, Button, FormInput, FormSelect, FormTextarea } from '@/components/admin';
-import { ArrowLeft, Save, FileCheck, Receipt } from 'lucide-react';
+import { ArrowLeft, Save, FileCheck, Receipt, FileText } from 'lucide-react';
 import { dischargeService } from '@/lib/integrations/services/discharge.service';
 import { ipdService } from '@/lib/integrations/services/ipd.service';
 import toast from 'react-hot-toast';
-import { Tag, AlertCircle, Info, Lock, Wallet, Plus, X, DollarSign } from 'lucide-react';
+import { Tag, AlertCircle, Info, Lock, Wallet, Plus, X, IndianRupee } from 'lucide-react';
 import ClinicalReceipt from '@/components/helpdesk/ClinicalReceipt';
 
 export function DischargeBillingProcess() {
@@ -19,21 +19,27 @@ export function DischargeBillingProcess() {
     const [billSummary, setBillSummary] = useState<any>(null);
 
     const [billingData, setBillingData] = useState({
+        patientName: '',
+        admissionId: '',
         advanceAmount: 0,
-        finalPayment: 0,
+        settlementPaid: 0,
+        balanceDue: 0,
         totalBillAmount: 0,
-        paymentMode: 'cash',
+        remainingAmountPaid: 0,
+        paymentMode: 'Cash',
+        amountToPay: 0,
+        paymentReference: '',
         insuranceName: '',
         allergyHistory: '',
         bedChargesTotal: 0,
         extraChargesTotal: 0,
-        discountAmount: 0
+        discountAmount: 0,
     });
 
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentData, setPaymentData] = useState({
         amount: 0,
-        mode: 'UPI',
+        mode: 'Cash',
         reference: ''
     });
     const [receiptData, setReceiptData] = useState<any>(null);
@@ -63,10 +69,17 @@ export function DischargeBillingProcess() {
                 // Auto-fill from SUMMARY if available (SOURCE OF TRUTH)
                 if (summary?.financials) {
                     setBillingData({
-                        advanceAmount: summary.financials.totalPaid || 0,
-                        totalBillAmount: summary.financials.finalAmount || 0,
-                        finalPayment: summary.financials.balance || 0,
-                        paymentMode: data.paymentMode || 'cash',
+                        patientName: data.patientName || '',
+                        admissionId: data.admissionId || '',
+                        advanceAmount: summary.financials.totalAdvance || 0,
+                        settlementPaid: summary.financials.totalSettlement || 0,
+                        balanceDue: summary.financials.balance || 0,
+                        totalBillAmount: summary.financials.totalBill || 0,
+                        remainingAmountPaid: summary.financials.remainingPaid || 0,
+                        paymentMode: data.paymentMode ? (['UPI', 'upi'].includes(data.paymentMode) ? 'UPI' : data.paymentMode.charAt(0).toUpperCase() + data.paymentMode.slice(1).toLowerCase()) : 'Cash',
+                        amountToPay: 0,
+                        paymentReference: '',
+                        
                         insuranceName: data.insuranceName || '',
                         allergyHistory: data.allergyHistory || data.vitals?.sugar || '',
                         bedChargesTotal: summary.bedCharges?.total || 0,
@@ -77,12 +90,16 @@ export function DischargeBillingProcess() {
                     // Pre-fill existing billing data if any (legacy path)
                     setBillingData(prev => ({
                         ...prev,
+                        patientName: data.patientName || '',
+                        admissionId: data.admissionId || '',
                         advanceAmount: data.advanceAmount || 0,
                         totalBillAmount: data.totalBillAmount || 0,
-                        finalPayment: data.finalPayment || 0,
-                        paymentMode: data.paymentMode || 'cash',
+                        remainingAmountPaid: data.remainingAmountPaid || data.finalPayment || 0,
+                        paymentMode: data.paymentMode ? (['UPI', 'upi'].includes(data.paymentMode) ? 'UPI' : data.paymentMode.charAt(0).toUpperCase() + data.paymentMode.slice(1).toLowerCase()) : 'Cash',
                         insuranceName: data.insuranceName || '',
-                        allergyHistory: data.allergyHistory || ''
+                        allergyHistory: data.allergyHistory || '',
+                        amountToPay: 0,
+                        paymentReference: ''
                     }));
                 }
             }
@@ -97,30 +114,84 @@ export function DischargeBillingProcess() {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
 
-        if (name === 'advanceAmount' || name === 'finalPayment') {
-            const val = parseFloat(value) || 0;
-            setBillingData(prev => {
-                const newBilling = { ...prev, [name]: val };
-                const advance = name === 'advanceAmount' ? val : prev.advanceAmount;
-                const final = name === 'finalPayment' ? val : prev.finalPayment;
-                newBilling.totalBillAmount = advance + final;
-                return newBilling;
-            });
-        } else if (name === 'totalBillAmount') {
-            // If user manually edits Total, should we adjust Final?
-            // Let's allow manual edit but maybe it gets overwritten if they touch others?
-            // Or maybe we treat Total as the sum always. 
-            // If they edit Total, let's keep it, but if they touch Advance/Final it recalculates.
-            // Actually, simplest is to let Total be Sum. 
-            const val = parseFloat(value) || 0;
+        if (name === 'advanceAmount' || name === 'settlementPaid' || name === 'balanceDue' || name === 'totalBillAmount') {
+            const val = Math.round(parseFloat(value) || 0);
             setBillingData(prev => ({ ...prev, [name]: val }));
         } else {
             setBillingData(prev => ({ ...prev, [name]: value }));
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const [isSaved, setIsSaved] = useState(false);
+
+    const handleGeneratePreview = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!admissionId) return;
+
+        // Set receipt data so the preview modal opens!
+        const startTime = recordData.admissionDate ? new Date(recordData.admissionDate).getTime() : 0;
+        const endTime = recordData.dischargeDate ? new Date(recordData.dischargeDate).getTime() : new Date().getTime();
+        const diffInMs = Math.max(0, endTime - startTime);
+        const hours = Math.floor(diffInMs / (1000 * 60 * 60));
+        const minutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
+        const stayDurationStr = startTime ? (hours >= 24 ? `${Math.floor(hours / 24)} Day${Math.floor(hours / 24) !== 1 ? 's' : ''}${hours % 24 > 0 ? ` ${hours % 24} Hrs` : ''}` : `${hours} Hrs, ${minutes} Mins`) : '';
+        setReceiptData({
+            hospital: recordData.hospital || {},
+            patient: {
+                name: recordData.patientName,
+                mrn: recordData.mrn,
+                age: recordData.age,
+                gender: recordData.gender,
+                mobile: recordData.phone,
+                email: recordData.email,
+                address: recordData.address,
+                emergencyContact: recordData.attendantName ? `${recordData.attendantName} (${recordData.attendantPhone})` : '',
+                bloodGroup: recordData.bloodGroup,
+                dateOfBirth: recordData.dob,
+                allergies: recordData.allergyHistory,
+                medicalHistory: recordData.pastMedicalHistory,
+                symptoms: recordData.reasonForAdmission,
+                diagnosis: recordData.diagnosis,
+                provisionalDiagnosis: recordData.provisionalDiagnosis,
+                treatmentGiven: recordData.treatmentGiven,
+                surgicalProcedures: recordData.surgicalProcedures,
+                investigationsPerformed: recordData.investigationsPerformed,
+                hospitalCourse: recordData.hospitalCourse,
+                conditionAtDischarge: recordData.conditionAtDischarge,
+                medicationsPrescribed: recordData.medicationsPrescribed,
+                adviceAtDischarge: recordData.adviceAtDischarge,
+                activityRestrictions: recordData.activityRestrictions,
+                dietInstructions: recordData.dietInstructions,
+                warningSigns: recordData.warningSigns,
+                followUpDate: recordData.followUpDate,
+                dischargeType: recordData.dischargeType || 'FINAL DISCHARGE',
+                vitals: recordData.vitals
+            },
+            appointment: {
+                type: recordData.dischargeType || 'FINAL DISCHARGE',
+                doctorName: recordData.consultants?.[0] || recordData.primaryDoctor || recordData.suggestedDoctorName || 'Assigned Physician',
+                appointmentId: recordData._id || `DIS-${Date.now()}`,
+                date: recordData.admissionDate ? new Date(recordData.admissionDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB'),
+                time: recordData.admissionDate ? new Date(recordData.admissionDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString(),
+                specialization: recordData.specialistType || 'IPD',
+                stayDuration: stayDurationStr
+            },
+            payment: {
+                receiptNo: recordData._id || `BILL-${Date.now()}`,
+                date: new Date().toISOString(),
+                amount: Math.round(billingData.advanceAmount + billingData.settlementPaid),
+                advanceAmount: Math.round(billingData.advanceAmount),
+                remainingPaid: Math.round(billingData.settlementPaid),
+                totalPaidAmount: Math.round(billingData.advanceAmount + billingData.settlementPaid),
+                totalBillAmount: Math.round(billingData.totalBillAmount),
+                balance: Math.round(billingData.balanceDue),
+                mode: billingData.paymentMode,
+                status: 'PAID'
+            }
+        });
+    };
+
+    const handleConfirmDischarge = async () => {
         if (!admissionId) return;
 
         setLoading(true);
@@ -128,64 +199,28 @@ export function DischargeBillingProcess() {
             const payload = {
                 ...recordData,
                 ...billingData,
+                dischargeType: recordData.dischargeType || '',
+                totalPaidAmount: Math.round(billingData.advanceAmount + (billingData.settlementPaid || 0)),
+                remainingAmount: Math.round(billingData.settlementPaid || 0),
                 status: 'completed',
                 dischargeDate: new Date().toISOString()
             };
 
-            // If the record is already completed, we are updating it.
-            // If it is 'PREPARED_BY_NURSE' (Draft) or has no status, we are CREATING the final record.
-            // The Draft ID (_id) from PendingDischarge cannot be used to update DischargeRecord collection.
-
             if (recordData.status === 'completed' && recordData._id) {
+                // Only update if it's an existing finalized discharge record
                 await dischargeService.updateRecord(recordData._id, payload);
             } else {
-                // It is a draft or new, so we create a new DischargeRecord
-                // We do NOT pass the draft's _id to saveRecord, as mongo will generate a new one for the DischargeRecord
+                // For new admissions or pending nurse discharges, use saveRecord (POST)
+                // The backend handles converting pending records to completed via admissionId
                 const { _id, ...cleanPayload } = payload;
                 await dischargeService.saveRecord(cleanPayload);
             }
 
+            setIsSaved(true);
             toast.success("Discharge finalized & Bill generated");
-            
-            // Set receipt data so the preview modal opens!
-            setReceiptData({
-                hospital: recordData.hospital || {},
-                patient: {
-                    name: recordData.patientName,
-                    mrn: recordData.mrn,
-                    age: recordData.age,
-                    gender: recordData.gender,
-                    mobile: recordData.phone,
-                    email: recordData.email,
-                    address: recordData.address,
-                    emergencyContact: recordData.attendantName ? `${recordData.attendantName} (${recordData.attendantPhone})` : '',
-                    bloodGroup: recordData.bloodGroup,
-                    dateOfBirth: recordData.dob,
-                    allergies: recordData.allergyHistory,
-                    medicalHistory: recordData.pastMedicalHistory,
-                    symptoms: recordData.reasonForAdmission,
-                    vitals: recordData.vitals
-                },
-                appointment: {
-                    type: 'Final Discharge Summary',
-                    doctorName: recordData.primaryDoctor || recordData.suggestedDoctorName || 'Assigned Physician',
-                    appointmentId: recordData._id || `DIS-${Date.now()}`,
-                    date: recordData.admissionDate ? new Date(recordData.admissionDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB'),
-                    time: recordData.admissionDate ? new Date(recordData.admissionDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString(),
-                    specialization: recordData.specialistType || 'IPD'
-                },
-                payment: {
-                    receiptNo: recordData._id || `BILL-${Date.now()}`,
-                    date: new Date().toISOString(),
-                    amount: Math.round(billingData.totalBillAmount),
-                    advanceAmount: Math.round(billingData.advanceAmount),
-                    totalBillAmount: Math.round(billingData.totalBillAmount),
-                    mode: billingData.paymentMode,
-                    status: 'PAID'
-                }
-            });
         } catch (error: any) {
             toast.error(error.message || "Failed to finalize discharge");
+            throw error;
         } finally {
             setLoading(false);
         }
@@ -207,6 +242,13 @@ export function DischargeBillingProcess() {
 
             toast.success("Payment recorded successfully");
 
+            const startTime = recordData.admissionDate ? new Date(recordData.admissionDate).getTime() : 0;
+            const endTime = recordData.dischargeDate ? new Date(recordData.dischargeDate).getTime() : new Date().getTime();
+            const diffInMs = Math.max(0, endTime - startTime);
+            const hours = Math.floor(diffInMs / (1000 * 60 * 60));
+            const minutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
+            const stayDurationStr = startTime ? (hours >= 24 ? `${Math.floor(hours / 24)} Day${Math.floor(hours / 24) !== 1 ? 's' : ''}${hours % 24 > 0 ? ` ${hours % 24} Hrs` : ''}` : `${hours} Hrs, ${minutes} Mins`) : '';
+
             // Set receipt data and refresh
             setReceiptData({
                 hospital: recordData.hospital || {},
@@ -224,21 +266,38 @@ export function DischargeBillingProcess() {
                     allergies: recordData.allergyHistory,
                     medicalHistory: recordData.pastMedicalHistory,
                     symptoms: recordData.reasonForAdmission,
+                    diagnosis: recordData.diagnosis,
+                    provisionalDiagnosis: recordData.provisionalDiagnosis,
+                    treatmentGiven: recordData.treatmentGiven,
+                    surgicalProcedures: recordData.surgicalProcedures,
+                    investigationsPerformed: recordData.investigationsPerformed,
+                    hospitalCourse: recordData.hospitalCourse,
+                    conditionAtDischarge: recordData.conditionAtDischarge,
+                    medicationsPrescribed: recordData.medicationsPrescribed,
+                    adviceAtDischarge: recordData.adviceAtDischarge,
+                    activityRestrictions: recordData.activityRestrictions,
+                    dietInstructions: recordData.dietInstructions,
+                    warningSigns: recordData.warningSigns,
+                    followUpDate: recordData.followUpDate,
+                    dischargeType: recordData.dischargeType || 'FINAL DISCHARGE',
                     vitals: recordData.vitals
                 },
                 appointment: {
-                    type: 'IPD Final Settlement',
-                    doctorName: recordData.primaryDoctor || recordData.suggestedDoctorName || 'Assigned Physician',
+                    type: recordData.dischargeType || 'FINAL DISCHARGE',
+                    doctorName: recordData.consultants?.[0] || recordData.primaryDoctor || recordData.suggestedDoctorName || 'Assigned Physician',
                     appointmentId: recordData._id || `SET-${Date.now()}`,
                     date: recordData.admissionDate ? new Date(recordData.admissionDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB'),
                     time: recordData.admissionDate ? new Date(recordData.admissionDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString(),
-                    specialization: recordData.specialistType || 'IPD'
+                    specialization: recordData.specialistType || 'IPD',
+                    stayDuration: stayDurationStr
                 },
                 payment: {
                     receiptNo: response._id || `REC-${Date.now()}`,
                     date: new Date().toISOString(),
                     amount: Math.round(paymentData.amount),
                     advanceAmount: Math.round(billingData.advanceAmount),
+                    remainingPaid: Math.round(paymentData.amount),
+                    totalPaidAmount: Math.round(billingData.advanceAmount + billingData.settlementPaid + paymentData.amount),
                     totalBillAmount: Math.round(billingData.totalBillAmount),
                     mode: paymentData.mode,
                     reference: paymentData.reference,
@@ -246,6 +305,7 @@ export function DischargeBillingProcess() {
                 }
             });
 
+            setPaymentData({ amount: 0, mode: 'Cash', reference: '' });
             setShowPaymentModal(false);
             fetchAdmissionDetails(admissionId);
         } catch (error: any) {
@@ -263,70 +323,271 @@ export function DischargeBillingProcess() {
         return <div className="p-8 text-center text-rose-500">Patient record not found</div>;
     }
 
+    // Helper for clinical sections
+    const clinicalSections = [
+        { label: 'Reason for Admission', value: recordData.reasonForAdmission },
+        { label: 'Diagnosis', value: recordData.diagnosis },
+        { label: 'Past Medical History', value: recordData.pastMedicalHistory },
+        { label: 'Allergy History', value: recordData.allergyHistory },
+        { label: 'Provisional Diagnosis', value: recordData.provisionalDiagnosis },
+        { label: 'Final Diagnosis', value: recordData.finalDiagnosis },
+        { label: 'Complications', value: recordData.complications },
+        { label: 'Investigations', value: recordData.investigations },
+    ];
+
+    const treatmentSections = [
+        { label: 'Treatment Given', value: recordData.treatmentGiven },
+        { label: 'Procedures Performed', value: recordData.proceduresPerformed },
+        { label: 'Medications at Discharge', value: recordData.medicationsAtDischarge },
+    ];
+
+    const adviceSections = [
+        { label: 'Advice at Discharge', value: recordData.adviceAtDischarge },
+        { label: 'Follow-up Date', value: recordData.followUpDate ? new Date(recordData.followUpDate).toLocaleString() : 'N/A' },
+        {
+            label: 'Dietary Advice',
+            value: recordData.dietaryAdvice,
+            subSections: [
+                { label: 'Diet Type', value: recordData.dietType },
+                { label: 'Diet Restrictions', value: recordData.dietRestrictions },
+            ]
+        },
+        { label: 'Activity Restrictions', value: recordData.activityRestrictions },
+        { label: 'Special Instructions', value: recordData.specialInstructions },
+    ];
+
     return (
         <div className="max-w-7xl mx-auto space-y-4 pb-12">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-2">
                 <div>
-                    <h1 className="text-xl font-black text-slate-900">Finalize Discharge</h1>
-                    <p className="text-xs text-slate-500 font-bold">Billing & Insurance Processing</p>
+                    <h1 className="text-2xl font-black text-slate-900 tracking-tight">Discharge Billing Process</h1>
+                    <p className="text-slate-500 text-sm font-medium">Finalize financials and generate discharge documentation</p>
                 </div>
-                <Button
-                    onClick={() => router.back()}
-                    className="border border-slate-200 text-black shadow-sm font-bold"
-                >
-                    <ArrowLeft size={16} className="mr-2" /> Back
-                </Button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => router.back()}
+                        className="px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all"
+                    >
+                        Back
+                    </button>
+                </div>
             </div>
 
-            {/* Read-Only Clinical Summary */}
-            <Card className="p-4 bg-slate-50 border-slate-200">
-                <div className="flex items-center gap-3 mb-3">
-                    <div className="p-1.5 bg-blue-100 text-blue-600 rounded-lg">
-                        <FileCheck size={18} />
-                    </div>
-                    <h3 className="font-bold text-slate-800 text-sm">
-                        Clinical Summary {recordData.preparedBy?.name ? `(Prepared by ${recordData.preparedBy.name})` : (recordData.createdBy?.name ? `(Finalized by ${recordData.createdBy.name})` : '(Prepared by Nurse)')}
+            {/* Patient & Admission Overview */}
+            <Card className="p-4 border-slate-100 shadow-sm bg-slate-50/50">
+                <div className="flex items-center gap-2 mb-3">
+                    <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] flex items-center gap-2">
+                        <FileText size={14} className="text-blue-500" />
+                        Patient & Admission Overview
                     </h3>
+                    <div className="ml-auto flex bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest gap-1 border border-blue-200">
+                        Stay Duration: {(() => {
+                            if (!recordData.admissionDate) return 'N/A';
+                            const startTime = new Date(recordData.admissionDate).getTime();
+                            const endTime = recordData.dischargeDate ? new Date(recordData.dischargeDate).getTime() : new Date().getTime();
+                            const diffInMs = Math.max(0, endTime - startTime);
+                            const hours = Math.floor(diffInMs / (1000 * 60 * 60));
+                            const minutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
+                            if (hours > 24) {
+                                const days = Math.floor(hours / 24);
+                                const remainingHours = hours % 24;
+                                return `${days} Day${days !== 1 ? 's' : ''}${remainingHours > 0 ? ` ${remainingHours} Hrs` : ''}`;
+                            }
+                            return `${hours} Hrs, ${minutes} Mins`;
+                        })()}
+                    </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-x-6 gap-y-3">
                     <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">Patient Name</p>
-                        <p className="font-bold text-slate-900">{recordData.patientName}</p>
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">MRN</p>
-                        <p className="font-bold text-slate-900">{recordData.mrn}</p>
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Patient Name</p>
+                        <p className="font-black text-slate-900 text-[12px] uppercase tracking-tight leading-none">{recordData.patientName}</p>
+                        <p className="text-[9px] font-bold text-blue-600 mt-1">{recordData.mrn || 'MRN-N/A'}</p>
                     </div>
                     <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">Doctor</p>
-                        <p className="font-bold text-slate-900">{recordData.primaryDoctor}</p>
-                    </div>
-                    <div className="md:col-span-3">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">Diagnosis</p>
-                        <p className="font-medium text-slate-800">{recordData.diagnosis}</p>
-                    </div>
-                    <div className="md:col-span-3">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">Advice</p>
-                        <p className="font-medium text-slate-800">{recordData.adviceAtDischarge || 'No specific advice'}</p>
-                    </div>
-                    <div className="md:col-span-3">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">Allergies</p>
-                        <p className="font-medium text-rose-600">{recordData.allergyHistory || 'None'}</p>
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-0.5">DOB / Age</p>
+                        <p className="font-bold text-slate-700 text-[11px]">{recordData.dob ? recordData.dob.split('T')[0] : 'N/A'} / {recordData.age}</p>
+                        <p className="text-[9px] font-black text-slate-500 uppercase">{recordData.gender}</p>
                     </div>
                     <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">Follow-up Date</p>
-                        <p className="font-bold text-blue-600">
-                            {recordData.followUpDate
-                                ? new Date(recordData.followUpDate).toLocaleString()
-                                : 'Not Scheduled'}
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Admission ID</p>
+                        <p className="font-black text-slate-800 text-[11px]">{recordData.admissionId}</p>
+                        <p className="text-[9px] font-black text-rose-600 uppercase">BLOOD: {recordData.bloodGroup || 'N/A'}</p>
+                    </div>
+                    <div>
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Treating Doctor</p>
+                        <p className="font-black text-blue-600 text-[11px] leading-tight uppercase">
+                            {recordData.consultants?.[0] || recordData.primaryDoctor || recordData.suggestedDoctorName || 'Assigned Physician'}
                         </p>
+                        <p className="text-[7px] font-bold text-slate-400 uppercase mt-1">Primary Consultant</p>
+                    </div>
+                    <div>
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Contact Details</p>
+                        <p className="font-bold text-slate-800 text-[11px] leading-none">{recordData.phone || '-'}</p>
+                        <p className="text-[9px] text-slate-500 truncate mt-1">{recordData.email || 'No email provided'}</p>
+                    </div>
+                    <div>
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Emergency Contact</p>
+                        <p className="font-bold text-slate-800 text-[11px] leading-tight">{recordData.attendantName || '-'}</p>
+                        <p className="text-[9px] text-slate-500">{recordData.attendantPhone || 'No contact'}</p>
+                    </div>
+                   
+                    <div className="md:col-span-2 lg:col-span-7 border-t border-slate-200 pt-2 flex items-start gap-3">
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-0.5 shrink-0">ADDRESS:</p>
+                        <p className="font-bold text-slate-600 text-[10px] leading-tight italic">{recordData.address || 'Residential address not updated in records'}</p>
                     </div>
                 </div>
             </Card>
 
+            {/* Clinical Summary Section (Nurse Filled Details) */}
+            <Card className="p-0 border-slate-200 shadow-xl shadow-slate-900/5 overflow-hidden bg-white">
+                <div className="bg-slate-50 border-b border-slate-100 px-6 py-4 flex items-center justify-between">
+                    <h3 className="text-xs font-black text-slate-700 uppercase tracking-[0.15em] flex items-center gap-3">
+                        <FileCheck size={18} className="text-blue-500" />
+                        Final Discharge Summary (Clinical Details)
+                    </h3>
+                    <div className="px-3 py-1 bg-white border border-slate-200 rounded-lg shadow-sm text-[10px] font-black text-slate-500 uppercase">
+                        PREPARED BY: <span className="text-blue-600">{
+                            recordData.preparedBy?.name 
+                            ? `NURSE (${recordData.preparedBy.name.toUpperCase()})` 
+                            : (recordData.nurseName || recordData.staffName || recordData.createdBy?.name)
+                                ? `NURSE (${(recordData.nurseName || recordData.staffName || recordData.createdBy?.name).toUpperCase()})`
+                                : 'NURSE'
+                        }</span>
+                    </div>
+                </div>
+                <div className="p-0">
+                    {/* section 1: vitals table */}
+                    <div className="bg-slate-50/50 border-b border-slate-100 p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Vital Signs (Current Visit)</h4>
+                        </div>
+                        <div className="grid grid-cols-4 md:grid-cols-7 gap-px bg-slate-200 border border-slate-200 rounded-lg overflow-hidden">
+                            {[
+                                { label: 'Height', value: recordData.vitals?.height ? `${recordData.vitals.height} cm` : '-' },
+                                { label: 'Weight', value: recordData.vitals?.weight ? `${recordData.vitals.weight} kg` : '-' },
+                                { label: 'Temp', value: recordData.vitals?.temperature || recordData.vitals?.temp ? `${recordData.vitals?.temperature || recordData.vitals?.temp} °F` : '-' },
+                                { label: 'BP', value: recordData.vitals?.bloodPressure || recordData.vitals?.bp || '-' },
+                                { label: 'Pulse', value: recordData.vitals?.pulse ? `${recordData.vitals.pulse} bpm` : '-' },
+                                { label: 'SpO2', value: recordData.vitals?.spO2 || recordData.vitals?.spo2 ? `${recordData.vitals?.spO2 || recordData.vitals?.spo2}%` : '-' },
+                                { label: 'Glucose', value: recordData.vitals?.glucose || recordData.vitals?.sugar ? `${recordData.vitals?.glucose || recordData.vitals?.sugar} mg/dL` : '-' }
+                            ].map((v, i) => (
+                                <div key={i} className="bg-white p-2">
+                                    <p className="text-[8px] font-black text-slate-400 uppercase mb-0.5">{v.label}</p>
+                                    <p className="text-[10px] font-bold text-slate-700">{v.value}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* section 2: history & symptoms table */}
+                    <div className="p-4 border-b border-slate-100">
+                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Background & Symptoms</h4>
+                        <div className="border border-slate-100 rounded-xl overflow-hidden">
+                            <div className="grid grid-cols-1 md:grid-cols-2 bg-slate-100 gap-px">
+                                {recordData.allergyHistory && (
+                                    <div className="flex bg-white">
+                                        <div className="w-1/3 bg-slate-50/80 p-3 text-[10px] font-black text-rose-600 uppercase border-r border-slate-100">Allergies</div>
+                                        <div className="w-2/3 p-3 text-xs font-bold text-slate-800">{recordData.allergyHistory}</div>
+                                    </div>
+                                )}
+                                {recordData.pastMedicalHistory && (
+                                    <div className="flex bg-white">
+                                        <div className="w-1/3 bg-slate-50/80 p-3 text-[10px] font-black text-slate-500 uppercase border-r border-slate-100">Medical History</div>
+                                        <div className="w-2/3 p-3 text-xs font-bold text-slate-800">{recordData.pastMedicalHistory}</div>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex bg-white border-t border-slate-100">
+                                <div className="w-1/6 bg-slate-50/80 p-3 text-[10px] font-black text-slate-500 uppercase border-r border-slate-100">Reason for Admission</div>
+                                <div className="w-5/6 p-3 text-xs font-bold text-slate-800 leading-relaxed">{recordData.reasonForAdmission || '-'}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* section 3: clinical discharge summary (The Main Table) */}
+                    <div className="p-4 bg-white">
+                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Discharge Clinical Summary</h4>
+                        <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
+                            {/* status row */}
+                            <div className="flex bg-blue-50/30">
+                                <div className="w-1/5 p-3 text-[10px] font-black text-blue-600 uppercase border-r border-blue-50">Discharge Type</div>
+                                <div className="w-4/5 p-3 text-xs font-black text-blue-700 uppercase tracking-tight">{recordData.dischargeType || 'Final Discharge'}</div>
+                            </div>
+                            {/* diagnoses */}
+                            <div className="flex">
+                                <div className="w-1/5 p-3 text-[10px] font-black text-slate-500 uppercase border-r border-slate-100">Provisional Diagnosis</div>
+                                <div className="w-4/5 p-3 text-xs font-bold text-slate-700">{recordData.provisionalDiagnosis || '-'}</div>
+                            </div>
+                            <div className="flex">
+                                <div className="w-1/5 p-3 text-[10px] font-black text-slate-500 uppercase border-r border-slate-100">Final Diagnosis</div>
+                                <div className="w-4/5 p-3 text-sm font-black text-slate-900 uppercase">{recordData.diagnosis || '-'} {recordData.icdCode && `(ICD: ${recordData.icdCode})`}</div>
+                            </div>
+                            {/* Course & Investigations */}
+                            <div className="flex">
+                                <div className="w-1/5 p-3 text-[10px] font-black text-slate-500 uppercase border-r border-slate-100">Hospital Course</div>
+                                <div className="w-4/5 p-3 text-xs font-bold text-slate-700 leading-relaxed whitespace-pre-wrap">{recordData.hospitalCourse || '-'}</div>
+                            </div>
+                            <div className="flex">
+                                <div className="w-1/5 p-3 text-[10px] font-black text-slate-500 uppercase border-r border-slate-100">Investigations</div>
+                                <div className="w-4/5 p-3 text-xs font-bold text-slate-700">{recordData.investigationsPerformed || recordData.investigations || '-'}</div>
+                            </div>
+                            {/* treatment */}
+                            <div className="flex bg-emerald-50/10">
+                                <div className="w-1/5 p-3 text-[10px] font-black text-emerald-600 uppercase border-r border-emerald-50">Treatment Given</div>
+                                <div className="w-4/5 p-3 text-xs font-bold text-slate-800">{recordData.treatmentGiven || '-'}</div>
+                            </div>
+                            <div className="flex">
+                                <div className="w-1/5 p-3 text-[10px] font-black text-slate-500 uppercase border-r border-slate-100">Procedures Done</div>
+                                <div className="w-4/5 p-3 text-xs font-bold text-slate-700">{recordData.surgicalProcedures || recordData.proceduresPerformed || '-'}</div>
+                            </div>
+                            {/* advice */}
+                            <div className="flex">
+                                <div className="w-1/5 p-3 text-[10px] font-black text-slate-500 uppercase border-r border-slate-100">Discharge Advice</div>
+                                <div className="w-4/5 p-3 space-y-2">
+                                    {recordData.adviceAtDischarge && <p className="text-xs font-bold text-slate-700"><span className="text-[8px] uppercase text-slate-400 block mb-0.5">General Advice</span>{recordData.adviceAtDischarge}</p>}
+                                    {recordData.dietInstructions && <p className="text-xs font-bold text-slate-700"><span className="text-[8px] uppercase text-slate-400 block mb-0.5">Dietary Instructions</span>{recordData.dietInstructions}</p>}
+                                    {recordData.activityRestrictions && <p className="text-xs font-bold text-slate-700"><span className="text-[8px] uppercase text-slate-400 block mb-0.5">Activity Restrictions</span>{recordData.activityRestrictions}</p>}
+                                </div>
+                            </div>
+                            {/* follow up & warnings highlight */}
+                            <div className="flex bg-rose-50/50">
+                                <div className="w-1/5 p-3 text-[10px] font-black text-rose-600 uppercase border-r border-rose-100">Follow-up & Warnings</div>
+                                <div className="w-4/5 p-3 space-y-3">
+                                    <div className="flex items-center gap-4">
+                                        <div className="bg-white px-3 py-1 rounded-lg border border-rose-100">
+                                            <p className="text-[8px] font-black text-slate-400 uppercase">Next Visit Date</p>
+                                            <p className="text-[11px] font-black text-rose-600">{recordData.followUpDate ? new Date(recordData.followUpDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Not Scheduled'}</p>
+                                        </div>
+                                        {recordData.followUpDate && (
+                                            <div className="bg-white px-3 py-1 rounded-lg border border-rose-100">
+                                                <p className="text-[8px] font-black text-slate-400 uppercase">Scheduled Time</p>
+                                                <p className="text-[11px] font-black text-rose-600">{new Date(recordData.followUpDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="bg-rose-100/50 p-2 rounded-lg border border-rose-200">
+                                        <p className="text-[9px] font-black text-rose-700 uppercase flex items-center gap-1 mb-1">
+                                            <AlertCircle size={10} /> Emergency Warning Signs
+                                        </p>
+                                        <p className="text-[10px] font-bold text-rose-900 leading-tight uppercase tracking-tight">{recordData.warningSigns || 'Standard Post-Discharge Precautions Apply'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            {/* final condition */}
+                            <div className="flex bg-emerald-50/20">
+                                <div className="w-1/5 p-3 text-[10px] font-black text-emerald-700 uppercase border-r border-emerald-50">Final Condition</div>
+                                <div className="w-4/5 p-3 text-[11px] font-black text-emerald-800 uppercase tracking-widest">{recordData.conditionAtDischarge || 'Stable / Improved'}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Card>
+
+            {/* Quick Actions & Status */}
+
             {/* Billing Form */}
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleGeneratePreview}>
                 <Card className="p-5 bg-white shadow-xl shadow-blue-900/5 border-white">
                     <div className="flex items-center gap-3 mb-5 border-b border-gray-50 pb-3">
                         <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
@@ -338,7 +599,7 @@ export function DischargeBillingProcess() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <FormInput
                             label="Total Advance Paid"
                             name="advanceAmount"
@@ -346,23 +607,41 @@ export function DischargeBillingProcess() {
                             value={Math.round(billingData.advanceAmount)}
                             onChange={handleChange}
                             placeholder="0.00"
-                            className="bg-slate-50 border-slate-200 font-bold text-emerald-700"
+                            className="bg-slate-50 border-slate-200 font-bold text-emerald-700 h-10"
+                            readOnly
+                        />
+                        <FormInput
+                            label="Remaining Amount Paid"
+                            name="settlementPaid"
+                            type="number"
+                            value={Math.round(billingData.settlementPaid)}
+                            onChange={handleChange}
+                            placeholder="0.00"
+                            className="bg-slate-50 border-slate-200 font-bold text-blue-600 h-10"
+                            readOnly
+                        />
+                        <FormInput
+                            label="Net Paid (Total Sum)"
+                            name="totalPaid"
+                            type="number"
+                            value={Math.round(billingData.advanceAmount + billingData.settlementPaid)}
+                            className="bg-emerald-50 border-emerald-200 font-black text-emerald-800 h-10"
                             readOnly
                         />
                         <div className="relative">
                             <FormInput
                                 label="Current Balance Due"
-                                name="finalPayment"
+                                name="balanceDue"
                                 type="number"
-                                value={Math.round(billingData.finalPayment)}
+                                value={Math.round(billingData.balanceDue)}
                                 onChange={handleChange}
                                 placeholder="0.00"
-                                className={`bg-slate-50 border-slate-200 font-bold ${Math.round(billingData.finalPayment) > 0 ? 'text-rose-600' : 'text-slate-900'}`}
+                                className={`bg-slate-50 border-slate-200 font-bold h-10 ${Math.round(billingData.balanceDue) > 0 ? 'text-rose-600' : 'text-slate-900'}`}
                                 readOnly
                                 required
                             />
-                            {Math.round(billingData.finalPayment) === 0 && Math.round(billingData.totalBillAmount) > 0 && (
-                                <span className="absolute right-3 top-[34px] text-[10px] font-black uppercase text-emerald-600 bg-emerald-100 px-2 py-1 rounded">Paid</span>
+                            {Math.round(billingData.balanceDue) === 0 && Math.round(billingData.totalBillAmount) > 0 && (
+                                <span className="absolute right-3 top-[34px] text-[10px] font-black uppercase text-emerald-600 bg-emerald-100 px-2 py-1 rounded">Settled</span>
                             )}
                         </div>
                         <FormInput
@@ -372,7 +651,7 @@ export function DischargeBillingProcess() {
                             value={Math.round(billingData.totalBillAmount)}
                             onChange={handleChange}
                             placeholder="0.00"
-                            className="bg-slate-50 border-slate-200 text-teal-600 font-bold text-lg opacity-70"
+                            className="bg-slate-50 border-slate-200 text-slate-400 font-black text-lg h-10 opacity-70"
                             readOnly
                             required
                         />
@@ -415,19 +694,58 @@ export function DischargeBillingProcess() {
                             </div>
 
                             <div className="space-y-3">
-                                {/* 1. Gross Charges */}
+                                {/* 1. Bed Charges */}
                                 <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-white text-slate-400 rounded-lg flex items-center justify-center border border-slate-100"><DollarSign size={14} /></div>
+                                        <div className="w-8 h-8 bg-white text-blue-500 rounded-lg flex items-center justify-center border border-slate-100 shadow-sm">
+                                            <Info size={14} />
+                                        </div>
                                         <div>
-                                            <p className="text-[9px] font-black text-slate-800 uppercase leading-none">Gross Clinical Charges</p>
-                                            <p className="text-[7px] font-bold text-slate-400 mt-1 uppercase tracking-tight">Bed & Extra Charges</p>
+                                            <p className="text-[9px] font-black text-slate-800 uppercase leading-none">Bed / Room Charges</p>
+                                            <p className="text-[7px] font-bold text-slate-400 mt-1 uppercase tracking-tight">Stay Duration: {billSummary.bedCharges?.totalStayReadable || 'Calculating...'}</p>
+                                            <p className="text-[6px] font-medium text-slate-400 mt-0.5 uppercase">
+                                                From: {recordData.admissionDate ? new Date(recordData.admissionDate).toLocaleString() : 'N/A'}
+                                            </p>
                                         </div>
                                     </div>
-                                    <p className="text-xs font-black text-slate-900">₹{(Math.round(billSummary.bedCharges?.total + billSummary.extraCharges?.total)).toLocaleString()}</p>
+                                    <p className="text-xs font-black text-slate-900">₹{Math.round(billSummary.bedCharges?.total || 0).toLocaleString()}</p>
                                 </div>
 
-                                {/* 2. Medicine Returns (if any) */}
+                                {/* 2. Medicine Charges */}
+                                {(billSummary.extraCharges?.categoryBreakdown?.Pharmacy || 0) > 0 && (
+                                    <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-white text-emerald-500 rounded-lg flex items-center justify-center border border-slate-100 shadow-sm">
+                                                <Receipt size={14} />
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] font-black text-slate-800 uppercase leading-none">Medicine Charges</p>
+                                                <p className="text-[7px] font-bold text-slate-400 mt-1 uppercase tracking-tight">Pharmacy Issues</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-xs font-black text-slate-900">₹{Math.round(billSummary.extraCharges?.categoryBreakdown?.Pharmacy || 0).toLocaleString()}</p>
+                                    </div>
+                                )}
+
+                                {/* 3. Other Clinical Charges */}
+                                {((billSummary.extraCharges?.total || 0) - (billSummary.extraCharges?.categoryBreakdown?.Pharmacy || 0)) > 0 && (
+                                    <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-white text-amber-500 rounded-lg flex items-center justify-center border border-slate-100 shadow-sm">
+                                                <Plus size={14} />
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] font-black text-slate-800 uppercase leading-none">Other Clinical Charges</p>
+                                                <p className="text-[7px] font-bold text-slate-400 mt-1 uppercase tracking-tight">Procedures & Miscellaneous</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-xs font-black text-slate-900">₹{Math.round((billSummary.extraCharges?.total || 0) - (billSummary.extraCharges?.categoryBreakdown?.Pharmacy || 0)).toLocaleString()}</p>
+                                    </div>
+                                )}
+
+                                {/* Existing logic for Returns, Discounts, etc. */}
+
+                                {/* 4. Medicine Returns (if any) */}
                                 {billSummary.financials?.returnCredits > 0 && (
                                     <div className="flex justify-between items-center pb-2 border-b border-rose-100 text-rose-600 bg-rose-50/50 px-2 py-1.5 rounded-lg -mx-2">
                                         <div className="flex items-center gap-3">
@@ -437,11 +755,11 @@ export function DischargeBillingProcess() {
                                                 <p className="text-[7px] font-bold opacity-70 mt-1 uppercase tracking-tight">Pharmacy Credit</p>
                                             </div>
                                         </div>
-                                        <p className="text-xs font-black">- ₹{billSummary.financials.returnCredits.toLocaleString()}</p>
+                                        <p className="text-xs font-black">- ₹{Math.round(billSummary.financials.returnCredits).toLocaleString()}</p>
                                     </div>
                                 )}
 
-                                {/* 3. Discount (if any) */}
+                                {/* 5. Discount (if any) */}
                                 {billSummary.financials?.discount > 0 && (
                                     <div className="flex justify-between items-center pb-2 border-b border-slate-100 text-emerald-600">
                                         <div className="flex items-center gap-3">
@@ -451,41 +769,82 @@ export function DischargeBillingProcess() {
                                                 <p className="text-[7px] font-bold opacity-60 mt-1 uppercase tracking-tight">Admin Adjustment</p>
                                             </div>
                                         </div>
-                                        <p className="text-xs font-black">- ₹{billSummary.financials.discount.toLocaleString()}</p>
+                                        <p className="text-xs font-black">- ₹{Math.round(billSummary.financials.discount).toLocaleString()}</p>
                                     </div>
                                 )}
 
-                                {/* 4. Advance Paid */}
+                                {/* Grand Total Bill Highlight */}
+                                <div className="flex justify-between items-center py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl -mx-2 my-3 shadow-inner">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-white text-slate-900 rounded-xl flex items-center justify-center border border-slate-200 shadow-sm"><FileText size={18} /></div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Gross Bill Amount</p>
+                                            <p className="text-[8px] font-bold text-slate-400 mt-1 uppercase">Total Hospital Services</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-base font-black text-slate-900 font-mono tracking-tighter">₹{Math.round(billingData.totalBillAmount).toLocaleString()}</p>
+                                </div>
+
+                                {/* 6. Advance Paid */}
                                 <div className="flex justify-between items-center pb-2 border-b border-emerald-100 text-emerald-600 bg-emerald-50/30 px-2 py-1.5 rounded-lg -mx-2 mt-2">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 bg-white text-emerald-600 rounded-lg flex items-center justify-center border border-emerald-100 shadow-sm"><Wallet size={14} /></div>
                                         <div>
                                             <p className="text-[9px] font-black uppercase leading-none">Net Advance Paid</p>
-                                            <p className="text-[7px] font-bold opacity-70 mt-1 uppercase tracking-tight">Payments Recorded</p>
+                                            <p className="text-[7px] font-bold opacity-70 mt-1 uppercase tracking-tight">Initial Payments</p>
                                         </div>
                                     </div>
                                     <p className="text-xs font-black">- ₹{(billingData.advanceAmount || 0).toLocaleString()}</p>
                                 </div>
 
-                                {/* 5. Final Balance */}
+                                {/* 7. Remaining Paid (Settlements) */}
+                                {billingData.settlementPaid > 0 && (
+                                    <div className="flex justify-between items-center pb-2 border-b border-blue-100 text-blue-600 bg-blue-50/30 px-2 py-1.5 rounded-lg -mx-2">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-white text-blue-600 rounded-lg flex items-center justify-center border border-blue-100 shadow-sm"><Receipt size={14} /></div>
+                                            <div>
+                                                <p className="text-[9px] font-black uppercase leading-none">Remaining Amount Paid</p>
+                                                <p className="text-[7px] font-bold opacity-70 mt-1 uppercase tracking-tight">Settlement Payments</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-xs font-black">- ₹{(billingData.settlementPaid || 0).toLocaleString()}</p>
+                                    </div>
+                                )}
+
+                                {/* Net Total Paid - High Visibility Summary */}
+                                <div className="flex justify-between items-center py-2.5 px-3 bg-emerald-600 text-white rounded-xl -mx-2 my-3 shadow-lg shadow-emerald-900/10">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-white/20 text-white rounded-xl flex items-center justify-center border border-white/20 backdrop-blur-sm"><Wallet size={18} /></div>
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest leading-none">Net Total Paid</p>
+                                            <p className="text-[8px] font-bold opacity-80 mt-1 uppercase tracking-tight">Total Payment Contribution</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-base font-black text-emerald-100 font-mono tracking-tighter">₹{Math.round(billingData.advanceAmount + billingData.settlementPaid).toLocaleString()}</p>
+                                        <p className="text-[8px] font-black uppercase text-emerald-300">FULLY SETTLED SUM</p>
+                                    </div>
+                                </div>
+
+                                {/* 8. Final Balance */}
                                 <div className="flex justify-between items-center pt-3 text-rose-600 border-t-2 border-dashed border-slate-200 mt-2">
                                     <div className="flex flex-col">
-                                        <p className="text-[10px] font-black uppercase tracking-widest leading-none">Final Balance Due</p>
+                                        <p className="text-[10px] font-black uppercase tracking-widest leading-none">Remaining Balance Due</p>
                                         <p className="text-[8px] font-bold opacity-60 uppercase mt-1">Settlement required for discharge</p>
                                     </div>
                                     <div className="flex flex-col items-end">
-                                        <p className="text-lg font-black underline decoration-2 underline-offset-4">₹{Math.round(billingData.finalPayment || 0).toLocaleString()}</p>
+                                        <p className="text-lg font-black underline decoration-2 underline-offset-4">₹{Math.round(billingData.balanceDue || 0).toLocaleString()}</p>
                                     </div>
                                 </div>
                             </div>
-                            
+
                             {/* Settlement Action Button moved here */}
-                            {Math.round(billingData.finalPayment) > 0 && (
+                            {Math.round(billingData.balanceDue) > 0 && (
                                 <div className="mt-6 flex justify-center">
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            setPaymentData(prev => ({ ...prev, amount: Math.round(billingData.finalPayment) }));
+                                            setPaymentData(prev => ({ ...prev, amount: Math.round(billingData.balanceDue) }));
                                             setShowPaymentModal(true);
                                         }}
                                         className="w-full md:w-auto px-10 py-3 bg-rose-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-rose-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-200"
@@ -509,42 +868,27 @@ export function DischargeBillingProcess() {
                         )}
                         <div className="flex-1 hidden md:block" />
 
-                        {Math.round(billingData.finalPayment) > 0 && (
+                        {Math.round(billingData.balanceDue) > 0 && (
                             <div className="flex items-center gap-2 px-4 py-2 bg-rose-50 border border-rose-100 rounded-xl">
                                 <AlertCircle size={14} className="text-rose-500" />
                                 <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">
-                                    Outstanding Balance: ₹{Math.round(billingData.finalPayment).toLocaleString()} — Please record payment first
+                                    Outstanding Balance: ₹{Math.round(billingData.balanceDue).toLocaleString()} — Please record payment first
                                 </span>
                             </div>
                         )}
 
-                        {Math.round(billingData.finalPayment) === 0 && (
-                            <div className="flex items-center gap-2">
-                                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Invoice Payment Mode:</label>
-                                <select
-                                    value={billingData.paymentMode}
-                                    onChange={(e) => setBillingData({ ...billingData, paymentMode: e.target.value })}
-                                    className="bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-blue-500"
-                                >
-                                    <option value="Cash">Cash</option>
-                                    <option value="UPI">UPI</option>
-                                    <option value="Card">Card</option>
-                                    <option value="Bank TXN">Bank Transfer</option>
-                                    <option value="Insurance">Insurance/TPA</option>
-                                </select>
-                            </div>
-                        )}
+                        <div className="flex-1 hidden md:block" />
 
                         <Button
                             type="submit"
-                            disabled={loading || Math.round(billingData.finalPayment) > 0}
-                            className={`rounded-xl px-6 py-2.5 font-bold shadow-lg flex items-center gap-2 text-sm transition-all ${Math.round(billingData.finalPayment) > 0
+                            disabled={loading || Math.round(billingData.balanceDue) > 0}
+                            className={`rounded-xl px-6 py-2.5 font-bold shadow-lg flex items-center gap-2 text-sm transition-all ${Math.round(billingData.balanceDue) > 0
                                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
                                 : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'
                                 }`}
                         >
                             <Save size={16} />
-                            {loading ? 'Finalizing...' : 'Finalize & Generate Invoice'}
+                            {loading ? 'Generating...' : 'Generate Preview & Finalize'}
                         </Button>
                     </div>
                 </Card>
@@ -571,7 +915,7 @@ export function DischargeBillingProcess() {
                                     onChange={(e) => setPaymentData(prev => ({ ...prev, amount: Number(e.target.value) }))}
                                     className="w-full text-lg font-black bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-rose-500"
                                     required
-                                    max={Math.round(billingData.finalPayment)}
+                                    max={Math.round(billingData.balanceDue)}
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
@@ -585,7 +929,8 @@ export function DischargeBillingProcess() {
                                         <option value="UPI">UPI</option>
                                         <option value="Cash">Cash</option>
                                         <option value="Card">Card</option>
-                                        <option value="Bank TXN">Bank TXN</option>
+                                        <option value="Insurance">Insurance</option>
+                                        <option value="Bank Transfer">Bank Transfer</option>
                                     </select>
                                 </div>
                                 <div>
@@ -604,7 +949,7 @@ export function DischargeBillingProcess() {
                                 disabled={isProcessingPayment}
                                 className="w-full py-3.5 bg-rose-600 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
                             >
-                                {isProcessingPayment ? "Processing..." : <><Plus size={16} /> Confirm Payment</>}
+                                {isProcessingPayment ? "Processing..." : <><Plus size={16} /> Confirm Settlement</>}
                             </button>
                         </form>
                     </div>
@@ -618,9 +963,10 @@ export function DischargeBillingProcess() {
                     patient={receiptData.patient}
                     appointment={receiptData.appointment}
                     payment={receiptData.payment}
+                    onConfirm={!isSaved ? handleConfirmDischarge : undefined}
                     onClose={() => {
                         setReceiptData(null);
-                        if (receiptData.appointment.type === 'Final Discharge Summary') {
+                        if (isSaved) {
                             router.push('/helpdesk/discharge');
                         }
                     }}

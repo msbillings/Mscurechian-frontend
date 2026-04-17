@@ -175,14 +175,14 @@ const AuditLogsPage = () => {
     };
 
     return (
-        <div className="space-y-6 pb-20 max-w-[1200px] mx-auto">
+        <div className="space-y-4 md:space-y-6 pb-20 max-w-[1200px] mx-auto px-4 md:px-0">
             {/* Header Section */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-gray-50 dark:border-gray-700/50 flex items-center gap-3">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden mt-4 md:mt-0">
+                <div className="p-4 md:p-6 border-b border-gray-50 dark:border-gray-700/50 flex items-center gap-3">
                     <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-lg">
-                        <Shield size={24} />
+                        <Shield size={20} className="md:size-6" />
                     </div>
-                    <h1 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Audit Logs</h1>
+                    <h1 className="text-lg md:text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Audit Logs</h1>
                     <button
                         onClick={() => fetchLogs(page)}
                         className="ml-auto p-2 text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-all active:scale-95"
@@ -193,52 +193,37 @@ const AuditLogsPage = () => {
                 </div>
 
                 {/* Filter Section */}
-                <div className="p-6 bg-gray-50/50 dark:bg-gray-900/20 border-b border-gray-50 dark:border-gray-700/50">
+                <div className="p-4 md:p-6 bg-gray-50/50 dark:bg-gray-900/20 border-b border-gray-50 dark:border-gray-700/50">
                     <div className="flex items-center gap-2 mb-4">
                         <Filter size={14} className="text-gray-400" />
-                        <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Filters</span>
+                        <span className="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest">Filters</span>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* <div>
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Action Type</label>
-                            <select
-                                value={action}
-                                onChange={(e) => setAction(e.target.value)}
-                                className="w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm font-bold outline-none ring-1 ring-gray-100 dark:ring-gray-700 focus:ring-2 focus:ring-emerald-500 dark:text-white appearance-none cursor-pointer"
-                            >
-                                <option>All Actions</option>
-                                <option>INVOICE_CREATED</option>
-                                <option>INVOICE_DELETED</option>
-                                <option>PRODUCT_ADDED</option>
-                                <option>PRODUCT_UPDATED</option>
-                                <option>LOGIN_SUCCESS</option>
-                                <option>SUPPLIER_REGISTERED</option>
-                            </select>
-                        </div> */}
-
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                         <div>
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Start Date</label>
+                            <label className="text-[10px] md:text-xs font-black text-gray-500 uppercase tracking-widest mb-2 block">Start Date</label>
                             <div className="relative">
                                 <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                 <input
                                     type="date"
+                                    title="Start Date"
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
-                                    className="w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-2.5 text-sm font-bold outline-none ring-1 ring-gray-100 dark:ring-gray-700 focus:ring-2 focus:ring-emerald-500 dark:text-white"
+                                    className="w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-2 md:py-2.5 text-xs md:text-sm font-bold outline-none ring-1 ring-gray-100 dark:ring-gray-700 focus:ring-2 focus:ring-emerald-500 dark:text-white shadow-sm"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">End Date</label>
+                            <label className="text-[10px] md:text-xs font-black text-gray-500 uppercase tracking-widest mb-2 block">End Date</label>
                             <div className="relative">
                                 <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                 <input
                                     type="date"
+                                    title="End Date"
                                     value={endDate}
                                     onChange={(e) => setEndDate(e.target.value)}
-                                    className="w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-2.5 text-sm font-bold outline-none ring-1 ring-gray-100 dark:ring-gray-700 focus:ring-2 focus:ring-emerald-500 dark:text-white"
+                                    className="w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-2 md:py-2.5 text-xs md:text-sm font-bold outline-none ring-1 ring-gray-100 dark:ring-gray-700 focus:ring-2 focus:ring-emerald-500 dark:text-white shadow-sm"
                                 />
                             </div>
                         </div>
@@ -252,19 +237,19 @@ const AuditLogsPage = () => {
                             <PharmacyTableSkeleton rows={8} />
                         </div>
                     ) : (
-                        <table className="w-full text-left">
+                        <table className="w-full text-left min-w-[700px]">
                             <thead>
                                 <tr className="bg-gray-50/50 dark:bg-gray-900/50">
-                                    <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-gray-700/50">TIMESTAMP</th>
-                                    <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-gray-700/50">ACTION</th>
-                                    <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-gray-700/50">USER</th>
-                                    <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-gray-700/50">IP ADDRESS</th>
+                                    <th className="px-5 md:px-6 py-4 text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-gray-700/50">TIMESTAMP</th>
+                                    <th className="px-5 md:px-6 py-4 text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-gray-700/50">ACTION</th>
+                                    <th className="px-5 md:px-6 py-4 text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-gray-700/50">USER</th>
+                                    <th className="px-5 md:px-6 py-4 text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-gray-700/50">IP ADDRESS</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50 font-medium">
+                            <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
                                 {logs.length === 0 ? (
                                     <tr>
-                                        <td colSpan={4} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest text-xs">
+                                        <td colSpan={4} className="px-5 md:px-6 py-12 text-center text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest text-[10px] md:text-xs">
                                             No logs found matching filters
                                         </td>
                                     </tr>
@@ -273,51 +258,51 @@ const AuditLogsPage = () => {
                                         if (!log) return null;
                                         const [date, time] = formatTimestamp(log.timestamp).split(', ');
                                         return (
-                                            <tr key={log._id} className="hover:bg-gray-50/20 dark:hover:bg-gray-700/10 transition-colors">
-                                                <td className="px-6 py-5 text-sm text-gray-600 dark:text-gray-300">
-                                                    {date}{time && `, ${time}`}
+                                            <tr key={log._id} className="hover:bg-gray-50/20 dark:hover:bg-gray-700/10 transition-colors group">
+                                                <td className="px-5 md:px-6 py-4 md:py-5 text-[10px] md:text-xs font-medium text-gray-600 dark:text-gray-300">
+                                                    <span className="font-mono">{date}</span>{time && <span className="text-gray-400 ml-1">at {time}</span>}
                                                 </td>
-                                                <td className="px-6 py-5">
-                                                    <span className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider border ${getActionBadgeStyle(log.action)}`}>
+                                                <td className="px-5 md:px-6 py-4 md:py-5">
+                                                    <span className={`px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-wider border shadow-sm ${getActionBadgeStyle(log.action)}`}>
                                                         {log.action}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-5 text-sm text-gray-600 dark:text-gray-300">
+                                                <td className="px-5 md:px-6 py-4 md:py-5 text-[10px] md:text-xs font-bold text-gray-700 dark:text-gray-200 uppercase truncate max-w-[150px]">
                                                     {log.user?.name || 'System'}
                                                 </td>
-                                                <td className="px-6 py-5 text-sm font-bold text-gray-500 dark:text-gray-400 font-mono">
+                                                <td className="px-5 md:px-6 py-4 md:py-5 text-[10px] md:text-xs font-black text-gray-400 dark:text-gray-500 font-mono tracking-tighter">
                                                     {log.ipAddress}
                                                 </td>
                                             </tr>
                                         );
                                     })
-                                )}
+                                ) || null}
                             </tbody>
                         </table>
                     )}
                 </div>
 
                 {/* Footer Section */}
-                <div className="p-4 bg-gray-50/50 dark:bg-gray-900/20 border-t border-gray-50 dark:border-gray-700/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest">
-                        Showing {logs.length > 0 ? ((page - 1) * 20) + 1 : 0} to {Math.min(page * 20, totalResults)} of {totalResults} results
+                <div className="p-4 md:p-6 bg-gray-50/50 dark:bg-gray-900/20 border-t border-gray-50 dark:border-gray-700/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <p className="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest text-center sm:text-left">
+                        Showing {logs.length > 0 ? ((page - 1) * 20) + 1 : 0} - {Math.min(page * 20, totalResults)} <span className="text-gray-300 mx-1">/</span> {totalResults} Entries
                     </p>
 
                     <div className="flex items-center gap-2">
                         <button
                             disabled={page === 1}
                             onClick={() => setPage(page - 1)}
-                            className="p-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-gray-400 disabled:opacity-30 hover:text-emerald-500 active:scale-95 transition-all"
+                            className="p-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-gray-400 disabled:opacity-30 hover:text-emerald-500 active:scale-95 transition-all shadow-sm"
                         >
-                            <ChevronLeft size={16} />
+                            <ChevronLeft size={18} />
                         </button>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5 px-2">
                             {[...Array(totalPages)].map((_, i) => (
                                 <button
                                     key={i}
                                     onClick={() => setPage(i + 1)}
-                                    className={`w-8 h-8 rounded-lg text-xs font-black transition-all ${page === i + 1
-                                        ? 'bg-emerald-600 text-white'
+                                    className={`w-8 h-8 md:w-9 md:h-9 rounded-lg text-[10px] md:text-xs font-black transition-all ${page === i + 1
+                                        ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
                                         : 'bg-white dark:bg-gray-800 text-gray-400 border border-gray-100 dark:border-gray-700 hover:border-emerald-500'
                                         }`}
                                 >
@@ -328,9 +313,9 @@ const AuditLogsPage = () => {
                         <button
                             disabled={page === totalPages}
                             onClick={() => setPage(page + 1)}
-                            className="p-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-gray-400 disabled:opacity-30 hover:text-emerald-500 active:scale-95 transition-all"
+                            className="p-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-gray-400 disabled:opacity-30 hover:text-emerald-500 active:scale-95 transition-all shadow-sm"
                         >
-                            <ChevronRight size={16} />
+                            <ChevronRight size={18} />
                         </button>
                     </div>
                 </div>

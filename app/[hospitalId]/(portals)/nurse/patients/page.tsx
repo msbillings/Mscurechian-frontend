@@ -324,13 +324,13 @@ export default function PatientMonitoringPage() {
     );
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-20 px-1 sm:px-4">
+        <div className="min-h-screen bg-slate-50 pb-10">
             <div className="max-w-7xl mx-auto space-y-2 sm:space-y-4">
 
 
                 {/* PAGE HEADING */}
                 <div className="px-1 sm:px-0 mb-4">
-                    <h1 className="text-xs sm:text-xs lg:text-xl font-black text-slate-800 uppercase tracking-tighter">
+                    <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-800 uppercase tracking-tight">
                         Patient Monitoring
                     </h1>
                 </div>

@@ -92,16 +92,16 @@ function DoctorsList() {
                         </Link>
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Medical Personnel / Active Duty Matrix</span>
                     </div>
-                    <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
+                    <h1 className="text-lg lg:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
                         Physician Registry Control
                     </h1>
                     <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest mt-1">Hospital Node / Provider Management</p>
                 </div>
-                <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full md:w-auto">
                     <select 
                         value={selectedDept}
                         onChange={(e) => setSelectedDept(e.target.value)}
-                        className="w-full sm:w-48 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-tight outline-none shadow-sm focus:border-teal-500 appearance-none cursor-pointer"
+                        className="w-full sm:w-48 px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-tight outline-none shadow-sm focus:border-teal-500 appearance-none cursor-pointer"
                     >
                         <option value="all">ALL DEPARTMENTS</option>
                         {departments.map(dept => (
@@ -110,12 +110,12 @@ function DoctorsList() {
                     </select>
 
                     <div className="relative w-full sm:w-80">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                        <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-slate-400 size-[14px]" />
                         <input
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="SEARCH BY NAME OR SPECIALTY..."
-                            className="w-full pl-11 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-tight outline-none shadow-sm focus:border-teal-500"
+                            placeholder="SEARCH..."
+                            className="w-full pl-9 sm:pl-11 pr-8 sm:pr-10 py-2 sm:py-2.5 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-tight outline-none shadow-sm focus:border-teal-500"
                             aria-label="Filter physicians"
                         />
                         {searchTerm && (
@@ -130,10 +130,10 @@ function DoctorsList() {
                     <button
                         onClick={() => refetch()}
                         disabled={isFetching}
-                        className="p-2.5 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-teal-600 shadow-sm disabled:opacity-50"
+                        className="p-2 sm:p-2.5 bg-white border border-slate-200 text-slate-400 rounded-lg sm:rounded-xl hover:text-teal-600 shadow-sm disabled:opacity-50"
                         aria-label="Refresh doctors"
                     >
-                        <RefreshCw size={18} className={showRefreshing ? 'animate-spin' : ''} />
+                        <RefreshCw size={16} className={`${showRefreshing ? 'animate-spin' : ''} sm:size-[18px]`} />
                     </button>
                 </div>
             </div>
@@ -142,12 +142,16 @@ function DoctorsList() {
             <div className="max-w-full mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredDoctors.length > 0 ? filteredDoctors.map((doc) => {
                     const name = (doc.user?.name || doc.name || "Dr. Anonymous").toUpperCase();
-                    const specialty = (doc.specialties?.[0] || doc.department || doc.specialty || "General Medicine").toUpperCase();
+                    const specialty = (doc.specialties?.[0] || doc.specialty || "General Medicine").toUpperCase();
                     const qualifications = doc.qualifications?.join(", ") || (doc as any).qualification || "MBBS, MD";
                     const status = doc.user?.status || "active";
                     const mobile = doc.user?.mobile || (doc as any).profile?.mobile || "CONTACT N/A";
                     const email = doc.user?.email || (doc as any).profile?.email || "EMAIL-NOT-LISTED";
-                    const experience = (doc as any).experience || "5+ Years";
+                    const experienceStart = doc.experienceStart || (doc as any).profile?.experienceStart;
+                    const calculatedExp = experienceStart ? Math.max(0, new Date().getFullYear() - new Date(experienceStart).getFullYear()) : null;
+                    const experience = calculatedExp !== null 
+                        ? `${calculatedExp} YEARS` 
+                        : (doc.experienceYears ? `${doc.experienceYears} YEARS` : "EXP N/A");
 
                     return (
                         <div key={doc._id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm group flex flex-col gap-5 h-full hover:border-teal-500 hover:shadow-xl hover:shadow-teal-900/5 transition-all duration-300">

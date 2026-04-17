@@ -24,7 +24,7 @@ import type { AttendanceHistory } from '@/lib/integrations/types';
 import { API_CONFIG } from '@/lib/integrations/config/api-config';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import { useStaffDashboard, useAttendanceHistory, useAnnouncements, useCheckIn, useCheckOut } from '@/lib/integrations/hooks';
+import { useStaffDashboard, useAttendanceHistory, useAnnouncements, useCheckIn, useCheckOut, useTodayStatus } from '@/lib/integrations/hooks';
 import { StaffDashboardSkeleton } from '@/components/ui/skeletons';
 
 const StaffDashboardPage = React.memo(function StaffDashboardPage() {
@@ -36,7 +36,8 @@ const StaffDashboardPage = React.memo(function StaffDashboardPage() {
     } | null>(null);
 
     // ✅ React Query hooks with placeholderData for instant cached display
-    const { data: dashboard, isLoading: dashboardLoading, refetch: refetchDashboard, isPlaceholderData: isDashboardPlaceholder } = useStaffDashboard();
+    const { data: dashboard, isLoading: dashboardLoading, isPlaceholderData: isDashboardPlaceholder } = useStaffDashboard();
+    const { data: statusData } = useTodayStatus(); // ✅ Unified status sync
     const { data: historyData, isPlaceholderData: isHistoryPlaceholder } = useAttendanceHistory({ limit: 5, page: 1 });
     const { data: announcementsData, isPlaceholderData: isAnnouncementsPlaceholder } = useAnnouncements();
 
@@ -93,21 +94,27 @@ const StaffDashboardPage = React.memo(function StaffDashboardPage() {
     // ✅ Optimized handlers with useCallback
     const handleCheckIn = useCallback(async () => {
         try {
-            await checkInMutation.mutateAsync(undefined);
-            toast.success('Checked in successfully!');
-        } catch (error) {
+            const result = await checkInMutation.mutateAsync(undefined);
+            const checkInTime = result?.attendance?.checkIn?.time
+                ? new Date(result.attendance.checkIn.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
+                : null;
+            toast.success(checkInTime ? `Checked in at ${checkInTime}` : 'Checked in successfully!');
+        } catch (error: any) {
             console.error('Check-in failed:', error);
-            toast.error('Failed to check in');
+            toast.error(error?.message || 'Failed to check in. Please try again.');
         }
     }, [checkInMutation]);
 
     const handleCheckOut = useCallback(async () => {
         try {
-            await checkOutMutation.mutateAsync(undefined);
-            toast.success('Checked out successfully!');
-        } catch (error) {
+            const result = await checkOutMutation.mutateAsync(undefined);
+            const checkOutTime = result?.attendance?.checkOut?.time
+                ? new Date(result.attendance.checkOut.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
+                : null;
+            toast.success(checkOutTime ? `Checked out at ${checkOutTime}` : 'Checked out successfully!');
+        } catch (error: any) {
             console.error('Check-out failed:', error);
-            toast.error('Failed to check out');
+            toast.error(error?.message || 'Failed to check out. Please try again.');
         }
     }, [checkOutMutation]);
 
@@ -120,7 +127,9 @@ const StaffDashboardPage = React.memo(function StaffDashboardPage() {
 
     if (!dashboard || !dashboard.staff) return null;
 
-    const { staff, stats, todayAttendance } = dashboard;
+    const { staff, stats } = dashboard;
+    // Prioritize statusData for real-time button sync
+    const todayAttendance = statusData?.attendance || dashboard.todayAttendance;
     const hasCheckedIn = !!todayAttendance?.checkIn;
     const hasCheckedOut = !!todayAttendance?.checkOut;
 
@@ -153,7 +162,7 @@ const StaffDashboardPage = React.memo(function StaffDashboardPage() {
 
     return (
         <div
-            className="space-y-4 md:space-y-8 max-w-7xl mx-auto pb-6 md:pb-12 animate-in fade-in duration-150 px-0.5 sm:px-4"
+            className="space-y-4 md:space-y-8 max-w-7xl mx-auto pb-6 md:pb-12 animate-in fade-in duration-150"
         >
             {/* Helpdesk Credentials Notification */}
             {helpdeskNotification && (
@@ -224,10 +233,10 @@ const StaffDashboardPage = React.memo(function StaffDashboardPage() {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
                 <div className="space-y-0.5">
-                    <h1 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tight">
+                    <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight">
                         Hello, {(staff.user?.name || (staff as any).name || 'Staff').split(' ')[0]}!
                     </h1>
-                    <p className="text-[10px] sm:text-sm text-gray-500 font-bold flex items-center gap-1.5 uppercase tracking-widest">
+                    <p className="text-[7px] sm:text-[10px] font-medium text-slate-500 flex items-center gap-1.5 uppercase tracking-widest mt-1">
                         <Zap className="w-3.5 h-3.5 text-indigo-600" />
                         Institutional Workspace • {staff.hospital.name}
                     </p>

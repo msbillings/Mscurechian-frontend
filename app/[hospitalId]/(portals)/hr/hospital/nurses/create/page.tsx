@@ -110,6 +110,7 @@ export default function HRCreateNursePage() {
     const [allRooms, setAllRooms] = useState<any[]>([]);
 
     const [f, setF] = useState({
+        honorific: "Mr",
         name: "", email: "", mobile: "", password: "", gender: "", dob: "",
         fatherName: "", workLocation: "",
         street: "", city: "", state: "", pincode: "",
@@ -163,6 +164,17 @@ export default function HRCreateNursePage() {
         }
 
         const upper = ["panNumber", "ifscCode"].includes(name) ? value.toUpperCase() : value;
+
+        if (name === "honorific") {
+            let gender = f.gender;
+            if (value === "Mr") gender = "male";
+            else if (value === "Mrs" || value === "Ms") gender = "female";
+            setF(p => ({ ...p, [name]: value, gender }));
+            const rule = RULES[name];
+            if (rule) setErrors(p => ({ ...p, [name]: rule(value) }));
+            return;
+        }
+
         setF(p => ({ ...p, [name]: upper }));
 
         const rule = RULES[name];
@@ -227,6 +239,7 @@ export default function HRCreateNursePage() {
         setLoading(true);
         try {
             await hospitalAdminService.createStaff({
+                honorific: f.honorific,
                 name: f.name.trim(), email: f.email.trim(), mobile: f.mobile, password: f.password,
                 gender: f.gender || undefined, dateOfBirth: f.dob || undefined,
                 address: f.street || f.city ? { street: f.street, city: f.city, state: f.state, pincode: f.pincode, country: "India" } : undefined,
@@ -295,7 +308,13 @@ export default function HRCreateNursePage() {
                         <div className={cls.card}>
                             <SH icon={<User size={16} />} title="Personal Information" color="blue" />
                             <div className="p-6">
-                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                    <div>
+                                        <label className={cls.label}>Honorific <span className="text-red-500">*</span></label>
+                                        <select name="honorific" value={f.honorific} onChange={handleChange} className={cls.input(false, !!f.honorific)}>
+                                            <option value="Mr">Mr</option><option value="Mrs">Mrs</option><option value="Ms">Ms</option><option value="Dr">Dr</option>
+                                        </select>
+                                    </div>
                                     <F label="Full Name" name="name" value={f.name} onChange={handleChange} error={errors.name} required placeholder="e.g. Priya Sharma" maxLength={100} hint="Max 100 characters" />
                                     <div>
                                         <label className={cls.label}>Gender</label>

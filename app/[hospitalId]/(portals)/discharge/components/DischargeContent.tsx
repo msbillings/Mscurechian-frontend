@@ -107,11 +107,11 @@ export function DischargeContent() {
                                 </div>
                             )}
                             <div>
-                                <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
+                                <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight">
                                     {isEditingOrCreating ? 'Discharge Summary' : 'Discharge Queue'}
                                 </h1>
                                 {!isEditingOrCreating && (
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                                    <p className="text-[7px] sm:text-[10px] font-medium text-slate-500 uppercase tracking-widest mt-1">
                                         {totalItems} Pending Discharges
                                     </p>
                                 )}

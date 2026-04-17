@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Save, Printer, CheckCircle, ArrowRight, X, Check } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
@@ -26,6 +26,7 @@ function LabBillingPage() {
     // Filter state
     const [searchTerm, setSearchTerm] = useState('');
     const [closing, setClosing] = useState(false);
+    const [isNavigating, startNavigation] = useTransition();
 
     // Fetch tests on load
     React.useEffect(() => {
@@ -210,6 +211,13 @@ function LabBillingPage() {
     };
 
     const handleGenerateBill = async (shouldPrint: boolean = true) => {
+        // ── Duplicate prevention: bail if invoice already generated ──
+        if (generatedBill) {
+            toast('Invoice already generated. Use "Save Bill" to finish.', { icon: 'ℹ️' });
+            if (shouldPrint) setTimeout(() => handlePrint(), 300);
+            return;
+        }
+
         if (!patient.name || !patient.mobile || selectedTests.length === 0) {
             toast.error('Fill patient details and select tests');
             return;
@@ -221,7 +229,7 @@ function LabBillingPage() {
                 const res = await LabSampleService.finalizeOrder(sampleId, {
                     totalAmount: finalAmount,
                     items: selectedTests,
-                    patientDetails: patient // Pass updated patient details
+                    patientDetails: patient
                 });
                 await LabSampleService.payOrder(sampleId, {
                     paymentMode: paymentMode || 'Cash',
@@ -287,7 +295,9 @@ function LabBillingPage() {
             // Global refresh notification
             window.dispatchEvent(new Event('refresh-lab-data'));
 
-            router.push('/lab/billing/transactions');
+            startNavigation(() => {
+                router.push('/lab/billing/transactions');
+            });
         } catch (error) {
             console.error(error);
             toast.error('Failed to close order');
@@ -300,16 +310,16 @@ function LabBillingPage() {
     );
 
     return (
-        <div className="max-w-[1600px] mx-auto space-y-6 animate-in fade-in duration-700 pb-12 px-4 md:px-8">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-4 border-b border-gray-100 dark:border-gray-800">
+        <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 animate-in fade-in duration-700 pb-12">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 lg:gap-6 pb-4 border-b border-gray-100 dark:border-gray-800">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
+                    <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
                         <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
                             <Save className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                         </div>
                         Lab Billing
                     </h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-12">Process transactions and generate invoices</p>
+                    <p className="text-xs md:text-sm lg:text-base text-gray-500 dark:text-gray-400 mt-1 ml-12">Process transactions and generate invoices</p>
                 </div>
                 {sampleId && (
                     <div className="flex items-center gap-3 px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 rounded-lg">
@@ -318,11 +328,11 @@ function LabBillingPage() {
                 )}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <div className="lg:col-span-8 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
+                <div className="lg:col-span-8 space-y-4 lg:space-y-6">
                     {/* Patient Details Card */}
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                        <div className="flex items-center gap-2 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
+                    <div className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <div className="flex items-center gap-2 mb-4 lg:mb-6 border-b border-gray-100 dark:border-gray-700 pb-3 lg:pb-4">
                             <span className="w-1 h-5 bg-indigo-600 rounded-full" />
                             <h3 className="text-base font-semibold text-gray-900 dark:text-white">Patient Information</h3>
                         </div>
@@ -395,15 +405,15 @@ function LabBillingPage() {
                     </div>
 
                     {/* Test Selection Card */}
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col min-h-[500px]">
-                        <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
+                    <div className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col min-h-[500px]">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 mb-4 lg:mb-6 pb-3 lg:pb-4 border-b border-gray-100 dark:border-gray-700">
                             <div className="flex items-center gap-2">
                                 <span className="w-1 h-5 bg-indigo-600 rounded-full" />
                                 <h3 className="text-base font-semibold text-gray-900 dark:text-white">Select Services</h3>
                             </div>
                             <input
                                 placeholder="Search tests..."
-                                className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 w-64 transition-all"
+                                className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 w-full sm:w-64 transition-all"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -441,9 +451,9 @@ function LabBillingPage() {
                     </div>
                 </div>
 
-                <div className="lg:col-span-4 space-y-6">
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg sticky top-6">
-                        <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
+                <div className="lg:col-span-4 space-y-4 lg:space-y-6">
+                    <div className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg sticky top-6">
+                        <div className="flex items-center gap-2 mb-4 lg:mb-6 pb-3 lg:pb-4 border-b border-gray-100 dark:border-gray-700">
                             <span className="w-1 h-5 bg-emerald-500 rounded-full" />
                             <h3 className="text-base font-semibold text-gray-900 dark:text-white">Payment Summary</h3>
                         </div>
@@ -491,11 +501,20 @@ function LabBillingPage() {
                             <div className="pt-2 space-y-3">
                                 <button
                                     onClick={() => handleGenerateBill(true)}
-                                    disabled={loading || selectedTests.length === 0}
-                                    className="w-full py-3 bg-primary-theme hover:bg-primary-theme/80 text-white rounded-xl font-semibold shadow-lg shadow-indigo-100 dark:shadow-none transition-all disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
+                                    disabled={loading || selectedTests.length === 0 || !!generatedBill}
+                                    className={`w-full py-3 text-white rounded-xl font-semibold shadow-lg transition-all flex items-center justify-center gap-2 ${
+                                        generatedBill
+                                            ? 'bg-green-600 cursor-not-allowed opacity-90 shadow-green-100 dark:shadow-none'
+                                            : 'bg-primary-theme hover:bg-primary-theme/80 disabled:opacity-50 disabled:shadow-none shadow-indigo-100 dark:shadow-none'
+                                    }`}
                                 >
-                                    {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Printer size={18} />}
-                                    {loading ? 'Processing...' : 'Generate Invoice'}
+                                    {loading
+                                        ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        : generatedBill
+                                            ? <Check size={18} />
+                                            : <Printer size={18} />
+                                    }
+                                    {loading ? 'Processing...' : generatedBill ? 'Invoice Generated' : 'Generate Invoice'}
                                 </button>
                                 {generatedBill && (
                                     <button

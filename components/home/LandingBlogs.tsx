@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -84,7 +84,7 @@ const LandingBlogs = () => {
 
                   <div className="p-5 flex flex-col flex-1">
                     <div className="flex items-center gap-2 text-[7px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1" suppressHydrationWarning>
                          {new Date(blog.publishedAt || blog.createdAt).toLocaleDateString()}
                       </span>
                       <span className="w-1 h-1 rounded-full bg-slate-200" />

@@ -85,7 +85,7 @@ export default function HospitalAdminSettings() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="max-w-4xl mx-auto p-3 md:p-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header Section */}
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-black text-slate-900 tracking-tight">Admin Profile</h1>
@@ -97,7 +97,7 @@ export default function HospitalAdminSettings() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Side: Identity Card */}
         <div className="lg:col-span-4 space-y-6">
-          <Card className="overflow-hidden border-slate-200 shadow-xl shadow-blue-900/5 bg-white flex flex-col items-center p-8">
+          <Card className="overflow-hidden border-slate-200 shadow-xl shadow-blue-900/5 bg-white flex flex-col items-center p-2 md:p-4 md:p-8">
             <div className="relative group">
               <div className="w-24 h-24 rounded-4xl bg-linear-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white text-3xl font-black shadow-lg shadow-blue-200 ring-4 ring-white relative z-10">
                 {profile?.name?.charAt(0) || "A"}
@@ -108,7 +108,7 @@ export default function HospitalAdminSettings() {
             </div>
 
             <div className="text-center mt-6 space-y-1">
-              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{profile?.name}</h3>
+              <h3 className="text-sm md:text-lg font-black text-slate-900 uppercase tracking-tight">{profile?.name}</h3>
               <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Hospital Administrator</p>
             </div>
 
@@ -163,8 +163,8 @@ export default function HospitalAdminSettings() {
             </div>
           </Card>
 
-          <Card className="p-6 bg-slate-900 text-white border-none shadow-xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
+          <Card className="p-2 md:p-6 bg-slate-900 text-white border-none shadow-xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-2 md:p-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
               <KeyRound size={80} />
             </div>
             <h4 className="text-sm font-black uppercase tracking-wider mb-2 relative z-10 italic">Account Security</h4>
@@ -177,11 +177,11 @@ export default function HospitalAdminSettings() {
 
         {/* Right Side: Form */}
         <div className="lg:col-span-8">
-          <Card className="p-8 border-slate-200 shadow-xl shadow-blue-900/5 bg-white">
+          <Card className="p-3 md:p-8 border-slate-200 shadow-xl shadow-blue-900/5 bg-white">
             <form onSubmit={handleUpdate} className="space-y-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
-                <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">Personal Details</h3>
+                <h3 className="text-xs md:text-base font-black text-slate-900 uppercase tracking-tight">Personal Details</h3>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

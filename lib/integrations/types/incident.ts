@@ -1,4 +1,4 @@
-export type IncidentType = 'Patient Fall' | 'Medication Error' | 'Equipment Failure' | 'Delay in Treatment' | 'Violence' | 'Near Miss' | 'Adverse Drug Reaction' | 'Other';
+﻿export type IncidentType = 'Patient Fall' | 'Medication Error' | 'Equipment Failure' | 'Delay in Treatment' | 'Violence' | 'Near Miss' | 'Adverse Drug Reaction' | 'Other';
 export type IncidentSeverity = 'Low' | 'Medium' | 'High';
 export type IncidentStatus = 'OPEN' | 'IN REVIEW' | 'CLOSED';
 export type Department = 'OPD' | 'IPD' | 'ICU' | 'OT' | 'Pharmacy' | 'Lab';

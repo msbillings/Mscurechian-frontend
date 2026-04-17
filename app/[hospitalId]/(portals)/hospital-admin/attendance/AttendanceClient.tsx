@@ -16,6 +16,7 @@ import {
   LayoutGrid,
   List,
   FileSpreadsheet,
+  FileText,
   ChevronDown,
   CalendarRange
 } from "lucide-react";
@@ -23,6 +24,8 @@ import toast from "react-hot-toast";
 import { PageHeader, Card, Button } from "@/components/admin";
 import { hospitalAdminService } from "@/lib/integrations";
 import type { AttendanceRecord, AttendanceStats, AttendanceSummary } from "@/lib/integrations";
+import { AttendancePDFPreview } from "./AttendancePDFPreview";
+import type { AttendancePDFRow, AttendanceSummaryPDFRow } from "./AttendancePDFPreview";
 
 const STATUS_CONFIG = {
   present: { icon: CheckCircle, color: "text-green-500", bg: "bg-green-50", label: "Present" },
@@ -104,7 +107,7 @@ const AttendanceRow = React.memo(({
 
   return (
     <tr className="hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors">
-      <td className="py-4 px-6">
+      <td className="py-4 px-3 md:px-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center font-bold text-xs text-gray-400">
             {staffName.charAt(0).toUpperCase()}
@@ -115,21 +118,21 @@ const AttendanceRow = React.memo(({
           </div>
         </div>
       </td>
-      <td className="py-4 px-6 text-sm font-medium text-gray-600 dark:text-gray-400">
+      <td className="py-4 px-3 md:px-6 text-sm font-medium text-gray-600 dark:text-gray-400">
         {new Date(record.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
       </td>
-      <td className="py-4 px-6 text-[11px] font-medium text-emerald-600">
+      <td className="py-4 px-3 md:px-6 text-[11px] font-medium text-emerald-600">
         {record.checkIn?.time ? formatTime(record.checkIn.time) : '--:--'}
       </td>
-      <td className="py-4 px-6 text-[11px] font-medium text-rose-500">
+      <td className="py-4 px-3 md:px-6 text-[11px] font-medium text-rose-500">
         {record.checkOut?.time ? formatTime(record.checkOut.time) : '--:--'}
       </td>
-      <td className="py-4 px-6">
+      <td className="py-4 px-3 md:px-6">
         <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
           {record.workingHours || 0}m
         </span>
       </td>
-      <td className="py-4 px-6">
+      <td className="py-4 px-3 md:px-6">
         {getStatusBadge(record.status)}
       </td>
     </tr>
@@ -170,7 +173,7 @@ const SummaryRow = React.memo(({
 
   return (
     <tr className="hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors">
-      <td className="py-4 px-6">
+      <td className="py-4 px-3 md:px-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
             {data.name?.charAt(0).toUpperCase() || 'S'}
@@ -188,15 +191,15 @@ const SummaryRow = React.memo(({
           </div>
         </div>
       </td>
-      <td className="py-4 px-6">
+      <td className="py-4 px-3 md:px-6">
         <span className="text-xs font-medium text-gray-500">
           {data.designation || 'Staff'}
         </span>
       </td>
-      <td className="py-4 px-6">
+      <td className="py-4 px-3 md:px-6">
         {getStatusBadge(data.todayStatus)}
       </td>
-      <td className="py-4 px-6 text-center">
+      <td className="py-4 px-3 md:px-6 text-center">
         <div className="flex flex-col items-center">
           <div className="flex gap-1 items-baseline">
             <span className="text-sm font-bold text-indigo-600">{data.monthlyAttendedDays}</span>
@@ -208,7 +211,7 @@ const SummaryRow = React.memo(({
           </div>
         </div>
       </td>
-      <td className="py-4 px-6 text-center">
+      <td className="py-4 px-3 md:px-6 text-center">
         <div className="flex flex-col items-center">
           <div className="flex gap-1 items-baseline">
             <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{data.yearlyAttendedDays}</span>
@@ -220,7 +223,7 @@ const SummaryRow = React.memo(({
           </div>
         </div>
       </td>
-      <td className="py-4 px-6 text-right">
+      <td className="py-4 px-3 md:px-6 text-right">
         <div className="flex flex-col text-[11px] font-medium">
           <span className="text-emerald-600">In: {formatTime(data.checkIn)}</span>
           <span className="text-gray-400">Out: {formatTime(data.checkOut)}</span>
@@ -265,9 +268,28 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showDateRangePicker, setShowDateRangePicker] = useState(false);
   const [customRange, setCustomRange] = useState({
-    from: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // last 7 days default
+    from: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     to: new Date().toISOString().split('T')[0]
   });
+
+  // ── Hospital info for PDF header ──
+  const [hospital, setHospital] = useState<any>({ name: '' });
+
+  // ── PDF Preview state ──
+  const [pdfPreview, setPdfPreview] = useState<{
+    open: boolean;
+    reportType: string;
+    period: string;
+    reportLabel: string;
+    rows: AttendancePDFRow[] | AttendanceSummaryPDFRow[];
+    isSummary: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    hospitalAdminService.getHospital().then(r => {
+      if (r?.hospital) setHospital(r.hospital);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetchStaff();
@@ -459,227 +481,199 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
     }
   };
 
-  const exportData = async (type: 'today' | 'weekly' | 'monthly' | 'yearly' | 'consolidated' | 'custom') => {
+  // ── Build PDF rows from fetched data ──
+  const buildPDFRows = (data: any[]): AttendancePDFRow[] =>
+    data.map(rec => ({
+      name: rec.staff?.user?.name || rec.user?.name || 'Unknown',
+      designation: rec.staff?.designation || rec.designation || 'Staff',
+      employeeId: rec.staff?.employeeId || rec.employeeId || 'N/A',
+      date: new Date(rec.date).toLocaleDateString('en-GB'),
+      checkIn: rec.checkIn?.time ? new Date(rec.checkIn.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--',
+      checkOut: rec.checkOut?.time ? new Date(rec.checkOut.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--',
+      dutyHours: rec.workingHours ? `${Math.floor(rec.workingHours / 60)}h ${rec.workingHours % 60}m` : '0h 0m',
+      status: rec.status || 'absent',
+    }));
+
+  const buildSummaryPDFRows = (data: any[]): AttendanceSummaryPDFRow[] =>
+    data.map(s => ({
+      name: s.name || 'Unknown',
+      designation: s.designation || 'Staff',
+      employeeId: s.employeeId || 'N/A',
+      email: s.email || '-',
+      monthlyPresent: s.monthlyAttendedDays,
+      monthlyAbsent: s.monthlyAbsentDays,
+      monthlyLeave: s.monthlyLeaveDays,
+      yearlyPresent: s.yearlyAttendedDays,
+      yearlyAbsent: s.yearlyAbsentDays,
+      yearlyLeave: s.yearlyLeaveDays,
+    }));
+
+  // ── Main export dispatcher ──
+  const handleExport = async (
+    type: 'today' | 'weekly' | 'monthly' | 'yearly' | 'consolidated' | 'custom',
+    format: 'pdf' | 'excel'
+  ) => {
+    setShowExportMenu(false);
+    const now = new Date();
+
+    // ── CONSOLIDATED SUMMARY ──
     if (type === 'consolidated') {
-      exportSummaryReport();
-      setShowExportMenu(false);
+      if (summary.length === 0) { toast.error('No summary data available'); return; }
+      if (format === 'pdf') {
+        setPdfPreview({
+          open: true,
+          reportType: 'CONSOLIDATED SUMMARY',
+          period: now.toLocaleDateString('en-GB'),
+          reportLabel: 'Consolidated Summary',
+          rows: buildSummaryPDFRows(summary),
+          isSummary: true,
+        });
+      } else {
+        exportSummaryReport();
+      }
       return;
     }
 
-    // Custom date range: show inline picker, don't close menu yet
+    // ── CUSTOM: show picker ──
     if (type === 'custom') {
       setShowDateRangePicker(true);
+      setShowExportMenu(true);
       return;
     }
 
     try {
       setLoading(true);
-      setShowExportMenu(false);
-
       const params: any = {};
-      const now = new Date();
-
       if (type === 'today') {
         params.date = now.toISOString().split('T')[0];
       } else if (type === 'weekly') {
-        const lastWeek = new Date();
-        lastWeek.setDate(now.getDate() - 7);
-        params.startDate = lastWeek.toISOString().split('T')[0];
+        const last = new Date(); last.setDate(now.getDate() - 7);
+        params.startDate = last.toISOString().split('T')[0];
         params.endDate = now.toISOString().split('T')[0];
       } else if (type === 'monthly') {
         params.month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
       } else if (type === 'yearly') {
-        const yearStart = new Date(now.getFullYear(), 0, 1);
-        params.startDate = yearStart.toISOString().split('T')[0];
+        params.startDate = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
         params.endDate = now.toISOString().split('T')[0];
       }
 
       const res = await hospitalAdminService.getAttendance(params);
-      const dataToExport = res.attendance || [];
+      const data = res.attendance || [];
+      if (data.length === 0) { toast.error(`No records found for ${type}`); return; }
 
-      if (dataToExport.length === 0) {
-        toast.error(`No historical logs found for ${type} protocol`);
-        return;
+      const LABELS: Record<string, string> = {
+        today: "Today's Attendance", weekly: 'Last 7 Days',
+        monthly: 'Monthly Logs', yearly: 'Yearly Logs'
+      };
+      const PERIODS: Record<string, string> = {
+        today: now.toLocaleDateString('en-GB'),
+        weekly: `${new Date(Date.now() - 7*86400000).toLocaleDateString('en-GB')} – ${now.toLocaleDateString('en-GB')}`,
+        monthly: `${now.toLocaleString('default', { month: 'long' })} ${now.getFullYear()}`,
+        yearly: `Jan – Dec ${now.getFullYear()}`,
+      };
+
+      if (format === 'pdf') {
+        setPdfPreview({
+          open: true,
+          reportType: type.toUpperCase(),
+          period: PERIODS[type] || now.toLocaleDateString('en-GB'),
+          reportLabel: LABELS[type] || type,
+          rows: buildPDFRows(data),
+          isSummary: false,
+        });
+      } else {
+        await exportToExcel(data, type, now);
       }
-
-      const ExcelJS = (await import('exceljs')).default;
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Attendance History');
-
-      // --- 1. Report Titles ---
-      const titleRow = worksheet.addRow(['ATTENDANCE HISTORY LOGS']);
-      titleRow.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF1F4E78' } };
-      titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
-      worksheet.mergeCells('A1:H1');
-      titleRow.height = 30;
-
-      const orgRow = worksheet.addRow(['Attendance History Logs']);
-      orgRow.font = { name: 'Calibri', size: 12, bold: true };
-      orgRow.alignment = { horizontal: 'center', vertical: 'middle' };
-      worksheet.mergeCells('A2:H2');
-
-      const periodRow = worksheet.addRow([`Protocol: ${type.toUpperCase()} | Generated: ${now.toLocaleDateString('en-GB')}`]);
-      periodRow.font = { name: 'Calibri', size: 11, italic: true };
-      periodRow.alignment = { horizontal: 'center', vertical: 'middle' };
-      worksheet.mergeCells('A3:H3');
-
-      worksheet.addRow([]); // Spacer
-
-      // --- 2. Define Columns & Headers ---
-      const headers = ["Personnel Name", "Designation", "Employee ID", "Date", "Check-In", "Check-Out", "Duty Hours", "Status"];
-      const headerRow = worksheet.addRow(headers);
-
-      headerRow.eachCell((cell) => {
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F2937' } };
-        cell.font = { name: 'Calibri', bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        cell.border = {
-          top: { style: 'thin', color: { argb: 'FF0070C0' } },
-          left: { style: 'thin', color: { argb: 'FF0070C0' } },
-          bottom: { style: 'thin', color: { argb: 'FF0070C0' } },
-          right: { style: 'thin', color: { argb: 'FF0070C0' } }
-        };
-      });
-
-      worksheet.columns = [
-        { key: 'name', width: 25 },
-        { key: 'designation', width: 20 },
-        { key: 'empId', width: 15 },
-        { key: 'date', width: 12 },
-        { key: 'in', width: 15 },
-        { key: 'out', width: 15 },
-        { key: 'hours', width: 15 },
-        { key: 'status', width: 15 },
-      ];
-
-      // --- 3. Populate Data ---
-      dataToExport.forEach((rec) => {
-        const row = worksheet.addRow({
-          name: rec.staff?.user?.name || 'Unknown',
-          designation: rec.staff?.designation || 'Staff',
-          empId: rec.staff?.employeeId || 'N/A',
-          date: new Date(rec.date).toLocaleDateString(),
-          in: rec.checkIn?.time ? new Date(rec.checkIn.time).toLocaleTimeString() : "-",
-          out: rec.checkOut?.time ? new Date(rec.checkOut.time).toLocaleTimeString() : "-",
-          hours: Number((rec.workingHours || 0) / 60).toFixed(2),
-          status: rec.status.toUpperCase()
-        });
-
-        row.eachCell((cell) => {
-          cell.alignment = { vertical: 'middle', horizontal: 'center' };
-          cell.border = {
-            top: { style: 'thin', color: { argb: 'FF0070C0' } },
-            left: { style: 'thin', color: { argb: 'FF0070C0' } },
-            bottom: { style: 'thin', color: { argb: 'FF0070C0' } },
-            right: { style: 'thin', color: { argb: 'FF0070C0' } }
-          };
-          cell.font = { name: 'Calibri', size: 10 };
-        });
-      });
-
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", `attendance_history_${type}_${now.toISOString().split('T')[0]}.xlsx`);
-      link.click();
-      toast.success(`${type.toUpperCase()} historical logs exported`);
     } catch (err) {
       console.error(err);
-      toast.error("Log export failed");
+      toast.error('Export failed');
     } finally {
       setLoading(false);
     }
   };
 
-  // ── Custom range export ──
-  const exportCustomRange = async () => {
-    if (!customRange.from || !customRange.to) {
-      toast.error('Please select both From and To dates');
-      return;
-    }
-    if (customRange.from > customRange.to) {
-      toast.error('From date cannot be after To date');
-      return;
-    }
+  // ── Custom date range export dispatcher ──
+  const handleCustomExport = async (format: 'pdf' | 'excel') => {
+    if (!customRange.from || !customRange.to) { toast.error('Select both dates'); return; }
+    if (customRange.from > customRange.to) { toast.error('From date cannot be after To date'); return; }
     setShowExportMenu(false);
     setShowDateRangePicker(false);
     try {
       setLoading(true);
-      const res = await hospitalAdminService.getAttendance({
-        startDate: customRange.from,
-        endDate: customRange.to,
-      });
-      const dataToExport = res.attendance || [];
-      if (dataToExport.length === 0) {
-        toast.error(`No logs found between ${customRange.from} and ${customRange.to}`);
-        return;
+      const res = await hospitalAdminService.getAttendance({ startDate: customRange.from, endDate: customRange.to });
+      const data = res.attendance || [];
+      if (data.length === 0) { toast.error('No records in this range'); return; }
+      const period = `${customRange.from} to ${customRange.to}`;
+      if (format === 'pdf') {
+        setPdfPreview({ open: true, reportType: 'CUSTOM RANGE', period, reportLabel: 'Custom Date Range', rows: buildPDFRows(data), isSummary: false });
+      } else {
+        await exportToExcel(data, 'custom', new Date(), period);
       }
-      const ExcelJS = (await import('exceljs')).default;
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Attendance History');
-
-      const titleRow = worksheet.addRow(['ATTENDANCE HISTORY LOGS']);
-      titleRow.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF1F4E78' } };
-      titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
-      worksheet.mergeCells('A1:H1');
-      titleRow.height = 30;
-      const orgRow = worksheet.addRow(['Attendance History Logs']);
-      orgRow.font = { name: 'Calibri', size: 12, bold: true };
-      orgRow.alignment = { horizontal: 'center', vertical: 'middle' };
-      worksheet.mergeCells('A2:H2');
-      const periodRow = worksheet.addRow([`Period: ${customRange.from}  to  ${customRange.to} | Generated: ${new Date().toLocaleDateString('en-GB')}`]);
-      periodRow.font = { name: 'Calibri', size: 11, italic: true };
-      periodRow.alignment = { horizontal: 'center', vertical: 'middle' };
-      worksheet.mergeCells('A3:H3');
-      worksheet.addRow([]);
-
-      const headers = ["Personnel Name", "Designation", "Employee ID", "Date", "Check-In", "Check-Out", "Duty Hours", "Status"];
-      const headerRow = worksheet.addRow(headers);
-      headerRow.eachCell((cell) => {
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F2937' } };
-        cell.font = { name: 'Calibri', bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        cell.border = { top: { style: 'thin', color: { argb: 'FF0070C0' } }, left: { style: 'thin', color: { argb: 'FF0070C0' } }, bottom: { style: 'thin', color: { argb: 'FF0070C0' } }, right: { style: 'thin', color: { argb: 'FF0070C0' } } };
-      });
-      worksheet.columns = [
-        { key: 'name', width: 25 }, { key: 'designation', width: 20 }, { key: 'empId', width: 15 },
-        { key: 'date', width: 12 }, { key: 'in', width: 15 }, { key: 'out', width: 15 },
-        { key: 'hours', width: 15 }, { key: 'status', width: 15 },
-      ];
-      dataToExport.forEach((rec: any) => {
-        const row = worksheet.addRow({
-          name: rec.staff?.user?.name || 'Unknown',
-          designation: rec.staff?.designation || 'Staff',
-          empId: rec.staff?.employeeId || 'N/A',
-          date: new Date(rec.date).toLocaleDateString('en-GB'),
-          in: rec.checkIn?.time ? new Date(rec.checkIn.time).toLocaleTimeString() : "-",
-          out: rec.checkOut?.time ? new Date(rec.checkOut.time).toLocaleTimeString() : "-",
-          hours: Number((rec.workingHours || 0) / 60).toFixed(2),
-          status: rec.status.toUpperCase()
-        });
-        row.eachCell((cell) => {
-          cell.alignment = { vertical: 'middle', horizontal: 'center' };
-          cell.border = { top: { style: 'thin', color: { argb: 'FF0070C0' } }, left: { style: 'thin', color: { argb: 'FF0070C0' } }, bottom: { style: 'thin', color: { argb: 'FF0070C0' } }, right: { style: 'thin', color: { argb: 'FF0070C0' } } };
-          cell.font = { name: 'Calibri', size: 10 };
-        });
-      });
-
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `attendance_${customRange.from}_to_${customRange.to}.xlsx`);
-      link.click();
-      toast.success(`Custom range report exported (${customRange.from} to ${customRange.to})`);
     } catch (err) {
       console.error(err);
-      toast.error('Custom range export failed');
+      toast.error('Custom export failed');
     } finally {
       setLoading(false);
     }
+  };
+
+  // ── Reusable Excel exporter ──
+  const exportToExcel = async (data: any[], type: string, now: Date, customPeriod?: string) => {
+    const ExcelJS = (await import('exceljs')).default;
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Attendance');
+    const period = customPeriod || type.toUpperCase();
+
+    const t = ws.addRow(['ATTENDANCE HISTORY LOGS']);
+    t.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF1F4E78' } };
+    t.alignment = { horizontal: 'center', vertical: 'middle' };
+    ws.mergeCells('A1:H1'); t.height = 30;
+    const o = ws.addRow([hospital.name || 'ATTENDANCE REPORT']);
+    o.font = { name: 'Calibri', size: 12, bold: true };
+    o.alignment = { horizontal: 'center', vertical: 'middle' };
+    ws.mergeCells('A2:H2');
+    const p = ws.addRow([`Period: ${period} | Generated: ${now.toLocaleDateString('en-GB')}`]);
+    p.font = { name: 'Calibri', size: 11, italic: true };
+    p.alignment = { horizontal: 'center', vertical: 'middle' };
+    ws.mergeCells('A3:H3');
+    ws.addRow([]);
+
+    const hdr = ws.addRow(['Personnel Name', 'Designation', 'Employee ID', 'Date', 'Check-In', 'Check-Out', 'Duty Hours', 'Status']);
+    hdr.eachCell(cell => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F2937' } };
+      cell.font = { name: 'Calibri', bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = { top: { style: 'thin', color: { argb: 'FF0070C0' } }, left: { style: 'thin', color: { argb: 'FF0070C0' } }, bottom: { style: 'thin', color: { argb: 'FF0070C0' } }, right: { style: 'thin', color: { argb: 'FF0070C0' } } };
+    });
+    ws.columns = [
+      { key: 'name', width: 25 }, { key: 'designation', width: 20 }, { key: 'empId', width: 15 },
+      { key: 'date', width: 12 }, { key: 'in', width: 15 }, { key: 'out', width: 15 }, { key: 'hours', width: 15 }, { key: 'status', width: 15 },
+    ];
+    data.forEach((rec: any) => {
+      const row = ws.addRow({
+        name: rec.staff?.user?.name || rec.user?.name || 'Unknown',
+        designation: rec.staff?.designation || 'Staff',
+        empId: rec.staff?.employeeId || 'N/A',
+        date: new Date(rec.date).toLocaleDateString('en-GB'),
+        in: rec.checkIn?.time ? new Date(rec.checkIn.time).toLocaleTimeString() : '-',
+        out: rec.checkOut?.time ? new Date(rec.checkOut.time).toLocaleTimeString() : '-',
+        hours: Number((rec.workingHours || 0) / 60).toFixed(2),
+        status: (rec.status || 'absent').toUpperCase(),
+      });
+      row.eachCell(cell => {
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = { top: { style: 'thin', color: { argb: 'FF0070C0' } }, left: { style: 'thin', color: { argb: 'FF0070C0' } }, bottom: { style: 'thin', color: { argb: 'FF0070C0' } }, right: { style: 'thin', color: { argb: 'FF0070C0' } } };
+        cell.font = { name: 'Calibri', size: 10 };
+      });
+    });
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `attendance_${type}_${now.toISOString().split('T')[0]}.xlsx`);
+    link.click();
+    toast.success('Excel report downloaded');
   };
 
   // ✅ PERFORMANCE: Pagination Logic
@@ -691,7 +685,7 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
   const totalPages = Math.ceil(attendance.length / ITEMS_PER_PAGE);
 
   return (
-    <div className="max-w-7xl mx-auto pb-12 px-4">
+    <div className="max-w-7xl mx-auto pb-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <PageHeader
           icon={<div className="p-3 bg-indigo-100 dark:bg-indigo-900/40 rounded-2xl"><Users className="text-indigo-600" size={32} /></div>}
@@ -702,7 +696,7 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
         <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
           <button
             onClick={() => setViewMode('summary')}
-            className={`flex items-center gap-2 px-6 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'summary'
+            className={`flex items-center gap-2 px-3 md:px-6 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'summary'
               ? 'bg-white dark:bg-gray-700 text-indigo-600 shadow-sm'
               : 'text-gray-500 hover:text-gray-700'
               }`}
@@ -711,7 +705,7 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
           </button>
           <button
             onClick={() => setViewMode('logs')}
-            className={`flex items-center gap-2 px-6 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'logs'
+            className={`flex items-center gap-2 px-3 md:px-6 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'logs'
               ? 'bg-white dark:bg-gray-700 text-indigo-600 shadow-sm'
               : 'text-gray-500 hover:text-gray-700'
               }`}
@@ -722,7 +716,7 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card padding="p-5" className="bg-white dark:bg-gray-900 border-none shadow-sm">
           <div className="flex items-center justify-between">
             <div>
@@ -776,28 +770,28 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card padding="p-4" className="mb-6 border-none shadow-sm bg-white dark:bg-gray-900">
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+       {/* Filters */}
+      <Card padding="p-3 md:p-4" className="mb-6 border-none shadow-sm bg-white dark:bg-gray-900">
+        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+          <div className="flex flex-wrap items-center gap-3 md:gap-4 w-full md:w-auto">
             {viewMode === 'logs' && (
-              <div className="flex-1 md:flex-none">
-                <label className="block text-[10px] font-bold text-gray-400 mb-1">Select Date</label>
+              <div className="flex-1 min-w-[140px] md:flex-none">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Select Date</label>
                 <input
                   type="date"
                   value={filterDate}
                   onChange={(e) => setFilterDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 text-sm"
+                  className="w-full px-3 py-2 md:py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 text-xs font-bold font-mono outline-none"
                 />
               </div>
             )}
 
-            <div className="flex-1 md:flex-none">
-              <label className="block text-[10px] font-bold text-gray-400 mb-1">Status Filter</label>
+            <div className="flex-1 min-w-[140px] md:flex-none">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Status Filter</label>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 text-sm"
+                className="w-full px-3 py-2 md:py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 text-xs font-bold outline-none appearance-none cursor-pointer"
               >
                 <option value="">All Statuses</option>
                 <option value="present">Present</option>
@@ -808,16 +802,18 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
               </select>
             </div>
 
-            <div className="flex-1 md:flex-none min-w-[150px]">
-              <label className="block text-[10px] font-bold text-gray-400 mb-1">Staff Member</label>
+            <div className="flex-1 min-w-[140px] md:flex-none">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Staff Member</label>
               <select
                 value={filterStaff}
                 onChange={(e) => setFilterStaff(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 text-sm"
+                className="w-full px-3 py-2 md:py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 text-xs font-bold outline-none appearance-none cursor-pointer"
               >
                 <option value="">All Personnel</option>
-                {staffList.map(s => (
-                  <option key={s._id} value={s.user?._id || s._id}>{s.user?.name || s.name}</option>
+                {staffList.map((s: any) => (
+                  <option key={s.user?._id || s._id} value={s.user?._id || s._id}>
+                    {s.user?.name || s.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -827,80 +823,93 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
             <Button
               variant="primary"
               onClick={() => { setShowExportMenu(!showExportMenu); setShowDateRangePicker(false); }}
-              className="w-full flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg font-bold text-sm bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="w-full flex items-center justify-center gap-2 px-5 py-2 md:py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 active:scale-95 transition-all"
             >
               <FileSpreadsheet size={16} />
               Generate Report
-              <ChevronDown size={14} className={`transition-transform duration-300 ${showExportMenu ? 'rotate-180' : ''}`} />
+              <ChevronDown size={14} className={`transition-transform duration-200 ${showExportMenu ? 'rotate-180' : ''}`} />
             </Button>
 
             {showExportMenu && (
               <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => { setShowExportMenu(false); setShowDateRangePicker(false); }}
-                />
-                <div className="absolute right-0 mt-3 w-72 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-20 py-2 backdrop-blur-lg overflow-hidden">
-                  <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-50 dark:border-gray-700 mb-1">Select Report Type</p>
-                  {[
-                    { key: 'consolidated', label: 'Consolidated Summary' },
-                    { key: 'today', label: "Today's Attendance" },
-                    { key: 'weekly', label: 'Last 7 Days' },
-                    { key: 'monthly', label: 'Monthly Logs' },
-                    { key: 'yearly', label: 'Yearly Logs' },
-                  ].map((item) => (
-                    <button
-                      key={item.key}
-                      onClick={() => exportData(item.key as any)}
-                      className="w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-gray-600 dark:text-gray-300 hover:text-indigo-600 transition-colors flex items-center justify-between"
-                    >
-                      {item.label}
-                      <Download size={14} className="opacity-40" />
-                    </button>
-                  ))}
+                <div className="fixed inset-0 z-10" onClick={() => { setShowExportMenu(false); setShowDateRangePicker(false); }} />
+                <div className="absolute right-0 mt-3 w-80 max-w-[calc(100vw-2.5rem)] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 z-20 overflow-hidden origin-top-right">
 
-                  {/* Custom Date Range section */}
-                  <div className="border-t border-gray-100 dark:border-gray-700 mt-1 pt-1">
+                  {/* Header */}
+                  <div className="px-4 py-3 bg-gradient-to-r from-indigo-600 to-violet-600">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white">Select Report Type</p>
+                    <p className="text-[9px] text-indigo-200 mt-0.5">Choose format: PDF preview or Excel download</p>
+                  </div>
+
+                  {/* Report rows with PDF / Excel buttons */}
+                  <div className="py-1">
+                    {[
+                      { key: 'consolidated', label: 'Consolidated Summary', icon: '📊' },
+                      { key: 'today',        label: "Today's Attendance",   icon: '📅' },
+                      { key: 'weekly',       label: 'Last 7 Days',          icon: '📆' },
+                      { key: 'monthly',      label: 'Monthly Logs',         icon: '🗓️' },
+                      { key: 'yearly',       label: 'Yearly Logs',          icon: '📈' },
+                    ].map((item) => (
+                      <div key={item.key} className="flex items-center justify-between px-3 py-2 hover:bg-indigo-50/60 dark:hover:bg-indigo-900/20 transition-colors group">
+                        <span className="flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-gray-300 group-hover:text-indigo-700">
+                          <span>{item.icon}</span>{item.label}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleExport(item.key as any, 'pdf')}
+                            className="flex items-center gap-1 px-2.5 py-1 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 border border-rose-100 hover:border-rose-600 rounded-lg text-[10px] font-bold transition-all"
+                            title="Preview & Download PDF"
+                          >
+                            <FileText size={11} /> PDF
+                          </button>
+                          <button
+                            onClick={() => handleExport(item.key as any, 'excel')}
+                            className="flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-600 border border-emerald-100 hover:border-emerald-600 rounded-lg text-[10px] font-bold transition-all"
+                            title="Download Excel"
+                          >
+                            <FileSpreadsheet size={11} /> XLS
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Custom Date Range */}
+                  <div className="border-t border-gray-100 dark:border-gray-700">
                     <button
                       onClick={() => setShowDateRangePicker(prev => !prev)}
-                      className="w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-indigo-600 transition-colors flex items-center gap-2"
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                     >
-                      <CalendarRange size={14} />
-                      Custom Date Range
-                      <ChevronDown size={12} className={`ml-auto transition-transform ${showDateRangePicker ? 'rotate-180' : ''}`} />
+                      <CalendarRange size={13} /> Custom Date Range
+                      <ChevronDown size={11} className={`ml-auto transition-transform ${showDateRangePicker ? 'rotate-180' : ''}`} />
                     </button>
 
                     {showDateRangePicker && (
-                      <div className="px-4 pb-3 space-y-2" onClick={e => e.stopPropagation()}>
+                      <div className="px-4 pb-4 space-y-2" onClick={e => e.stopPropagation()}>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">From</label>
-                            <input
-                              type="date"
-                              value={customRange.from}
-                              max={customRange.to}
+                            <input type="date" value={customRange.from} max={customRange.to}
                               onChange={e => setCustomRange(r => ({ ...r, from: e.target.value }))}
-                              className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
-                            />
+                              className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none" />
                           </div>
                           <div>
                             <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">To</label>
-                            <input
-                              type="date"
-                              value={customRange.to}
-                              min={customRange.from}
-                              max={new Date().toISOString().split('T')[0]}
+                            <input type="date" value={customRange.to} min={customRange.from} max={new Date().toISOString().split('T')[0]}
                               onChange={e => setCustomRange(r => ({ ...r, to: e.target.value }))}
-                              className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
-                            />
+                              className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none" />
                           </div>
                         </div>
-                        <button
-                          onClick={exportCustomRange}
-                          className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
-                        >
-                          <Download size={13} /> Export Range
-                        </button>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button onClick={() => handleCustomExport('pdf')}
+                            className="flex items-center justify-center gap-1.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold rounded-lg transition-colors">
+                            <FileText size={12} /> PDF Preview
+                          </button>
+                          <button onClick={() => handleCustomExport('excel')}
+                            className="flex items-center justify-center gap-1.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold rounded-lg transition-colors">
+                            <FileSpreadsheet size={12} /> Excel
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -924,15 +933,15 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
       <Card padding="p-0" className="overflow-hidden border border-gray-100 dark:border-gray-800 rounded-2xl bg-white dark:bg-gray-900 shadow-sm">
         <div className="overflow-x-auto">
           {viewMode === 'summary' ? (
-            <table className="w-full">
+            <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full">
               <thead>
                 <tr className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
-                  <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Staff Member</th>
-                  <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Designation</th>
-                  <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Today's Pulse</th>
-                  <th className="py-4 px-6 text-center text-xs font-bold text-gray-400">Monthly Stats</th>
-                  <th className="py-4 px-6 text-center text-xs font-bold text-gray-400">Yearly Stats</th>
-                  <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Daily Timing</th>
+                  <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Staff Member</th>
+                  <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Designation</th>
+                  <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Today's Pulse</th>
+                  <th className="py-4 px-3 md:px-6 text-center text-xs font-bold text-gray-400">Monthly Stats</th>
+                  <th className="py-4 px-3 md:px-6 text-center text-xs font-bold text-gray-400">Yearly Stats</th>
+                  <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Daily Timing</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
@@ -953,18 +962,18 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
                     ))
                 )}
               </tbody>
-            </table>
+            </table></div>
           ) : (
             <div className="space-y-4">
-              <table className="w-full">
+              <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full">
                 <thead className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
                   <tr>
-                    <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Staff Unit</th>
-                    <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Date</th>
-                    <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Check-In</th>
-                    <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Check-Out</th>
-                    <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Duration</th>
-                    <th className="py-4 px-6 text-left text-xs font-bold text-gray-400">Status</th>
+                    <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Staff Unit</th>
+                    <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Date</th>
+                    <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Check-In</th>
+                    <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Check-Out</th>
+                    <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Duration</th>
+                    <th className="py-4 px-3 md:px-6 text-left text-xs font-bold text-gray-400">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
@@ -986,19 +995,19 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
                     ))
                   )}
                 </tbody>
-              </table>
+              </table></div>
 
               {/* Pagination */}
               {totalPages > 1 && viewMode === 'logs' && (
-                <div className="flex items-center justify-between p-8 bg-gray-50/30 dark:bg-gray-800/20 border-t border-gray-100 dark:border-gray-800">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 md:p-8 bg-gray-50/30 dark:bg-gray-800/20 border-t border-gray-100 dark:border-gray-800">
                   <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="flex items-center gap-3 px-8 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 hover:text-blue-600 hover:border-blue-200 transition-all disabled:opacity-30 active:scale-95 shadow-sm"
+                    className="w-full sm:w-auto flex items-center justify-center gap-3 px-6 md:px-8 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 hover:text-blue-600 hover:border-blue-200 transition-all disabled:opacity-30 active:scale-95 shadow-sm order-2 sm:order-1"
                   >
                     <ChevronLeft size={16} /> Previous Quadrant
                   </button>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 order-1 sm:order-2">
                     <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">
                       Sector {page} <span className="mx-2 opacity-20">/</span> {totalPages}
                     </span>
@@ -1006,7 +1015,7 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
                   <button
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
-                    className="flex items-center gap-3 px-8 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 hover:text-blue-600 hover:border-blue-200 transition-all disabled:opacity-30 active:scale-95 shadow-sm"
+                    className="w-full sm:w-auto flex items-center justify-center gap-3 px-6 md:px-8 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 hover:text-blue-600 hover:border-blue-200 transition-all disabled:opacity-30 active:scale-95 shadow-sm order-3"
                   >
                     Next Quadrant <ChevronRight size={16} />
                   </button>
@@ -1016,6 +1025,19 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
           )}
         </div>
       </Card>
+
+      {/* ── PDF PREVIEW MODAL ── */}
+      {pdfPreview?.open && (
+        <AttendancePDFPreview
+          hospital={hospital}
+          reportType={pdfPreview.reportType}
+          period={pdfPreview.period}
+          reportLabel={pdfPreview.reportLabel}
+          rows={pdfPreview.rows}
+          isSummary={pdfPreview.isSummary}
+          onClose={() => setPdfPreview(null)}
+        />
+      )}
     </div>
   );
 }

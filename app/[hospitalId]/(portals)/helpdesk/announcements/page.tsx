@@ -80,11 +80,11 @@ function HelpdeskAnnouncementsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pt-10 px-4 pb-20">
+    <div className="space-y-6 max-w-7xl mx-auto pb-20">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
+          <h1 className="text-lg lg:text-xl font-bold text-foreground flex items-center gap-3">
             Hospital Announcements
             {announcements.filter(a => a.priority === 'high').length > 0 && (
               <span className="flex items-center gap-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border border-red-200 dark:border-red-800">
@@ -97,11 +97,11 @@ function HelpdeskAnnouncementsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Filter Sidebar */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-card p-6 rounded-2xl shadow-sm border border-border-theme">
-            <h3 className="font-bold text-foreground mb-4">Categories</h3>
-            <div className="space-y-1">
+        {/* Categories / Filter */}
+        <div className="lg:col-span-1 border-b lg:border-none border-slate-100 pb-4 lg:pb-0">
+          <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100">
+            <h3 className="font-bold text-slate-900 mb-3 sm:mb-4 text-sm sm:text-base">Categories</h3>
+            <div className="flex flex-row lg:flex-col overflow-x-auto no-scrollbar gap-1 sm:gap-2">
               {[
                 { label: 'All Updates', value: 'all', count: announcements.length },
                 { label: 'High Priority', value: 'high', count: announcements.filter(a => a.priority === 'high').length },
@@ -111,11 +111,11 @@ function HelpdeskAnnouncementsPage() {
                 <button
                   key={cat.value}
                   onClick={() => setFilter(cat.value as any)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-colors ${filter === cat.value ? 'bg-primary-theme/10 text-primary-theme font-bold' : 'hover:bg-secondary-theme text-muted'
+                  className={`flex flex-1 lg:w-full items-center justify-between px-3 py-2 rounded-lg sm:rounded-xl transition-colors whitespace-nowrap ${filter === cat.value ? 'bg-teal-50 text-teal-600 font-bold border border-teal-100 shadow-sm' : 'hover:bg-slate-50 text-slate-500 border border-transparent'
                     }`}
                 >
-                  <span className="text-sm">{cat.label}</span>
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${filter === cat.value ? 'bg-primary-theme/20' : 'bg-secondary-theme'
+                  <span className="text-[11px] sm:text-sm">{cat.label}</span>
+                  <span className={`text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full ${filter === cat.value ? 'bg-teal-200/50' : 'bg-slate-100'
                     }`}>{cat.count}</span>
                 </button>
               ))}
@@ -125,16 +125,16 @@ function HelpdeskAnnouncementsPage() {
 
         {/* Announcements Table */}
         <div className="lg:col-span-3">
-          <div className="bg-white dark:bg-card rounded-[0.5rem] shadow-sm border border-gray-100 dark:border-border-theme overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               {currentItems.length > 0 ? (
-                <table className="w-full text-left">
+                <table className="w-full min-w-[700px] sm:min-w-0 text-left">
                   <thead>
-                    <tr className="bg-gray-50/50 dark:bg-secondary-theme/30 border-b border-gray-100 dark:border-border-theme">
-                      <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest w-1/3">Title</th>
-                      <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Date</th>
-                      <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest w-1/3">Content</th>
-                      <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Priority</th>
+                    <tr className="bg-slate-50/50 border-b border-slate-100">
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-1/3">Title</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Date</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-1/3">Content</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Priority</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50 dark:divide-border-theme">

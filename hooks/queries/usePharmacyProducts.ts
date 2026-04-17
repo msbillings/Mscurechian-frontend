@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProductService } from '@/lib/integrations/services/product.service';
 import { PharmacyProduct, PharmacyProductPayload } from '@/lib/integrations/types/product';
 

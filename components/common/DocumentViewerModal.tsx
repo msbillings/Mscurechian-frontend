@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { FileText, X, CheckCircle2, UploadCloud } from 'lucide-react';
 
 interface DocumentViewerModalProps {
@@ -33,31 +33,25 @@ export const DocumentViewerModal = ({ isOpen, onClose, url, title }: DocumentVie
             <div className="w-full max-w-5xl h-full flex flex-col items-center gap-4">
 
                 {/* Header - Solid Background */}
-                <div className="w-full bg-white dark:bg-[#0a0a09] rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 flex-shrink-0">
-                    <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
-                        <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-full bg-white dark:bg-[#0a0a09] rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 flex-shrink-0 overflow-hidden">
+                    <div className="flex items-center justify-between gap-3 px-3 py-2 sm:px-6 sm:py-4">
+                        <div className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3">
                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 border border-indigo-100 dark:border-indigo-500/20 shadow-sm shrink-0">
                                 <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
                             </div>
-                            <div className="min-w-0 pr-2 sm:pr-4">
-                                <p className="text-[7px] sm:text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-0.5 sm:mb-1">Secure Preview</p>
-                                <h3 className="text-[10px] sm:text-sm font-black text-gray-900 dark:text-white truncate uppercase tracking-[0.1em]">{title}</h3>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[6px] sm:text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-0.5 sm:mb-1">Secure Preview</p>
+                                <h3 className="text-[9px] sm:text-sm font-black text-gray-900 dark:text-white whitespace-normal line-clamp-2 sm:whitespace-nowrap sm:truncate uppercase tracking-[0.1em] leading-tight">
+                                    {title}
+                                </h3>
                             </div>
                         </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                            <a
-                                href={viewUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hidden sm:flex px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all items-center gap-2 shadow-sm"
-                            >
-                                <UploadCloud size={14} /> <span>Open Original</span>
-                            </a>
+                        <div className="shrink-0 flex items-center">
                             <button
                                 onClick={onClose}
                                 className="p-2 sm:p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-all active:scale-95 border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
                             >
-                                <X size={20} />
+                                <X size={20} className="w-4 h-4 sm:w-5 sm:h-5" />
                             </button>
                         </div>
                     </div>

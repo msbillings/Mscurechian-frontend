@@ -45,6 +45,27 @@ export default function CreateLab() {
     const [editForm, setEditForm] = useState<Partial<LabData>>({});
     const [showEditPassword, setShowEditPassword] = useState(false);
 
+    // Filtration & Pagination State
+    const [filterHospital, setFilterHospital] = useState<Hospital | null>(null);
+    const [filterSearch, setFilterSearch] = useState("");
+    const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    // ... (Filter Dropdown Outside Click) ...
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            if (!target.closest('.filter-dropdown-container')) {
+                setShowFilterDropdown(false);
+            }
+        };
+        if (showFilterDropdown) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [showFilterDropdown]);
+
     useEffect(() => {
         fetchHospitals();
         fetchStaff();
@@ -220,20 +241,111 @@ export default function CreateLab() {
         return h ? h.name : "Unknown Hospital";
     };
 
+    // Filtered Staff Logic
+    const filteredStaff = existingStaff.filter(staff => {
+        if (!filterHospital) return true;
+        const staffHospitalId = typeof staff.hospital === 'object' ? staff.hospital?._id : staff.hospital;
+        return staffHospitalId === filterHospital._id;
+    });
+
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredStaff.length / itemsPerPage);
+    const currentStaffPage = filteredStaff.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    useEffect(() => {
+        setCurrentPage(1); // Reset to page 1 when filter changes
+    }, [filterHospital]);
+
+    // Hospitals for filter dropdown
+    const hospitalsForFilter = filterSearch 
+        ? hospitals.filter(h => h.name.toLowerCase().includes(filterSearch.toLowerCase()))
+        : hospitals;
+
     return (
-        <div className="max-w-[1600px] mx-auto pb-12 px-4">
-            <PageHeader
-                icon={<FlaskConical className="text-purple-500" />}
-                title="Create Lab Staff"
-                subtitle="Manage laboratory staff accounts"
-            />
+        <div className="max-w-7xl mx-auto pb-12">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-6 pb-4 border-b border-border-theme">
+                <div className="shrink-0">
+                    <h1 className="text-lg md:text-xl lg:text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--text-color)' }}>
+                        <FlaskConical className="text-purple-500" size={20} /> Create Lab Staff
+                    </h1>
+                    <p className="text-[11px] opacity-60 ml-7 leading-none">Manage laboratory staff accounts</p>
+                </div>
+
+                {/* Hospital Filter - Middle Section (Expanded) */}
+                <div className="flex-1 w-full lg:mx-10 relative filter-dropdown-container">
+                    <div className="relative">
+                        <input
+                            type="text"
+                            readOnly={!!filterHospital}
+                            placeholder={filterHospital ? filterHospital.name : "Search hospital to filter..."}
+                            value={filterHospital ? "" : filterSearch}
+                            onChange={(e) => {
+                                setFilterSearch(e.target.value);
+                                setShowFilterDropdown(true);
+                            }}
+                            onFocus={() => !filterHospital && setShowFilterDropdown(true)}
+                            className={`w-full px-5 py-2.5 pr-12 rounded-xl border shadow-sm focus:outline-none transition-all text-sm ${
+                                filterHospital 
+                                ? "bg-purple-50 dark:bg-purple-900/10 border-purple-200 dark:border-purple-800 font-semibold text-purple-700 dark:text-purple-300" 
+                                : "bg-white dark:bg-gray-800 border-border-theme border-opacity-50"
+                            }`}
+                        />
+                        {filterHospital ? (
+                            <button 
+                                onClick={() => {
+                                    setFilterHospital(null);
+                                    setFilterSearch("");
+                                }}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 rounded-full transition-colors"
+                            >
+                                <X size={16} />
+                            </button>
+                        ) : (
+                            <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-muted" size={18} />
+                        )}
+                    </div>
+
+                    {showFilterDropdown && !filterHospital && (
+                        <div className="absolute z-[60] w-full mt-1.5 rounded-xl shadow-2xl border border-border-theme max-h-60 overflow-y-auto bg-card animate-in fade-in slide-in-from-top-2">
+                            {hospitalsForFilter.length > 0 ? (
+                                hospitalsForFilter.map((h) => (
+                                    <button
+                                        key={h._id}
+                                        onClick={() => {
+                                            setFilterHospital(h);
+                                            setShowFilterDropdown(false);
+                                            setFilterSearch("");
+                                        }}
+                                        className="w-full text-left px-5 py-3 hover:bg-muted/50 border-b border-border-theme last:border-b-0 transition-colors"
+                                    >
+                                        <p className="font-bold text-sm">{h.name}</p>
+                                        <p className="text-[10px] opacity-50">{h.hospitalId}</p>
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="p-5 text-center text-sm text-muted italic">No hospitals found</div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <div className="shrink-0 flex items-center gap-2 bg-blue-500/5 dark:bg-blue-500/10 px-3 py-1.5 rounded-xl border border-blue-500/20 shadow-sm">
+                    <Building2 className="text-blue-500" size={16} />
+                    <div className="flex flex-col items-end">
+                        <span className="text-[7px] uppercase font-black text-gray-400 tracking-widest leading-none mb-0.5">Total Counts</span>
+                        <span className="text-xs font-black text-blue-500 leading-none">
+                            Lab Staff ({filteredStaff.length})
+                        </span>
+                    </div>
+                </div>
+            </div>
 
             <div className="flex flex-col xl:flex-row gap-8">
                 {/* Left Column: Existing Staff List */}
                 <div className="flex-1 order-2 xl:order-1">
-                    <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--text-color)' }}>
-                        <Building2 className="text-blue-500" /> Existing Lab Staff ({existingStaff.length})
-                    </h2>
 
                     {loadingStaff ? (
                         <div className="text-center py-12 opacity-50">Loading staff...</div>
@@ -242,58 +354,85 @@ export default function CreateLab() {
                             No lab staff found.
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {existingStaff.map((staff) => (
-                                <Card key={staff._id} padding="p-5" className="hover:shadow-lg transition-shadow relative group">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 flex items-center justify-center font-bold text-lg">
-                                                {staff.name?.charAt(0).toUpperCase()}
+                        <>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {currentStaffPage.map((staff) => (
+                                    <Card key={staff._id} padding="p-5" className="hover:shadow-lg transition-shadow relative group">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 flex items-center justify-center font-bold text-lg">
+                                                    {staff.name?.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-bold text-lg" style={{ color: 'var(--text-color)' }}>{staff.name}</h3>
+                                                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                                        {getHospitalName(staff.hospital)}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h3 className="font-bold text-lg" style={{ color: 'var(--text-color)' }}>{staff.name}</h3>
-                                                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                                                    {getHospitalName(staff.hospital)}
-                                                </span>
+                                            <div className="flex gap-2 transition-opacity">
+                                                <button
+                                                    onClick={() => handleEdit(staff)}
+                                                    className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                                    title="Edit Details"
+                                                >
+                                                    <Edit size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(staff._id)}
+                                                    className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                    title="Delete Staff"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
                                             </div>
                                         </div>
-                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => handleEdit(staff)}
-                                                className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                                                title="Edit Details"
-                                            >
-                                                <Edit size={18} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(staff._id)}
-                                                className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                                title="Delete Staff"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </div>
-                                    </div>
 
-                                    <div className="space-y-3 text-sm" style={{ color: 'var(--secondary-color)' }}>
-                                        <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                                            <span className="opacity-70 w-20">Email:</span>
-                                            <span className="font-medium truncate flex-1">{staff.email}</span>
+                                        <div className="space-y-3 text-sm" style={{ color: 'var(--secondary-color)' }}>
+                                            <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                                                <span className="opacity-70 w-20">Email:</span>
+                                                <span className="font-medium truncate flex-1">{staff.email}</span>
+                                            </div>
+                                            <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                                                <span className="opacity-70 w-20">Mobile:</span>
+                                                <span className="font-medium">{staff.mobile}</span>
+                                            </div>
+                                            {/* Dummy Password Field */}
+                                            <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                                                <span className="opacity-70 w-20">Password:</span>
+                                                <span className="font-medium tracking-widest">••••••••</span>
+                                                <Lock size={14} className="ml-auto opacity-50" />
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                                            <span className="opacity-70 w-20">Mobile:</span>
-                                            <span className="font-medium">{staff.mobile}</span>
-                                        </div>
-                                        {/* Dummy Password Field */}
-                                        <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                                            <span className="opacity-70 w-20">Password:</span>
-                                            <span className="font-medium tracking-widest">••••••••</span>
-                                            <Lock size={14} className="ml-auto opacity-50" />
-                                        </div>
+                                    </Card>
+                                ))}
+                            </div>
+
+                            {/* Pagination - Matching Doctors UI Style */}
+                            <div className="mt-8 flex justify-center">
+                                <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-0.5 md:p-1 shadow-inner border border-gray-200 dark:border-gray-700">
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                        className="px-3 md:px-5 py-2 text-[10px] md:text-xs font-bold uppercase transition-all hover:bg-white dark:hover:bg-gray-700 rounded-lg disabled:opacity-30 disabled:hover:bg-transparent"
+                                        style={{ color: 'var(--text-color)' }}
+                                    >
+                                        Prev
+                                    </button>
+                                    <div className="px-3 md:px-5 py-2 text-[10px] md:text-xs font-mono text-purple-500 font-bold border-x border-gray-200 dark:border-gray-700">
+                                        {currentPage}/{Math.max(1, totalPages)}
                                     </div>
-                                </Card>
-                            ))}
-                        </div>
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        disabled={currentPage === totalPages || totalPages === 0}
+                                        className="px-3 md:px-5 py-2 text-[10px] md:text-xs font-bold uppercase transition-all hover:bg-white dark:hover:bg-gray-700 rounded-lg disabled:opacity-30 disabled:hover:bg-transparent"
+                                        style={{ color: 'var(--text-color)' }}
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        </>
                     )}
                 </div>
 
@@ -317,15 +456,29 @@ export default function CreateLab() {
                                             }}
                                             onFocus={() => setShowHospitalDropdown(true)}
                                             placeholder="Search hospital..."
-                                            className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-4 py-3 pr-12 rounded-xl border focus:outline-none focus:ring-2 focus:ring-purple-500"
                                             style={{
-                                                backgroundColor: 'var(--card-bg)',
+                                                backgroundColor: 'white',
                                                 color: 'var(--text-color)',
                                                 borderColor: 'var(--border-color)'
                                             }}
                                             required
                                         />
-                                        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                            {(searchQuery || formData.hospitalId) && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSearchQuery("");
+                                                        setFormData(prev => ({ ...prev, hospitalId: "" }));
+                                                    }}
+                                                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-400 hover:text-red-500 transition-colors"
+                                                >
+                                                    <X size={18} />
+                                                </button>
+                                            )}
+                                            <Search className="text-gray-400" size={20} />
+                                        </div>
                                     </div>
 
                                     {showHospitalDropdown && filteredHospitals.length > 0 && (
@@ -393,11 +546,12 @@ export default function CreateLab() {
                                             value={formData.password}
                                             onChange={handleChange}
                                             placeholder="Password"
+                                            autoComplete="new-password"
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-10 text-gray-500 hover:text-purple-500"
+                                            className="absolute right-3 top-9 text-gray-500 hover:text-purple-500"
                                         >
                                             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                                         </button>
@@ -456,11 +610,12 @@ export default function CreateLab() {
                                     value={editForm.password || ""}
                                     onChange={(e) => setEditForm(prev => ({ ...prev, password: e.target.value }))}
                                     placeholder="Type to change password..."
+                                    autoComplete="new-password"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowEditPassword(!showEditPassword)}
-                                    className="absolute right-3 top-10 text-gray-500 hover:text-purple-500"
+                                    className="absolute right-3 top-9 text-gray-500 hover:text-purple-500"
                                 >
                                     {showEditPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                                 </button>

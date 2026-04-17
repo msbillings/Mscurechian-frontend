@@ -34,6 +34,7 @@ function AuthGuard({ children }: AuthGuardProps) {
     if (!isInitialized) return;
 
     if (!isAuthenticated) {
+      console.warn(`[AuthGuard: hospital-admin] 🚫 Not authenticated. Redirecting to login.`);
       router.replace("/auth/login");
     } else if (userRole && userRole !== "hospital-admin") {
       const routeMap: Record<string, string> = {
@@ -46,8 +47,16 @@ function AuthGuard({ children }: AuthGuardProps) {
         "super-admin": "/admin",
         admin: "/admin",
         patient: "/patient",
+        nurse: "/nurse",
+        emergency: "/emergency",
+        hr: "/hr",
+        frontdesk: "/frontdesk"
       };
-      router.replace(routeMap[userRole] || "/auth/login");
+      const redirectPath = routeMap[userRole] || "/auth/login";
+      console.warn(`[AuthGuard: hospital-admin] 🔄 Role mismatch (${userRole}). Redirecting to: ${redirectPath}`);
+      router.replace(redirectPath);
+    } else {
+      console.log(`[AuthGuard: hospital-admin] ✅ Access Granted. Role: ${userRole}`);
     }
   }, [isAuthenticated, isInitialized, userRole, router]);
 
