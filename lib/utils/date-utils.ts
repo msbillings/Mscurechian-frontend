@@ -23,3 +23,43 @@ export const calculateStayDuration = (admissionDate: string | Date): string => {
         return `${diffMins} Min${diffMins !== 1 ? 's' : ''}`;
     }
 };
+
+/**
+ * Formats a date string or Date object to a local time string (e.g., "10:10 AM").
+ * Handles UTC to Local conversion automatically.
+ */
+export const formatLocalTime = (dateInput: string | Date | undefined, fallback?: string): string => {
+    // console.log("[formatLocalTime] Input:", { dateInput, fallback });
+
+    if (!dateInput && !fallback) return "N/A";
+
+    const isFormattedTime = (s: string) => /^\d{1,2}:\d{2}(?:\s*[AP]M)?$/i.test(s);
+
+    try {
+        // If we have a full timestamp (ISO or Date object), try converting it to local first.
+        if (dateInput) {
+            const date = new Date(dateInput);
+            if (!isNaN(date.getTime())) {
+                const localStr = date.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                });
+                // If it's just midnight (from a date-only string), and we have a fallback, use fallback.
+                if (localStr === "12:00 AM" && fallback && isFormattedTime(fallback)) {
+                   return fallback;
+                }
+                return localStr;
+            }
+        }
+
+        // Fallback to the provided time string if it's already formatted.
+        if (fallback && isFormattedTime(fallback)) return fallback;
+        if (typeof dateInput === 'string' && isFormattedTime(dateInput)) return dateInput;
+
+        return fallback || "N/A";
+    } catch (e) {
+        console.error("[formatLocalTime] Error:", e);
+        return fallback || "N/A";
+    }
+};

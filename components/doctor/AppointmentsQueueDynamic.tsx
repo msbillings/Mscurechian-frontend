@@ -6,6 +6,7 @@ import { Calendar, Clock, User, CheckCircle2, Loader2, Trash2 } from 'lucide-rea
 import { doctorService } from '@/lib/integrations/services/doctor.service';
 import { toast } from 'react-hot-toast';
 import { useAuthStore } from '@/stores/authStore';
+import { formatLocalTime } from '@/lib/utils/date-utils';
 
 interface Appointment {
   id: string;

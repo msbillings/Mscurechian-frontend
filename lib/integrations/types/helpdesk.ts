@@ -19,10 +19,12 @@ export interface RecentPatient {
 
 export interface HelpdeskAppointment {
   id: string;
+  _id?: string;
   patientName: string;
   doctorName: string;
   time: string;
   date: Date | string;
+  createdAt?: string;
   type: string;
   status: string;
 }

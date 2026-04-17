@@ -29,6 +29,7 @@ import {
 } from "@/lib/integrations/hooks";
 import { HelpdeskDashboardSkeleton } from "@/components/ui/skeletons";
 import { useAuthStore } from "@/stores/authStore";
+import { formatLocalTime } from "@/lib/utils/date-utils";
 
 function HelpdeskDashboard() {
     const formatTimeTo12h = (timeStr?: string) => {

@@ -11,6 +11,8 @@ export interface DoctorAppointment {
   patientName: string;
   patientId: string;
   time: string;
+  date?: string;
+  createdAt?: string;
   type: string;
   status: string;
   hospital?: string;

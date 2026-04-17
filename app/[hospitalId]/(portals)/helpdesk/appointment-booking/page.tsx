@@ -131,6 +131,9 @@ export default function AppointmentBooking() {
         let error = '';
         if (!value) return ''; // No longer required
         const num = Number(value);
+        if (!value) {
+            return '';
+        }
 
         switch (field) {
             case 'pulse':
@@ -306,6 +309,43 @@ export default function AppointmentBooking() {
     }, [selectedPatient]);
 
     useEffect(() => {
+        const checkExistingAppointment = async () => {
+            if (!selectedPatient || !selectedDoctor) return;
+            try {
+                // We use the dashboard/appointments endpoint to check for today's active bookings
+                const hospitalId = profile?.hospital?._id;
+                if (!hospitalId) return;
+
+                const patientId = selectedPatient.id || selectedPatient._id;
+                const appointments = await helpdeskService.getAppointments(1, 50, patientId, selectedDoctor._id);
+
+                const today = new Date().toISOString().split('T')[0];
+
+                const existing = (appointments.data || []).find((apt: any) => {
+                    const aptPatientId = apt.patient?._id || apt.patient?.id || apt.patient;
+                    const aptDate = new Date(apt.date).toISOString().split('T')[0];
+                    const activeStatuses = ['pending', 'confirmed', 'in-progress', 'waiting', 'Booked'];
+                    
+                    return aptPatientId === patientId && 
+                           aptDate === today && 
+                           activeStatuses.includes(apt.status);
+                });
+
+                if (existing) {
+                    toast(`Attention: ${selectedPatient.name} already has a ${existing.status} appointment with Dr. ${selectedDoctor.user?.name || selectedDoctor.name} today.`, {
+                        icon: '⚠️',
+                        duration: 6000,
+                    });
+                }
+            } catch (err) {
+                console.warn("[CHECK] Failed to verify existing appointments:", err);
+            }
+        };
+
+        checkExistingAppointment();
+    }, [selectedPatient?.id, selectedPatient?._id, selectedDoctor?._id, profile?.hospital]);
+
+    useEffect(() => {
         if (selectedPatient?.activeAdmission && registrationType === 'IPD') {
             setRegistrationType('OPD');
             toast.error(`Patient is already admitted (${selectedPatient.activeAdmission.admissionId}). Switching to OPD mode.`, {
@@ -371,7 +411,7 @@ export default function AppointmentBooking() {
             if (admissionData.diet.length > 250 || admissionData.clinicalNotes.length > 400) return false;
         }
 
-        return !hasEmptyRequired && !hasVitalErrors && !hasNotesLimit && !hasEmptyNotes && !hasAdmissionErrors;
+        return !hasVitalErrors && !hasNotesLimit && !hasEmptyNotes && !hasAdmissionErrors;
     };
 
     const handleBooking = async () => {
@@ -391,13 +431,22 @@ export default function AppointmentBooking() {
             setSubmitting(true);
             const backendPaymentStatus = paymentStatus === 'unpaid' ? 'pending' : 'paid';
 
+            // PRE-OPEN BLANK WINDOW: This is CRITICAL.
+            // Browsers block window.open if it occurs too long after the user click.
+            // By opening it immediately, we preserve the user-trust state even if the API takes 50 seconds.
+            const printWindow = window.open('about:blank', '_blank');
+            if (printWindow) {
+               printWindow.document.write('<html><head><title>Generating Receipt...</title><style>body{display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#666;}</style></head><body><div><p>Processing your booking, please wait...</p></div></body></html>');
+            }
+
             const payload = {
                 patientId: selectedPatient?._id || selectedPatient?.id,
                 doctorId: selectedDoctor?._id,
                 date: selectedDate,
-                timeSlot: bookingMode === 'slot' ? selectedSlot : selectedTime,
-                startTime: bookingMode === 'slot' ? selectedSlot : selectedTime,
-                endTime: bookingMode === 'slot' ? selectedSlot : selectedTime,
+                time: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                timeSlot: bookingMode === 'slot' ? selectedSlot : "General Queue",
+                startTime: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                endTime: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
                 type: appointmentType,
                 notes: notes,
                 paymentMethod: paymentMethod,
@@ -557,7 +606,7 @@ export default function AppointmentBooking() {
                     })(),
                     type: appointmentType.toUpperCase(),
                     notes: notes,
-                    appointmentId: appointment.appointmentId || appointment.id || appointment._id || 'APT-' + Math.random().toString(36).substr(2, 9).toUpperCase()
+                    appointmentId: 'PENDING'
                 },
                 payment: {
                     amount: registrationType === 'IPD' ? parseFloat(ipdFee) : (selectedDoctor?.consultationFee || 0),
