@@ -190,21 +190,7 @@ export default async function DoctorProfilePage({ params }: { params: Promise<{ 
 
                         {/* Education & Employment */}
                         <div className="bg-white dark:bg-[#111] p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm space-y-4 sm:space-y-6">
-                            <div>
-                                <h4 className="font-bold text-xs sm:text-sm text-gray-900 dark:text-white mb-3 sm:mb-4 flex items-center gap-2">
-                                    <Briefcase size={16} className="text-emerald-500" /> Placement
-                                </h4>
-                                <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                                    <div className="p-2 sm:p-3 bg-gray-50 dark:bg-gray-900 rounded-xl sm:rounded-2xl">
-                                        <p className="text-[8px] sm:text-[9px] font-bold text-gray-400 uppercase">Dept</p>
-                                        <p className="text-[10px] sm:text-xs font-black">{profile?.department || 'General'}</p>
-                                    </div>
-                                    <div className="p-2 sm:p-3 bg-gray-50 dark:bg-gray-900 rounded-xl sm:rounded-2xl">
-                                        <p className="text-[8px] sm:text-[9px] font-bold text-gray-400 uppercase">Room</p>
-                                        <p className="text-[10px] sm:text-xs font-black">{profile?.room || 'TBD'}</p>
-                                    </div>
-                                </div>
-                            </div>
+
 
                             <div>
                                 <h4 className="font-bold text-xs sm:text-sm text-gray-900 dark:text-white mb-2 sm:mb-3">Qualifications</h4>

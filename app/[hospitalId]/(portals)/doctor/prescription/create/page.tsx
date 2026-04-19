@@ -93,6 +93,7 @@ interface PrescriptionForm {
     duration: string;
     mrn: string;
     date: string;
+    time: string;
     symptoms: string;
     diagnosis: string;
     medicines: Medicine[];
@@ -165,10 +166,19 @@ interface PrescriptionForm {
     };
     dermatologyData?: {
         lesionType: string;
-        location: string;
-        pattern: string;
-        appearance: string;
-        associatedSymptoms: string;
+        lesionCount: string;
+        size: string;
+        location: string[];
+        distribution: string;
+        color: string[];
+        surfaceChanges: string[];
+        itchingSeverity: 'None' | 'Mild' | 'Moderate' | 'Severe';
+        painSeverity: 'None' | 'Mild' | 'Moderate' | 'Severe';
+        burning: boolean;
+        duration: string;
+        onset: 'Acute' | 'Chronic' | '';
+        progression: 'Improving' | 'Worsening' | 'Stable' | '';
+        provisionalDiagnosis: string;
     };
     pediatricData?: {
         weight: string;
@@ -471,6 +481,7 @@ const INITIAL_FORM: PrescriptionForm = {
     duration: '',
     mrn: '',
     date: new Date().toLocaleDateString('en-GB'), // DD/MM/YYYY
+    time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
     symptoms: '',
     diagnosis: '',
     medicines: [],
@@ -538,10 +549,19 @@ const INITIAL_FORM: PrescriptionForm = {
     },
     dermatologyData: {
         lesionType: '',
-        location: '',
-        pattern: '',
-        appearance: '',
-        associatedSymptoms: ''
+        lesionCount: '',
+        size: '',
+        location: [],
+        distribution: '',
+        color: [],
+        surfaceChanges: [],
+        itchingSeverity: 'None',
+        painSeverity: 'None',
+        burning: false,
+        duration: '',
+        onset: '',
+        progression: '',
+        provisionalDiagnosis: '',
     },
     pediatricData: {
         weight: '',
@@ -1515,43 +1535,35 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                     }
                     .container {
                         width: 210mm;
-                        min-height: 296mm;
+                        min-height: 297mm;
                         margin: 0 auto;
-                        padding: 10mm 15mm 10mm 25mm;
+                        padding: 10mm 25mm 10mm 25mm;
                         box-sizing: border-box;
                         display: flex;
                         flex-direction: column;
                         background: white;
+                        position: relative;
                     }
-                    .content { flex: 1; }
-                    .header-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; }
-                    .title { color: #1e40af; margin: 0; font-size: 18px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; }
+                    .content { 
+                        flex: 1; 
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .header-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
+                    .title { color: #1e40af; margin: 0; font-size: 15px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; }
                     .doctor-info { text-align: right; }
                     .doctor-name { font-size: 14px; font-weight: 800; color: #1e293b; margin: 0; }
                     .doctor-spec { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin: 2px 0 0; }
 
-                    .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #eef2f6; }
-                    .info-item { display: flex; flex-direction: column; gap: 2px; }
-                    .info-label { font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
-                    .info-value { font-size: 12px; font-weight: 700; color: #1e293b; }
-
-                    .section-title { font-size: 10px; font-weight: 900; color: #1e40af; text-transform: uppercase; border-left: 4px solid #1e40af; padding-left: 10px; margin: 20px 0 10px 0; letter-spacing: 1px; }
+                    .sig-line { border-top: 1.5px solid #1e293b; width: 180px; margin-left: auto; padding-top: 5px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+                    .section-title { font-size: 10px; font-weight: 900; text-transform: uppercase; color: #475569; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px; letter-spacing: 1px; }
                     
-                    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                    th { text-align: left; font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; padding: 12px 10px; border-bottom: 2px solid #f1f5f9; }
-                    td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
-                    .med-name { font-weight: 800; color: #1e293b; font-size: 13px; }
-                    
-                    .advice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 10px; }
-                    .advice-list { list-style: none; padding: 0; margin: 0; }
-                    .advice-list li { margin-bottom: 8px; padding-left: 15px; position: relative; font-size: 11px; font-weight: 600; color: #334155; }
-                    .advice-list li:before { content: "→"; position: absolute; left: 0; color: #1e40af; font-weight: 900; }
-
-                    .follow-up-box { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin-top: 30px; border-radius: 0 12px 12px 0; display: flex; justify-content: space-between; align-items: center; }
-                    .follow-up-label { font-size: 9px; font-weight: 800; color: #b45309; text-transform: uppercase; }
-                    .follow-up-date { font-weight: 900; color: #d97706; font-size: 14px; }
-
-                    .signature-area { margin-top: 40px; text-align: right; }
+                    .specialty-section { page-break-inside: avoid; margin-bottom: 25px; }
+                    .info-grid { page-break-inside: avoid; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #eef2f6; }
+                    .follow-up-box { page-break-inside: avoid; background: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin-top: 30px; border-radius: 0 12px 12px 0; display: flex; justify-content: space-between; align-items: center; }
+                    .signature-area { page-break-inside: avoid; margin-top: 40px; text-align: right; }
+                    .advice-grid { page-break-inside: avoid; display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 10px; }
+                    .print-footer { page-break-inside: avoid; margin-top: auto; }
                     .sig-img { height: 45px; margin-bottom: 5px; }
                     .sig-line { border-top: 1.5px solid #1e293b; width: 180px; margin-left: auto; padding-top: 5px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
                 </style>
@@ -1568,35 +1580,35 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             </div>
                         </div>
 
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <span class="info-label">Patient Name</span>
-                                <span class="info-value">${formData.patientName}</span>
+                        <div style="margin: 8px 0 24px 0; display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+                            <div style="padding: 16px; background: white; border-right: 1px solid #f1f5f9;">
+                                <div style="font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">Patient Name</div>
+                                <div style="font-size: 11px; font-weight: 900; color: #1e293b; text-transform: uppercase;">${formData.patientName}</div>
                             </div>
-                            <div class="info-item">
-                                <span class="info-label">Age / Gender</span>
-                                <span class="info-value">${formData.age} Y / ${formData.gender}</span>
+                            <div style="padding: 16px; background: #f8fafc; border-right: 1px solid #f1f5f9;">
+                                <div style="font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">Age / Gender</div>
+                                <div style="font-size: 11px; font-weight: 900; color: #1e293b;">${formData.age || '--'} Y / ${formData.gender}</div>
                             </div>
-                            <div class="info-item">
-                                <span class="info-label">MRN / ID</span>
-                                <span class="info-value">${formData.mrn || 'N/A'}</span>
+                            <div style="padding: 16px; background: white; border-right: 1px solid #f1f5f9;">
+                                <div style="font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">MRN / ID</div>
+                                <div style="font-size: 11px; font-weight: 900; color: #1e293b; text-transform: uppercase;">${formData.mrn || 'N/A'}</div>
                             </div>
-                            <div class="info-item">
-                                <span class="info-label">Date</span>
-                                <span class="info-value">${formData.date}</span>
+                            <div style="padding: 16px; background: #f8fafc;">
+                                <div style="font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">Printed Time</div>
+                                <div style="font-size: 11px; font-weight: 900; color: #1e293b;">${formData.date} <span style="color: #64748b; font-weight: 700; margin-left: 4px;">${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span></div>
                             </div>
                         </div>
 
                         ${formData.symptoms || formData.diagnosis ? `
-                        <div style="margin-bottom: 25px; padding: 15px; border: 1.5px solid #e2e8f0; border-radius: 12px; background: #f8fafc;">
+                        <div style="margin-bottom: 25px; padding: 15px; border: 1.5px solid #e2e8f0; border-radius: 12px; background: #f8fafc; display: flex; gap: 20px;">
                             ${formData.symptoms ? `
-                            <div style="margin-bottom: 12px;">
+                            <div style="flex: 1;">
                                 <span class="info-label" style="color: #64748b; font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">Chief Complaints / Symptoms</span>
                                 <div style="font-size: 12px; font-weight: 700; color: #334155;">${formData.symptoms}</div>
                             </div>
                             ` : ''}
                             ${formData.diagnosis ? `
-                            <div style="${formData.symptoms ? 'border-top: 1px dashed #e2e8f0; padding-top: 10px; margin-top: 10px;' : ''}">
+                            <div style="flex: 1; ${formData.symptoms ? 'border-left: 1px dashed #e2e8f0; padding-left: 20px;' : ''}">
                                 <span class="info-label" style="color: #1e40af; font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">Diagnosis / Impressions</span>
                                 <div style="font-size: 13px; font-weight: 800; color: #1e40af;">${formData.diagnosis}</div>
                             </div>
@@ -2253,7 +2265,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         </div>`;
                         })() : ''}
 
-                        ${(activeSpecialty.toUpperCase().includes('OPHTHAL') || activeSpecialty.toUpperCase().includes('EYE')) && formData.ophthaData && formData.ophthaData.vision?.od?.unaided ? (() => {
+                        ${(activeSpecialty.toUpperCase().includes('OPHTHAL') || activeSpecialty.toUpperCase().includes('EYE')) && formData.ophthaData && (formData.ophthaData.diagnosis || formData.ophthaData.notes || formData.ophthaData.vision?.od?.unaided || formData.ophthaData.iop?.od) ? (() => {
                             const o = formData.ophthaData;
                             const iopOD = parseFloat(o.iop?.od) || 0;
                             const iopOS = parseFloat(o.iop?.os) || 0;
@@ -2706,22 +2718,37 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
 
                         ${activeSpecialty.toUpperCase().includes('DERMA') && formData.dermatologyData ? (() => {
                             const d = formData.dermatologyData;
+                            const locationStr = (Array.isArray(d.location) ? d.location : (d.location ? [d.location] : [])).join(', ');
+                            const colorStr = (Array.isArray(d.color) ? d.color : (d.color ? [d.color] : [])).join(', ');
+                            const surfaceStr = (Array.isArray(d.surfaceChanges) ? d.surfaceChanges : (d.surfaceChanges ? [d.surfaceChanges] : [])).join(', ');
+
                             return `
                         <div style="margin-bottom:25px;padding:18px;border:2px solid #fff1f2;border-radius:16px;background:#fff5f5;page-break-inside:avoid;">
-                            <div style="border-bottom:1.5px solid #fecdd3;margin-bottom:12px;padding-bottom:8px;">
-                                <span style="font-size:10px;font-weight:900;text-transform:uppercase;color:#be123c;letter-spacing:1px;">Dermatological Findings</span>
+                            <div style="border-bottom:1.5px solid #fecdd3;margin-bottom:12px;padding-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-size:10px;font-weight:900;text-transform:uppercase;color:#be123c;letter-spacing:1px;">Dermatological Findings Portfolio</span>
+                                <span style="font-size:10px;font-weight:900;color:white;background:#be123c;padding:3px 10px;border-radius:6px;">${locationStr || 'Diffuse'}</span>
                             </div>
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
                                 <div>
                                     <span style="font-size:8px;color:#be123c;font-weight:800;text-transform:uppercase;display:block;margin-bottom:4px;">Lesion Profile</span>
-                                    <div style="font-size:12px;font-weight:900;color:#1e1b4b;">${d.lesionType || 'No lesions'}</div>
-                                    <div style="font-size:10px;font-weight:700;color:#be123c;">Location: ${d.location || 'Diffuse'}</div>
+                                    <div style="font-size:12px;font-weight:900;color:#1e1b4b;">${d.lesionType || 'No lesions'}${d.lesionCount ? ' (' + d.lesionCount + ')' : ''}</div>
+                                    <div style="font-size:10px;font-weight:700;color:#be123c;">Size: ${d.size || 'N/A'}</div>
                                 </div>
                                 <div>
                                     <span style="font-size:8px;color:#be123c;font-weight:800;text-transform:uppercase;display:block;margin-bottom:4px;">Characteristics</span>
-                                    <div style="font-size:10px;font-weight:700;color:#1e293b;">Pattern: ${d.pattern || 'Standard'}<br/>Appearance: ${d.appearance || 'Standard'}</div>
+                                    <div style="font-size:10px;font-weight:700;color:#1e293b;">
+                                        Pattern: ${d.distribution || 'Standard'}<br/>
+                                        Color: ${colorStr || 'N/A'}<br/>
+                                        Changes: ${surfaceStr || 'None'}
+                                    </div>
                                 </div>
                             </div>
+                            ${d.provisionalDiagnosis ? `
+                            <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #fecdd3;">
+                                <span style="font-size:8px;color:#be123c;font-weight:800;text-transform:uppercase;display:block;margin-bottom:2px;">Provisional Diagnosis</span>
+                                <div style="font-size:11px;font-weight:900;color:#be123c;">${d.provisionalDiagnosis}</div>
+                            </div>
+                            ` : ''}
                         </div>`;
                         })() : ''}
 
@@ -2749,34 +2776,37 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         </div>`;
                         })() : ''}
 
-                        <div class="section-title">Medications & Dosage</div>
+                        <div style="font-size: 10px; font-weight: 900; text-transform: uppercase; color: #475569; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px; letter-spacing: 1px;">Medications & Dosage</div>
 
-                        <table>
+                        <table style="width: 100%; border-collapse: collapse;">
                             <thead>
-                                <tr>
-                                    <th style="width: ${activeSpecialty.toUpperCase().includes('PEDIATRI') ? '35%' : '45%'}">Medicine</th>
-                                    <th>Dosage</th>
-                                    <th>Frequency</th>
-                                    <th>Duration</th>
+                                <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                                    <th style="width: ${activeSpecialty.toUpperCase().includes('PEDIATRI') ? '30%' : '35%'}; padding: 12px 10px; color: #475569; font-size: 9px; font-weight: 900; text-transform: uppercase;">Medicine Name</th>
+                                    <th style="padding: 12px 10px; color: #475569; font-size: 9px; font-weight: 900; text-transform: uppercase;">Dosage</th>
+                                    <th style="padding: 12px 10px; color: #475569; font-size: 9px; font-weight: 900; text-transform: uppercase;">Frequency</th>
+                                    <th style="padding: 12px 10px; color: #475569; font-size: 9px; font-weight: 900; text-transform: uppercase;">Duration</th>
                                     ${activeSpecialty.toUpperCase().includes('PEDIATRI') ? `
-                                    <th style="font-size: 8px;">mg/kg</th>
-                                    <th style="font-size: 8px;">Calc. Dose</th>
+                                    <th style="font-size: 8px; padding: 12px 5px; color: #be123c;">mg/kg</th>
+                                    <th style="font-size: 8px; padding: 12px 5px; color: #be123c;">Calc. Dose</th>
                                     ` : ''}
-                                    <th style="text-align: right;">Qty</th>
+                                    <th style="text-align: right; padding: 12px 10px; color: #475569; font-size: 9px; font-weight: 900; text-transform: uppercase;">Qty</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${formData.medicines.map(med => `
-                                <tr>
-                                    <td class="med-name">${med.name}</td>
-                                    <td style="font-weight: 600;">${med.dosage}</td>
-                                    <td style="font-weight: 600; color: #475569;">${formatFrequency(med.freq)}</td>
-                                    <td style="font-weight: 600;">${med.duration}</td>
+                                <tr style="border-bottom: 1px solid #f1f5f9;">
+                                    <td style="padding: 14px 10px;">
+                                        <div style="font-weight: 800; color: #0f172a; font-size: 13px;">${med.name}</div>
+                                        <div style="font-size: 10px; color: #64748b; font-weight: 500;">${med.form}</div>
+                                    </td>
+                                    <td style="padding: 14px 10px; font-weight: 700; color: #334155; font-size: 12px;">${med.dosage}</td>
+                                    <td style="padding: 14px 10px; font-weight: 600; color: #475569; font-size: 12px;">${formatFrequency(med.freq)}</td>
+                                    <td style="padding: 14px 10px; font-weight: 700; color: #334155; font-size: 12px;">${med.duration}</td>
                                     ${activeSpecialty.toUpperCase().includes('PEDIATRI') ? `
-                                    <td style="font-size: 9px; font-weight: 700; color: #be123c;">${med.mgPerKg || '--'}</td>
-                                    <td style="font-size: 9px; font-weight: 800; color: #0f172a;">${med.calculatedDose || '--'} <small>mg</small></td>
+                                    <td style="padding: 14px 5px; font-size: 11px; font-weight: 700; color: #be123c;">${med.mgPerKg || '--'}</td>
+                                    <td style="padding: 14px 5px; font-size: 11px; font-weight: 800; color: #0f172a;">${med.calculatedDose || '--'} <small>mg</small></td>
                                     ` : ''}
-                                    <td style="font-weight: 800; text-align: right;">${med.quantity}</td>
+                                    <td style="padding: 14px 10px; font-weight: 900; text-align: right; color: #0f172a; font-size: 13px;">${med.quantity}</td>
                                 </tr>
                                 `).join('')}
                             </tbody>
@@ -2817,12 +2847,16 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         </div>
                         ` : ''}
 
-                        <div class="signature-area">
-                            ${formData.doctorSignature ? `<img src="${formData.doctorSignature}" class="sig-img" />` : '<div style="height: 50px;"></div>'}
-                            <div class="sig-line">Authorized Digital Signature</div>
+                        <div style="page-break-inside: avoid; margin-top: auto;">
+                            <div class="signature-area">
+                                ${formData.doctorSignature ? `<img src="${formData.doctorSignature}" class="sig-img" />` : '<div style="height: 50px;"></div>'}
+                                <div class="sig-line">Authorized Digital Signature</div>
+                            </div>
+                            <div style="margin-top: 20px;">
+                                ${footerHtml}
+                            </div>
                         </div>
                     </div>
-                    ${footerHtml}
                 </div>
             </body>
             </html>
@@ -2861,15 +2895,19 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                     }
                     .container {
                         width: 210mm;
-                        min-height: 296mm;
+                        min-height: 297mm;
                         margin: 0 auto;
-                        padding: 10mm 15mm 10mm 25mm;
+                        padding: 10mm 22mm 10mm 22mm;
                         box-sizing: border-box;
                         display: flex;
                         flex-direction: column;
                         background: white;
                     }
-                    .content { flex: 1; }
+                    .content { 
+                        flex: 1; 
+                        display: flex;
+                        flex-direction: column;
+                    }
                     .title { color: #1e40af; margin: 20px 0; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; }
                     
                     .bill-info { display: flex; justify-content: space-between; margin-bottom: 25px; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #eef2f6; }
@@ -2878,14 +2916,16 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                     .info-value { font-size: 13px; font-weight: 700; color: #1e293b; }
 
                     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                    th { text-align: left; font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; padding: 12px 10px; border-bottom: 2.5px solid #f1f5f9; }
-                    td { padding: 15px 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+                    thead tr { background: #f8fafc; }
+                    th { text-align: left; font-size: 9px; font-weight: 900; color: #475569; text-transform: uppercase; padding: 12px 10px; border-bottom: 2.5px solid #e2e8f0; }
+                    td { padding: 14px 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
                     .med-name { font-weight: 800; color: #1e293b; }
                     .amount { font-weight: 800; text-align: right; font-family: monospace; }
 
                     .summary-box { margin-left: auto; width: 280px; margin-top: 30px; background: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #eef2f6; }
                     .summary-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
                     .summary-total { border-top: 2px solid #eef2f6; margin-top: 15px; padding-top: 15px; color: #16a34a; font-size: 20px; font-weight: 900; }
+                    .print-footer { page-break-inside: avoid; margin-top: auto; }
                 </style>
             </head>
             <body>
@@ -3367,7 +3407,9 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                     </div>
 
                     {/* Unified Clinical Safety Monitor */}
-                    <ClinicalAlertPanel alerts={clinicalAlerts} />
+                    {!activeSpecialty.toUpperCase().includes('ENDOCRIN') && (
+                        <ClinicalAlertPanel alerts={clinicalAlerts} />
+                    )}
 
                     {/* DYNAMIC CLINICAL MODULES - STREAMLINED RENDERING */}
                     <div className="mb-8">
@@ -3785,7 +3827,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             {isSending ? <Loader2 className="animate-spin" size={14} /> : (sentToPharma ? <CheckCircle2 size={14} /> : <Pill size={14} />)}
                             <span className="truncate">{sentToPharma ? 'Pharma' : 'Pharma'}</span>
                         </button>
-                        <button
+                        {/* <button
                             onClick={() => {
                                 // Preview: open modal only (do not submit)
                                 if (!formData.patientName) return toast.error("Patient Name is required");
@@ -3804,7 +3846,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         >
                             <Search size={14} />
                             Preview
-                        </button>
+                        </button> */}
 
                         <button
                             onClick={handleSaveAndPrint}

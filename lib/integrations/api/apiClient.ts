@@ -642,6 +642,11 @@ export async function apiClient<T>(
 
         const error = new Error(finalMessage);
         (error as any).status = res.status;
+        try {
+          const parsed = JSON.parse(rawRes);
+          (error as any).error = parsed; // Standard for our UI catch blocks
+          (error as any).data = parsed;  // Fallback
+        } catch (e) {}
         throw error;
       }
 

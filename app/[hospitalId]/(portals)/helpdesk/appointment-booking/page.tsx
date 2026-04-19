@@ -81,6 +81,15 @@ export default function AppointmentBooking() {
     const [paymentStatus, setPaymentStatus] = useState<'paid' | 'unpaid'>('paid');
     const [sendToDoctor, setSendToDoctor] = useState(true);
 
+    // Duplicate-appointment confirmation state
+    const [existingAptWarning, setExistingAptWarning] = useState<{
+        show: boolean;
+        patientName: string;
+        aptStatus: string;
+        doctorName: string;
+        confirmed: boolean;
+    } | null>(null);
+
     // IPD Specific State
     const registrationTypeFromQuery = searchParams.get('type') as 'OPD' | 'IPD' || 'OPD';
     const [registrationType, setRegistrationType] = useState<'OPD' | 'IPD'>(registrationTypeFromQuery);
@@ -128,47 +137,54 @@ export default function AppointmentBooking() {
     const [admissionErrors, setAdmissionErrors] = useState<Record<string, string>>({});
 
     const validateVital = (field: string, value: string) => {
-        let error = '';
-        if (!value) return ''; // No longer required
+        if (!value) return ''; // All vitals are optional
         const num = Number(value);
-        if (!value) {
-            return '';
-        }
 
         switch (field) {
             case 'pulse':
-                if (num < 30 || num > 200) error = '30-200';
+                // Clinical range: 10 bpm (severe bradycardia / pacemaker) to 300 bpm (VT/SVT)
+                if (num < 10 || num > 300) return 'Valid range: 10–300 bpm';
                 break;
             case 'spo2':
-                if (num < 50 || num > 100) error = '50-100';
+                // SpO2 ≥ 1% allows recording extreme critical values
+                if (num < 1 || num > 100) return 'Valid range: 1–100%';
                 break;
             case 'temperature':
-                if (num < 95 || num > 108) error = '95-108';
+                // °F range: severe hypothermia (93°F) to extreme hyperthermia (115°F)
+                if (num < 93 || num > 115) return 'Valid range: 93–115 °F';
                 break;
             case 'glucose':
-                if (value && (num < 50 || num > 500)) error = '50-500';
+                // mg/dL: severe hypoglycemia (20) to extreme DKA (1000)
+                if (num < 20 || num > 1000) return 'Valid range: 20–1000 mg/dL';
                 break;
             case 'height':
-                if (value && (num < 30 || num > 250)) error = '30-250';
+                // cm: premature infant (30 cm) to extreme tall stature (272 cm)
+                if (num < 30 || num > 272) return 'Valid range: 30–272 cm';
                 break;
             case 'weight':
-                if (value && (num < 0.5 || num > 500)) error = '0.5-500';
+                // kg: extremely low birth weight (0.3 kg) to maximum recorded (600 kg)
+                if (num < 0.3 || num > 600) return 'Valid range: 0.3–600 kg';
                 break;
-            case 'bp':
-                const bpParts = value.split('/');
-                if (!/^\d{2,3}\/\d{2,3}$/.test(value)) {
-                    error = 'Format: 120/80';
-                } else {
-                    const s = Number(bpParts[0]);
-                    const d = Number(bpParts[1]);
-                    if (s < 70 || s > 250) error = 'Sys: 70-250';
-                    else if (d < 40 || d > 150) error = 'Dia: 40-150';
-                    else if (d >= s) error = 'Dia < Sys';
+            case 'bp': {
+                // Allow 1–3 digits on each side (e.g. 90/60, 300/180)
+                if (!/^\d{1,3}\/\d{1,3}$/.test(value)) {
+                    return 'Format: 120/80';
                 }
+                const [sStr, dStr] = value.split('/');
+                const s = Number(sStr);
+                const d = Number(dStr);
+                // Systolic: 50 (profound shock) – 300 (hypertensive emergency)
+                if (s < 50 || s > 300) return 'Systolic: 50–300 mmHg';
+                // Diastolic: 20 (circulatory collapse) – 200 (hypertensive crisis)
+                else if (d < 20 || d > 200) return 'Diastolic: 20–200 mmHg';
+                // Diastolic must be lower than systolic (physiological requirement)
+                else if (d >= s) return 'Diastolic must be less than Systolic';
                 break;
+            }
         }
-        return error;
+        return '';
     };
+
 
     const handleVitalChange = (field: string, value: string) => {
         let cleanValue = value;
@@ -189,8 +205,17 @@ export default function AppointmentBooking() {
             cleanValue = value.replace(/[^0-9]/g, '');
         }
 
-        // Character length limits
-        const limits: any = { height: 3, weight: 3, pulse: 3, spo2: 3, temperature: 5, glucose: 3, bp: 7 };
+        // Character length limits per field
+        // BP: up to 7 chars handles "300/200"; weight: up to 6 handles "600.00"
+        const limits: Record<string, number> = {
+            height: 3,
+            weight: 6,
+            pulse: 3,
+            spo2: 3,
+            temperature: 5,
+            glucose: 4,
+            bp: 7,
+        };
         if (limits[field] && cleanValue.length > limits[field]) return;
 
         setVitals(prev => ({ ...prev, [field]: cleanValue }));
@@ -219,6 +244,7 @@ export default function AppointmentBooking() {
                         const transformed = {
                             _id: patientData.user?._id || patientData._id,
                             id: patientData.user?._id || patientData._id,
+                            patientId: patientData._id, // Original Patient Document ID
                             name: patientData.user?.name || patientData.name,
                             honorific: profileData.honorific || patientData.honorific || '',
                             mobile: patientData.user?.mobile || profileData.contactNumber || patientData.profile?.contactNumber || patientData.mobile || 'N/A',
@@ -308,42 +334,106 @@ export default function AppointmentBooking() {
         }
     }, [selectedPatient]);
 
+    // ── Duplicate appointment check ───────────────────────────────────────────
+    // Fires when a patient is selected. Checks ALL active appointments for this
+    // patient at THIS hospital today (hospital is already scoped via helpdeskService
+    // JWT token — no cross-hospital leakage possible).
     useEffect(() => {
+        // Reset any prior warning when patient changes
+        setExistingAptWarning(null);
+
         const checkExistingAppointment = async () => {
-            if (!selectedPatient || !selectedDoctor) return;
+            if (!selectedPatient) return;
+            const hospitalId = profile?.hospital?._id;
+            if (!hospitalId) return;
+
             try {
-                // We use the dashboard/appointments endpoint to check for today's active bookings
-                const hospitalId = profile?.hospital?._id;
-                if (!hospitalId) return;
+                const pId = selectedPatient?._id || selectedPatient?.id;
+                const pDocId = selectedPatient?.patientId || selectedPatient?._id; 
+                const pMrn = selectedPatient?.mrn;
+                const pName = selectedPatient?.name || "Patient";
 
-                const patientId = selectedPatient.id || selectedPatient._id;
-                const appointments = await helpdeskService.getAppointments(1, 50, patientId, selectedDoctor._id);
+                // Reliable local date for filtering (consistent with Dashboard logic)
+                const today = new Date();
+                today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+                const todayStr = today.toISOString().split('T')[0];
 
-                const today = new Date().toISOString().split('T')[0];
+                console.log(`[CHECK] Investigating duplicates for ${pName}. MRN: ${pMrn}, IDs: User(${pId}), Patient(${pDocId}) | Date: ${todayStr}`);
 
-                const existing = (appointments.data || []).find((apt: any) => {
-                    const aptPatientId = apt.patient?._id || apt.patient?.id || apt.patient;
-                    const aptDate = new Date(apt.date).toISOString().split('T')[0];
-                    const activeStatuses = ['pending', 'confirmed', 'in-progress', 'waiting', 'Booked'];
+                // DUAL FETCH STRATEGY
+                const [broadResult, narrowResult] = await Promise.all([
+                    helpdeskService.getAppointments(1, 100, undefined, todayStr, todayStr).catch(e => { console.error("[CHECK] Broad fetch failed", e); return []; }),
+                    pId ? helpdeskService.getAppointments(1, 20, pId).catch(e => { console.error("[CHECK] Narrow fetch failed", e); return []; }) : Promise.resolve([])
+                ]);
+                
+                const normalize = (res: any) => {
+                    if (!res) return [];
+                    if (Array.isArray(res)) return res;
+                    return res.appointments || res.data?.appointments || res.data || [];
+                };
+
+                const appointmentsList = [...normalize(broadResult), ...normalize(narrowResult)];
+                console.log(`[CHECK] Total candidates found: ${appointmentsList.length}`);
+                
+                if (appointmentsList.length > 0) {
+                    console.log(`[CHECK] Sample Record 0:`, {
+                        name: appointmentsList[0].patientName || appointmentsList[0].patient?.name,
+                        mrn: appointmentsList[0].mrn || appointmentsList[0].patient?.mrn,
+                        status: appointmentsList[0].status,
+                        hospital: appointmentsList[0].hospital?._id || appointmentsList[0].hospital
+                    });
+                }
+
+                const activeStatuses = ['pending', 'confirmed', 'in-progress', 'waiting', 'booked', 'scheduled', 'arrived', 'checked-in'];
+
+                const existing = appointmentsList.find((apt: any) => {
+                    const aptStatus = String(apt.status || '').toLowerCase();
+                    const aptHospitalId = apt.hospital?._id || apt.hospital || apt.hospitalId;
                     
-                    return aptPatientId === patientId && 
-                           aptDate === today && 
-                           activeStatuses.includes(apt.status);
+                    const isSameHospital = !aptHospitalId || !hospitalId || aptHospitalId.toString() === hospitalId.toString();
+                    const isActive = activeStatuses.includes(aptStatus);
+
+                    const aptPatientId = apt.patient?._id || apt.patient?.id || apt.patient || apt.patientId;
+                    const aptUserId = apt.patient?.user?._id || apt.patient?.user || apt.userId;
+                    const aptMrn = apt.mrn || apt.patient?.mrn || apt.patientMrn || (apt.patient && apt.patient.mrn);
+                    const aptName = apt.patientName || apt.patient?.name || apt.patient?.user?.name || apt.name;
+
+                    const idMatch = (pId && (pId === aptPatientId || pId === aptUserId)) ||
+                                  (pDocId && (pDocId === aptPatientId || pDocId === aptUserId));
+                    
+                    const mrnMatch = (pMrn && aptMrn && String(pMrn).trim().toUpperCase() === String(aptMrn).trim().toUpperCase());
+                    const nameMatch = (pName && aptName && String(pName).trim().toUpperCase() === String(aptName).trim().toUpperCase());
+
+                    if (idMatch || mrnMatch || nameMatch) {
+                        // verify if it's an active booking 
+                        // (We trust the API filters for the correct hospital, so we don't need to match the Name string 'Horizon Hospitlal' against the ID)
+                        const isActive = activeStatuses.includes(aptStatus);
+                        
+                        console.log(`[CHECK] Potential match found: ${aptName} (Status: ${aptStatus}, Active: ${isActive})`);
+                        if (isActive) return true;
+                    }
+                    return false;
                 });
 
                 if (existing) {
-                    toast(`Attention: ${selectedPatient.name} already has a ${existing.status} appointment with Dr. ${selectedDoctor.user?.name || selectedDoctor.name} today.`, {
-                        icon: '⚠️',
-                        duration: 6000,
+                    const aptDoctorName = existing.doctorName || existing.doctor?.user?.name || existing.doctor?.name || 'the doctor';
+                    console.log(`[CHECK] ✅ DUPLICATE VERIFIED: Triggering banner for ${aptDoctorName}`);
+                    setExistingAptWarning({
+                        show: true,
+                        patientName: selectedPatient.name,
+                        aptStatus: existing.status,
+                        doctorName: aptDoctorName,
+                        confirmed: false,
                     });
                 }
             } catch (err) {
-                console.warn("[CHECK] Failed to verify existing appointments:", err);
+                console.warn('[CHECK] Failed to verify existing appointments:', err);
             }
         };
 
         checkExistingAppointment();
-    }, [selectedPatient?.id, selectedPatient?._id, selectedDoctor?._id, profile?.hospital]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedPatient?.id, selectedPatient?._id, profile?.hospital?._id]);
 
     useEffect(() => {
         if (selectedPatient?.activeAdmission && registrationType === 'IPD') {
@@ -422,22 +512,40 @@ export default function AppointmentBooking() {
             return;
         }
 
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-            printWindow.document.write('<html><body><div style="font-family:sans-serif;padding:20px;text-align:center;margin-top:20vh;"><h2>Processing Appointment...</h2><p>Please wait while we generate your receipt.</p></div></body></html>');
+        // If a duplicate-appointment warning is pending and not yet confirmed, stop here.
+        // The inline banner (rendered below) lets the user click "Proceed Anyway".
+        if (existingAptWarning?.show && !existingAptWarning.confirmed) {
+            setExistingAptWarning(prev => prev ? { ...prev, show: true } : null);
+            return;
         }
+
+        // ── Open ONE print window synchronously (MUST be before any await) ─────
+        // Browsers block popups opened after async calls. Opening here preserves
+        // the user-gesture trust context. We update the same window with the
+        // receipt HTML once the API calls complete.
+        let printWindow: Window | null = null;
+        try {
+            printWindow = window.open('about:blank', '_blank');
+            if (printWindow) {
+                printWindow.document.write(
+                    '<html><head><title>Generating Receipt...</title>' +
+                    '<style>body{display:flex;align-items:center;justify-content:center;' +
+                    'height:100vh;margin:0;font-family:sans-serif;background:#f8fafc;color:#475569;}' +
+                    '.box{text-align:center;}.spinner{width:40px;height:40px;border:3px solid #e2e8f0;' +
+                    'border-top-color:#0d9488;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;}' +
+                    '@keyframes spin{to{transform:rotate(360deg)}}h2{font-size:1.1rem;margin:0 0 6px;color:#1e293b;}' +
+                    'p{font-size:.85rem;margin:0;}</style></head>' +
+                    '<body><div class="box"><div class="spinner"></div>' +
+                    '<h2>Processing Appointment…</h2>' +
+                    '<p>Please wait while we generate your receipt.</p>' +
+                    '</div></body></html>'
+                );
+            }
+        } catch (_) { printWindow = null; }
 
         try {
             setSubmitting(true);
             const backendPaymentStatus = paymentStatus === 'unpaid' ? 'pending' : 'paid';
-
-            // PRE-OPEN BLANK WINDOW: This is CRITICAL.
-            // Browsers block window.open if it occurs too long after the user click.
-            // By opening it immediately, we preserve the user-trust state even if the API takes 50 seconds.
-            const printWindow = window.open('about:blank', '_blank');
-            if (printWindow) {
-               printWindow.document.write('<html><head><title>Generating Receipt...</title><style>body{display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#666;}</style></head><body><div><p>Processing your booking, please wait...</p></div></body></html>');
-            }
 
             const payload = {
                 patientId: selectedPatient?._id || selectedPatient?.id,
@@ -523,19 +631,16 @@ export default function AppointmentBooking() {
                 } catch (e) { }
             }
 
-            // 1. Fetch Hospital Branding
+            // Fetch Hospital Branding
             let latestHospital: any = profile?.hospital;
             try {
                 const hRes = await hospitalAdminService.getHospital();
                 if (hRes?.hospital) {
-                    latestHospital = {
-                        ...profile?.hospital,
-                        ...hRes.hospital
-                    };
+                    latestHospital = { ...profile?.hospital, ...hRes.hospital };
                 }
             } catch (e) { }
 
-            // 2. Render Header/Footer
+            // Render Header/Footer
             const headerHtml = renderToStaticMarkup(
                 <MainHeader
                     initialDetails={{
@@ -606,7 +711,7 @@ export default function AppointmentBooking() {
                     })(),
                     type: appointmentType.toUpperCase(),
                     notes: notes,
-                    appointmentId: 'PENDING'
+                    appointmentId: appointment._id || appointment.id || 'PENDING'
                 },
                 payment: {
                     amount: registrationType === 'IPD' ? parseFloat(ipdFee) : (selectedDoctor?.consultationFee || 0),
@@ -623,6 +728,7 @@ export default function AppointmentBooking() {
                 returnUrl: '/helpdesk'
             };
 
+            // Write the receipt into the SAME window we opened above (no second popup)
             if (printWindow) {
                 printWindow.document.open();
                 printWindow.document.write(generateClinicalReceiptHtml(receiptData));
@@ -834,6 +940,7 @@ export default function AppointmentBooking() {
                                                             setSelectedPatient({
                                                                 _id: full.user?._id || full._id,
                                                                 id: full.user?._id || full._id,
+                                                                patientId: full._id, // Actual Patient Document ID
                                                                 name: full.user?.name || full.name,
                                                                 honorific: profileData.honorific || full.honorific || '',
                                                                 mobile: full.user?.mobile || profileData.contactNumber || full.mobile || 'N/A',
@@ -912,6 +1019,42 @@ export default function AppointmentBooking() {
                                 </div>
                             )}
                         </section>
+
+                        {/* ── Duplicate appointment warning banner ─────────────────────────── */}
+                        {existingAptWarning?.show && !existingAptWarning.confirmed && (
+                            <div className="flex items-start gap-4 p-4 bg-amber-50 border border-amber-200 rounded-2xl animate-in slide-in-from-top-2 duration-300">
+                                <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600">
+                                    <AlertTriangle size={18} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[11px] font-black text-amber-900 uppercase tracking-wide">
+                                        Duplicate Appointment Detected
+                                    </p>
+                                    <p className="text-[10px] text-amber-700 mt-0.5 leading-relaxed">
+                                        <span className="font-bold">{existingAptWarning.patientName}</span> already has a{' '}
+                                        <span className="font-bold uppercase">{existingAptWarning.aptStatus}</span> appointment
+                                        with <span className="font-bold">Dr. {existingAptWarning.doctorName}</span> at this hospital today.
+                                        Do you want to book another appointment?
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setExistingAptWarning(null)}
+                                            className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-amber-700 bg-amber-100 hover:bg-amber-200 rounded-lg transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setExistingAptWarning(prev => prev ? { ...prev, confirmed: true } : null)}
+                                            className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors"
+                                        >
+                                            Proceed Anyway
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* 2. DOCTOR & SCHEDULING */}
                         <section className={`space-y-5 transition-all duration-500 ${!selectedPatient ? 'opacity-50 pointer-events-none grayscale' : ''}`}>

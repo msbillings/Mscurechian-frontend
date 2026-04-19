@@ -203,12 +203,14 @@ export const helpdeskService = {
     limit: number = 10,
     patientId?: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    date?: string
   ) => {
     let query = `${HELPDESK_ENDPOINTS.APPOINTMENTS}?page=${page}&limit=${limit}`;
     if (patientId) query += `&patientId=${patientId}`;
     if (startDate) query += `&startDate=${startDate}`;
     if (endDate) query += `&endDate=${endDate}`;
+    if (date) query += `&date=${date}`;
     return apiClient<any>(query);
   },
 

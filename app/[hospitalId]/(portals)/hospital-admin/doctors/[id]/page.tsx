@@ -27,6 +27,8 @@ import {
   Eye
 } from "lucide-react";
 import { Card, Button } from "@/components/admin";
+import { DocumentViewerModal } from "@/components/common/DocumentViewerModal";
+
 
 function DoctorDetailPage() {
   const router = useRouter();
@@ -42,6 +44,13 @@ function DoctorDetailPage() {
     message: "",
     onConfirm: () => { }
   });
+
+  const [viewerModal, setViewerModal] = useState({
+    isOpen: false,
+    url: "",
+    title: ""
+  });
+
 
   useEffect(() => {
     if (id) {
@@ -210,10 +219,8 @@ function DoctorDetailPage() {
             <p className="text-blue-600 dark:text-blue-400 font-medium mb-2 text-sm">
               {doctor.designation || 'Consultant'}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700 pt-3 mt-3">
-              {doctor.department || 'Department not assigned'}
-            </p>
           </div>
+
 
           {/* Contact Information */}
           <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
@@ -313,15 +320,9 @@ function DoctorDetailPage() {
                 <span className="text-gray-500">Max Appointments</span>
                 <span className="font-semibold text-gray-900 dark:text-white">{doctor.maxAppointmentsPerDay || 20}/day</span>
               </div>
-
-              {doctor.room && (
-                <div className="flex justify-between items-center text-sm pt-1">
-                  <span className="text-gray-500">Room</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">{doctor.room}</span>
-                </div>
-              )}
             </div>
           </div>
+
         </div>
 
         {/* Right Column - Detailed Information */}
@@ -369,44 +370,41 @@ function DoctorDetailPage() {
               {doctor.degreeCertificate && (
                 <div>
                   <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Degree Certificate</h4>
-                  <a
-                    href={doctor.degreeCertificate}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => setViewerModal({ isOpen: true, url: doctor.degreeCertificate, title: "Degree Certificate" })}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg text-sm font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors"
                   >
                     <Eye size={16} /> View Degree
-                  </a>
+                  </button>
                 </div>
               )}
+
 
               {doctor.doctorateCertificate && (
                 <div>
                   <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Doctorate Certificate</h4>
-                  <a
-                    href={doctor.doctorateCertificate}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => setViewerModal({ isOpen: true, url: doctor.doctorateCertificate, title: "Doctorate Certificate" })}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg text-sm font-medium hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
                   >
                     <Eye size={16} /> View Doctorate
-                  </a>
+                  </button>
                 </div>
               )}
+
 
               {doctor.internshipCertificate && (
                 <div>
                   <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Internship Certificate</h4>
-                  <a
-                    href={doctor.internshipCertificate}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => setViewerModal({ isOpen: true, url: doctor.internshipCertificate, title: "Internship Certificate" })}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
                   >
                     <Eye size={16} /> View Internship
-                  </a>
+                  </button>
                 </div>
               )}
+
             </div>
 
             {doctor.experienceStart && (
@@ -461,30 +459,24 @@ function DoctorDetailPage() {
             {doctor.registrationCertificate && (
               <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700/50">
                 <p className="text-xs font-medium text-gray-400 mb-2">Registration Certificate</p>
-                <a
-                  href={doctor.registrationCertificate}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={() => setViewerModal({ isOpen: true, url: doctor.registrationCertificate, title: "Registration Certificate" })}
                   className="inline-flex items-center gap-2 px-4 py-3 bg-yellow-50 dark:bg-yellow-900/10 text-yellow-700 dark:text-yellow-600 rounded-lg text-sm font-bold hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-all active:scale-95"
                 >
                   <Eye size={16} /> View Document
-                </a>
+                </button>
               </div>
             )}
+
           </div>
 
-          {/* Department & Scheduling */}
+          {/* Designation & Scheduling */}
           <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-              <Building size={16} className="text-indigo-500" /> Department & Scheduling
+              <Building size={16} className="text-indigo-500" /> Designation & Scheduling
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-4 mb-8">
-              <div>
-                <p className="text-xs font-medium text-gray-400 mb-1">Department</p>
-                <p className="font-semibold text-gray-900 dark:text-white">{doctor.department || 'Not assigned'}</p>
-              </div>
-
               <div>
                 <p className="text-xs font-medium text-gray-400 mb-1">Designation</p>
                 <p className="font-semibold text-gray-900 dark:text-white">{doctor.designation || 'Consultant'}</p>
@@ -497,6 +489,7 @@ function DoctorDetailPage() {
                 </div>
               )}
             </div>
+
 
             {doctor.availability && doctor.availability.length > 0 && (
               <div className="bg-gray-50 dark:bg-gray-700/20 p-2 md:p-4 rounded-xl border border-gray-100 dark:border-gray-700">
@@ -655,7 +648,14 @@ function DoctorDetailPage() {
         message={confirmModal.message}
         loading={deleteLoading}
       />
+      <DocumentViewerModal
+        isOpen={viewerModal.isOpen}
+        onClose={() => setViewerModal(prev => ({ ...prev, isOpen: false }))}
+        url={viewerModal.url}
+        title={viewerModal.title}
+      />
     </div>
+
   );
 }
 

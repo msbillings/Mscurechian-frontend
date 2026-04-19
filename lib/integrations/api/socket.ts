@@ -1,34 +1,54 @@
 import { API_CONFIG } from "../config/api-config";
 import { getAccessToken } from "./apiClient";
 
+// ─── Singleton State ──────────────────────────────────────────────────────────
+
 let socket: any = null;
 let socketPromise: Promise<any> | null = null;
-let connectionAttempts = 0;
-const MAX_RETRIES = 10;
 
-// ✅ FIX #4 (complete): Store last join_room params so we can re-emit after
-// token rotation forces a socket reconnect. Without this the socket would
-// reconnect with the new token but stay in no rooms — all real-time events lost.
+/**
+ * Stores the last join_room payload so we can re-emit it automatically after
+ * every (re)connect, including reconnects triggered by token rotation.
+ */
 let _lastJoinPayload: { role: string; userId: string; hospitalId?: string } | null = null;
+
+/**
+ * Set to true once the socket has permanently given up (max retries exhausted).
+ * Prevents infinite re-initialisation loops.
+ */
+let _fatallyFailed = false;
+
+// Keep reconnectionAttempts and MAX_RETRIES in sync — one source of truth.
+const MAX_RETRIES = 10;
 
 // ─── Socket Initialisation ────────────────────────────────────────────────────
 
 export const getSocket = (token?: string): Promise<any> => {
+  // Bail out early if WS_URL is not configured — avoids pointless connection spam.
+  const baseUrl = API_CONFIG.WS_URL;
+  if (!baseUrl) {
+    console.warn("📡 [Socket] WS_URL is not configured. Real-time features are disabled.");
+    return Promise.resolve(null);
+  }
+
+  // Do not retry once we have permanently failed.
+  if (_fatallyFailed) {
+    return Promise.resolve(null);
+  }
+
   if (socket?.connected) return Promise.resolve(socket);
   if (socketPromise) return socketPromise;
 
   socketPromise = (async () => {
     try {
-      // @ts-ignore
+      // @ts-ignore — dynamic import keeps socket.io-client out of the SSR bundle
       const { io } = await import("socket.io-client");
-      const baseUrl = API_CONFIG.WS_URL;
 
-      // Always prefer the explicitly supplied token, then fall back to the
-      // in-memory store (never localStorage — tokens are memory-only here).
+      // Prefer the explicitly supplied token, then fall back to the in-memory store.
       const resolvedToken = token || getAccessToken() || undefined;
 
       console.log(
-        "🔌 Initializing Socket.IO connection to:",
+        "🔌 [Socket] Initializing Socket.IO →",
         baseUrl,
         "| Token present:",
         !!resolvedToken
@@ -36,61 +56,64 @@ export const getSocket = (token?: string): Promise<any> => {
 
       const socketInstance = io(baseUrl, {
         auth: { token: resolvedToken },
+        // Polling first so the handshake works behind proxies that don't yet support WS,
+        // then upgrades to WebSocket automatically.
         transports: ["polling", "websocket"],
         reconnection: true,
-        reconnectionAttempts: 15,
+        reconnectionAttempts: MAX_RETRIES,   // ← aligned with the counter below
         reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
+        reconnectionDelayMax: 8000,
         timeout: 20000,
         autoConnect: true,
         path: "/socket.io/",
       });
 
+      // ── Connection success ────────────────────────────────────────────────
       socketInstance.on("connect", () => {
-        connectionAttempts = 0;
-        console.log("📡 ✅ Connected to WebSocket server (ID:", socketInstance.id + ")");
+        _fatallyFailed = false;
+        console.log("📡 ✅ [Socket] Connected (ID:", socketInstance.id + ")");
 
-        // ✅ Auto re-join rooms on every (re)connect — covers both initial
-        // connection and reconnects after updateSocketToken() rotates the token.
+        // Re-join rooms on every (re)connect — covers both initial connection
+        // and reconnects after token rotation.
         if (_lastJoinPayload) {
-          console.log("🔌 Auto re-joining room after connect:", _lastJoinPayload);
+          console.log("🔌 [Socket] Auto re-joining room:", _lastJoinPayload);
           socketInstance.emit("join_room", _lastJoinPayload);
         }
       });
 
+      // ── Connection error ──────────────────────────────────────────────────
       socketInstance.on("connect_error", (err: any) => {
-        connectionAttempts++;
-        console.warn(
-          `📡 ⚠️ WebSocket Connection Error (Attempt ${connectionAttempts}/${MAX_RETRIES}):`,
-          err.message
+        console.warn(`📡 ⚠️ [Socket] Connection error:`, err.message);
+        if (err.description) console.warn("📡 [Socket] Detail:", err.description);
+      });
+
+      // ── Permanent failure (all retries exhausted) ─────────────────────────
+      socketInstance.on("reconnect_failed", () => {
+        _fatallyFailed = true;
+        socketPromise = null; // allow callers to retry later if they choose
+        console.error(
+          `📡 ❌ [Socket] Max connection retries (${MAX_RETRIES}) reached. ` +
+          `Real-time features disabled. Backend URL: ${baseUrl}`
         );
-        if (err.description) console.warn("📡 Error Detail:", err.description);
-        if (err.context) console.warn("📡 Error Context:", err.context);
-        if (connectionAttempts >= MAX_RETRIES) {
-          console.error(
-            "📡 ❌ Max connection retries reached. Real-time features disabled. Backend URL:",
-            baseUrl
-          );
-        }
       });
 
       socketInstance.on("disconnect", (reason: string) => {
-        console.log("📡 Disconnected from WebSocket server. Reason:", reason);
+        console.log("📡 [Socket] Disconnected. Reason:", reason);
       });
 
       socketInstance.on("error", (err: any) => {
-        console.error("📡 WebSocket error:", err);
+        console.error("📡 [Socket] Error:", err);
       });
 
       socketInstance.on("reconnect", (attemptNumber: number) => {
-        console.log(`📡 🔄 Reconnected after ${attemptNumber} attempts`);
+        console.log(`📡 🔄 [Socket] Reconnected after ${attemptNumber} attempt(s)`);
       });
 
       socket = socketInstance;
       return socket;
     } catch (error) {
-      console.error("📡 Failed to initialize Socket.IO:", error);
-      socketPromise = null;
+      console.error("📡 [Socket] Failed to initialize Socket.IO:", error);
+      socketPromise = null; // allow a future retry
       return null;
     }
   })();
@@ -104,43 +127,35 @@ export const disconnectSocket = () => {
   if (socket) {
     socket.disconnect();
     socket = null;
-    socketPromise = null;
   }
+  socketPromise = null;
+  _fatallyFailed = false; // reset so a future login can reconnect
 };
 
 // ─── Token Rotation Handler ───────────────────────────────────────────────────
 
 /**
- * ✅ FIX #4 (COMPLETE): Called by apiClient and authStore after every
- * successful token refresh.
+ * Called by apiClient / authStore after every successful token refresh.
  *
  * Strategy:
- *  1. Update socket.auth.token to the new access token IN-PLACE (no disconnect).
- *  2. Call socket.disconnect() then socket.connect() so the server receives
- *     the new token in the handshake.
- *  3. The "connect" listener above fires automatically and re-emits join_room
- *     with _lastJoinPayload so the user is back in their rooms immediately.
+ *  1. Update socket.auth.token in-place (no destroy).
+ *  2. Cycle disconnect → connect so the server receives the new token in the handshake.
+ *  3. The "connect" listener fires and re-emits join_room automatically.
  *
- * This is safer than resetSocket() (which destroys the instance) because all
- * existing event listeners are preserved.
+ * This is safer than resetSocket() because all existing event listeners are preserved.
  */
 export const updateSocketToken = async (newToken: string): Promise<void> => {
   if (!newToken) return;
 
-  // Case 1: Socket not yet initialized — just create fresh with the new token.
   if (!socket) {
+    // Socket not yet initialized — create fresh with the new token.
     await getSocket(newToken);
     return;
   }
 
   try {
-    console.log("🔄 [Socket] Updating token after rotation — reconnecting...");
-
-    // Update auth payload so the new token is sent in the next handshake.
+    console.log("🔄 [Socket] Rotating token — cycling connection...");
     socket.auth = { token: newToken };
-
-    // Force a clean reconnect cycle. The "connect" event handler will
-    // automatically re-emit join_room with _lastJoinPayload.
     socket.disconnect();
     socket.connect();
   } catch (err) {
@@ -152,7 +167,7 @@ export const updateSocketToken = async (newToken: string): Promise<void> => {
 };
 
 /**
- * Full reset — use only on login/logout, not on token rotation.
+ * Full reset — use only on login/logout.
  * Token rotation should use updateSocketToken() to preserve event listeners.
  */
 export const resetSocket = async (newToken?: string): Promise<any> => {
@@ -191,18 +206,19 @@ export const joinSocketRoom = async (userData: {
   userId: string;
   hospitalId?: string;
 }) => {
-  // ✅ Persist payload so reconnect-after-rotation can re-emit automatically.
+  // Persist payload so reconnect-after-rotation can re-emit automatically.
   _lastJoinPayload = userData;
 
   const socketInstance = await getSocket();
+  if (!socketInstance) return;
 
-  if (socketInstance && socketInstance.connected) {
-    console.log("🔌 Joining room with:", userData);
+  if (socketInstance.connected) {
+    console.log("🔌 [Socket] Joining room:", userData);
     socketInstance.emit("join_room", userData);
-  } else if (socketInstance) {
+  } else {
     // Use 'once' — avoids stacking duplicate listeners on repeated calls.
     socketInstance.once("connect", () => {
-      console.log("🔌 Joining room (on connect) with:", userData);
+      console.log("🔌 [Socket] Joining room (deferred until connect):", userData);
       socketInstance.emit("join_room", userData);
     });
   }

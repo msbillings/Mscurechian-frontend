@@ -272,35 +272,24 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
               }
               .container {
                 width: 210mm;
-                height: 296mm;
+                min-height: 297mm;
                 margin: 0 auto;
-                padding: 10mm 15mm 10mm 25mm;
+                padding: 10mm 15mm 10mm 20mm;
                 box-sizing: border-box;
                 display: flex;
                 flex-direction: column;
                 background: white;
-                overflow: hidden;
+                position: relative;
               }
-              .content { flex: 1; }
-              .title-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
-              .title { color: #1e40af; margin: 0; font-size: 22px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
-              .token-id { background: #1f2937; color: white; padding: 6px 14px; border-radius: 8px; font-family: monospace; font-weight: 900; font-size: 16px; }
-              .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #eef2f6; }
-              .info-item { display: flex; flex-direction: column; gap: 2px; }
-              .info-label { font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
-              .info-value { font-size: 13px; font-weight: 700; color: #1e293b; }
-              table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-              th { text-align: left; font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; padding: 10px; border-bottom: 2px solid #f1f5f9; }
-              td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
-              .test-name { font-weight: 700; color: #1e293b; }
-              .priority-badge { font-size: 9px; font-weight: 900; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
-              .priority-stat { background: #fee2e2; color: #dc2626; }
-              .priority-urgent { background: #ffedd5; color: #f97316; }
-              .priority-routine { background: #dbeafe; color: #2563eb; }
-              .remarks-box { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 12px; margin-top: 20px; border-radius: 0 8px 8px 0; }
-              .remarks-title { font-size: 9px; font-weight: 800; color: #b45309; text-transform: uppercase; margin-bottom: 4px; }
-              .remarks-text { font-size: 11px; font-style: italic; color: #92400e; margin: 0; }
-              .signature-section { margin-top: 30px; text-align: right; }
+              .content { 
+                flex: 1; 
+                display: flex;
+                flex-direction: column;
+              }
+              .print-footer { page-break-inside: avoid; margin-top: auto; }
+              .info-grid { page-break-inside: avoid; display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #eef2f6; }
+              .remarks-box { page-break-inside: avoid; background: #fffbeb; border-left: 4px solid #f59e0b; padding: 12px; margin-top: 20px; border-radius: 0 8px 8px 0; }
+              .signature-section { page-break-inside: avoid; margin-top: 30px; text-align: right; }
               .signature-name { font-size: 13px; font-weight: 800; color: #1e293b; margin: 0; }
               .signature-desc { font-size: 10px; color: #64748b; margin: 0; }
             </style>
@@ -314,25 +303,22 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
                   <div class="token-id">${genTokenNumber}</div>
                 </div>
                 
-                <div class="info-grid">
-                  <div class="info-item">
-                    <span class="info-label">Patient Name</span>
-                    <span class="info-value">${patientData?.personal?.name || patientData?.name || 'N/A'}</span>
+                <div style="margin: 20px 0; display: grid; grid-template-columns: repeat(2, 1fr); border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+                  <div style="padding: 12px 15px; background: white; border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;">
+                    <div style="font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Patient Name</div>
+                    <div style="font-size: 11px; font-weight: 900; color: #1e293b; text-transform: uppercase;">${patientData?.personal?.name || patientData?.name || 'N/A'}</div>
                   </div>
-                  <div class="info-item">
-                    <span class="info-label">MRN Number</span>
-                    <span class="info-value">${patientData?.mrn || patientData?.personal?.mrn || 'N/A'}</span>
+                  <div style="padding: 12px 15px; background: #f8fafc; border-bottom: 1px solid #f1f5f9;">
+                    <div style="font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">MRN / UHID</div>
+                    <div style="font-size: 11px; font-weight: 900; color: #1e293b; text-transform: uppercase;">${patientData?.mrn || patientData?.personal?.mrn || 'N/A'}</div>
                   </div>
-                  <div class="info-item">
-                    <span class="info-label">Age / Gender</span>
-                    <span class="info-value">${patientData?.age || patientData?.personal?.age || 'N/A'}Y / ${patientData?.gender || patientData?.personal?.gender || 'N/A'}</span>
+                  <div style="padding: 12px 15px; background: #f8fafc; border-right: 1px solid #f1f5f9;">
+                    <div style="font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Age / Gender</div>
+                    <div style="font-size: 11px; font-weight: 900; color: #1e293b;">${patientData?.age || patientData?.personal?.age || 'N/A'}Y / ${patientData?.gender || patientData?.personal?.gender || 'N/A'}</div>
                   </div>
-                  <div class="info-item">
-                    <span class="info-label">Date & Priority</span>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <span class="info-value">${new Date().toLocaleDateString('en-GB')}</span>
-                      <span class="priority-badge priority-${priority}">${priority}</span>
-                    </div>
+                  <div style="padding: 12px 15px; background: white;">
+                    <div style="font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Applied Path (Priority: ${priority.toUpperCase()})</div>
+                    <div style="font-size: 11px; font-weight: 900; color: #1e293b;">${new Date().toLocaleDateString('en-GB')} <span style="color: #64748b; font-weight: 700; margin-left: 4px;">${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span></div>
                   </div>
                 </div>
 
@@ -397,27 +383,22 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
               }
               .container {
                 width: 210mm;
-                height: 296mm;
+                min-height: 297mm;
                 margin: 0 auto;
-                padding: 10mm 15mm 10mm 25mm;
+                padding: 10mm 15mm 10mm 20mm;
                 box-sizing: border-box;
                 display: flex;
                 flex-direction: column;
                 background: white;
-                overflow: hidden;
               }
-              .content { flex: 1; }
-              .title { color: #1e40af; margin: 0 0 20px 0; font-size: 22px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; text-align: center; }
-              .info-row { display: flex; justify-content: space-between; margin-bottom: 25px; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #eef2f6; }
-              .info-column { display: flex; flex-direction: column; gap: 4px; }
-              .info-label { font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
-              .info-value { font-size: 13px; font-weight: 700; color: #1e293b; }
-              table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-              th { text-align: left; font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; padding: 12px; border-bottom: 2.5px solid #f1f5f9; }
-              td { padding: 15px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
-              .test-name { font-weight: 700; color: #1e293b; }
-              .amount { font-weight: 700; text-align: right; }
-              .summary-box { margin-left: auto; width: 250px; margin-top: 30px; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #eef2f6; }
+              .content { 
+                flex: 1; 
+                display: flex;
+                flex-direction: column;
+              }
+              .print-footer { page-break-inside: avoid; margin-top: auto; }
+              .info-row { page-break-inside: avoid; display: flex; justify-content: space-between; margin-bottom: 25px; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #eef2f6; }
+              .summary-box { page-break-inside: avoid; margin-left: auto; width: 250px; margin-top: 30px; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #eef2f6; }
               .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
               .summary-total { border-top: 2px solid #eef2f6; margin-top: 10px; padding-top: 10px; color: #16a34a; font-size: 18px; font-weight: 900; }
             </style>
@@ -428,16 +409,16 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
               <div class="content">
                 <h1 class="title">Billing Receipt</h1>
                 
-                <div class="info-row">
-                  <div class="info-column">
-                    <span class="info-label">Patient Details</span>
-                    <span class="info-value">${patientData?.personal?.name || patientData?.name || 'N/A'}</span>
-                    <span style="font-size: 11px; color: #64748b;">MRN: ${patientData?.mrn || 'N/A'}</span>
+                <div style="margin: 20px 0; display: grid; grid-template-columns: repeat(2, 1fr); border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                  <div style="padding: 12px 15px; background: white; border-right: 1px solid #f1f5f9;">
+                    <div style="font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Bill To</div>
+                    <div style="font-size: 11px; font-weight: 900; color: #1e293b; text-transform: uppercase;">${patientData?.personal?.name || patientData?.name || 'N/A'}</div>
+                    <div style="font-size: 9px; color: #64748b; font-weight: 700;">MRN: ${patientData?.mrn || 'N/A'}</div>
                   </div>
-                  <div class="info-column" style="text-align: right;">
-                    <span class="info-label">Bill Information</span>
-                    <span class="info-value">TOKEN: ${genTokenNumber}</span>
-                    <span style="font-size: 11px; color: #64748b;">Date: ${new Date().toLocaleDateString('en-GB')}</span>
+                  <div style="padding: 12px 15px; background: #f8fafc;">
+                    <div style="font-size: 8px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Billing Metadata</div>
+                    <div style="font-size: 11px; font-weight: 900; color: #1e293b;">TOKEN: ${genTokenNumber}</div>
+                    <div style="font-size: 9px; color: #64748b; font-weight: 700;">${new Date().toLocaleDateString('en-GB')} @ ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</div>
                   </div>
                 </div>
 
@@ -518,7 +499,7 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans pb-24">
-      <div className="max-w-4xl mx-auto p-3 sm:p-6 print:hidden">
+      <div className="max-w-7xl mx-auto p-3 sm:p-6 print:hidden">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
           <div className="flex items-center gap-3 sm:gap-4">
@@ -529,7 +510,7 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
               <ArrowLeft size={20} />
             </button>
             <div>
-              <h1 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2 uppercase tracking-tighter italic">
+              <h1 className="text-lg md:text-xl lg:text-xl font-black text-gray-900 dark:text-white flex items-center gap-2 uppercase tracking-tighter italic">
                 <Beaker className="text-purple-600" size={24} />
                 Lab Request
               </h1>

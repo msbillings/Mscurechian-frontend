@@ -1,94 +1,97 @@
-import { useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
-import toast from 'react-hot-toast';
-import { API_CONFIG } from '@/lib/integrations/config';
+import { useEffect, useRef } from "react";
+import toast from "react-hot-toast";
+import { getSocket, joinSocketRoom } from "@/lib/integrations/api/socket";
 
-export function useVitalsSocket(patientId: string | null, onVitalsUpdate: (vitals: any) => void, doctorId?: string | null) {
-    const socketRef = useRef<Socket | null>(null);
-    const callbackRef = useRef(onVitalsUpdate);
+/**
+ * useVitalsSocket
+ *
+ * Plugs into the shared Socket.IO singleton (lib/integrations/api/socket.ts)
+ * instead of spawning a second raw io() connection. This prevents duplicate
+ * connection attempts, double-counting retries, and WSS errors when the
+ * backend is unreachable.
+ *
+ * The hook safely no-ops when the socket cannot connect (WS_URL missing,
+ * backend down, or max retries exhausted) — real-time features are optional.
+ */
+export function useVitalsSocket(
+  patientId: string | null,
+  onVitalsUpdate: (vitals: any) => void,
+  doctorId?: string | null
+) {
+  const callbackRef = useRef(onVitalsUpdate);
 
-    // Keep callback ref up to date
-    useEffect(() => {
-        callbackRef.current = onVitalsUpdate;
-    }, [onVitalsUpdate]);
+  // Keep the callback ref in sync without triggering effect re-runs.
+  useEffect(() => {
+    callbackRef.current = onVitalsUpdate;
+  }, [onVitalsUpdate]);
 
-    useEffect(() => {
-        if (!patientId) return;
+  useEffect(() => {
+    if (!patientId) return;
 
-        // Connect to WebSocket server using dynamic API config
-        const socketUrl = API_CONFIG.WS_URL;
+    let socketInstance: any = null;
+    let cleanedUp = false;
 
-        const socket = io(socketUrl, {
-            withCredentials: true,
-            transports: ['websocket', 'polling']
-        });
+    const setup = async () => {
+      // Reuse the application-wide singleton — no new connection is created.
+      socketInstance = await getSocket();
 
-        socketRef.current = socket;
+      // If the socket is unavailable (WS_URL missing, max retries hit, etc.)
+      // silently skip — the rest of the page still works without real-time.
+      if (!socketInstance || cleanedUp) return;
 
-        socket.on('connect', () => {
-            console.log('✅ WebSocket connected');
-            // Subscribe to patient updates
-            socket.emit('subscribe-patient', patientId);
+      // ── Vitals subscription ─────────────────────────────────────────────
+      socketInstance.emit("subscribe-patient", patientId);
 
-            // If doctorId is provided, join the doctor's room to receive real-time vital alerts
-            if (doctorId) {
-                console.log(`📡 Joining doctor room: doctor_${doctorId}`);
-                socket.emit('join_room', {
-                    role: 'doctor',
-                    userId: doctorId
-                });
-            }
-        });
+      // ── Doctor room ─────────────────────────────────────────────────────
+      if (doctorId) {
+        console.log(`📡 [VitalsSocket] Joining doctor room: doctor_${doctorId}`);
+        joinSocketRoom({ role: "doctor", userId: doctorId });
+      }
 
-        socket.on('vitals-updated', (data) => {
-            console.log('📡 Received vitals update:', data);
-            if (data.patientId === patientId) {
-                callbackRef.current(data.vitals);
-            }
-        });
+      // ── Event handlers ──────────────────────────────────────────────────
+      const onVitalsUpdated = (data: any) => {
+        if (data?.patientId === patientId) {
+          callbackRef.current(data.vitals);
+        }
+      };
 
-        // Listen for high-priority doctoral vital alerts
-        socket.on('doctoral_vital_alert', (data) => {
-            console.log('🚨 Received high-priority vital alert:', data);
-            if (data.severity === 'CRITICAL') {
-                toast.error(data.message, {
-                    duration: 10000,
-                    icon: '🚨',
-                    style: {
-                        background: '#dc2626',
-                        color: '#fff',
-                        fontWeight: 'bold'
-                    }
-                });
-            } else {
-                toast.error(data.message, {
-                    duration: 6000,
-                    icon: '⚠️',
-                    style: {
-                        background: '#f59e0b',
-                        color: '#fff',
-                        fontWeight: 'bold'
-                    },
-                });
-            }
-        });
+      const onVitalAlert = (data: any) => {
+        console.log("🚨 [VitalsSocket] Vital alert:", data);
+        if (data?.severity === "CRITICAL") {
+          toast.error(data.message, {
+            duration: 10000,
+            icon: "🚨",
+            style: { background: "#dc2626", color: "#fff", fontWeight: "bold" },
+          });
+        } else {
+          toast.error(data.message, {
+            duration: 6000,
+            icon: "⚠️",
+            style: { background: "#f59e0b", color: "#fff", fontWeight: "bold" },
+          });
+        }
+      };
 
-        socket.on('disconnect', () => {
-            console.log('âŒ WebSocket disconnected');
-        });
+      socketInstance.on("vitals-updated", onVitalsUpdated);
+      socketInstance.on("doctoral_vital_alert", onVitalAlert);
 
-        socket.on('connect_error', (error) => {
-            console.error('WebSocket connection error:', error);
-        });
+      // Store cleanup handles on the socket ref for teardown.
+      (socketInstance as any)._vitalsCleanup = () => {
+        socketInstance.off("vitals-updated", onVitalsUpdated);
+        socketInstance.off("doctoral_vital_alert", onVitalAlert);
+        socketInstance.emit("unsubscribe-patient", patientId);
+      };
+    };
 
-        // Cleanup on unmount
-        return () => {
-            if (patientId) {
-                socket.emit('unsubscribe-patient', patientId);
-            }
-            socket.disconnect();
-        };
-    }, [patientId, doctorId]); // Re-connect if patientId or doctorId changes
+    setup();
 
-    return socketRef.current;
+    // ── Cleanup ─────────────────────────────────────────────────────────────
+    return () => {
+      cleanedUp = true;
+      if (socketInstance?._vitalsCleanup) {
+        socketInstance._vitalsCleanup();
+        delete socketInstance._vitalsCleanup;
+      }
+    };
+  }, [patientId, doctorId]);
 }

@@ -30,9 +30,30 @@ if (!apiUrl && typeof window !== "undefined") {
   );
 }
 
+// ─── WS_URL Derivation ────────────────────────────────────────────────────────
+// Converts  https://host/api  →  wss://host
+//           http://host/api   →  ws://host
+// Using a proper protocol swap and stripping only a trailing /api segment.
+function deriveWsUrl(httpUrl: string): string {
+  try {
+    const url = new URL(httpUrl);
+    // Swap protocol: https → wss, http → ws
+    url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+    // Remove trailing /api path segment only
+    url.pathname = url.pathname.replace(/\/api\/?$/, "") || "/";
+    return url.toString().replace(/\/$/, ""); // strip trailing slash
+  } catch {
+    // Fallback for non-URL strings (should not happen)
+    return httpUrl
+      .replace(/\/api\/?$/, "")
+      .replace(/^https:/, "wss:")
+      .replace(/^http:/, "ws:");
+  }
+}
+
 export const API_CONFIG = {
   // NEXT_PUBLIC_* vars are baked in at build time — set them on the SERVER before building.
   BASE_URL: apiUrl || "",
-  WS_URL: apiUrl ? apiUrl.replace("/api", "").replace("http", "ws") : "", // Derive from API URL
+  WS_URL: apiUrl ? deriveWsUrl(apiUrl) : "",
   TIMEOUT: 10000,
 };
