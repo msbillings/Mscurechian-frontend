@@ -156,21 +156,31 @@ export const generatePayslipHtml = (data: any) => {
             padding: 0 !important;
           }
         }
+        html, body {
+          height: 100%;
+          margin: 0;
+          padding: 0;
+        }
         body {
           font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
           color: #000;
           line-height: 1.3;
           margin: 0;
-          padding: 8mm;
+          padding: 0;
           background: white;
           font-size: 11px;
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
         }
         .container {
           width: 210mm;
-          min-height: 297mm;
           margin: 0 auto;
           padding: 8mm;
           box-sizing: border-box;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
         }
         .header {
           text-align: center;
@@ -658,16 +668,18 @@ export const generatePayslipHtml = (data: any) => {
           </table>
         </div>
 
-        <!-- Footer -->
-        <div class="footer" style="font-size: 8.4px;">
-          <p>TDS Deducted Upto ${monthName} : Rs. Nil</p>
-          <p>This is Computer Generated Sheet, does not require Signature.</p>
-        </div>
-
-        <!-- Signatory -->
-        <div class="signatory">
-          <div class="signatory-box">
-            <div class="signatory-text">Authorised Signatory</div>
+        <!-- Footer & Signatory (Pushed to bottom) -->
+        <div style="margin-top: auto;">
+          <div class="footer" style="font-size: 8.4px;">
+            <p>TDS Deducted Upto ${monthName} : Rs. Nil</p>
+            <p>This is Computer Generated Sheet, does not require Signature.</p>
+          </div>
+  
+          <!-- Signatory -->
+          <div class="signatory">
+            <div class="signatory-box">
+              <div class="signatory-text">Authorised Signatory</div>
+            </div>
           </div>
         </div>
       </div>
@@ -700,20 +712,30 @@ export const generateClinicalReceiptHtml = (data: any) => {
             -webkit-print-color-adjust: exact;
           }
         }
+        html, body {
+          height: 100%;
+          margin: 0;
+          padding: 0;
+        }
         body {
           font-family: 'Inter', sans-serif;
           color: #1e293b;
           line-height: 1.3;
           margin: 0;
-          padding: 4px;
+          padding: 0;
           background: white;
           font-size: 10px;
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
         }
         .receipt-container {
           width: 100%;
-          margin: 0 auto;
-          display: block;
-          min-height: auto;
+          padding: 4px;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          flex: 1;
         }
         ${headerHtml
       ? ""
@@ -904,8 +926,8 @@ export const generateClinicalReceiptHtml = (data: any) => {
           color: #1e293b;
         }
         .footer-wrapper {
-          margin-top: 8px;
-          padding-top: 5px;
+          margin-top: auto;
+          padding-top: 15px;
         }
         .no-print {
           display: block;
@@ -968,76 +990,64 @@ export const generateClinicalReceiptHtml = (data: any) => {
           </div>
           <div class="bill-meta">
             <div><strong>Date:</strong> ${payment.date ? new Date(payment.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : appointment.date}</div>
+            <div><strong>Time:</strong> ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</div>
             <div><strong>Receipt No:</strong> ${payment.receiptNumber || payment.receiptNo || appointment.appointmentId}</div>
           </div>
         </div>
 
-        <!-- Patient Details -->
-        <div class="section">
-          <div class="section-header">Patient Details</div>
-          <table class="data-grid">
-            <tr>
-              <td class="label">MRN:</td>
-              <td class="value">${patient.mrn}</td>
-              <td class="label">Blood Group:</td>
-              <td class="value">${patient.bloodGroup || "-"}</td>
-            </tr>
-            <tr>
-              <td class="label">Name:</td>
-              <td class="value">${patient.name}</td>
-              <td class="label">DOB:</td>
-              <td class="value">${patient.dob ? patient.dob.split("T")[0] : "-"}</td>
-            </tr>
-            <tr>
-              <td class="label">Age/Gender:</td>
-              <td class="value">${patient.age} Yrs / ${patient.gender}</td>
-              <td class="label">Mobile:</td>
-              <td class="value">${patient.mobile}</td>
-            </tr>
-            ${patient.email ? `<tr>
-              <td class="label">Email:</td>
-              <td class="value">${patient.email}</td>
-              <td class="label">Alt. Contact:</td>
-              <td class="value">${patient.emergencyContact || '-'}</td>
-            </tr>` : (patient.emergencyContact ? `<tr>
-              <td class="label">Alt. Contact:</td>
-              <td colspan="3" class="value">${patient.emergencyContact}</td>
-            </tr>` : '')}
-            <tr>
-              <td class="label">Address:</td>
-              <td colspan="3" class="value">${patient.address || "-"}</td>
-            </tr>
-          </table>
-        </div>
+        <!-- Patient & Appointment Context - High Fidelity Grid -->
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px;">
+            <!-- Patient Identification Card -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 0; right: 0; background: #1e293b; color: white; padding: 2px 8px; border-bottom-left-radius: 8px; font-size: 8px; font-weight: 900; letter-spacing: 0.5px;">PATIENT IDENTITY</div>
+                <div style="font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    ${patient.name}
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div>
+                        <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">MRN / Mobile</div>
+                        <div style="font-size: 10px; font-weight: 700; color: #1e293b;">${patient.mrn} / ${patient.mobile}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Age / Gender</div>
+                        <div style="font-size: 10px; font-weight: 700; color: #1e293b;">${patient.age} / ${patient.gender}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Blood Group</div>
+                        <div style="font-size: 10px; font-weight: 700; color: #e11d48;">${patient.bloodGroup || 'N/A'}</div>
+                    </div>
+                    <div>
+                         <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">DOB</div>
+                         <div style="font-size: 10px; font-weight: 700; color: #1e293b;">${patient.dob ? new Date(patient.dob).toLocaleDateString('en-GB') : 'N/A'}</div>
+                    </div>
+                </div>
+            </div>
 
-        <!-- Appointment Details -->
-        <div class="section">
-          <div class="section-header">Appointment Details</div>
-          <table class="data-grid">
-            <tr>
-              <td class="label">Consulting Doctor:</td>
-              <td class="value">${appointment.doctorName?.toLowerCase().startsWith("dr") ? appointment.doctorName : `Dr. ${appointment.doctorName || "Assigned Physician"}`}</td>
-              <td class="label">${(data.registrationType === "IPD" || data.registrationType === "DISCHARGE") ? "Admission Date:" : "Appointment Date:"}</td>
-              <td class="value">${appointment.date}</td>
-            </tr>
-            <tr>
-              <td class="label">Qualification:</td>
-              <td class="value">${appointment.qualification || "MBBS, DM"}</td>
-              <td class="label">${(data.registrationType === "IPD" || data.registrationType === "DISCHARGE") ? "Admission Time:" : "Appointment Time:"}</td>
-              <td class="value">${formatTime12Hr(appointment.time || "IN QUEUE")}</td>
-            </tr>
-            <tr>
-              <td class="label">Specialization:</td>
-              <td class="value">${appointment.specialization || "General Doctor"}</td>
-              <td class="label">${(data.registrationType === "IPD" || data.registrationType === "DISCHARGE") ? "Admission Type:" : "Visit Type:"}</td>
-              <td class="value">${appointment.type || "Consultation"}</td>
-            </tr>
-            ${appointment.stayDuration ? `
-            <tr>
-               <td class="label">Stay Duration:</td>
-               <td colspan="3" class="value" style="font-weight: 800; color: #1e40af;">${appointment.stayDuration}</td>
-            </tr>` : ""}
-          </table>
+            <!-- Consultant & Schedule Card -->
+            <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px; padding: 12px; position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 0; right: 0; background: #0369a1; color: white; padding: 2px 8px; border-bottom-left-radius: 8px; font-size: 8px; font-weight: 900; letter-spacing: 0.5px;">ENCOUNTER DATA</div>
+                <div style="font-size: 13px; font-weight: 900; color: #0c4a6e; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    ${appointment.doctorName?.toLowerCase().startsWith("dr") ? appointment.doctorName : `Dr. ${appointment.doctorName || "Assigned Physician"}`}
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                     <div>
+                        <div style="font-size: 8px; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px;">Specialization</div>
+                        <div style="font-size: 10px; font-weight: 700; color: #0c4a6e;">${appointment.specialization || "General Physician"}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 8px; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px;">Visit Date</div>
+                        <div style="font-size: 10px; font-weight: 700; color: #0c4a6e;">${appointment.date}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 8px; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px;">Arrival Time</div>
+                        <div style="font-size: 10px; font-weight: 700; color: #0c4a6e;">${formatTime12Hr(appointment.time || new Date())}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 8px; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px;">Engagement</div>
+                        <div style="font-size: 10px; font-weight: 700; color: #0c4a6e;">${appointment.type || "CONSULTATION"}</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Vital Signs -->
@@ -1315,6 +1325,11 @@ export const generatePrescriptionHtml = (data: any) => {
                         body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
                     }
 
+                    html, body {
+                      height: 100%;
+                      margin: 0;
+                      padding: 0;
+                    }
                     body { 
                         font-family: 'Inter', sans-serif; 
                         margin: 0;
@@ -1323,15 +1338,19 @@ export const generatePrescriptionHtml = (data: any) => {
                         font-size: 11px;
                         line-height: 1.4;
                         color: #111;
+                        display: flex;
+                        flex-direction: column;
+                        min-height: 100vh;
                     }
 
                     .container {
                         width: 210mm;
-                        min-height: 297mm;
                         margin: 0 auto;
                         padding: 15mm 20mm;
-                        position: relative;
                         box-sizing: border-box;
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
                         border: 1px solid #e5e7eb;
                     }
 
@@ -1390,8 +1409,14 @@ export const generatePrescriptionHtml = (data: any) => {
                     .follow-up { margin-top: 30px; padding-top: 15px; border-top: 1px dashed #eee; font-size: 11px; }
                     .follow-up strong { font-weight: 700; text-transform: uppercase; font-size: 9px; color: #777; margin-right: 5px; }
 
-                    /* Footer */
-                    .footer { position: absolute; bottom: 15mm; left: 20mm; right: 20mm; display: flex; justify-content: space-between; align-items: flex-end; }
+                    /* Footer (Pushed to bottom) */
+                    .footer { 
+                        margin-top: auto;
+                        padding-top: 30px;
+                        display: flex; 
+                        justify-content: space-between; 
+                        align-items: flex-end; 
+                    }
                     .footer-l span { display: block; font-size: 8px; color: #999; line-height: 1.5; }
                     
                     .sig-block { text-align: center; }
@@ -1609,49 +1634,30 @@ export const generateLabTokenHtml = (data: any) => {
                 @page { size: A4; margin: 0; }
                 body { margin: 0; padding: 12mm 15mm 12mm 25mm; }
               }
-              body { font-family: Arial, sans-serif; background: white; }
-              .header { text-align: center; border-bottom: 4px solid #9333ea; padding-bottom: 10px; margin-bottom: 20px; }
-              .token-badge { background: #1f2937; color: white; padding: 8px 16px; border-radius: 8px; display: inline-block; }
-              table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-              th, td { border: 1px solid #e5e7eb; padding: 10px; text-align: left; }
-              th { background: #f9fafb; font-weight: bold; }
-              .priority { padding: 4px 12px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
-              .priority-stat { background: #dc2626; color: white; }
-              .priority-urgent { background: #f97316; color: white; }
-              .priority-routine { background: #2563eb; color: white; }
-              .no-print {
-                position: sticky;
-                top: 0;
-                background: white;
-                padding: 10px;
-                z-index: 1000;
-                border-bottom: 2px solid #9333ea;
-                text-align: center;
+              html, body {
+                height: 100%;
+                margin: 0;
+                padding: 0;
               }
-              .return-btn {
-                padding: 10px 24px;
-                background-color: #9333ea;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                font-weight: bold;
-                cursor: pointer;
-                text-decoration: none;
-                font-family: inherit;
-                width: 100%;
-                max-width: 400px;
-                font-size: 14px;
-                text-transform: uppercase;
-                letter-spacing: 0.1em;
+              body { 
+                font-family: Arial, sans-serif; 
+                background: white;
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
               }
               .container {
                 width: 210mm;
-                min-height: 297mm;
                 margin: 0 auto;
                 padding: 15mm 20mm;
                 box-sizing: border-box;
+                flex: 1;
+                display: flex;
+                flex-direction: column;
                 border: 1px solid #e5e7eb;
-                position: relative;
+              }
+              .footer-push {
+                margin-top: auto;
               }
               @media print {
                 .no-print { display: none !important; }
@@ -1738,18 +1744,20 @@ export const generateLabTokenHtml = (data: any) => {
       : ""
     }
 
-              <div style="text-align: right; margin-top: 50px;">
-                <div style="width: 200px; border-bottom: 1.5px solid #000; margin-left: auto; margin-bottom: 6px;"></div>
-                <p style="margin: 0; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #475569;">Medical Officer Signature</p>
-              </div>
+              <div class="footer-push">
+                <div style="text-align: right; margin-top: 50px;">
+                  <div style="width: 200px; border-bottom: 1.5px solid #000; margin-left: auto; margin-bottom: 6px;"></div>
+                  <p style="margin: 0; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #475569;">Medical Officer Signature</p>
+                </div>
 
-              ${footerHtml ||
-    `
-              <div style="border-top: 1px solid #e5e7eb; margin-top: 40px; padding-top: 8px; text-align: center; font-size: 8px; color: #9ca3af;">
-                <p style="margin: 0;">Generated by MsCureChain • ${new Date().toLocaleDateString('en-GB')} at ${formatTime12Hr(new Date())}</p>
+                ${footerHtml ||
+      `
+                <div style="border-top: 1px solid #e5e7eb; margin-top: 40px; padding-top: 8px; text-align: center; font-size: 8px; color: #9ca3af;">
+                  <p style="margin: 0;">Generated by MsCureChain • ${new Date().toLocaleDateString('en-GB')} at ${formatTime12Hr(new Date())}</p>
+                </div>
+                `
+      }
               </div>
-              `
-    }
             </div>
           </body>
           </html>
@@ -1787,7 +1795,20 @@ export const generateQualityReportHtml = (data: any) => {
           body { -webkit-print-color-adjust: exact; }
           .no-print { display: none !important; }
         }
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1e293b; line-height: 1.3; font-size: 11px; }
+        html, body {
+          height: 100%;
+          margin: 0;
+          padding: 0;
+        }
+        body { 
+          font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+          color: #1e293b; 
+          line-height: 1.3; 
+          font-size: 11px; 
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
+        }
         .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
         .title { font-size: 20px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin: 0; }
         .subtitle { font-size: 12px; color: #64748b; margin-top: 2px; font-weight: 600; text-transform: uppercase; }
@@ -1956,9 +1977,11 @@ export const generateQualityReportHtml = (data: any) => {
         <div class="sign-line">Medical Superintendent</div>
       </div>
 
-      ${footerHtml || `<div class="footer">
-        CureChain Hospital Management System | Generated on ${new Date().toLocaleDateString('en-GB')} at ${formatTime12Hr(new Date())}
-      </div>`}
+      <div style="margin-top: auto;">
+        ${footerHtml || `<div class="footer">
+          CureChain Hospital Management System | Generated on ${new Date().toLocaleDateString('en-GB')} at ${formatTime12Hr(new Date())}
+        </div>`}
+      </div>
     </body>
     </html>
   `;

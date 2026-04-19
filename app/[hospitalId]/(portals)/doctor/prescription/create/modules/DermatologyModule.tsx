@@ -108,7 +108,14 @@ interface DermatologyModuleProps {
 }
 
 export const DermatologyModule: React.FC<DermatologyModuleProps> = ({ formData, setFormData }) => {
-    const derm: DermatologyData = formData.dermatologyData ?? INITIAL_DERMATOLOGY_DATA;
+    const dermData = formData.dermatologyData || {};
+    const derm: DermatologyData = {
+        ...INITIAL_DERMATOLOGY_DATA,
+        ...dermData,
+        location: Array.isArray(dermData.location) ? dermData.location : (dermData.location ? [dermData.location] : []),
+        color: Array.isArray(dermData.color) ? dermData.color : (dermData.color ? [dermData.color] : []),
+        surfaceChanges: Array.isArray(dermData.surfaceChanges) ? dermData.surfaceChanges : (dermData.surfaceChanges ? [dermData.surfaceChanges] : []),
+    };
 
     const update = (patch: Partial<DermatologyData>) =>
         setFormData((p: any) => ({
@@ -208,7 +215,7 @@ export const DermatologyModule: React.FC<DermatologyModuleProps> = ({ formData, 
                         </label>
                         <div className="flex flex-wrap gap-2">
                             {BODY_LOCATIONS.map((loc) => {
-                                const active = derm.location.includes(loc);
+                                const active = derm.location?.includes(loc);
                                 return (
                                     <button
                                         key={loc}
@@ -264,7 +271,7 @@ export const DermatologyModule: React.FC<DermatologyModuleProps> = ({ formData, 
                         </label>
                         <div className="flex flex-wrap gap-2">
                             {COLORS.map((col) => {
-                                const active = derm.color.includes(col);
+                                const active = derm.color?.includes(col);
                                 return (
                                     <button
                                         key={col}
@@ -289,7 +296,7 @@ export const DermatologyModule: React.FC<DermatologyModuleProps> = ({ formData, 
                         </label>
                         <div className="flex flex-wrap gap-3">
                             {SURFACE_CHANGES.map((sc) => {
-                                const checked = derm.surfaceChanges.includes(sc);
+                                const checked = derm.surfaceChanges?.includes(sc);
                                 return (
                                     <label key={sc} className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 cursor-pointer transition-all select-none ${checked
                                         ? 'bg-indigo-50 border-indigo-400 text-indigo-700'
@@ -503,7 +510,7 @@ export const DermatologyModule: React.FC<DermatologyModuleProps> = ({ formData, 
                         {derm.lesionType && (
                             <span className="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full text-[9px] font-black uppercase">{derm.lesionType}</span>
                         )}
-                        {derm.location.map((l) => (
+                        {derm.location?.map((l) => (
                             <span key={l} className="px-2.5 py-1 bg-orange-100 text-orange-800 rounded-full text-[9px] font-black uppercase">{l}</span>
                         ))}
                         {derm.distribution && (

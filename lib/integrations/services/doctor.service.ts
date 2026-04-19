@@ -17,6 +17,7 @@ export interface DoctorDashboard {
     id: string;
     patientName: string;
     patientId: string;
+    mrn?: string;
     time: string;
     type: string;
     status: string;

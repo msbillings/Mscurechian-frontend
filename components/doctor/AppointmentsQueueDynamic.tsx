@@ -17,6 +17,7 @@ interface Appointment {
   isPaused?: boolean;
   createdAt?: string;
   date?: string;
+  mrn?: string;
 }
 
 interface QueueProps {
@@ -408,8 +409,10 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
               {/* Desktop Table Header (Visible on sm and up) */}
               <div className="hidden sm:grid grid-cols-12 gap-4 px-4 py-2 border-b border-border-theme text-[10px] font-black text-muted uppercase tracking-widest">
                 <div className="col-span-1 text-center">#</div>
-                <div className="col-span-7">Patient Name & Type</div>
-                <div className="col-span-4 text-right pr-6">Actions</div>
+                <div className="col-span-3 lg:col-span-4">Patient Name & Type</div>
+                <div className="col-span-3 text-center">MRN Number</div>
+                <div className="col-span-2 text-center">Schedule</div>
+                <div className="col-span-3 lg:col-span-2 text-right pr-6">Actions</div>
               </div>
 
               {sortedAppointments.map((apt, idx) => {
@@ -422,55 +425,65 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
                 return (
                   <React.Fragment key={apt.id}>
                     {/* Desktop View Card (sm and up) */}
-                    <div className="hidden sm:flex items-center gap-4 p-4 bg-secondary-theme dark:bg-secondary-theme rounded-xl hover:opacity-80 group">
-                      <div className="shrink-0 w-10 h-10 bg-primary-theme rounded-full flex items-center justify-center text-primary-theme-foreground font-black text-sm">
-                        {idx + 1}
+                    <div className="hidden sm:grid grid-cols-12 items-center gap-4 p-4 bg-secondary-theme dark:bg-secondary-theme rounded-xl hover:opacity-100 transition-all border border-transparent hover:border-primary-theme/20 hover:shadow-md group">
+                      <div className="col-span-1 flex justify-center">
+                        <div className="shrink-0 w-8 h-8 lg:w-10 lg:h-10 bg-primary-theme rounded-full flex items-center justify-center text-primary-theme-foreground font-black text-xs">
+                          {idx + 1}
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
+                      
+                      <div className="col-span-3 lg:col-span-4 min-w-0">
                         <h4 className="font-bold text-foreground dark:text-foreground text-sm truncate">
                           {apt.patientName}
                         </h4>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap text-[10px] sm:text-xs">
-                          <span className="text-muted">{apt.type}</span>
-                          {idx > 0 && (
-                            <>
-                              <span className="text-border-theme">•</span>
-                              <span className="font-bold text-orange-600 flex items-center gap-1">
-                                <Clock size={12} /> Wait: {waitTime}
-                              </span>
-                            </>
-                          )}
-                          <span className="text-border-theme">•</span>
-                          <span className={`font-bold ${apt.status === 'confirmed' ? 'text-green-600' :
-                            apt.status === 'Booked' ? 'text-blue-600' : 'text-muted'
+                        <div className="flex items-center gap-2 mt-1 flex-wrap text-[10px] md:text-[11px]">
+                          <span className="text-muted uppercase font-bold text-[9px] tracking-tighter bg-muted/10 px-1.5 rounded">{apt.type}</span>
+                          <span className="text-border-theme opacity-30">•</span>
+                          <span className={`font-bold ${apt.status?.toLowerCase() === 'confirmed' ? 'text-green-600' :
+                            apt.status?.toLowerCase() === 'booked' ? 'text-blue-600' : 'text-muted'
                             }`}>
                             {apt.status}
                           </span>
                         </div>
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-bold text-foreground">{apt.time}</p>
-                        <p className="text-[10px] text-muted font-bold mt-0.5">
-                          {apt.date ? new Date(apt.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : "N/A"}
-                        </p>
-                        <p className="text-xs text-muted">~{consultationDuration || 15}min</p>
+
+                      <div className="col-span-3 flex flex-col items-center justify-center">
+                        <div className="px-3 py-1 bg-primary-theme/5 border border-primary-theme/10 rounded-lg">
+                          <p className="text-[11px] font-black text-primary-theme tracking-wider">{apt.mrn || 'N/A'}</p>
+                        </div>
+                        {idx > 0 && (
+                          <div className="mt-1 flex items-center gap-1.5">
+                            <Clock size={10} className="text-orange-500" />
+                            <span className="text-[10px] font-bold text-orange-600">Wait: {waitTime}</span>
+                          </div>
+                        )}
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setAppointmentToDelete(apt.id);
-                        }}
-                        className="shrink-0 p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg cursor-pointer transition-colors"
-                        title="Remove Appointment"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                      <button
-                        onClick={() => router.push(`/doctor/appointment/${apt.id}`)}
-                        className="shrink-0 px-4 py-2 bg-primary-theme hover:opacity-90 text-primary-theme-foreground text-xs font-bold rounded-lg flex items-center gap-2 cursor-pointer"
-                      >
-                        <CheckCircle2 size={14} /> Start
-                      </button>
+
+                      <div className="col-span-2 text-center pointer-events-none">
+                        <p className="text-xs font-black text-foreground">{apt.time}</p>
+                        <p className="text-[9px] text-muted font-bold mt-0.5 opacity-70">
+                          {apt.date ? new Date(apt.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : "N/A"}
+                        </p>
+                      </div>
+
+                      <div className="col-span-3 lg:col-span-2 flex items-center justify-end gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAppointmentToDelete(apt.id);
+                          }}
+                          className="shrink-0 p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg cursor-pointer transition-colors"
+                          title="Remove Appointment"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => router.push(`/doctor/appointment/${apt.id}`)}
+                          className="shrink-0 px-3 lg:px-4 py-2 bg-primary-theme hover:opacity-90 text-primary-theme-foreground text-[10px] lg:text-xs font-black uppercase rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                        >
+                          <CheckCircle2 size={14} /> Start
+                        </button>
+                      </div>
                     </div>
 
                     {/* Mobile Table Row (xs only) */}
@@ -483,6 +496,8 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
                           <div className="min-w-0">
                             <p className="text-[12px] font-black text-foreground truncate">{apt.patientName}</p>
                             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap text-[9px]">
+                              <span className="text-primary-theme font-black bg-primary-theme/10 px-1 rounded">{apt.mrn || 'NO MRN'}</span>
+                              <span className="text-border-theme">•</span>
                               <span className="text-muted font-bold truncate max-w-[60px]">{apt.type}</span>
                               <span className="text-border-theme">•</span>
                               <span className={`font-black uppercase tracking-wider ${apt.status?.toLowerCase() === 'confirmed' ? 'text-green-600' :

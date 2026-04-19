@@ -201,7 +201,6 @@ function HRDoctorDetailPage() {
             )}
             <h2 className="text-xl font-bold mb-1 text-gray-900 dark:text-white">{doctor.name}</h2>
             <p className="text-blue-600 font-medium mb-2 text-sm">{doctor.designation || 'Consultant'}</p>
-            <p className="text-xs text-gray-500 border-t border-gray-100 pt-3 mt-3">{doctor.department || 'Clinical faculty'}</p>
           </div>
 
           <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
