@@ -65,7 +65,7 @@ export default function HelpdeskProfilePage() {
     };
 
     return (
-        <div className="max-w-7xl mx-auto space-y-5 pb-20 pt-6 animate-in fade-in duration-500 px-4 sm:px-0">
+        <div className="max-w-7xl mx-auto space-y-5 pb-20 pt-6 animate-in fade-in duration-500 px-0 md:px-4 lg:px-4">
 
             {/* PROFILE HEADER */}
             <div className="relative group overflow-hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-7 transition-all hover:shadow-lg">

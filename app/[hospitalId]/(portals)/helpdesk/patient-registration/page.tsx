@@ -179,49 +179,7 @@ export default function PatientRegistration() {
         setPopup({ field, match, x, y });
     }, []);
 
-
-
-
-    useEffect(() => {
-        const initialType = searchParams.get('type') as 'OPD' | 'IPD' || 'OPD';
-        setFormData(prev => ({ ...prev, registrationType: initialType }));
-
-        const loadInit = async () => {
-            try {
-                const [docsData, bedsData] = await Promise.all([
-                    helpdeskService.getDoctors(),
-                    ipdService.getBeds({ status: 'Vacant' })
-                ]);
-                setDoctors(docsData);
-                setBeds(bedsData);
-                const depts = Array.from(new Set(docsData.map(d => d.specialty).filter(Boolean)));
-                setDepartments(depts as string[]);
-            } catch {
-                toast.error("Failed to load initial data");
-            } finally {
-                setLoadingInitial(false);
-            }
-        };
-        loadInit();
-    }, [searchParams]);
-
-    useEffect(() => {
-        if (formData.dob) {
-            const birthDate = new Date(formData.dob);
-            const today = new Date();
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const monthDiff = today.getMonth() - birthDate.getMonth();
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
-            if (age >= 0) setFormData(prev => ({ ...prev, age: age.toString() }));
-        }
-    }, [formData.dob]);
-
-    useEffect(() => {
-        if (formData.honorific === 'Mr') setFormData(prev => ({ ...prev, gender: 'male' }));
-        else if (formData.honorific === 'Mrs' || formData.honorific === 'Ms') setFormData(prev => ({ ...prev, gender: 'female' }));
-    }, [formData.honorific]);
-
-    const validateField = (name: string, value: string): string => {
+    const validateField = useCallback((name: string, value: string): string => {
         const trimmed = value.trim();
         switch (name) {
             case 'name':
@@ -267,7 +225,58 @@ export default function PatientRegistration() {
             default:
                 return '';
         }
-    };
+    }, [formData.dob]);
+
+
+
+
+    useEffect(() => {
+        const initialType = searchParams.get('type') as 'OPD' | 'IPD' || 'OPD';
+        setFormData(prev => ({ ...prev, registrationType: initialType }));
+
+        const loadInit = async () => {
+            try {
+                const [docsData, bedsData] = await Promise.all([
+                    helpdeskService.getDoctors(),
+                    ipdService.getBeds({ status: 'Vacant' })
+                ]);
+                setDoctors(docsData);
+                setBeds(bedsData);
+                const depts = Array.from(new Set(docsData.map(d => d.specialty).filter(Boolean)));
+                setDepartments(depts as string[]);
+            } catch {
+                toast.error("Failed to load initial data");
+            } finally {
+                setLoadingInitial(false);
+            }
+        };
+        loadInit();
+    }, [searchParams]);
+
+    useEffect(() => {
+        if (formData.dob) {
+            const birthDate = new Date(formData.dob);
+            if (isNaN(birthDate.getTime())) return;
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
+            
+            if (age >= 0 && age.toString() !== formData.age) {
+                const newAgeValue = age.toString();
+                setFormData(prev => ({ ...prev, age: newAgeValue }));
+                if (touched.age) {
+                    setErrors(prev => ({ ...prev, age: validateField('age', newAgeValue) }));
+                }
+            }
+        }
+    }, [formData.dob, touched.age, validateField, formData.age]);
+
+    useEffect(() => {
+        if (formData.honorific === 'Mr') setFormData(prev => ({ ...prev, gender: 'male' }));
+        else if (formData.honorific === 'Mrs' || formData.honorific === 'Ms') setFormData(prev => ({ ...prev, gender: 'female' }));
+    }, [formData.honorific]);
+
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -291,17 +300,28 @@ export default function PatientRegistration() {
             const ageNum = parseInt(processedValue);
             if (!isNaN(ageNum) && ageNum >= 0 && ageNum <= 125) {
                 const birthYear = new Date().getFullYear() - ageNum;
-                setFormData(prev => ({ ...prev, age: processedValue, dob: `${birthYear}-01-01` }));
+                const newDob = `${birthYear}-01-01`;
+                setFormData(prev => ({ ...prev, age: processedValue, dob: newDob }));
+                
+                // Logic: updating age directly updates DOB, so sync both errors immediately
+                setErrors(prev => {
+                    const updated = { ...prev };
+                    if (touched.age || name === 'age') updated.age = validateField('age', processedValue);
+                    if (touched.dob) updated.dob = validateField('dob', newDob);
+                    return updated;
+                });
             } else {
                 setFormData(prev => ({ ...prev, age: processedValue }));
+                if (touched.age) {
+                    setErrors(prev => ({ ...prev, age: validateField('age', processedValue) }));
+                }
             }
         } else {
             setFormData(prev => ({ ...prev, [name]: processedValue }));
-        }
-
-        if (touched[name]) {
-            const error = validateField(name, processedValue);
-            setErrors(prev => ({ ...prev, [name]: error }));
+            if (touched[name]) {
+                const error = validateField(name, processedValue);
+                setErrors(prev => ({ ...prev, [name]: error }));
+            }
         }
 
         // Spell-check eligible fields
@@ -895,4 +915,3 @@ function FormInput({ label, required, component, error }: any) {
         </div>
     );
 }
-

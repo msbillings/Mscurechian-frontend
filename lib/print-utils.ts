@@ -1630,6 +1630,8 @@ export const generateLabTokenHtml = (data: any) => {
             <title>Lab Token</title>
             <meta charset="UTF-8">
             <style>
+              @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+              
               @media print {
                 @page { size: A4; margin: 0; }
                 body { margin: 0; padding: 12mm 15mm 12mm 25mm; }
@@ -1640,11 +1642,12 @@ export const generateLabTokenHtml = (data: any) => {
                 padding: 0;
               }
               body { 
-                font-family: Arial, sans-serif; 
+                font-family: 'Inter', Arial, sans-serif; 
                 background: white;
                 display: flex;
                 flex-direction: column;
                 min-height: 100vh;
+                color: #1e293b;
               }
               .container {
                 width: 210mm;
@@ -1654,13 +1657,101 @@ export const generateLabTokenHtml = (data: any) => {
                 flex: 1;
                 display: flex;
                 flex-direction: column;
-                border: 1px solid #e5e7eb;
               }
+              
+              table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin-top: 15px;
+                border-radius: 8px;
+                overflow: hidden;
+              }
+              th { 
+                text-align: left; 
+                padding: 14px 10px; 
+                border-bottom: 2.5px solid #9333ea; 
+                color: #4b5563; 
+                font-size: 11px; 
+                font-weight: 800;
+                text-transform: uppercase; 
+                letter-spacing: 1px;
+                background-color: #fdfaff;
+              }
+              td { 
+                padding: 14px 10px; 
+                border-bottom: 1.5px solid #f1f5f9; 
+                font-size: 12px; 
+                color: #334155;
+                vertical-align: middle;
+              }
+              th:nth-child(1), td:nth-child(1) { width: 40px; }
+              th:nth-child(2), td:nth-child(2) { font-weight: 700; }
+              th:nth-child(3), td:nth-child(3) { width: 130px; }
+              th:nth-child(4), td:nth-child(4) { width: 140px; }
+              th:nth-child(5), td:nth-child(5) { text-align: right; width: 120px; font-weight: 700; }
+
+              .priority {
+                display: inline-block;
+                padding: 4px 12px;
+                border-radius: 6px;
+                font-size: 11px;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-top: 8px;
+              }
+              .priority-urgent { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+              .priority-routine { background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; }
+              
+              .token-badge {
+                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                padding: 14px 24px;
+                border-radius: 14px;
+                border: 1px solid #e2e8f0;
+                text-align: center;
+                min-width: 120px;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+              }
+              .token-label {
+                font-size: 10px;
+                font-weight: 800;
+                color: #94a3b8;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                margin: 0;
+              }
+              .token-number {
+                font-size: 22px;
+                font-weight: 900;
+                color: #1e40af;
+                margin: 4px 0 0;
+                letter-spacing: 1px;
+              }
+
+              .return-btn {
+                padding: 10px 24px;
+                background-color: #000;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-weight: bold;
+                cursor: pointer;
+                text-decoration: none;
+                font-family: inherit;
+                width: 100%;
+                max-width: 400px;
+                font-size: 14px;
+                text-transform: uppercase;
+                letter-spacing: 0.1em;
+              }
+
               .footer-push {
                 margin-top: auto;
               }
+
               @media print {
                 .no-print { display: none !important; }
+                .container { border: none; }
               }
             </style>
           </head>
@@ -1688,26 +1779,26 @@ export const generateLabTokenHtml = (data: any) => {
               `
     }
 
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 16px; background: #fff; border: 1.5px solid #f1f5f9; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
                   <div>
-                      <h1 style="color: #1e40af; margin: 0; font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">LAB REQUISITION</h1>
-                      <p style="margin: 4px 0; font-size: 11px;"><strong>Date:</strong> ${new Date(labToken.createdAt).toLocaleDateString("en-GB")}</p>
+                      <h1 style="color: #1e40af; margin: 0; font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">LAB REQUISITION</h1>
+                      <p style="margin: 6px 0; font-size: 12px; color: #64748b;"><strong>Date:</strong> ${new Date(labToken.createdAt).toLocaleDateString("en-GB")}</p>
                       <span class="priority priority-${priority}">${priority}</span>
                   </div>
-                  <div class="token-badge" style="text-align: center; min-width: 100px;">
-                      <p style="margin: 0; font-size: 10px; opacity: 0.7; color: white;">TOKEN</p>
-                      <p style="margin: 0; font-size: 24px; font-weight: bold; color: white;">${labToken.tokenNumber}</p>
+                  <div class="token-badge">
+                      <p class="token-label">TOKEN</p>
+                      <p class="token-number">${labToken.tokenNumber}</p>
                   </div>
               </div>
               
-              <div style="background: #f9fafb; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
-                <p style="margin: 4px 0;"><strong>Patient:</strong> ${patientName}</p>
-                <p style="margin: 4px 0;"><strong>Age/Gender:</strong> ${ageDisplay} / ${genderDisplay}</p>
-                <p style="margin: 4px 0;"><strong>MRN:</strong> ${patient.mrn || "N/A"}</p>
-                <p style="margin: 4px 0;"><strong>Ordering Physician:</strong> ${formatDoctorName(doctor.name)}</p>
+              <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 24px; border: 1px solid #e2e8f0; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <p style="margin: 0; font-size: 13px;"><strong>Patient:</strong> <span style="margin-left: 8px; color: #1e293b; font-weight: 600;">${patientName}</span></p>
+                <p style="margin: 0; font-size: 13px;"><strong>Age/Gender:</strong> <span style="margin-left: 8px; color: #1e293b;">${ageDisplay} / ${genderDisplay}</span></p>
+                <p style="margin: 0; font-size: 13px;"><strong>MRN:</strong> <span style="margin-left: 8px; color: #1e293b; font-family: monospace; font-weight: 700;">${patient.mrn || "N/A"}</span></p>
+                <p style="margin: 0; font-size: 13px;"><strong>Ordering Physician:</strong> <span style="margin-left: 8px; color: #1e293b;">${formatDoctorName(doctor.name)}</span></p>
               </div>
 
-              <h3 style="color: #9333ea; font-size: 14px; margin-bottom: 12px;">CLINICAL INVESTIGATIONS</h3>
+              <h3 style="color: #9333ea; font-size: 15px; margin-bottom: 8px; font-weight: 800; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">CLINICAL INVESTIGATIONS</h3>
               <table>
                 <thead>
                   <tr>
@@ -1715,7 +1806,7 @@ export const generateLabTokenHtml = (data: any) => {
                     <th>Test Name</th>
                     <th>Category</th>
                     <th>Instructions</th>
-                    <th style="text-align: right;">Price</th>
+                    <th>Price</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1725,10 +1816,10 @@ export const generateLabTokenHtml = (data: any) => {
         (test: any, idx: number) => `
                     <tr>
                       <td>${idx + 1}</td>
-                      <td style="font-weight: bold;">${test.name}</td>
-                      <td>${test.category}</td>
-                      <td style="font-style: italic; color: #6b7280;">${test.instructions || "Standard"}</td>
-                      <td style="text-align: right; font-weight: 600;">Rupees ${(parseFloat(String(test.price || test.testPrice || test.amount || test.test?.price || test.testId?.price || 0)) || 0).toFixed(2)}</td>
+                      <td>${test.name}</td>
+                      <td>${test.category || "N/A"}</td>
+                      <td style="font-style: italic; color: #64748b;">${test.instructions || "Standard Procedures"}</td>
+                      <td>Rupees ${(parseFloat(String(test.price || test.testPrice || test.amount || test.test?.price || test.testId?.price || 0)) || 0).toFixed(2)}</td>
                     </tr>
                   `,
       )
@@ -1737,9 +1828,9 @@ export const generateLabTokenHtml = (data: any) => {
               </table>
 
               ${notes
-      ? `<div style="background: #fef3c7; padding: 12px; border-left: 4px solid #f59e0b; margin: 16px 0;">
-                <p style="margin: 0; font-weight: bold; font-size: 12px;">Physician Remarks:</p>
-                <p style="margin: 4px 0 0 0; font-style: italic;">${notes}</p>
+      ? `<div style="background: #fdfaff; padding: 16px; border-left: 4px solid #9333ea; margin: 24px 0; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0; font-weight: 800; font-size: 13px; color: #9333ea; text-transform: uppercase; letter-spacing: 0.5px;">Physician Remarks:</p>
+                <p style="margin: 8px 0 0 0; font-style: italic; color: #475569; line-height: 1.5;">${notes}</p>
               </div>`
       : ""
     }

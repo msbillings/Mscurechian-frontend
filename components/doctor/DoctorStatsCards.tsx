@@ -69,7 +69,7 @@ function DoctorStatsCards({ stats, visitTypeFilter, onTypeChange }: DoctorStatsC
                         <div className="min-w-0 flex-1">
                             <p className="text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-tight truncate">{card.label}</p>
                             {card.dateRange && (
-                                <p className="text-[8px] sm:text-[9px] font-black text-primary-theme/60 uppercase tracking-tighter mt-0.5 break-words line-clamp-2 max-w-[90%] leading-none">
+                                <p className="text-[8px] sm:text-[9px] font-black text-primary-theme/60 uppercase tracking-tighter mt-0.5 break-all leading-tight">
                                     {card.dateRange}
                                 </p>
                             )}

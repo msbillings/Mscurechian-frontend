@@ -775,18 +775,6 @@ export function DischargeSummaryForm() {
             return;
         }
 
-        if (totalSpellingErrors > 0) {
-            toast.error(`Please resolve the ${totalSpellingErrors} spelling issues before committing.`, {
-                icon: '✍️',
-                duration: 4000
-            });
-            return;
-        }
-
-        if (isSpellChecking) {
-            toast.error("Checking spelling... please wait a moment.");
-            return;
-        }
 
         setLoading(true);
         try {
@@ -1711,8 +1699,8 @@ export function DischargeSummaryForm() {
                         </div>
                     </div>
                     {totalSpellingErrors > 0 && (
-                        <div className="text-[10px] font-black text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 uppercase tracking-widest">
-                            Fix issues to Commit
+                        <div className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 uppercase tracking-widest">
+                            Suggestions Available
                         </div>
                     )}
                 </div>

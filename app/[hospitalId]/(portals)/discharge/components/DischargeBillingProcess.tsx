@@ -361,7 +361,7 @@ export function DischargeBillingProcess() {
             {/* Header */}
             <div className="flex items-center justify-between mb-2">
                 <div>
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight">Discharge Billing Process</h1>
+                    <h1 className="text-lg md:text-xl lg:text-xl font-black text-slate-900 tracking-tight">Discharge Billing Process</h1>
                     <p className="text-slate-500 text-sm font-medium">Finalize financials and generate discharge documentation</p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -375,7 +375,7 @@ export function DischargeBillingProcess() {
             </div>
 
             {/* Patient & Admission Overview */}
-            <Card className="p-4 border-slate-100 shadow-sm bg-slate-50/50">
+            <Card className="p-1 border-slate-100 shadow-sm bg-slate-50/50">
                 <div className="flex items-center gap-2 mb-3">
                     <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] flex items-center gap-2">
                         <FileText size={14} className="text-blue-500" />
@@ -481,7 +481,7 @@ export function DischargeBillingProcess() {
                     </div>
 
                     {/* section 2: history & symptoms table */}
-                    <div className="p-4 border-b border-slate-100">
+                    <div className="p-1 border-b border-slate-100">
                         <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Background & Symptoms</h4>
                         <div className="border border-slate-100 rounded-xl overflow-hidden">
                             <div className="grid grid-cols-1 md:grid-cols-2 bg-slate-100 gap-px">
@@ -506,7 +506,7 @@ export function DischargeBillingProcess() {
                     </div>
 
                     {/* section 3: clinical discharge summary (The Main Table) */}
-                    <div className="p-4 bg-white">
+                    <div className="p-1 bg-white">
                         <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Discharge Clinical Summary</h4>
                         <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
                             {/* status row */}
