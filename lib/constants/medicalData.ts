@@ -1,17 +1,27 @@
 export const COMMON_SPECIALTIES = [
-    "Orthopedics", "Cardiology", "Dermatology", "Pediatrics", "Orthopedic Surgery", "Endocrinology", "Gastroenterology",
-    "Neurology", "Psychiatry", "Oncology", "Ophthalmology", "ENT (Otolaryngology)", "Pulmonology",
-    "Nephrology", "Rheumatology", "Hematology", "Urology", "Gynecology & Obstetrics", "Internal Medicine",
-    "General Surgery", "Plastic Surgery", "Neurosurgery", "Anesthesiology", "Radiology", "Pathology",
-    "Emergency Medicine", "Family Medicine", "Geriatrics", "Infectious Disease", "Sports Medicine",
-    "Physical Medicine & Rehabilitation", "Medical Genetics", "Allergist & Immunologist", "Neonatologist", "Vascular Surgery",
-    "Thoracic Surgery", "Colon and Rectal Surgery", "Oral and Maxillofacial Surgery", "Sleep Medicine", "Pain Management",
-    "Nuclear Medicine", "Preventive Medicine", "Occupational Medicine", "Podiatry", "Chiropractic", "Audiology",
-    "Speech-Language Pathology", "Dietitian / Nutritionist", "Clinical Psychology", "Homeopathy", "Ayurveda",
-    "Unani", "Siddha", "Physiotherapy", "Dentistry", "Maxillofacial Surgery", "Oculoplasty", "Vitreoretinal Surgery",
-    "Palliative Care", "Intensive Care", "Reproductive Medicine", "General Physician", "Uro-Oncology", "Surgical Gastroenterology",
-    "Nephrology & Dialysis", "Critical Care Medicine", "Neonatal Intensive Care (NICU)"
-];
+"Orthopedist",
+"Cardiologist",
+"Dermatologist",
+"Pediatrician",
+"Orthopedic Surgeon",
+"Endocrinologist",
+"Gastroenterologist",
+"Neurologist",
+"Psychiatrist",
+"Oncologist",
+"Ophthalmologist",
+"ENT Specialist",
+"Pulmonologist",
+"Nephrologist",
+"Hematologist",
+"Urologist",
+"Gynecologist / Obstetrician",
+"General Surgeon",
+"Neurosurgeon",
+"Radiologist",
+"Dentist",
+"General Physician"
+]
 
 export const COMMON_QUALIFICATIONS = [
     "MBBS", "MD", "MS", "DNB", "Diploma", "PhD", "M.Phil", "DM", "MCh", "BDS", "MDS", 

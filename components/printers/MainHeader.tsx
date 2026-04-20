@@ -58,7 +58,7 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-start', 
-                flexWrap: 'nowrap', 
+                flexWrap: 'wrap', 
                 gap: 'clamp(8px, 1.5vw, 20px)', 
                 padding: '6px 0',
                 width: '100%',
@@ -157,7 +157,7 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        flexWrap: 'nowrap', 
+                        flexWrap: 'wrap', 
                         gap: 'clamp(6px, 1.5vw, 12px)',
                         fontSize: 'clamp(8px, 1.2vw, 12px)',
                         color: '#334155',

@@ -120,60 +120,106 @@ interface PrescriptionForm {
     };
     dermatologyData?: DermatologyData;
     orthopedicData?: {
-        jointRegion: string;
+        joint: string;
+        side: string;
+        symptoms: string[];
+        pain: { score: number; type: string; };
         rom: string;
-        painScore: string;
-        side: 'Left' | 'Right' | 'Bilateral';
-        palpation: string;
-        specialTests: string;
+        exam: { swelling: string; tenderness: string; deformity: string; spasm: string; };
+        motorPower: number;
+        neurovascular: { sensation: string; pulse: string; };
+        specialTests: string[];
+        imaging: { xray: string; mri: string; };
+        diagnosis: string;
+        notes?: string;
     };
     pediatricData?: {
         weight: string;
         height: string;
         headCircumference: string;
         temperature: string;
-        milestones: 'Yes' | 'Delayed' | 'Borderline';
-        developmentalNotes: string;
+        heartRate: string;
+        respRate: string;
+        growth: { weightForAge: string; heightForAge: string; };
+        milestones: 'Normal' | 'Delayed' | 'Borderline';
+        milestoneNotes: string;
         immunizationStatus: string;
+        dueVaccines: string[];
+        symptoms: string[];
+        redFlags: string[];
+        notes?: string;
     };
     entData?: {
-        throat: string;
-        nose: string;
-        ears: string;
-        lymphNodes: string;
-        voiceHearing: string;
+        ear: {
+            left:  { externalEar: string; earCanal: string[]; tympanicMembrane: string; };
+            right: { externalEar: string; earCanal: string[]; tympanicMembrane: string; };
+        };
+        hearing: { status: string; tuningForkTest: string[]; };
+        nose:   { mucosa: string; septum: string; discharge: string; };
+        throat: { tonsils: string; pharynx: string; uvula: string; };
+        lymphNodes: { cervical: string; sizeCm: string; tender: string; mobility: string; };
+        voice:  { quality: string; airway: string; };
+        symptoms: string[];
+        duration: string;
+        notes?: string;
     };
     ophthaData?: {
-        visionRight: string;
-        visionLeft: string;
-        iop: string;
-        pupils: 'PERRLA' | 'Sluggish' | 'Fixed';
-        conjunctiva: string;
-        fundus: string;
+        symptoms: string[];
+        vision: {
+            od: { unaided: string; corrected: string; };
+            os: { unaided: string; corrected: string; };
+        };
+        refraction: {
+            od: { sph: string; cyl: string; axis: string; };
+            os: { sph: string; cyl: string; axis: string; };
+        };
+        iop:    { od: string; os: string; };
+        pupils: string;
+        slitLamp: { conjunctiva: string; cornea: string; anteriorChamber: string; lens: string; };
+        fundus:   { retina: string; opticDisc: string; macula: string; };
+        diagnosis: string;
+        notes?: string;
     };
     gynaecData?: {
         lmp: string;
-        cycle: string;
-        obstetric: string;
+        cycleLength: string;
+        cycleRegularity: string;
+        flowDuration: string;
+        flowType: string;
         pregnant: 'Yes' | 'No' | 'Suspected';
-        examFindings: string;
-        associatedComplaints: string;
+        gestationalAge: string;
+        edd: string;
+        symptoms: string[];
+        vitals: { bp: string; pulse: string; weight: string; temperature: string; };
+        obstetric: { gravida: string; para: string; living: string; abortions: string; };
+        obstetricExam: { uterineSize: string; fetalPosition: string; fetalHeartRate: string; };
+        gynExam: { cervix: string; discharge: string; tenderness: string; };
+        investigations: string[];
+        notes?: string;
     };
     neuroData?: {
-        gcs: string;
-        motorPower: string;
+        gcs: { eye: string; verbal: string; motor: string; };
+        mentalStatus: string;
+        motorPower: { ru: string; lu: string; rl: string; ll: string; };
         reflexes: string;
-        mentalStatus: 'Alert' | 'Drowsy' | 'Stupor';
-        sensoryCoordination: string;
         cranialNerves: string;
+        cranialNerveDeficits: string[];
+        sensory: string;
+        coordination: string;
+        symptoms: string[];
+        onset: string;
+        notes?: string;
     };
     pulmoData?: {
-        respRate: string;
-        spo2: string;
-        breathSounds: string;
+        vitals: { respRate: string; spo2: string; oxygenSupport: string; };
+        symptoms: string[];
+        mmrcGrade: number | null;
+        exam: { chestExpansion: string; accessoryMuscles: string; };
+        auscultation: { airEntry: string; sounds: string[]; };
         peakFlow: string;
-        chestExpansion: string;
-        coughSputum: string;
+        diagnosis: string;
+        severity: string;
+        notes?: string;
     };
     gastroData?: {
         symptoms: string[];
@@ -193,10 +239,16 @@ interface PrescriptionForm {
     nephroData?: {
         urineOutput: string;
         creatinine: string;
-        edema: 'None' | 'Trace' | '1+' | '2+' | '3+' | '4+';
+        urea: string;
         egfr: string;
-        urineRoutine: string;
-        specialHistory: string;
+        edema: 'None' | 'Trace' | '1+' | '2+' | '3+' | '4+';
+        electrolytes: { sodium: string; potassium: string; bicarbonate: string; };
+        urineAnalysis: { protein: string; sugar: string; rbc: string; };
+        fluidBalance: { intake: string; output: string; };
+        dialysis: { status: string; frequency: string; lastSession: string; access: string; };
+        symptoms: string[];
+        ckdStage: string;
+        notes?: string;
     };
     psychiatryData?: {
         complaints: string[];
@@ -354,60 +406,99 @@ const INITIAL_FORM: PrescriptionForm = {
     },
     dermatologyData: { ...INITIAL_DERMATOLOGY_DATA },
     orthopedicData: {
-        jointRegion: '',
+        joint: '',
+        side: '',
+        symptoms: [],
+        pain: { score: 0, type: '' },
         rom: 'Normal',
-        painScore: '0',
-        side: 'Left',
-        palpation: '',
-        specialTests: ''
+        exam: { swelling: '', tenderness: '', deformity: '', spasm: '' },
+        motorPower: 5,
+        neurovascular: { sensation: '', pulse: '' },
+        specialTests: [],
+        imaging: { xray: '', mri: '' },
+        diagnosis: '',
     },
     pediatricData: {
         weight: '',
         height: '',
         headCircumference: '',
         temperature: '',
-        milestones: 'Yes',
-        developmentalNotes: '',
-        immunizationStatus: ''
+        heartRate: '',
+        respRate: '',
+        growth: { weightForAge: '', heightForAge: '' },
+        milestones: 'Normal',
+        milestoneNotes: '',
+        immunizationStatus: '',
+        dueVaccines: [],
+        symptoms: [],
+        redFlags: []
     },
     entData: {
-        throat: 'Normal',
-        nose: '',
-        ears: '',
-        lymphNodes: '',
-        voiceHearing: ''
+        ear: {
+            left:  { externalEar: '', earCanal: [], tympanicMembrane: '' },
+            right: { externalEar: '', earCanal: [], tympanicMembrane: '' }
+        },
+        hearing: { status: '', tuningForkTest: [] },
+        nose:    { mucosa: '', septum: '', discharge: '' },
+        throat:  { tonsils: '', pharynx: '', uvula: '' },
+        lymphNodes: { cervical: '', sizeCm: '', tender: '', mobility: '' },
+        voice:   { quality: '', airway: '' },
+        symptoms: [],
+        duration: ''
     },
     ophthaData: {
-        visionRight: '',
-        visionLeft: '',
-        iop: '',
+        symptoms: [],
+        vision: {
+            od: { unaided: '', corrected: '' },
+            os: { unaided: '', corrected: '' }
+        },
+        refraction: {
+            od: { sph: '', cyl: '', axis: '' },
+            os: { sph: '', cyl: '', axis: '' }
+        },
+        iop:    { od: '', os: '' },
         pupils: 'PERRLA',
-        conjunctiva: '',
-        fundus: ''
+        slitLamp: { conjunctiva: '', cornea: '', anteriorChamber: '', lens: '' },
+        fundus:   { retina: '', opticDisc: '', macula: '' },
+        diagnosis: ''
     },
     gynaecData: {
         lmp: '',
-        cycle: 'Regular',
-        obstetric: '',
+        cycleLength: '',
+        cycleRegularity: '',
+        flowDuration: '',
+        flowType: '',
         pregnant: 'No',
-        examFindings: '',
-        associatedComplaints: ''
+        gestationalAge: '',
+        edd: '',
+        symptoms: [],
+        vitals: { bp: '', pulse: '', weight: '', temperature: '' },
+        obstetric: { gravida: '', para: '', living: '', abortions: '' },
+        obstetricExam: { uterineSize: '', fetalPosition: '', fetalHeartRate: '' },
+        gynExam: { cervix: '', discharge: '', tenderness: '' },
+        investigations: []
     },
     neuroData: {
-        gcs: '15',
-        motorPower: '5/5',
-        reflexes: 'Normal',
-        mentalStatus: 'Alert',
-        sensoryCoordination: '',
-        cranialNerves: ''
+        gcs: { eye: '', verbal: '', motor: '' },
+        mentalStatus: '',
+        motorPower: { ru: '', lu: '', rl: '', ll: '' },
+        reflexes: '',
+        cranialNerves: '',
+        cranialNerveDeficits: [],
+        sensory: '',
+        coordination: '',
+        symptoms: [],
+        onset: ''
     },
     pulmoData: {
-        respRate: '',
-        spo2: '',
-        breathSounds: 'Vesicular',
+        vitals: { respRate: '', spo2: '', oxygenSupport: 'Room Air' },
+        symptoms: [],
+        mmrcGrade: null,
+        exam: { chestExpansion: '', accessoryMuscles: '' },
+        auscultation: { airEntry: '', sounds: [] },
         peakFlow: '',
-        chestExpansion: '',
-        coughSputum: ''
+        diagnosis: '',
+        severity: ''
     },
     gastroData: {
         symptoms: [],
@@ -425,12 +516,17 @@ const INITIAL_FORM: PrescriptionForm = {
         notes: '',
     },
     nephroData: {
-        urineOutput: '',
         creatinine: '',
-        edema: 'None',
+        urea: '',
         egfr: '',
-        urineRoutine: '',
-        specialHistory: ''
+        urineOutput: '',
+        edema: 'None',
+        electrolytes: { sodium: '', potassium: '', bicarbonate: '' },
+        urineAnalysis: { protein: 'Nil', sugar: 'Nil', rbc: 'Nil' },
+        fluidBalance: { intake: '', output: '' },
+        dialysis: { status: 'Not on dialysis', frequency: '', lastSession: '', access: '' },
+        symptoms: [],
+        ckdStage: ''
     },
     psychiatryData: {
         complaints: [],
@@ -474,7 +570,7 @@ const INITIAL_FORM: PrescriptionForm = {
         symptoms: [],
         transfusion: { product: '', units: '0', indication: '' },
         diagnosis: '',
-        followUpInstructions: ''
+        notes: ''
     },
     oncologyData: {
         body: { weight: '', height: '', bsa: '0.00' },
@@ -754,12 +850,14 @@ function CreatePrescriptionPage() {
     });
 
     // ✅ REACT QUERY: Fetch Doctor Profile
+    // staleTime: 0 ensures specialties always refresh when the page mounts
+    // (e.g. after saving profile from the edit page)
     const { data: doctorProfile } = useQuery({
         queryKey: ['doctor-profile'],
         queryFn: () => doctorService.getProfile(),
-        staleTime: 10 * 60 * 1000,
+        staleTime: 0,
         gcTime: 30 * 60 * 1000,
-        refetchOnMount: false,
+        refetchOnMount: true,
         refetchOnWindowFocus: false,
     });
 
@@ -1274,32 +1372,28 @@ function CreatePrescriptionPage() {
                     notes: cardioData.notes || undefined
                 } : undefined,
 
-                // Standardized specialty supplements
-                entData: activeSpecialty.toUpperCase().includes('ENT') ? formData.entData : undefined,
-                pediatricData: activeSpecialty.toUpperCase().includes('PEDIATRI') ? formData.pediatricData : undefined,
-                gynaecData: (activeSpecialty.toUpperCase().includes('GYNAE') || activeSpecialty.toUpperCase().includes('GYNE')) ? formData.gynaecData : undefined,
-                neuroData: activeSpecialty.toUpperCase().includes('NEURO') ? formData.neuroData : undefined,
-                gastroData: activeSpecialty.toUpperCase().includes('GASTRO') ? formData.gastroData : undefined,
-                orthopedicData: activeSpecialty.toUpperCase().includes('ORTHO') ? formData.orthopedicData : undefined,
-                nephroData: activeSpecialty.toUpperCase().includes('NEPHRO') ? formData.nephroData : undefined,
-                ophthaData: (activeSpecialty.toUpperCase().includes('OPHTHA') || activeSpecialty.toUpperCase().includes('EYE')) ? formData.ophthaData : undefined,
-                pulmoData: activeSpecialty.toUpperCase().includes('PULMO') ? formData.pulmoData : undefined,
-                psychiatryData: activeSpecialty.toUpperCase().includes('PSYCH') ? formData.psychiatryData : undefined,
+                // Standardized specialty supplements — each only sent when doctor's active specialty matches
+                entData:           activeSpecialty.toUpperCase().includes('ENT') ? formData.entData : undefined,
+                pediatricData:     activeSpecialty.toUpperCase().includes('PEDIATRI') ? formData.pediatricData : undefined,
+                gynaecData:        (activeSpecialty.toUpperCase().includes('GYNAE') || activeSpecialty.toUpperCase().includes('GYNE')) ? formData.gynaecData : undefined,
+                neuroData:         activeSpecialty.toUpperCase().includes('NEURO') ? formData.neuroData : undefined,
+                gastroData:        activeSpecialty.toUpperCase().includes('GASTRO') ? formData.gastroData : undefined,
+                orthopedicData:    activeSpecialty.toUpperCase().includes('ORTHO') ? formData.orthopedicData : undefined,
+                nephroData:        activeSpecialty.toUpperCase().includes('NEPHRO') ? formData.nephroData : undefined,
+                ophthaData:        (activeSpecialty.toUpperCase().includes('OPHTHA') || activeSpecialty.toUpperCase().includes('EYE')) ? formData.ophthaData : undefined,
+                pulmoData:         activeSpecialty.toUpperCase().includes('PULMO') ? formData.pulmoData : undefined,
+                psychiatryData:    activeSpecialty.toUpperCase().includes('PSYCH') ? formData.psychiatryData : undefined,
                 endocrinologyData: activeSpecialty.toUpperCase().includes('ENDOCRIN') ? formData.endocrinologyData : undefined,
-                hematologyData: activeSpecialty.toUpperCase().includes('HEMA') ? formData.hematologyData : undefined,
-                oncologyData: activeSpecialty.toUpperCase().includes('ONCO') ? formData.oncologyData : undefined,
-                
-                // Pharma Safety Warning
-                pharmaWarning: (hasCardioData && cardioData.riskLevel === 'High') 
-                    ? "High-risk cardiac patient – verify drug interactions" 
-                    : undefined,
+                hematologyData:    activeSpecialty.toUpperCase().includes('HEMA') ? formData.hematologyData : undefined,
+                oncologyData:      activeSpecialty.toUpperCase().includes('ONCO') ? formData.oncologyData : undefined,
+                dentistryData:     activeSpecialty.toUpperCase().includes('DENT') ? formData.dentistryData : undefined,
+                urologyData:       activeSpecialty.toUpperCase().includes('UROLO') ? formData.urologyData : undefined,
+                radiologyOrder:    activeSpecialty.toUpperCase().includes('RADIOL') ? formData.radiologyOrder : undefined,
 
-                // Send metadata for robust backends
-                metadata: {
-                    activeSpecialty,
-                    cardiologyData: formData.cardiologyData,
-                    gastroData: formData.gastroData
-                }
+                // Pharma Safety Warning
+                pharmaWarning: (hasCardioData && cardioData.riskLevel === 'High')
+                    ? "High-risk cardiac patient – verify drug interactions"
+                    : undefined,
             };
 
             await doctorService.createPrescription(submissionData);
@@ -1496,6 +1590,23 @@ function CreatePrescriptionPage() {
                         </div>
                     </div>
 
+                    ${formData.symptoms || formData.diagnosis ? `
+                    <div style="margin-bottom: 25px; padding: 15px; border: 1.5px solid #e2e8f0; border-radius: 12px; background: #f8fafc; display: flex; gap: 20px;">
+                        ${formData.symptoms ? `
+                        <div style="flex: 1;">
+                            <span class="info-label" style="color: #64748b; font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">Chief Complaints / Symptoms</span>
+                            <div style="font-size: 11px; font-weight: 700; color: #334155;">${formData.symptoms}</div>
+                        </div>
+                        ` : ''}
+                        ${formData.diagnosis ? `
+                        <div style="flex: 1; ${formData.symptoms ? 'border-left: 1px dashed #e2e8f0; padding-left: 20px;' : ''}">
+                            <span class="info-label" style="color: #1e40af; font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">Diagnosis / Impressions</span>
+                            <div style="font-size: 12px; font-weight: 800; color: #1e40af;">${formData.diagnosis}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+
                     ${activeSpecialty.toUpperCase().includes('CARDIO') ? `
                     <div style="margin-bottom: 25px; padding: 15px; border: 2px solid #fee2e2; border-radius: 12px; background: #fffcfc;">
                         <span style="font-size: 9px; font-weight: 800; text-transform: uppercase; color: #ef4444; border-bottom: 1px solid #fee2e2; display: block; margin-bottom: 10px;">Cardiology Assessment</span>
@@ -1535,6 +1646,56 @@ function CreatePrescriptionPage() {
                     </div>
                     ` : ''}
 
+                    ${(() => {
+                        const isOrtho = activeSpecialty.toUpperCase().includes('ORTHO');
+                        const o = formData.orthopedicData;
+                        if (!isOrtho || !o?.joint) return '';
+                        const painNum = o?.pain?.score || 0;
+                        const sideLabel = o?.side || '';
+                        const painColor = painNum >= 8 ? '#dc2626' : painNum >= 5 ? '#ea580c' : '#16a34a';
+                        const romColor = o?.rom === 'Normal' ? '#16a34a' : (o?.rom === 'Restricted' || o?.rom === 'Painful') ? '#ea580c' : o?.rom === 'Severely restricted' ? '#dc2626' : '#1e293b';
+                        const specialTestsDisplay = Array.isArray(o?.specialTests) && o.specialTests.length > 0 ? o.specialTests.join(', ') : (typeof o?.specialTests === 'string' ? o.specialTests : '');
+                        return `
+                    <div style="margin-bottom:22px;padding:14px 16px;border:2px solid #fed7aa;border-radius:12px;background:#fff7ed;">
+                        <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#c2410c;display:block;margin-bottom:10px;letter-spacing:1px;border-bottom:1px solid #fed7aa;padding-bottom:6px;">
+                            ◆ Orthopedic Assessment
+                        </span>
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:10px;">
+                            <div>
+                                <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">Joint / Region</span>
+                                <span style="font-size:12px;font-weight:800;color:#1e293b;">${sideLabel ? sideLabel + ' ' : ''}${o.joint}</span>
+                            </div>
+                            <div>
+                                <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">Pain Score</span>
+                                <span style="font-size:14px;font-weight:900;color:${painColor};">${painNum}/10</span>
+                            </div>
+                            <div>
+                                <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">ROM</span>
+                                <span style="font-size:11px;font-weight:800;color:${romColor};">${o?.rom || '—'}</span>
+                            </div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:10px;">
+                            ${o?.exam?.swelling ? `<div>
+                                <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">Swelling</span>
+                                <span style="font-size:11px;font-weight:700;color:#1e293b;">${o.exam.swelling}</span>
+                            </div>` : ''}
+                            ${specialTestsDisplay ? `<div>
+                                <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">Special Tests</span>
+                                <span style="font-size:10px;font-weight:700;color:#1e293b;">${specialTestsDisplay}</span>
+                            </div>` : ''}
+                        </div>
+                        ${o?.exam?.deformity === 'Present' ? `<div style="background:#fee2e2;border:1px solid #ef4444;border-radius:8px;padding:8px 12px;margin-bottom:8px;">
+                            <span style="font-size:8px;font-weight:800;color:#dc2626;text-transform:uppercase;">⚠️ DEFORMITY PRESENT — Immobilize and order urgent X-ray</span>
+                        </div>` : ''}
+                        ${painNum >= 8 ? `<div style="background:#fee2e2;border:1px solid #ef4444;border-radius:8px;padding:8px 12px;">
+                            <span style="font-size:8px;font-weight:800;color:#dc2626;text-transform:uppercase;">🚨 SEVERE PAIN — Immediate analgesia and urgent evaluation required</span>
+                        </div>` : ''}
+                        ${o?.diagnosis ? `<div style="margin-top:10px;padding-top:8px;border-top:1px dashed #fed7aa;">
+                            <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;">Assessment: </span>
+                            <span style="font-size:11px;font-weight:900;color:#c2410c;">${o.diagnosis}</span>
+                        </div>` : ''}
+                    </div>`;
+                    })()}
 
                     ${(() => {
                         const isDerm = activeSpecialty.toUpperCase().includes('DERM');
@@ -1821,20 +1982,32 @@ function CreatePrescriptionPage() {
                         <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#2563eb;display:block;margin-bottom:10px;letter-spacing:1px;border-bottom:1px solid #3b82f6;padding-bottom:6px;">
                             ◆ ENT Examination
                         </span>
+                        ${e.symptoms && e.symptoms.length > 0 ? `<div style="margin-bottom:10px;"><span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">Symptoms</span><span style="font-size:11px;font-weight:700;">${e.symptoms.join(', ')}</span></div>` : ''}
                         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:10px;">
                             <div>
                                 <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">Throat</span>
-                                <span style="font-size:11px;font-weight:700;">${e.throat || 'Normal'}</span>
+                                <span style="font-size:11px;font-weight:700;">${[e.throat?.tonsils, e.throat?.pharynx, e.throat?.uvula].filter(Boolean).join(' / ') || '—'}</span>
                             </div>
                             <div>
                                 <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">Nose</span>
-                                <span style="font-size:11px;font-weight:700;">${e.nose || 'Normal'}</span>
+                                <span style="font-size:11px;font-weight:700;">${[e.nose?.mucosa, e.nose?.septum, e.nose?.discharge].filter(Boolean).join(' / ') || '—'}</span>
                             </div>
                             <div>
-                                <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">Ears</span>
-                                <span style="font-size:11px;font-weight:700;">${e.ears || 'Normal'}</span>
+                                <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">Ears (L/R)</span>
+                                <span style="font-size:11px;font-weight:700;">${e.ear?.left?.externalEar || e.ear?.right?.externalEar ? `${e.ear?.left?.externalEar || '—'} / ${e.ear?.right?.externalEar || '—'}` : '—'}</span>
                             </div>
                         </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                            <div>
+                                <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">Hearing</span>
+                                <span style="font-size:11px;font-weight:700;">${e.hearing?.status || '—'}</span>
+                            </div>
+                            <div>
+                                <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">Voice / Airway</span>
+                                <span style="font-size:11px;font-weight:700;">${[e.voice?.quality, e.voice?.airway].filter(Boolean).join(' / ') || '—'}</span>
+                            </div>
+                        </div>
+                        ${e.duration ? `<div style="margin-top:8px;"><span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;">Duration: </span><span style="font-size:11px;font-weight:700;">${e.duration}</span></div>` : ''}
                     </div>`;
                     })()}
 
@@ -2031,12 +2204,6 @@ function CreatePrescriptionPage() {
                     </div>`;
                     })()}
 
-                    ${formData.diagnosis ? `
-                    <div style="margin-bottom: 25px;">
-                        <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #94a3b8;">Diagnosis:</span>
-                        <span style="font-size: 13px; font-weight: 800; color: #1e40af; margin-left:8px;">${formData.diagnosis}</span>
-                    </div>
-                    ` : ''}
 
                     <div class="section-label">Prescribed Medications</div>
                     <table>
@@ -2441,36 +2608,8 @@ function CreatePrescriptionPage() {
                         </div>
                     </div>
 
-                    {/* DYNAMIC CLINICAL MODULES - STRICT MAPPING TO PREVENT CROSS-RENDERING */}
-                    <div className="mb-6 sm:mb-8">
-                        {(() => {
-                            const spec = activeSpecialty.toUpperCase();
-                            console.log("Rendering module for:", spec);
-                            
-                            // Reordered to check GASTRO before ENT (since ENT is a substring of GASTROENTEROLOGY)
-                            if (spec.includes('CARDIO')) return <CardiologyModule formData={formData} setFormData={setFormData} />;
-                            if (spec.includes('DERMA')) return <DermatologyModule formData={formData} setFormData={setFormData} />;
-                            if (spec.includes('ORTHO')) return <OrthopedicModule formData={formData} setFormData={setFormData} />;
-                            if (spec.includes('PEDIATRI')) return <PediatricsModule formData={formData} setFormData={setFormData} />;
-                            if (spec.includes('GASTRO')) return <GastroModule formData={formData} setFormData={setFormData} />; 
-                            if (spec === 'ENT' || (spec.includes('ENT') && !spec.includes('DENT') && !spec.includes('GASTRO'))) return <ENTModule formData={formData} setFormData={setFormData} />;
-                            if (spec.includes('EYE') || spec.includes('OPHTHA')) return <OphthalmologyModule formData={formData} setFormData={setFormData} />;
-                            if (spec.includes('GYNAE') || spec.includes('GYNE') || spec.includes('OBST')) return <GynecologyModule formData={formData} setFormData={setFormData} />;
-                            if (spec.includes('NEURO')) return <NeurologyModule formData={formData} setFormData={setFormData} />;
-                            if (spec.includes('PULMO') || spec.includes('CHEST')) return <PulmonologyModule formData={formData} setFormData={setFormData} />;
-                            if (spec.includes('NEPHRO')) return <NephrologyModule formData={formData} setFormData={setFormData} />;
-                            if (spec.includes('URO')) return <UrologyModule formData={formData} setFormData={setFormData} />;
-                            if (spec.includes('RADIO')) return <RadiologyModule formData={formData} setFormData={setFormData} />;
-                            if (spec.includes('PSYCH')) return <PsychiatryModule formData={formData} setFormData={setFormData} />;
-                            if (spec.includes('ENDOCRIN')) return <EndocrinologyModule formData={formData} setFormData={setFormData} />;
-                            if (spec.includes('HEMA')) return <HematologyModule formData={formData} setFormData={setFormData} />;
-                            if (spec.includes('ONCO')) return <OncologyModule formData={formData} setFormData={setFormData} />;
-                            if (spec.includes('DENT')) return <DentistryModule formData={formData} setFormData={setFormData} />;
-                            return null;
-                        })()}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
+                    {/* ── COMMON FIELDS: Symptoms & Diagnosis (always shown, above specialty modules) ── */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 mb-6 sm:mb-8">
                         <div>
                             <label className="text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 flex justify-between">
                                 Symptoms / Complaints
@@ -2505,6 +2644,35 @@ function CreatePrescriptionPage() {
                                 className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
                             />
                         </div>
+                    </div>
+
+                    {/* DYNAMIC CLINICAL MODULES - STRICT MAPPING TO PREVENT CROSS-RENDERING */}
+                    <div className="mb-6 sm:mb-8">
+                        {(() => {
+                            const spec = activeSpecialty.toUpperCase();
+                            console.log("Rendering module for:", spec);
+                            
+                            // Reordered to check GASTRO before ENT (since ENT is a substring of GASTROENTEROLOGY)
+                            if (spec.includes('CARDIO')) return <CardiologyModule formData={formData} setFormData={setFormData} />;
+                            if (spec.includes('DERMA')) return <DermatologyModule formData={formData} setFormData={setFormData} />;
+                            if (spec.includes('ORTHO')) return <OrthopedicModule formData={formData} setFormData={setFormData} />;
+                            if (spec.includes('PEDIATRI')) return <PediatricsModule formData={formData} setFormData={setFormData} />;
+                            if (spec.includes('GASTRO')) return <GastroModule formData={formData} setFormData={setFormData} />; 
+                            if (spec === 'ENT' || (spec.includes('ENT') && !spec.includes('DENT') && !spec.includes('GASTRO'))) return <ENTModule formData={formData} setFormData={setFormData} />;
+                            if (spec.includes('EYE') || spec.includes('OPHTHA')) return <OphthalmologyModule formData={formData} setFormData={setFormData} />;
+                            if (spec.includes('GYNAE') || spec.includes('GYNE') || spec.includes('OBST')) return <GynecologyModule formData={formData} setFormData={setFormData} />;
+                            if (spec.includes('NEURO')) return <NeurologyModule formData={formData} setFormData={setFormData} />;
+                            if (spec.includes('PULMO') || spec.includes('CHEST')) return <PulmonologyModule formData={formData} setFormData={setFormData} />;
+                            if (spec.includes('NEPHRO')) return <NephrologyModule formData={formData} setFormData={setFormData} />;
+                            if (spec.includes('URO')) return <UrologyModule formData={formData} setFormData={setFormData} />;
+                            if (spec.includes('RADIO')) return <RadiologyModule formData={formData} setFormData={setFormData} />;
+                            if (spec.includes('PSYCH')) return <PsychiatryModule formData={formData} setFormData={setFormData} />;
+                            if (spec.includes('ENDOCRIN')) return <EndocrinologyModule formData={formData} setFormData={setFormData} />;
+                            if (spec.includes('HEMA')) return <HematologyModule formData={formData} setFormData={setFormData} />;
+                            if (spec.includes('ONCO')) return <OncologyModule formData={formData} setFormData={setFormData} />;
+                            if (spec.includes('DENT')) return <DentistryModule formData={formData} setFormData={setFormData} />;
+                            return null;
+                        })()}
                     </div>
                 </div>
 

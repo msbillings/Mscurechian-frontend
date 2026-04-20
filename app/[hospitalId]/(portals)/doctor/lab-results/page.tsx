@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { getSocket, joinSocketRoom } from '@/lib/integrations/api/socket';
 import { toast } from 'react-hot-toast';
 import {
     TestTube, ChevronRight,
     ChevronLeft, LayoutGrid, List, FlaskConical,
-    AlertTriangle, RefreshCw
+    AlertTriangle, RefreshCw, Search, Filter, X
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTenantLink } from '@/hooks/useTenantLink';
@@ -308,6 +308,12 @@ export default function DoctorLabResultsPage() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [idToDelete, setIdToDelete] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedTest, setSelectedTest] = useState('all');
+
+    const [isTestDropdownOpen, setIsTestDropdownOpen] = useState(false);
+    const [testSearchQuery, setTestSearchQuery] = useState('');
+    const testDropdownRef = useRef<HTMLDivElement>(null);
 
     const fetchLabResults = useCallback(async (silent = false) => {
         if (!silent) setLoading(true);
@@ -352,6 +358,14 @@ export default function DoctorLabResultsPage() {
         };
 
         initSocket();
+
+        const handleClickOutside = (event: MouseEvent) => {
+            if (testDropdownRef.current && !testDropdownRef.current.contains(event.target as Node)) {
+                setIsTestDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+
         const handleRefresh = () => fetchLabResults();
         window.addEventListener('refresh-lab-results', handleRefresh);
         return () => {
@@ -360,18 +374,28 @@ export default function DoctorLabResultsPage() {
                 socketInstance.off('disconnect');
                 socketInstance.off('lab_result_notification');
             }
+            document.removeEventListener("mousedown", handleClickOutside);
             window.removeEventListener('refresh-lab-results', handleRefresh);
         };
     }, [fetchLabResults]);
 
     // Reset to page 1 on filter/view change
-    useEffect(() => setCurrentPage(1), [filter, viewMode]);
+    useEffect(() => setCurrentPage(1), [filter, viewMode, searchQuery, selectedTest]);
+
+    const testOptions = Array.from(new Set(results.flatMap(r => r.tests.map(t => t.testName)))).sort();
 
     const filteredResults = results.filter(r => {
         const isVerified = r.status?.toLowerCase() === 'completed' && r.doctorNotified;
-        if (filter === 'completed') return isVerified;
-        if (filter === 'pending') return !isVerified;
-        return true;
+        const statusMatch = filter === 'completed' ? isVerified : (filter === 'pending' ? !isVerified : true);
+
+        const q = searchQuery.toLowerCase();
+        const nameMatch = r.patient?.name?.toLowerCase().includes(q);
+        const mrnMatch = r.patient?.mrn?.toLowerCase().includes(q);
+        const searchMatch = searchQuery === '' || nameMatch || mrnMatch;
+
+        const testMatch = selectedTest === 'all' || r.tests.some(t => t.testName === selectedTest);
+
+        return statusMatch && searchMatch && testMatch;
     });
 
     const totalPages = Math.max(1, Math.ceil(filteredResults.length / ITEMS_PER_PAGE));
@@ -491,6 +515,122 @@ export default function DoctorLabResultsPage() {
                             <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
                         </button>
                     </div>
+                </div>
+            </div>
+
+            {/* ── Search & Filter Bar ── */}
+            <div className="bg-card rounded-xl border border-border-theme p-2 shadow-sm flex flex-col md:flex-row items-center gap-2">
+                {/* Search Input */}
+                <div className="relative flex-1 group w-full">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search size={14} className="text-muted group-focus-within:text-primary-theme transition-colors" />
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Search by Patient Name or MRN Number..."
+                        className="w-full bg-secondary-theme/50 border border-border-theme rounded-lg pl-9 pr-9 py-2 text-[11px] font-black uppercase tracking-tight focus:outline-none focus:ring-1 focus:ring-primary-theme/30 focus:border-primary-theme/30 transition-all"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted hover:text-rose-500 transition-colors"
+                        >
+                            <X size={14} />
+                        </button>
+                    )}
+                </div>
+
+                {/* Test Name Filter - Custom Searchable Dropdown */}
+                <div className="relative w-full md:w-72 group" ref={testDropdownRef}>
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                        <Filter size={14} className={`transition-colors ${isTestDropdownOpen ? 'text-primary-theme' : 'text-muted'}`} />
+                    </div>
+                    
+                    <button
+                        onClick={() => {
+                            setIsTestDropdownOpen(!isTestDropdownOpen);
+                            if (!isTestDropdownOpen) setTestSearchQuery('');
+                        }}
+                        className={`w-full bg-secondary-theme/50 border rounded-lg pl-9 pr-10 py-2.5 text-[11px] font-black uppercase tracking-tight flex items-center justify-between transition-all outline-none ${
+                            isTestDropdownOpen ? 'border-primary-theme/40 ring-1 ring-primary-theme/10 bg-card shadow-sm' : 'border-border-theme hover:border-primary-theme/30'
+                        }`}
+                    >
+                        <span className="truncate">
+                            {selectedTest === 'all' ? 'All Available Tests' : selectedTest}
+                        </span>
+                        <div className="absolute right-3 flex items-center pointer-events-none">
+                            <ChevronRight size={14} className={`text-muted transition-transform duration-300 ${isTestDropdownOpen ? 'rotate-[-90deg]' : 'rotate-90'}`} />
+                        </div>
+                    </button>
+
+                    {isTestDropdownOpen && (
+                        <div className="absolute top-[calc(100%+5px)] left-0 right-0 bg-card border border-border-theme rounded-xl shadow-2xl z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                            {/* Search Input for Test */}
+                            <div className="p-2 border-b border-border-theme bg-secondary-theme/30 flex items-center gap-2">
+                                <Search size={12} className="text-muted" />
+                                <input 
+                                    autoFocus
+                                    type="text" 
+                                    placeholder="Search tests..."
+                                    className="w-full bg-transparent border-none text-[10px] font-black uppercase tracking-tight focus:outline-none placeholder:text-muted/50 text-foreground"
+                                    value={testSearchQuery}
+                                    onChange={(e) => setTestSearchQuery(e.target.value)}
+                                />
+                                {testSearchQuery && (
+                                    <button onClick={() => setTestSearchQuery('')} className="text-muted hover:text-rose-500">
+                                        <X size={12} />
+                                    </button>
+                                )}
+                            </div>
+                            
+                            <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                                <button
+                                    className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-tight transition-all flex items-center justify-between group ${
+                                        selectedTest === 'all' ? 'text-primary-theme bg-primary-theme/5 border-l-2 border-primary-theme' : 'text-muted hover:bg-secondary-theme hover:text-foreground border-l-2 border-transparent'
+                                    }`}
+                                    onClick={() => {
+                                        setSelectedTest('all');
+                                        setIsTestDropdownOpen(false);
+                                    }}
+                                >
+                                    <span>All Available Tests</span>
+                                    {selectedTest === 'all' && (
+                                        <div className="w-1.5 h-1.5 rounded-full bg-primary-theme shadow-[0_0_8px_rgba(var(--primary-theme-rgb),0.5)]" />
+                                    )}
+                                </button>
+                                
+                                {testOptions
+                                    .filter(test => test.toLowerCase().includes(testSearchQuery.toLowerCase()))
+                                    .map(test => (
+                                        <button
+                                            key={test}
+                                            className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-tight transition-all flex items-center justify-between group ${
+                                                selectedTest === test ? 'text-primary-theme bg-primary-theme/5 border-l-2 border-primary-theme' : 'text-muted hover:bg-secondary-theme hover:text-foreground border-l-2 border-transparent'
+                                            }`}
+                                            onClick={() => {
+                                                setSelectedTest(test);
+                                                setIsTestDropdownOpen(false);
+                                            }}
+                                        >
+                                            <span className="truncate">{test}</span>
+                                            {selectedTest === test && (
+                                                <div className="w-1.5 h-1.5 rounded-full bg-primary-theme shadow-[0_0_8px_rgba(var(--primary-theme-rgb),0.5)]" />
+                                            )}
+                                        </button>
+                                    ))
+                                }
+                                
+                                {testOptions.filter(test => test.toLowerCase().includes(testSearchQuery.toLowerCase())).length === 0 && (
+                                    <div className="px-4 py-8 text-center bg-secondary-theme/10">
+                                        <Search size={20} className="text-muted/20 mx-auto mb-2" />
+                                        <p className="text-[9px] font-black text-muted uppercase tracking-widest italic">No matching tests</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

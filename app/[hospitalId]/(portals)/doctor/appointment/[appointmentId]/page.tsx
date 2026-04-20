@@ -18,6 +18,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
 import { useTenantLink } from '@/hooks/useTenantLink';
 import { useSSE } from '@/hooks/useSSE';
+import ConsultationCompletionModal from './components/ConsultationCompletionModal';
 
 interface ConsultationPageProps {
   params: Promise<{
@@ -59,6 +60,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
 
   const hasCompletedLabs = appointment?.labResults?.some((order: any) => order.status === 'completed');
   const isPrescriptionRestricted = wantsLabToken && !hasCompletedLabs;
@@ -312,11 +314,22 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleEndConsultation = async () => {
+  const handleEndConsultation = async (bypassCheck = false) => {
     if (isSubmitting) return;
+
+    // Check if prescription or lab tests are added
+    const hasPrescription = !!appointment?.prescription;
+    const hasLabs = (appointment?.labResults && appointment.labResults.length > 0) || !!appointment?.labToken;
+
+    if (!bypassCheck && (!hasPrescription || !hasLabs)) {
+      setShowCompletionModal(true);
+      return;
+    }
 
     try {
       setIsSubmitting(true);
+      if (showCompletionModal) setShowCompletionModal(false);
+      
       await doctorService.endConsultation(appointmentId, {
         duration: elapsedTime,
         diagnosis,
@@ -408,7 +421,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                 <span className="hidden sm:inline">{appointment?.isPaused ? 'Paused' : 'Pause'}</span>
               </button>
               <button
-                onClick={handleEndConsultation}
+                onClick={() => handleEndConsultation(false)}
                 disabled={isSubmitting || appointment?.status !== 'in-progress'}
                 className={`px-2 sm:px-5 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all shadow-lg flex items-center gap-1.5 whitespace-nowrap ${(isSubmitting || appointment?.status !== 'in-progress')
                   ? 'bg-gray-400 cursor-not-allowed opacity-70'
@@ -895,7 +908,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                     )}
                   </div>
                   <button
-                    onClick={handleEndConsultation}
+                    onClick={() => handleEndConsultation(false)}
                     className="flex items-center gap-1.5 px-4 py-2 bg-primary-theme text-primary-theme-foreground font-black uppercase text-[10px] tracking-wider rounded-xl shadow-lg shadow-primary-theme/20 hover:scale-105 active:scale-95 transition-all"
                   >
                     <Send size={14} /> Finish consultation
@@ -1228,6 +1241,15 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
         onClose={() => setDocViewer(null)}
         url={docViewer?.url || ''}
         title={docViewer?.label || ''}
+      />
+
+      {/* CONSULTATION COMPLETION MODAL */}
+      <ConsultationCompletionModal
+        isOpen={showCompletionModal}
+        onClose={() => setShowCompletionModal(false)}
+        onConfirm={() => handleEndConsultation(true)}
+        missingPrescription={!appointment?.prescription}
+        missingLabs={!((appointment?.labResults && appointment.labResults.length > 0) || !!appointment?.labToken)}
       />
     </div>
   );

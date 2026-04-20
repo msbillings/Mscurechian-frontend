@@ -25,95 +25,10 @@ function parseBP(bp: string): { sys: number; dia: number } | null {
 }
 
 export const GynecologyModule: React.FC<GynecologyModuleProps> = ({ formData, setFormData }) => {
-    const [alerts, setAlerts] = useState<AlertEntry[]>([]);
-
     if (!formData.gynaecData) return null;
     const g = formData.gynaecData;
 
-    // ── Real-time Clinical Validation Engine ────────────────────────────────
-    useEffect(() => {
-        const newAlerts: AlertEntry[] = [];
-        const today = new Date();
 
-        // 1. LMP validation
-        if (g.lmp) {
-            const lmpDate = new Date(g.lmp);
-            if (lmpDate > today) {
-                newAlerts.push({ type: 'error', message: 'LMP cannot be a future date.' });
-            } else {
-                const monthsAgo = (today.getTime() - lmpDate.getTime()) / (1000 * 60 * 60 * 24 * 30);
-                if (monthsAgo > 3 && g.pregnant === 'No') {
-                    newAlerts.push({ type: 'warning', message: 'LMP > 3 months ago with no pregnancy reported — Possible amenorrhea / hormonal issue.' });
-                }
-            }
-        }
-
-        // 2. Pregnancy status requirements
-        if (g.pregnant === 'Yes') {
-
-        }
-
-        // 3. Gestational age validation
-        const ga = parseInt(g.gestationalAge);
-        if (ga) {
-            if (ga < 1 || ga > 42) {
-                newAlerts.push({ type: 'error', message: 'Gestational age must be between 1 and 42 weeks.' });
-            } else if (ga > 40) {
-                newAlerts.push({ type: 'warning', message: `Post-term pregnancy detected (${ga} weeks). Requires urgent assessment.` });
-            }
-        }
-
-        // 4. FHR validation
-        const fhr = parseInt(g.obstetricExam?.fetalHeartRate);
-        if (fhr && g.pregnant === 'Yes') {
-            if (fhr < 110) {
-                newAlerts.push({ type: 'emergency', message: `CRITICAL: FHR ${fhr} bpm — Fetal Bradycardia / Fetal Distress. Normal: 110–160 bpm.` });
-            } else if (fhr > 160) {
-                newAlerts.push({ type: 'warning', message: `FHR ${fhr} bpm — Fetal Tachycardia. Normal: 110–160 bpm.` });
-            }
-        }
-
-        // 5. Blood Pressure validation
-        const bp = parseBP(g.vitals?.bp || '');
-        if (bp && g.pregnant === 'Yes') {
-            if (bp.sys > 160 || bp.dia > 110) {
-                newAlerts.push({ type: 'emergency', message: `CRITICAL: BP ${g.vitals.bp} — SEVERE PREECLAMPSIA RISK. Immediate intervention required.` });
-            } else if (bp.sys > 140 || bp.dia > 90) {
-                newAlerts.push({ type: 'warning', message: `BP ${g.vitals.bp} is HIGH — Possible preeclampsia. Monitor closely.` });
-            }
-        }
-
-        // 6. Symptom-based validations
-        const syms: string[] = g.symptoms || [];
-
-        if (syms.includes('Bleeding PV') && g.pregnant === 'Yes') {
-            newAlerts.push({ type: 'emergency', message: 'EMERGENCY: Bleeding PV in pregnancy — Possible abortion / placenta previa. Urgent evaluation required.' });
-        }
-
-        if (syms.includes('Decreased Fetal Movement') && g.pregnant === 'Yes') {
-            newAlerts.push({ type: 'emergency', message: 'URGENT: Decreased fetal movement — Immediate fetal assessment required.' });
-        }
-
-        if (syms.includes('White Discharge') && g.gynExam?.discharge === 'Foul smelling') {
-            newAlerts.push({ type: 'warning', message: 'Foul-smelling discharge + white discharge — Infection likely. Consider swab culture.' });
-        }
-
-        // 7. Cross-field validations
-        if (bp && (bp.sys > 140 || bp.dia > 90) && syms.includes('Swelling') && g.pregnant === 'Yes') {
-            newAlerts.push({ type: 'warning', message: 'High BP + Edema — Preeclampsia risk. Monitor proteinuria and reflexes.' });
-        }
-
-        if (syms.includes('Missed Periods') && g.pregnant === 'No') {
-            newAlerts.push({ type: 'info', message: 'Missed periods with No pregnancy — Check pregnancy test / hormonal workup.' });
-        }
-
-        // 8. Drug safety in pregnancy
-        if (g.pregnant === 'Yes') {
-            newAlerts.push({ type: 'info', message: 'Pregnancy active — Check drug safety category (FDA A/B/C/D/X) before prescribing.' });
-        }
-
-        setAlerts(newAlerts);
-    }, [g]);
 
     // ── State helpers ────────────────────────────────────────────────────────
     const updateGyn = (field: string, value: any) => {
@@ -189,27 +104,6 @@ export const GynecologyModule: React.FC<GynecologyModuleProps> = ({ formData, se
 
     return (
         <div className="space-y-5">
-
-            {/* ── Clinical Alerts ─────────────────────────────────────────── */}
-            {alerts.length > 0 && (
-                <div className="space-y-2">
-                    {alerts.map((alert, idx) => (
-                        <div
-                            key={idx}
-                            className={`flex items-start gap-3 p-3 rounded-xl border-l-4 animate-in fade-in slide-in-from-top-2 duration-300 ${alertColors[alert.type]}`}
-                        >
-                            {alert.type === 'emergency' || alert.type === 'error'
-                                ? <ShieldAlert size={16} className="shrink-0 mt-0.5" />
-                                : alert.type === 'warning'
-                                ? <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-                                : <Info size={16} className="shrink-0 mt-0.5" />
-                            }
-                            <p className="text-[11px] font-black uppercase tracking-tight">{alert.message}</p>
-                        </div>
-                    ))}
-                </div>
-            )}
-
             {/* Standardized Light Header */}
             <div className="bg-pink-50 border border-pink-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-4">
@@ -222,14 +116,8 @@ export const GynecologyModule: React.FC<GynecologyModuleProps> = ({ formData, se
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    {alerts.length > 0 && (
-                        <div className="bg-pink-100/50 px-3 py-2 rounded-lg flex items-center gap-2 border border-pink-200 hidden md:flex">
-                             <AlertTriangle size={14} className="text-pink-600" />
-                             <span className="text-[9px] font-black uppercase tracking-widest text-pink-700">Safety Alerts Active</span>
-                        </div>
-                    )}
                     <div className="bg-white border border-pink-200 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.1em] text-pink-600">
-                        Gyn - Module
+                        Gynae - Module
                     </div>
                 </div>
             </div>
@@ -374,9 +262,6 @@ export const GynecologyModule: React.FC<GynecologyModuleProps> = ({ formData, se
                                 placeholder="e.g. 24"
                                 className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all ${!g.gestationalAge ? 'border-rose-300' : 'border-slate-200'}`}
                             />
-                            {parseInt(g.gestationalAge) > 40 && (
-                                <p className="text-[10px] text-amber-600 font-bold">⚠️ Post-term pregnancy</p>
-                            )}
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -452,9 +337,6 @@ export const GynecologyModule: React.FC<GynecologyModuleProps> = ({ formData, se
                                     key === 'bp' && g.vitals?.bp && parseBP(g.vitals.bp)?.sys! > 140 ? 'border-amber-400 bg-amber-50' : 'border-slate-200'
                                 }`}
                             />
-                            {hint && (
-                                <p className={`text-[10px] font-bold ${hint.includes('🚨') ? 'text-red-600' : hint.includes('⚠️') ? 'text-amber-600' : 'text-emerald-600'}`}>{hint}</p>
-                            )}
                         </div>
                     ))}
                 </div>
@@ -510,17 +392,6 @@ export const GynecologyModule: React.FC<GynecologyModuleProps> = ({ formData, se
                                         : 'border-slate-200 focus:ring-purple-500/20 focus:border-purple-500'
                                 }`}
                             />
-                            {g.obstetricExam?.fetalHeartRate && (
-                                <p className={`text-[10px] font-bold ${
-                                    parseInt(g.obstetricExam.fetalHeartRate) < 110 ? 'text-red-600' :
-                                    parseInt(g.obstetricExam.fetalHeartRate) > 160 ? 'text-amber-600' :
-                                    'text-emerald-600'
-                                }`}>
-                                    {parseInt(g.obstetricExam.fetalHeartRate) < 110 ? '🚨 Bradycardia — Fetal Distress' :
-                                     parseInt(g.obstetricExam.fetalHeartRate) > 160 ? '⚠️ Tachycardia' :
-                                     '✓ Normal range'}
-                                </p>
-                            )}
                         </div>
                     </div>
                 </div>
@@ -597,37 +468,6 @@ export const GynecologyModule: React.FC<GynecologyModuleProps> = ({ formData, se
                     ))}
                 </div>
             </div>
-
-            {/* ── Patient-Friendly Summary ─────────────────────────────────── */}
-            {(g.pregnant === 'Yes' || (g.symptoms || []).length > 0) && (
-                <div className="bg-pink-50 border border-pink-100 rounded-2xl p-5 text-pink-900 mt-6 shadow-sm">
-                    <div className="flex items-center gap-2 mb-3">
-                        <Info size={16} />
-                        <h3 className="text-[11px] font-black uppercase tracking-widest text-pink-700">Patient Summary (Plain Language)</h3>
-                    </div>
-                    <div className="space-y-1.5 text-sm font-medium text-pink-800">
-                        {g.pregnant === 'Yes' && g.gestationalAge && (
-                            <p>🤰 Pregnancy: <span className="text-pink-900 font-bold">{g.gestationalAge} weeks</span></p>
-                        )}
-                        {g.obstetricExam?.fetalHeartRate && (
-                            <p>💓 Baby heartbeat: <span className={`font-bold ${
-                                parseInt(g.obstetricExam.fetalHeartRate) >= 110 && parseInt(g.obstetricExam.fetalHeartRate) <= 160 ? 'text-emerald-400' : 'text-red-400'
-                            }`}>
-                                {parseInt(g.obstetricExam.fetalHeartRate) >= 110 && parseInt(g.obstetricExam.fetalHeartRate) <= 160 ? 'Normal' : 'Requires attention'}
-                            </span></p>
-                        )}
-                        {g.vitals?.bp && parseBP(g.vitals.bp) && (
-                            <p>🩺 Blood pressure: <span className={`font-bold ${parseBP(g.vitals.bp)!.sys > 140 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                                {g.vitals.bp} {parseBP(g.vitals.bp)!.sys > 140 ? '— Slightly elevated' : '— Normal'}
-                            </span></p>
-                        )}
-                        {(g.symptoms || []).length > 0 && (
-                            <p>📋 Current complaints: <span className="text-pink-900 font-bold">{(g.symptoms || []).join(', ')}</span></p>
-                        )}
-                        <p className="text-indigo-300 text-xs font-bold mt-2">📌 Advice: Regular antenatal checkups recommended.</p>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

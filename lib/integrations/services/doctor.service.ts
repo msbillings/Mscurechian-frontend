@@ -167,8 +167,17 @@ export const doctorService = {
   getGastroByPrescriptionId: (id: string) =>
     apiClient<any>(DOCTOR_ENDPOINTS.GET_GASTRO(id)),
 
+  getNephrologyByPrescriptionId: (id: string) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.GET_NEPHROLOGY(id)),
+
+  getUrologyByPrescriptionId: (id: string) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.GET_UROLOGY(id)),
+
+  getRadiologyByPrescriptionId: (id: string) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.GET_RADIOLOGY(id)),
+
   getOrthopedicByPrescriptionId: (id: string) =>
-    apiClient<any>(`/doctor/prescriptions/${id}/orthopedic`),
+    apiClient<any>(DOCTOR_ENDPOINTS.GET_ORTHOPEDICS(id)),
 
   getOncologyByPrescriptionId: (id: string) =>
     apiClient<any>(`/doctor/prescriptions/${id}/oncology`),

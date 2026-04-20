@@ -69,17 +69,18 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 sm:left-64 z-[60] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 md:p-10 animate-in fade-in duration-300">
-            <div className="bg-slate-50 w-full max-w-6xl h-full max-h-[95vh] flex flex-col rounded-[32px] shadow-2xl border border-white/20 overflow-hidden relative">
+        <div className="fixed inset-0 lg:left-64 z-[60] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-8 lg:p-10 animate-in fade-in duration-300">
+            <div className="bg-slate-50 w-full max-w-6xl h-full max-h-[98vh] flex flex-col rounded-2xl md:rounded-[32px] shadow-2xl border border-white/20 overflow-hidden relative">
                 <style jsx>{`
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
                 .preview-paper {
                     font-family: 'Inter', Arial, sans-serif;
-                    width: 210mm;
+                    width: 100%;
+                    max-width: 210mm;
                     min-height: 297mm;
                     background: white;
-                    padding: 10mm 22mm 10mm 22mm;
-                    box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0,0,0,0.05);
+                    padding: 4mm 6mm;
+                    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0,0,0,0.05);
                     position: relative;
                     margin: 0 auto;
                     color: #1e293b;
@@ -87,40 +88,59 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                     display: flex;
                     flex-direction: column;
                 }
+                @media (min-width: 1024px) {
+                    .preview-paper {
+                        padding: 10mm 15mm;
+                        box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0,0,0,0.05);
+                    }
+                }
+                @media (max-width: 640px) {
+                    .preview-paper {
+                        padding: 3mm 4mm;
+                        border-radius: 0;
+                        min-height: auto;
+                    }
+                    .specialty-section {
+                        margin-bottom: 12px !important;
+                        padding: 10px !important;
+                        border-radius: 12px !important;
+                    }
+                    .vitals-grid {
+                        gap: 8px !important;
+                        margin-bottom: 8px !important;
+                    }
+                    .text-sm-mobile {
+                        font-size: 11px !important;
+                    }
+                    .text-xs-mobile {
+                        font-size: 9px !important;
+                    }
+                }
                 .preview-content {
                     flex: 1;
                     display: flex;
                     flex-direction: column;
                 }
-                @media (max-width: 210mm) {
-                    .preview-paper {
-                        width: 100%;
-                        min-height: auto;
-                        padding: 8mm;
-                        margin: 0 auto;
-                    }
-                }
                 @media (max-width: 640px) {
                     .preview-paper {
-                        padding: 5mm;
+                        padding: 15px;
                     }
                 }
             `}</style>
 
-                <div className="flex-1 overflow-y-auto scroll-smooth custom-scrollbar">
-                    <div className="w-full flex flex-col items-center gap-8 py-10">
-
+                <div className="flex-1 overflow-auto scroll-smooth custom-scrollbar bg-slate-100/30">
+                    <div className="min-w-fit w-full flex flex-col items-center gap-4 sm:gap-8 py-4 sm:py-10 px-0 sm:px-4">
                         {/* Modal Toolbar */}
-                        <div className="sticky top-0 z-[75] w-full bg-white/95 backdrop-blur-md p-4 sm:p-5 border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+                        <div className="sticky top-0 z-[75] w-full bg-white/95 backdrop-blur-md p-3 sm:p-5 border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 shadow-sm">
                             <div className="flex items-center gap-4">
                                 <div className="w-10 h-10 bg-linear-to-br from-indigo-600 to-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
                                     <FileText size={20} className="text-white" />
                                 </div>
                                 <div className="text-center sm:text-left">
-                                    <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Prescription Preview</h2>
+                                    <h2 className="text-base sm:text-lg font-black text-slate-900 uppercase tracking-tight">Prescription Preview</h2>
                                     <div className="flex items-center gap-2 justify-center sm:justify-start">
-                                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Visual Parity with Printout</p>
+                                        <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                                        <p className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-widest">Medical Document Manifest</p>
                                     </div>
                                 </div>
                             </div>
@@ -139,29 +159,29 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                             <MainHeader initialDetails={hospitalBranding} />
 
                             <div className="preview-content">
-                                <div className="mt-6 flex justify-between items-center border-b-[3px] border-indigo-600/10 pb-2">
+                                <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b-[3px] border-indigo-600/10 pb-4">
                                 <div className="flex items-center gap-4">
-                                    <div className="text-[29px] font-[900] text-indigo-700 leading-none">Rx</div>
+                                    <div className="text-[24px] sm:text-[29px] font-[900] text-indigo-700 leading-none">Rx</div>
                                     <div className="h-8 w-[1px] bg-slate-200"></div>
                                     <div className="text-[7px] font-black text-slate-400 uppercase tracking-[3px]">Prescription</div>
                                 </div>
-                                <div className="text-right">
-                                    <div className="text-[13px] font-black text-slate-900 uppercase tracking-tight">{formData.doctorName}</div>
+                                <div className="text-left sm:text-right w-full sm:w-auto">
+                                    <div className="text-sm font-black text-slate-900 uppercase tracking-tight">{formData.doctorName}</div>
                                     <div className="text-[10px] font-bold text-slate-500 uppercase">{formData.doctorSpecialization}</div>
-                                    <div className="text-[9px] font-black text-indigo-500 mt-1 uppercase tracking-[2px] bg-indigo-50 px-2 py-0.5 rounded-sm">{activeSpecialty} Portal</div>
+                                    <div className="text-[9px] font-black text-indigo-500 mt-1 uppercase tracking-[2px] bg-indigo-50 px-2 py-0.5 rounded-sm inline-block">{activeSpecialty} Portal</div>
                                 </div>
                             </div>
 
-                            <div className="mt-4 mb-6 grid grid-cols-4 gap-0 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                <div className="mt-2 sm:mt-4 mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                                 {[
                                     ['Patient Name', formData.patientName, 'bg-white'],
                                     ['Age / Gender', `${formData.age || '--'} / ${formData.gender}`, 'bg-slate-50/50'],
                                     ['MRN / UHID', formData.mrn || 'N/A', 'bg-white'],
                                     ['Clinical Time', `${formData.date} @ ${formData.time || '--'}`, 'bg-slate-50/50']
                                 ].map(([label, val, bg], idx) => (
-                                    <div key={label} className={`p-4 ${bg} ${idx < 3 ? 'border-r border-slate-100' : ''}`}>
-                                        <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">{label}</div>
-                                        <div className="text-[11px] font-black text-slate-800 uppercase tracking-tight truncate">{val}</div>
+                                    <div key={label} className={`p-2.5 sm:p-4 ${bg} border-b lg:border-b-0 border-slate-100 ${idx % 2 === 0 ? 'sm:border-r' : 'sm:border-r-0'} lg:border-r last:border-0`}>
+                                        <div className="text-[7px] sm:text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 sm:mb-1.5">{label}</div>
+                                        <div className="text-[10px] sm:text-[11px] font-black text-slate-800 uppercase tracking-tight truncate">{val}</div>
                                     </div>
                                 ))}
                             </div>
@@ -170,15 +190,15 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                 {/* chief complaints & diagnosis */}
                                 <div className="grid grid-cols-1 gap-4">
                                     {(formData.symptoms || formData.diagnosis) && (
-                                        <div className="border-l-4 border-indigo-500 pl-4 py-1 flex items-start gap-8">
+                                        <div className="border-l-4 border-indigo-500 pl-4 py-1 flex flex-col md:flex-row items-start gap-4 md:gap-8">
                                             {formData.symptoms && (
-                                                <div className="flex-1">
+                                                <div className="w-full md:flex-1">
                                                     <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest block mb-0.5">Chief Complaints</span>
                                                     <div className="text-sm font-bold text-slate-700">{formData.symptoms}</div>
                                                 </div>
                                             )}
                                             {formData.diagnosis && (
-                                                <div className="flex-1 bg-indigo-50 p-3 rounded-lg border border-indigo-100/50">
+                                                <div className="w-full md:flex-1 bg-indigo-50 p-3 rounded-lg border border-indigo-100/50">
                                                     <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest block mb-0.5">Clinical Diagnosis</span>
                                                     <div className="text-sm font-black text-indigo-900">{formData.diagnosis}</div>
                                                 </div>
@@ -193,18 +213,17 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                     const bp = c.vitals?.bp || (c.bpSystolic ? `${c.bpSystolic}/${c.bpDiastolic}` : 'N/A');
                                     const hr = c.vitals?.hr || c.heartRate || '--';
                                     return (
-                                        <div className="mb-[25px] p-[20px] border-2 border-red-100 rounded-[24px] bg-[#fffcfc] shadow-sm">
-                                            <div className="flex justify-between items-center border-b-[1.5px] border-red-200 mb-4 pb-2">
-                                                <span className="text-[11px] font-black uppercase text-red-800 tracking-wider">Cardiovascular Clinical Profile</span>
-                                                <span className="text-[10px] font-black text-white bg-red-600 px-3 py-1 rounded-lg">NYHA: Class {c.nyhaClass || 'I'}</span>
+                                        <div className="specialty-section mb-[12px] md:mb-[25px] p-[12px] md:p-[20px] border-2 border-red-100 rounded-[24px] bg-[#fffcfc] shadow-sm">
+                                            <div className="flex justify-between items-center border-b-[1.5px] border-red-200 mb-3 md:mb-4 pb-2">
+                                                <span className="text-[9px] md:text-[11px] font-black uppercase text-red-800 tracking-wider">Cardiovascular Profile</span>
+                                                <span className="text-[8px] md:text-[10px] font-black text-white bg-red-600 px-2 md:px-3 py-1 rounded-lg">NYHA: {c.nyhaClass || 'I'}</span>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-6 mt-2">
-                                                <div className="bg-white p-4 rounded-xl border border-red-50 shadow-sm relative overflow-hidden">
-                                                    <div className="absolute top-0 right-0 p-2 opacity-10 font-black text-4xl">❤️</div>
-                                                    <span className="text-[8px] font-black text-red-600 uppercase block mb-2">Hemodynamics</span>
+                                            <div className="vitals-grid grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6 mt-2">
+                                                <div className="bg-white p-3 md:p-4 rounded-xl border border-red-50 shadow-sm relative overflow-hidden">
+                                                    <span className="text-[7px] md:text-[8px] font-black text-red-600 uppercase block mb-1 md:mb-2">Hemodynamics</span>
                                                     <div className="flex items-end gap-1 mb-1">
-                                                        <span className="text-[20px] font-black text-slate-900">{bp}</span>
-                                                        <span className="text-[10px] text-slate-400 font-bold mb-1">mmHg</span>
+                                                        <span className="text-[16px] md:text-[20px] font-black text-slate-900">{bp}</span>
+                                                        <span className="text-[8px] md:text-[10px] text-slate-400 font-bold mb-0.5 md:mb-1">mmHg</span>
                                                     </div>
                                                     <div className="text-[12px] font-bold text-slate-700">Heart Rate: <span className="text-red-600">{hr} bpm</span> ({c.vitals?.rhythm || c.rhythm || 'Regular'})</div>
                                                 </div>
@@ -229,12 +248,12 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                 {activeSpecialty.toUpperCase().includes('GASTRO') && formData.gastroData && (() => {
                                     const g = formData.gastroData;
                                     return (
-                                        <div className="mb-[25px] p-[18px] border-2 border-emerald-100 rounded-[20px] bg-[#f0fdf4] shadow-sm">
-                                            <div className="flex justify-between items-center border-b-[1.5px] border-emerald-200 mb-4 pb-2">
-                                                <span className="text-[11px] font-black uppercase text-emerald-800 tracking-wider">Gastroenterology Profile</span>
-                                                <span className="text-[10px] font-black text-white bg-emerald-600 px-3 py-1 rounded-lg">{g.diagnosis || 'Clinical Profile'}</span>
+                                        <div className="specialty-section mb-[12px] md:mb-[25px] p-[12px] md:p-[18px] border-2 border-emerald-100 rounded-[20px] bg-[#f0fdf4] shadow-sm">
+                                            <div className="flex justify-between items-center border-b-[1.5px] border-emerald-200 mb-3 md:mb-4 pb-2">
+                                                <span className="text-[9px] md:text-[11px] font-black uppercase text-emerald-800 tracking-wider">Gastroenterology Profile</span>
+                                                <span className="text-[8px] md:text-[10px] font-black text-white bg-emerald-600 px-2 md:px-3 py-1 rounded-lg">{g.diagnosis || 'Clinical Profile'}</span>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-6 mt-2">
+                                            <div className="vitals-grid grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6 mt-2">
                                                 <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm">
                                                     <span className="text-[8px] font-black text-emerald-600 uppercase block mb-2">Clinical Presentation</span>
                                                     <div className="text-[11px] font-bold text-slate-700 leading-relaxed">
@@ -275,7 +294,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 <span className="text-[11px] font-black uppercase text-indigo-800 tracking-wider">Psychiatric Clinical Evaluation</span>
                                                 <span className={`text-[10px] font-black px-4 py-1 rounded-full ${p.suicideRisk === 'High' ? 'bg-red-600 text-white' : 'bg-indigo-600 text-white'}`}>Risk: {p.suicideRisk?.toUpperCase()}</span>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-6 mt-2">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-2">
                                                 <div className="bg-white p-4 rounded-xl border border-indigo-100 shadow-sm">
                                                     <span className="text-[8px] font-black text-indigo-600 uppercase block mb-3">Mental Status (MSE)</span>
                                                     <div className="grid grid-cols-2 gap-3">
@@ -300,7 +319,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                     <div className="text-[10px] font-black text-red-900 italic tracking-tight">{mse.thought.join(' • ')}</div>
                                                 </div>
                                             )}
-                                             <div className="mt-4 grid grid-cols-2 gap-4">
+                                             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                                                  <div className="p-3 bg-white rounded-xl border border-indigo-100 italic text-[10px] text-slate-700">
                                                      <strong>Main Complaints:</strong><br/>{p.complaints || 'None listed'}
                                                  </div>
@@ -327,7 +346,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 <span className="text-[11px] font-black uppercase text-rose-800 tracking-wider">Dermatological Findings Portfolio</span>
                                                 <span className="text-[10px] font-black text-white bg-rose-600 px-3 py-1 rounded-lg">{location.join(', ') || 'Diffuse'}</span>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-6 mt-2">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-2">
                                                 <div className="bg-white p-4 rounded-xl border border-rose-100 shadow-sm">
                                                     <span className="text-[8px] font-black text-rose-600 uppercase block mb-2">Lesion Profile</span>
                                                     <div className="text-[15px] font-black text-slate-900 leading-tight mb-1">{d.lesionType || 'N/A'}{d.lesionCount ? ` (${d.lesionCount})` : ''}</div>
@@ -397,7 +416,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 <span className="text-[11px] font-black uppercase text-slate-900 tracking-wider">General Surgical Evaluation</span>
                                                 <span className="text-[10px] font-black text-white bg-slate-900 px-3 py-1 rounded-lg">Trial/Plan: {s.plan || 'Conservative'}</span>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-6 mt-2">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-2">
                                                 <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
                                                     <span className="text-[8px] font-black text-slate-500 uppercase block mb-2">Abdominal Examination</span>
                                                     <div className="text-[11px] font-bold text-slate-800 leading-relaxed">
@@ -427,12 +446,12 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 <span className="text-[10px] font-[900] uppercase text-pink-700 tracking-[1px]">Pediatric Growth & Assessment</span>
                                                 <span className="text-[12px] font-[900] text-pink-600 bg-pink-100 px-[10px] py-[4px] rounded-[6px]">Weight: {peds.weight} kg</span>
                                             </div>
-                                            <div className="grid grid-cols-3 gap-[15px] mb-[15px]">
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-[15px]">
                                                 <div><span className="text-[8px] text-pink-800 font-[800] uppercase block">Temperature</span><span className="text-[13px] font-[800] text-slate-800">{peds.temperature}°F</span></div>
                                                 <div><span className="text-[8px] text-pink-800 font-[800] uppercase block">Heart Rate</span><span className="text-[13px] font-[800] text-slate-800">{peds.heartRate || '--'} BPM</span></div>
                                                 <div><span className="text-[8px] text-pink-800 font-[800] uppercase block">Resp Rate</span><span className="text-[13px] font-[800] text-slate-800">{peds.respRate || '--'} min</span></div>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-[20px] border-t border-dashed border-pink-200 pt-[12px]">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-[20px] border-t border-dashed border-pink-200 pt-[12px]">
                                                 <div>
                                                     <div className="text-[8px] font-[800] text-pink-700 uppercase mb-[5px]">Development</div>
                                                     <div className="text-[11px] font-[700] text-slate-700 whitespace-pre-wrap">Milestones: <span className="text-pink-600">{peds.milestones || 'Appropriate'}</span></div>
@@ -445,7 +464,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 </div>
                                             </div>
                                             {(peds.symptoms?.length > 0 || peds.redFlags?.length > 0) && (
-                                                <div className="mt-4 grid grid-cols-2 gap-4">
+                                                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                     {peds.symptoms?.length > 0 && (
                                                         <div className="p-2 bg-white rounded-lg border border-pink-100">
                                                             <span className="text-[7px] font-black text-pink-500 uppercase block">Symptoms</span>
@@ -476,7 +495,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 </div>
                                                 <span className={`text-[10px] font-[900] px-[12px] py-[4px] rounded-[6px] ${r.priority === 'Emergency' ? 'bg-red-600 text-white' : 'bg-indigo-600 text-white'}`}>{r.priority?.toUpperCase()} PRIORITY</span>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-8">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                                                 <div className="space-y-4">
                                                     <div className="p-4 bg-white rounded-xl border border-slate-100 shadow-sm">
                                                         <span className="text-[8px] font-[800] text-indigo-600 uppercase block mb-1">Target Modality</span>
@@ -516,13 +535,13 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                     if (egfr > 0 && egfr < 15) assessments.push('🚨 STAGE 5 CKD / ESRD — Dialysis Support');
                                     if (k > 5.5) assessments.push('🚨 HYPERKALEMIA — Cardiac Monitoring Indicated');
 
-                                    return (
+return (
                                         <div className="mb-[25px] p-[20px] border-2 border-indigo-100 rounded-[24px] bg-[#f8fbff] shadow-sm">
                                             <div className="flex justify-between items-center border-b-[1.5px] border-indigo-200 mb-4 pb-2">
                                                 <span className="text-[11px] font-black uppercase text-indigo-800 tracking-wider">Renal & Electrolyte Clearance Profile</span>
                                                 <span className="text-[10px] font-black text-white bg-indigo-700 px-3 py-1 rounded-lg">Staging: {n.ckdStage || 'Evaluation'}</span>
                                             </div>
-                                            <div className="grid grid-cols-3 gap-4 mb-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                                                 <div className="bg-white p-3 rounded-xl border border-indigo-50 text-center">
                                                     <div className="text-[7px] text-slate-400 font-bold uppercase">Serum Creatinine</div>
                                                     <div className={`text-[16px] font-black ${creat > 1.5 ? 'text-red-600' : 'text-slate-900'}`}>{n.creatinine || '--'} <small className="text-[8px]">mg/dL</small></div>
@@ -537,7 +556,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 </div>
                                             </div>
                                             
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div className="p-3 bg-white rounded-xl border border-indigo-100">
                                                     <span className="text-[8px] font-black text-indigo-600 uppercase block mb-1">Electrolytes Detail</span>
                                                     <div className="text-[10px] font-bold text-slate-700 flex justify-between">
@@ -557,7 +576,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 </div>
                                             )}
                                             
-                                            <div className="grid grid-cols-2 gap-4 mt-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                                                 <div className="p-3 bg-white rounded-xl border border-indigo-100">
                                                     <span className="text-[8px] font-black text-indigo-600 uppercase block mb-1">Dialysis & Access</span>
                                                     <div className="text-[10px] font-bold text-slate-700">
@@ -588,7 +607,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 <span className={`text-[12px] font-black ${totalGcs < 8 ? 'text-red-600 animate-pulse' : 'text-violet-700'} bg-violet-100 px-4 py-1 rounded-full`}>Total GCS: {totalGcs}/15</span>
                                             </div>
                                             
-                                            <div className="grid grid-cols-2 gap-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                                                 <div className="space-y-4">
                                                     <div className="bg-white p-3 rounded-2xl border border-violet-50 shadow-sm">
                                                         <span className="text-[8px] font-black text-violet-600 uppercase block mb-2">Motor Power Distribution</span>
@@ -633,7 +652,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 <span className="text-[10px] font-[900] uppercase text-sky-800 tracking-[1px]">Urology Assessment</span>
                                                 <span className="text-[11px] font-[900] text-sky-700 bg-sky-100 px-[12px] py-[4px] rounded-[6px]">IPSS Score: {u.ipss?.score || '--'}</span>
                                             </div>
-                                            <div className="grid grid-cols-3 gap-4 mb-3">
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-3">
                                                 <div><span className="text-[8px] font-bold text-sky-600 uppercase block">Creatinine</span><div className="text-sm font-bold text-slate-800">{u.renal?.creatinine || '--'} mg/dL</div></div>
                                                 <div><span className="text-[8px] font-bold text-sky-600 uppercase block">PVR Volume</span><div className="text-sm font-bold text-slate-800">{u.pvr || '--'} ml</div></div>
                                                 <div><span className="text-[8px] font-bold text-sky-600 uppercase block">Prostate Size</span><div className="text-sm font-bold text-slate-800">{u.prostate?.size || 'Normal'}</div></div>
@@ -667,17 +686,17 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 <span className="text-[11px] font-black text-white bg-orange-600 px-3 py-1 rounded-lg">{o.side} {o.joint}</span>
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                                 <div className="bg-white p-3 rounded-xl border border-orange-100">
                                                     <span className="text-[8px] font-black text-orange-600 uppercase block mb-2">Pain & Functional Status</span>
                                                     <div className="flex items-center gap-4">
                                                         <div>
-                                                            <div className="text-[7px] text-slate-400 font-bold uppercase">Pain Score</div>
-                                                            <div className={`text-[18px] font-black ${pain >= 7 ? 'text-red-600' : 'text-slate-900'}`}>{pain}/10</div>
+                                                            <div className="text-[7px] text-slate-400 font-bold uppercase">Pain</div>
+                                                            <div className={`text-[18px] font-black ${pain >= 7 ? 'text-red-600' : 'text-slate-900'}`}>{pain}</div>
                                                         </div>
                                                         <div>
                                                             <div className="text-[7px] text-slate-400 font-bold uppercase">Type</div>
-                                                            <div className="text-xs font-bold text-orange-800">{o.pain?.type || 'Standard'}</div>
+                                                            <div className="text-xs font-bold text-orange-800">{o.pain?.type?.substring(0, 8) || 'Normal'}</div>
                                                         </div>
                                                         <div>
                                                             <div className="text-[7px] text-slate-400 font-bold uppercase">ROM</div>
@@ -689,18 +708,18 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                     <span className="text-[8px] font-black text-orange-600 uppercase block mb-2">Neurovascular & Motor</span>
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div>
-                                                            <div className="text-[7px] text-slate-400 font-bold uppercase">Motor Power</div>
+                                                            <div className="text-[7px] text-slate-400 font-bold uppercase">Motor</div>
                                                             <div className="text-[15px] font-black text-slate-900">{motor}/5</div>
                                                         </div>
                                                         <div>
-                                                            <div className="text-[7px] text-slate-400 font-bold uppercase">Distal Pulse</div>
+                                                            <div className="text-[7px] text-slate-400 font-bold uppercase">Pulse</div>
                                                             <div className={`text-xs font-black ${o.neurovascular?.pulse === 'Normal' ? 'text-emerald-600' : 'text-red-600'}`}>{o.neurovascular?.pulse}</div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-4 gap-2 mb-4">
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
                                                 {[
                                                     ['Swelling', o.exam?.swelling],
                                                     ['Tenderness', o.exam?.tenderness],
@@ -757,7 +776,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 px-3 py-1 rounded-lg">Clinical Detail: Full Exam</span>
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                                 <div className="bg-white p-3 rounded-xl border border-emerald-100 shadow-sm">
                                                     <span className="text-[8px] font-black text-emerald-600 uppercase block mb-2">Vision Assessment (Snellen)</span>
                                                     <div className="grid grid-cols-2 gap-4">
@@ -787,11 +806,11 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                             </div>
 
                                             {(o.refraction?.od?.sph || o.refraction?.os?.sph) && (
-                                                <div className="mb-4 p-3 bg-white rounded-xl border border-sky-100 shadow-sm">
+                                                <div className="mb-4 p-3 bg-white rounded-xl border border-sky-100 shadow-sm overflow-x-auto">
                                                     <span className="text-[8px] font-black text-sky-700 uppercase block mb-2">Refraction Grid</span>
-                                                    <div className="grid grid-cols-2 gap-4 text-[11px] font-bold">
-                                                        <div className="text-slate-700">OD: SPH {o.refraction.od.sph || '0'} / CYL {o.refraction.od.cyl || '0'} / Axis {o.refraction.od.axis || '0'}°</div>
-                                                        <div className="text-slate-700">OS: SPH {o.refraction.os.sph || '0'} / CYL {o.refraction.os.cyl || '0'} / Axis {o.refraction.os.axis || '0'}°</div>
+                                                    <div className="flex sm:grid sm:grid-cols-2 gap-4 text-[11px] font-bold min-w-[300px]">
+                                                        <div className="text-slate-700 whitespace-nowrap">OD: SPH {o.refraction.od.sph || '0'} / CYL {o.refraction.od.cyl || '0'} / Axis {o.refraction.od.axis || '0'}°</div>
+                                                        <div className="text-slate-700 whitespace-nowrap">OS: SPH {o.refraction.os.sph || '0'} / CYL {o.refraction.os.cyl || '0'} / Axis {o.refraction.os.axis || '0'}°</div>
                                                     </div>
                                                 </div>
                                             )}
@@ -827,6 +846,53 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                     );
                                 })()}
 
+                                {(activeSpecialty.toUpperCase().includes('GYNAE') || activeSpecialty.toUpperCase().includes('GYNE') || activeSpecialty.toUpperCase().includes('OBST')) && formData.gynaecData && (() => {
+                                    const gyn = formData.gynaecData;
+                                    const obs = gyn.obstetric || {};
+                                    const vitals = gyn.vitals || {};
+                                    const obsEx = gyn.obstetricExam || {};
+                                    const fhr = parseInt(obsEx.fetalHeartRate);
+                                    
+                                    return (
+                                        <div className="mb-[25px] p-[18px] border-2 border-pink-100 rounded-[16px] bg-pink-50/10">
+                                            <div className="flex justify-between items-center border-b-[1.5px] border-pink-200 mb-[14px] pb-[8px]">
+                                                <span className="text-[10px] font-[900] uppercase text-pink-800 tracking-[1px]">Gynaecology / Obstetric Report</span>
+                                                <span className="text-[11px] font-[900] text-pink-700 bg-pink-100 px-[10px] py-[4px] rounded-[6px]">{gyn.pregnant === 'Yes' ? `Pregnant (${gyn.gestationalAge} wks)` : 'Non-Pregnant'}</span>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                                                <div>
+                                                    <span className="text-[8px] font-bold text-pink-600 block uppercase">LMP</span>
+                                                    <div className="text-[12px] font-black text-slate-800">{gyn.lmp ? new Date(gyn.lmp).toLocaleDateString('en-GB') : 'N/A'}</div>
+                                                </div>
+                                                <div>
+                                                    <span className="text-[8px] font-bold text-pink-600 block uppercase">G P L A</span>
+                                                    <div className="text-[13px] font-black text-slate-800">G{obs.gravida} P{obs.para} L{obs.living} A{obs.abortions}</div>
+                                                </div>
+                                                <div>
+                                                    <span className="text-[8px] font-bold text-pink-600 block uppercase">Cycle</span>
+                                                    <div className="text-[11px] font-bold text-slate-700">{gyn.cycleRegularity} {gyn.cycleLength && `/ ${gyn.cycleLength}d`}</div>
+                                                </div>
+                                            </div>
+
+                                            {gyn.pregnant === 'Yes' && (
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 bg-white p-3 rounded-xl border border-pink-100">
+                                                    <div><span className="text-[8px] font-bold text-purple-600 uppercase">EDD</span><div className="text-xs font-black">{gyn.edd ? new Date(gyn.edd).toLocaleDateString('en-GB') : 'N/A'}</div></div>
+                                                    <div><span className="text-[8px] font-bold text-purple-600 uppercase">Fetal Position</span><div className="text-xs font-bold">{obsEx.fetalPosition || 'N/A'}</div></div>
+                                                    <div><span className="text-[8px] font-bold text-purple-600 uppercase">FHR</span><div className={`text-xs font-black ${fhr < 110 || fhr > 160 ? 'text-rose-600' : 'text-emerald-600'}`}>{obsEx.fetalHeartRate} bpm</div></div>
+                                                </div>
+                                            )}
+
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                                                {vitals.bp && <div><span className="text-[8px] text-pink-600 font-bold block">BP</span><span className="text-[10px] font-black">{vitals.bp}</span></div>}
+                                                {vitals.pulse && <div><span className="text-[8px] text-pink-600 font-bold block">Pulse</span><span className="text-[10px] font-black">{vitals.pulse}</span></div>}
+                                                {vitals.weight && <div><span className="text-[8px] text-pink-600 font-bold block">Weight</span><span className="text-[10px] font-black">{vitals.weight}kg</span></div>}
+                                                {vitals.temperature && <div><span className="text-[8px] text-pink-600 font-bold block">Temp</span><span className="text-[10px] font-black">{vitals.temperature}°F</span></div>}
+                                            </div>
+                                            {gyn.notes && <div className="mt-3 text-[10px] text-pink-400 italic">Gynae Notes: {gyn.notes}</div>}
+                                        </div>
+                                    );
+                                })()}
+
                                 {activeSpecialty.toUpperCase().includes('PULMO') && formData.pulmoData && (() => {
                                     const p = formData.pulmoData;
                                     const spo2 = parseInt(p.vitals?.spo2) || 0;
@@ -845,7 +911,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 <span className="text-[11px] font-black text-white bg-cyan-600 px-3 py-1 rounded-lg">Severity: {p.severity}</span>
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                                 <div className="bg-white p-3 rounded-xl border border-cyan-100">
                                                     <span className="text-[8px] font-black text-cyan-600 uppercase block mb-2">Vital Statistics</span>
                                                     <div className="grid grid-cols-2 gap-4">
@@ -866,7 +932,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4 mb-2">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
                                                 <div className="p-3 bg-white/50 rounded-xl border border-cyan-50">
                                                     <span className="text-[8px] font-black text-cyan-600 uppercase block mb-1">Auscultation Findings</span>
                                                     <div className="text-[10px] font-bold text-slate-700 leading-tight">
@@ -906,7 +972,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 <span className="text-[11px] font-black text-white bg-rose-600 px-3 py-1 rounded-lg">BMI: {bmi} ({bmi > 30 ? 'Obese' : bmi > 25 ? 'Overweight' : 'Normal'})</span>
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                                 <div className="bg-white p-3 rounded-xl border border-rose-100">
                                                     <span className="text-[8px] font-black text-rose-600 uppercase block mb-2">Glycemic Dashboard</span>
                                                     <div className="grid grid-cols-3 gap-2 text-center">
@@ -931,7 +997,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                         <span className="text-[8px] font-black text-rose-900 uppercase">Diabetes Profile Detail</span>
                                                         <span className="text-[9px] font-bold text-red-600">Hypo Risk: {e.diabetes.hypoglycemia}</span>
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-4">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <div>
                                                             <div className="text-[7px] text-slate-400 font-bold uppercase">Foot Exam</div>
                                                             <div className="text-[10px] font-bold">Sens: {e.diabetes.footExam?.sensation} | Ulcer: {e.diabetes.footExam?.ulcer}</div>
@@ -946,7 +1012,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 </div>
                                             )}
 
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div className="p-3 bg-red-50/50 rounded-xl border border-red-100">
                                                     <span className="text-[8px] font-black text-red-600 uppercase block mb-1">Symptoms reported</span>
                                                     <div className="text-[10px] font-bold text-red-900">{e.symptoms?.join(' • ') || 'None'}</div>
@@ -973,38 +1039,64 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                     const findingsLines: string[] = [];
                                     if (d.oralFindings?.caries !== 'None') findingsLines.push(`Caries: ${d.oralFindings?.caries}`);
                                     if (d.oralFindings?.gingivitis !== 'None') findingsLines.push(`Gingivitis: ${d.oralFindings?.gingivitis}`);
+                                    if (d.oralFindings?.mobility !== 'None') findingsLines.push(`Mobility: ${d.oralFindings?.mobility}`);
                                     if (d.oralFindings?.abscess) findingsLines.push('Intraoral Abscess Present');
+
+                                    const extraOral: string[] = [];
+                                    if (d.extraOral?.facialSwelling) extraOral.push('Facial Swelling');
+                                    if (d.extraOral?.lymphNodes) extraOral.push('Lymphadenopathy');
+                                    if (d.extraOral?.tmjPain) extraOral.push('TMJ Pain/Tenderness');
                                     
                                     return (
                                         <div className="mb-[25px] p-[18px] border-2 border-teal-100 rounded-[20px] bg-[#f0fdfa] shadow-sm">
                                             <div className="flex justify-between items-center border-b-[2px] border-teal-200 mb-4 pb-2">
-                                                <span className="text-[11px] font-black uppercase text-teal-800 tracking-wider">Dental Examination & Procedure Plan</span>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-[11px] font-black uppercase text-teal-800 tracking-wider">Dental Examination & Procedure Plan</span>
+                                                    {(d.painScale !== undefined || d.duration) && (
+                                                        <span className="text-[9px] font-bold text-teal-600 bg-white px-2 py-0.5 rounded border border-teal-50">
+                                                            Pain: {d.painScale}/10 {d.duration ? `• ${d.duration}` : ''}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 {d.procedure && <span className="text-[10px] font-black text-white bg-teal-600 px-3 py-1 rounded-lg">Plan: {d.procedure}</span>}
                                             </div>
                                             
                                             <div className="mb-4">
                                                 <span className="text-[8px] font-black text-teal-600 uppercase block mb-2">Tooth-Level Detailed Assessment</span>
-                                                <div className="grid grid-cols-2 gap-3">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                     {(d.teeth || []).map((t: any, idx: number) => (
                                                         <div key={idx} className="bg-white p-3 rounded-xl border border-teal-100 shadow-sm relative overflow-hidden">
                                                             <div className="absolute top-0 left-0 w-1 h-full bg-teal-500"></div>
                                                             <div className="flex justify-between items-center mb-1">
                                                                 <span className="text-[12px] font-black text-teal-900">Tooth #{t.toothNumber}</span>
-                                                                <span className="text-[8px] font-black px-2 py-0.5 bg-red-50 text-red-600 rounded uppercase">{t.condition || 'Finding'}</span>
+                                                                <div className="flex gap-1">
+                                                                    {t.cariesDepth && t.cariesDepth !== 'None' && <span className="text-[7px] font-black px-1.5 py-0.5 bg-violet-50 text-violet-600 rounded border border-violet-100 uppercase">{t.cariesDepth}</span>}
+                                                                    <span className="text-[8px] font-black px-2 py-0.5 bg-red-50 text-red-600 rounded uppercase">{t.condition || 'Finding'}</span>
+                                                                </div>
                                                             </div>
                                                             <div className="text-[10px] font-bold text-slate-600">{t.diagnosis || 'Clinical evaluation notes...'}</div>
-                                                            {t.mobilityGrade > 0 && <div className="text-[9px] font-black text-red-700 mt-1">Mobility Grade: {t.mobilityGrade}</div>}
+                                                            {(t.mobilityGrade > 0 || t.tenderness) && (
+                                                                <div className="flex gap-3 mt-1.5 pt-1.5 border-t border-slate-50">
+                                                                    {t.mobilityGrade > 0 && <div className="text-[8px] font-black text-red-700 uppercase">Mobility: G{t.mobilityGrade}</div>}
+                                                                    {t.tenderness && <div className="text-[8px] font-black text-orange-600 uppercase">● Percussion Tenderness</div>}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     ))}
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div className="bg-white p-3 rounded-xl border border-teal-100">
                                                     <span className="text-[8px] font-black text-teal-600 uppercase block mb-1">General Oral Environment</span>
                                                     <div className="text-[10px] font-bold text-slate-700 leading-relaxed">
                                                         Findings: <span className="text-teal-900">{findingsLines.join(' • ') || 'No significant generalized findings'}</span><br/>
                                                         Plaque Index: <span className="text-slate-900">{d.oralFindings?.plaqueIndex || 'Low'}</span>
+                                                        {extraOral.length > 0 && (
+                                                            <div className="mt-1 pt-1 border-t border-slate-50 text-teal-600">
+                                                                Extraoral: <span className="font-black">{extraOral.join(' • ')}</span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <div className={`p-3 rounded-xl border ${d.systemicRisks?.onBloodThinners ? 'bg-red-50 border-red-100' : 'bg-white border-teal-100'}`}>
@@ -1021,6 +1113,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                     );
                                 })()}
 
+
                                 {activeSpecialty.toUpperCase().includes('ENT') && !activeSpecialty.toUpperCase().includes('DENT') && !activeSpecialty.toUpperCase().includes('GASTRO') && formData.entData && (() => {
                                     const ent = formData.entData;
                                     return (
@@ -1029,8 +1122,8 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 <span className="text-[11px] font-[900] uppercase text-sky-800 tracking-[1px]">ENT / Otolaryngology Examination</span>
                                                 <span className="text-[10px] font-[900] text-sky-600 bg-sky-100 px-[10px] py-[4px] rounded-[6px]">Ear, Nose, Throat Profile</span>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-6 mt-2">
-                                                <div className="col-span-2 grid grid-cols-2 gap-4 bg-white/50 p-3 rounded-xl border border-sky-100">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-2">
+                                                <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white/50 p-3 rounded-xl border border-sky-100">
                                                     <div>
                                                         <span className="text-[8px] font-bold text-sky-600 uppercase block mb-1">Left Ear</span>
                                                         <div className="text-[10px] space-y-1">
@@ -1091,7 +1184,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 <span className="text-[10px] font-[900] uppercase text-rose-800 tracking-[1px]">Hematology Assessment Report</span>
                                                 <span className="text-[11px] font-[900] text-rose-700">CBC & Coagulation Status</span>
                                             </div>
-                                            <div className="grid grid-cols-4 gap-3 mb-4">
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                                                 <div className="bg-white p-2 border border-rose-100 rounded-lg">
                                                     <span className="text-[8px] font-bold text-slate-400 block uppercase">Hb</span>
                                                     <span className={`text-sm font-black ${(parseFloat(cbc.hb) < 10) ? 'text-rose-600' : 'text-slate-800'}`}>{cbc.hb || '--'} <small className="text-[9px]">g/dL</small></span>
@@ -1109,7 +1202,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                     <span className="text-sm font-black text-slate-800">{cbc.tlc || '--'}</span>
                                                 </div>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                                                 <div className="bg-white/50 p-2 rounded-lg border border-rose-100">
                                                     <span className="text-[8px] font-bold text-rose-600 uppercase block mb-1">RBC Indices</span>
                                                     <div className="text-[10px] font-bold text-slate-700">MCV: {rbci.mcv} | MCH: {rbci.mch} | MCHC: {rbci.mchc}</div>
@@ -1143,7 +1236,7 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 <span className="text-[10px] font-[900] uppercase text-indigo-900 tracking-[1px]">Oncology Treatment Summary</span>
                                                 <span className="text-[10px] font-[900] text-white bg-indigo-900 px-3 py-1 rounded-full">BSA: {onco.body?.bsa || '--'} m²</span>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                                 <div>
                                                     <span className="text-[8px] font-black text-slate-400 uppercase">Diagnosis & Clinical Stage</span>
                                                     <div className="text-sm font-black text-indigo-900">{onco.diagnosis || 'Solid Tumor'} {onco.tnm?.stage ? `(Stage ${onco.tnm.stage})` : ''}</div>
@@ -1162,27 +1255,29 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
 
                                             {chemo.length > 0 && (
                                                 <div className="mt-4">
-                                                    <span className="text-[8px] font-black text-slate-400 uppercase block mb-2">Cytotoxic Regimen: {onco.treatment?.regimen}</span>
-                                                    <table className="w-full border-collapse bg-white rounded-xl overflow-hidden border border-slate-200">
-                                                        <thead>
-                                                            <tr className="bg-slate-100">
-                                                                <th className="text-[8px] p-2 text-left text-slate-500 uppercase">Drug</th>
-                                                                <th className="text-[8px] p-2 text-center text-slate-500 uppercase">mg/m²</th>
-                                                                <th className="text-[8px] p-2 text-center text-indigo-600 uppercase">Total</th>
-                                                                <th className="text-[8px] p-2 text-center text-slate-500 uppercase">Route</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {chemo.map((c: any, i: number) => (
-                                                                <tr key={i} className="border-t border-slate-100">
-                                                                    <td className="p-2 text-[11px] font-black text-indigo-900">{c.drug}</td>
-                                                                    <td className="p-2 text-[10px] text-center text-slate-500">{c.dosePerM2}</td>
-                                                                    <td className="p-2 text-[11px] text-center font-black text-indigo-900">{c.totalDose} mg</td>
-                                                                    <td className="p-2 text-[10px] text-center text-slate-500">{c.route}</td>
+                                                    <span className="text-[8px] font-black text-slate-400 uppercase block mb-2">Cytotoxic Regimen</span>
+                                                    <div className="overflow-x-auto">
+                                                        <table className="w-full border-collapse bg-white rounded-xl overflow-hidden border border-slate-200 min-w-[400px]">
+                                                            <thead>
+                                                                <tr className="bg-slate-100">
+                                                                    <th className="text-[8px] p-2 text-left text-slate-500 uppercase">Drug</th>
+                                                                    <th className="text-[8px] p-2 text-center text-slate-500 uppercase">mg/m²</th>
+                                                                    <th className="text-[8px] p-2 text-center text-indigo-600 uppercase">Total</th>
+                                                                    <th className="text-[8px] p-2 text-center text-slate-500 uppercase">Route</th>
                                                                 </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
+                                                            </thead>
+                                                            <tbody>
+                                                                {chemo.map((c: any, i: number) => (
+                                                                    <tr key={i} className="border-t border-slate-100">
+                                                                        <td className="p-2 text-[11px] font-black text-indigo-900">{c.drug}</td>
+                                                                        <td className="p-2 text-[10px] text-center text-slate-500">{c.dosePerM2}</td>
+                                                                        <td className="p-2 text-[11px] text-center font-black text-indigo-900">{c.totalDose} mg</td>
+                                                                        <td className="p-2 text-[10px] text-center text-slate-500">{c.route}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                 </div>
                                             )}
                                             
@@ -1196,57 +1291,12 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                         </div>
                                     );
                                 })()}
-
-                                {(activeSpecialty.toUpperCase().includes('GYNAE') || activeSpecialty.toUpperCase().includes('GYNE') || activeSpecialty.toUpperCase().includes('OBST')) && formData.gynaecData && (() => {
-                                    const gyn = formData.gynaecData;
-                                    const obs = gyn.obstetric || {};
-                                    const vitals = gyn.vitals || {};
-                                    const obsEx = gyn.obstetricExam || {};
-                                    const fhr = parseInt(obsEx.fetalHeartRate);
-                                    
-                                    return (
-                                        <div className="mb-[25px] p-[18px] border-2 border-pink-100 rounded-[16px] bg-pink-50/10">
-                                            <div className="flex justify-between items-center border-b-[1.5px] border-pink-200 mb-[14px] pb-[8px]">
-                                                <span className="text-[10px] font-[900] uppercase text-pink-800 tracking-[1px]">Gynaecology / Obstetric Report</span>
-                                                <span className="text-[11px] font-[900] text-pink-700 bg-pink-100 px-[10px] py-[4px] rounded-[6px]">{gyn.pregnant === 'Yes' ? `Pregnant (${gyn.gestationalAge} wks)` : 'Non-Pregnant'}</span>
-                                            </div>
-                                            <div className="grid grid-cols-3 gap-4 mb-4">
-                                                <div>
-                                                    <span className="text-[8px] font-bold text-pink-600 block uppercase">LMP</span>
-                                                    <div className="text-[12px] font-black text-slate-800">{gyn.lmp ? new Date(gyn.lmp).toLocaleDateString('en-GB') : 'N/A'}</div>
-                                                </div>
-                                                <div>
-                                                    <span className="text-[8px] font-bold text-pink-600 block uppercase">G P L A</span>
-                                                    <div className="text-[13px] font-black text-slate-800">G{obs.gravida} P{obs.para} L{obs.living} A{obs.abortions}</div>
-                                                </div>
-                                                <div>
-                                                    <span className="text-[8px] font-bold text-pink-600 block uppercase">Cycle</span>
-                                                    <div className="text-[11px] font-bold text-slate-700">{gyn.cycleRegularity} {gyn.cycleLength && `/ ${gyn.cycleLength}d`}</div>
-                                                </div>
-                                            </div>
-
-                                            {gyn.pregnant === 'Yes' && (
-                                                <div className="grid grid-cols-3 gap-4 mb-4 bg-white p-3 rounded-xl border border-pink-100">
-                                                    <div><span className="text-[8px] font-bold text-purple-600 uppercase">EDD</span><div className="text-xs font-black">{gyn.edd ? new Date(gyn.edd).toLocaleDateString('en-GB') : 'N/A'}</div></div>
-                                                    <div><span className="text-[8px] font-bold text-purple-600 uppercase">Fetal Position</span><div className="text-xs font-bold">{obsEx.fetalPosition || 'N/A'}</div></div>
-                                                    <div><span className="text-[8px] font-bold text-purple-600 uppercase">FHR</span><div className={`text-xs font-black ${fhr < 110 || fhr > 160 ? 'text-rose-600' : 'text-emerald-600'}`}>{obsEx.fetalHeartRate} bpm</div></div>
-                                                </div>
-                                            )}
-
-                                            <div className="grid grid-cols-4 gap-2 mb-3">
-                                                {vitals.bp && <div><span className="text-[8px] text-pink-600 font-bold block">BP</span><span className="text-[10px] font-black">{vitals.bp}</span></div>}
-                                                {vitals.pulse && <div><span className="text-[8px] text-pink-600 font-bold block">Pulse</span><span className="text-[10px] font-black">{vitals.pulse}</span></div>}
-                                                {vitals.weight && <div><span className="text-[8px] text-pink-600 font-bold block">Weight</span><span className="text-[10px] font-black">{vitals.weight}kg</span></div>}
-                                                {vitals.temperature && <div><span className="text-[8px] text-pink-600 font-bold block">Temp</span><span className="text-[10px] font-black">{vitals.temperature}°F</span></div>}
-                                            </div>
-                                            {gyn.notes && <div className="mt-3 text-[10px] text-pink-400 italic">Gynae Notes: {gyn.notes}</div>}
-                                        </div>
-                                    );
-                                })()}
+                                
                                 {formData.medicines.length > 0 && (
-                                    <div>
-                                        <div className="text-[11px] font-[900] uppercase text-slate-800 tracking-[1.5px] mb-[12px] pb-[4px] border-b-2 border-indigo-600/20 inline-block">Medications & Dosage</div>
-                                        <table className="w-full border-collapse">
+                                    <div className="mt-4 sm:mt-6">
+                                        <div className="text-[9px] sm:text-[11px] font-[900] uppercase text-slate-800 tracking-[1.5px] mb-[8px] sm:mb-[12px] pb-[4px] border-b-2 border-indigo-600/20 inline-block">Medications & Dosage</div>
+                                        <div className="overflow-x-auto -mx-2 px-2 pb-4">
+                                            <table className="w-full border-collapse min-w-[500px] sm:min-w-[600px]">
                                             <thead>
                                                 <tr className="bg-slate-50 border-b-2 border-indigo-600/10">
                                                     <th className="text-left text-[9px] font-[900] text-slate-500 uppercase py-[12px] px-[10px]" style={{ width: activeSpecialty.toUpperCase().includes('PEDIATRI') ? '30%' : '35%' }}>Medicine Name</th>
@@ -1283,11 +1333,12 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                                                 ))}
                                             </tbody>
                                         </table>
+                                        </div>
                                     </div>
                                 )}
 
                                 {/* Advice Grid */}
-                                <div className="grid grid-cols-2 gap-8 pt-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
                                     {formData.dietAdvice.length > 0 && (
                                         <div>
                                             <div className="text-[11px] font-[900] uppercase text-slate-800 tracking-[1.5px] mb-[12px]">Clinical Advice</div>
@@ -1316,13 +1367,13 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
 
                                 {/* Follow up */}
                                 {(formData.followUp || formData.followUpDate) && (
-                                    <div className="mt-8 p-6 bg-amber-50 rounded-2xl border-2 border-amber-100 flex justify-between items-center">
+                                    <div className="mt-8 p-6 bg-amber-50 rounded-2xl border-2 border-amber-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                         <div>
                                             <span className="text-[9px] font-[800] text-amber-600 uppercase tracking-widest block mb-1">Follow-up Instructions</span>
                                             <div className="text-sm font-bold text-amber-900">{formData.followUp || 'Follow Standard Protocol'}</div>
                                         </div>
                                         {formData.followUpDate && (
-                                            <div className="text-right">
+                                            <div className="text-right sm:text-right w-full sm:w-auto">
                                                 <span className="text-[9px] font-[800] text-amber-600 uppercase tracking-widest block mb-1">Scheduled Date</span>
                                                 <div className="text-sm font-black text-amber-900">{new Date(formData.followUpDate).toLocaleDateString('en-GB')}</div>
                                             </div>
@@ -1348,29 +1399,29 @@ const PrescriptionPreviewModal: React.FC<PrescriptionPreviewModalProps> = ({
                 </div>
 
                 {/* Action Bar */}
-                <div className="sticky bottom-0 w-full bg-slate-900 p-5 border-t border-slate-800 flex flex-col sm:flex-row justify-end items-center gap-4 shadow-2xl">
-                    <div className="flex gap-4 w-full sm:w-auto">
+                <div className="sticky bottom-0 w-full bg-slate-900 p-3 sm:p-5 border-t border-slate-800 flex flex-col sm:flex-row justify-end items-center gap-2 sm:gap-4 shadow-2xl">
+                    <div className="flex gap-2 sm:gap-4 w-full sm:w-auto">
                         {!sentToPharma && formData.medicines.length > 0 && (
                             <button
                                 onClick={handleSendToPharma}
-                                className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-8 py-4 bg-indigo-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-600/20"
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-8 py-2.5 sm:py-4 bg-indigo-600 text-white rounded-lg sm:rounded-xl font-black uppercase text-[8px] sm:text-[10px] tracking-widest hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-600/20"
                             >
-                                <CheckCircle2 size={18} />
-                                <span>Send to Pharma</span>
+                                <CheckCircle2 size={16} />
+                                <span>Pharma</span>
                             </button>
                         )}
                         <button
                             onClick={onClose}
-                            className="flex-1 sm:flex-none px-8 py-4 bg-slate-800 text-slate-300 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-700 transition-all active:scale-95 border border-slate-700"
+                            className="flex-1 sm:flex-none px-4 sm:px-8 py-2.5 sm:py-4 bg-slate-800 text-slate-300 rounded-lg sm:rounded-xl font-black uppercase text-[8px] sm:text-[10px] tracking-widest hover:bg-slate-700 transition-all active:scale-95 border border-slate-700"
                         >
-                            Modify Details
+                            Modify
                         </button>
                         <button
                             onClick={handleFinalizeFromPreview}
-                            className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-10 py-4 bg-teal-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-teal-700 transition-all active:scale-95 shadow-lg shadow-teal-600/20"
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-10 py-2.5 sm:py-4 bg-teal-600 text-white rounded-lg sm:rounded-xl font-black uppercase text-[8px] sm:text-[10px] tracking-widest hover:bg-teal-700 transition-all active:scale-95 shadow-lg shadow-teal-600/20"
                         >
-                            <Printer size={18} />
-                            <span>{sentToPharma ? 'Finalize & Print' : 'Sign & Finalize'}</span>
+                            <Printer size={16} />
+                            <span>{sentToPharma ? 'Print' : 'Finalize'}</span>
                         </button>
                     </div>
                 </div>

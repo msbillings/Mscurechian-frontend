@@ -323,7 +323,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             throw error;
         }
       }
-      const { accessToken, csrfToken, user, sessionId } = response;
+      const {
+        // ✅ FIX (Bug 5): Support both top-level (new) and nested tokens.{} (legacy fallback)
+        accessToken:    _at,
+        csrfToken:      _csrf,
+        sessionId:      _sid,
+        user,
+        tokens,
+        accessTokenExpiresIn,
+        refreshTokenExpiresIn,
+      } = response as any;
+      const accessToken = _at || tokens?.accessToken;
+      const csrfToken   = _csrf || tokens?.csrfToken;
+      const sessionId   = _sid || tokens?.sessionId;
       if (!user) throw new Error("Authentication failed: No user data returned.");
 
       // Resolution of hospital context

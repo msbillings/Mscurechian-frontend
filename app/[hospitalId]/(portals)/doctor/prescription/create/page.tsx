@@ -2134,7 +2134,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         </div>`;
                         })() : ''}
 
-                        ${activeSpecialty.toUpperCase().includes('URO') && formData.urologyData ? (() => {
+                        ${(formData.urologyData && (formData.urologyData.ipss?.score || formData.urologyData.renal?.creatinine || formData.urologyData.diagnosis)) ? (() => {
                             const u = formData.urologyData;
                             const ipss = parseInt(u.ipss?.score) || 0;
                             const creat = parseFloat(u.renal?.creatinine) || 0;
@@ -3126,7 +3126,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                 nephroData:  (activeSpecialty.toUpperCase().includes('NEPHRO')) ? formData.nephroData : undefined,
                 urologyData: (activeSpecialty.toUpperCase().includes('URO')) ? formData.urologyData : undefined,
                 ophthaData:  (activeSpecialty.toUpperCase().includes('OPHTHAL') || activeSpecialty.toUpperCase().includes('EYE')) ? formData.ophthaData : undefined,
-                orthoData:   (activeSpecialty.toUpperCase().includes('ORTHO'))   ? formData.orthoData   : undefined,
+                orthopedicData: (activeSpecialty.toUpperCase().includes('ORTHO')) ? formData.orthoData : undefined,
                 pulmoData:   (activeSpecialty.toUpperCase().includes('PULMO'))   ? formData.pulmoData   : undefined,
                 psychiatryData: (activeSpecialty.toUpperCase().includes('PSYCH')) ? formData.psychiatryData : undefined,
                 endocrinologyData: (activeSpecialty.toUpperCase().includes('ENDOCRIN')) ? formData.endocrinologyData : undefined,
@@ -3406,11 +3406,6 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         </div>
                     </div>
 
-                    {/* Unified Clinical Safety Monitor */}
-                    {!activeSpecialty.toUpperCase().includes('ENDOCRIN') && (
-                        <ClinicalAlertPanel alerts={clinicalAlerts} />
-                    )}
-
                     {/* DYNAMIC CLINICAL MODULES - STREAMLINED RENDERING */}
                     <div className="mb-8">
                         {(() => {
@@ -3453,33 +3448,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             return null;
                         })()}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8" style={{display:'none'}}>
-                        <div>
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex justify-between">
-                                Symptoms / Complaints
-                            </label>
-                            <textarea
-                                name="symptoms"
-                                value={formData.symptoms}
-                                onChange={handleInputChange}
-                                rows={3}
-                                placeholder="e.g. Fever, Cough, Headache..."
-                                className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
-                            />
 
-                        </div>
-                        <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Diagnosis</label>
-                            <textarea
-                                name="diagnosis"
-                                value={formData.diagnosis}
-                                onChange={handleInputChange}
-                                rows={3}
-                                placeholder="e.g. Viral Fever"
-                                className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
-                            />
-                        </div>
-                    </div>
                 </div>
 
                 {/* Medicines Section */}
