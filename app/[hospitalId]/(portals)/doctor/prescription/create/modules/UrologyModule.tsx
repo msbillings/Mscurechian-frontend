@@ -38,8 +38,6 @@ const IPSS_COLORS: Record<string, string> = {
 };
 
 export const UrologyModule: React.FC<UrologyModuleProps> = ({ formData, setFormData }) => {
-    const [alerts, setAlerts] = useState<AlertEntry[]>([]);
-
     if (!formData.urologyData) return null;
     const u = formData.urologyData;
 
@@ -60,56 +58,7 @@ export const UrologyModule: React.FC<UrologyModuleProps> = ({ formData, setFormD
         update('symptoms', curr.includes(sym) ? curr.filter((s: string) => s !== sym) : [...curr, sym]);
     };
 
-    // ── Clinical Validation Engine ────────────────────────────────────────────
-    useEffect(() => {
-        const newAlerts: AlertEntry[] = [];
-        const score = parseInt(u.ipss?.score) || 0;
-        const creat = parseFloat(u.renal?.creatinine) || 0;
-        const pus   = parseInt(u.urine?.pusCells) || 0;
-        const rbc   = parseInt(u.urine?.rbc) || 0;
-        const pvr   = parseFloat(u.pvr) || 0;
-        const stoneSize = parseFloat(u.stone?.size) || 0;
-        const syms: string[] = u.symptoms || [];
 
-        // 1. IPSS
-        if (score > 20) {
-            newAlerts.push({ type: 'warning', message: '❗ Severe LUTS — intervention required' });
-        }
-
-        // 2. Creatinine
-        if (creat > 1.5) {
-            newAlerts.push({ type: 'warning', message: '❗ Renal impairment' });
-        }
-
-        // 3. UTI logic
-        if (pus > 10 && u.urine?.nitrite) {
-            newAlerts.push({ type: 'info', message: '⭐ Urinary tract infection' });
-        } else if (pus > 5 || syms.includes('Dysuria')) {
-             if (pus > 5 && syms.includes('Dysuria')) newAlerts.push({ type: 'info', message: '⭐ UTI' });
-        }
-
-        // 4. Hematuria
-        if (rbc > 0 || syms.includes('Hematuria')) {
-            newAlerts.push({ type: 'emergency', message: '❗ Hematuria — requires evaluation' });
-        }
-
-        // 5. Stones
-        if (stoneSize > 0) {
-            if (stoneSize < 5) newAlerts.push({ type: 'info', message: '⭐ Medical management' });
-            else if (stoneSize > 10) newAlerts.push({ type: 'warning', message: '❗ Surgical intervention likely' });
-            if (syms.includes('Flank Pain')) newAlerts.push({ type: 'info', message: '⭐ Renal calculi' });
-        }
-
-        // 6. Obstruction / PVR
-        if (pvr > 100) {
-            newAlerts.push({ type: 'warning', message: '❗ Urinary retention' });
-        }
-        if (creat > 1.5 && pvr > 100) {
-            newAlerts.push({ type: 'emergency', message: '🚨 CRITICAL: Obstructive uropathy' });
-        }
-
-        setAlerts(newAlerts);
-    }, [u.ipss?.score, u.renal?.creatinine, u.urine?.pusCells, u.urine?.rbc, u.urine?.nitrite, u.pvr, u.stone?.size, u.symptoms, u.diagnosis]);
 
     const btnPill = (active: boolean, danger = false, warn = false) =>
         `px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
@@ -137,23 +86,7 @@ export const UrologyModule: React.FC<UrologyModuleProps> = ({ formData, setFormD
 
     return (
         <div className="space-y-4">
-            {/* ── Clinical Alerts Panel ──────────────────────────────────── */}
-            {alerts.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {alerts.map((alert, idx) => (
-                        <div key={idx} className={`flex items-start gap-3 p-3 rounded-xl border-l-4 ${
-                            alert.type === 'emergency' ? 'bg-red-50 border-red-600 text-red-900' :
-                            alert.type === 'error' ? 'bg-rose-50 border-rose-500 text-rose-800' :
-                            alert.type === 'warning' ? 'bg-amber-50 border-amber-500 text-amber-800' :
-                            'bg-blue-50 border-blue-400 text-blue-800'
-                        }`}>
-                            {alert.type === 'emergency' || alert.type === 'error' ? <ShieldAlert size={16} className="shrink-0 mt-0.5" /> :
-                             alert.type === 'warning' ? <AlertTriangle size={16} className="shrink-0 mt-0.5" /> : <Info size={16} className="shrink-0 mt-0.5" />}
-                            <p className="text-[10px] font-black uppercase tracking-tight leading-snug">{alert.message}</p>
-                        </div>
-                    ))}
-                </div>
-            )}
+
 
             {/* Header */}
             <div className="bg-sky-50 border border-sky-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">

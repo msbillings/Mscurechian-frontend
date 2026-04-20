@@ -24,13 +24,6 @@ export const PediatricsModule: React.FC<PediatricsModuleProps> = ({ formData, se
         const rr = parseInt(pediatricData.respRate);
         const age = parseInt(formData.age) || 0;
 
-        // 1. Weight Validation
-        if (!weight || weight <= 0) {
-            newAlerts.push({ type: 'error', message: "Weight is recommended for accurate pediatric dosing." });
-        } else if (weight > 100) {
-            newAlerts.push({ type: 'warning', message: "Weight exceeds typical pediatric range." });
-        }
-
         // 2. Age-based Head Circumference
         if (age > 5 && pediatricData.headCircumference) {
             newAlerts.push({ type: 'info', message: "Head circumference is typically monitored for children < 5 years." });

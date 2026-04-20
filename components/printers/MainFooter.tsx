@@ -52,6 +52,7 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails }) => {
             {/* ── Contact Slanted Bars ── */}
                     <div style={{ 
                         display: 'flex', 
+                        flexWrap: 'wrap',
                         alignItems: 'stretch',
                         minHeight: '32px', 
                         marginBottom: '12px', 
@@ -99,7 +100,7 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails }) => {
             {/* ── Info Wrapper with Border ── */}
             <div style={{
                 display: 'flex',
-                flexWrap: 'nowrap',
+                flexWrap: 'wrap',
                 justifyContent: 'flex-start',
                 alignItems: 'flex-start',
                 marginTop: '5px',

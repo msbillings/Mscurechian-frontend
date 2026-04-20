@@ -62,7 +62,8 @@ function HighlightedText({
 }: {
     text: string;
     matches: SpellMatch[];
-    onMatchClick: (field: string, idx: number, e: React.MouseEvent) => void;
+    onMatchClick: (field: string, match: SpellMatch, e: React.MouseEvent) => void;
+
     fieldName: string;
 }) {
     if (!matches.length || !text) return null;
@@ -79,13 +80,14 @@ function HighlightedText({
         parts.push(
             <span
                 key={`e-${i}`}
-                onClick={(e) => onMatchClick(fieldName, i, e)}
+                onClick={(e) => onMatchClick(fieldName, m, e)}
                 className="spell-error"
                 title={m.message}
             >
                 {text.slice(start, end)}
             </span>
         );
+
         cursor = end;
     });
 
@@ -144,9 +146,7 @@ export default function PatientRegistration() {
     }, []);
 
     // Apply suggestion — correction logic delegated to spellCheckService
-    const applySuggestion = useCallback((field: string, matchIdx: number, suggestion: string) => {
-        const matches: SpellMatch[] = spellErrors[field] || [];
-        const match = matches[matchIdx];
+    const applySuggestion = useCallback((field: string, match: SpellMatch, suggestion: string) => {
         if (!match) return;
 
         const currentValue = (formData as any)[field] as string;
@@ -155,14 +155,32 @@ export default function PatientRegistration() {
         setFormData(prev => ({ ...prev, [field]: newValue }));
         setPopup(null);
         triggerSpellCheck(field, newValue);
-    }, [spellErrors, formData, triggerSpellCheck]);
+    }, [formData, triggerSpellCheck]);
+
+
+    // Apply all suggestions at once (Google-like "Fix All")
+    const applyAllSuggestions = useCallback((field: string, correctedText: string) => {
+        setFormData(prev => ({ ...prev, [field]: correctedText }));
+        setPopup(null);
+        // Delay re-check slightly to let state settle
+        setTimeout(() => triggerSpellCheck(field, correctedText), 100);
+    }, [triggerSpellCheck]);
 
     // Popup position handler
-    const handleMatchClick = useCallback((field: string, matchIndex: number, e: React.MouseEvent) => {
+    const handleMatchClick = useCallback((field: string, match: SpellMatch, e: React.MouseEvent) => {
         e.stopPropagation();
-        const rect = (e.target as HTMLElement).getBoundingClientRect();
-        setPopup({ field, matchIndex, x: rect.left, y: rect.bottom + window.scrollY + 4 });
+        const target = e.currentTarget as HTMLElement;
+        const rect = target.getBoundingClientRect();
+        
+        // Ensure coordinates are within viewport
+        const x = Math.max(8, Math.min(rect.left, window.innerWidth - 220));
+        const y = rect.bottom + 8;
+        
+        setPopup({ field, match, x, y });
     }, []);
+
+
+
 
     useEffect(() => {
         const initialType = searchParams.get('type') as 'OPD' | 'IPD' || 'OPD';
@@ -313,12 +331,8 @@ export default function PatientRegistration() {
 
         if (hasError) { toast.error("Please fix form errors"); return; }
 
-        // Warn if spell errors remain
-        const totalSpellIssues = Object.values(spellErrors).reduce((s, a) => s + a.length, 0);
-        if (totalSpellIssues > 0) {
-            toast.error(`⚠️ ${totalSpellIssues} spelling issue(s) detected. Please review before submitting.`);
-            return;
-        }
+        // Removed blocking check for spelling issues. Spelling is now purely suggestive.
+
 
         try {
             setSubmitting(true);
@@ -337,7 +351,20 @@ export default function PatientRegistration() {
                 router.push(`/helpdesk/appointment-booking?patientId=${res.patient.id}&type=${formData.registrationType}`);
             }, 1000);
         } catch (error: any) {
-            toast.error(error.message || "Failed to register");
+            let errorMsg = error.message || "Failed to register";
+            
+            // Handle MongoDB Duplicate Key Error (E11000)
+            if (errorMsg.includes("E11000")) {
+                if (errorMsg.includes("email")) {
+                    errorMsg = "This email is already registered with another patient.";
+                } else if (errorMsg.includes("mobile")) {
+                    errorMsg = "This mobile number is already registered.";
+                } else {
+                    errorMsg = "A patient with these details already exists.";
+                }
+            }
+            
+            toast.error(errorMsg);
         } finally {
             setSubmitting(false);
         }
@@ -365,64 +392,61 @@ export default function PatientRegistration() {
             {/* Spell-check popup */}
             <AnimatePresence>
                 {popup && (() => {
-                    const matches = spellErrors[popup.field] || [];
-                    const match = matches[popup.matchIndex];
-                    if (!match) return null;
+                    const { match, field } = popup;
                     const suggestions = match.replacements.slice(0, 4);
                     return (
                         <motion.div
+
                             ref={popupRef}
                             key="spell-popup"
-                            initial={{ opacity: 0, scale: 0.92, y: -4 }}
+                            initial={{ opacity: 0, scale: 0.95, y: -4 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            transition={{ duration: 0.15 }}
-                            className="fixed z-[9999] bg-white border border-slate-200 rounded-2xl shadow-2xl p-3 min-w-[200px] max-w-[260px]"
-                            style={{ left: Math.min(popup.x, window.innerWidth - 270), top: popup.y }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.1 }}
+                            className="fixed z-[9999] bg-white border border-slate-200 rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] p-2 min-w-[180px] max-w-[240px]"
+                            style={{ left: Math.min(popup.x, window.innerWidth - 250), top: popup.y }}
                         >
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
-                                <SpellCheck size={10} className="text-amber-500" /> Spelling Suggestion
-                            </p>
-                            <p className="text-[10px] text-slate-600 font-medium mb-2 leading-snug">{match.message}</p>
+                            <div className="px-2 py-1 mb-1 border-b border-slate-50">
+                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                    <SpellCheck size={10} className="text-rose-500" /> Suggestion
+                                </p>
+                            </div>
                             {suggestions.length > 0 ? (
-                                <div className="flex flex-wrap gap-1.5">
+                                <div className="space-y-0.5">
                                     {suggestions.map((s, i) => (
                                         <button
                                             key={i}
                                             type="button"
-                                            onClick={() => applySuggestion(popup.field, popup.matchIndex, s.value)}
-                                            className="px-2.5 py-1 bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-700 text-[11px] font-bold rounded-lg transition-all"
+                                            onClick={() => applySuggestion(field, match, s.value)}
+                                            className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 text-slate-700 text-[11px] font-bold rounded-lg transition-colors flex items-center justify-between group"
                                         >
+
                                             {s.value}
+                                            <ChevronRight size={10} className="text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
                                         </button>
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-[10px] text-slate-400 italic">No suggestions available</p>
+                                <p className="p-2 text-[10px] text-slate-400 italic">No suggestions</p>
                             )}
-                            <button
-                                type="button"
-                                onClick={() => setPopup(null)}
-                                className="mt-2 text-[9px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest w-full text-right"
-                            >
-                                Dismiss
-                            </button>
                         </motion.div>
+
                     );
                 })()}
             </AnimatePresence>
 
-            {/* CSS for squiggly underline */}
+            {/* CSS for squiggly underline and overlays */}
             <style>{`
                 .spell-error {
-                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='3'%3E%3Cpath d='M0 2.5 Q1.5 0 3 2.5 Q4.5 5 6 2.5' stroke='%23f59e0b' stroke-width='1' fill='none'/%3E%3C/svg%3E");
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='3'%3E%3Cpath d='M0 2.5 Q1.5 0 3 2.5 Q4.5 5 6 2.5' stroke='%23f43f5e' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
                     background-repeat: repeat-x;
                     background-position: bottom;
                     background-size: 6px 3px;
                     cursor: pointer;
                     border-radius: 1px;
+                    transition: background-color 0.2s;
                 }
-                .spell-error:hover { background-color: rgba(245, 158, 11, 0.08); }
+                .spell-error:hover { background-color: rgba(244, 63, 94, 0.1); }
                 .spell-overlay {
                     position: absolute;
                     inset: 0;
@@ -436,9 +460,16 @@ export default function PatientRegistration() {
                     word-break: break-word;
                     overflow: hidden;
                     border-radius: 0.75rem;
-                    z-index: 2;
+                    z-index: 5;
+                    font-family: inherit;
+                    letter-spacing: normal;
                 }
+
                 .spell-overlay span.spell-error { pointer-events: auto; color: transparent; }
+                
+                /* Custom scrollbar-hiding for overlays to match inputs if needed */
+                .spell-overlay::-webkit-scrollbar { display: none; }
+                
                 @keyframes glow {
                     0%, 100% { text-shadow: 0 0 5px rgba(13,148,136,.5), 0 0 10px rgba(13,148,136,.3); opacity: 1; }
                     50%       { text-shadow: 0 0 10px rgba(13,148,136,.8), 0 0 20px rgba(13,148,136,.5); opacity: .8; }
@@ -524,6 +555,8 @@ export default function PatientRegistration() {
                                             spellMatches={spellErrors['name'] || []}
                                             isChecking={checking['name']}
                                             onMatchClick={handleMatchClick}
+                                            onFixAll={applyAllSuggestions}
+
                                         />
                                     } />
                                 </div>
@@ -578,7 +611,9 @@ export default function PatientRegistration() {
                                         spellMatches={spellErrors['address'] || []}
                                         isChecking={checking['address']}
                                         onMatchClick={handleMatchClick}
+                                        onFixAll={applyAllSuggestions}
                                     />
+
                                 } />
                             </div>
                             <div className="md:col-span-4 space-y-4">
@@ -629,6 +664,8 @@ export default function PatientRegistration() {
                                             spellMatches={spellErrors['allergies'] || []}
                                             isChecking={checking['allergies']}
                                             onMatchClick={handleMatchClick}
+                                            onFixAll={applyAllSuggestions}
+
                                             showCounter
                                         />
                                     } />
@@ -647,6 +684,8 @@ export default function PatientRegistration() {
                                             spellMatches={spellErrors['medicalHistory'] || []}
                                             isChecking={checking['medicalHistory']}
                                             onMatchClick={handleMatchClick}
+                                            onFixAll={applyAllSuggestions}
+
                                         />
                                     } />
                                 </div>
@@ -679,6 +718,23 @@ export default function PatientRegistration() {
     );
 }
 
+// ── Helpers ──────────────────────────────────────────────────────────────
+const getFullCorrection = (text: string, matches: SpellMatch[]) => {
+    if (!matches || !matches.length) return null;
+    let result = text;
+    // Apply in reverse order to maintain offsets
+    const sorted = [...matches].sort((a, b) => b.offset - a.offset);
+    let changed = false;
+    sorted.forEach(m => {
+        if (m.replacements && m.replacements.length > 0) {
+            const firstSuggestion = m.replacements[0].value;
+            result = result.slice(0, m.offset) + firstSuggestion + result.slice(m.offset + m.length);
+            changed = true;
+        }
+    });
+    return changed ? result : null;
+};
+
 // ── SpellCheckedInput ──────────────────────────────────────────────────────
 interface SpellInputProps {
     name: string;
@@ -690,64 +746,64 @@ interface SpellInputProps {
     hasError: boolean;
     spellMatches: SpellMatch[];
     isChecking?: boolean;
-    onMatchClick: (field: string, idx: number, e: React.MouseEvent) => void;
+    onMatchClick: (field: string, match: SpellMatch, e: React.MouseEvent) => void;
+    onFixAll: (field: string, corrected: string) => void;
     showCounter?: boolean;
 }
 
-function SpellCheckedInput({ name, value, onChange, onBlur, placeholder, maxLength, hasError, spellMatches, isChecking, onMatchClick, showCounter }: SpellInputProps) {
+function SpellCheckedInput({ name, value, onChange, onBlur, placeholder, maxLength, hasError, spellMatches, isChecking, onMatchClick, onFixAll, showCounter }: SpellInputProps) {
     const borderClass = hasError ? 'border-rose-500' : spellMatches.length ? 'border-amber-300' : 'border-slate-200';
+    const correction = getFullCorrection(value, spellMatches);
+
     return (
-        <div className="relative">
-            <input
-                name={name}
-                value={value}
-                onChange={onChange}
-                onBlur={onBlur}
-                placeholder={placeholder}
-                maxLength={maxLength}
-                className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${borderClass} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold transition-all`}
-                autoComplete="off"
-                spellCheck={false}
-            />
-            {isChecking && (
-                <div className="absolute top-1/2 -translate-y-1/2 right-3 flex items-center gap-1">
-                    <Loader2 size={11} className="animate-spin text-teal-400" />
+        <div className="flex flex-col gap-1.5 w-full">
+            <AnimatePresence mode="wait">
+                {correction && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        className="flex items-center gap-2 px-1 py-0.5"
+                    >
+                        <p className="text-[10px] font-extrabold text-rose-500 uppercase tracking-tighter bg-rose-50 px-1.5 py-0.5 rounded leading-none">Did you mean:</p>
+                        <button 
+                            type="button" 
+                            onClick={() => onFixAll(name, correction)}
+                            className="text-[11px] font-bold text-teal-600 hover:text-teal-700 underline decoration-teal-300 decoration-2 underline-offset-4 transition-all text-left"
+                        >
+                            {correction}
+                        </button>
+                        {isChecking && <Loader2 size={10} className="animate-spin text-teal-300 ml-auto" />}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            
+            <div className="relative group">
+                <div className="spell-overlay" style={{ whiteSpace: 'nowrap' }}>
+                    <HighlightedText text={value} matches={spellMatches} onMatchClick={onMatchClick} fieldName={name} />
                 </div>
-            )}
-            {!isChecking && spellMatches.length > 0 && (
-                <div className="absolute top-1/2 -translate-y-1/2 right-3">
-                    <span className="bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
-                        {spellMatches.length}✦
-                    </span>
-                </div>
-            )}
-            {showCounter && maxLength && (
-                <div className="absolute bottom-2 right-8 text-[9px] font-bold text-slate-300 pointer-events-none uppercase">
-                    {value.length}/{maxLength}
-                </div>
-            )}
-            {/* Spell error list below field */}
-            {spellMatches.length > 0 && (
-                <div className="mt-1 space-y-0.5">
-                    {spellMatches.slice(0, 3).map((m, i) => {
-                        const wrong = value.slice(m.offset, m.offset + m.length);
-                        const suggestion = m.replacements[0]?.value;
-                        return (
-                            <button
-                                key={i}
-                                type="button"
-                                onClick={(e) => onMatchClick(name, i, e)}
-                                className="flex items-center gap-1.5 text-[9px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-lg w-full text-left transition-all"
-                            >
-                                <SpellCheck size={9} className="flex-shrink-0" />
-                                <span className="line-through text-rose-500">{wrong}</span>
-                                {suggestion && <><span className="text-slate-400">→</span><span className="text-teal-600">{suggestion}</span></>}
-                                <span className="ml-auto text-slate-300 uppercase">click to fix</span>
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
+                <input
+                    name={name}
+                    value={value}
+                    onChange={onChange}
+                    onBlur={onBlur}
+                    placeholder={placeholder}
+                    maxLength={maxLength}
+                    className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${borderClass} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold transition-all relative z-[1]`}
+                    autoComplete="off"
+                    spellCheck={false}
+                />
+                {!isChecking && spellMatches.length > 0 && (
+                    <div className="absolute top-1/2 -translate-y-1/2 right-3 z-10">
+                        <span className="bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-sm">{spellMatches.length}✦</span>
+                    </div>
+                )}
+                {showCounter && maxLength && (
+                    <div className="absolute bottom-2 right-8 text-[9px] font-bold text-slate-300 pointer-events-none uppercase z-10">
+                        {value.length}/{maxLength}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
@@ -763,54 +819,66 @@ interface SpellTextareaProps {
     hasError: boolean;
     spellMatches: SpellMatch[];
     isChecking?: boolean;
-    onMatchClick: (field: string, idx: number, e: React.MouseEvent) => void;
+    onMatchClick: (field: string, match: SpellMatch, e: React.MouseEvent) => void;
+    onFixAll: (field: string, corrected: string) => void;
 }
 
-function SpellCheckedTextarea({ name, value, onChange, onBlur, placeholder, maxLength, hasError, spellMatches, isChecking, onMatchClick }: SpellTextareaProps) {
+function SpellCheckedTextarea({ name, value, onChange, onBlur, placeholder, maxLength, hasError, spellMatches, isChecking, onMatchClick, onFixAll }: SpellTextareaProps) {
     const borderClass = hasError ? 'border-rose-500' : spellMatches.length ? 'border-amber-300' : 'border-slate-200';
+    const correction = getFullCorrection(value, spellMatches);
+    const overlayRef = useRef<HTMLDivElement>(null);
+    const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+        if (overlayRef.current) overlayRef.current.scrollTop = (e.target as HTMLTextAreaElement).scrollTop;
+    };
+
     return (
-        <div className="relative">
-            <textarea
-                name={name}
-                value={value}
-                onChange={onChange}
-                onBlur={onBlur}
-                rows={2}
-                placeholder={placeholder}
-                maxLength={maxLength}
-                className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${borderClass} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold resize-none transition-all`}
-                spellCheck={false}
-                autoComplete="off"
-            />
-            <div className="absolute bottom-2 right-3 text-[9px] font-bold text-slate-400 pointer-events-none uppercase flex items-center gap-1.5">
-                {isChecking && <Loader2 size={9} className="animate-spin text-teal-400" />}
-                {!isChecking && spellMatches.length > 0 && (
-                    <span className="bg-amber-500 text-white text-[8px] font-black px-1 py-0.5 rounded-full">{spellMatches.length}✦</span>
+        <div className="flex flex-col gap-1.5 w-full">
+            <AnimatePresence mode="wait">
+                {correction && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        className="flex items-center gap-2 px-1 py-0.5"
+                    >
+                        <p className="text-[10px] font-extrabold text-rose-500 uppercase tracking-tighter bg-rose-50 px-1.5 py-0.5 rounded leading-none">Did you mean:</p>
+                        <button 
+                            type="button" 
+                            onClick={() => onFixAll(name, correction)}
+                            className="text-[11px] font-bold text-teal-600 hover:text-teal-700 underline decoration-teal-300 decoration-2 underline-offset-4 transition-all text-left"
+                        >
+                            {correction}
+                        </button>
+                        {isChecking && <Loader2 size={10} className="animate-spin text-teal-300 ml-auto" />}
+                    </motion.div>
                 )}
-                {maxLength && <span>{value.length}/{maxLength}</span>}
-            </div>
-            {/* Spell error list below textarea */}
-            {spellMatches.length > 0 && (
-                <div className="mt-1 space-y-0.5">
-                    {spellMatches.slice(0, 3).map((m, i) => {
-                        const wrong = value.slice(m.offset, m.offset + m.length);
-                        const suggestion = m.replacements[0]?.value;
-                        return (
-                            <button
-                                key={i}
-                                type="button"
-                                onClick={(e) => onMatchClick(name, i, e)}
-                                className="flex items-center gap-1.5 text-[9px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-lg w-full text-left transition-all"
-                            >
-                                <SpellCheck size={9} className="flex-shrink-0" />
-                                <span className="line-through text-rose-500">{wrong}</span>
-                                {suggestion && <><span className="text-slate-400">→</span><span className="text-teal-600">{suggestion}</span></>}
-                                <span className="ml-auto text-slate-300 uppercase">click to fix</span>
-                            </button>
-                        );
-                    })}
+            </AnimatePresence>
+
+            <div className="relative group">
+                <div ref={overlayRef} className="spell-overlay">
+                    <HighlightedText text={value} matches={spellMatches} onMatchClick={onMatchClick} fieldName={name} />
                 </div>
-            )}
+                <textarea
+                    name={name}
+                    value={value}
+                    onChange={onChange}
+                    onBlur={onBlur}
+                    onScroll={handleScroll}
+                    rows={2}
+                    placeholder={placeholder}
+                    maxLength={maxLength}
+                    className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${borderClass} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold resize-none transition-all relative z-[1]`}
+                    spellCheck={false}
+                    autoComplete="off"
+                />
+                <div className="absolute bottom-2 right-3 text-[9px] font-bold text-slate-400 pointer-events-none uppercase flex items-center gap-1.5 z-10">
+                    {isChecking && <Loader2 size={9} className="animate-spin text-teal-400" />}
+                    {!isChecking && spellMatches.length > 0 && (
+                        <span className="bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-sm">{spellMatches.length}✦</span>
+                    )}
+                    {maxLength && <span>{value.length}/{maxLength}</span>}
+                </div>
+            </div>
         </div>
     );
 }
@@ -827,3 +895,4 @@ function FormInput({ label, required, component, error }: any) {
         </div>
     );
 }
+

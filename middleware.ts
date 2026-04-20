@@ -268,11 +268,35 @@ export default async function middleware(request: NextRequest) {
     if (tenantToken) accessToken = tenantToken;
   }
   
-  // ✅ FIX: Resolve Refresh Token with role-suffix priority (prevents localhost collisions)
-  let refreshToken = request.cookies.get("refreshToken")?.value || "";
+  // ✅ FIX (Bug 3): Resolve Refresh Token with role-suffix priority.
+  // Backend sets refreshToken_hospital_admin, refreshToken_doctor, etc. NOT the plain refreshToken.
+  // Without this, hasRefreshToken is always false → silent refresh never fires → session dies.
+  let refreshToken = "";
+
+  // Priority 1: suffixed by hospitalId (most specific)
+  if (pathHospitalId) {
+    refreshToken = request.cookies.get(`refreshToken_${pathHospitalId}`)?.value || "";
+  }
+
+  // Priority 2: suffixed by role (decode access token to get the role first)
+  const _rtPayloadPre = accessToken ? decodeJwt(accessToken) : null;
+  const _rtRolePre = _rtPayloadPre?.role?.toLowerCase() || "";
+  if (!refreshToken && _rtRolePre) {
+    const _rNorm = _rtRolePre.replace(/-/g, "_");
+    const _rHyph = _rtRolePre.replace(/_/g, "-");
+    refreshToken = request.cookies.get(`refreshToken_${_rNorm}`)?.value
+                || request.cookies.get(`refreshToken_${_rHyph}`)?.value
+                || "";
+  }
+
+  // Priority 3: plain global refreshToken (super-admin / ambulance / fallback)
+  if (!refreshToken) {
+    refreshToken = request.cookies.get("refreshToken")?.value || "";
+  }
+
   // 2.6 METADATA RESOLUTION (Required for CSRF check below)
   const payloadBeforeRefresh = (accessToken ? decodeJwt(accessToken) : null) || (refreshToken ? decodeJwt(refreshToken) : null);
-  const userRoleInitial = payloadBeforeRefresh?.role?.toLowerCase() || "";
+  const userRoleInitial = payloadBeforeRefresh?.role?.toLowerCase() || _rtRolePre || "";
 
   // 2.5 PROACTIVE SILENT REFRESH Variables
   let isRefreshed = false;

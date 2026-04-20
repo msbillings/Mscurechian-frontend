@@ -65,15 +65,15 @@ function PatientsPage() {
    const endIndex = Math.min(currentPage * pagination.limit, pagination.total);
 
    return (
-      <div className="space-y-4 sm:space-y-6 pt-3 md:pt-4 translate-y-[-10px] sm:translate-y-0">
+      <div className="space-y-4 sm:space-y-6 pt-3 md:pt-0 lg:pt-0 translate-y-[-10px] sm:translate-y-0">
          {/* Header */}
-         <div className="bg-card p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm border border-border-theme flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all">
+         <div className="bg-card p-4 sm:p-6 sm:pt-3 rounded-2xl sm:rounded-3xl shadow-sm border border-border-theme flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all">
             <div className="flex items-center gap-3">
                <div className="p-2 bg-primary-theme/10 rounded-xl">
                   <Users className="text-primary-theme" size={20} />
                </div>
                <div>
-                  <h1 className="text-lg md:text-xl lg:text-xl font-bold text-foreground uppercase tracking-tight italic">My Patients</h1>
+                  <h1 className="text-lg md:text-xl lg:text-xl font-bold text-foreground uppercase tracking-tight">My Patients</h1>
                   <p className="text-muted font-bold uppercase tracking-[0.2em] text-[8px] sm:text-[9px] mt-0.5">Clinical Registry & Archives</p>
                </div>
             </div>
@@ -84,50 +84,84 @@ function PatientsPage() {
          </div>
 
          {/* Filters & Search - Mobile Compact */}
-         <div className="bg-card p-3 sm:p-4 rounded-2xl sm:rounded-3xl shadow-sm border border-border-theme flex flex-col lg:flex-row gap-3 sm:gap-4 items-center">
-            <div className="relative flex-1 w-full group">
-               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted transition-colors group-focus-within:text-primary-theme" size={16} />
-               <input
-                  type="text"
-                  placeholder="ID, Name or Mobile..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 sm:py-3 bg-secondary-theme border border-transparent focus:border-primary-theme/30 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold uppercase tracking-widest placeholder:text-muted/50 focus:ring-4 focus:ring-primary-theme/5 outline-none transition-all"
-               />
-            </div>
-
-            <div className="flex items-center gap-2 w-full lg:w-auto">
-               <div className="flex-1 lg:flex-none flex items-center gap-2 bg-secondary-theme border border-transparent rounded-xl sm:rounded-2xl px-3 sm:px-4 py-3 sm:py-3 transition-all">
-                  <Filter size={14} className="text-muted" />
-                  <select
-                     className="bg-transparent text-[10px] sm:text-[11px] font-black uppercase tracking-widest focus:outline-none text-foreground cursor-pointer w-full"
-                     value={sortBy}
-                     onChange={(e) => {
-                        setSortBy(e.target.value);
-                        setCurrentPage(1);
-                     }}
-                  >
-                     <option value="newest">Recent</option>
-                     <option value="oldest">Historical</option>
-                  </select>
+         <div className="bg-card p-3 sm:p-4 rounded-2xl sm:rounded-3xl shadow-sm border border-border-theme flex flex-col lg:flex-row gap-3 sm:gap-4 items-center justify-between">
+            <div className="flex flex-col md:flex-row items-center gap-3 sm:gap-4 flex-1 w-full">
+               <div className="relative flex-1 w-full group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted transition-colors group-focus-within:text-primary-theme" size={16} />
+                  <input
+                     type="text"
+                     placeholder="ID, Name or Mobile..."
+                     value={searchQuery}
+                     onChange={(e) => setSearchQuery(e.target.value)}
+                     className="w-full pl-11 pr-4 py-3 sm:py-3 bg-secondary-theme border border-transparent focus:border-primary-theme/30 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold uppercase tracking-widest placeholder:text-muted/50 focus:ring-4 focus:ring-primary-theme/5 outline-none transition-all"
+                  />
                </div>
 
-               <div className="flex-1 lg:flex-none flex items-center gap-2 bg-secondary-theme border border-transparent rounded-xl sm:rounded-2xl px-3 sm:px-4 py-3 sm:py-3 min-w-[120px] sm:min-w-[140px] transition-all">
-                  <Activity size={14} className="text-muted" />
-                  <select
-                     className="bg-transparent text-[10px] sm:text-[11px] font-black uppercase tracking-widest focus:outline-none text-foreground cursor-pointer w-full"
-                     value={patientTypeFilter}
-                     onChange={(e) => {
-                        setPatientTypeFilter(e.target.value);
-                        setCurrentPage(1);
-                     }}
-                  >
-                     <option value="all">Global</option>
-                     <option value="OPD">Outpatient</option>
-                     <option value="IPD">Inpatient</option>
-                  </select>
+               <div className="flex items-center gap-2 w-full md:w-auto">
+                  <div className="flex-1 md:flex-none flex items-center gap-2 bg-secondary-theme border border-transparent rounded-xl sm:rounded-2xl px-3 sm:px-4 py-3 sm:py-3 transition-all">
+                     <Filter size={14} className="text-muted" />
+                     <select
+                        className="bg-transparent text-[10px] sm:text-[11px] font-black uppercase tracking-widest focus:outline-none text-foreground cursor-pointer w-full"
+                        value={sortBy}
+                        onChange={(e) => {
+                           setSortBy(e.target.value);
+                           setCurrentPage(1);
+                        }}
+                     >
+                        <option value="newest">Recent</option>
+                        <option value="oldest">Historical</option>
+                     </select>
+                  </div>
+
+                  <div className="flex-1 md:flex-none flex items-center gap-2 bg-secondary-theme border border-transparent rounded-xl sm:rounded-2xl px-3 sm:px-4 py-3 sm:py-3 min-w-[120px] sm:min-w-[140px] transition-all">
+                     <Activity size={14} className="text-muted" />
+                     <select
+                        className="bg-transparent text-[10px] sm:text-[11px] font-black uppercase tracking-widest focus:outline-none text-foreground cursor-pointer w-full"
+                        value={patientTypeFilter}
+                        onChange={(e) => {
+                           setPatientTypeFilter(e.target.value);
+                           setCurrentPage(1);
+                        }}
+                     >
+                        <option value="all">Global</option>
+                        <option value="OPD">Outpatient</option>
+                        <option value="IPD">Inpatient</option>
+                     </select>
+                  </div>
                </div>
             </div>
+
+            {/* Pagination Controls in Header */}
+            {patients.length > 0 && (
+               <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end border-t lg:border-t-0 pt-3 lg:pt-0 border-border-theme/30">
+                  <div className="hidden xl:block text-[10px] text-muted font-black uppercase tracking-widest mr-2">
+                     <span className="text-foreground">{startIndex}-{endIndex}</span> / {pagination.total}
+                  </div>
+                  <div className="flex items-center gap-2">
+                     <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl border border-border-theme bg-secondary-theme text-foreground hover:bg-primary-theme hover:text-white disabled:opacity-30 transition-all active:scale-95 shadow-sm"
+                     >
+                        <ChevronLeft size={16} />
+                     </button>
+
+                     <div className="flex items-center gap-1.5 px-2 text-[10px] font-black text-foreground lg:hidden xl:flex">
+                        <span>{currentPage}</span>
+                        <span className="text-muted">/</span>
+                        <span className="text-muted">{pagination.totalPages}</span>
+                     </div>
+
+                     <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, pagination.totalPages))}
+                        disabled={currentPage === pagination.totalPages}
+                        className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl border border-border-theme bg-secondary-theme text-foreground hover:bg-primary-theme hover:text-white disabled:opacity-30 transition-all active:scale-95 shadow-sm"
+                     >
+                        <ChevronRight size={16} />
+                     </button>
+                  </div>
+               </div>
+            )}
          </div>
 
          {/* Patients List */}
@@ -145,11 +179,11 @@ function PatientsPage() {
                      <table className="w-full text-left">
                         <thead className="bg-secondary-theme/50 border-b border-border-theme/50">
                            <tr>
-                              <th className="px-4 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-black text-muted uppercase tracking-[0.2em] whitespace-nowrap italic">Subject Identity</th>
-                              <th className="px-4 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-black text-muted uppercase tracking-[0.2em] whitespace-nowrap hidden sm:table-cell italic">Profiling</th>
-                              <th className="px-4 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-black text-muted uppercase tracking-[0.2em] whitespace-nowrap italic">Timeline</th>
-                              <th className="px-4 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-black text-muted uppercase tracking-[0.2em] whitespace-nowrap italic">Flux Case</th>
-                              <th className="px-4 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-black text-muted uppercase tracking-[0.2em] text-right whitespace-nowrap italic">Navigate</th>
+                              <th className="px-4 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-black text-muted uppercase tracking-[0.2em] whitespace-nowrap">Subject Identity</th>
+                              <th className="px-4 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-black text-muted uppercase tracking-[0.2em] whitespace-nowrap hidden sm:table-cell">Profiling</th>
+                              <th className="px-4 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-black text-muted uppercase tracking-[0.2em] whitespace-nowrap">Timeline</th>
+                              <th className="px-4 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-black text-muted uppercase tracking-[0.2em] whitespace-nowrap">Flux Case</th>
+                              <th className="px-4 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-black text-muted uppercase tracking-[0.2em] text-right whitespace-nowrap">Navigate</th>
                            </tr>
                         </thead>
                         <tbody className="divide-y divide-border-theme/30">
@@ -174,12 +208,12 @@ function PatientsPage() {
                                     </td>
                                     <td className="px-4 sm:px-8 py-4 sm:py-6 whitespace-nowrap hidden sm:table-cell">
                                        <div className="text-xs sm:text-sm text-foreground">
-                                          <p className="font-black italic">{patient.age ? `${patient.age}Y` : '---'}</p>
+                                          <p className="font-black">{patient.age ? `${patient.age}Y` : '---'}</p>
                                           <p className="text-[10px] text-muted font-black uppercase tracking-widest">{patient.gender || '---'}</p>
                                        </div>
                                     </td>
                                     <td className="px-4 sm:px-8 py-4 sm:py-6 whitespace-nowrap text-[10px] sm:text-xs">
-                                       <div className="flex items-center gap-2 text-muted font-black uppercase tracking-tight italic">
+                                       <div className="flex items-center gap-2 text-muted font-black uppercase tracking-tight">
                                           <Calendar size={12} className="text-primary-theme/40" />
                                           {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString([], { month: 'short', day: 'numeric', year: '2-digit' }) : 'N/A'}
                                        </div>
@@ -214,7 +248,7 @@ function PatientsPage() {
                                           <User size={40} />
                                        </div>
                                        <div>
-                                          <p className="text-sm font-black uppercase tracking-widest italic">Clinical Archive Empty</p>
+                                          <p className="text-sm font-black uppercase tracking-widest">Clinical Archive Empty</p>
                                           <p className="text-[10px] font-bold uppercase tracking-tight mt-1">No matches found for current filters</p>
                                        </div>
                                     </div>
@@ -224,55 +258,6 @@ function PatientsPage() {
                         </tbody>
                      </table>
                   </div>
-
-                  {/* Pagination - Mobile Optimized */}
-                  {patients.length > 0 && (
-                     <div className="px-4 sm:px-8 py-4 sm:py-6 bg-secondary-theme/50 border-t border-border-theme/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div className="text-[10px] sm:text-[11px] text-muted font-black uppercase tracking-widest italic">
-                           Viewing Sequence <span className="text-foreground">{startIndex}-{endIndex}</span> of <span className="text-foreground">{pagination.total}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                           <button
-                              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                              disabled={currentPage === 1}
-                              className="w-10 h-10 flex items-center justify-center rounded-xl border border-border-theme bg-card text-foreground hover:bg-primary-theme hover:text-white disabled:opacity-30 transition-all active:scale-95 shadow-sm"
-                           >
-                              <ChevronLeft size={18} />
-                           </button>
-                           
-                           <div className="flex items-center gap-2 hidden sm:flex">
-                              {Array.from({ length: Math.min(pagination.totalPages, 3) }, (_, i) => {
-                                 let pageNum = i + 1;
-                                 if (pagination.totalPages > 3 && currentPage > 2) {
-                                    pageNum = currentPage - 1 + i;
-                                    if (pageNum > pagination.totalPages) pageNum = pagination.totalPages - (2 - i);
-                                 }
-
-                                 return (
-                                    <button
-                                       key={pageNum}
-                                       onClick={() => setCurrentPage(pageNum)}
-                                       className={`w-10 h-10 rounded-xl text-[11px] font-black transition-all active:scale-95 shadow-sm ${currentPage === pageNum
-                                          ? 'bg-primary-theme text-white border-primary-theme'
-                                          : 'bg-card text-muted hover:bg-secondary-theme border border-border-theme'
-                                          }`}
-                                    >
-                                       {pageNum}
-                                    </button>
-                                 );
-                              })}
-                           </div>
-
-                           <button
-                              onClick={() => setCurrentPage(prev => Math.min(prev + 1, pagination.totalPages))}
-                              disabled={currentPage === pagination.totalPages}
-                              className="w-10 h-10 flex items-center justify-center rounded-xl border border-border-theme bg-card text-foreground hover:bg-primary-theme hover:text-white disabled:opacity-30 transition-all active:scale-95 shadow-sm"
-                           >
-                              <ChevronRight size={18} />
-                           </button>
-                        </div>
-                     </div>
-                  )}
                </>
             )}
          </div>

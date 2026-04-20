@@ -344,6 +344,23 @@ export default function PrescriptionViewModal({ isOpen, onClose, admissionId, pa
                                             );
                                         }
 
+                                        // Urology
+                                        const uro = presc.urologyData;
+                                        if (uro && (uro.ipss?.score || uro.renal?.creatinine || uro.diagnosis)) {
+                                            renderedSpecs.push(
+                                                <div key="ouro" className="px-6 py-3 bg-sky-50/20 border-b border-slate-50">
+                                                    <p className="text-[8px] font-black text-sky-800 uppercase tracking-widest mb-1">Urology Evaluation</p>
+                                                    <div className="flex flex-wrap gap-4 text-[9px] font-bold text-slate-600">
+                                                        <span>IPSS: {uro.ipss?.score || '0'} ({uro.ipss?.category || 'Mild'})</span>
+                                                        <span>Creatinine: {uro.renal?.creatinine || '--'}</span>
+                                                        <span>Urea: {uro.renal?.urea || '--'}</span>
+                                                        {uro.pvr && <span>PVR: {uro.pvr}ml</span>}
+                                                        {uro.diagnosis && <span className="text-sky-700">Assessment: {uro.diagnosis}</span>}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
                                         return renderedSpecs;
                                     })()}
 

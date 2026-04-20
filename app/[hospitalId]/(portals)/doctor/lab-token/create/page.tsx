@@ -292,6 +292,14 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
               .signature-section { page-break-inside: avoid; margin-top: 30px; text-align: right; }
               .signature-name { font-size: 13px; font-weight: 800; color: #1e293b; margin: 0; }
               .signature-desc { font-size: 10px; color: #64748b; margin: 0; }
+              table { width: 100%; border-collapse: collapse; margin: 15px 0; table-layout: fixed; }
+              th { text-align: left; font-size: 8px; font-weight: 900; color: #94a3b8; text-transform: uppercase; padding: 12px 10px; border-bottom: 2px solid #f1f5f9; letter-spacing: 0.5px; }
+              td { padding: 12px 10px; border-bottom: 1px solid #f8fafc; font-size: 10px; vertical-align: top; word-wrap: break-word; }
+              .col-id { width: 35px; }
+              .col-desc { width: 40%; }
+              .col-cat { width: 25%; }
+              .col-instr { width: auto; }
+              .test-name { font-weight: 800; color: #1e293b; text-transform: uppercase; line-height: 1.4; }
             </style>
           </head>
           <body>
@@ -326,10 +334,10 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
                 <table>
                   <thead>
                     <tr>
-                      <th style="width: 40px;">#</th>
-                      <th>Investigation Description</th>
-                      <th>Category</th>
-                      <th>Clinic Instructions</th>
+                      <th class="col-id">#</th>
+                      <th class="col-desc">Investigation Description</th>
+                      <th class="col-cat">Category</th>
+                      <th class="col-instr">Clinic Instructions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -337,8 +345,8 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
                       <tr>
                         <td style="color: #94a3b8; font-weight: 600;">${idx + 1}</td>
                         <td class="test-name">${test.name}</td>
-                        <td style="color: #64748b;">${test.category}</td>
-                        <td style="font-style: italic; color: #94a3b8; font-size: 11px;">${test.instructions || 'Standard Protocol'}</td>
+                        <td style="color: #64748b; font-weight: 700;">${test.category}</td>
+                        <td style="font-style: italic; color: #64748b; font-size: 10px; line-height: 1.4;">${test.instructions || 'Standard Protocol'}</td>
                       </tr>
                     `).join('')}
                   </tbody>
@@ -401,6 +409,11 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
               .summary-box { page-break-inside: avoid; margin-left: auto; width: 250px; margin-top: 30px; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #eef2f6; }
               .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
               .summary-total { border-top: 2px solid #eef2f6; margin-top: 10px; padding-top: 10px; color: #16a34a; font-size: 18px; font-weight: 900; }
+              table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+              th { text-align: left; font-size: 9px; font-weight: 900; color: #94a3b8; text-transform: uppercase; padding: 12px 15px; border-bottom: 2px solid #f1f5f9; letter-spacing: 0.5px; }
+              td { padding: 12px 15px; border-bottom: 1px solid #f8fafc; font-size: 11px; vertical-align: middle; }
+              .test-name { font-weight: 800; color: #1e293b; text-transform: uppercase; }
+              .amount { text-align: right; font-weight: 900; color: #1e293b; }
             </style>
           </head>
           <body>
@@ -425,9 +438,9 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
                 <table>
                   <thead>
                     <tr>
-                      <th>Investigation Item</th>
-                      <th>Category</th>
-                      <th style="text-align: right;">Amount</th>
+                      <th style="width: 50%;">Investigation Item</th>
+                      <th style="width: 30%;">Category</th>
+                      <th style="text-align: right; width: 20%;">Amount</th>
                     </tr>
                   </thead>
                   <tbody>

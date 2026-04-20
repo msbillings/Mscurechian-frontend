@@ -58,8 +58,6 @@ const NumInput = ({
 );
 
 export const NephrologyModule: React.FC<NephrologyModuleProps> = ({ formData, setFormData }) => {
-    const [alerts, setAlerts] = useState<AlertEntry[]>([]);
-
     if (!formData.nephroData) return null;
     const n = formData.nephroData;
 
@@ -90,64 +88,18 @@ export const NephrologyModule: React.FC<NephrologyModuleProps> = ({ formData, se
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [n.egfr]);
 
-    // ── Clinical Validation Engine ────────────────────────────────────────────
+    const [alerts, setAlerts] = useState<AlertEntry[]>([]);
+
     useEffect(() => {
         const newAlerts: AlertEntry[] = [];
+        const syms: string[] = n.symptoms || [];
         const creat   = parseFloat(n.creatinine) || 0;
         const egfr    = parseFloat(n.egfr) || 0;
-        const k       = parseFloat(n.electrolytes?.potassium) || 0;
-        const na      = parseFloat(n.electrolytes?.sodium) || 0;
-        const uo      = parseFloat(n.urineOutput) || 0;
         const intake  = parseFloat(n.fluidBalance?.intake) || 0;
         const output  = parseFloat(n.fluidBalance?.output) || 0;
-        const syms: string[] = n.symptoms || [];
+        const uo      = parseFloat(n.urineOutput) || 0;
+        const k       = parseFloat(n.electrolytes?.potassium) || 0;
 
-        // Required fields
-
-
-        // 1. Creatinine
-        if (creat > 5) {
-            newAlerts.push({ type: 'emergency', message: '🚨 SEVERE RENAL FAILURE — Creatinine > 5 mg/dL. Urgent nephrology consult & dialysis evaluation required.' });
-        } else if (creat > 1.5) {
-            newAlerts.push({ type: 'warning', message: '⚠️ Renal Impairment — Creatinine > 1.5 mg/dL. Dose adjustment required for renally-cleared medications.' });
-        }
-
-        // 2. eGFR
-        if (egfr > 0 && egfr < 15) {
-            newAlerts.push({ type: 'emergency', message: '🚨 END-STAGE RENAL DISEASE (ESRD) — eGFR < 15 ml/min. Immediate dialysis evaluation required.' });
-        } else if (egfr >= 15 && egfr < 60) {
-            newAlerts.push({ type: 'warning', message: `⚠️ CKD detected — eGFR ${egfr} ml/min (${getCKDStage(egfr)}). Nephrology referral recommended.` });
-        }
-
-        // 3. Potassium — MOST CRITICAL
-        if (k > 6) {
-            newAlerts.push({ type: 'emergency', message: '🚨 HYPERKALEMIA EMERGENCY — K+ > 6.0 mEq/L. RISK OF CARDIAC ARREST. Urgent ECG, IV Calcium Gluconate, Insulin-Dextrose NOW.' });
-        } else if (k > 5.5) {
-            newAlerts.push({ type: 'emergency', message: '🚨 HYPERKALEMIA — K+ > 5.5 mEq/L. Stop potassium supplements. AVOID potassium-sparing diuretics & ACE inhibitors.' });
-        } else if (k > 0 && k < 3.5) {
-            newAlerts.push({ type: 'warning', message: '⚠️ Hypokalemia — K+ < 3.5 mEq/L. Risk of cardiac arrhythmia. Potassium replacement required.' });
-        }
-
-        // 4. Sodium
-        if (na > 0 && na < 125) {
-            newAlerts.push({ type: 'emergency', message: '🚨 Severe Hyponatremia — Na+ < 125 mEq/L. Risk of cerebral edema and seizures. Restrict free water.' });
-        } else if (na > 0 && na < 135) {
-            newAlerts.push({ type: 'warning', message: '⚠️ Hyponatremia — Na+ < 135 mEq/L. Fluid restriction may be required.' });
-        }
-
-        // 5. Urine Output
-        if (uo > 0 && uo < 100) {
-            newAlerts.push({ type: 'emergency', message: '🚨 ANURIA — Urine output < 100 ml/day. Immediate urological & nephrology evaluation. Rule out obstruction.' });
-        } else if (uo >= 100 && uo < 400) {
-            newAlerts.push({ type: 'warning', message: '⚠️ Oliguria — Urine output < 400 ml/day. Monitor fluid status closely. Evaluate for obstruction and AKI.' });
-        }
-
-        // 6. Fluid Balance
-        if (intake > 0 && output > 0 && intake > output * 1.25) {
-            newAlerts.push({ type: 'warning', message: '⚠️ FLUID OVERLOAD — Intake significantly exceeds output. Restrict fluids. Monitor for pulmonary edema.' });
-        }
-
-        // 7. Cross-field: CKD pattern
         if (creat > 1.5 && egfr > 0 && egfr < 60) {
             newAlerts.push({ type: 'info', message: '💡 Elevated Creatinine + Low eGFR — Consistent with Chronic Kidney Disease (CKD) pattern.' });
         }
@@ -242,22 +194,7 @@ export const NephrologyModule: React.FC<NephrologyModuleProps> = ({ formData, se
     return (
         <div className="space-y-4">
 
-            {/* ── Clinical Alerts Panel ──────────────────────────────────── */}
-            {alerts.length > 0 && (
-                <div className="space-y-2">
-                    {alerts.map((alert, idx) => (
-                        <div key={idx} className={`flex items-start gap-3 p-3 rounded-xl border-l-4 ${alertColors[alert.type]}`}>
-                            {alert.type === 'emergency' || alert.type === 'error'
-                                ? <ShieldAlert size={16} className="shrink-0 mt-0.5" />
-                                : alert.type === 'warning'
-                                ? <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-                                : <Info size={16} className="shrink-0 mt-0.5" />
-                            }
-                            <p className="text-[11px] font-black uppercase tracking-tight leading-snug">{alert.message}</p>
-                        </div>
-                    ))}
-                </div>
-            )}
+
 
             {/* Standardized Light Header */}
             <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">
@@ -272,9 +209,9 @@ export const NephrologyModule: React.FC<NephrologyModuleProps> = ({ formData, se
                 </div>
                 <div className="flex items-center gap-3">
                     {hasEmergency && (
-                        <div className="bg-blue-100/50 px-3 py-2 rounded-lg flex items-center gap-2 border border-blue-200 hidden md:flex">
-                             <AlertTriangle size={14} className="text-blue-600" />
-                             <span className="text-[9px] font-black uppercase tracking-widest text-blue-700">Safety Alerts Active</span>
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-red-600 animate-pulse rounded-full shadow-lg shadow-red-500/20">
+                            <ShieldAlert size={12} className="text-white" />
+                            <span className="text-[9px] font-black uppercase tracking-widest text-white">Critical Alert</span>
                         </div>
                     )}
                     {ckdStage && (
@@ -284,6 +221,22 @@ export const NephrologyModule: React.FC<NephrologyModuleProps> = ({ formData, se
                     )}
                 </div>
             </div>
+
+            {/* ── ALERTS SYSTEM ─────────────────────────────────────────── */}
+            {alerts.length > 0 && (
+                <div className="space-y-2">
+                    {alerts.map((alert, idx) => (
+                        <div key={idx} className={`flex items-start gap-3 p-4 rounded-2xl border ${alertColors[alert.type]} shadow-sm animate-in fade-in slide-in-from-top-2 duration-300`}>
+                            {alert.type === 'emergency' ? <ShieldAlert size={18} className="shrink-0" /> :
+                             alert.type === 'warning'   ? <AlertTriangle size={18} className="shrink-0" /> :
+                             <Info size={18} className="shrink-0" />}
+                            <p className="text-[10px] font-bold uppercase tracking-wide leading-relaxed">
+                                {alert.message}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {/* ── A. RENAL FUNCTION (simplified) ────────────────────────── */}
             {sectionCard(

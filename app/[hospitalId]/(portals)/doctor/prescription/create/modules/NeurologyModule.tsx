@@ -14,8 +14,6 @@ interface NeurologyModuleProps {
 type AlertEntry = { type: 'emergency' | 'error' | 'warning' | 'info'; message: string };
 
 export const NeurologyModule: React.FC<NeurologyModuleProps> = ({ formData, setFormData }) => {
-    const [alerts, setAlerts] = useState<AlertEntry[]>([]);
-
     if (!formData.neuroData) return null;
     const n = formData.neuroData;
 
@@ -36,82 +34,7 @@ export const NeurologyModule: React.FC<NeurologyModuleProps> = ({ formData, setF
         : gcsTotal >= 9  ? 'text-amber-600'
         : 'text-red-600';
 
-    // ── Real-time Clinical Validation Engine ────────────────────────────────
-    useEffect(() => {
-        const newAlerts: AlertEntry[] = [];
-        const syms: string[] = n.symptoms || [];
 
-        // 1. GCS ≤ 8 → airway critical
-        if (gcsValid && gcsTotal <= 8) {
-            newAlerts.push({
-                type: 'emergency',
-                message: `CRITICAL: GCS ${gcsTotal} (≤8) — SEVERE COMA. Airway protection required immediately.`,
-            });
-        }
-
-        // 2. GCS ≤ 8 + Coma mental status
-        if (gcsValid && gcsTotal <= 8 && n.mentalStatus === 'Coma') {
-            newAlerts.push({
-                type: 'emergency',
-                message: 'COMA CONFIRMED: GCS ≤ 8 + Mental Status = Coma. ICU care required.',
-            });
-        }
-
-        // 3. Motor deficit → stroke suggestion
-        const ru = parseInt(n.motorPower?.ru);
-        const lu = parseInt(n.motorPower?.lu);
-        const rl = parseInt(n.motorPower?.rl);
-        const ll = parseInt(n.motorPower?.ll);
-
-        const rightWeak = (!isNaN(ru) && ru < 5) || (!isNaN(rl) && rl < 5);
-        const leftWeak  = (!isNaN(lu) && lu < 5) || (!isNaN(ll) && ll < 5);
-
-        if (rightWeak && !leftWeak) {
-            newAlerts.push({ type: 'warning', message: 'Right-sided weakness detected — Possible left hemisphere stroke.' });
-        } else if (leftWeak && !rightWeak) {
-            newAlerts.push({ type: 'warning', message: 'Left-sided weakness detected — Possible right hemisphere stroke.' });
-        } else if (rightWeak && leftWeak) {
-            newAlerts.push({ type: 'warning', message: 'Bilateral weakness detected — Consider spinal cord pathology or bilateral cortical lesion.' });
-        }
-
-        // 4. Reflexes
-        if (n.reflexes === 'Hyperreflexia (3+)') {
-            newAlerts.push({ type: 'info', message: 'Hyperreflexia — Suggests Upper Motor Neuron (UMN) lesion.' });
-        }
-        if (n.reflexes === 'Hyporeflexia (1+)' || n.reflexes === 'Absent (0)') {
-            newAlerts.push({ type: 'info', message: 'Hyporeflexia / Areflexia — Suggests Lower Motor Neuron (LMN) lesion or peripheral neuropathy.' });
-        }
-
-        // 5. Cranial nerve deficit must be specified
-        if (n.cranialNerves === 'Abnormal' && (!n.cranialNerveDeficits || n.cranialNerveDeficits.length === 0)) {
-            newAlerts.push({ type: 'error', message: 'Cranial nerves marked Abnormal — At least one deficit must be selected.' });
-        }
-
-        // Cross-field Rule 1 — STROKE DETECTION
-        if (n.onset === 'Sudden' && syms.includes('Weakness') && syms.includes('Speech difficulty')) {
-            newAlerts.push({
-                type: 'emergency',
-                message: '🚨 SUSPECTED STROKE: Sudden onset + Weakness + Speech difficulty — Immediate CT brain required. Activate stroke protocol.',
-            });
-        }
-
-        // Cross-field Rule 2 — SEIZURE EVENT
-        if (syms.includes('Seizures') && syms.includes('Loss of consciousness')) {
-            newAlerts.push({ type: 'warning', message: 'Seizures + Loss of Consciousness — Possible epileptic event. Evaluate EEG.' });
-        }
-
-        // Cross-field Rule 3 — INCREASED ICP
-        if (syms.includes('Headache') && syms.includes('Vomiting') && (n.mentalStatus === 'Drowsy' || n.mentalStatus === 'Stupor' || n.mentalStatus === 'Coma')) {
-            newAlerts.push({ type: 'emergency', message: '⚠️ Headache + Vomiting + Altered sensorium — Raised Intracranial Pressure (ICP). Urgent imaging required.' });
-        }
-
-        // Pharma reminder
-        if (syms.includes('Seizures')) {
-            newAlerts.push({ type: 'info', message: 'Seizures documented — Ensure compliance with anti-epileptic drug (AED) regimen.' });
-        }
-
-        setAlerts(newAlerts);
-    }, [n, gcsTotal, gcsValid]);
 
     // ── Helper updaters ─────────────────────────────────────────────────────
     const updateNeuro = (field: string, value: any) =>
@@ -184,25 +107,7 @@ export const NeurologyModule: React.FC<NeurologyModuleProps> = ({ formData, setF
     return (
         <div className="space-y-5">
 
-            {/* ── Clinical Alerts ─────────────────────────────────────────── */}
-            {alerts.length > 0 && (
-                <div className="space-y-2">
-                    {alerts.map((alert, idx) => (
-                        <div
-                            key={idx}
-                            className={`flex items-start gap-3 p-3 rounded-xl border-l-4 animate-in fade-in slide-in-from-top-2 duration-300 ${alertColors[alert.type]}`}
-                        >
-                            {alert.type === 'emergency' || alert.type === 'error'
-                                ? <ShieldAlert size={16} className="shrink-0 mt-0.5" />
-                                : alert.type === 'warning'
-                                ? <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-                                : <Info size={16} className="shrink-0 mt-0.5" />
-                            }
-                            <p className="text-[11px] font-black uppercase tracking-tight">{alert.message}</p>
-                        </div>
-                    ))}
-                </div>
-            )}
+
 
             {/* Standardized Light Header */}
             <div className="bg-purple-50 border border-purple-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">
@@ -216,12 +121,7 @@ export const NeurologyModule: React.FC<NeurologyModuleProps> = ({ formData, setF
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    {alerts.some(a => a.type === 'emergency') && (
-                        <div className="bg-purple-100/50 px-3 py-2 rounded-lg flex items-center gap-2 border border-purple-200 hidden md:flex">
-                             <AlertTriangle size={14} className="text-purple-600" />
-                             <span className="text-[9px] font-black uppercase tracking-widest text-purple-700">Safety Alerts Active</span>
-                        </div>
-                    )}
+
                     <div className="bg-white border border-purple-200 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.1em] text-purple-600">
                         Neuro - Module
                     </div>
@@ -375,18 +275,7 @@ export const NeurologyModule: React.FC<NeurologyModuleProps> = ({ formData, setF
                         >{reflex}</button>
                     ))}
                 </div>
-                {n.reflexes && (
-                    <p className={`mt-2 text-[10px] font-black ${
-                        n.reflexes.includes('Hyper') ? 'text-orange-600' :
-                        n.reflexes.includes('Absent') || n.reflexes.includes('Hypo') ? 'text-amber-600' :
-                        'text-emerald-600'
-                    }`}>
-                        {n.reflexes.includes('Hyper') ? '→ Upper Motor Neuron (UMN) lesion suggested'
-                        : n.reflexes.includes('Absent') ? '→ Lower Motor Neuron (LMN) lesion / peripheral neuropathy suggested'
-                        : n.reflexes.includes('Hypo') ? '→ Lower Motor Neuron (LMN) lesion suggested'
-                        : '✓ Reflexes within normal limits'}
-                    </p>
-                )}
+
             </div>
 
             {/* ── E. CRANIAL NERVES ───────────────────────────────────────── */}
@@ -497,39 +386,10 @@ export const NeurologyModule: React.FC<NeurologyModuleProps> = ({ formData, setF
                         </button>
                     ))}
                 </div>
-                {n.onset === 'Sudden' && (
-                    <p className="mt-2 text-[10px] font-black text-red-600">
-                        ⚠️ Sudden onset — Always consider vascular emergency (stroke, haemorrhage).
-                    </p>
-                )}
+
             </div>
 
-            {/* ── J. RED FLAG SUMMARY (auto) ──────────────────────────────── */}
-            {(() => {
-                const redFlags: string[] = [];
-                if (n.onset === 'Sudden' && (n.symptoms || []).includes('Weakness')) redFlags.push('Sudden weakness');
-                if ((n.symptoms || []).includes('Speech difficulty')) redFlags.push('Slurred / absent speech');
-                if ((n.symptoms || []).includes('Seizures')) redFlags.push('Active seizures');
-                if ((n.symptoms || []).includes('Loss of consciousness')) redFlags.push('Unconsciousness');
-                if (gcsValid && gcsTotal <= 8) redFlags.push(`GCS ${gcsTotal} — Severe coma`);
-                if (n.mentalStatus === 'Coma') redFlags.push('Coma mental status');
 
-                return redFlags.length > 0 ? (
-                    <div className="bg-red-50 border-2 border-red-400 rounded-2xl p-4">
-                        <div className="flex items-center gap-2 mb-3">
-                            <ShieldAlert size={18} className="text-red-600" />
-                            <h3 className="text-[11px] font-black uppercase tracking-widest text-red-700">🔴 Active Red Flags</h3>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            {redFlags.map(f => (
-                                <span key={f} className="px-3 py-1 bg-red-600 text-white rounded-lg text-[10px] font-black uppercase">
-                                    {f}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                ) : null;
-            })()}
 
             {/* ── Notes ───────────────────────────────────────────────────── */}
             <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
@@ -545,37 +405,7 @@ export const NeurologyModule: React.FC<NeurologyModuleProps> = ({ formData, setF
                 />
             </div>
 
-            {/* ── Patient Summary (Plain Language) ────────────────────────── */}
-            {((n.symptoms || []).length > 0 || gcsValid) && (
-                <div className="bg-violet-50 border border-violet-100 rounded-2xl p-5 text-violet-900 mt-6 shadow-sm">
-                    <div className="flex items-center gap-2 mb-3">
-                        <Info size={16} />
-                        <h3 className="text-[11px] font-black uppercase tracking-widest text-violet-700">Brain Condition Summary (Patient-Friendly)</h3>
-                    </div>
-                    <div className="space-y-1.5 text-sm font-medium text-violet-800">
-                        {gcsValid && (
-                            <p>🧠 Consciousness level: <span className={`font-black ${gcsColor}`}>
-                                {gcsTotal >= 13 ? 'Good (Mild / Normal)' : gcsTotal >= 9 ? 'Moderate impairment' : 'Severely impaired — needs urgent care'}
-                            </span></p>
-                        )}
-                        {(n.symptoms || []).length > 0 && (
-                            <p>📋 Current complaints: <span className="text-violet-900 font-bold">{(n.symptoms || []).join(', ')}</span></p>
-                        )}
-                        {n.onset && (
-                            <p>⏱ Onset: <span className={`font-bold ${n.onset === 'Sudden' ? 'text-red-600' : 'text-violet-900'}`}>{n.onset}</span></p>
-                        )}
-                        {n.motorPower && (parseInt(n.motorPower.ru) < 5 || parseInt(n.motorPower.lu) < 5 || parseInt(n.motorPower.rl) < 5 || parseInt(n.motorPower.ll) < 5) && (
-                            <p>💪 Muscle weakness detected: <span className="text-amber-400 font-bold">One or more limbs affected</span></p>
-                        )}
-                        {alerts.some(a => a.type === 'emergency') && (
-                            <p className="text-red-400 font-black mt-2">⚠️ Doctor suspects: possible stroke / emergency — urgent evaluation required.</p>
-                        )}
-                        {(n.symptoms || []).includes('Seizures') && (
-                            <p className="text-amber-300 font-bold">📌 Ensure anti-epileptic medication compliance at all times.</p>
-                        )}
-                    </div>
-                </div>
-            )}
+
         </div>
     );
 };

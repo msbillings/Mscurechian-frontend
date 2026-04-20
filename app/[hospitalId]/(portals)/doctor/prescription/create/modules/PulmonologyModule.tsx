@@ -27,8 +27,6 @@ const SEVERITIES = ['Mild', 'Moderate', 'Severe', 'Acute Exacerbation'] as const
 const DIAGNOSES = ['Asthma', 'COPD', 'Pneumonia', 'TB', 'ARDS'] as const;
 
 export const PulmonologyModule: React.FC<PulmonologyModuleProps> = ({ formData, setFormData }) => {
-    const [alerts, setAlerts] = useState<AlertEntry[]>([]);
-
     if (!formData.pulmoData) return null;
     const p = formData.pulmoData;
 
@@ -53,72 +51,6 @@ export const PulmonologyModule: React.FC<PulmonologyModuleProps> = ({ formData, 
         const curr: string[] = p.auscultation?.sounds || [];
         updateNested('auscultation', 'sounds', curr.includes(sound) ? curr.filter(s => s !== sound) : [...curr, sound]);
     };
-
-    // ── Clinical Validation Engine (Pulmonology) ──────────────────────────────
-    useEffect(() => {
-        const newAlerts: AlertEntry[] = [];
-        const rr = parseInt(p.vitals?.respRate) || 0;
-        const spo2 = parseInt(p.vitals?.spo2) || 0;
-        const syms = p.symptoms || [];
-        const sounds = p.auscultation?.sounds || [];
-
-        // 2. SpO2 Hypoxia Logic
-        if (spo2 > 0) {
-            if (spo2 < 90) {
-                newAlerts.push({ type: 'emergency', message: '🚨 CRITICAL HYPOXIA — SpO2 < 90%. Urgent oxygen therapy and clinical stabilization required.' });
-            } else if (spo2 < 94) {
-                newAlerts.push({ type: 'warning', message: '⚠️ Low Oxygen Saturation — Monitor closely and consider supplemental O2.' });
-            }
-        }
-
-        // 3. Respiratory Rate Logic
-        if (rr > 0) {
-            if (rr > 30) {
-                newAlerts.push({ type: 'emergency', message: '🚨 RESPIRATORY DISTRESS — RR > 30 bpm. Extreme effort detected.' });
-            } else if (rr > 24) {
-                newAlerts.push({ type: 'warning', message: '⚠️ Tachypnea detected (RR > 24). Investigating underlying strain.' });
-            }
-        }
-
-        // 4. Rule-based Suggestion: Respiratory Failure
-        if (spo2 < 90 && rr > 30) {
-            newAlerts.push({ type: 'emergency', message: '🚨 EMERGENCY: RESPIRATORY FAILURE — Combined hypoxia and severe tachypnea.' });
-        }
-
-        // 5. Oxygen Logic
-        if (spo2 < 90 && p.vitals?.oxygenSupport === 'Room Air') {
-            newAlerts.push({ type: 'emergency', message: '🚨 OXYGEN THERAPY REQUIRED — Patient is hypoxic on Room Air.' });
-        }
-
-        // 6. Hemoptysis & Stridor Alerts
-        if (syms.includes('Hemoptysis')) {
-            newAlerts.push({ type: 'emergency', message: '❗ HEMOPTYSIS DETECTED — Possible TB, malignancy, or severe lung pathology.' });
-        }
-        if (sounds.includes('Stridor')) {
-            newAlerts.push({ type: 'emergency', message: '🚨 STRIDOR PRESENT — Indicates upper airway obstruction. Emergency airway review required.' });
-        }
-
-        // 7. Clinical Patterns
-        if (syms.includes('Wheeze') && p.peakFlow && p.peakFlow < 250) {
-            newAlerts.push({ type: 'info', message: '💡 Pattern: Possible Acute Asthma Exacerbation (Wheeze + Low Peak Flow).' });
-        }
-        if (syms.includes('Fever') && sounds.includes('Crackles')) {
-            newAlerts.push({ type: 'info', message: '💡 Pattern: Possible Pneumonia (Fever + Crackles).' });
-        }
-        if (p.mmrcGrade >= 3 && p.vitals?.oxygenSupport !== 'Room Air') {
-            newAlerts.push({ type: 'warning', message: '⚠️ Severe chronic breathlessness (mMRC 3-4). Check for COPD/ILD staging.' });
-        }
-
-        // 8. Pharma Rules
-        if (p.diagnosis === 'Asthma') {
-            newAlerts.push({ type: 'info', message: '💊 Pharma Note: Ensure inhaler technique is demonstrated to the patient.' });
-        }
-        if (p.diagnosis === 'COPD') {
-            newAlerts.push({ type: 'info', message: '💊 Pharma Note: Long-term bronchodilator counseling required.' });
-        }
-
-        setAlerts(newAlerts);
-    }, [p.vitals, p.symptoms, p.auscultation, p.peakFlow, p.diagnosis, p.mmrcGrade]);
 
     // ── Style helpers ─────────────────────────────────────────────────────────
     const alertColors: Record<string, string> = {
@@ -151,20 +83,7 @@ export const PulmonologyModule: React.FC<PulmonologyModuleProps> = ({ formData, 
     return (
         <div className="space-y-4">
 
-            {/* ── Alerts Panel ────────────────────────────────────────── */}
-            {alerts.length > 0 && (
-                <div className="space-y-2">
-                    {alerts.map((alert, idx) => (
-                        <div key={idx} className={`flex items-start gap-3 p-3 rounded-xl border-l-4 ${alertColors[alert.type]}`}>
-                            {alert.type === 'emergency' || alert.type === 'error'
-                                ? <ShieldAlert size={16} className="shrink-0 mt-0.5" />
-                                : <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-                            }
-                            <p className="text-[11px] font-black uppercase tracking-tight leading-snug">{alert.message}</p>
-                        </div>
-                    ))}
-                </div>
-            )}
+
 
             {/* Standardized Light Header */}
             <div className="bg-cyan-50 border border-cyan-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">
@@ -178,12 +97,7 @@ export const PulmonologyModule: React.FC<PulmonologyModuleProps> = ({ formData, 
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    {isHypoxic && (
-                        <div className="bg-cyan-100/50 px-3 py-2 rounded-lg flex items-center gap-2 border border-cyan-200 hidden md:flex">
-                             <AlertTriangle size={14} className="text-cyan-600" />
-                             <span className="text-[9px] font-black uppercase tracking-widest text-cyan-700">Safety Alerts Active</span>
-                        </div>
-                    )}
+
                     <div className="bg-white border border-cyan-200 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.1em] text-cyan-600">
                         Pulmo - Module
                     </div>
@@ -373,35 +287,7 @@ export const PulmonologyModule: React.FC<PulmonologyModuleProps> = ({ formData, 
             </div>
 
             {/* ── Patient View Summary ─────────────────────────────── */}
-            {(p.vitals?.spo2 || p.diagnosis) && (
-                <div className="bg-cyan-50 rounded-2xl p-6 border border-cyan-200 border-l-8 border-l-cyan-500 shadow-sm">
-                    <div className="flex items-center gap-3 mb-4 text-cyan-600">
-                        <Info size={18} />
-                        <h3 className="text-[11px] font-black uppercase tracking-widest">Respiratory Care Summary</h3>
-                    </div>
-                    <div className="space-y-3 text-sm font-medium text-slate-700">
-                        {p.vitals?.spo2 && (
-                            <p className="flex items-center gap-2">
-                                🫧 Oxygen saturation is <span className={`font-bold ${isHypoxic ? 'text-red-500' : 'text-cyan-600'}`}>
-                                    {p.vitals.spo2}% ({isHypoxic ? 'Low' : 'Normal'})
-                                </span>
-                            </p>
-                        )}
-                        {p.symptoms?.length > 0 && (
-                            <p>📝 Reported symptoms include: <span className="text-slate-800 font-bold">{p.symptoms.join(', ')}</span></p>
-                        )}
-                        {p.diagnosis && (
-                            <div className="bg-white p-3 rounded-xl border border-cyan-200 mt-2">
-                                <p className="text-[10px] text-slate-400 uppercase mb-1">Doctor's Assessment</p>
-                                <p className="text-cyan-600 font-black text-lg">{p.severity} {p.diagnosis}</p>
-                            </div>
-                        )}
-                        <div className="pt-4 border-t border-cyan-200 text-[10px] text-slate-500 font-bold uppercase italic tracking-wider">
-                            📌 Safety: Always maintain proper inhaler technique. Return to ER if SpO2 drops below 92% or breathing becomes extremely difficult.
-                        </div>
-                    </div>
-                </div>
-            )}
+
         </div>
     );
 };

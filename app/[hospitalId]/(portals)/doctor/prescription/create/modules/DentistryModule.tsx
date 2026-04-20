@@ -12,10 +12,7 @@ interface DentistryModuleProps {
     setFormData: React.Dispatch<React.SetStateAction<any>>;
 }
 
-type AlertEntry = { type: 'emergency' | 'error' | 'warning' | 'info'; message: string };
-
 export const DentistryModule: React.FC<DentistryModuleProps> = ({ formData, setFormData }) => {
-    const [alerts, setAlerts] = useState<AlertEntry[]>([]);
     const [selectedTooth, setSelectedTooth] = useState<string | null>(null);
 
     if (!formData.dentistryData) return null;
@@ -27,66 +24,6 @@ export const DentistryModule: React.FC<DentistryModuleProps> = ({ formData, setF
     const upperLeft  = ["21", "22", "23", "24", "25", "26", "27", "28"];
     const lowerRight = ["48", "47", "46", "45", "44", "43", "42", "41"];
     const lowerLeft  = ["31", "32", "33", "34", "35", "36", "37", "38"];
-
-    const containsPulpitis = (d.teeth || []).some((t: any) => t.diagnosis?.toLowerCase().includes('pulpitis'));
-
-    // ── Real-time Clinical Validation Engine ────────────────────────────────
-    useEffect(() => {
-        const newAlerts: AlertEntry[] = [];
-        
-        // 1. Pain Validation
-        if (d.painScale >= 7) {
-            newAlerts.push({ type: 'emergency', message: 'Severe dental pain (≥7) — urgent intervention required.' });
-        }
-
-        // 3. Procedure Logic
-        if (containsPulpitis && d.procedure !== 'Root Canal Treatment') {
-            newAlerts.push({ type: 'warning', message: 'Diagnosis includes Pulpitis — Suggestion: RCT (Root Canal Treatment) indicated.' });
-        }
-
-        const containsHighMobility = (d.teeth || []).some((t: any) => t.mobilityGrade >= 3);
-        if (containsHighMobility && d.procedure !== 'Extraction') {
-            newAlerts.push({ type: 'warning', message: 'Grade 3 Mobility detected — Suggestion: Extraction required.' });
-        }
-
-        if (d.oralFindings?.plaqueIndex === 'High' && d.oralFindings?.gingivitis !== 'None') {
-            newAlerts.push({ type: 'info', message: 'High plaque & Gingivitis — Suggesting: Scaling & Polishing.' });
-        }
-
-        // 4. Antibiotic Validation (CRITICAL)
-        const infectionSigns = d.oralFindings?.abscess || d.extraOral?.facialSwelling;
-        const antibioticRequested = (d.medications || []).some((m: string) => m.toLowerCase().includes('antibiotic') || m.toLowerCase().includes('amoxicillin'));
-        
-        if (infectionSigns && !antibioticRequested) {
-            newAlerts.push({ type: 'warning', message: 'Clinical signs of infection (Abscess/Swelling) — Consider prescribing Antibiotics.' });
-        }
-
-        const simpleCaries = (d.teeth || []).every((t: any) => t.condition === 'caries' || !t.condition) && !infectionSigns;
-        if (simpleCaries && antibioticRequested) {
-            newAlerts.push({ type: 'error', message: 'ALERT: No clinical signs of infection. Antibiotics not required for simple caries.' });
-        }
-
-        // 5. Bleeding Risk
-        if (d.systemicRisks?.onBloodThinners) {
-            newAlerts.push({ type: 'emergency', message: 'CRITICAL: Patient on blood thinners. HIGH BLEEDING RISK — caution for extraction/surgery.' });
-        }
-
-        // 6. Diabetes Validation
-        if (d.systemicRisks?.diabetic && d.systemicRisks?.diabetesControl === 'Uncontrolled') {
-            newAlerts.push({ type: 'warning', message: 'Uncontrolled Diabetes — Risk of delayed healing and post-op infection.' });
-        }
-
-        // 7. Cross-field Infection
-        if (d.oralFindings?.abscess && d.extraOral?.facialSwelling) {
-             newAlerts.push({ type: 'emergency', message: 'SEVERE DENTAL INFECTION: Spreading abscess with swelling detected.' });
-        }
-
-        if (d.oralFindings?.gingivitis !== 'None' && d.oralFindings?.mobility !== 'None') {
-            newAlerts.push({ type: 'info', message: 'Clinical signs of Periodontitis (Gingivitis + Mobility).' });
-        }
-
-        setAlerts(newAlerts);
-    }, [d, containsPulpitis]);
 
     // ── Helper updaters ─────────────────────────────────────────────────────
     const updateDent = (field: string, value: any) =>
@@ -135,14 +72,6 @@ export const DentistryModule: React.FC<DentistryModuleProps> = ({ formData, setF
         updateDent('teeth', updatedTeeth);
     };
 
-    // ── Styles ──────────────────────────────────────────────────────────────
-    const alertColors: Record<string, string> = {
-        emergency: 'bg-red-50 border-red-600 text-red-900',
-        error:     'bg-rose-50 border-rose-500 text-rose-800',
-        warning:   'bg-amber-50 border-amber-500 text-amber-800',
-        info:      'bg-blue-50 border-blue-400 text-blue-800',
-    };
-
     const getToothStyle = (num: string) => {
         const isSelected = selectedTooth === num;
         const toothData = (d.teeth || []).find((t: any) => t.toothNumber === num);
@@ -156,29 +85,9 @@ export const DentistryModule: React.FC<DentistryModuleProps> = ({ formData, setF
                     : 'border-slate-200 bg-white text-slate-400 hover:border-slate-400'
         }`;
     };
-
     return (
         <div className="space-y-6">
 
-            {/* ── Clinical Alerts ─────────────────────────────────────────── */}
-            {alerts.length > 0 && (
-                <div className="space-y-2">
-                    {alerts.map((alert, idx) => (
-                        <div
-                            key={idx}
-                            className={`flex items-start gap-3 p-3 rounded-xl border-l-4 animate-in fade-in slide-in-from-top-2 duration-300 ${alertColors[alert.type]}`}
-                        >
-                            {alert.type === 'emergency' || alert.type === 'error'
-                                ? <ShieldAlert size={16} className="shrink-0 mt-0.5" />
-                                : alert.type === 'warning'
-                                ? <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-                                : <Info size={16} className="shrink-0 mt-0.5" />
-                            }
-                            <p className="text-[11px] font-black uppercase tracking-tight">{alert.message}</p>
-                        </div>
-                    ))}
-                </div>
-            )}
 
             {/* Header */}
             <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">

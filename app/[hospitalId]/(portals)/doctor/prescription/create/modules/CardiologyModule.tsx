@@ -9,40 +9,12 @@ interface CardiologyModuleProps {
 }
 
 export const CardiologyModule: React.FC<CardiologyModuleProps> = ({ formData, setFormData }) => {
-    const [validationMsg, setValidationMsg] = useState<{ field: string; message: string; type: 'warning' | 'critical' | 'info' }[]>([]);
-
     if (!formData.cardiologyData) return null;
 
     const data = formData.cardiologyData;
     const sys = parseInt(data.bpSystolic || '0');
     const dia = parseInt(data.bpDiastolic || '0');
     const hr = parseInt(data.heartRate || '0');
-
-    // Real-time Validations
-    useEffect(() => {
-        const msgs: typeof validationMsg = [];
-
-        if (sys > 0) {
-            if (sys < 90) msgs.push({ field: 'bp', message: 'Possible hypotension detected', type: 'warning' });
-            if (sys > 140) msgs.push({ field: 'bp', message: 'Hypertension detected', type: 'warning' });
-            if (sys > 180) msgs.push({ field: 'bp', message: 'CRITICAL: Hypertensive emergency risk', type: 'critical' });
-        }
-        if (hr > 0) {
-            if (hr < 60) msgs.push({ field: 'hr', message: 'Bradycardia', type: 'info' });
-            if (hr > 100) msgs.push({ field: 'hr', message: 'Tachycardia', type: 'warning' });
-            if (hr > 150) msgs.push({ field: 'hr', message: 'CRITICAL: Severe Tachycardia', type: 'critical' });
-        }
-        if (data.ecgType === 'ST Elevation') {
-            msgs.push({ field: 'ecg', message: 'URGENT: Possible Myocardial Infarction', type: 'critical' });
-        }
-        
-        // Consistency Check
-        if ((sys > 140 || hr > 100) && data.riskLevel === 'Low') {
-            msgs.push({ field: 'risk', message: 'Risk level inconsistent with vitals', type: 'warning' });
-        }
-
-        setValidationMsg(msgs);
-    }, [data.bpSystolic, data.bpDiastolic, data.heartRate, data.ecgType, data.riskLevel]);
 
     const updateField = (field: string, value: any) => {
         setFormData((p: any) => ({
@@ -59,8 +31,6 @@ export const CardiologyModule: React.FC<CardiologyModuleProps> = ({ formData, se
         updateField(field, next);
     };
 
-    const getMsg = (field: string) => validationMsg.find(m => m.field === field);
-
     return (
         <div className="space-y-6">
             {/* Standardized Light Header */}
@@ -75,12 +45,7 @@ export const CardiologyModule: React.FC<CardiologyModuleProps> = ({ formData, se
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    {validationMsg.length > 0 && (
-                        <div className="bg-rose-100/50 px-3 py-2 rounded-lg flex items-center gap-2 border border-rose-200 hidden md:flex">
-                             <AlertTriangle size={14} className="text-rose-600" />
-                             <span className="text-[9px] font-black uppercase tracking-widest text-rose-700">Safety Alerts Active</span>
-                        </div>
-                    )}
+
                     <div className="bg-white border border-rose-200 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.1em] text-rose-600">
                         Cardio - Module
                     </div>
@@ -88,11 +53,7 @@ export const CardiologyModule: React.FC<CardiologyModuleProps> = ({ formData, se
             </div>
 
             {/* VITAL MONITORING BOX - Moved outside shared background to keep header clean */}
-            <div className={`rounded-2xl border-2 p-6 transition-all duration-500 ${
-                validationMsg.some(m => m.type === 'critical') 
-                ? 'bg-red-50 border-red-200 animate-pulse' 
-                : 'bg-white border-slate-100 shadow-sm'
-            }`}>
+            <div className="bg-white border-slate-100 border-2 rounded-2xl p-6 shadow-sm">
                 <div className="flex items-center gap-2 mb-6">
                    <div className="w-1.5 h-6 bg-[#f01d41] rounded-full"></div>
                    <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400">Cardiac Vital Monitoring</h3>
@@ -119,11 +80,7 @@ export const CardiologyModule: React.FC<CardiologyModuleProps> = ({ formData, se
                                 className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-4 text-xl font-black text-slate-700 placeholder:text-slate-300 focus:border-rose-500 focus:bg-white outline-none transition-all text-center"
                             />
                         </div>
-                        {getMsg('bp') && (
-                            <p className={`mt-2 text-[9px] font-bold uppercase flex items-center gap-1 ${getMsg('bp')?.type === 'critical' ? 'text-red-600' : 'text-amber-600'}`}>
-                                <AlertTriangle size={10} /> {getMsg('bp')?.message}
-                            </p>
-                        )}
+
                     </div>
 
                     {/* HR & Rhythm */}
@@ -173,11 +130,7 @@ export const CardiologyModule: React.FC<CardiologyModuleProps> = ({ formData, se
                                 </button>
                             ))}
                         </div>
-                        {getMsg('risk') && (
-                            <p className="mt-2 text-[9px] font-bold uppercase text-amber-600 text-center flex items-center justify-center gap-1">
-                                <AlertTriangle size={10} /> {getMsg('risk')?.message}
-                            </p>
-                        )}
+
                     </div>
                 </div>
             </div>
