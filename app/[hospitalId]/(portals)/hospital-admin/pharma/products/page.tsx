@@ -9,11 +9,14 @@ import {
     FileSpreadsheet,
     ChevronDown,
     RefreshCcw,
-    LayoutGrid
+    LayoutGrid,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { ProductService } from '@/lib/integrations/services/product.service';
+import { SupplierService } from '@/lib/integrations/services/supplier.service';
 import { PharmacyProduct, PharmacyProductPayload } from '@/lib/integrations/types/product';
 import ProductTable from '@/components/pharmacy/products/ProductTable';
 import AddProductModal from '@/components/pharmacy/products/AddProductModal';
@@ -35,31 +38,50 @@ const ProductsPage = () => {
     const [supplierFilter, setSupplierFilter] = useState('All Suppliers');
     const [expiryStatusFilter, setExpiryStatusFilter] = useState(searchParams.get('expiryStatus') || 'All');
 
-    // ✅ CRITICAL FIX: Use React Query instead of useState + useEffect
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(15);
+
+    // Reset to page 1 when filters change
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter, supplierFilter, expiryStatusFilter]);
+
     // ✅ STEP 3 FIX: Standardized query key with hospital-admin prefix
-    const { data: products = [], isLoading, refetch } = useQuery<any[]>({
-        queryKey: ['hospital-admin-pharma-products', searchTerm, statusFilter, supplierFilter, expiryStatusFilter],
+    const { data: paginationResult, isLoading, refetch } = useQuery({
+        queryKey: ['hospital-admin-pharma-products', searchTerm, statusFilter, supplierFilter, expiryStatusFilter, currentPage, pageSize],
         queryFn: async () => {
             const apiStartTime = performance.now();
-            console.log(`[API] Starting products fetch with filters:`, { searchTerm, statusFilter, supplierFilter, expiryStatusFilter });
+            console.log(`[API] Starting products fetch with filters:`, { searchTerm, statusFilter, supplierFilter, expiryStatusFilter, currentPage, pageSize });
             try {
-                const data = await ProductService.getProducts({
+                const data = await ProductService.getProductsPaginated(currentPage, pageSize, {
                     search: searchTerm,
                     status: statusFilter === 'All Stock' ? undefined : statusFilter,
                     supplier: supplierFilter === 'All Suppliers' ? undefined : supplierFilter,
                     expiryStatus: expiryStatusFilter === 'All' ? undefined : expiryStatusFilter
                 });
                 const apiEndTime = performance.now();
-                console.log(`[API] Products fetch completed in ${(apiEndTime - apiStartTime).toFixed(2)}ms, returned ${data?.length || 0} products`);
+                console.log(`[API] Products fetch completed in ${(apiEndTime - apiStartTime).toFixed(2)}ms`);
                 return data;
             } catch (error) {
                 console.error('Failed to fetch products:', error);
                 toast.error('Failed to load inventory data');
-                return [];
+                return { products: [], totalPages: 1, totalProducts: 0, currentPage: 1 };
             }
         },
-        staleTime: 2 * 60 * 1000, // 2 minutes - will use cache for 2 min
-        gcTime: 10 * 60 * 1000, // Keep in cache for 10 min
+        staleTime: 2 * 60 * 1000, 
+        gcTime: 10 * 60 * 1000, 
+    });
+
+    const products = paginationResult?.products || [];
+    const totalPages = paginationResult?.totalPages || 1;
+    const totalProducts = paginationResult?.totalProducts || 0;
+
+    // Fetch suppliers for filter dropdown
+    const { data: allSuppliers = [] } = useQuery({
+        queryKey: ['hospital-admin-pharma-all-suppliers'],
+        queryFn: () => SupplierService.getSuppliers(),
+        staleTime: 5 * 60 * 1000,
     });
 
     const handleSaveProduct = async (data: PharmacyProductPayload) => {
@@ -100,134 +122,146 @@ const ProductsPage = () => {
     };
 
     const handleExportExcel = async () => {
-        if (products.length === 0) {
-            toast.error('No registry data to export');
-            return;
-        }
-
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Inventory Manifest');
-
-        // 1. Branding Header
-        const headerTitle = ['INSTITUTIONAL PHARMA INVENTORY MANIFEST'];
-        const subTitle = [`Global SKU Audit: ${new Date().toLocaleDateString('en-GB')} | Status: SYSTEM_VERIFIED`];
-
-        const titleRow = worksheet.addRow(headerTitle);
-        titleRow.font = { name: 'Arial Black', size: 16, color: { argb: 'FF1E293B' } };
-        worksheet.mergeCells('A1:H1');
-        titleRow.alignment = { vertical: 'middle', horizontal: 'center' };
-
-        const dateRow = worksheet.addRow(subTitle);
-        dateRow.font = { name: 'Arial', size: 10, italic: true, bold: true, color: { argb: 'FF64748B' } };
-        worksheet.mergeCells('A2:H2');
-        dateRow.alignment = { vertical: 'middle', horizontal: 'center' };
-
-        worksheet.addRow([]); // Spacer
-
-        // 2. Define Columns
-        worksheet.columns = [
-            { header: 'SKU SIGNATURE', key: 'sku', width: 15 },
-            { header: 'NOMENCLATURE', key: 'brandName', width: 25 },
-            { header: 'COMPOSITION', key: 'genericName', width: 25 },
-            { header: 'SCHEDULE', key: 'schedule', width: 10 },
-            { header: 'MRP (₹)', key: 'mrp', width: 12 },
-            { header: 'UNIT STOCK', key: 'stock', width: 12 },
-            { header: 'STATUS', key: 'status', width: 15 },
-            { header: 'EXPIRY', key: 'expiry', width: 12 },
-        ];
-
-        // 3. Add & Style Table Header
-        const headerRow = worksheet.addRow([
-            'SKU SIGNATURE', 'NOMENCLATURE', 'COMPOSITION', 'SCHEDULE',
-            'MRP (₹)', 'UNIT STOCK', 'STATUS', 'EXPIRY'
-        ]);
-
-        headerRow.eachCell((cell) => {
-            cell.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FF0F172A' }
-            };
-            cell.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 9 };
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
-            cell.border = {
-                top: { style: 'thin' },
-                left: { style: 'thin' },
-                bottom: { style: 'thin' },
-                right: { style: 'thin' }
-            };
-        });
-
-        // 4. Populate Data
-        products.forEach((product, index) => {
-            const row = worksheet.addRow({
-                sku: (product.sku || 'N/A').toUpperCase(),
-                brandName: product.brandName?.toUpperCase(),
-                genericName: product.genericName?.toUpperCase(),
-                schedule: (product.schedule?.split(' ')[0] || '-').toUpperCase(),
-                mrp: Number(product.mrp) || 0,
-                stock: Number(product.currentStock) || 0,
-                status: (product.status || 'IN_STOCK').toUpperCase(),
-                expiry: product.expiryDate ? new Date(product.expiryDate).toLocaleDateString('en-GB') : '-'
+        const loadingToast = toast.loading('Preparing manifest for export...');
+        try {
+            // Fetch ALL products matching filters for export
+            const allProducts = await ProductService.getProducts({
+                search: searchTerm,
+                status: statusFilter === 'All Stock' ? undefined : statusFilter,
+                supplier: supplierFilter === 'All Suppliers' ? undefined : supplierFilter,
+                expiryStatus: expiryStatusFilter === 'All' ? undefined : expiryStatusFilter
             });
 
-            // Alternate row styling
-            if (index % 2 === 0) {
-                row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+            if (allProducts.length === 0) {
+                toast.dismiss(loadingToast);
+                toast.error('No registry data to export');
+                return;
             }
 
-            row.font = { size: 9 };
-            row.alignment = { vertical: 'middle' };
-            row.eachCell((cell, colIndex) => {
-                if (colIndex === 5) {
-                    cell.numFmt = '#,##0.00';
-                    cell.alignment = { horizontal: 'right' };
-                }
-                if (colIndex === 6) {
-                    cell.font = { bold: true };
-                    cell.alignment = { horizontal: 'center' };
-                }
-                if (colIndex === 7) {
-                    cell.font = {
-                        bold: true,
-                        color: { argb: cell.value === 'OUT OF STOCK' ? 'FFDC2626' : 'FF10B981' }
-                    };
-                    cell.alignment = { horizontal: 'center' };
-                }
-                if (colIndex === 8) {
-                    cell.alignment = { horizontal: 'center' };
-                }
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Inventory Manifest');
+
+            // ... (rest of branding header)
+            const headerTitle = ['INSTITUTIONAL PHARMA INVENTORY MANIFEST'];
+            const subTitle = [`Global SKU Audit: ${new Date().toLocaleDateString('en-GB')} | Status: SYSTEM_VERIFIED`];
+
+            const titleRow = worksheet.addRow(headerTitle);
+            titleRow.font = { name: 'Arial Black', size: 16, color: { argb: 'FF1E293B' } };
+            worksheet.mergeCells('A1:H1');
+            titleRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+            const dateRow = worksheet.addRow(subTitle);
+            dateRow.font = { name: 'Arial', size: 10, italic: true, bold: true, color: { argb: 'FF64748B' } };
+            worksheet.mergeCells('A2:H2');
+            dateRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+            worksheet.addRow([]); // Spacer
+
+            // 2. Define Columns
+            worksheet.columns = [
+                { header: 'SKU SIGNATURE', key: 'sku', width: 15 },
+                { header: 'NOMENCLATURE', key: 'brandName', width: 25 },
+                { header: 'COMPOSITION', key: 'genericName', width: 25 },
+                { header: 'SCHEDULE', key: 'schedule', width: 10 },
+                { header: 'MRP (₹)', key: 'mrp', width: 12 },
+                { header: 'UNIT STOCK', key: 'stock', width: 12 },
+                { header: 'STATUS', key: 'status', width: 15 },
+                { header: 'EXPIRY', key: 'expiry', width: 12 },
+            ];
+
+            // 3. Add & Style Table Header
+            const headerRow = worksheet.addRow([
+                'SKU SIGNATURE', 'NOMENCLATURE', 'COMPOSITION', 'SCHEDULE',
+                'MRP (₹)', 'UNIT STOCK', 'STATUS', 'EXPIRY'
+            ]);
+
+            headerRow.eachCell((cell) => {
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FF0F172A' }
+                };
+                cell.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 9 };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
                 cell.border = {
-                    top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-                    left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-                    bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-                    right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
                 };
             });
-        });
 
-        const buffer = await workbook.xlsx.writeBuffer();
-        const data = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        saveAs(data, `Institutional_Pharma_Inventory_${new Date().toISOString().split('T')[0]}.xlsx`);
-        toast.success('Manifest exported successfully');
+            // 4. Populate Data
+            allProducts.forEach((product, index) => {
+                const row = worksheet.addRow({
+                    sku: (product.sku || 'N/A').toUpperCase(),
+                    brandName: product.brandName?.toUpperCase(),
+                    genericName: product.genericName?.toUpperCase(),
+                    schedule: (product.schedule?.split(' ')[0] || '-').toUpperCase(),
+                    mrp: Number(product.mrp) || 0,
+                    stock: Number(product.currentStock) || 0,
+                    status: (product.status || 'IN_STOCK').toUpperCase(),
+                    expiry: product.expiryDate ? new Date(product.expiryDate).toLocaleDateString('en-GB') : '-'
+                });
+
+                // Alternate row styling
+                if (index % 2 === 0) {
+                    row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+                }
+
+                row.font = { size: 9 };
+                row.alignment = { vertical: 'middle' };
+                row.eachCell((cell, colIndex) => {
+                    if (colIndex === 5) {
+                        cell.numFmt = '#,##0.00';
+                        cell.alignment = { horizontal: 'right' };
+                    }
+                    if (colIndex === 6) {
+                        cell.font = { bold: true };
+                        cell.alignment = { horizontal: 'center' };
+                    }
+                    if (colIndex === 7) {
+                        cell.font = {
+                            bold: true,
+                            color: { argb: cell.value === 'OUT OF STOCK' ? 'FFDC2626' : 'FF10B981' }
+                        };
+                        cell.alignment = { horizontal: 'center' };
+                    }
+                    if (colIndex === 8) {
+                        cell.alignment = { horizontal: 'center' };
+                    }
+                    cell.border = {
+                        top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                        left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                        bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                        right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+                    };
+                });
+            });
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const data = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            saveAs(data, `Institutional_Pharma_Inventory_${new Date().toISOString().split('T')[0]}.xlsx`);
+            toast.dismiss(loadingToast);
+            toast.success('Manifest exported successfully');
+        } catch (error) {
+            console.error('Export failed:', error);
+            toast.dismiss(loadingToast);
+            toast.error('Export operation failed');
+        }
     };
 
-    const suppliers = ['All Suppliers', ...Array.from(new Set(products.map(p => {
-        if (typeof p.supplier === 'object' && p.supplier !== null) {
-            return (p.supplier as any).name;
-        }
-        return p.supplier;
-    }))).filter(Boolean)];
+    const suppliers = ['All Suppliers', ...allSuppliers.map(s => s.name)];
 
     return (
         <div className="space-y-4 md:space-y-6 pb-20 w-full max-w-[100vw] overflow-x-hidden pt-2 md:pt-4">
             {/* Header Area */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 md:gap-4 w-full lg:w-auto">
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 md:gap-4 w-full xl:w-auto flex-1">
                     <h1 className="px-1 md:px-3 text-lg md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white shrink-0">Products</h1>
 
-                    {/* Search Bar - Integrated in Header */}
-                    <div className="relative w-full sm:min-w-[200px] xl:min-w-[400px]">
+                    {/* Search Bar - Flexible width */}
+                    <div className="relative w-full lg:max-w-[500px]">
                         <Search className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400 absolute left-3 md:left-4 top-1/2 -translate-y-1/2" />
                         <input
                             type="text"
@@ -239,7 +273,39 @@ const ProductsPage = () => {
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 lg:gap-3">
+                    {/* Pagination - Integrated with buttons for better responsiveness */}
+                    {!isLoading && totalProducts > 0 && (
+                        <div className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-1 shadow-sm shrink-0">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                className="p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                title="Previous Page"
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
+                            
+                            <div className="px-1.5 text-[10px] md:text-xs font-bold text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                                <span className="hidden sm:inline mr-1">Page</span>
+                                <span className="text-blue-600 font-black">{currentPage}</span>
+                                <span className="mx-1 text-gray-400">/</span>
+                                {totalPages}
+                                <span className="hidden lg:inline text-gray-400 font-medium ml-1">({totalProducts})</span>
+                            </div>
+
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                className="p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                title="Next Page"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    )}
+
+                    <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 hidden lg:block mx-1" />
                     <button
                         onClick={() => setIsModalOpen(true)}
                         className="flex items-center gap-1.5 px-3 py-2 bg-teal-600 text-white rounded-lg text-xs font-semibold hover:bg-teal-700 transition-colors shadow-sm"

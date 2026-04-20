@@ -19,13 +19,12 @@ import {
     Table as TableIcon
 } from 'lucide-react';
 import { Card, Button } from '@/components/admin';
-import { dischargeService } from '@/lib/integrations/services/discharge.service';
+import { dischargeService, hospitalAdminService } from '@/lib/integrations/services';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
 import ClinicalReceipt from '@/components/helpdesk/ClinicalReceipt';
-import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
-import toast from 'react-hot-toast';
 import { useTenantLink } from '@/hooks/useTenantLink';
+import toast from 'react-hot-toast';
 
 interface DischargeHistoryProps {
     basePath: string;

@@ -296,10 +296,11 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
         {/* Queue Filters */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
           {/* Date Filter */}
-          <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 bg-secondary-theme px-3 py-2 rounded-xl border border-border-theme focus-within:ring-2 focus-within:ring-primary-theme/50 transition-all w-full lg:w-auto">
-            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-[10px] font-bold text-muted uppercase">From</span>
+          <div className="flex-1 flex flex-col gap-2 bg-secondary-theme px-3 py-2 rounded-xl border border-border-theme focus-within:ring-2 focus-within:ring-primary-theme/50 transition-all w-full lg:w-auto">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              {/* FROM date */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-bold text-muted uppercase shrink-0">From</span>
                 <input 
                   type="date" 
                   value={startDateFilter || ''}
@@ -309,16 +310,16 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
                       setEndDateFilter(e.target.value);
                     }
                   }}
-                  className="bg-transparent text-[11px] font-black text-foreground outline-none uppercase tracking-widest cursor-pointer w-[100px] sm:w-[110px]"
+                  className="bg-transparent text-[11px] font-black text-foreground outline-none uppercase tracking-widest cursor-pointer min-w-0 w-auto"
                   style={{ colorScheme: 'light' }}
                 />
               </div>
-              
-              <div className="w-[1px] h-4 bg-border-theme hidden sm:block"></div>
-              <div className="flex sm:hidden items-center text-muted font-black text-[10px] uppercase">To</div>
-              
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-[10px] font-bold text-muted uppercase hidden sm:block">To</span>
+
+              <div className="w-[1px] h-4 bg-border-theme hidden sm:block shrink-0"></div>
+
+              {/* TO date */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-bold text-muted uppercase shrink-0">To</span>
                 <input 
                   type="date" 
                   value={endDateFilter || ''}
@@ -328,40 +329,41 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
                       setStartDateFilter(e.target.value);
                     }
                   }}
-                  className="bg-transparent text-[11px] font-black text-foreground outline-none uppercase tracking-widest cursor-pointer w-[100px] sm:w-[110px]"
+                  className="bg-transparent text-[11px] font-black text-foreground outline-none uppercase tracking-widest cursor-pointer min-w-0 w-auto"
                   style={{ colorScheme: 'light' }}
                 />
               </div>
-            </div>
 
-            <div className="flex items-center justify-end gap-2 border-t sm:border-t-0 sm:border-l border-border-theme pt-2 sm:pt-0 sm:pl-3">
-              {(() => {
-                  const today = new Date();
-                  today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
-                  const todayStr = today.toISOString().split('T')[0];
-                  return (startDateFilter !== todayStr || endDateFilter !== todayStr);
-              })() && (
-                <button 
-                  onClick={() => {
+              {/* Action buttons inline */}
+              <div className="flex items-center gap-2 ml-auto">
+                {(() => {
                     const today = new Date();
                     today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
                     const todayStr = today.toISOString().split('T')[0];
-                    setStartDateFilter(todayStr);
-                    setEndDateFilter(todayStr);
-                  }} 
-                  className="text-[9px] text-primary-theme font-black uppercase bg-primary-theme/10 px-3 py-1 rounded-lg hover:bg-primary-theme/20 transition-colors"
-                >
-                  Today
-                </button>
-              )}
-              {(startDateFilter || endDateFilter) ? (
-                <button 
-                  onClick={() => { setStartDateFilter(''); setEndDateFilter(''); }}
-                  className="text-[9px] text-rose-500 font-black uppercase bg-rose-50 px-3 py-1 rounded-lg hover:bg-rose-100 transition-colors"
-                >
-                  Clear
-                </button>
-              ) : null}
+                    return (startDateFilter !== todayStr || endDateFilter !== todayStr);
+                })() && (
+                  <button 
+                    onClick={() => {
+                      const today = new Date();
+                      today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+                      const todayStr = today.toISOString().split('T')[0];
+                      setStartDateFilter(todayStr);
+                      setEndDateFilter(todayStr);
+                    }} 
+                    className="text-[9px] text-primary-theme font-black uppercase bg-primary-theme/10 px-3 py-1 rounded-lg hover:bg-primary-theme/20 transition-colors whitespace-nowrap"
+                  >
+                    Today
+                  </button>
+                )}
+                {(startDateFilter || endDateFilter) ? (
+                  <button 
+                    onClick={() => { setStartDateFilter(''); setEndDateFilter(''); }}
+                    className="text-[9px] text-rose-500 font-black uppercase bg-rose-50 px-3 py-1 rounded-lg hover:bg-rose-100 transition-colors whitespace-nowrap"
+                  >
+                    Clear
+                  </button>
+                ) : null}
+              </div>
             </div>
           </div>
           

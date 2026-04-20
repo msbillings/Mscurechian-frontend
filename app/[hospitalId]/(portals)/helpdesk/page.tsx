@@ -657,31 +657,31 @@ function HelpdeskDashboard() {
                                 </div>
 
                                 {/* Date Filter */}
-                                <div className="flex items-center bg-white px-2 py-1.5 rounded-xl border border-slate-200 shadow-sm focus-within:ring-2 focus-within:ring-teal-500/50 transition-all flex-wrap gap-2">
-                                    <div className="flex items-center gap-1.5">
+                                <div className="flex items-center bg-white px-2 py-1.5 rounded-xl border border-slate-200 shadow-sm focus-within:ring-2 focus-within:ring-teal-500/50 transition-all flex-wrap gap-y-2 gap-x-3 w-full sm:w-auto">
+                                    <div className="flex items-center gap-1.5 flex-1 sm:flex-none min-w-[130px] sm:min-w-0">
                                         <Calendar size={14} className="text-teal-600 hidden sm:block" />
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase">From</span>
+                                        <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase">From</span>
                                         <input
                                             type="date"
                                             value={startDateFilter || ''}
                                             onChange={(e) => handleStartDateChange(e.target.value)}
-                                            className="bg-transparent text-[11px] font-black text-slate-700 outline-none uppercase tracking-widest cursor-pointer select-none"
+                                            className="flex-1 bg-transparent text-[10px] sm:text-[11px] font-black text-slate-700 outline-none uppercase tracking-widest cursor-pointer select-none"
                                             style={{ colorScheme: 'light' }}
                                         />
                                     </div>
                                     <div className="w-[1px] h-4 bg-slate-200 hidden sm:block"></div>
-                                    <div className="flex items-center gap-1.5 border-l sm:border-0 border-slate-200 pl-2 sm:pl-0">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase">To</span>
+                                    <div className="flex items-center gap-1.5 flex-1 sm:flex-none min-w-[130px] sm:min-w-0 border-l sm:border-0 border-slate-100 pl-2 sm:pl-0">
+                                        <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase">To</span>
                                         <input
                                             type="date"
                                             value={endDateFilter || ''}
                                             onChange={(e) => handleEndDateChange(e.target.value)}
-                                            className="bg-transparent text-[11px] font-black text-slate-700 outline-none uppercase tracking-widest cursor-pointer select-none"
+                                            className="flex-1 bg-transparent text-[10px] sm:text-[11px] font-black text-slate-700 outline-none uppercase tracking-widest cursor-pointer select-none"
                                             style={{ colorScheme: 'light' }}
                                         />
                                     </div>
 
-                                    <div className="flex items-center gap-1 ml-auto">
+                                    <div className="flex items-center gap-1 ml-auto w-full sm:w-auto justify-end sm:justify-start">
                                         {(() => {
                                             const today = new Date();
                                             today.setMinutes(today.getMinutes() - today.getTimezoneOffset());

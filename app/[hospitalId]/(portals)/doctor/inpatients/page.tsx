@@ -183,8 +183,9 @@ export default function DoctorInpatientsPage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-fit">
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <div className="flex items-center bg-card border border-border-theme p-1 rounded-lg">
+                    {/* Row 1: View toggle + Filters + Pagination */}
+                    <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+                        <div className="flex items-center bg-card border border-border-theme p-1 rounded-lg shrink-0">
                             <button
                                 onClick={() => setViewType('list')}
                                 className={`p-1.5 rounded-md transition-all ${viewType === 'list' ? 'bg-emerald-50 text-emerald-600' : 'text-muted hover:text-foreground'}`}
@@ -201,40 +202,69 @@ export default function DoctorInpatientsPage() {
                             </button>
                         </div>
 
-                        <div className="flex items-center gap-2 flex-1 sm:flex-none">
-                            <select
-                                className="flex-1 sm:flex-none px-2 py-2 bg-card border border-border-theme rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest outline-none focus:border-emerald-500 transition-all"
-                                value={filters.type}
-                                onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value, room: '' }))}
-                            >
-                                <option value="">Type</option>
-                                {unitTypeOptions.map(type => (
-                                    <option key={type} value={type}>{type}</option>
-                                ))}
-                            </select>
+                        <select
+                            className="px-2 py-2 bg-card border border-border-theme rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest outline-none focus:border-emerald-500 transition-all cursor-pointer"
+                            value={filters.type}
+                            onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value, room: '' }))}
+                        >
+                            <option value="">Type</option>
+                            {unitTypeOptions.map(type => (
+                                <option key={type} value={type}>{type}</option>
+                            ))}
+                        </select>
 
-                            <select
-                                className="flex-1 sm:flex-none px-2 py-2 bg-card border border-border-theme rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest outline-none focus:border-emerald-500 transition-all"
-                                value={filters.room}
-                                onChange={(e) => setFilters(prev => ({ ...prev, room: e.target.value }))}
-                            >
-                                <option value="">Room</option>
-                                {availableRooms.map(room => (
-                                    <option key={room} value={room}>{room}</option>
-                                ))}
-                            </select>
+                        <select
+                            className="px-2 py-2 bg-card border border-border-theme rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest outline-none focus:border-emerald-500 transition-all cursor-pointer"
+                            value={filters.room}
+                            onChange={(e) => setFilters(prev => ({ ...prev, room: e.target.value }))}
+                        >
+                            <option value="">Room</option>
+                            {availableRooms.map(room => (
+                                <option key={room} value={room}>{room}</option>
+                            ))}
+                        </select>
+
+                        {/* Pagination - Inline with filters at the TOP */}
+                        {!loading && filteredAdmissions.length > 0 && (
+                            <div className="flex items-center gap-1 bg-card border border-border-theme rounded-lg p-1 shadow-sm shrink-0">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="p-1.5 text-muted hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-md disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    title="Prev"
+                                >
+                                    <ChevronLeft size={14} />
+                                </button>
+                                <div className="px-1.5 text-[10px] font-black text-gray-500 dark:text-gray-400 whitespace-nowrap uppercase tracking-tighter flex items-center gap-1">
+                                    <span className="text-emerald-600">{currentPage}</span>
+                                    <span className="mx-0.5 text-border-theme font-normal">/</span>
+                                    {totalPages}
+                                    <span className="ml-1 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded text-[9px] font-bold">
+                                        {filteredAdmissions.length} TOTAL
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                    className="p-1.5 text-muted hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-md disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    title="Next"
+                                >
+                                    <ChevronRight size={14} />
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Search */}
+                        <div className="relative flex-1 min-w-[200px] lg:min-w-[250px] xl:w-[350px]">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={14} />
+                            <input
+                                type="text"
+                                placeholder="Search by name, MRN, ID..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-9 pr-4 py-2 sm:py-2.5 bg-card border border-border-theme focus:border-emerald-500 outline-none text-[10px] sm:text-[11px] font-bold transition-all shadow-sm rounded-lg sm:rounded-xl"
+                            />
                         </div>
-                    </div>
-
-                    <div className="relative w-full lg:w-[300px] xl:w-[400px]">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={14} />
-                        <input
-                            type="text"
-                            placeholder="Name, MRN, ID..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 sm:py-2.5 bg-card border border-border-theme focus:border-emerald-500 outline-none text-[10px] sm:text-[11px] font-bold transition-all shadow-sm rounded-lg sm:rounded-xl"
-                        />
                     </div>
                 </div>
             </div>
@@ -263,7 +293,6 @@ export default function DoctorInpatientsPage() {
                     icon={<Heart className="w-3.5 h-3.5 sm:w-5 sm:h-5" />}
                 />
             </div>
-
 
             {/* Content Section */}
             {viewType === 'list' ? (
@@ -387,30 +416,7 @@ export default function DoctorInpatientsPage() {
                 </div>
             )}
 
-            {/* Pagination Controls */}
-            {!loading && filteredAdmissions.length > 0 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between mt-6 p-4 bg-card rounded-xl border border-border-theme gap-4">
-                    <p className="text-[10px] font-bold text-muted uppercase tracking-widest">
-                        Page {currentPage} of {totalPages} ({filteredAdmissions.length} Total)
-                    </p>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                            className="p-1.5 rounded-lg border border-border-theme text-muted disabled:opacity-30 disabled:cursor-not-allowed hover:bg-secondary-theme hover:text-emerald-600 transition-all"
-                        >
-                            <ChevronLeft size={16} />
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages}
-                            className="p-1.5 rounded-lg border border-border-theme text-muted disabled:opacity-30 disabled:cursor-not-allowed hover:bg-secondary-theme hover:text-emerald-600 transition-all"
-                        >
-                            <ChevronRight size={16} />
-                        </button>
-                    </div>
-                </div>
-            )}
+
 
             {/* Modals */}
             <AddClinicalChargeModal
