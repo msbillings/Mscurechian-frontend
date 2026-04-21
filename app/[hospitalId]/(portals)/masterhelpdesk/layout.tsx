@@ -11,16 +11,19 @@ import {
     ClipboardList,
     Menu,
     LogOut,
-    Bell
+    Bell,
+    Clock
 } from "lucide-react";
 import SharedSidebar from "@/components/navbar/SharedSidebar";
 import LogoutModal from "@/components/auth/LogoutModal";
 import { useTenantLink } from "@/hooks/useTenantLink";
 import ProgressBar from "@/components/ui/ProgressBar";
+import { Toaster } from "react-hot-toast";
 
 const masterhelpdeskMenu: any[] = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/masterhelpdesk" },
     { icon: CalendarDays, label: "Appointments", path: "/masterhelpdesk/appointments" },
+    { icon: Clock, label: "Queue", path: "/masterhelpdesk/queue" },
     { icon: Settings, label: "Settings", path: "/masterhelpdesk/settings" },
     { icon: Headphones, label: "Support", path: "/masterhelpdesk/support" },
     { icon: ClipboardList, label: "Transactions", path: "/masterhelpdesk/transactions" },
@@ -157,6 +160,7 @@ export function MasterHelpdeskLayout({ children }: { children: React.ReactNode }
                         <React.Fragment key="children">
                             {children}
                         </React.Fragment>
+                        <Toaster position="top-right" />
                     </div>
                 </main>
             </div>
