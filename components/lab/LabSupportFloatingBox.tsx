@@ -1,19 +1,24 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import SupportFloatingButton from '@/components/common/SupportFloatingButton';
 
+import { useTenantLink } from '@/hooks/useTenantLink';
+
 const LabSupportFloatingBox = () => {
     const router = useRouter();
     const pathname = usePathname();
+    const { getPath } = useTenantLink();
 
     const handleClick = () => {
-        // Lab portal uses top-level support for now assuming no /lab/support as checked earlier
-        if (pathname === '/support') {
-            router.push('/lab/dashboard');
+        const supportPath = getPath('/lab/support');
+        const dashboardPath = getPath('/lab/dashboard');
+
+        if (pathname === supportPath) {
+            router.push(dashboardPath);
         } else {
-            router.push('/support');
+            router.push(supportPath);
         }
     };
 

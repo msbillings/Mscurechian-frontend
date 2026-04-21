@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { Upload, X, Send, Activity } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import ImageCropper from '../ui/ImageCropper';
+import { useTenantLink } from '@/hooks/useTenantLink';
 
 interface CreateTicketFormProps {
     onSuccess?: () => void;
@@ -12,6 +13,7 @@ interface CreateTicketFormProps {
 
 function CreateTicketForm({ onSuccess, basePath }: CreateTicketFormProps) {
     const router = useRouter();
+    const { getPath } = useTenantLink();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         subject: '',
@@ -65,7 +67,7 @@ function CreateTicketForm({ onSuccess, basePath }: CreateTicketFormProps) {
                 onSuccess();
             } else {
                 // Navigate to list, then force a refresh so the list re-fetches
-                router.push(basePath);
+                router.push(getPath(basePath));
                 router.refresh();
             }
         } catch (error) {

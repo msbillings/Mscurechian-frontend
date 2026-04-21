@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -8,6 +8,7 @@ import TicketList from '@/components/support/TicketList';
 import CreateTicketModal from '@/components/support/CreateTicketModal';
 import { Plus, LifeBuoy } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useTenantLink } from '@/hooks/useTenantLink';
 
 interface UserSupportPageProps {
     basePath?: string;
@@ -17,6 +18,7 @@ interface UserSupportPageProps {
 export default function UserSupportPage({ basePath, title }: UserSupportPageProps) {
     const router = useRouter();
     const pathname = usePathname();
+    const { getPath } = useTenantLink();
     const effectiveBasePath = basePath || pathname;
     const effectiveTitle = title || "Support Center";
     const [tickets, setTickets] = useState<SupportTicket[]>([]);
@@ -70,7 +72,7 @@ export default function UserSupportPage({ basePath, title }: UserSupportPageProp
                 tickets={tickets}
                 isAdmin={false}
                 loading={loading}
-                onView={(id) => router.push(`${effectiveBasePath}/${id}`)}
+                onView={(id) => router.push(getPath(`${effectiveBasePath}/${id}`))}
             />
 
             <CreateTicketModal

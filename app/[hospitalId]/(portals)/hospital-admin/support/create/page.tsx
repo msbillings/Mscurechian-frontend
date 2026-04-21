@@ -28,7 +28,7 @@ function HA_CreateTicketPage() {
             <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div className="bg-blue-600 h-2 w-full"></div>
                 <div className="p-6 md:p-10 lg:p-16">
-                    <CreateTicketForm basePath={getPath("/hospital-admin/support")} />
+                    <CreateTicketForm basePath="/hospital-admin/support" />
                 </div>
             </div>
         </div>
