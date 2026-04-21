@@ -129,6 +129,7 @@ const LoginForm = () => {
     'doctor': 'Doctor Portal',
     'hospital-admin': 'Hospital Admin',
     'helpdesk': 'Helpdesk Portal',
+    'masterhelpdesk': 'Master Helpdesk Portal',
     'frontdesk': 'Front Desk Portal',
     'staff': 'Staff Portal',
     'nurse': 'Nurse Portal',
@@ -170,7 +171,7 @@ const LoginForm = () => {
         const rolePathMap: Record<string, string> = {
           'admin': '/admin', 'super-admin': '/admin', 'patient': '/patient/dashboard',
           'doctor': 'doctor', 'hospital-admin': 'hospital-admin',
-          'helpdesk': 'helpdesk', 'frontdesk': 'frontdesk', 'staff': 'staff', 'nurse': 'nurse',
+          'helpdesk': 'helpdesk', 'masterhelpdesk': 'masterhelpdesk', 'frontdesk': 'frontdesk', 'staff': 'staff', 'nurse': 'nurse',
           'pharma': 'pharmacy/dashboard', 'pharma-owner': 'pharmacy/dashboard', 'pharmacist': 'pharmacy/dashboard',
           'lab': 'lab/dashboard', 'emergency': '/ambulance', 'ambulance': '/ambulance',
           'hr': 'hr', 'discharge': 'discharge',
@@ -242,7 +243,7 @@ const LoginForm = () => {
 
       const ALLOWED_ROLES = [
         'admin', 'super-admin', 'doctor', 'hospital-admin',
-        'helpdesk', 'frontdesk', 'staff', 'patient',
+        'helpdesk', 'masterhelpdesk', 'frontdesk', 'staff', 'patient',
         'nurse', 'pharma', 'lab', 'emergency', 'ambulance', 'hr', 'pharma-owner', 'pharmacist', 'discharge',
       ];
       const role = freshUser?.role?.toLowerCase() || '';
@@ -257,7 +258,7 @@ const LoginForm = () => {
       const rolePathMap: Record<string, string> = {
         'admin': '/admin', 'super-admin': '/admin', 'patient': '/patient/dashboard',
         'doctor': 'doctor', 'hospital-admin': 'hospital-admin',
-        'helpdesk': 'helpdesk', 'frontdesk': 'frontdesk', 'staff': 'staff', 'nurse': 'nurse',
+        'helpdesk': 'helpdesk', 'masterhelpdesk': 'masterhelpdesk', 'frontdesk': 'frontdesk', 'staff': 'staff', 'nurse': 'nurse',
         'pharma': 'pharmacy/dashboard', 'pharma-owner': 'pharmacy/dashboard', 'pharmacist': 'pharmacy/dashboard',
         'lab': 'lab/dashboard', 'emergency': '/ambulance', 'ambulance': '/ambulance', 'hr': 'hr', 'discharge': 'discharge',
       };

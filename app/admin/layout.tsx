@@ -36,6 +36,7 @@ const adminMenuItems: any[] = [
             { label: "Create Hospital", path: "/admin/create-hospital" },
             { label: "Create Hospital Admin", path: "/admin/create-hospital-admin" },
             { label: "Create HelpDesk", path: "/admin/create-helpdesk" },
+            { label: "Create Master Helpdesk", path: "/admin/create-masterhelpdesk" },
             { label: "Create Doctor", path: "/admin/create-doctor" },
             { label: "Create HR", path: "/admin/create-hr" },
             { label: "Create Pharmacy", path: "/admin/create-pharma" },
