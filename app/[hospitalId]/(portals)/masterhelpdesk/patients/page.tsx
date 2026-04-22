@@ -57,7 +57,7 @@ export default function MasterPatientsPage() {
             try {
                 const [docs, prof] = await Promise.all([
                     helpdeskService.getDoctors(),
-                    adminService.getProfile()
+                    helpdeskService.getMe()
                 ]);
                 const map: Record<string, string> = {};
                 docs.forEach((doc: any) => { map[doc._id] = doc.user?.name || doc.name; });
