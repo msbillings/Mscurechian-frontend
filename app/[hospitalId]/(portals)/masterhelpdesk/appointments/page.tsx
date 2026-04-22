@@ -1,246 +1,279 @@
-"use client";
+'use client';
 
-import React, { useState, useMemo } from "react";
-import { 
-    Calendar, 
-    Search, 
-    Filter, 
-    RefreshCw, 
-    ChevronLeft, 
-    ChevronRight,
-    SearchX,
+import React, { useState, useMemo, useCallback } from "react";
+import {
+    Users,
+    Calendar,
+    Search,
     Stethoscope,
-    Clock
+    ChevronRight,
+    Activity,
+    AlertCircle,
+    Plus,
+    RefreshCw,
+    CheckCircle2,
+    Activity as ActivityIcon,
+    ArrowLeft,
+    Filter,
+    FileText,
+    Clock,
+    MoreVertical,
+    FileDown,
+    X
 } from "lucide-react";
-import { useAppointments } from "@/lib/integrations/hooks";
+import { useRouter } from "next/navigation";
+import { useTenantLink } from "@/hooks/useTenantLink";
+import { useAuthStore } from "@/stores/authStore";
+import { helpdeskService } from "@/lib/integrations/services/helpdesk.service";
+import { useAppointments, useHelpdeskDoctors, useUpdateAppointmentStatus } from "@/lib/integrations/hooks";
+import toast from "react-hot-toast";
+import { formatLocalTime } from "@/lib/utils/date-utils";
+import Link from "next/link";
 
-export default function MasterAppointmentsPage() {
-    const [page, setPage] = useState(1);
-    const [search, setSearch] = useState("");
+export default function MasterAppointmentsLedger() {
+    const router = useRouter();
+    const { getPath } = useTenantLink();
+    const { user } = useAuthStore();
+    
+    // Filters State
+    const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
-    const [dateFilter, setDateFilter] = useState(() => {
-        const today = new Date();
-        return today.toISOString().split('T')[0];
-    });
+    const [typeFilter, setTypeFilter] = useState("all");
+    const [selectedDoctorId, setSelectedDoctorId] = useState("all");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
 
+    const [page, setPage] = useState(1);
+    const limit = 20;
+
+    // Fetch Appointments
     const { data: appointmentsData, isLoading, refetch } = useAppointments(
         page,
-        15,
-        undefined,
-        dateFilter,
-        dateFilter
+        limit,
+        undefined, // Query is handled by filter logic or Backend Search
+        startDate,
+        endDate
     );
 
-    const appointments = appointmentsData?.data || [];
-    const pagination = appointmentsData?.pagination || { totalPages: 1 };
+    // Fetch Doctors for filter
+    const { data: doctorsData } = useHelpdeskDoctors();
+    const updateStatusMutation = useUpdateAppointmentStatus();
 
-    const filteredAppointments = useMemo(() => {
-        let list = appointments;
-        if (statusFilter !== "all") {
-            list = list.filter((apt: any) => apt.status?.toLowerCase() === statusFilter.toLowerCase());
+    const appointments = useMemo(() => {
+        const raw = appointmentsData as any;
+        const list = Array.isArray(raw) ? raw : (raw?.appointments || raw?.data || []);
+        
+        // Frontend filtering (Fallback)
+        return list.filter((apt: any) => {
+            const matchesSearch = searchTerm === "" || 
+                apt.patientName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                apt.patient?.mrn?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                apt.mrn?.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            const matchesStatus = statusFilter === "all" || apt.status?.toLowerCase() === statusFilter.toLowerCase();
+            const matchesType = typeFilter === "all" || apt.type?.toLowerCase() === typeFilter.toLowerCase();
+            const matchesDoctor = selectedDoctorId === "all" || 
+                apt.doctorId === selectedDoctorId || 
+                apt.doctor?._id === selectedDoctorId;
+
+            return matchesSearch && matchesStatus && matchesType && matchesDoctor;
+        }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [appointmentsData, searchTerm, statusFilter, typeFilter, selectedDoctorId]);
+
+    const handleUpdateStatus = useCallback(async (appointmentId: string, status: string) => {
+        try {
+            await updateStatusMutation.mutateAsync({ appointmentId, status });
+            toast.success(`Protocol updated: ${status.toUpperCase()}`);
+            refetch();
+        } catch (err: any) {
+            toast.error("Operation failed");
         }
-        if (search) {
-            const s = search.toLowerCase();
-            list = list.filter((apt: any) => 
-                apt.patientName?.toLowerCase().includes(s) || 
-                apt.mrn?.toLowerCase().includes(s) ||
-                apt.doctorName?.toLowerCase().includes(s)
-            );
-        }
-        return list;
-    }, [appointments, search, statusFilter]);
+    }, [updateStatusMutation, refetch]);
 
     const getStatusColor = (status: string) => {
-        switch (status?.toLowerCase()) {
-            case "completed": return "bg-emerald-50 text-emerald-600 border-emerald-100";
-            case "confirmed": return "bg-blue-50 text-blue-600 border-blue-100";
-            case "in-progress": return "bg-amber-50 text-amber-600 border-amber-100";
-            case "waiting": return "bg-indigo-50 text-indigo-600 border-indigo-100";
-            case "cancelled": return "bg-rose-50 text-rose-600 border-rose-100";
-            default: return "bg-slate-50 text-slate-600 border-slate-100";
+        switch (status.toLowerCase()) {
+            case 'confirmed': return 'bg-teal-50 text-teal-700 border-teal-100';
+            case 'in-progress': return 'bg-amber-50 text-amber-700 border-amber-100';
+            case 'completed': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+            case 'cancelled': return 'bg-rose-50 text-rose-700 border-rose-100';
+            default: return 'bg-slate-50 text-slate-500 border-slate-100';
         }
     };
 
     return (
-        <div className="space-y-6 max-w-[1600px] mx-auto animate-in fade-in duration-300">
+        <div className="space-y-6 animate-in fade-in duration-500 pb-12">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b pb-6">
                 <div>
-                    <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Appointments Management</h1>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">Cross-Hospital Booking Ledger</p>
+                    <div className="flex items-center gap-3 mb-1">
+                        <button onClick={() => router.back()} className="p-2 border rounded-xl hover:bg-slate-50 transition-colors">
+                            <ArrowLeft size={16} />
+                        </button>
+                        <div>
+                            <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Master Clinical Ledger</h1>
+                            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em]">Hospital-Wide Deployment Tracker</p>
+                        </div>
+                    </div>
                 </div>
-                
-                <div className="flex items-center gap-2">
-                    <button 
-                        onClick={() => refetch()}
-                        className="p-2.5 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-indigo-600 shadow-sm transition-all active:scale-95"
-                    >
-                        <RefreshCw size={20} className={isLoading ? "animate-spin" : ""} />
-                    </button>
-                    <div className="flex items-center gap-2 bg-white border border-slate-200 p-1.5 rounded-xl shadow-sm">
-                        <Calendar size={18} className="ml-2 text-slate-400" />
+
+                <div className="flex items-center gap-3">
+                     <Link href={getPath("/masterhelpdesk/appointment-booking")} className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95">
+                        <Plus size={16} /> New Enrollment
+                    </Link>
+                </div>
+            </div>
+
+            {/* Filter Bar */}
+            <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <div className="col-span-1 lg:col-span-2 relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                         <input 
-                            type="date" 
-                            value={dateFilter}
-                            onChange={(e) => setDateFilter(e.target.value)}
-                            className="bg-transparent border-none text-xs font-black text-slate-700 focus:ring-0 uppercase outline-none"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="SEARCH BY MRN / NAME..." 
+                            className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest outline-none focus:border-indigo-500 transition-all"
                         />
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[9px] font-black text-slate-400 uppercase ml-2 tracking-widest">Start Date</label>
+                        <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-[1.2rem] text-[10px] font-black outline-none" />
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[9px] font-black text-slate-400 uppercase ml-2 tracking-widest">End Date</label>
+                        <input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-[1.2rem] text-[10px] font-black outline-none" />
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[9px] font-black text-slate-400 uppercase ml-2 tracking-widest">Status</label>
+                        <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-[1.2rem] text-[10px] font-black uppercase outline-none">
+                            <option value="all">ALL STATUS</option>
+                            <option value="pending">PENDING</option>
+                            <option value="confirmed">CONFIRMED</option>
+                            <option value="in-progress">IN-PROGRESS</option>
+                            <option value="completed">COMPLETED</option>
+                        </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[9px] font-black text-slate-400 uppercase ml-2 tracking-widest">Consultant</label>
+                        <select value={selectedDoctorId} onChange={e=>setSelectedDoctorId(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-[1.2rem] text-[10px] font-black uppercase outline-none">
+                            <option value="all">ALL CONSULTANTS</option>
+                            {(Array.isArray(doctorsData) ? doctorsData : (doctorsData as any)?.doctors || (doctorsData as any)?.data || [])?.map((doc: any) => (
+                                <option key={doc._id} value={doc._id}>{doc.user?.name || doc.name}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
             </div>
 
-            {/* Filters & Search */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="md:col-span-2 relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input 
-                        type="text" 
-                        placeholder="SEARCH PATIENT, MRN, OR DOCTOR..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold uppercase tracking-widest focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
-                    />
-                </div>
-                
-                <div className="md:col-span-1 border border-slate-200 bg-white rounded-2xl flex items-center px-4">
-                    <Filter className="text-slate-400 mr-2" size={18} />
-                    <select 
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="flex-1 bg-transparent border-none text-xs font-black text-slate-700 focus:ring-0 uppercase outline-none py-3"
-                    >
-                        <option value="all">ALL STATUSES</option>
-                        <option value="booked">BOOKED</option>
-                        <option value="confirmed">CONFIRMED</option>
-                        <option value="waiting">WAITING</option>
-                        <option value="completed">COMPLETED</option>
-                        <option value="cancelled">CANCELLED</option>
-                    </select>
-                </div>
-            </div>
-
-            {/* Content Table */}
-            <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden min-h-[600px] flex flex-col">
-                <div className="flex-1 overflow-x-auto">
+            {/* Main Ledger Table */}
+            <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
                     <table className="w-full border-collapse">
                         <thead>
                             <tr className="bg-slate-50/50 border-b border-slate-100">
-                                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">ID</th>
-                                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Patient</th>
-                                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Doctor</th>
-                                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Schedule</th>
-                                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Source</th>
-                                <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                                <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</th>
+                                <th className="text-left p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Clinical Entity</th>
+                                <th className="text-left p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Consultant</th>
+                                <th className="text-center p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Schedule</th>
+                                <th className="text-center p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Engagement</th>
+                                <th className="text-right p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol Status</th>
+                                <th className="text-right p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Execution</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                             {isLoading ? (
-                                Array(8).fill(0).map((_, i) => (
-                                    <tr key={i} className="animate-pulse">
-                                        <td colSpan={7} className="px-6 py-4">
-                                            <div className="h-12 bg-slate-50 rounded-xl w-full"></div>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : filteredAppointments.length > 0 ? (
-                                filteredAppointments.map((apt: any, idx: number) => (
-                                    <tr key={apt.id || apt._id || idx} className="hover:bg-slate-50 transition-colors group">
-                                        <td className="px-6 py-4">
-                                            <span className="text-[10px] font-black text-slate-300 uppercase">#{apt.appointmentId?.split('-').pop() || apt.id?.slice(-4)}</span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white font-bold text-sm">
-                                                    {apt.patientName?.charAt(0) || "P"}
+                                <tr>
+                                    <td colSpan={6} className="p-20 text-center">
+                                        <div className="flex flex-col items-center">
+                                            <RefreshCw className="animate-spin text-indigo-600 mb-4" size={32} />
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Synchronizing Manifest...</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : appointments.length > 0 ? (
+                                appointments.map((apt: any, i: number) => (
+                                    <tr key={i} className="group hover:bg-slate-50/80 transition-all italic-hover:bg-slate-100">
+                                        <td className="p-6">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white font-black text-base group-hover:scale-110 transition-transform">
+                                                    {(apt.patientName || "U").charAt(0).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <p className="text-xs font-black text-slate-900 uppercase">{apt.patientName}</p>
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">MRN: {apt.mrn || "N/A"}</p>
+                                                    <h4 className="text-xs font-black text-slate-900 uppercase">{apt.patientName || "Unknown"}</h4>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-lg uppercase tracking-widest">
+                                                            MRN: {apt.mrn || apt.patient?.mrn || (apt.patient?._id ? "CC-"+apt.patient._id.slice(-6).toUpperCase() : "N/A")}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="p-6">
                                             <div className="flex items-center gap-2">
-                                                <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                                                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
                                                     <Stethoscope size={14} />
                                                 </div>
-                                                <span className="text-xs font-bold text-slate-700 uppercase">{apt.doctorName || "Pending"}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="space-y-1">
-                                                <div className="flex items-center gap-1.5">
-                                                    <Clock size={12} className="text-slate-400" />
-                                                    <span className="text-xs font-black text-slate-900 uppercase tabular-nums">
-                                                        {apt.timeSlot || apt.startTime || "N/A"}
-                                                    </span>
+                                                <div className="min-w-0">
+                                                    <p className="text-[10px] font-black text-slate-900 uppercase truncate max-w-[150px]">
+                                                        {apt.doctorName || apt.doctor?.user?.name || "Pending Assign"}
+                                                    </p>
+                                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Facility Expert</p>
                                                 </div>
-                                                <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">
-                                                    {apt.date ? new Date(apt.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : "Date N/A"}
-                                                </p>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${apt.isOnline ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
-                                                {apt.isOnline ? 'MOBILE APP' : 'WALK-IN'}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex justify-center">
-                                                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${getStatusColor(apt.status)}`}>
-                                                    {apt.status}
+                                        <td className="p-6 text-center">
+                                            <div className="inline-flex flex-col items-center gap-1">
+                                                <span className="text-[10px] font-black text-slate-900 uppercase tracking-tighter">
+                                                    {apt.date ? new Date(apt.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : "N/A"}
+                                                </span>
+                                                <span className="flex items-center gap-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                                    <Clock size={10} /> {apt.time || "No Slot"}
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <button className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors">
-                                                DETAILS
-                                            </button>
+                                        <td className="p-6 text-center">
+                                            <span className={`px-2 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border ${
+                                                apt.type?.toLowerCase() === 'emergency' ? 'bg-rose-50 text-rose-600 border-rose-100' : 
+                                                apt.type?.toLowerCase() === 'ipd' ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-blue-50 text-blue-600 border-blue-100'
+                                            }`}>
+                                                {apt.type || "OPD"}
+                                            </span>
+                                        </td>
+                                        <td className="p-6 text-right">
+                                            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-[9px] font-black uppercase tracking-widest border ${getStatusColor(apt.status || 'pending')}`}>
+                                                {apt.status === 'confirmed' ? <CheckCircle2 size={12} /> : <ActivityIcon size={12} />}
+                                                {apt.status || "Pending"}
+                                            </div>
+                                        </td>
+                                        <td className="p-6 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                {['Booked', 'pending'].includes(apt.status) && (
+                                                    <button 
+                                                        onClick={() => handleUpdateStatus(apt._id || apt.id, 'confirmed')}
+                                                        className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 shadow-md transition-all active:scale-95"
+                                                    >
+                                                        Confirm
+                                                    </button>
+                                                )}
+                                                <button className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all">
+                                                    <FileText size={18} />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={7} className="py-20 text-center">
-                                        <div className="flex flex-col items-center">
-                                            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                                                <SearchX className="text-slate-300" size={32} />
-                                            </div>
-                                            <h3 className="text-lg font-bold text-slate-900 uppercase">No Appointments Found</h3>
-                                            <p className="text-xs font-medium text-slate-400 uppercase tracking-[0.2em] mt-1">Try adjusting your filters or date selection</p>
-                                        </div>
+                                    <td colSpan={6} className="p-32 text-center text-slate-400 uppercase font-black text-xs tracking-widest">
+                                        No clinical engangements found for the selected manifest scope
                                     </td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
-                </div>
-
-                {/* Pagination */}
-                <div className="p-6 border-t border-slate-50 flex items-center justify-between bg-slate-50/30">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        Showing {filteredAppointments.length} results
-                    </p>
-                    <div className="flex items-center gap-1">
-                        <button 
-                            disabled={page === 1}
-                            onClick={() => setPage(p => p - 1)}
-                            className="p-2 border border-slate-200 rounded-xl hover:bg-white disabled:opacity-50 transition-all"
-                        >
-                            <ChevronLeft size={18} />
-                        </button>
-                        <div className="px-4 text-xs font-black text-slate-700">
-                            {page} / {pagination.totalPages || 1}
-                        </div>
-                        <button 
-                            disabled={page >= pagination.totalPages}
-                            onClick={() => setPage(p => p + 1)}
-                            className="p-2 border border-slate-200 rounded-xl hover:bg-white disabled:opacity-50 transition-all"
-                        >
-                            <ChevronRight size={18} />
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>

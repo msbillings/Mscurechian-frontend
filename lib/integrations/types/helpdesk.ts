@@ -24,11 +24,20 @@ export interface HelpdeskAppointment {
   patientName: string;
   doctorName: string;
   time: string;
+  appointmentTime?: string;
   date: Date | string;
   createdAt?: string;
   type: string;
   status: string;
+  mrn?: string;
+  patientId?: string;
+  patient?: {
+    _id: string;
+    name: string;
+  };
 }
+
+export type Appointment = HelpdeskAppointment;
 
 export interface HelpdeskDashboard {
   stats: HelpdeskDashboardStats;
