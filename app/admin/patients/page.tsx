@@ -197,7 +197,7 @@ function PatientsList() {
 
   const filteredPatients = patients;
 
-  const headers = ["Patient", "Age/Gender", "Contact", "Status", "Actions"];
+  const headers = ["Patient", "Age/Gender", "Contact", "Registered", "Status", "Actions"];
 
 
 
@@ -306,7 +306,7 @@ function PatientsList() {
       <Table headers={headers}>
         {loading ? (
           <tr>
-            <td colSpan={5} className="py-24 text-center">
+            <td colSpan={6} className="py-24 text-center">
               <div className="flex flex-col items-center gap-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                 <p className="text-sm font-medium opacity-50">Loading patients...</p>
@@ -341,6 +341,14 @@ function PatientsList() {
                 <div className="font-medium text-[11px] md:text-sm">{patient.mobile || 'No Mobile'}</div>
                 <div className="text-[9px] md:text-xs opacity-60 mt-0.5">{patient.email}</div>
               </td>
+              <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
+                <div className="font-medium text-[11px] md:text-sm">
+                  {patient.createdAt ? new Date(patient.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
+                </div>
+                <div className="text-[9px] md:text-xs opacity-60 mt-0.5">
+                  {patient.createdAt ? new Date(patient.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : ''}
+                </div>
+              </td>
               <td className="px-4 md:px-6 py-3 md:py-4">
                 <Badge variant={patient.status === 'active' ? 'success' : 'danger'}>
                   {patient.status.toUpperCase()}
@@ -368,7 +376,7 @@ function PatientsList() {
           ))
         ) : (
           <tr>
-            <td colSpan={5} className="py-12 text-center text-gray-500 italic">
+            <td colSpan={6} className="py-12 text-center text-gray-500 italic">
               No patients found.
             </td>
           </tr>
