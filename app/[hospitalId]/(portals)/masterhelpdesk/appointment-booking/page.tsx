@@ -168,7 +168,7 @@ export default function MasterAppointmentBooking() {
                 const validDocs = allDocs.filter((doc: any) => (doc.user?.name && doc.user.name !== 'Unknown') || (doc.name && doc.name !== 'Unknown'));
                 setDoctors(validDocs);
                 
-                const uniqueDepts = Array.from(new Set(validDocs.map(d => d.specialty || d.specialties?.[0]).filter(Boolean)));
+                const uniqueDepts = Array.from(new Set(validDocs.map((d: any) => d.specialty || d.specialties?.[0]).filter(Boolean)));
                 setDepartments(uniqueDepts as string[]);
 
                 if (patientIdFromQuery) {
@@ -307,7 +307,7 @@ export default function MasterAppointmentBooking() {
     }, [patientSearch]);
 
     const filteredDoctors = selectedDept
-        ? doctors.filter(d => (d.specialty === selectedDept || d.specialties?.[0] === selectedDept))
+        ? doctors.filter((d: any) => (d.specialty === selectedDept || d.specialties?.[0] === selectedDept))
         : doctors;
 
     const isBookingValid = () => {

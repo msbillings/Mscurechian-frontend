@@ -145,7 +145,7 @@ function EditDoctor() {
   const toggleDay = (slotIndex: number, day: string) => {
     const updated = [...availability];
     const days = updated[slotIndex].days;
-    updated[slotIndex].days = days.includes(day) ? days.filter(d => d !== day) : [...days, day];
+    updated[slotIndex].days = days.includes(day) ? days.filter((d: string) => d !== day) : [...days, day];
     setAvailability(updated);
   };
 
