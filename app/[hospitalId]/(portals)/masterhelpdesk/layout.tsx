@@ -12,7 +12,8 @@ import {
     Menu,
     LogOut,
     Bell,
-    Clock
+    Clock,
+    Bot
 } from "lucide-react";
 import SharedSidebar from "@/components/navbar/SharedSidebar";
 import LogoutModal from "@/components/auth/LogoutModal";
@@ -27,6 +28,7 @@ const masterhelpdeskMenu: any[] = [
     { icon: Settings, label: "Settings", path: "/masterhelpdesk/settings" },
     { icon: Headphones, label: "Support", path: "/masterhelpdesk/support" },
     { icon: ClipboardList, label: "Transactions", path: "/masterhelpdesk/transactions" },
+    { icon: Bot, label: "AI Assistant", path: "/masterhelpdesk/assistant" },
 ];
 
 export function MasterHelpdeskLayout({ children }: { children: React.ReactNode }) {
