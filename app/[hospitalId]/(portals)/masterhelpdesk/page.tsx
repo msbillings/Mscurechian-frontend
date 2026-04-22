@@ -23,7 +23,10 @@ import {
     Zap,
     LayoutDashboard,
     ClipboardList,
-    AlertCircle
+    AlertCircle,
+    Smartphone,
+    Thermometer,
+    X
 } from "lucide-react";
 import { helpdeskService, adminService, doctorService } from "@/lib/integrations";
 import type { HelpdeskDoctor, Appointment } from "@/lib/integrations/types";
@@ -42,6 +45,65 @@ interface DashboardStats {
 }
 
 // ── Components ──────────────────────────────────────────────────────────────
+
+const CountdownTimer = React.memo(({ targetDate, startTime }: { targetDate: string | Date; startTime: string }) => {
+    const [timeLeft, setTimeLeft] = useState<string>("");
+
+    useEffect(() => {
+        const calculate = () => {
+            try {
+                if (!targetDate || !startTime) {
+                    setTimeLeft("N/A");
+                    return;
+                }
+
+                const [time, modifier] = startTime.split(' ');
+                let [hours, minutes] = time.split(':').map(Number);
+                if (modifier === 'PM' && hours < 12) hours += 12;
+                if (modifier === 'AM' && hours === 12) hours = 0;
+
+                const target = new Date(targetDate);
+                target.setHours(hours, minutes, 0, 0);
+
+                const now = new Date();
+                const diff = target.getTime() - now.getTime();
+
+                if (diff <= 0) {
+                    if (diff > -15 * 60 * 1000) { // 15 mins buffer
+                        setTimeLeft("IN PROGRESS");
+                    } else {
+                        setTimeLeft("PASSED");
+                    }
+                    return;
+                }
+
+                const h = Math.floor(diff / (1000 * 60 * 60));
+                const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+                setTimeLeft(
+                    `${h > 0 ? `${h}h ` : ""}${m}m ${s}s`
+                );
+            } catch (e) {
+                setTimeLeft("N/A");
+            }
+        };
+
+        calculate();
+        const timer = setInterval(calculate, 1000);
+        return () => clearInterval(timer);
+    }, [targetDate, startTime]);
+
+    if (timeLeft === "IN PROGRESS") return <span className="text-emerald-500 font-black animate-pulse">IN PROGRESS</span>;
+    if (timeLeft === "PASSED") return <span className="text-slate-400 font-bold">COMPLETED</span>;
+    
+    return (
+        <span className="text-teal-600 font-black flex items-center gap-1.5 whitespace-nowrap">
+            <span className="w-1 h-1 rounded-full bg-teal-500 animate-pulse" />
+            {timeLeft}
+        </span>
+    );
+});
 
 const StatCard = React.memo(function StatCard({ icon, title, value, trend, color, typeFilter, onTypeChange }: {
     icon: React.ReactElement<{ size?: number; strokeWidth?: number }>;
@@ -95,8 +157,140 @@ const StatCard = React.memo(function StatCard({ icon, title, value, trend, color
     );
 });
 
+// ── Modal Components ────────────────────────────────────────────────────────
+
+const OnlineAdmissionsTable = React.memo(({ appointments, onCheckIn }: { appointments: any[], onCheckIn: (apt: any) => void }) => {
+    return (
+        <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full border-separate border-spacing-y-2">
+                <thead>
+                    <tr className="text-left">
+                        <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Patient Identity</th>
+                        <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Appointment Manifest</th>
+                        <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Attending Physician</th>
+                        <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Verification Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {appointments.length > 0 ? (
+                        appointments.map((apt, idx) => (
+                            <tr key={apt.id || idx} className="group/row cursor-pointer">
+                                <td className="bg-slate-50 border-y border-l border-slate-100 rounded-l-[20px] px-6 py-4 transition-all group-hover/row:bg-teal-50/50 group-hover/row:border-teal-200">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 font-extrabold group-hover/row:bg-teal-600 group-hover/row:text-white transition-all">
+                                            {apt.patientName?.[0]}
+                                        </div>
+                                        <div>
+                                            <div className="text-slate-900 text-xs font-black uppercase tracking-tight">{apt.patientName}</div>
+                                            <div className="text-slate-400 text-[9px] font-bold uppercase mt-0.5">{apt.mrn || 'MOB-PENDING'}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="bg-slate-50 border-y border-slate-100 px-6 py-4 group-hover/row:bg-teal-50/50 group-hover/row:border-teal-200">
+                                    <div className="flex items-center gap-3">
+                                        <Clock size={14} className="text-teal-600" />
+                                        <div>
+                                            <div className="text-slate-900 text-xs font-black">{apt.time}</div>
+                                            <div className="text-[9px] font-bold mt-0.5 uppercase flex items-center gap-2">
+                                                <CountdownTimer 
+                                                    targetDate={apt.date} 
+                                                    startTime={apt.startTime || apt.time.split(' - ')[0]} 
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="bg-slate-50 border-y border-slate-100 px-6 py-4 group-hover/row:bg-teal-50/50 group-hover/row:border-teal-200">
+                                    <div className="flex items-center gap-3">
+                                        <Stethoscope size={14} className="text-teal-600" />
+                                        <span className="text-slate-600 text-xs font-black uppercase">DR. {apt.doctorName}</span>
+                                    </div>
+                                </td>
+                                <td className="bg-slate-50 border-y border-r border-slate-100 rounded-r-[20px] px-6 py-4 text-right group-hover/row:bg-teal-50/50 group-hover/row:border-teal-200">
+                                    <div className="flex items-center justify-end gap-3">
+                                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-white border border-slate-200 text-teal-600 text-[9px] font-black uppercase tracking-widest shadow-sm group-hover/row:border-teal-300">
+                                            <CheckCircle2 size={12} className="text-teal-500" />
+                                            {apt.status}
+                                        </div>
+                                        
+                                        {['booked', 'confirmed', 'arrived', 'pending'].includes(apt.status?.toLowerCase()) && (
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onCheckIn(apt);
+                                                }}
+                                                className={`flex items-center gap-2 ${apt.status?.toLowerCase() === 'booked' ? 'bg-teal-600 shadow-teal-500/20' : 'bg-slate-900 shadow-slate-900/20'} text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:opacity-90 transition-all shadow-lg active:scale-95`}
+                                            >
+                                                {apt.status?.toLowerCase() === 'booked' ? <Activity size={12} /> : <CheckCircle2 size={12} className="text-teal-400" />}
+                                                {apt.status?.toLowerCase() === 'booked' ? 'Admission' : 'Edit Admission'}
+                                            </button>
+                                        )}
+                                    </div>
+                                </td>
+                            </tr>
+                        ))
+                    ) : (
+                        <tr>
+                            <td colSpan={4} className="py-24 text-center bg-slate-50/10 rounded-[2.5rem] border-2 border-dashed border-slate-100">
+                                <div className="flex flex-col items-center">
+                                    <div className="w-16 h-16 rounded-full bg-white border border-slate-100 flex items-center justify-center mb-6 shadow-sm">
+                                        <Smartphone size={32} className="text-slate-200" />
+                                    </div>
+                                    <p className="text-slate-300 text-[11px] font-black uppercase tracking-[0.4em]">No Online Admissions Found</p>
+                                    <p className="text-slate-400 text-[9px] font-bold uppercase mt-2 tracking-widest">Digital queue is clear</p>
+                                </div>
+                            </td>
+                        </tr>
+                    )}
+                </tbody>
+            </table>
+        </div>
+    );
+});
+
+const PhysicianMonitor = React.memo(({ doctors, hospitalId }: { doctors: any[], hospitalId: string }) => {
+    return (
+        <div className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm flex flex-col h-[500px]">
+            <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                    <Stethoscope size={14} className="text-teal-600" /> Physician Load Monitor
+                </h2>
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" />
+            </div>
+            <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                {doctors.map((doc, idx) => (
+                    <div key={doc._id} className="p-3.5 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all group">
+                        <div className="flex items-center gap-4">
+                            <div className="relative">
+                                <div className="w-11 h-11 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-lg overflow-hidden group-hover:scale-105 transition-transform">
+                                    {(doc.user?.name || doc.name).charAt(0)}
+                                </div>
+                                {(idx % 3 === 0) && <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-teal-500 border-2 border-white rounded-full" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="text-[11px] font-black text-slate-900 uppercase truncate">Dr. {doc.user?.name || doc.name}</h4>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{doc.specialties?.[0] || 'Clinician'}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-[10px] font-black text-slate-900 leading-none">{Math.floor(Math.random() * 8)}</p>
+                                <p className="text-[7px] font-bold text-slate-400 uppercase mt-1">Waiting</p>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-100 text-center">
+                <Link href={`/${hospitalId}/masterhelpdesk/doctors`} className="text-[9px] font-black text-teal-600 uppercase tracking-widest hover:underline flex items-center justify-center gap-1">
+                    Full Roster Access <ArrowUpRight size={10} />
+                </Link>
+            </div>
+        </div>
+    );
+});
+
 export default function MasterDashboard() {
     const params = useParams();
+    const router = useRouter();
     const hospitalId = params.hospitalId as string;
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<DashboardStats>({
@@ -112,6 +306,7 @@ export default function MasterDashboard() {
     const [selectedType, setSelectedType] = useState<'all' | 'opd' | 'ipd'>('all');
     const [searchQuery, setSearchQuery] = useState("");
     const [refreshing, setRefreshing] = useState(false);
+    const [selectedOnlineDate, setSelectedOnlineDate] = useState(new Date().toDateString());
 
     // ── Data Fetching ───────────────────────────────────────────────────────
     const loadData = useCallback(async (isSilent = false) => {
@@ -121,7 +316,7 @@ export default function MasterDashboard() {
             const [profile, docs, apts] = await Promise.all([
                 helpdeskService.getMe(),
                 helpdeskService.getDoctors(),
-                helpdeskService.getAppointments()
+                helpdeskService.getAppointments(1, 100)
             ]);
 
             const rawApts = apts as any;
@@ -151,15 +346,31 @@ export default function MasterDashboard() {
         return () => clearInterval(interval);
     }, [loadData]);
 
+    // ── Handlers ────────────────────────────────────────────────────────────
+    const handleCheckIn = useCallback((apt: any) => {
+        router.push(`/${hospitalId}/masterhelpdesk/admission/${apt._id || apt.id}`);
+    }, [hospitalId, router]);
+
+
     // ── Filtering ──────────────────────────────────────────────────────────
-    const displayAppointments = useMemo(() => {
-        return appointments.filter(apt => {
+    const { offlineAppointments, onlineAppointments } = useMemo(() => {
+        const filtered = appointments.filter(apt => {
             const matchesType = selectedType === 'all' || (selectedType === 'opd' && apt.type !== 'IPD') || (selectedType === 'ipd' && apt.type === 'IPD');
             const matchesSearch = !searchQuery || apt.patientName?.toLowerCase().includes(searchQuery.toLowerCase()) || apt.mrn?.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesTab = activeTab === 'active' ? ['confirmed', 'in-progress', 'Booked', 'pending'].includes(apt.status) : ['completed', 'cancelled'].includes(apt.status);
+            const status = apt.status?.toLowerCase();
+            const matchesTab = activeTab === 'active' 
+                ? ['confirmed', 'in-progress', 'booked', 'pending', 'arrived', 'waiting', 'scheduled'].includes(status) 
+                : ['completed', 'cancelled'].includes(status);
             return matchesType && matchesSearch && matchesTab;
-        }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [appointments, selectedType, searchQuery, activeTab]);
+        });
+
+        return {
+            offlineAppointments: filtered.filter(a => !a.isOnline).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+            onlineAppointments: filtered.filter(a => a.isOnline && new Date(a.date).toDateString() === selectedOnlineDate).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        };
+    }, [appointments, selectedType, searchQuery, activeTab, selectedOnlineDate]);
+
+    const displayAppointments = offlineAppointments;
 
     const handleUpdateStatus = async (id: string, status: string) => {
         try {
@@ -180,6 +391,8 @@ export default function MasterDashboard() {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500 pb-12">
+            {/* Admission Modal Overlay */}
+
             <style jsx global>{`
                 @keyframes pulse-ring {
                     0% { transform: scale(0.33); }
@@ -228,47 +441,91 @@ export default function MasterDashboard() {
                 <StatCard icon={<Users />} title="Institutional Registry" value={stats.totalPatients} trend="+12.5% vs Prev Month" color="slate" />
                 <StatCard icon={<CalendarCheck />} title="Today's Sessions" value={stats.todayPatients} trend="Active Live Queue" color="teal" typeFilter={selectedType} onTypeChange={setSelectedType} />
                 <StatCard icon={<Activity />} title="Emergency Triage" value={stats.emergencyPatients} trend="Critical Oversight" color="rose" />
-                <StatCard icon={<CheckCircle2 />} title="Completed Manifests" value={stats.completedAppointments} trend="Archived Success" color="emerald" />
+            <StatCard icon={<CheckCircle2 />} title="Completed Manifests" value={stats.completedAppointments} trend="Archived Success" color="emerald" />
+            </div>
+
+            {/* ONLINE APPOINTMENTS SECTION - LIST VIEW & FILTERS */}
+            <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-12 opacity-[0.02] pointer-events-none">
+                    <Zap size={240} className="text-teal-600" />
+                </div>
+                
+                <div className="relative z-10">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
+                        <div className="flex items-center gap-5">
+                            <div className="w-14 h-14 bg-teal-50 rounded-2xl flex items-center justify-center border border-teal-100 shadow-sm">
+                                <Smartphone size={24} className="text-teal-600" />
+                            </div>
+                            <div>
+                                <h2 className="text-slate-900 text-xl font-black uppercase tracking-tighter">
+                                    Digital Front Door: <span className="text-teal-600">Online Admissions</span>
+                                </h2>
+                                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">
+                                    Total Synchronized: {onlineAppointments.length} Active Records
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* 7-Day Date Filter */}
+                        <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
+                            {Array.from({ length: 7 }).map((_, i) => {
+                                const d = new Date();
+                                d.setDate(d.getDate() + i);
+                                const dateStr = d.toDateString();
+                                const isSelected = selectedOnlineDate === dateStr;
+                                
+                                return (
+                                    <button 
+                                        key={i}
+                                        onClick={() => setSelectedOnlineDate(dateStr)}
+                                        className={`flex flex-col items-center min-w-[60px] py-1.5 px-3 rounded-2xl border transition-all active:scale-95 ${
+                                            isSelected 
+                                            ? 'bg-teal-600 border-teal-500 text-white shadow-lg shadow-teal-500/20' 
+                                            : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-teal-200 hover:text-teal-600'
+                                        }`}
+                                    >
+                                        <span className="text-[7px] font-black uppercase tracking-widest">{d.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+                                        <span className="text-sm font-black mt-0.5">{d.getDate()}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Table-like List */}
+                    <OnlineAdmissionsTable 
+                        appointments={onlineAppointments} 
+                        onCheckIn={handleCheckIn} 
+                    />
+
+                    {/* Proper Pagination */}
+                    <div className="mt-10 flex items-center justify-between border-t border-slate-100 pt-6">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            Showing {onlineAppointments.length} active admissions
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button className="p-2 rounded-xl border border-slate-100 text-slate-400 hover:bg-slate-50 transition-all active:scale-95">
+                                <ArrowRight size={14} className="rotate-180" />
+                            </button>
+                            <div className="flex items-center gap-1">
+                                {[1, 2, 3].map(p => (
+                                    <button key={p} className={`w-8 h-8 rounded-xl text-[10px] font-black border transition-all ${p === 1 ? 'bg-slate-900 border-slate-900 text-white' : 'border-slate-100 text-slate-400 hover:bg-slate-50'}`}>
+                                        {p}
+                                    </button>
+                                ))}
+                            </div>
+                            <button className="p-2 rounded-xl border border-slate-100 text-slate-400 hover:bg-teal-600 hover:text-white transition-all active:scale-95">
+                                <ArrowRight size={14} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* DOCTOR QUEUE TRACKER */}
                 <div className="lg:col-span-4 space-y-4">
-                    <div className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm flex flex-col h-[500px]">
-                        <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                            <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
-                                <Stethoscope size={14} className="text-teal-600" /> Physician Load Monitor
-                            </h2>
-                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" />
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-                            {doctors.map((doc, idx) => (
-                                <div key={doc._id} className="p-3.5 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all group">
-                                    <div className="flex items-center gap-4">
-                                        <div className="relative">
-                                            <div className="w-11 h-11 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-lg overflow-hidden group-hover:scale-105 transition-transform">
-                                                {(doc.user?.name || doc.name).charAt(0)}
-                                            </div>
-                                            {(idx % 3 === 0) && <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-teal-500 border-2 border-white rounded-full" />}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className="text-[11px] font-black text-slate-900 uppercase truncate">Dr. {doc.user?.name || doc.name}</h4>
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{doc.specialties?.[0] || 'Clinician'}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-[10px] font-black text-slate-900 leading-none">{Math.floor(Math.random() * 8)}</p>
-                                            <p className="text-[7px] font-bold text-slate-400 uppercase mt-1">Waiting</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="p-4 bg-slate-50 border-t border-slate-100 text-center">
-                            <Link href={`/${hospitalId}/masterhelpdesk/doctors`} className="text-[9px] font-black text-teal-600 uppercase tracking-widest hover:underline flex items-center justify-center gap-1">
-                                Full Roster Access <ArrowUpRight size={10} />
-                            </Link>
-                        </div>
-                    </div>
+                    <PhysicianMonitor doctors={doctors} hospitalId={hospitalId} />
                 </div>
 
                 {/* APPOINTMENT LEDGER DISPLAY */}

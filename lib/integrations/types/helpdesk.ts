@@ -31,6 +31,9 @@ export interface HelpdeskAppointment {
   status: string;
   mrn?: string;
   patientId?: string;
+  isOnline?: boolean;
+  startTime?: string;
+  endTime?: string;
   patient?: {
     _id: string;
     name: string;

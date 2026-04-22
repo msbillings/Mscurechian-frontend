@@ -148,6 +148,13 @@ export const helpdeskService = {
     }),
 
   /**
+   * Get appointment details by ID
+   * @param appointmentId Appointment ID
+   */
+  getAppointmentById: (appointmentId: string) =>
+    apiClient<any>(`${HELPDESK_ENDPOINTS.APPOINTMENTS}/${appointmentId}`),
+
+  /**
    * Get doctor availability for a specific hospital and date
    * @param doctorId Doctor ID
    * @param hospitalId Hospital ID
