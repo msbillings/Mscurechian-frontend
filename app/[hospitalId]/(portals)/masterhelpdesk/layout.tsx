@@ -5,13 +5,15 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from '@/stores/authStore';
 import {
     LayoutDashboard,
-    CalendarDays,
     Settings,
     Headphones,
     ClipboardList,
     Menu,
     LogOut,
-    Bell
+    Bell,
+    Stethoscope,
+    UserPlus,
+    CalendarPlus
 } from "lucide-react";
 import SharedSidebar from "@/components/navbar/SharedSidebar";
 import LogoutModal from "@/components/auth/LogoutModal";
@@ -20,10 +22,13 @@ import ProgressBar from "@/components/ui/ProgressBar";
 
 const masterhelpdeskMenu: any[] = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/masterhelpdesk" },
-    { icon: CalendarDays, label: "Appointments", path: "/masterhelpdesk/appointments" },
-    { icon: Settings, label: "Settings", path: "/masterhelpdesk/settings" },
-    { icon: Headphones, label: "Support", path: "/masterhelpdesk/support" },
+    { icon: UserPlus, label: "Patient Registration", path: "/masterhelpdesk/registration" },
+    { icon: CalendarPlus, label: "Book Appointment", path: "/masterhelpdesk/appointment-booking" },
+    { icon: ClipboardList, label: "Patients List", path: "/masterhelpdesk/appointments" },
+    { icon: Stethoscope, label: "Doctors", path: "/masterhelpdesk/doctors" },
     { icon: ClipboardList, label: "Transactions", path: "/masterhelpdesk/transactions" },
+    { icon: Headphones, label: "Support", path: "/masterhelpdesk/support" },
+    { icon: Settings, label: "Settings", path: "/masterhelpdesk/settings" },
 ];
 
 export function MasterHelpdeskLayout({ children }: { children: React.ReactNode }) {

@@ -12,6 +12,7 @@ import type {
   HelpdeskDoctor,
   PatientRegistrationRequest,
   PatientRegistrationResponse,
+  HelpdeskAppointment,
 } from "../types/helpdesk";
 
 /**
@@ -51,7 +52,7 @@ export const helpdeskService = {
    * @returns List of doctors
    */
   getDoctors: () =>
-    apiClient<HelpdeskDoctor[]>(
+    apiClient<any>(
       `${HELPDESK_ENDPOINTS.DOCTORS}?limit=100&_t=${Date.now()}`,
     ),
 

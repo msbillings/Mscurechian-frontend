@@ -30,9 +30,8 @@ export default function TransactionsPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [page, setPage] = useState(1);
     const [showExportMenu, setShowExportMenu] = useState(false);
-    const [typeFilter, setTypeFilter] = useState("opd"); // Default to 'opd' as requested
-    const [ipdPaymentType, setIpdPaymentType] = useState<'all' | 'advance' | 'discharge'>('all'); // New filter for IPD payments
-    const [paymentModeFilter, setPaymentModeFilter] = useState<'all' | 'online' | 'offline'>('all'); // New filter for Online/Offline
+    const [typeFilter] = useState("opd"); // Locked to 'opd'
+    const [paymentModeFilter, setPaymentModeFilter] = useState<'all' | 'online' | 'offline'>('all');
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const limit = 10;
@@ -42,8 +41,7 @@ export default function TransactionsPage() {
         if (filterValue === 'all') return undefined;
 
         const typeMap: Record<string, string> = {
-            'opd': 'appointment_booking,consultation',
-            'ipd': ipdPaymentType === 'advance' ? 'ipd_advance,ipd_refund' : ipdPaymentType === 'discharge' ? 'ipd_final_settlement,ipd_bill_payment' : 'ipd_advance,ipd,ipd_refund,ipd_admission_fee,ipd_bill_payment',
+            'opd': 'appointment_booking,consultation,opd,opd_consultation',
         };
 
         return typeMap[filterValue] || filterValue;
@@ -61,9 +59,9 @@ export default function TransactionsPage() {
 
     // ✅ DEBUG LOGGING: Track filtering and data retrieval
     React.useEffect(() => {
-        console.log("[Transactions] Type Filter:", typeFilter, "IPD Type:", ipdPaymentType);
+        console.log("[Transactions] Type Filter:", typeFilter);
         console.log("[Transactions] Backend Filter Query:", getBackendTypeFilter(typeFilter));
-    }, [typeFilter, ipdPaymentType]);
+    }, [typeFilter]);
 
     const { transactions, total, totalRevenue } = useMemo(() => {
         const raw: any = txRaw;
@@ -76,8 +74,8 @@ export default function TransactionsPage() {
 
         if (Array.isArray(raw)) return { transactions: raw, total: raw.length, totalRevenue: 0 };
         return {
-            transactions: raw.data || [],
-            total: raw.pagination?.total || (raw.data?.length || 0),
+            transactions: raw.transactions || raw.data || [],
+            total: raw.pagination?.total || raw.total || (raw.transactions?.length || raw.data?.length || 0),
             totalRevenue: raw.totalRevenue || 0
         };
     }, [txRaw]);
@@ -179,12 +177,19 @@ export default function TransactionsPage() {
         const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
         const isCancelled = tx.status?.toLowerCase() === 'cancelled' || tx.referenceId?.status?.toLowerCase() === 'cancelled';
         
-        const txPaymentMode = (tx.paymentMethod || tx.paymentMode || 'CASH').toUpperCase();
+        const rawMethod = (tx.paymentMethod || tx.paymentMode || 'CASH').toUpperCase();
+        const txType = tx.type?.toLowerCase() || 'appointment_booking';
+        
+        // Categorize Helpdesk/OPD transactions as OFFLINE category (including those paid by card/upi at counter)
+        const isOfflineCategory = ['CASH', 'OFFLINE'].includes(rawMethod) || 
+                                ['appointment_booking', 'opd', 'consultation', 'opd_consultation'].includes(txType);
+
         let matchesPaymentMode = true;
         if (paymentModeFilter === 'online') {
-            matchesPaymentMode = ['UPI', 'CARD', 'ONLINE', 'NETBANKING'].includes(txPaymentMode);
+            // Purely online payments (not counter appointments)
+            matchesPaymentMode = !isOfflineCategory && ['UPI', 'CARD', 'ONLINE', 'NETBANKING'].includes(rawMethod);
         } else if (paymentModeFilter === 'offline') {
-            matchesPaymentMode = ['CASH', 'OFFLINE'].includes(txPaymentMode);
+            matchesPaymentMode = isOfflineCategory;
         }
 
         return matchesSearch && !isCancelled && matchesPaymentMode;
@@ -283,70 +288,31 @@ export default function TransactionsPage() {
                                 />
                             </div>
                         </div>
-
-                        {/* ROW 3: CATEGORY TOGGLE (OPD / IPD) */}
+                        {/* ROW 3: CATEGORY & PAYMENT MODE */}
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
+                            {/* Payment Mode (Online / Offline) Toggle */}
                             <div className="flex bg-slate-100 p-1 rounded-lg sm:rounded-xl border border-slate-200 shadow-inner">
                                 <button
-                                    onClick={() => setTypeFilter('opd')}
-                                    className={`flex-1 sm:flex-none px-4 py-2 rounded-md sm:rounded-lg text-[9px] sm:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap ${typeFilter === 'opd' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
-                                >
-                                    OPD<span className="hidden sm:inline"> Payments</span>
-                                </button>
-                                <button
-                                    onClick={() => setTypeFilter('ipd')}
-                                    className={`flex-1 sm:flex-none px-4 py-2 rounded-md sm:rounded-lg text-[9px] sm:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap ${typeFilter === 'ipd' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
-                                >
-                                    IPD<span className="hidden sm:inline"> Payments</span>
-                                </button>
-                            </div>
-
-                            {/* IPD Sub-filters */}
-                            {typeFilter === 'ipd' && (
-                                <div className="flex bg-rose-50 p-1 rounded-lg sm:rounded-xl border border-rose-100 shadow-inner animate-in slide-in-from-left-2 duration-300 overflow-x-auto no-scrollbar">
-                                    <button
-                                        onClick={() => setIpdPaymentType('all')}
-                                        className={`px-3 py-1.5 rounded-md sm:rounded-lg text-[8px] sm:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${ipdPaymentType === 'all' ? 'bg-white text-rose-600 shadow-sm' : 'text-rose-300 hover:text-rose-400'}`}
-                                    >
-                                        All IPD
-                                    </button>
-                                    <button
-                                        onClick={() => setIpdPaymentType('advance')}
-                                        className={`px-3 py-1.5 rounded-md sm:rounded-lg text-[8px] sm:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${ipdPaymentType === 'advance' ? 'bg-white text-rose-600 shadow-sm' : 'text-rose-300 hover:text-rose-400'}`}
-                                    >
-                                        Advance
-                                    </button>
-                                    <button
-                                        onClick={() => setIpdPaymentType('discharge')}
-                                        className={`px-3 py-1.5 rounded-md sm:rounded-lg text-[8px] sm:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${ipdPaymentType === 'discharge' ? 'bg-white text-rose-600 shadow-sm' : 'text-rose-300 hover:text-rose-400'}`}
-                                    >
-                                        Discharge
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Payment Mode (Online / Offline) Toggle */}
-                            <div className="flex bg-slate-100 p-1 rounded-lg sm:rounded-xl border border-slate-200 shadow-inner ml-2">
-                                <button
                                     onClick={() => setPaymentModeFilter('all')}
-                                    className={`flex-none px-3 py-1.5 rounded-md text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${paymentModeFilter === 'all' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
+                                    className={`flex-none px-4 py-2 rounded-md text-[9px] sm:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap ${paymentModeFilter === 'all' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
                                 >
                                     All
                                 </button>
                                 <button
                                     onClick={() => setPaymentModeFilter('online')}
-                                    className={`flex-none px-3 py-1.5 rounded-md text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${paymentModeFilter === 'online' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
+                                    className={`flex-none px-4 py-2 rounded-md text-[9px] sm:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap ${paymentModeFilter === 'online' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
                                 >
                                     Online
                                 </button>
                                 <button
                                     onClick={() => setPaymentModeFilter('offline')}
-                                    className={`flex-none px-3 py-1.5 rounded-md text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${paymentModeFilter === 'offline' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
+                                    className={`flex-none px-4 py-2 rounded-md text-[9px] sm:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap ${paymentModeFilter === 'offline' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
                                 >
                                     Offline
                                 </button>
                             </div>
                         </div>
+
                     </div>
 
                     <div className="flex items-center justify-between md:justify-end gap-4 w-full xl:w-auto">
@@ -394,7 +360,7 @@ export default function TransactionsPage() {
                         <table className="w-full min-w-[1000px] sm:min-w-0 text-left">
                             <thead>
                                 <tr className="bg-slate-50 border-b border-slate-200 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest">
-                                    <th className="px-4 sm:px-6 py-4 sm:py-6 text-left">Reference Node</th>
+                                    <th className="px-4 sm:px-6 py-4 sm:py-6 text-left">Patient Name / ID</th>
                                     <th className="px-6 py-6 text-center">Service Type</th>
                                     <th className="px-6 py-6 text-left font-bold">Reason</th>
                                     <th className="px-6 py-6 text-left font-bold">Doctor / Status</th>
@@ -451,10 +417,7 @@ export default function TransactionsPage() {
 
                                     // 🔧 FIX: Amount display logic based on filter type
                                     // - Only show Discharge totals when "Discharge Only" filter is explicitly selected
-                                    // - In all other cases (Global view, All IPD), hide the discharge specific totals
-                                    const displayAmount = isDischargeTransaction
-                                        ? (ipdPaymentType === 'discharge' ? (appointmentData.totalBillAmount || amount) : null)
-                                        : amount;
+                                    const displayAmount = amount;
 
                                     // 🔧 FIX: Removed strict filter that was hiding discharge transactions
                                     // Let all transactions flow through and be rendered based on their available data
@@ -545,23 +508,10 @@ export default function TransactionsPage() {
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-center">
-                                                {isDischargeTransaction && (ipdPaymentType === 'discharge' || ipdPaymentType === 'all') ? (
-                                                    <div className="flex flex-row items-center gap-2 justify-center mt-1">
-                                                        <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-slate-100 rounded text-[10px] font-bold whitespace-nowrap">
-                                                            <span className="text-slate-500 uppercase">Adv:</span>
-                                                            <span className="text-blue-700">₹{Math.round(appointmentData.advanceAmount || 0).toLocaleString()}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5 px-2 py-1 bg-rose-50 border border-rose-100 rounded text-[10px] font-bold whitespace-nowrap">
-                                                            <span className="text-rose-600 uppercase">Due:</span>
-                                                            <span className="text-rose-700">₹{Math.round(appointmentData.dueAmount || 0).toLocaleString()}</span>
-                                                        </div>
-                                                    </div>
-                                                ) : (
+                                             <td className="px-6 py-4 text-center">
                                                     <p className="text-sm font-bold text-slate-900 tracking-tight">
-                                                        {displayAmount !== null ? `₹${Math.round(displayAmount).toLocaleString()}` : '-'}
+                                                        {amount !== null ? `₹${Math.round(amount).toLocaleString()}` : '-'}
                                                     </p>
-                                                )}
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${status.toLowerCase() === 'paid' || status.toLowerCase() === 'completed'
