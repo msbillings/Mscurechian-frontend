@@ -6,6 +6,7 @@ export interface HelpdeskDashboardStats {
   pendingAppointments: number;
   activeTransits: number;
   emergencyCases: number;
+  revenueToday?: number;
 }
 
 export interface RecentPatient {

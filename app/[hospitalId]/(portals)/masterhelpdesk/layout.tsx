@@ -13,7 +13,9 @@ import {
     Bell,
     Stethoscope,
     UserPlus,
-    CalendarPlus
+    CalendarPlus,
+    Clock,
+    Bot
 } from "lucide-react";
 import SharedSidebar from "@/components/navbar/SharedSidebar";
 import LogoutModal from "@/components/auth/LogoutModal";
@@ -22,11 +24,13 @@ import ProgressBar from "@/components/ui/ProgressBar";
 
 const masterhelpdeskMenu: any[] = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/masterhelpdesk" },
+    { icon: Clock, label: "Queue", path: "/masterhelpdesk/queue" },
     { icon: UserPlus, label: "Patient Registration", path: "/masterhelpdesk/registration" },
     { icon: CalendarPlus, label: "Book Appointment", path: "/masterhelpdesk/appointment-booking" },
     { icon: ClipboardList, label: "Patients List", path: "/masterhelpdesk/appointments" },
     { icon: Stethoscope, label: "Doctors", path: "/masterhelpdesk/doctors" },
     { icon: ClipboardList, label: "Transactions", path: "/masterhelpdesk/transactions" },
+    { icon: Bot, label: "AI Assistant", path: "/masterhelpdesk/assistant" },
     { icon: Headphones, label: "Support", path: "/masterhelpdesk/support" },
     { icon: Settings, label: "Settings", path: "/masterhelpdesk/settings" },
 ];
