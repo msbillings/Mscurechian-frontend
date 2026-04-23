@@ -88,14 +88,19 @@ export const helpdeskService = {
    * @param query Search query
    */
   searchPatients: (
-    query: string,
+    query: string = "",
     page: number = 1,
     limit: number = 10,
     type?: string,
-  ) =>
-    apiClient<any>(
-      `${HELPDESK_ENDPOINTS.PATIENTS_SEARCH}?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}${type && type !== "all" ? `&type=${type}` : ""}`,
-    ),
+    channel?: string
+  ) => {
+    const q = encodeURIComponent(query);
+    const typeQuery = type && type !== "all" ? `&type=${type}` : "";
+    const channelQuery = channel && channel !== "all" ? `&channel=${channel}` : "";
+    return apiClient<any>(
+      `${HELPDESK_ENDPOINTS.PATIENTS_SEARCH}?q=${q}&page=${page}&limit=${limit}${typeQuery}${channelQuery}`,
+    );
+  },
 
   /**
    * Get patient details by ID
@@ -212,13 +217,15 @@ export const helpdeskService = {
     patientId?: string,
     startDate?: string,
     endDate?: string,
-    date?: string
+    date?: string,
+    channel?: string
   ) => {
     let query = `${HELPDESK_ENDPOINTS.APPOINTMENTS}?page=${page}&limit=${limit}`;
     if (patientId) query += `&patientId=${patientId}`;
     if (startDate) query += `&startDate=${startDate}`;
     if (endDate) query += `&endDate=${endDate}`;
     if (date) query += `&date=${date}`;
+    if (channel && channel !== 'all') query += `&channel=${channel}`;
     return apiClient<any>(query);
   },
 

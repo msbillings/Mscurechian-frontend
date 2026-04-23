@@ -27,7 +27,6 @@ const masterhelpdeskMenu: any[] = [
     { icon: Clock, label: "Queue", path: "/masterhelpdesk/queue" },
     { icon: UserPlus, label: "Patient Registration", path: "/masterhelpdesk/registration" },
     { icon: CalendarPlus, label: "Book Appointment", path: "/masterhelpdesk/appointment-booking" },
-    { icon: ClipboardList, label: "Appointments List", path: "/masterhelpdesk/appointments" },
     { icon: ClipboardList, label: "Patients List", path: "/masterhelpdesk/patients" },
     { icon: Stethoscope, label: "Doctors", path: "/masterhelpdesk/doctors" },
     { icon: ClipboardList, label: "Transactions", path: "/masterhelpdesk/transactions" },

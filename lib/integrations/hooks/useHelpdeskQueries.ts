@@ -34,11 +34,11 @@ export const helpdeskKeys = {
   all: BASE_KEY,
   dashboard: () => [...BASE_KEY, "dashboard"] as const,
   doctors: () => [...BASE_KEY, "doctors"] as const,
-  patients: (query?: string, page?: number, limit?: number, type?: string) =>
-    [...BASE_KEY, "patients", { query, page, limit, type }] as const,
+  patients: (query?: string, page?: number, limit?: number, type?: string, channel?: string) =>
+    [...BASE_KEY, "patients", { query, page, limit, type, channel: channel }] as const,
   patient: (id: string) => [...BASE_KEY, "patient", id] as const,
-  appointments: (page?: number, limit?: number, patientId?: string, startDate?: string, endDate?: string) =>
-    [...BASE_KEY, "appointments", { page, limit, patientId, startDate, endDate }] as const,
+  appointments: (page?: number, limit?: number, patientId?: string, startDate?: string, endDate?: string, channel?: string) =>
+    [...BASE_KEY, "appointments", { page, limit, patientId, startDate, endDate, channel: channel }] as const,
   transactions: (
     page?: number,
     limit?: number,
@@ -96,16 +96,17 @@ export const usePatientSearch = (
   page: number = 1,
   limit: number = 10,
   type?: string,
+  channel?: string,
   enabled: boolean = true,
 ) => {
   return useQuery({
-    queryKey: helpdeskKeys.patients(query, page, limit, type),
-    queryFn: () => helpdeskService.searchPatients(query, page, limit, type),
-    staleTime: 2 * 60 * 1000, // ✅ 2min cache for search results
+    queryKey: helpdeskKeys.patients(query, page, limit, type, channel),
+    queryFn: () => helpdeskService.searchPatients(query, page, limit, type, channel),
+    staleTime: 2 * 60 * 1000, 
     gcTime: 10 * 60 * 1000,
     enabled: enabled && query.length > 0,
     refetchOnWindowFocus: false,
-    refetchOnMount: false, // ✅ Don't refetch searches
+    refetchOnMount: false, 
     retry: 1,
   });
 };
@@ -119,18 +120,19 @@ export const useHelpdeskPatients = (
   page: number = 1,
   limit: number = 10,
   type?: string,
+  channel?: string,
   enabled: boolean = true,
 ) => {
   return useQuery({
-    queryKey: helpdeskKeys.patients(query, page, limit, type),
+    queryKey: helpdeskKeys.patients(query, page, limit, type, channel),
     queryFn: () =>
-      helpdeskService.searchPatients(query || "", page, limit, type),
-    staleTime: 2 * 60 * 1000, // ✅ 2min cache
+      helpdeskService.searchPatients(query || "", page, limit, type, channel),
+    staleTime: 2 * 60 * 1000, 
     gcTime: 10 * 60 * 1000,
     enabled,
-    placeholderData: (previousData) => previousData, // ✅ Instant display
-    refetchOnWindowFocus: false, // ✅ Don't refetch on tab switch
-    refetchOnMount: false, // ✅ CRITICAL: Don't auto-refetch (prevents ERR_CONNECTION_RESET)
+    placeholderData: (previousData) => previousData,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false, 
     retry: 1,
   });
 };
@@ -204,11 +206,12 @@ export const useAppointments = (
   limit?: number,
   patientId?: string,
   startDate?: string,
-  endDate?: string
+  endDate?: string,
+  channel?: string
 ) => {
   return useQuery({
-    queryKey: helpdeskKeys.appointments(page, limit, patientId, startDate, endDate),
-    queryFn: () => helpdeskService.getAppointments(page, limit, patientId, startDate, endDate),
+    queryKey: helpdeskKeys.appointments(page, limit, patientId, startDate, endDate, channel),
+    queryFn: () => helpdeskService.getAppointments(page, limit, patientId, startDate, endDate, undefined, channel),
     ...HELPDESK_QUERY_DEFAULTS,
     staleTime: 30 * 1000,
     refetchOnMount: true,

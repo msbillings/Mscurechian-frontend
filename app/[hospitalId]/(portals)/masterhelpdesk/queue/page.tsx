@@ -44,7 +44,7 @@ export default function MasterQueuePage() {
         if (search) {
             const s = search.toLowerCase();
             list = list.filter((apt: any) => 
-                (apt.patientName || "UNKNOWN").toLowerCase().includes(s) || 
+                (apt.patient?.name || apt.patientName || "UNKNOWN").toLowerCase().includes(s) || 
                 (apt.mrn || "").toLowerCase().includes(s) ||
                 (apt.doctorName || "").toLowerCase().includes(s)
             );
@@ -210,7 +210,7 @@ export default function MasterQueuePage() {
 // Table Row Component
 function QueueRow({ apt, idx, onUpdateStatus, isProcessing }: { apt: any, idx: number, onUpdateStatus: any, isProcessing: boolean }) {
     const isConsulting = apt.status === "in-progress";
-    const patientName = apt.patientName?.trim() || "UNKNOWN";
+    const patientName = (apt.patient?.name || apt.patientName)?.trim() || "UNKNOWN";
     
     // Status Badge Styling Logic
     let statusStyle = "bg-slate-100 text-slate-500 border-slate-200";
