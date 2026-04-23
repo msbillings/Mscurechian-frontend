@@ -221,6 +221,7 @@ export const HELPDESK_ENDPOINTS = {
   APPOINTMENTS: "/helpdesk/appointments",
   APPOINTMENT_STATUS: (id: string) => `/helpdesk/appointments/${id}/status`,
   TRANSACTIONS: "/helpdesk/transactions",
+  IPD_ADMISSIONS: (id: string) => `/helpdesk/patients/${id}/ipd-admissions`,
 };
 
 export const BOOKING_ENDPOINTS = {

@@ -104,6 +104,7 @@ export default function PatientsPage() {
         page,
         limit,
         activeFilter,
+        undefined, // Added to fix type error (boolean not assignable to string for channel)
         true
     );
 
@@ -151,13 +152,8 @@ export default function PatientsPage() {
             // Fetch both OPD appointments AND IPD admissions
             const [opdRes, ipdRes] = await Promise.all([
                 helpdeskService.getAppointments(1, 50, patientId).catch(() => ({ data: [] })),
-                // Fetch IPD admissions for this patient
-                fetch(`/api/helpdesk/patients/${patientId}/ipd-admissions`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                        'Content-Type': 'application/json'
-                    }
-                }).then(res => res.ok ? res.json() : { admissions: [] }).catch(() => ({ admissions: [] }))
+                // Fetch IPD admissions for this patient via helpdeskService for proper proxying/auth
+                helpdeskService.getPatientIPDAdmissions(patientId).catch(() => ({ admissions: [] }))
             ]);
 
             const opdAppointments = opdRes.appointments || opdRes.data || [];

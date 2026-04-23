@@ -110,6 +110,13 @@ export const helpdeskService = {
     apiClient<any>(HELPDESK_ENDPOINTS.PATIENT_DETAILS(patientId)),
 
   /**
+   * Get IPD admissions for a specific patient
+   * @param patientId Patient ID
+   */
+  getPatientIPDAdmissions: (patientId: string) =>
+    apiClient<any>(HELPDESK_ENDPOINTS.IPD_ADMISSIONS(patientId)),
+
+  /**
    * Update patient information
    * @param patientId Patient ID
    * @param data Updated patient data
