@@ -1,33 +1,57 @@
-﻿'use client';
+'use client';
 
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, FileText, CheckCircle, X, ChevronRight, Lock, Globe, Server } from 'lucide-react';
+import React from 'react';
+import { ShieldCheck, FileText, CheckCircle, X, ChevronRight, Lock, Globe, Server, AlertCircle, Scale } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const TermsPage = () => {
-  const [agreed, setAgreed] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const router = useRouter();
 
-  const handleContinue = () => {
-    if (agreed) {
-        setShowSuccess(true);
-        setTimeout(() => {
-            router.push('/');
-        }, 1200);
+  const sections = [
+    {
+      id: 's1',
+      icon: <FileText size={18} className="text-blue-600" />,
+      title: '1. Identification & Services',
+      content: 'These Terms & Conditions ("Terms") govern your access to and use of MS CureChain, a hospital management software platform owned and operated by MS Tech Hive Private Limited. By accessing, logging into, or using MS CureChain, you confirm that you have read, understood, and agree to be bound by these Terms and our Privacy Policy.'
+    },
+    {
+      id: 's2',
+      icon: <Scale size={18} className="text-blue-600" />,
+      title: '2. Eligibility & Authority',
+      content: 'The Software is intended for use by hospitals, clinics, healthcare organizations, and individual patients. You represent and warrant that you are legally authorized to access the Software and are acting within your assigned role. Patient users must be at least 18 years of age or have legal guardian consent.'
+    },
+    {
+      id: 's3',
+      icon: <AlertCircle size={18} className="text-blue-600" />,
+      title: '3. Scope of Services & Disclaimer',
+      content: 'MS CureChain provides technology enablement for healthcare operations, including patient registration, appointment booking, and health record management. MS CureChain is NOT a medical provider and does NOT provide medical advice, diagnosis, or treatment. The clinical quality of consultations rests solely with the healthcare provider.'
+    },
+    {
+      id: 's4',
+      icon: <CheckCircle size={18} className="text-blue-600" />,
+      title: '4. Appointment Booking & Refunds',
+      content: 'Fees paid for appointment booking are eligible for a refund only if the cancellation is made at least 24 hours before the scheduled slot. In case of doctor unavailability or hospital-side cancellation, a full refund will be initiated and credited back within 24-48 hours. No-shows are not eligible for refunds.',
+      highlight: true
+    },
+    {
+      id: 's5',
+      icon: <Lock size={18} className="text-blue-600" />,
+      title: '5. Account Security',
+      content: 'You are responsible for maintaining the confidentiality of your login credentials. Any unauthorized access must be reported immediately. MS Tech Hive is not responsible for losses caused by compromised credentials resulting from user negligence.'
+    },
+    {
+      id: 's6',
+      icon: <Globe size={18} className="text-blue-600" />,
+      title: '6. Intellectual Property',
+      content: 'MS CureChain, including all source code, UI designs, workflows, and trademarks, is the exclusive intellectual property of MS Tech Hive Pvt. Ltd. No license is granted except for limited use as defined under these Terms.'
     }
-  };
-
-  const handleCancel = () => {
-    router.push('/');
-  };
+  ];
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans selection:bg-blue-100 selection:text-blue-700">
       
-      {/* Top Header Section - Premium Global Style */}
-      <div className="w-full bg-[#1e40af] py-10 px-8 relative overflow-hidden">
+      {/* Premium Header */}
+      <div className="w-full bg-[#1e40af] py-12 px-8 relative overflow-hidden">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between relative z-10 gap-6">
             <div className="flex items-center gap-6">
                 <div className="w-16 h-16 bg-white/15 backdrop-blur-xl rounded-[1.25rem] flex items-center justify-center border border-white/20 shadow-2xl">
@@ -35,19 +59,19 @@ const TermsPage = () => {
                 </div>
                 <div className="text-left">
                     <h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight italic">
-                        Legal <span className="opacity-60 text-blue-200">&</span> Compliance
+                        Legal <span className="opacity-60 text-blue-200">&</span> Terms
                     </h1>
                     <p className="text-blue-100/70 font-bold text-[10px] uppercase tracking-[0.3em] mt-1">
-                        Portal Accreditation Protocols v2.4
+                        Global Service Protocols v4.2
                     </p>
                 </div>
             </div>
             
             <button 
-                onClick={handleCancel}
+                onClick={() => router.push('/')}
                 className="group flex items-center gap-3 bg-white/10 hover:bg-white/20 transition-all border border-white/10 px-5 py-2.5 rounded-2xl text-white text-[10px] font-black uppercase tracking-widest backdrop-blur-sm shadow-sm"
             >
-                Return to Landing <X size={14} className="group-hover:rotate-90 transition-transform" />
+                Back to Home <X size={14} className="group-hover:rotate-90 transition-transform" />
             </button>
         </div>
 
@@ -56,162 +80,60 @@ const TermsPage = () => {
         <div className="absolute -bottom-1/2 -left-1/4 w-[400px] h-[400px] bg-blue-400/10 rounded-full blur-[80px]" />
       </div>
 
-      {/* Main Body Grid */}
-      <main className="flex-1 w-full max-w-7xl mx-auto p-6 md:p-10 lg:p-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-            
-            {/* Left: Professional Document Area (70%) */}
-            <div className="lg:col-span-8 bg-white rounded-[2.5rem] shadow-[0_30px_70px_rgba(0,0,0,0.03)] border border-slate-100/80 overflow-hidden flex flex-col">
-                <div className="p-8 md:p-12 h-[600px] overflow-y-auto custom-scrollbar bg-white/50 backdrop-blur-sm">
-                    <div className="space-y-12">
-                        {/* Section 1 */}
-                        <div className="relative pl-12">
-                            <div className="absolute left-0 top-1 w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100 shadow-sm">
-                                <FileText size={16} className="text-blue-600" />
-                            </div>
-                            <h2 className="text-lg font-black text-slate-900 uppercase italic tracking-tight mb-4">1. Identification & Services</h2>
-                            <p className="text-slate-500 font-medium leading-relaxed text-sm antialiased">
-                                Welcome to the <span className="font-black text-slate-900 italic">MSCureChain Platform</span>. These terms govern your professional engagement with our clinical services, software solutions, and diagnostic modules. By authenticating your portal credentials, you acknowledge and agree to abide by these established protocols.
-                            </p>
-                        </div>
-
-                        {/* Section 2 */}
-                        <div className="relative pl-12">
-                            <div className="absolute left-0 top-1 w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100 shadow-sm">
-                                <Lock size={16} className="text-blue-600" />
-                            </div>
-                            <h2 className="text-lg font-black text-slate-900 uppercase italic tracking-tight mb-4">2. Data Sovereignty & Encryption</h2>
-                            <p className="text-slate-500 font-medium leading-relaxed text-sm antialiased">
-                                MSCureChain enforces strict AES-256 bit encryption for all patient-identifiable data. Our system maintains compliance with international healthcare standards including HIPAA and GDPR. Users are strictly prohibited from attempting to bypass encryption layers or exfiltrate private diagnostic data.
-                            </p>
-                        </div>
-
-                        {/* Section 3 */}
-                        <div className="relative pl-12">
-                            <div className="absolute left-0 top-1 w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100 shadow-sm">
-                                <Server size={16} className="text-blue-600" />
-                            </div>
-                            <h2 className="text-lg font-black text-slate-900 uppercase italic tracking-tight mb-4">3. User Credentials & Liabilities</h2>
-                            <p className="text-slate-500 font-medium leading-relaxed text-sm antialiased">
-                                Access keys are personal and non-transferable. Authorized medical practitioners are responsible for all actions performed under their verified credentials. MSCureChain provides clinical decision-support but does not replace the specialized judgment of licensed medical personnel.
-                            </p>
-                        </div>
-
-                        {/* Section 4 */}
-                        <div className="relative pl-12">
-                            <div className="absolute left-0 top-1 w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100 shadow-sm">
-                                <Globe size={16} className="text-blue-600" />
-                            </div>
-                            <h2 className="text-lg font-black text-slate-900 uppercase italic tracking-tight mb-4">4. Global Service Level Agreement</h2>
-                            <p className="text-slate-500 font-medium leading-relaxed text-sm antialiased">
-                                Our infrastructure guarantees 99.9% uptime for core clinical portals. Maintenance windows are professionally scheduled to minimize disruption to critical hospital operations. We reserve the right to suspend accounts found to be in violation of ethical medical computing standards.
-                            </p>
-                        </div>
-                    </div>
-                </div>
+      {/* Content Container */}
+      <main className="flex-1 w-full max-w-5xl mx-auto p-6 md:p-12">
+        <div className="bg-white rounded-[2.5rem] shadow-[0_30px_80px_rgba(0,0,0,0.02)] border border-slate-100 p-8 md:p-16">
+          <div className="mb-12 border-b border-slate-50 pb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-[10px] font-black uppercase tracking-widest mb-4">
+              <FileText size={12} /> Service Agreement
             </div>
+            <h2 className="text-3xl font-black text-slate-900 italic tracking-tight">Terms of Conditions</h2>
+            <p className="text-slate-500 mt-4 font-medium leading-relaxed max-w-2xl text-sm italic">
+              Last Updated: April 23, 2026. These terms apply to all users of the MS CureChain ecosystem including healthcare providers and patients.
+            </p>
+          </div>
 
-            {/* Right: Sticky Action Sidebar (30%) */}
-            <div className="lg:col-span-4 sticky top-12 space-y-6">
-                <div className="bg-white rounded-[2rem] shadow-[0_40px_100px_rgba(0,0,0,0.06)] border border-slate-100 p-8 md:p-10 flex flex-col gap-8">
-                    
-                    <div 
-                        className="flex flex-col gap-6"
-                    >
-                        <div className="space-y-3">
-                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Agreement Status</h3>
-                            <div 
-                                onClick={() => setAgreed(!agreed)}
-                                className={`flex items-center gap-4 p-5 rounded-2xl border-2 transition-all cursor-pointer group ${
-                                    agreed 
-                                    ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-200' 
-                                    : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-blue-200 hover:bg-slate-100'
-                                }`}
-                            >
-                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-                                    agreed ? 'bg-white border-white' : 'border-slate-300'
-                                }`}>
-                                    {agreed && <CheckCircle size={14} className="text-blue-600 stroke-[3]" />}
-                                </div>
-                                <span className={`text-[11px] font-black uppercase tracking-widest leading-none selection:bg-none ${
-                                    agreed ? 'text-white' : 'text-slate-500'
-                                }`}>
-                                    I accept all protocols & terms
-                                </span>
-                            </div>
-                        </div>
-
-                        <p className="text-[9px] font-bold text-slate-400 uppercase leading-relaxed tracking-wider italic">
-                            By checking this box, you confirm that you have read, understood, and agreed to the clinical governance of MSCureChain.
-                        </p>
-                    </div>
-
-                    <div className="flex flex-col gap-3">
-                        <button 
-                            disabled={!agreed}
-                            onClick={handleContinue}
-                            className={`w-full py-4 rounded-xl font-black text-[10px] uppercase tracking-[0.25em] transition-all duration-300 transform active:scale-95 flex items-center justify-center gap-2 ${
-                                agreed 
-                                ? 'bg-[#1e40af] text-white shadow-2xl shadow-blue-600/30 hover:bg-[#1e3a8a]' 
-                                : 'bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200/50'
-                            }`}
-                        >
-                           Proceed to Portal <ChevronRight size={14} />
-                        </button>
-                        <button 
-                            onClick={handleCancel}
-                            className="w-full py-4 rounded-xl border border-slate-100 bg-white text-slate-400 font-black text-[10px] uppercase tracking-[0.25em] hover:text-slate-900 transition-all shadow-sm active:scale-95"
-                        >
-                            Decline Access
-                        </button>
-                    </div>
-
-                    <AnimatePresence>
-                        {showSuccess && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                className="p-4 rounded-xl bg-green-50 border border-green-200 flex items-center gap-3"
-                            >
-                                <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shadow-lg shadow-green-200 text-white">
-                                    <CheckCircle size={16} />
-                                </div>
-                                <div className="text-left font-black tracking-tight uppercase italic flex flex-col">
-                                    <span className="text-[10px] text-green-600">Authentication</span>
-                                    <span className="text-[8px] text-green-400 uppercase tracking-widest leading-none">Access Granted</span>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+          <div className="space-y-12">
+            {sections.map((section) => (
+              <div key={section.id} className={`relative pl-14 p-6 rounded-3xl transition-all ${section.highlight ? 'bg-blue-50/50 border border-blue-100 shadow-sm' : ''}`}>
+                <div className={`absolute left-4 top-6 w-8 h-8 rounded-xl flex items-center justify-center border shadow-sm ${section.highlight ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-100 text-blue-600'}`}>
+                  {section.icon}
                 </div>
-                
-                {/* Visual context labels */}
-                <div className="flex items-center justify-between px-6 opacity-40 grayscale group hover:grayscale-0 transition-all cursor-default">
-                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">MSCUREÂ® SECURITY</p>
-                    <div className="flex gap-2">
-                         <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                         <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                    </div>
-                </div>
+                <h3 className={`text-lg font-black uppercase italic tracking-tight mb-3 ${section.highlight ? 'text-blue-900' : 'text-slate-900'}`}>
+                  {section.title}
+                </h3>
+                <p className="text-slate-500 font-medium leading-relaxed antialiased text-sm">
+                  {section.content}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer Statement */}
+          <div className="mt-20 pt-10 border-t border-slate-50 text-center">
+            <p className="text-[11px] font-black text-slate-300 uppercase tracking-[0.3em] italic mb-6">
+              MS Tech Hive Pvt. Ltd Â· Legal Department
+            </p>
+            <div className="flex justify-center gap-8">
+              <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Governing Law: India</div>
+              <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Version: 2026.04.1</div>
             </div>
+          </div>
         </div>
       </main>
 
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #e2e8f0;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #cbd5e1;
-        }
-      `}</style>
+      {/* Bottom Sticky Action */}
+      <div className="p-8 text-center bg-white border-t border-slate-100">
+        <p className="text-xs font-medium text-slate-500 mb-4 italic">
+          Want to know how we protect your data?
+        </p>
+        <button 
+          onClick={() => router.push('/privacy')}
+          className="inline-flex items-center gap-2 text-blue-600 font-black text-[11px] uppercase tracking-widest hover:text-blue-800 transition-colors"
+        >
+          Read our Privacy Policy <ChevronRight size={14} />
+        </button>
+      </div>
     </div>
   );
 };

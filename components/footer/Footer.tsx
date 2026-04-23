@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Heart, Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram, Youtube } from 'lucide-react';
 import Link from 'next/link';
 
@@ -169,15 +169,15 @@ const Footer = () => {
                             Â© {currentYear} MS Tech Hive - Hospital Management System. All rights reserved.
                         </p>
                         <div className="flex space-x-6">
-                            <a href="#" className="text-sm hover:text-blue-400 transition-colors duration-200" style={{ color: 'var(--secondary-color)' }}>
+                            <Link href="/privacy" className="text-sm hover:text-blue-400 transition-colors duration-200" style={{ color: 'var(--secondary-color)' }}>
                                 Privacy Policy
-                            </a>
+                            </Link>
                             <Link href="/terms" className="text-sm hover:text-blue-400 transition-colors duration-200" style={{ color: 'var(--secondary-color)' }}>
                                 Terms of Service
                             </Link>
-                            <a href="#" className="text-sm hover:text-blue-400 transition-colors duration-200" style={{ color: 'var(--secondary-color)' }}>
+                            <Link href="/privacy" className="text-sm hover:text-blue-400 transition-colors duration-200" style={{ color: 'var(--secondary-color)' }}>
                                 Cookie Policy
-                            </a>
+                            </Link>
                         </div>
                     </div>
                 </div>
