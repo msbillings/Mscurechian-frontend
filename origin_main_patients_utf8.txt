@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
     Users,
     Calendar,
@@ -14,22 +14,11 @@ import {
     X
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useTenantLink } from "@/hooks/useTenantLink";
+import { useAuthStore } from "@/stores/authStore";
+import { useHelpdeskPatients, useUpdateAppointmentStatus } from "@/lib/integrations/hooks";
 import toast from "react-hot-toast";
-import { useHelpdeskPatients, useUpdateAppointmentStatus, useHelpdeskDoctors } from "@/lib/integrations/hooks";
-import { helpdeskService } from "@/lib/integrations/services/helpdesk.service";
-import ClinicalReceipt from "@/components/helpdesk/ClinicalReceipt";
-import AppointmentHistoryModal from "@/components/helpdesk/AppointmentHistoryModal";
-
-// ── Debounce Hook ────────────────────────────────────────────────────────
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-    const [debounced, setDebounced] = useState(value);
-    useEffect(() => {
-        const t = setTimeout(() => setDebounced(value), delayMs);
-        return () => clearTimeout(t);
-    }, [value, delayMs]);
-    return debounced;
-}
+import { useDebounce } from "@/hooks/useDebounce";
 
 export default function MasterPatientsPage() {
     const router = useRouter();
@@ -38,16 +27,7 @@ export default function MasterPatientsPage() {
     const [limit] = useState(10);
     const [channelFilter, setChannelFilter] = useState<'all' | 'online' | 'offline'>('all');
 
-    const debouncedSearch = useDebouncedValue(searchTerm, 500);
-
-    // Receipt & History States
-    const [showReceipt, setShowReceipt] = useState(false);
-    const [receiptData, setReceiptData] = useState<any>(null);
-    const [hospitalInfo, setHospitalInfo] = useState<any>(null);
-    const [showHistoryModal, setShowHistoryModal] = useState(false);
-    const [appointmentHistory, setAppointmentHistory] = useState<any[]>([]);
-    const [historyLoading, setHistoryLoading] = useState(false);
-    const [selectedPatientForHistory, setSelectedPatientForHistory] = useState<any>(null);
+    const debouncedSearch = useDebounce(searchTerm, 500);
 
     // Fetch Patients with details resolved by backend
     const { data: patientsRaw, isLoading, isFetching, refetch } = useHelpdeskPatients(
@@ -62,105 +42,27 @@ export default function MasterPatientsPage() {
     const patients = patientsRaw?.data || [];
     const pagination = patientsRaw?.pagination;
 
-    const totalPages = Math.ceil((pagination?.total || 0) / limit);
-
-    const { data: doctorsData } = useHelpdeskDoctors();
-    const doctorMap = useMemo(() => {
-        const docs = Array.isArray(doctorsData) ? doctorsData : ((doctorsData as any)?.doctors || (doctorsData as any)?.data || []);
-        const map: any = {};
-        docs.forEach((doc: any) => map[doc._id] = doc.user?.name || doc.name);
-        return map;
-    }, [doctorsData]);
-
     const updateStatusMutation = useUpdateAppointmentStatus();
 
     const handleUpdateStatus = async (appointmentId: string, status: string) => {
         try {
             await updateStatusMutation.mutateAsync({ appointmentId, status });
-            toast.success(`Session ${status}`);
+            toast.success(`Session ${status} successfully`, {
+                style: {
+                    borderRadius: '1rem',
+                    background: '#1e293b',
+                    color: '#fff',
+                    fontSize: '11px',
+                    fontWeight: '900',
+                    textTransform: 'uppercase'
+                },
+                icon: <Activity className="text-emerald-400" size={14} />
+            });
             refetch();
         } catch (error) {
             toast.error("Failed to update status");
         }
     };
-
-    // ── Handlers ──────────────────────────────────────────────────────────
-    const handleFetchHistory = async (patient: any) => {
-        try {
-            setSelectedPatientForHistory(patient);
-            setShowHistoryModal(true);
-            setHistoryLoading(true);
-
-            const patientId = patient._id || patient.id;
-            const [opdRes, ipdRes] = await Promise.all([
-                helpdeskService.getAppointments(1, 50, patientId).catch(() => ({ appointments: [] })),
-                fetch(`/api/helpdesk/patients/${patientId}/ipd-admissions`, {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                }).then(res => res.ok ? res.json() : { admissions: [] }).catch(() => ({ admissions: [] }))
-            ]);
-
-            const opdApts = opdRes.appointments || opdRes.data || [];
-            const ipdAdms = ipdRes.admissions || ipdRes.data || [];
-
-            const transformedIPD = ipdAdms.map((adm: any) => ({
-                ...adm,
-                type: 'IPD',
-                date: adm.admissionDate || adm.createdAt,
-                appointmentId: adm.admissionId,
-                doctor: adm.primaryDoctor
-            }));
-
-            const allHistory = [...opdApts, ...transformedIPD].sort((a, b) =>
-                new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime()
-            );
-
-            setAppointmentHistory(allHistory);
-        } catch (err) {
-            toast.error("Failed to load history");
-        } finally {
-            setHistoryLoading(false);
-        }
-    };
-
-    const handleSelectAppointment = async (appt: any) => {
-        const patient = selectedPatientForHistory;
-        if (!patient || !appt) return;
-
-        setShowHistoryModal(false);
-        const doctorName = appt.doctor?.name || appt.doctorName || doctorMap[appt.doctor?._id || appt.doctor] || "N/A";
-
-        setReceiptData({
-            hospital: { name: hospitalInfo?.name, address: hospitalInfo?.address, contact: hospitalInfo?.phone, email: hospitalInfo?.email, logo: hospitalInfo?.logo },
-            patient: { 
-                name: patient.name || patient.user?.name, 
-                mrn: patient.mrn || "N/A", 
-                age: patient.age, 
-                gender: patient.gender, 
-                mobile: patient.mobile || patient.user?.mobile,
-                vitals: appt.vitals
-            },
-            appointment: { 
-                doctorName, 
-                date: new Date(appt.date).toLocaleDateString(), 
-                time: appt.appointmentTime || "N/A", 
-                type: appt.type || "OPD",
-                appointmentId: appt.appointmentId || appt._id?.substring(0, 8).toUpperCase()
-            },
-            payment: { 
-                amount: appt.payment?.amount || appt.amount || 0, 
-                method: appt.payment?.paymentMethod || appt.paymentMethod || 'cash', 
-                status: appt.payment?.paymentStatus || appt.paymentStatus || 'paid'
-            }
-        });
-        setShowReceipt(true);
-    };
-
-    if (isLoading && !patientsRaw) return (
-        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
-            <RefreshCw className="animate-spin text-indigo-600" size={32} />
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Hydrating Clinical Registry...</p>
-        </div>
-    );
 
     return (
         <div className="flex flex-col gap-8 p-10 max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -321,27 +223,6 @@ export default function MasterPatientsPage() {
                     </div>
                 )}
             </div>
-
-            {/* Modals */}
-            {showHistoryModal && (
-                <AppointmentHistoryModal
-                    patientName={selectedPatientForHistory?.name || "Patient"}
-                    appointments={appointmentHistory}
-                    isLoading={historyLoading}
-                    onSelect={handleSelectAppointment}
-                    onClose={() => setShowHistoryModal(false)}
-                    doctorMap={doctorMap}
-                />
-            )}
-            {showReceipt && receiptData && (
-                <ClinicalReceipt
-                    hospital={receiptData.hospital}
-                    patient={receiptData.patient}
-                    appointment={receiptData.appointment}
-                    payment={receiptData.payment}
-                    onClose={() => setShowReceipt(false)}
-                />
-            )}
         </div>
     );
 }

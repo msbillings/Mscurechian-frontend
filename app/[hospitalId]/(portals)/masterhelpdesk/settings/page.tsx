@@ -6,10 +6,11 @@ import {
     User, Mail, Phone, Briefcase, Award,
     CreditCard, Building, Landmark, Wallet,
     Save, ArrowLeft, Plus, X,
-    Calendar, FileText
+    Calendar, FileText, MapPin
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { helpdeskService } from '@/lib/integrations/services/helpdesk.service';
+import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 
 const DocumentViewerModal = ({ isOpen, onClose, url, title }: any) => {
     if (!isOpen) return null;
@@ -42,11 +43,42 @@ const DocumentViewerModal = ({ isOpen, onClose, url, title }: any) => {
     );
 };
 
+interface FormData {
+    name: string;
+    email: string;
+    mobile: string;
+    address: string;
+    profilePic: string;
+    gender: string;
+    dateOfBirth: string;
+    designation: string;
+    department: string;
+    employeeId: string;
+    joiningDate: string;
+    experienceYears: string;
+    workingHours: { start: string; end: string };
+    bankDetails: { bankName: string; accountNumber: string; accountName: string; ifscCode: string };
+    panNumber: string;
+    aadharNumber: string;
+    baseSalary: string;
+    pfNumber: string;
+    esiNumber: string;
+    uanNumber: string;
+    registrationNumber: string;
+    licenseValidityDate: string;
+    qualifications: string[];
+    hospitalName: string;
+    hospitalAddress: string;
+    hospitalEmail: string;
+    hospitalMobile: string;
+    documents: Record<string, any>;
+}
+
 export default function MasterHelpdeskProfileSettings() {
     const router = useRouter();
     const params = useParams();
     const hospitalId = params?.hospitalId as string;
-    
+
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('personal');
@@ -55,11 +87,12 @@ export default function MasterHelpdeskProfileSettings() {
     const [viewer, setViewer] = useState({ isOpen: false, url: '', title: '' });
     const [isIFSCValidating, setIsIFSCValidating] = useState(false);
 
-    const [formData, setFormData] = useState<any>({
+    const [formData, setFormData] = useState<FormData>({
         // Personal & Account
         name: '',
         email: '',
         mobile: '',
+        address: '',
         profilePic: '',
         gender: '',
         dateOfBirth: '',
@@ -81,10 +114,13 @@ export default function MasterHelpdeskProfileSettings() {
         esiNumber: '',
         uanNumber: '',
 
-        // Qualifications
         registrationNumber: '',
         licenseValidityDate: '',
         qualifications: [] as string[],
+        hospitalName: '',
+        hospitalAddress: '',
+        hospitalEmail: '',
+        hospitalMobile: '',
         documents: {}
     });
 
@@ -92,16 +128,39 @@ export default function MasterHelpdeskProfileSettings() {
         async function loadProfile() {
             setLoading(true);
             try {
+                // Force fresh fetch to bypass any intermediate caching
                 const res = await helpdeskService.getMe();
+                
+                let latestHospital = res?.hospital;
+                try {
+                    // We try to get the most authoritative hospital data, but ignore if permissions don't allow (403)
+                    const hRes = await hospitalAdminService.getHospital();
+                    if (hRes?.hospital) latestHospital = { ...latestHospital, ...hRes.hospital } as any;
+                } catch (e) {
+                    console.warn("[settings] Note: Could not fetch global hospital details (Permission restricted). Using profile-linked hospital data.");
+                }
+
+                // 🚀 FE-Only Persistence: Load local overrides since backend strips non-schema fields
+                let localOverrides: any = {};
+                try {
+                    const saved = localStorage.getItem(`master_branding_${hospitalId}`);
+                    if (saved) localOverrides = JSON.parse(saved);
+                } catch (e) {}
+
                 if (res) {
-                    setFormData((prev: any) => ({
+                    setFormData((prev: FormData) => ({
                         ...prev,
                         name: res.name || '',
                         email: res.email || '',
                         mobile: res.mobile || '',
+                        address: (res as any).address || '',
                         gender: (res as any).gender || '',
-                        profilePic: (res as any).image || '',
+                        profilePic: (res as any).image || (latestHospital as any)?.logo || '',
                         dateOfBirth: (res as any).dateOfBirth ? new Date((res as any).dateOfBirth).toISOString().split('T')[0] : '',
+                        hospitalName: localOverrides.hospitalName || (res as any).hospitalName || latestHospital?.name || '',
+                        hospitalAddress: localOverrides.hospitalAddress || (res as any).hospitalAddress || latestHospital?.address || '',
+                        hospitalEmail: localOverrides.hospitalEmail || (res as any).hospitalEmail || latestHospital?.email || '',
+                        hospitalMobile: localOverrides.hospitalMobile || (res as any).hospitalMobile || (latestHospital as any)?.phone || latestHospital?.mobile || '',
                     }));
                 }
             } catch (error) {
@@ -125,7 +184,7 @@ export default function MasterHelpdeskProfileSettings() {
         if (formData.mobile && !/^\d{10}$/.test(formData.mobile)) {
             newErrors.mobile = "Mobile number must be exactly 10 digits";
         }
-        
+
         // Strict Bank & Payroll Validation
         if (formData.bankDetails.ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.bankDetails.ifscCode.toUpperCase())) {
             newErrors['bankDetails.ifscCode'] = "Invalid IFSC Code format";
@@ -170,9 +229,9 @@ export default function MasterHelpdeskProfileSettings() {
         if (name === 'bankDetails.ifscCode' && value.length > 11) return;
         if (name === 'uanNumber' && value.length > 12) return;
 
-        setErrors(prev => ({ ...prev, [name]: fieldError }));
+        setErrors((prev: Record<string, string>) => ({ ...prev, [name]: fieldError }));
         if (!fieldError && errors[name]) {
-            setErrors(prev => {
+            setErrors((prev: Record<string, string>) => {
                 const updated = { ...prev };
                 delete updated[name];
                 return updated;
@@ -183,29 +242,29 @@ export default function MasterHelpdeskProfileSettings() {
             const keys = name.split('.');
             if (keys.length === 2) {
                 const [parent, child] = keys;
-                setFormData((prev: any) => ({
+                setFormData((prev: FormData) => ({
                     ...prev,
-                    [parent]: { ...prev[parent], [child]: value }
+                    [parent]: { ...(prev as any)[parent], [child]: value }
                 }));
             }
         } else {
-            setFormData((prev: any) => ({ ...prev, [name]: value }));
+            setFormData((prev: FormData) => ({ ...prev, [name]: value }));
         }
     };
 
     const handleQualificationChange = (index: number, value: string) => {
         const updated = [...formData.qualifications];
         updated[index] = value;
-        setFormData((prev: any) => ({ ...prev, qualifications: updated }));
+        setFormData((prev: FormData) => ({ ...prev, qualifications: updated }));
     };
 
     const addQualification = () => {
-        setFormData((prev: any) => ({ ...prev, qualifications: [...prev.qualifications, ''] }));
+        setFormData((prev: FormData) => ({ ...prev, qualifications: [...prev.qualifications, ''] }));
     };
 
     const removeQualification = (index: number) => {
         const updated = formData.qualifications.filter((_: any, i: number) => i !== index);
-        setFormData((prev: any) => ({ ...prev, qualifications: updated }));
+        setFormData((prev: FormData) => ({ ...prev, qualifications: updated }));
     };
 
     const handleSave = async (e?: React.FormEvent) => {
@@ -217,20 +276,46 @@ export default function MasterHelpdeskProfileSettings() {
 
         setIsSaving(true);
         try {
-            // Update backend Profile
+            // 🚀 FE-Only Persistence: Save local overrides since backend strips non-schema fields
+            try {
+                localStorage.setItem(`master_branding_${hospitalId}`, JSON.stringify({
+                    hospitalName: formData.hospitalName,
+                    hospitalAddress: formData.hospitalAddress,
+                    hospitalEmail: formData.hospitalEmail,
+                    hospitalMobile: formData.hospitalMobile
+                }));
+            } catch (e) {
+                console.warn("Failed to save local branding overrides");
+            }
+
+            // Update Profile & Institutional Overrides
+            // We use a nested hospital object in case the backend supports structured updates via /helpdesk/me
             await helpdeskService.updateProfile({
                 name: formData.name,
                 email: formData.email,
                 mobile: formData.mobile,
+                address: formData.address,
                 gender: formData.gender,
                 dateOfBirth: formData.dateOfBirth,
-                image: formData.profilePic
+                image: formData.profilePic,
+                // Top-level overrides
+                hospitalName: formData.hospitalName,
+                hospitalAddress: formData.hospitalAddress,
+                hospitalEmail: formData.hospitalEmail,
+                hospitalMobile: formData.hospitalMobile,
+                // Structured fallback
+                hospital: {
+                    name: formData.hospitalName,
+                    address: formData.hospitalAddress,
+                    email: formData.hospitalEmail,
+                    mobile: formData.hospitalMobile
+                }
             } as any);
 
-            toast.success('Master Helpdesk Profile updated successfully!');
+            toast.success('Settings updated successfully!');
             router.push(`/${hospitalId}/masterhelpdesk`);
         } catch (error: any) {
-             toast.error(error.message || 'Failed to update profile');
+            toast.error(error.message || 'Failed to update profile');
         } finally {
             setIsSaving(false);
         }
@@ -246,6 +331,7 @@ export default function MasterHelpdeskProfileSettings() {
 
     const tabs = [
         { id: 'personal', label: 'Personal & Account', icon: <User size={18} /> },
+        { id: 'hospital', label: 'Hospital Details', icon: <Building size={18} /> },
         { id: 'professional', label: 'Work & Employment', icon: <Briefcase size={18} /> },
         { id: 'qualifications', label: 'Qualifications', icon: <Award size={18} /> },
         { id: 'bank', label: 'Bank & Payroll', icon: <Landmark size={18} /> },
@@ -288,7 +374,7 @@ export default function MasterHelpdeskProfileSettings() {
                     <div className="lg:hidden mb-6">
                         <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] mb-3 block px-1">Navigation Registry</label>
                         <div className="relative">
-                            <select 
+                            <select
                                 value={activeTab}
                                 onChange={(e) => setActiveTab(e.target.value)}
                                 className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-5 py-4 text-xs font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-teal-500 shadow-sm appearance-none"
@@ -326,32 +412,6 @@ export default function MasterHelpdeskProfileSettings() {
                         <div className="space-y-8 animate-in fade-in duration-300">
                             <div>
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Account Information</h3>
-                                
-                                {/* Logo / Avatar Updater */}
-                                <div className="mb-8 flex items-center gap-6">
-                                    <div className="relative group w-24 h-24 rounded-full border-4 border-white dark:border-[#111] shadow-xl overflow-hidden bg-gray-50 dark:bg-gray-900 flex-shrink-0">
-                                        {formData.profilePic ? (
-                                            <img src={formData.profilePic} alt="Profile Logo" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <User className="w-10 h-10 text-gray-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                                        )}
-                                        <label className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                                            <span className="text-white text-[10px] font-bold tracking-widest uppercase">Update</span>
-                                            <input type="file" name="profilePic" accept="image/*" onChange={(e) => {
-                                                const file = e.target.files?.[0];
-                                                if (file) {
-                                                    const reader = new FileReader();
-                                                    reader.onloadend = () => setFormData(prev => ({...prev, profilePic: reader.result}));
-                                                    reader.readAsDataURL(file);
-                                                }
-                                            }} className="hidden" />
-                                        </label>
-                                    </div>
-                                    <div>
-                                        <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider mb-1">Profile Logo</h4>
-                                        <p className="text-xs text-gray-400">JPG, GIF or PNG. Max size of 5MB.</p>
-                                    </div>
-                                </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
@@ -378,6 +438,17 @@ export default function MasterHelpdeskProfileSettings() {
                                         </div>
                                         {errors.mobile && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.mobile}</p>}
                                     </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Personal Address</label>
+                                        <textarea
+                                            name="address"
+                                            value={formData.address}
+                                            onChange={handleChange}
+                                            placeholder="Enter your complete home address"
+                                            rows={3}
+                                            className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all resize-none"
+                                        />
+                                    </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Gender</label>
                                         <select name="gender" value={formData.gender} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all">
@@ -399,6 +470,71 @@ export default function MasterHelpdeskProfileSettings() {
                             </div>
                         </div>
                     )}
+
+                    {activeTab === 'hospital' && (
+                        <div className="space-y-8 animate-in fade-in duration-300">
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Hospital Branding Details</h3>
+                                
+                                {/* Hospital Logo Updater */}
+                                <div className="mb-8 flex items-center gap-6">
+                                    <div className="relative group w-24 h-24 rounded-full border-4 border-white dark:border-[#111] shadow-xl overflow-hidden bg-gray-50 dark:bg-gray-900 flex-shrink-0">
+                                        {formData.profilePic ? (
+                                            <img src={formData.profilePic} alt="Hospital Logo" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Building className="w-10 h-10 text-gray-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                                        )}
+                                        <label className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                            <span className="text-white text-[10px] font-bold tracking-widest uppercase">Update</span>
+                                            <input type="file" name="profilePic" accept="image/*" onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    const reader = new FileReader();
+                                                    reader.onloadend = () => setFormData((prev: FormData) => ({ ...prev, profilePic: reader.result as string }));
+                                                    reader.readAsDataURL(file);
+                                                }
+                                            }} className="hidden" />
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider mb-1">Hospital Logo</h4>
+                                        <p className="text-xs text-gray-400">JPG, GIF or PNG. Used for printed receipts.</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2 md:col-span-2">
+                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Hospital Name</label>
+                                        <div className="relative">
+                                            <input type="text" name="hospitalName" value={formData.hospitalName} onChange={handleChange} placeholder="Enter hospital name" className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                                            <Building className="absolute right-4 top-3.5 text-gray-300" size={16} />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Hospital Address</label>
+                                        <div className="relative">
+                                            <textarea name="hospitalAddress" value={formData.hospitalAddress} onChange={handleChange} placeholder="Enter hospital address" rows={2} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all resize-none" />
+                                            <MapPin className="absolute right-4 top-3.5 text-gray-300" size={16} />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Hospital Phone Number</label>
+                                        <div className="relative">
+                                            <input type="text" name="hospitalMobile" value={formData.hospitalMobile} onChange={handleChange} placeholder="Enter hospital mobile" className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                                            <Phone className="absolute right-4 top-3.5 text-gray-300" size={16} />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Hospital Email</label>
+                                        <div className="relative">
+                                            <input type="email" name="hospitalEmail" value={formData.hospitalEmail} onChange={handleChange} placeholder="Enter hospital email" className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                                            <Mail className="absolute right-4 top-3.5 text-gray-300" size={16} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) || <></>}
 
                     {activeTab === 'professional' && (
                         <div className="space-y-8 animate-in fade-in duration-300">

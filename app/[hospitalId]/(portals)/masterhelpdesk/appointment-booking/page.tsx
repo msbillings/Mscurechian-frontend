@@ -28,21 +28,23 @@ import {
     X,
     Droplets
 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { helpdeskService } from "@/lib/integrations";
 import type { HelpdeskDoctor, HelpdeskProfile } from "@/lib/integrations/types";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import { renderToStaticMarkup } from 'react-dom/server';
-import MainHeader from '@/components/printers/MainHeader';
-import MainFooter from '@/components/printers/MainFooter';
+import MasterHeader from '@/components/printers/MasterHeader';
+import MasterFooter from '@/components/printers/MasterFooter';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 import { generateClinicalReceiptHtml } from "@/lib/print-utils";
 
 export default function MasterAppointmentBooking() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const params = useParams();
+    const hospitalId = params.hospitalId as string;
     const patientIdFromQuery = searchParams.get('patientId');
 
     const [loading, setLoading] = useState(true);
@@ -70,7 +72,7 @@ export default function MasterAppointmentBooking() {
         const m = String(now.getMinutes()).padStart(2, '0');
         return `${h}:${m}`;
     });
-    
+
     // For Master Helpdesk, we hardcode registrationType to OPD
     const registrationType = 'OPD';
 
@@ -167,7 +169,7 @@ export default function MasterAppointmentBooking() {
                 setProfile(me);
                 const validDocs = allDocs.filter((doc: any) => (doc.user?.name && doc.user.name !== 'Unknown') || (doc.name && doc.name !== 'Unknown'));
                 setDoctors(validDocs);
-                
+
                 const uniqueDepts = Array.from(new Set(validDocs.map((d: any) => d.specialty || d.specialties?.[0]).filter(Boolean)));
                 setDepartments(uniqueDepts as string[]);
 
@@ -267,7 +269,7 @@ export default function MasterAppointmentBooking() {
                 const broadResult = await helpdeskService.getAppointments(1, 100, undefined, todayStr, todayStr).catch(() => []);
                 const normalize = (res: any) => res?.appointments || res?.data || [];
                 const appointmentsList = normalize(broadResult);
-                
+
                 const activeStatuses = ['pending', 'confirmed', 'in-progress', 'waiting', 'booked', 'scheduled', 'arrived', 'checked-in'];
                 const existing = appointmentsList.find((apt: any) => {
                     const aptStatus = String(apt.status || '').toLowerCase();
@@ -286,7 +288,7 @@ export default function MasterAppointmentBooking() {
                         confirmed: false,
                     });
                 }
-            } catch (err) {}
+            } catch (err) { }
         };
         checkExistingAppointment();
     }, [selectedPatient?.id, selectedPatient?._id, profile?.hospital?._id]);
@@ -334,7 +336,7 @@ export default function MasterAppointmentBooking() {
             if (printWindow) {
                 printWindow.document.write('<html><head><title>Processing Receipt...</title></head><body><div style="text-align:center;padding:50px;"><h2>Generating Receipt...</h2><p>Please wait.</p></div></body></html>');
             }
-        } catch (_) {}
+        } catch (_) { }
 
         try {
             setSubmitting(true);
@@ -384,20 +386,38 @@ export default function MasterAppointmentBooking() {
             if (sendToDoctor && (appointment._id || appointment.id)) {
                 try {
                     await helpdeskService.updateAppointmentStatus(appointment._id || appointment.id, 'confirmed');
-                } catch (e) {}
+                } catch (e) { }
             }
 
-            let latestHospital: any = profile?.hospital;
+            // Prioritize details from Master Helpdesk Setting profile - Strictly use Helpdesk overrides
+            const profileAsAny = profile as any;
+            
+            // 🚀 FE-Only Persistence: Load local overrides since backend strips non-schema fields
+            let localOverrides: any = {};
             try {
-                const hRes = await hospitalAdminService.getHospital();
-                if (hRes?.hospital) latestHospital = { ...profile?.hospital, ...hRes.hospital };
+                const saved = localStorage.getItem(`master_branding_${hospitalId}`);
+                if (saved) localOverrides = JSON.parse(saved);
             } catch (e) {}
 
-            const headerHtml = renderToStaticMarkup(<MainHeader initialDetails={{ name: latestHospital?.name || "Hospital", address: latestHospital?.address || "", phone: latestHospital?.phone || latestHospital?.mobile || "", email: latestHospital?.email || "", logo: latestHospital?.logo }} />);
-            const footerHtml = renderToStaticMarkup(<MainFooter initialDetails={{ name: latestHospital?.name || "Hospital", address: latestHospital?.address || "", phone: latestHospital?.phone || latestHospital?.mobile || "", email: latestHospital?.email || "", }} />);
-
+            const latestHospital: any = {
+                name: localOverrides.hospitalName || profileAsAny?.hospitalName || profile?.hospital?.name || "Hospital",
+                address: localOverrides.hospitalAddress || profileAsAny?.hospitalAddress || profile?.hospital?.address || "",
+                phone: localOverrides.hospitalMobile || profileAsAny?.hospitalMobile || profile?.hospital?.mobile || (profile?.hospital as any)?.phone || "",
+                email: localOverrides.hospitalEmail || profileAsAny?.hospitalEmail || profile?.hospital?.email || "",
+                logo: profileAsAny?.image || (profile?.hospital as any)?.logo
+            };
+            
+            const headerHtml = renderToStaticMarkup(<MasterHeader initialDetails={{ ...latestHospital }} />);
+            const footerHtml = renderToStaticMarkup(<MasterFooter initialDetails={{ ...latestHospital }} />);
+            
             const receiptData = {
-                hospital: { name: latestHospital?.name || "CureChain Center", address: latestHospital?.address || "Main Node", contact: latestHospital?.mobile || "Support", email: latestHospital?.email || "", logo: latestHospital?.logo },
+                hospital: { 
+                    name: latestHospital.name, 
+                    address: latestHospital.address, 
+                    contact: latestHospital.phone, 
+                    email: latestHospital.email, 
+                    logo: latestHospital.logo 
+                },
                 patient: { name: selectedPatient.name, mrn: selectedPatient.mrn, age: selectedPatient.age, gender: selectedPatient.gender, mobile: selectedPatient.mobile, dob: selectedPatient.dob, address: selectedPatient.address, email: selectedPatient.email, bloodGroup: selectedPatient.bloodGroup, emergencyContact: selectedPatient.emergencyContact, allergies: Array.isArray(selectedPatient.allergies) ? selectedPatient.allergies.join(', ') : selectedPatient.allergies, medicalHistory: selectedPatient.medicalHistory, vitals: { ...vitals } },
                 appointment: { doctorName: selectedDoctor.user?.name || selectedDoctor.name, specialization: selectedDoctor.specialties?.[0] || 'General', qualification: selectedDoctor.qualifications?.[0] || 'MBBS', date: new Date(selectedDate).toLocaleDateString(), time: payload.time, type: appointmentType.toUpperCase(), notes: notes, appointmentId: appointment._id || appointment.id || 'PENDING' },
                 payment: { amount: selectedDoctor?.consultationFee || 0, totalBillAmount: selectedDoctor?.consultationFee || 0, totalPaidAmount: selectedDoctor?.consultationFee || 0, advanceAmount: 0, method: paymentMethod.toUpperCase(), status: paymentStatus.toUpperCase(), date: new Date().toISOString() },
