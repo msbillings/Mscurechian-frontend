@@ -550,41 +550,61 @@ export default function MasterDashboard() {
                         <div className="flex-1 overflow-y-auto custom-scrollbar">
                             {displayAppointments.length > 0 ? (
                                 <div className="divide-y divide-slate-50">
-                                    {displayAppointments.map((apt, idx) => (
-                                        <div key={apt._id} className="group p-4 hover:bg-slate-50 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-400 relative">
-                                                    {(apt.patientName || "U").charAt(0)}
-                                                    {(apt as any).type === 'EMERGENCY' && <div className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 border-2 border-white rounded-full animate-pulse" />}
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{apt.patientName}</h4>
-                                                        <span className={`text-[7px] font-black px-1.5 py-0.5 rounded uppercase ${(apt as any).type === 'EMERGENCY' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-teal-50 text-teal-600 border border-teal-100'}`}>{(apt as any).type || 'OPD'}</span>
+                                    {displayAppointments.map((apt: any, idx) => {
+                                        const patientName = apt.patient?.name || apt.patientName || "UNKNOWN";
+                                        const mrn = apt.mrn || (apt as any).patientDetails?.mrn || 'MRN-PENDING';
+                                        const age = (apt as any).patientDetails?.age || (apt as any).patient?.age || '--';
+                                        const gender = (apt as any).patientDetails?.gender || (apt as any).patient?.gender || '--';
+                                        
+                                        return (
+                                            <div key={apt._id || idx} className="group p-4 hover:bg-slate-50 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-400 relative">
+                                                        {patientName.charAt(0)}
+                                                        {(apt as any).type === 'EMERGENCY' && <div className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 border-2 border-white rounded-full animate-pulse" />}
                                                     </div>
-                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{(apt as any).mrn || 'MRN-PENDING'} • {apt.doctorName || 'General Staff'}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center justify-between sm:justify-end gap-6 h-full">
-                                                <div className="text-right">
-                                                    <p className="text-[10px] font-black text-slate-900 uppercase leading-none">{new Date(apt.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</p>
-                                                    <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">{apt.appointmentTime || 'Scheduled'}</p>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    {['confirmed', 'in-progress', 'Booked', 'pending'].includes(apt.status) ? (
-                                                        <button onClick={() => apt._id && handleUpdateStatus(apt._id, 'completed')} className="px-4 py-2 bg-teal-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-teal-700 active:scale-95 transition-all shadow-lg shadow-teal-500/20">Finalize</button>
-                                                    ) : (
-                                                        <div className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border ${apt.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
-                                                            {apt.status}
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{patientName}</h4>
+                                                            <span className={`text-[7px] font-black px-1.5 py-0.5 rounded uppercase ${(apt as any).type === 'EMERGENCY' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-teal-50 text-teal-600 border border-teal-100'}`}>{(apt as any).type || 'OPD'}</span>
                                                         </div>
-                                                    )}
-                                                    <Link href={`/${hospitalId}/masterhelpdesk/appointment-booking?patientId=${apt.patientId || apt.patient?._id}&type=${apt.type || 'OPD'}`} className="p-2 bg-slate-100 text-slate-400 hover:text-teal-600 rounded-xl transition-all">
-                                                        <ArrowRight size={14} />
-                                                    </Link>
+                                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{mrn}</p>
+                                                            <span className="w-0.5 h-0.5 rounded-full bg-slate-300" />
+                                                            <p className="text-[9px] font-bold text-slate-500 uppercase">{age}Y • {gender}</p>
+                                                            <span className="w-0.5 h-0.5 rounded-full bg-slate-300" />
+                                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{apt.doctorName || 'General Staff'}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center justify-between sm:justify-end gap-6 h-full">
+                                                    <div className="text-right">
+                                                        <div className="flex items-center justify-end gap-1.5 mb-1">
+                                                            <Clock size={10} className="text-teal-500" />
+                                                            <CountdownTimer 
+                                                                targetDate={apt.date} 
+                                                                startTime={apt.startTime || apt.appointmentTime || "09:00 AM"} 
+                                                            />
+                                                        </div>
+                                                        <p className="text-[10px] font-black text-slate-900 uppercase leading-none">{new Date(apt.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</p>
+                                                        <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">{apt.appointmentTime || 'Scheduled'}</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {['confirmed', 'in-progress', 'booked', 'pending', 'arrived', 'waiting'].includes(apt.status?.toLowerCase()) ? (
+                                                            <button onClick={() => apt._id && handleUpdateStatus(apt._id, 'completed')} className="px-4 py-2 bg-teal-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-teal-700 active:scale-95 transition-all shadow-lg shadow-teal-500/20">Finalize</button>
+                                                        ) : (
+                                                            <div className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border ${apt.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                                                                {apt.status}
+                                                            </div>
+                                                        )}
+                                                        <Link href={`/${hospitalId}/masterhelpdesk/appointment-booking?patientId=${apt.patientId || apt.patient?._id}&type=${apt.type || 'OPD'}`} className="p-2 bg-slate-100 text-slate-400 hover:text-teal-600 rounded-xl transition-all">
+                                                            <ArrowRight size={14} />
+                                                        </Link>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center h-full text-slate-300 gap-3 opacity-50 p-20">

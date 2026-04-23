@@ -163,6 +163,8 @@ export default function MasterQueuePage() {
                             <tr className="bg-slate-50 border-b border-slate-200">
                                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Queue #</th>
                                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Patient Profile</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Age</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Gender</th>
                                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Doctor</th>
                                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Schedule</th>
                                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Source</th>
@@ -210,14 +212,15 @@ export default function MasterQueuePage() {
 // Table Row Component
 function QueueRow({ apt, idx, onUpdateStatus, isProcessing }: { apt: any, idx: number, onUpdateStatus: any, isProcessing: boolean }) {
     const isConsulting = apt.status === "in-progress";
-    const patientName = (apt.patient?.name || apt.patientName)?.trim() || "UNKNOWN";
+    const patientName = (apt.patient?.name || apt.patientName || "UNKNOWN").trim();
+    const status = (apt.status || "").toLowerCase();
     
     // Status Badge Styling Logic
     let statusStyle = "bg-slate-100 text-slate-500 border-slate-200";
-    if (apt.status === "waiting" || apt.status === "booked" || apt.status === "confirmed") statusStyle = "bg-indigo-50 text-indigo-600 border-indigo-200";
-    if (apt.status === "in-progress") statusStyle = "bg-amber-100 text-amber-700 border-amber-300 shadow-sm shadow-amber-500/20";
-    if (apt.status === "completed") statusStyle = "bg-emerald-50 text-emerald-600 border-emerald-200";
-    if (apt.status === "cancelled") statusStyle = "bg-rose-50 text-rose-600 border-rose-200";
+    if (status === "waiting" || status === "booked" || status === "confirmed") statusStyle = "bg-indigo-50 text-indigo-600 border-indigo-200";
+    if (status === "in-progress") statusStyle = "bg-amber-100 text-amber-700 border-amber-300 shadow-sm shadow-amber-500/20";
+    if (status === "completed") statusStyle = "bg-emerald-50 text-emerald-600 border-emerald-200";
+    if (status === "cancelled") statusStyle = "bg-rose-50 text-rose-600 border-rose-200";
 
     return (
         <tr className={`group transition-colors hover:bg-slate-50/50 ${isConsulting ? 'bg-amber-50/30' : ''}`}>
@@ -234,9 +237,19 @@ function QueueRow({ apt, idx, onUpdateStatus, isProcessing }: { apt: any, idx: n
                     </div>
                     <div>
                         <h3 className="text-sm font-black text-slate-900 uppercase">{patientName}</h3>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">{apt.mrn || `MOB-MRN-${Date.now().toString().slice(-6)}`}</p>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">{apt.mrn || "N/A"}</p>
                     </div>
                 </div>
+            </td>
+
+            <td className="px-6 py-5 whitespace-nowrap">
+                <p className="text-xs font-black text-slate-700 uppercase">{apt.age || "--"}</p>
+            </td>
+
+            <td className="px-6 py-5 whitespace-nowrap">
+                <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${apt.gender?.toLowerCase() === 'male' ? 'bg-blue-50 text-blue-600 border-blue-100' : apt.gender?.toLowerCase() === 'female' ? 'bg-pink-50 text-pink-600 border-pink-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
+                    {apt.gender || "--"}
+                </span>
             </td>
 
             <td className="px-6 py-5 whitespace-nowrap">
