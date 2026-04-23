@@ -23,6 +23,7 @@ import {
   BookOpenCheck,
   Settings,
   ShieldCheck,
+  QrCode,
 } from "lucide-react";
 import LogoutModal from "@/components/auth/LogoutModal";
 import SharedNavbar from "@/components/navbar/SharedNavbar";
@@ -94,6 +95,7 @@ const hospitalAdminMenu: MenuItem[] = [
   },
   { icon: ClipboardCheck, label: "Discharge Audit", path: "/hospital-admin/discharge/history" },
   { icon: Bell, label: "Notice Board", path: "/hospital-admin/announcements" },
+  { icon: QrCode, label: "QR Booking Code", path: "/hospital-admin/qr-generator" },
   {
     icon: Pill,
     label: "Pharmacy Unit",

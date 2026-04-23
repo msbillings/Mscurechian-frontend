@@ -9,7 +9,7 @@ import {
     LayoutDashboard, PieChart, Users, Building2, Stethoscope, 
     UserRound, Headset, Briefcase, Shield, Key, UserPlus, 
     UserCog, Pill, FlaskConical, Ambulance, Contact, 
-    PlusSquare, UserCheck, Globe, FileText, Quote, Menu
+    PlusSquare, UserCheck, Globe, FileText, Quote, Menu, QrCode
 } from "lucide-react";
 import LogoutModal from "@/components/auth/LogoutModal";
 import NotificationCenter from "@/components/navbar/NotificationCenter";
@@ -52,6 +52,7 @@ const adminMenuItems: any[] = [
             { label: "Manage Testimonials", path: "/admin/cms/testimonials" },
         ]
     },
+    { icon: QrCode, label: "QR Booking Code", path: "/admin/qr-generator" },
 ];
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
