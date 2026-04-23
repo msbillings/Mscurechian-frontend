@@ -626,10 +626,15 @@ export async function apiClient<T>(
         // ✅ LOGGING: Use the clone to safely inspect the body without affecting the original 'res'
         // (if 'res' was already consumed by 403 logic, this would fail if we didn't clone at the top)
         const rawRes = await resClone.text();
-        console.error(`[API ERROR] ${path}: status=${res.status}, body=${rawRes.slice(0, 500)}`);
+        
+        // ✅ SUPPRESS NOISY AUTH LOGS: 401 on /me or /refresh is a standard status check, not a failure.
+        const isAuthStatusCheck = res.status === 401 && (path.includes("/auth/me") || path.includes("/auth/refresh"));
+        
+        if (!isAuthStatusCheck) {
+          console.error(`[API ERROR] ${path}: status=${res.status}, body=${rawRes.slice(0, 500)}`);
+        }
 
-        // If it's a 401 for /auth/me or /auth/refresh, we return null to let the store handle it
-        if (res.status === 401 && (path.includes("/auth/me") || path.includes("/auth/refresh"))) return null as any;
+        if (isAuthStatusCheck) return null as any;
 
         // Try to parse error message from the logged body text
         let finalMessage = `HTTP ${res.status}`;
