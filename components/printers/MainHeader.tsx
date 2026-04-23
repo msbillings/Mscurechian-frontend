@@ -57,9 +57,9 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
             <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'flex-start', 
-                flexWrap: 'wrap', 
-                gap: 'clamp(8px, 1.5vw, 20px)', 
+                justifyContent: 'flex-start',
+                flexWrap: 'wrap',
+                gap: 'clamp(8px, 1.5vw, 20px)',
                 padding: '6px 0',
                 width: '100%',
                 boxSizing: 'border-box'
@@ -77,7 +77,7 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                             src={details.logo}
                             alt="Hospital Logo"
                             style={{
-                                maxWidth: 'clamp(80px, 18vw, 160px)', 
+                                maxWidth: 'clamp(80px, 18vw, 160px)',
                                 maxHeight: '100px',
                                 objectFit: 'contain',
                                 flexShrink: 0
@@ -104,12 +104,12 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                     width: '1px',
                     height: '50px',
                     backgroundColor: '#e2e8f0',
-                    display: 'block' 
+                    display: 'block'
                 }}></div>
 
                 {/* DETAILS SECTION */}
                 <div style={{
-                    flex: '1', 
+                    flex: '1',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'flex-start',
@@ -120,10 +120,10 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                     <h1 style={{
                         margin: 0,
                         fontWeight: '900',
-                        color: '#1e3a8a', 
+                        color: '#1e3a8a',
                         lineHeight: '1.2',
                         textAlign: 'left',
-                        fontSize: 'clamp(16px, 4vw, 32px)', 
+                        fontSize: 'clamp(16px, 4vw, 32px)',
                         textTransform: 'uppercase',
                         letterSpacing: '0.2px',
                         wordBreak: 'break-word',
@@ -157,7 +157,7 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        flexWrap: 'wrap', 
+                        flexWrap: 'wrap',
                         gap: 'clamp(6px, 1.5vw, 12px)',
                         fontSize: 'clamp(8px, 1.2vw, 12px)',
                         color: '#334155',

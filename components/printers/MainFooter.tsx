@@ -50,52 +50,52 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails }) => {
             WebkitPrintColorAdjust: 'exact',
         }}>
             {/* ── Contact Slanted Bars ── */}
-                    <div style={{ 
-                        display: 'flex', 
-                        flexWrap: 'wrap',
-                        alignItems: 'stretch',
-                        minHeight: '32px', 
-                        marginBottom: '12px', 
-                        gap: '2px',
-                        borderRadius: '6px',
-                        overflow: 'hidden'
+            <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'stretch',
+                minHeight: '32px',
+                marginBottom: '12px',
+                gap: '2px',
+                borderRadius: '6px',
+                overflow: 'hidden'
+            }}>
+                {details.phone && details.phone !== 'N/A' && details.phone !== 'Phone Number' && (
+                    <div style={{
+                        flex: '1',
+                        background: '#10b981',
+                        color: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '8px 20px',
+                        fontWeight: 800,
+                        fontSize: '12px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
                     }}>
-                        {details.phone && details.phone !== 'N/A' && details.phone !== 'Phone Number' && (
-                            <div style={{
-                                flex: '1', 
-                                background: '#10b981',
-                                color: '#ffffff',
-                                display: 'flex',
-                                alignItems: 'center',
-                                padding: '8px 20px',
-                                fontWeight: 800,
-                                fontSize: '12px',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px'
-                            }}>
-                                <span style={{ marginRight: '8px', fontSize: '14px' }}>📞</span>
-                                {details.phone}
-                            </div>
-                        )}
-
-                        {details.email && details.email !== 'N/A' && details.email !== 'Email Address' && (
-                            <div style={{
-                                flex: '1.2',
-                                background: '#3b82f6',
-                                color: '#ffffff',
-                                display: 'flex',
-                                alignItems: 'center',
-                                padding: '8px 20px',
-                                fontWeight: 800,
-                                fontSize: '12px',
-                                textTransform: 'lowercase',
-                                letterSpacing: '0.5px'
-                            }}>
-                                <span style={{ marginRight: '8px', fontSize: '14px' }}>✉️</span>
-                                {details.email}
-                            </div>
-                        )}
+                        <span style={{ marginRight: '8px', fontSize: '14px' }}>📞</span>
+                        {details.phone}
                     </div>
+                )}
+
+                {details.email && details.email !== 'N/A' && details.email !== 'Email Address' && (
+                    <div style={{
+                        flex: '1.2',
+                        background: '#3b82f6',
+                        color: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '8px 20px',
+                        fontWeight: 800,
+                        fontSize: '12px',
+                        textTransform: 'lowercase',
+                        letterSpacing: '0.5px'
+                    }}>
+                        <span style={{ marginRight: '8px', fontSize: '14px' }}>✉️</span>
+                        {details.email}
+                    </div>
+                )}
+            </div>
 
             {/* ── Info Wrapper with Border ── */}
             <div style={{
@@ -131,7 +131,7 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails }) => {
                         margin: 0,
                         fontSize: 'clamp(7px, 1.5vw, 10px)',
                         fontWeight: 800,
-                        color: '#000000', 
+                        color: '#000000',
                         textTransform: 'uppercase',
                         lineHeight: '1.4',
                         wordBreak: 'break-word'

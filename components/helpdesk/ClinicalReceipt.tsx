@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { X, Printer } from "lucide-react";
 import { generateClinicalReceiptHtml } from "@/lib/print-utils";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -153,12 +153,12 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
             notes: patient.symptoms // Map symptoms to appointment notes as existing receipts do
           },
           payment,
-          registrationType: ((patient.dischargeType && patient.dischargeType.toUpperCase() !== 'NONE') || 
+          registrationType: ((patient.dischargeType && patient.dischargeType.toUpperCase() !== 'NONE') ||
             (appointment.type && (appointment.type.toUpperCase().includes('DISCHARGE') || appointment.type.toUpperCase().includes('SETTLEMENT'))) ||
-            (appointment.specialization && appointment.specialization.toUpperCase().includes('DISCHARGE'))) 
-            ? 'DISCHARGE' 
-            : (appointment.specialization?.toUpperCase().includes('IPD') || appointment.type?.toUpperCase().includes('IPD') || appointment.stayDuration) 
-              ? 'IPD' 
+            (appointment.specialization && appointment.specialization.toUpperCase().includes('DISCHARGE')))
+            ? 'DISCHARGE'
+            : (appointment.specialization?.toUpperCase().includes('IPD') || appointment.type?.toUpperCase().includes('IPD') || appointment.stayDuration)
+              ? 'IPD'
               : 'OPD',
           headerHtml,
           footerHtml,
@@ -251,7 +251,7 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
         {/* Header Actions */}
         <div className="flex justify-between items-center p-2.5 sm:p-4 border-b border-slate-100 bg-white z-10 shrink-0">
           <div className="flex items-center gap-2">
-            <Printer size={18} className="text-teal-600" /> 
+            <Printer size={18} className="text-teal-600" />
             <span className="hidden sm:inline text-sm font-bold text-slate-500 uppercase tracking-widest">Print Manager</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
@@ -260,7 +260,7 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
               disabled={isConfirming}
               className="px-4 sm:px-5 py-2 sm:py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-bold flex items-center gap-2 shadow-sm active:scale-95 transition-all text-[11px] sm:text-xs uppercase tracking-wider disabled:opacity-50"
             >
-              <Printer size={14} className="sm:size-[16px]" /> 
+              <Printer size={14} className="sm:size-[16px]" />
               <span>{isConfirming ? '...' : onConfirm ? 'Confirm' : 'Print'}</span>
             </button>
             <button
