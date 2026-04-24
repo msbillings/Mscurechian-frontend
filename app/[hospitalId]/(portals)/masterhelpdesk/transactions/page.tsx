@@ -16,7 +16,8 @@ import {
     ChevronRight,
     Activity,
     Shield,
-    IndianRupee
+    IndianRupee,
+    X
 } from "lucide-react";
 import { helpdeskService } from "@/lib/integrations";
 import toast from "react-hot-toast";
@@ -29,7 +30,10 @@ export default function TransactionsPage() {
     const [exporting, setExporting] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [page, setPage] = useState(1);
-    const [showExportMenu, setShowExportMenu] = useState(false);
+    const [showExportCard, setShowExportCard] = useState(false);
+    const [exportStartDate, setExportStartDate] = useState(new Date().toISOString().split('T')[0]);
+    const [exportEndDate, setExportEndDate] = useState(new Date().toISOString().split('T')[0]);
+    const [exportType, setExportType] = useState('all');
     const [typeFilter] = useState("opd"); // Locked to 'opd'
     const [paymentModeFilter, setPaymentModeFilter] = useState<'all' | 'online' | 'offline'>('all');
     const [startDate, setStartDate] = useState("");
@@ -80,14 +84,31 @@ export default function TransactionsPage() {
         };
     }, [txRaw]);
 
-    const handleExport = async (range: "daily" | "weekly" | "monthly" | "all") => {
+    const handleExport = async () => {
         try {
             setExporting(true);
-            setShowExportMenu(false);
+            setShowExportCard(false);
 
             // Fetch ALL transactions for the selected range (nopage=true)
-            const data = await helpdeskService.getTransactions(1, 1000, range === "all" ? undefined : range, true);
+            const data = await helpdeskService.getTransactions(
+                1,
+                2000, // Large limit for export
+                undefined,
+                true,
+                exportStartDate,
+                exportEndDate,
+                getBackendTypeFilter(typeFilter)
+            );
             let exportData = Array.isArray(data) ? data : (data.data || []);
+
+            // ✅ CLIENT-SIDE FILTERING: Ensure we respect the Online/Offline selection
+            if (exportType !== 'all') {
+                exportData = exportData.filter((tx: any) => {
+                    const txType = tx.type?.toLowerCase();
+                    return txType === exportType.toLowerCase();
+                });
+            }
+
             exportData = exportData.filter((tx: any) => tx.status?.toLowerCase() !== 'cancelled' && tx.referenceId?.status?.toLowerCase() !== 'cancelled');
 
             if (exportData.length === 0) {
@@ -98,24 +119,45 @@ export default function TransactionsPage() {
             const workbook = new ExcelJS.Workbook();
             const worksheet = workbook.addWorksheet("Transactions");
 
-            // Define Headers
-            worksheet.columns = [
-                { header: "DATE", key: "date", width: 20 },
-                { header: "PATIENT NAME", key: "patient", width: 25 },
-                { header: "MOBILE", key: "mobile", width: 15 },
-                { header: "SERVICE TYPE", key: "type", width: 20 },
-                { header: "AMOUNT (INR)", key: "amount", width: 15 },
-                { header: "PAYMENT MODE", key: "mode", width: 15 },
-                { header: "STATUS", key: "status", width: 15 }
+            // Add Report Title
+            worksheet.mergeCells("A1:G1");
+            const titleRow = worksheet.getRow(1);
+            worksheet.getCell("A1").value = "TRANSACTION REVENUE REPORT";
+            titleRow.font = { bold: true, size: 16, color: { argb: "0F172A" } };
+            titleRow.alignment = { vertical: "middle", horizontal: "center" };
+            titleRow.height = 30;
+
+            // Define Headers (Row 3)
+            worksheet.getRow(3).values = [
+                "DATE",
+                "TRANSACTION ID",
+                "MOBILE",
+                "SERVICE TYPE",
+                "AMOUNT (INR)",
+                "PAYMENT MODE",
+                "STATUS"
             ];
 
-            // Style Headers
-            worksheet.getRow(1).font = { bold: true, color: { argb: "FFFFFF" } };
-            worksheet.getRow(1).fill = {
+            // Set column mapping (uses the same columns for addRow logic)
+            worksheet.columns = [
+                { key: "date", width: 20 },
+                { key: "id", width: 25 },
+                { key: "mobile", width: 15 },
+                { key: "type", width: 20 },
+                { key: "amount", width: 15 },
+                { key: "mode", width: 15 },
+                { key: "status", width: 15 }
+            ];
+
+            // Style Headers (Row 3)
+            const headerRow = worksheet.getRow(3);
+            headerRow.font = { bold: true, color: { argb: "FFFFFF" } };
+            headerRow.fill = {
                 type: "pattern",
                 pattern: "solid",
                 fgColor: { argb: "0F172A" }
             };
+            headerRow.alignment = { vertical: "middle", horizontal: "center" };
 
             // Add Data
             exportData.forEach((tx: any) => {
@@ -137,9 +179,11 @@ export default function TransactionsPage() {
                 const rawType = tx.type || 'appointment_booking';
                 const serviceType = typeMapping[rawType.toLowerCase()] || rawType.toUpperCase();
 
+                const txId = tx.transactionId || tx.receiptNumber || tx.invoiceNumber || tx.referenceId?.appointmentId || tx.referenceId?.transactionId || tx.referenceId?.admissionId || (tx.patientMRN && tx.patientMRN !== 'Resolving...' ? `#${tx.patientMRN}` : "—");
+
                 worksheet.addRow({
                     date: formattedDate,
-                    patient: (tx.patientName || 'Unknown').toUpperCase(),
+                    id: txId ? txId.toUpperCase() : "—",
                     mobile: tx.patientMobile || tx.mobile || "N/A",
                     type: serviceType,
                     amount: tx.amount || 0,
@@ -157,9 +201,9 @@ export default function TransactionsPage() {
             // Generate File
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-            saveAs(blob, `CureChain_Revenue_${range.toUpperCase()}_${new Date().toISOString().split('T')[0]}.xlsx`);
+            saveAs(blob, `CureChain_Revenue_${exportType.toUpperCase()}_${new Date().toISOString().split('T')[0]}.xlsx`);
 
-            toast.success(`${range.toUpperCase()} manifest exported successfully`);
+            toast.success(`${exportType.toUpperCase()} manifest exported successfully`);
         } catch (error) {
             console.error("Export Error:", error);
             toast.error("Export Failed");
@@ -176,13 +220,13 @@ export default function TransactionsPage() {
         const name = tx.patient?.name || tx.patientName || "Unknown";
         const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
         const isCancelled = tx.status?.toLowerCase() === 'cancelled' || tx.referenceId?.status?.toLowerCase() === 'cancelled';
-        
+
         const rawMethod = (tx.paymentMethod || tx.paymentMode || 'CASH').toUpperCase();
         const txType = tx.type?.toLowerCase() || 'appointment_booking';
-        
+
         // Categorize Helpdesk/OPD transactions as OFFLINE category (including those paid by card/upi at counter)
-        const isOfflineCategory = ['CASH', 'OFFLINE'].includes(rawMethod) || 
-                                ['appointment_booking', 'opd', 'consultation', 'opd_consultation'].includes(txType);
+        const isOfflineCategory = ['CASH', 'OFFLINE'].includes(rawMethod) ||
+            ['appointment_booking', 'opd', 'consultation', 'opd_consultation'].includes(txType);
 
         let matchesPaymentMode = true;
         if (paymentModeFilter === 'online') {
@@ -241,6 +285,13 @@ export default function TransactionsPage() {
                     </div>
 
                     <div className="hidden sm:flex items-center gap-2">
+                        <button
+                            onClick={() => setShowExportCard(true)}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/10 active:scale-95 text-[11px] font-bold uppercase tracking-widest"
+                        >
+                            <Download size={16} />
+                            Export Excel
+                        </button>
                         <button onClick={() => refetch()} className="p-2 sm:p-2.5 bg-white border border-slate-200 text-slate-400 rounded-lg sm:rounded-xl hover:text-teal-600 shadow-sm active:scale-95">
                             <RefreshCw size={16} className={`${isFetching ? 'animate-spin' : ''} sm:size-[18px]`} />
                         </button>
@@ -250,7 +301,7 @@ export default function TransactionsPage() {
                 {/* SEARCH & FILTER BAR */}
                 <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-t border-slate-100 pt-3 px-2">
                     <div className="flex flex-col lg:grid lg:grid-cols-2 xl:flex xl:flex-row items-stretch xl:items-center gap-3 w-full">
-                        
+
                         {/* ROW 1: SEARCH & REFRESH (On Small Screens) */}
                         <div className="flex items-center gap-2 w-full xl:w-80">
                             <div className="relative flex-1 group">
@@ -461,13 +512,12 @@ export default function TransactionsPage() {
                                                     </div>
                                                     <div className="min-w-0">
                                                         <p className="text-sm font-bold text-slate-900 uppercase tracking-tight truncate max-w-[200px]">{patientName}</p>
-                                                        <p className={`text-[10px] font-black uppercase tracking-[0.1em] mt-1 px-2 py-0.5 rounded-md inline-block border ${
-                                                            tx.referenceId?.transactionId?.startsWith('OPD') || tx.referenceId?.transactionId?.startsWith('APT')
+                                                        <p className={`text-[10px] font-black uppercase tracking-[0.1em] mt-1 px-2 py-0.5 rounded-md inline-block border ${tx.referenceId?.transactionId?.startsWith('OPD') || tx.referenceId?.transactionId?.startsWith('APT')
                                                             ? 'bg-teal-50 text-teal-600 border-teal-100/50'
                                                             : tx.referenceId?.transactionId?.startsWith('IPD') || tx.referenceId?.admissionId
                                                                 ? 'bg-rose-50 text-rose-600 border-rose-100/50'
                                                                 : 'bg-slate-50 text-slate-500 border-slate-100'
-                                                        }`}>
+                                                            }`}>
                                                             {tx.transactionId || tx.receiptNumber || tx.invoiceNumber || tx.referenceId?.appointmentId || tx.referenceId?.transactionId || tx.referenceId?.admissionId || (tx.patientMRN && tx.patientMRN !== 'Resolving...' ? `#${tx.patientMRN}` : "—")}
                                                         </p>
                                                     </div>
@@ -508,10 +558,10 @@ export default function TransactionsPage() {
                                                     )}
                                                 </div>
                                             </td>
-                                             <td className="px-6 py-4 text-center">
-                                                    <p className="text-sm font-bold text-slate-900 tracking-tight">
-                                                        {amount !== null ? `₹${Math.round(amount).toLocaleString()}` : '-'}
-                                                    </p>
+                                            <td className="px-6 py-4 text-center">
+                                                <p className="text-sm font-bold text-slate-900 tracking-tight">
+                                                    {amount !== null ? `₹${Math.round(amount).toLocaleString()}` : '-'}
+                                                </p>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${status.toLowerCase() === 'paid' || status.toLowerCase() === 'completed'
@@ -542,6 +592,100 @@ export default function TransactionsPage() {
                 </div>
             </div>
 
+            {/* EXPORT MODAL */}
+            {showExportCard && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-300">
+                        {/* Modal Header */}
+                        <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-emerald-100 text-emerald-600 rounded-xl">
+                                    <Download size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Export Ledger</h3>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Select Date Range & Type</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowExportCard(false)}
+                                className="p-2 hover:bg-slate-200 rounded-xl text-slate-400 transition-all"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="p-6 space-y-5">
+                            {/* Date Inputs */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Start Date</label>
+                                    <input
+                                        type="date"
+                                        value={exportStartDate}
+                                        onChange={(e) => setExportStartDate(e.target.value)}
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:bg-white focus:border-emerald-500 outline-none transition-all"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">End Date</label>
+                                    <input
+                                        type="date"
+                                        value={exportEndDate}
+                                        onChange={(e) => setExportEndDate(e.target.value)}
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:bg-white focus:border-emerald-500 outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Type Selection */}
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Transaction Category</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {['all', 'online', 'offline'].map((t) => (
+                                        <button
+                                            key={t}
+                                            onClick={() => setExportType(t)}
+                                            className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${exportType === t
+                                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20'
+                                                : 'bg-slate-50 text-slate-400 border-slate-200 hover:border-emerald-200 hover:bg-emerald-50'
+                                                }`}
+                                        >
+                                            {t}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="pt-4">
+                                <button
+                                    onClick={() => handleExport()}
+                                    disabled={exporting}
+                                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-slate-800 transition-all flex items-center justify-center gap-3 shadow-xl shadow-slate-900/10 active:scale-[0.98] disabled:opacity-50"
+                                >
+                                    {exporting ? (
+                                        <>
+                                            <Loader2 size={18} className="animate-spin" />
+                                            GENERATING SHEET...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FileText size={18} />
+                                            DOWNLOAD EXCEL SHEET
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="bg-slate-50 px-6 py-4 text-center">
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.15em]">System optimized for high-volume ledger exports</p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 }

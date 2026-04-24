@@ -391,13 +391,13 @@ export default function MasterAppointmentBooking() {
 
             // Prioritize details from Master Helpdesk Setting profile - Strictly use Helpdesk overrides
             const profileAsAny = profile as any;
-            
+
             // 🚀 FE-Only Persistence: Load local overrides since backend strips non-schema fields
             let localOverrides: any = {};
             try {
                 const saved = localStorage.getItem(`master_branding_${hospitalId}`);
                 if (saved) localOverrides = JSON.parse(saved);
-            } catch (e) {}
+            } catch (e) { }
 
             const latestHospital: any = {
                 name: localOverrides.hospitalName || profileAsAny?.hospitalName || profile?.hospital?.name || "Hospital",
@@ -406,17 +406,17 @@ export default function MasterAppointmentBooking() {
                 email: localOverrides.hospitalEmail || profileAsAny?.hospitalEmail || profile?.hospital?.email || "",
                 logo: profileAsAny?.image || (profile?.hospital as any)?.logo
             };
-            
+
             const headerHtml = renderToStaticMarkup(<MasterHeader initialDetails={{ ...latestHospital }} />);
             const footerHtml = renderToStaticMarkup(<MasterFooter initialDetails={{ ...latestHospital }} />);
-            
+
             const receiptData = {
-                hospital: { 
-                    name: latestHospital.name, 
-                    address: latestHospital.address, 
-                    contact: latestHospital.phone, 
-                    email: latestHospital.email, 
-                    logo: latestHospital.logo 
+                hospital: {
+                    name: latestHospital.name,
+                    address: latestHospital.address,
+                    contact: latestHospital.phone,
+                    email: latestHospital.email,
+                    logo: latestHospital.logo
                 },
                 patient: { name: selectedPatient.name, mrn: selectedPatient.mrn, age: selectedPatient.age, gender: selectedPatient.gender, mobile: selectedPatient.mobile, dob: selectedPatient.dob, address: selectedPatient.address, email: selectedPatient.email, bloodGroup: selectedPatient.bloodGroup, emergencyContact: selectedPatient.emergencyContact, allergies: Array.isArray(selectedPatient.allergies) ? selectedPatient.allergies.join(', ') : selectedPatient.allergies, medicalHistory: selectedPatient.medicalHistory, vitals: { ...vitals } },
                 appointment: { doctorName: selectedDoctor.user?.name || selectedDoctor.name, specialization: selectedDoctor.specialties?.[0] || 'General', qualification: selectedDoctor.qualifications?.[0] || 'MBBS', date: new Date(selectedDate).toLocaleDateString(), time: payload.time, type: appointmentType.toUpperCase(), notes: notes, appointmentId: appointment._id || appointment.id || 'PENDING' },

@@ -238,7 +238,7 @@ function HospitalAdminLabTransactionsPage() {
     const filteredBills = useMemo(() => {
         if (!searchTerm.trim()) return bills;
         const lowSearch = searchTerm.toLowerCase();
-        return bills.filter(bill => 
+        return bills.filter(bill =>
             bill.invoiceId.toLowerCase().includes(lowSearch) ||
             bill.patientDetails.name.toLowerCase().includes(lowSearch) ||
             bill.patientDetails.mobile?.toLowerCase().includes(lowSearch) ||

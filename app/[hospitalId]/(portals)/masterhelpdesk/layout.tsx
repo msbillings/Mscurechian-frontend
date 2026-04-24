@@ -21,6 +21,7 @@ import SharedSidebar from "@/components/navbar/SharedSidebar";
 import LogoutModal from "@/components/auth/LogoutModal";
 import { useTenantLink } from "@/hooks/useTenantLink";
 import ProgressBar from "@/components/ui/ProgressBar";
+import AIAssistantModal from "@/components/masterhelpdesk/AIAssistantModal";
 
 const masterhelpdeskMenu: any[] = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/masterhelpdesk" },
@@ -30,7 +31,7 @@ const masterhelpdeskMenu: any[] = [
     { icon: ClipboardList, label: "Patients List", path: "/masterhelpdesk/patients" },
     { icon: Stethoscope, label: "Doctors", path: "/masterhelpdesk/doctors" },
     { icon: ClipboardList, label: "Transactions", path: "/masterhelpdesk/transactions" },
-    { icon: Bot, label: "AI Assistant", path: "/masterhelpdesk/assistant" },
+   
     { icon: Headphones, label: "Support", path: "/masterhelpdesk/support" },
     { icon: Settings, label: "Settings", path: "/masterhelpdesk/settings" },
 ];
@@ -41,6 +42,7 @@ export function MasterHelpdeskLayout({ children }: { children: React.ReactNode }
     const { user, logout, isAuthenticated, checkAuth, isLoading, isInitialized } = useAuthStore();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+    const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
     const [isMounted, setIsMounted] = useState(false);
     const { getPath } = useTenantLink();
@@ -168,6 +170,24 @@ export function MasterHelpdeskLayout({ children }: { children: React.ReactNode }
                         </React.Fragment>
                     </div>
                 </main>
+
+                {/* Floating AI Assistant Button */}
+                <button
+                    onClick={() => setIsAIAssistantOpen(true)}
+                    className={`fixed bottom-6 right-6 z-40 p-4 bg-indigo-600 text-white rounded-full shadow-2xl hover:bg-indigo-700 transition-all duration-300 hover:scale-110 active:scale-95 group ${isAIAssistantOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
+                >
+                    <div className="relative">
+                        <Bot size={24} />
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 border-2 border-indigo-600 rounded-full animate-pulse"></span>
+                    </div>
+                    {/* Tooltip */}
+                
+                </button>
+
+                <AIAssistantModal
+                    isOpen={isAIAssistantOpen}
+                    onClose={() => setIsAIAssistantOpen(false)}
+                />
             </div>
         </div>
     );

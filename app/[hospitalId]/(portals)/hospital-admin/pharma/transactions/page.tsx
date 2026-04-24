@@ -361,7 +361,7 @@ const TransactionsPage = () => {
                         <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
                         <input
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500/20 text-sm font-medium transition-all"
-                             placeholder="Search by invoice or name..."
+                            placeholder="Search by invoice or name..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                         />

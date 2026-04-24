@@ -234,7 +234,7 @@ export default function TransactionsPage() {
                 {/* SEARCH & FILTER BAR */}
                 <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-t border-slate-100 pt-3 px-2">
                     <div className="flex flex-col lg:grid lg:grid-cols-2 xl:flex xl:flex-row items-stretch xl:items-center gap-3 w-full">
-                        
+
                         {/* ROW 1: SEARCH & REFRESH (On Small Screens) */}
                         <div className="flex items-center gap-2 w-full xl:w-80">
                             <div className="relative flex-1 group">
@@ -465,13 +465,12 @@ export default function TransactionsPage() {
                                                     </div>
                                                     <div className="min-w-0">
                                                         <p className="text-sm font-bold text-slate-900 uppercase tracking-tight truncate max-w-[200px]">{patientName}</p>
-                                                        <p className={`text-[10px] font-black uppercase tracking-[0.1em] mt-1 px-2 py-0.5 rounded-md inline-block border ${
-                                                            tx.referenceId?.transactionId?.startsWith('OPD') || tx.referenceId?.transactionId?.startsWith('APT')
+                                                        <p className={`text-[10px] font-black uppercase tracking-[0.1em] mt-1 px-2 py-0.5 rounded-md inline-block border ${tx.referenceId?.transactionId?.startsWith('OPD') || tx.referenceId?.transactionId?.startsWith('APT')
                                                             ? 'bg-teal-50 text-teal-600 border-teal-100/50'
                                                             : tx.referenceId?.transactionId?.startsWith('IPD') || tx.referenceId?.admissionId
                                                                 ? 'bg-rose-50 text-rose-600 border-rose-100/50'
                                                                 : 'bg-slate-50 text-slate-500 border-slate-100'
-                                                        }`}>
+                                                            }`}>
                                                             {tx.transactionId || tx.receiptNumber || tx.invoiceNumber || tx.referenceId?.appointmentId || tx.referenceId?.transactionId || tx.referenceId?.admissionId || (tx.patientMRN && tx.patientMRN !== 'Resolving...' ? `#${tx.patientMRN}` : "—")}
                                                         </p>
                                                     </div>
