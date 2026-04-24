@@ -200,12 +200,10 @@ function MasterHelpdeskDoctors() {
                   <div className="min-w-0 flex-1">
                     <h3 className="text-base font-bold text-slate-900 truncate">{doctor.name}</h3>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest bg-indigo-400/10 px-2 py-0.5 rounded border border-indigo-400/20">
-                        {doctor.doctorId || 'N/A'}
-                      </span>
+                      
                       <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border ${doctor.status === 'inactive' ? 'bg-rose-50 text-rose-500 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
-                        {doctor.status || 'Active'}
-                      </span>
+                          {doctor.status || '-'}
+                        </span>
                     </div>
                   </div>
                 </div>

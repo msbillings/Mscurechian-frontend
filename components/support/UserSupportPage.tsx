@@ -55,7 +55,7 @@ export default function UserSupportPage({ basePath, title }: UserSupportPageProp
         <div className="max-w-7xl mx-auto space-y-3 pb-24 pt-2 sm:pt-4 px-1 animate-in fade-in duration-700">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#0a0a0a] p-4 sm:p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm transition-all hover:shadow-md">
                 <div className="space-y-1">
-                    <h1 className="text-lg md:text-xl font-black text-gray-900 dark:text-white flex items-center gap-2 uppercase tracking-tighter italic">
+                    <h1 className="text-lg md:text-xl font-black text-gray-900 dark:text-white flex items-center gap-2 uppercase tracking-tighter">
                         <LifeBuoy size={20} className="text-blue-600" /> {effectiveTitle}
                     </h1>
                     <p className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-widest opacity-70">Raise tickets and track their status directly from here.</p>

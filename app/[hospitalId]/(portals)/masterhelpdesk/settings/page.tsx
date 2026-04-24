@@ -16,7 +16,7 @@ const DocumentViewerModal = ({ isOpen, onClose, url, title }: any) => {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-8 md:p-12 bg-[#020617]/80 backdrop-blur-xl animate-in fade-in duration-300">
-            <div className="bg-white dark:bg-[#0a0a09] w-full h-full max-h-[90vh] max-w-6xl rounded-[2.5rem] sm:rounded-[3.5rem] overflow-hidden flex flex-col relative shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)] border border-white/10">
+            <div className="bg-white dark:bg-[#0a0a09] w-full h-full max-h-[90vh] max-w-6xl rounded-[2.5rem] sm:rounded-[3.5rem] overflow-hidden flex flex-col relative  border border-white/10">
                 <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-white/50 dark:bg-black/50 backdrop-blur-md sticky top-0 z-10">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-600">
@@ -32,7 +32,7 @@ const DocumentViewerModal = ({ isOpen, onClose, url, title }: any) => {
                     {url?.toLowerCase().includes('.pdf') || url?.toLowerCase().includes('raw') || url?.toLowerCase().includes('pdf') ? (
                         <iframe src={`${url}#toolbar=0`} className="w-full h-full border-none" title={title} />
                     ) : (
-                        <img src={url} alt={title} className="max-w-full h-auto shadow-lg" />
+                        <img src={url} alt={title} className="max-w-full h-auto " />
                     )}
                 </div>
                 <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-black/50 text-center">
@@ -362,7 +362,7 @@ export default function MasterHelpdeskProfileSettings() {
                 <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-4 sm:px-8 py-2.5 sm:py-3 bg-teal-600 hover:bg-teal-700 text-white text-[10px] sm:text-sm font-black uppercase tracking-widest rounded-xl sm:rounded-2xl shadow-xl shadow-teal-500/20 active:scale-95 transition-all disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 sm:px-8 py-2.5 sm:py-3 bg-teal-600 hover:bg-teal-700 text-white text-[10px] sm:text-sm font-black uppercase tracking-widest rounded-xl sm:rounded-2xl active:scale-95 transition-all disabled:opacity-50"
                 >
                     {isSaving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Save size={16} className="sm:size-4" />}
                     Save Changes
@@ -377,7 +377,7 @@ export default function MasterHelpdeskProfileSettings() {
                             <select
                                 value={activeTab}
                                 onChange={(e) => setActiveTab(e.target.value)}
-                                className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-5 py-4 text-xs font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-teal-500 shadow-sm appearance-none"
+                                className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-5 py-4 text-xs font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-teal-500  appearance-none"
                             >
                                 {tabs.map(tab => (
                                     <option key={tab.id} value={tab.id}>{tab.label}</option>
@@ -396,7 +396,7 @@ export default function MasterHelpdeskProfileSettings() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab.id
-                                    ? 'bg-teal-600 text-white shadow-lg shadow-teal-500/20 translate-x-1'
+                                    ? 'bg-teal-600 text-white  translate-x-1'
                                     : 'bg-white dark:bg-[#111] text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900 border border-gray-100 dark:border-gray-800'
                                     }`}
                             >
@@ -407,7 +407,7 @@ export default function MasterHelpdeskProfileSettings() {
                     </div>
                 </div>
 
-                <div className="flex-1 bg-white dark:bg-[#111] rounded-3xl border border-gray-100 dark:border-gray-800 p-3 sm:p-8 shadow-sm">
+                <div className="flex-1 bg-white dark:bg-[#111] rounded-3xl border border-gray-100 dark:border-gray-800 p-3 sm:p-8 ">
                     {activeTab === 'personal' && (
                         <div className="space-y-8 animate-in fade-in duration-300">
                             <div>
@@ -478,7 +478,7 @@ export default function MasterHelpdeskProfileSettings() {
                                 
                                 {/* Hospital Logo Updater */}
                                 <div className="mb-8 flex items-center gap-6">
-                                    <div className="relative group w-24 h-24 rounded-full border-4 border-white dark:border-[#111] shadow-xl overflow-hidden bg-gray-50 dark:bg-gray-900 flex-shrink-0">
+                                    <div className="relative group w-24 h-24 rounded-full border-4 border-white dark:border-[#111]  overflow-hidden bg-gray-50 dark:bg-gray-900 flex-shrink-0">
                                         {formData.profilePic ? (
                                             <img src={formData.profilePic} alt="Hospital Logo" className="w-full h-full object-cover" />
                                         ) : (
