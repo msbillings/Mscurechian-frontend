@@ -9,6 +9,7 @@ import {
     Stethoscope, 
     User // Icon for Offline/Manual
 } from "lucide-react";
+import { sanitizePatientName } from "@/lib/utils/name-utils";
 
 interface OfflineClinicalLedgerProps {
     appointments: any[];
@@ -47,11 +48,11 @@ export const OfflineClinicalLedger = ({ appointments, isLoading, onUpdateStatus 
                             <td className="p-6">
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white font-black text-base group-hover:scale-110 transition-transform">
-                                        {(apt.patientName || apt.patient?.name || "U")[0]}
+                                        {sanitizePatientName(apt.patientName || apt.patient?.name)[0]}
                                     </div>
                                     <div>
                                         <h4 className="text-xs font-black text-slate-900 uppercase">
-                                            {apt.patientName || apt.patient?.name || "Unknown"}
+                                            {sanitizePatientName(apt.patientName || apt.patient?.name)}
                                         </h4>
                                         <div className="flex flex-wrap items-center gap-2 mt-1">
                                             <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg uppercase tracking-widest border border-indigo-100">

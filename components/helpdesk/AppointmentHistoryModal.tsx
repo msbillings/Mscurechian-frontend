@@ -1,5 +1,6 @@
 import React from "react";
 import { X, Calendar, Clock, Stethoscope, FileText, CheckCircle2 } from "lucide-react";
+import { sanitizePatientName } from "@/lib/utils/name-utils";
 
 interface AppointmentHistoryModalProps {
     patientName: string;
@@ -45,7 +46,7 @@ export default function AppointmentHistoryModal({
                     <div>
                         <h2 className="text-lg font-bold text-slate-900 tracking-tight">Select Appointment</h2>
                         <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mt-0.5">
-                            To Generate Receipt for <span className="text-teal-600 font-bold">{patientName}</span>
+                            To Generate Receipt for <span className="text-teal-600 font-bold">{sanitizePatientName(patientName)}</span>
                         </p>
                     </div>
                     <button

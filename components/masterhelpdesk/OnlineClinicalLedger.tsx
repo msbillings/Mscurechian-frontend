@@ -9,6 +9,7 @@ import {
     Stethoscope, 
     Smartphone // Icon for Online
 } from "lucide-react";
+import { sanitizePatientName } from "@/lib/utils/name-utils";
 
 interface OnlineClinicalLedgerProps {
     appointments: any[];
@@ -46,12 +47,12 @@ export const OnlineClinicalLedger = ({ appointments, isLoading, onUpdateStatus }
                             <td className="p-6">
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-base shadow-lg shadow-indigo-100">
-                                        {(apt.patientName || apt.patient?.name || "U")[0]}
+                                        {sanitizePatientName(apt.patientName || apt.patient?.name)[0]}
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <h4 className="text-xs font-black text-slate-900 uppercase">
-                                                {apt.patientName || apt.patient?.name || "Unknown"}
+                                                {sanitizePatientName(apt.patientName || apt.patient?.name)}
                                             </h4>
                                             <span className="bg-indigo-100 text-indigo-600 p-1 rounded-lg">
                                                 <Smartphone size={10} />

@@ -1,27 +1,25 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
-    Users,
-    Calendar,
     Search,
-    Stethoscope,
-    Activity,
+    Calendar,
     Plus,
+    ChevronRight,
+    ChevronLeft,
+    Activity,
+    ExternalLink,
     RefreshCw,
-    MoreVertical,
-    FileDown,
-    X
+    Printer
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { helpdeskService, useHelpdeskPatients } from "@/lib/integrations";
 import toast from "react-hot-toast";
-import { useHelpdeskPatients, useUpdateAppointmentStatus, useHelpdeskDoctors } from "@/lib/integrations/hooks";
-import { helpdeskService } from "@/lib/integrations/services/helpdesk.service";
+import { useRouter, useParams } from "next/navigation";
 import ClinicalReceipt from "@/components/helpdesk/ClinicalReceipt";
 import AppointmentHistoryModal from "@/components/helpdesk/AppointmentHistoryModal";
+import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
+import { sanitizePatientName } from "@/lib/utils/name-utils";
 
-// ── Debounce Hook ────────────────────────────────────────────────────────
 function useDebouncedValue<T>(value: T, delayMs: number): T {
     const [debounced, setDebounced] = useState(value);
     useEffect(() => {
@@ -33,58 +31,95 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 
 export default function MasterPatientsPage() {
     const router = useRouter();
+    const params = useParams();
+    const hospitalId = params.hospitalId as string;
+
     const [searchTerm, setSearchTerm] = useState("");
     const [page, setPage] = useState(1);
-    const [limit] = useState(10);
-    const [channelFilter, setChannelFilter] = useState<'all' | 'online' | 'offline'>('all');
+    const limit = 10;
 
-    const debouncedSearch = useDebouncedValue(searchTerm, 500);
-
-    // Receipt & History States
+    // Receipt State
     const [showReceipt, setShowReceipt] = useState(false);
     const [receiptData, setReceiptData] = useState<any>(null);
     const [hospitalInfo, setHospitalInfo] = useState<any>(null);
+
+    // History Modal State (OPD only for masterhelpdesk)
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [appointmentHistory, setAppointmentHistory] = useState<any[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     const [selectedPatientForHistory, setSelectedPatientForHistory] = useState<any>(null);
 
-    // Fetch Patients with details resolved by backend
+    // Doctor Lookup State
+    const [doctorMap, setDoctorMap] = useState<Record<string, string>>({});
+
+    // Fetch doctors once on mount
+    useEffect(() => {
+        const fetchDoctors = async () => {
+            try {
+                const doctors = await helpdeskService.getDoctors();
+                const map: Record<string, string> = {};
+                const docList = Array.isArray(doctors) ? doctors : (doctors as any)?.doctors || (doctors as any)?.data || [];
+                docList.forEach((doc: any) => {
+                    const id = doc._id || doc.id;
+                    const name = doc.name || doc.user?.name;
+                    if (id && name) map[id] = name;
+                });
+                setDoctorMap(map);
+            } catch (error) {
+                console.error("Failed to fetch doctors map", error);
+            }
+        };
+        fetchDoctors();
+    }, []);
+
+    // Fetch hospital branding info
+    useEffect(() => {
+        const fetchBranding = async () => {
+            try {
+                const res = await hospitalAdminService.getHospital();
+                if (res?.hospital) setHospitalInfo(res.hospital);
+            } catch (err) {
+                console.error("Failed to fetch hospital branding", err);
+            }
+        };
+        fetchBranding();
+    }, []);
+
+    const debouncedSearch = useDebouncedValue(searchTerm, 300);
+
     const { data: patientsRaw, isLoading, isFetching, refetch } = useHelpdeskPatients(
         debouncedSearch,
         page,
         limit,
-        undefined, // Removed activeFilter
-        channelFilter,
+        undefined,
+        undefined,
         true
     );
 
-    const patients = patientsRaw?.data || [];
-    const pagination = patientsRaw?.pagination;
+    const { patients, total } = useMemo(() => {
+        const raw: any = patientsRaw;
+        if (!raw) return { patients: [] as any[], total: 0 };
+        if (Array.isArray(raw)) return { patients: raw, total: raw.length };
+        return {
+            patients: raw.data || [],
+            total: raw.pagination?.total || (raw.data?.length || 0),
+        };
+    }, [patientsRaw]);
 
-    const totalPages = Math.ceil((pagination?.total || 0) / limit);
+    const showSkeleton = isLoading && !patientsRaw;
+    const showRefreshing = isFetching && !isLoading && patientsRaw;
+    const totalPages = Math.ceil(total / limit);
 
-    const { data: doctorsData } = useHelpdeskDoctors();
-    const doctorMap = useMemo(() => {
-        const docs = Array.isArray(doctorsData) ? doctorsData : ((doctorsData as any)?.doctors || (doctorsData as any)?.data || []);
-        const map: any = {};
-        docs.forEach((doc: any) => map[doc._id] = doc.user?.name || doc.name);
-        return map;
-    }, [doctorsData]);
-
-    const updateStatusMutation = useUpdateAppointmentStatus();
-
-    const handleUpdateStatus = async (appointmentId: string, status: string) => {
-        try {
-            await updateStatusMutation.mutateAsync({ appointmentId, status });
-            toast.success(`Session ${status}`);
-            refetch();
-        } catch (error) {
-            toast.error("Failed to update status");
-        }
+    // Resolve doctor name from map
+    const resolveDoctorName = (appt: any) => {
+        if (appt.doctor?.name) return appt.doctor.name;
+        if (appt.doctorName) return appt.doctorName;
+        const docId = appt.doctor?._id || appt.doctor?.id || (typeof appt.doctor === 'string' ? appt.doctor : null);
+        if (docId && doctorMap[docId]) return doctorMap[docId];
+        return "N/A";
     };
 
-    // ── Handlers ──────────────────────────────────────────────────────────
+    // Fetch OPD-only history (masterhelpdesk has no IPD)
     const handleFetchHistory = async (patient: any) => {
         try {
             setSelectedPatientForHistory(patient);
@@ -92,240 +127,348 @@ export default function MasterPatientsPage() {
             setHistoryLoading(true);
 
             const patientId = patient._id || patient.id;
-            const [opdRes, ipdRes] = await Promise.all([
-                helpdeskService.getAppointments(1, 50, patientId).catch(() => ({ appointments: [] })),
-                fetch(`/api/helpdesk/patients/${patientId}/ipd-admissions`, {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                }).then(res => res.ok ? res.json() : { admissions: [] }).catch(() => ({ admissions: [] }))
-            ]);
+            const visitRes = await helpdeskService.getMasterPatientVisitHistory(patientId).catch(() => []);
+            const opdAppointments = Array.isArray(visitRes) ? visitRes : (visitRes.appointments || visitRes.data || []);
 
-            const opdApts = opdRes.appointments || opdRes.data || [];
-            const ipdAdms = ipdRes.admissions || ipdRes.data || [];
-
-            const transformedIPD = ipdAdms.map((adm: any) => ({
-                ...adm,
-                type: 'IPD',
-                date: adm.admissionDate || adm.createdAt,
-                appointmentId: adm.admissionId,
-                doctor: adm.primaryDoctor
-            }));
-
-            const allHistory = [...opdApts, ...transformedIPD].sort((a, b) =>
+            // Sort by date descending
+            const sorted = [...opdAppointments].sort((a, b) =>
                 new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime()
             );
 
-            setAppointmentHistory(allHistory);
-        } catch (err) {
-            toast.error("Failed to load history");
-        } finally {
+            setAppointmentHistory(sorted);
             setHistoryLoading(false);
+        } catch (error) {
+            console.error("Error fetching patient history:", error);
+            setHistoryLoading(false);
+            toast.error("Failed to retrieve patient history.");
         }
     };
 
+    // Select appointment & generate receipt
     const handleSelectAppointment = async (appt: any) => {
-        const patient = selectedPatientForHistory;
-        if (!patient || !appt) return;
+        try {
+            const patient = selectedPatientForHistory;
+            if (!patient || !appt) return;
 
-        setShowHistoryModal(false);
-        const doctorName = appt.doctor?.name || appt.doctorName || doctorMap[appt.doctor?._id || appt.doctor] || "N/A";
+            setShowHistoryModal(false);
 
-        setReceiptData({
-            hospital: { name: hospitalInfo?.name, address: hospitalInfo?.address, contact: hospitalInfo?.phone, email: hospitalInfo?.email, logo: hospitalInfo?.logo },
-            patient: { 
-                name: patient.name || patient.user?.name, 
-                mrn: patient.mrn || "N/A", 
-                age: patient.age, 
-                gender: patient.gender, 
-                mobile: patient.mobile || patient.user?.mobile,
-                vitals: appt.vitals
-            },
-            appointment: { 
-                doctorName, 
-                date: new Date(appt.date).toLocaleDateString(), 
-                time: appt.appointmentTime || "N/A", 
-                type: appt.type || "OPD",
-                appointmentId: appt.appointmentId || appt._id?.substring(0, 8).toUpperCase()
-            },
-            payment: { 
-                amount: appt.payment?.amount || appt.amount || 0, 
-                method: appt.payment?.paymentMethod || appt.paymentMethod || 'cash', 
-                status: appt.payment?.paymentStatus || appt.paymentStatus || 'paid'
-            }
-        });
-        setShowReceipt(true);
+            const doctorName = resolveDoctorName(appt);
+
+            const data = {
+                hospital: {
+                    name: hospitalInfo?.name || "Hospital",
+                    address: hospitalInfo?.address || "",
+                    contact: hospitalInfo?.phone || "",
+                    email: hospitalInfo?.email || "",
+                    logo: hospitalInfo?.logo
+                },
+                patient: {
+                    name: sanitizePatientName(patient.name || patient.user?.name),
+                    mrn: patient.profile?.mrn || patient.mrn || appt.patient?.mrn || "N/A",
+                    age: patient.profile?.age || patient.age || appt.patientDetails?.age || appt.patient?.age,
+                    gender: patient.profile?.gender || patient.gender || appt.patientDetails?.gender || appt.patient?.gender,
+                    mobile: patient.mobile || patient.user?.mobile || appt.patient?.mobile,
+                    bloodGroup: patient.profile?.bloodGroup || patient.bloodGroup,
+                    address: patient.address || patient.profile?.address,
+                    email: patient.profile?.emergencyContactEmail || patient.email || patient.user?.email,
+                    dateOfBirth: patient.profile?.dob || appt.patient?.dob,
+                    emergencyContact: patient.profile?.alternateNumber || appt.patient?.emergencyContact,
+                    medicalHistory: patient.profile?.medicalHistory,
+                    allergies: patient.profile?.allergies,
+                    symptoms: appt.symptoms || appt.reason || appt.chiefComplaint,
+                    vitals: {
+                        height: appt.vitals?.height || patient.profile?.height,
+                        weight: appt.vitals?.weight || patient.profile?.weight,
+                        bp: appt.vitals?.bp || appt.vitals?.bloodPressure,
+                        pulse: appt.vitals?.pulse || appt.vitals?.heartRate,
+                        temp: appt.vitals?.temp || appt.vitals?.temperature,
+                        temperature: appt.vitals?.temperature || appt.vitals?.temp,
+                        spo2: appt.vitals?.spo2 || appt.vitals?.spO2,
+                        spO2: appt.vitals?.spO2 || appt.vitals?.spo2,
+                        glucose: appt.vitals?.glucose || appt.vitals?.sugar,
+                        sugar: appt.vitals?.sugar || appt.vitals?.glucose
+                    }
+                },
+                appointment: {
+                    doctorName: doctorName,
+                    degree: appt.doctor?.qualification || appt.doctor?.degree || "",
+                    specialization: appt.doctor?.specialization || appt.department || "",
+                    date: new Date(appt.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+                    time: appt.appointmentTime || appt.startTime || "N/A",
+                    type: "OPD",
+                    appointmentId: appt.appointmentId || appt._id?.substring(0, 8).toUpperCase()
+                },
+                payment: {
+                    amount: Number(appt.payment?.amount || appt.amount || 0),
+                    method: appt.payment?.paymentMethod || appt.paymentMethod || 'cash',
+                    status: appt.payment?.paymentStatus || appt.paymentStatus || 'not_required',
+                    receiptNumber: appt.payment?.transactionId || appt.transactionId || appt.appointmentId || `REC-${Date.now().toString().slice(-6)}`
+                }
+            };
+
+            setReceiptData(data);
+            setShowReceipt(true);
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to generate receipt.");
+        }
     };
 
-    if (isLoading && !patientsRaw) return (
-        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
-            <RefreshCw className="animate-spin text-indigo-600" size={32} />
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Hydrating Clinical Registry...</p>
-        </div>
-    );
+    if (showSkeleton) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="flex flex-col items-center gap-4">
+                    <RefreshCw className="w-8 h-8 text-teal-600 animate-spin" />
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Synchronizing Registry...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="flex flex-col gap-8 p-10 max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Action Bar */}
-            <div className="flex flex-wrap items-center gap-4 bg-white p-6 rounded-[2.5rem] border border-slate-200 shadow-sm">
-                <div className="relative flex-1 w-full">
-                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
-                    <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search by MRN, Name, or Mobile Reference..."
-                        className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-[2rem] text-xs font-bold uppercase outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all"
-                    />
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex items-center p-1 bg-slate-100 rounded-[1.5rem] border border-slate-200 shadow-inner">
-                        {(['all', 'online', 'offline'] as const).map(c => (
+        <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="space-y-8">
+
+                {/* CONSOLIDATED HEADER & CONTROLS */}
+                <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm space-y-4 max-w-full mx-auto">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2 pt-2">
+                        <div className="flex items-center gap-3">
+                            <div>
+                                <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                                    Patient Registry
+                                </h1>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Master Records • Document Manifest</p>
+                            </div>
+                        </div>
+
+                        {/* SEARCH + REFRESH + COUNT + PAGINATION all in one row */}
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-1 justify-end">
+                            {/* Search */}
+                            <div className="relative flex-1 max-w-xs group">
+                                <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-slate-400 size-[14px] sm:size-[16px]" />
+                                <input
+                                    type="text"
+                                    value={searchTerm}
+                                    onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+                                    placeholder="SEARCH..."
+                                    className="w-full pl-9 sm:pl-11 pr-3 sm:pr-4 py-2 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-tight outline-none focus:bg-white focus:border-teal-500 shadow-inner transition-all"
+                                />
+                            </div>
+
+                            {/* Refresh */}
                             <button
-                                key={c}
-                                onClick={() => { setChannelFilter(c); setPage(1); }}
-                                className={`px-4 py-2 rounded-[1.2rem] text-[9px] font-black uppercase tracking-widest transition-all ${channelFilter === c ? 'bg-indigo-600 text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}
+                                onClick={() => refetch()}
+                                disabled={isFetching}
+                                className="p-2 sm:p-2.5 bg-white border border-slate-200 text-slate-400 rounded-lg sm:rounded-xl hover:text-teal-600 shadow-sm active:scale-95 disabled:opacity-50"
+                                aria-label="Refresh"
                             >
-                                {c}
+                                <RefreshCw size={16} className={`${showRefreshing ? 'animate-spin' : ''} sm:size-[18px]`} />
                             </button>
-                        ))}
-                    </div>
-                </div>
-                <button onClick={() => refetch()} className="p-4 bg-white border border-slate-200 text-slate-400 rounded-[1.5rem] hover:text-indigo-600 transition-all shadow-sm">
-                    <RefreshCw size={18} className={isFetching ? 'animate-spin' : ''} />
-                </button>
-            </div>
 
-            {/* Registry Table */}
-            <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-slate-50 border-b border-slate-100">
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Identification</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Patient Name</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Clinical Engagement</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Mobile Contact</th>
-                                <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Oversight Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {isLoading ? (
-                                Array(5).fill(0).map((_, i) => (
-                                    <tr key={i} className="animate-pulse">
-                                        <td colSpan={5} className="px-8 py-6 h-20 bg-slate-50/50"></td>
-                                    </tr>
-                                ))
-                            ) : patients.length > 0 ? (
-                                patients.map((p: any) => {
-                                    const activeC = p.activeConsultation;
-                                    const isOnline = activeC?.isOnline;
-                                    const status = activeC?.status;
+                            {/* Patient Count */}
+                            <div className="px-2 sm:px-3 py-1.5 bg-teal-50 border border-teal-100 rounded-lg flex items-center gap-1.5 sm:gap-2 shadow-sm shrink-0 whitespace-nowrap">
+                                <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-teal-500 animate-pulse" />
+                                <span className="text-[8px] sm:text-[10px] font-black text-teal-700 uppercase tracking-widest">
+                                    {total} Total
+                                </span>
+                            </div>
 
-                                    return (
-                                        <tr key={p._id} className="group hover:bg-slate-50 transition-colors">
-                                            <td className="px-8 py-5">
-                                                <div className="flex flex-col gap-1">
-                                                    <span className="text-[11px] font-black text-slate-900 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 tracking-tight w-fit">{p.mrn || 'PENDING'}</span>
-                                                    <div className="flex gap-1">
-                                                        <span className="text-[9px] font-bold text-slate-400 bg-white border border-slate-100 px-1.5 py-0.5 rounded-md uppercase">{p.age || '--'}Y</span>
-                                                        <span className="text-[9px] font-bold text-slate-400 bg-white border border-slate-100 px-1.5 py-0.5 rounded-md uppercase">{p.gender || '--'}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-8 py-5">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black shadow-lg shadow-slate-900/10">{(p.name || p.user?.name)?.charAt(0)}</div>
-                                                    <span className="text-[13px] font-black text-slate-900 uppercase tracking-tight">{p.name || p.user?.name}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-8 py-5">
-                                                 {activeC ? (
-                                                     <div className="flex items-center gap-3">
-                                                         <div>
-                                                             <div className="flex items-center gap-2">
-                                                                 <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${isOnline ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-900 text-white shadow-md'}`}>
-                                                                     {isOnline ? 'ONLINE' : 'OFFLINE'}
-                                                                 </span>
-                                                                 <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter ${
-                                                                     ['completed'].includes(status?.toLowerCase()) ? 'bg-slate-100 text-slate-400' : 
-                                                                     ['in-progress', 'confirmed'].includes(status?.toLowerCase()) ? 'bg-emerald-500 text-white shadow-sm' : 'bg-amber-500 text-white shadow-sm'
-                                                                 }`}>{status || 'Active'}</span>
-                                                             </div>
-                                                             <div className="flex flex-col mt-1.5">
-                                                                 <div className="flex items-center gap-1">
-                                                                     <Stethoscope size={10} className="text-slate-400" />
-                                                                     <span className="text-[10px] font-black text-slate-800 uppercase tracking-tight truncate max-w-[120px]">
-                                                                         {activeC.doctorName || "Assigning Doctor..."}
-                                                                     </span>
-                                                                 </div>
-                                                             </div>
-                                                         </div>
-                                                     </div>
-                                                 ) : (
-                                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 opacity-50">
-                                                         <div className="w-1.5 h-1.5 rounded-full bg-slate-200"></div> No Active Session
-                                                     </span>
-                                                 )}
-                                             </td>
-                                            <td className="px-8 py-5">
-                                                <span className="text-[12px] font-bold text-slate-600 tracking-wider font-mono">{p.mobile || p.user?.mobile || 'N/A'}</span>
-                                            </td>
-                                            <td className="px-8 py-5">
-                                                <div className="flex items-center justify-end">
-                                                    {activeC && status?.toLowerCase() !== 'completed' ? (
-                                                        <button 
-                                                            onClick={() => handleUpdateStatus(activeC._id, 'completed')}
-                                                            className="px-8 py-2.5 bg-emerald-600 text-white rounded-2xl font-black text-[11px] uppercase shadow-lg shadow-emerald-200 hover:bg-emerald-700 hover:scale-105 active:scale-95 transition-all tracking-widest"
-                                                        >
-                                                            Confirm
-                                                        </button>
-                                                    ) : (
-                                                        <span className="text-[9px] font-black text-slate-200 uppercase tracking-widest">No Action</span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            ) : (
-                                <tr>
-                                    <td colSpan={5} className="px-8 py-32 text-center">
-                                        <div className="flex flex-col items-center gap-4 opacity-20">
-                                            <Users size={48} className="text-slate-900" />
-                                            <span className="text-xs font-black uppercase tracking-[0.2em]">No Matches In Registry</span>
-                                        </div>
-                                    </td>
-                                </tr>
+                            {/* Inline Pagination */}
+                            {totalPages > 1 && (
+                                <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-inner">
+                                    <button
+                                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                                        disabled={page === 1}
+                                        className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-teal-600 disabled:opacity-20 transition-all"
+                                    >
+                                        <ChevronLeft size={16} />
+                                    </button>
+                                    <div className="px-4 py-1.5 text-xs font-black text-slate-900 bg-white rounded-md shadow-sm border border-slate-100 min-w-[60px] text-center">
+                                        {page} / {totalPages}
+                                    </div>
+                                    <button
+                                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                        disabled={page === totalPages}
+                                        className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-teal-600 disabled:opacity-20 transition-all"
+                                    >
+                                        <ChevronRight size={16} />
+                                    </button>
+                                </div>
                             )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Pagination */}
-                {pagination && pagination.pages > 1 && (
-                    <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                            Page {pagination.page} of {pagination.pages} ({pagination.total} Records)
-                        </span>
-                        <div className="flex gap-2">
-                            <button
-                                disabled={page === 1}
-                                onClick={() => setPage(p => p - 1)}
-                                className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase text-slate-600 disabled:opacity-30 hover:shadow-sm transition-all"
-                            >Previous</button>
-                            <button
-                                disabled={page === pagination.pages}
-                                onClick={() => setPage(p => p + 1)}
-                                className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase text-slate-600 disabled:opacity-30 hover:shadow-sm transition-all"
-                            >Next</button>
                         </div>
                     </div>
-                )}
+                </div>
+
+                {/* LISTING PANEL */}
+                <div className="max-w-full mx-auto">
+                    <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[500px]">
+                        <div className="overflow-x-auto w-full no-scrollbar">
+                            {isFetching && patients.length === 0 ? (
+                                <div className="py-40 flex flex-col items-center justify-center gap-4">
+                                    <RefreshCw className="w-8 h-8 text-teal-600 animate-spin" />
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest animate-pulse">Syncing Registry...</p>
+                                </div>
+                            ) : patients.length > 0 ? (
+                                <table className="w-full min-w-[700px] table-auto">
+                                    <thead>
+                                        <tr className="bg-slate-50 border-b border-slate-200 text-[10px] lg:text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
+                                            <th className="w-16 px-4 py-3 sm:py-4 text-center">#</th>
+                                            <th className="px-4 sm:px-6 py-3 sm:py-4 text-left w-64 lg:w-80">MRN Number</th>
+                                            <th className="px-4 sm:px-6 py-3 sm:py-4 text-left min-w-[200px]">Patient Name</th>
+                                            <th className="px-4 sm:px-6 py-3 sm:py-4 text-center w-24">Age</th>
+                                            <th className="px-4 sm:px-6 py-3 sm:py-4 text-center w-24">Gender</th>
+                                            <th className="px-4 sm:px-6 py-3 sm:py-4 text-left w-auto">Phone Number</th>
+                                            <th className="w-[140px] px-4 py-3 sm:py-4 text-center">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {patients.map((patient: any, idx: number) => {
+                                            const patientId = patient._id || patient.id;
+                                            const serialNo = ((page - 1) * limit) + idx + 1;
+
+                                            return (
+                                                <tr key={`${patientId}-${idx}`} className="group hover:bg-slate-50 transition-colors">
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-[11px] lg:text-[13px] font-black text-slate-300 group-hover:text-teal-500 transition-colors">
+                                                            {serialNo.toString().padStart(2, '0')}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 sm:px-6 py-4">
+                                                        <span className="text-[12px] lg:text-[14px] font-extra-bold text-slate-700 uppercase tracking-widest bg-slate-100/50 px-2.5 py-1 rounded-md border border-slate-100 block truncate">
+                                                            {patient.profile?.mrn || patient.mrn}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 sm:px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-lg lg:rounded-xl transition-all flex items-center justify-center font-bold text-sm shadow-sm border shrink-0 bg-slate-50 text-slate-300 group-hover:bg-teal-600 group-hover:text-white border-slate-100">
+                                                                {sanitizePatientName(patient.name || patient.user?.name).charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <span className="text-[13px] lg:text-[15px] font-[550] text-slate-700 uppercase tracking-tight truncate block">
+                                                                    {sanitizePatientName(patient.name || patient.user?.name)}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-[12px] lg:text-[13px] font-bold text-slate-600 bg-slate-50 border border-slate-200/50 px-2 py-1 rounded-lg">
+                                                            {patient.profile?.age || patient.age} <span className="text-[9px] text-slate-400">YRS</span>
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-[10px] lg:text-[12px] font-black text-slate-500 uppercase tracking-widest bg-slate-200/10 px-2 py-0.5 rounded-full border border-slate-200/20">
+                                                            {patient.profile?.gender || patient.gender}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-4">
+                                                        <span className="text-[11px] lg:text-[13px] font-bold text-slate-600 uppercase tracking-wider font-mono">
+                                                            {patient.mobile || patient.user?.mobile}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-4">
+                                                        <div className="flex items-center justify-center gap-1.5">
+                                                            {/* Edit patient — navigates to helpdesk edit page */}
+                                                            <button
+                                                                onClick={() => router.push(`/helpdesk/patients/${patientId}`)}
+                                                                className="p-1.5 bg-slate-100 text-slate-500 rounded-lg hover:bg-slate-900 hover:text-white transition-all shadow-sm"
+                                                                title="Edit Patient"
+                                                            >
+                                                                <ExternalLink size={14} />
+                                                            </button>
+                                                            {/* Print OPD receipts */}
+                                                            <button
+                                                                onClick={() => handleFetchHistory(patient)}
+                                                                className="p-1.5 bg-white border border-slate-200 text-slate-500 rounded-lg hover:text-teal-600 hover:border-teal-200 shadow-sm transition-all active:scale-95"
+                                                                title="Print OPD Receipt"
+                                                            >
+                                                                <Printer size={14} />
+                                                            </button>
+                                                            {/* New appointment booking with patient autofill */}
+                                                            <button
+                                                                onClick={() => router.push(`/masterhelpdesk/appointment-booking?patientId=${patientId}`)}
+                                                                className="p-1.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 shadow-md shadow-teal-900/10 transition-all"
+                                                                title="New Appointment"
+                                                            >
+                                                                <Calendar size={14} />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <div className="py-40 text-center">
+                                    <Activity size={32} className="text-slate-200 mx-auto mb-3" />
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No patient nodes indexed in registry</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* BOTTOM PAGINATION */}
+                    {totalPages > 1 && patients.length > 0 && (
+                        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mt-4">
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                    Showing {((page - 1) * limit) + 1}-{Math.min(page * limit, total)} of {total} patients
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                                        disabled={page === 1}
+                                        className="px-4 py-2 bg-gray-300 border border-slate-200 text-slate-600 rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 transition-all"
+                                    >
+                                        <ChevronLeft size={14} /> Previous
+                                    </button>
+
+                                    <div className="flex items-center gap-1">
+                                        {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => {
+                                            const pageNum = i + 1;
+                                            const showPage = pageNum <= 5 ||
+                                                pageNum === totalPages ||
+                                                (pageNum >= page - 1 && pageNum <= page + 1);
+
+                                            if (!showPage && pageNum === 6 && page > 7) {
+                                                return <span key={pageNum} className="px-2 text-slate-400">...</span>;
+                                            }
+                                            if (!showPage) return null;
+
+                                            return (
+                                                <button
+                                                    key={pageNum}
+                                                    onClick={() => setPage(pageNum)}
+                                                    className={`w-8 h-8 rounded-lg text-[10px] font-bold transition-all ${page === pageNum
+                                                        ? 'bg-teal-600 text-white shadow-lg shadow-teal-900/20'
+                                                        : 'bg-white border border-slate-200 text-slate-400 hover:text-slate-600'
+                                                        }`}
+                                                >
+                                                    {pageNum}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <button
+                                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                        disabled={page === totalPages}
+                                        className="px-4 py-2 bg-gray-300 border border-slate-200 text-slate-600 rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 transition-all"
+                                    >
+                                        Next <ChevronRight size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
-            {/* Modals */}
+            {/* OPD APPOINTMENT HISTORY MODAL */}
             {showHistoryModal && (
                 <AppointmentHistoryModal
-                    patientName={selectedPatientForHistory?.name || "Patient"}
+                    patientName={selectedPatientForHistory?.name || selectedPatientForHistory?.user?.name || "Patient"}
                     appointments={appointmentHistory}
                     isLoading={historyLoading}
                     onSelect={handleSelectAppointment}
@@ -333,6 +476,8 @@ export default function MasterPatientsPage() {
                     doctorMap={doctorMap}
                 />
             )}
+
+            {/* RECEIPT PREVIEW MODAL */}
             {showReceipt && receiptData && (
                 <ClinicalReceipt
                     hospital={receiptData.hospital}

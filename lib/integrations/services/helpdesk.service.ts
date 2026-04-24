@@ -117,6 +117,20 @@ export const helpdeskService = {
     apiClient<any>(HELPDESK_ENDPOINTS.IPD_ADMISSIONS(patientId)),
 
   /**
+   * Get OPD visit history (appointments) for a specific patient — HELPDESK portal
+   * @param patientId Patient ID
+   */
+  getPatientVisitHistory: (patientId: string) =>
+    apiClient<any>(`/helpdesk/patients/${patientId}/visit-history`),
+
+  /**
+   * Get OPD visit history (appointments) for a specific patient — MASTERHELPDESK portal
+   * @param patientId Patient ID
+   */
+  getMasterPatientVisitHistory: (patientId: string) =>
+    apiClient<any>(`/masterhelpdesk/visits/history/${patientId}`),
+
+  /**
    * Update patient information
    * @param patientId Patient ID
    * @param data Updated patient data

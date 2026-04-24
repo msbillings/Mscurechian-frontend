@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import MainHeader from "../printers/MainHeader";
 import MainFooter from "../printers/MainFooter";
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
+import { sanitizePatientName } from "@/lib/utils/name-utils";
 
 interface ReceiptProps {
   hospital: {
@@ -111,6 +112,7 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
         // Map props to match generateClinicalReceiptHtml expectations
         const mappedPatient = {
           ...patient,
+          name: sanitizePatientName(patient.name),
           dob: patient.dateOfBirth, // crucial mapping
           vitals: patient.vitals ? {
             ...patient.vitals,
