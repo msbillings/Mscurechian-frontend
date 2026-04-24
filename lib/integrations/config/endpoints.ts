@@ -224,6 +224,10 @@ export const HELPDESK_ENDPOINTS = {
   IPD_ADMISSIONS: (id: string) => `/helpdesk/patients/${id}/ipd-admissions`,
 };
 
+export const MASTERHELPDESK_ENDPOINTS = {
+  ME: "/masterhelpdesk/me",
+};
+
 export const BOOKING_ENDPOINTS = {
   AVAILABILITY: "/bookings/availability",
   BOOK: "/bookings/book",

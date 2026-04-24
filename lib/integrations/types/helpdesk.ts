@@ -63,6 +63,25 @@ export interface HelpdeskProfile {
     rooms?: { _id: string; label: string; type: string }[];
     departments?: { _id: string; name: string; code: string }[];
   };
+  bankDetails?: {
+    accountName?: string;
+    accountNumber?: string;
+    bankName?: string;
+    ifscCode?: string;
+    branchName?: string;
+  };
+  panNumber?: string;
+  aadharNumber?: string;
+  pfNumber?: string;
+  esiNumber?: string;
+  uanNumber?: string;
+  baseSalary?: number | string;
+  designation?: string;
+  experienceYears?: number | string;
+  dateOfBirth?: string | Date;
+  address?: string;
+  gender?: string;
+  image?: string;
 }
 
 // Doctor for helpdesk view

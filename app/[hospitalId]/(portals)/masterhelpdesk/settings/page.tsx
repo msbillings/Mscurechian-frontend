@@ -11,6 +11,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { helpdeskService } from '@/lib/integrations/services/helpdesk.service';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
+import ImageCropper from '@/components/ui/ImageCropper';
 
 const DocumentViewerModal = ({ isOpen, onClose, url, title }: any) => {
     if (!isOpen) return null;
@@ -86,6 +87,7 @@ export default function MasterHelpdeskProfileSettings() {
     const [files, setFiles] = useState<Record<string, File>>({});
     const [viewer, setViewer] = useState({ isOpen: false, url: '', title: '' });
     const [isIFSCValidating, setIsIFSCValidating] = useState(false);
+    const [cropperSrc, setCropperSrc] = useState<string | null>(null);
 
     const [formData, setFormData] = useState<FormData>({
         // Personal & Account
@@ -129,8 +131,8 @@ export default function MasterHelpdeskProfileSettings() {
             setLoading(true);
             try {
                 // Force fresh fetch to bypass any intermediate caching
-                const res = await helpdeskService.getMe();
-                
+                const res = await helpdeskService.getMasterMe();
+
                 let latestHospital = res?.hospital;
                 try {
                     // We try to get the most authoritative hospital data, but ignore if permissions don't allow (403)
@@ -145,22 +147,47 @@ export default function MasterHelpdeskProfileSettings() {
                 try {
                     const saved = localStorage.getItem(`master_branding_${hospitalId}`);
                     if (saved) localOverrides = JSON.parse(saved);
-                } catch (e) {}
+                } catch (e) { }
 
                 if (res) {
+                    console.log("[Settings] Loaded Master Helpdesk Profile:", {
+                        bank: !!res.bankDetails,
+                        pan: !!res.panNumber
+                    });
+
                     setFormData((prev: FormData) => ({
                         ...prev,
                         name: res.name || '',
                         email: res.email || '',
                         mobile: res.mobile || '',
-                        address: (res as any).address || '',
-                        gender: (res as any).gender || '',
-                        profilePic: (res as any).image || (latestHospital as any)?.logo || '',
-                        dateOfBirth: (res as any).dateOfBirth ? new Date((res as any).dateOfBirth).toISOString().split('T')[0] : '',
-                        hospitalName: localOverrides.hospitalName || (res as any).hospitalName || latestHospital?.name || '',
-                        hospitalAddress: localOverrides.hospitalAddress || (res as any).hospitalAddress || latestHospital?.address || '',
-                        hospitalEmail: localOverrides.hospitalEmail || (res as any).hospitalEmail || latestHospital?.email || '',
-                        hospitalMobile: localOverrides.hospitalMobile || (res as any).hospitalMobile || (latestHospital as any)?.phone || latestHospital?.mobile || '',
+                        address: res.address || '',
+                        gender: res.gender || '',
+                        profilePic: res.image || (latestHospital as any)?.logo || '',
+                        dateOfBirth: (() => {
+                            if (!res.dateOfBirth) return '';
+                            const d = new Date(res.dateOfBirth);
+                            return isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0];
+                        })(),
+                        hospitalName: localOverrides.hospitalName || (res.hospital as any)?.name || (latestHospital as any)?.name || '',
+                        hospitalAddress: localOverrides.hospitalAddress || (res.hospital as any)?.address || (latestHospital as any)?.address || '',
+                        hospitalEmail: localOverrides.hospitalEmail || (res.hospital as any)?.email || (latestHospital as any)?.email || '',
+                        hospitalMobile: localOverrides.hospitalMobile || (res.hospital as any)?.mobile || (latestHospital as any)?.phone || (latestHospital as any)?.mobile || '',
+
+                        // Map Profile & Financial fields with type safety
+                        bankDetails: {
+                            bankName: res.bankDetails?.bankName || prev.bankDetails.bankName || '',
+                            accountNumber: res.bankDetails?.accountNumber || prev.bankDetails.accountNumber || '',
+                            accountName: res.bankDetails?.accountName || prev.bankDetails.accountName || '',
+                            ifscCode: res.bankDetails?.ifscCode || prev.bankDetails.ifscCode || '',
+                        },
+                        panNumber: res.panNumber || '',
+                        aadharNumber: res.aadharNumber || '',
+                        pfNumber: res.pfNumber || '',
+                        esiNumber: res.esiNumber || '',
+                        uanNumber: res.uanNumber || '',
+                        baseSalary: res.baseSalary?.toString() || '',
+                        experienceYears: res.experienceYears?.toString() || '',
+                        designation: res.designation || 'Master Helpdesk Executive',
                     }));
                 }
             } catch (error) {
@@ -219,7 +246,30 @@ export default function MasterHelpdeskProfileSettings() {
         if (name === 'bankDetails.bankName') {
             if (!/^[A-Za-z ]+$/.test(value) && value.length > 0) fieldError = "Only letters & spaces";
         }
-        if (['mobile', 'bankDetails.accountNumber', 'aadharNumber', 'experienceYears', 'uanNumber'].includes(name)) {
+        if (name === 'bankDetails.ifscCode') {
+            const upper = value.toUpperCase();
+            if (upper.length > 0 && upper.length < 11) fieldError = "IFSC must be 11 characters (e.g. HDFC0001234)";
+            else if (upper.length === 11 && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(upper)) fieldError = "Invalid IFSC format — must be ABCD0xxxxxx";
+        }
+        if (name === 'panNumber') {
+            const upper = value.toUpperCase();
+            if (upper.length > 0 && upper.length < 10) fieldError = "PAN must be 10 characters (e.g. ABCDE1234F)";
+            else if (upper.length === 10 && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(upper)) fieldError = "Invalid PAN format — 5 letters, 4 digits, 1 letter";
+        }
+        if (name === 'aadharNumber') {
+            if (value.length > 0 && value.length < 12) fieldError = "Aadhar must be exactly 12 digits";
+        }
+        if (name === 'uanNumber') {
+            if (value.length > 0 && value.length < 12) fieldError = "UAN must be exactly 12 digits";
+        }
+        if (name === 'esiNumber') {
+            if (value.length > 0 && (value.length < 10 || value.length > 17)) fieldError = "ESI must be 10–17 digits";
+        }
+        if (name === 'bankDetails.accountNumber') {
+            if (value.length > 0 && (value.length < 9 || value.length > 18)) fieldError = "Account number must be 9-18 digits";
+        }
+
+        if (['mobile', 'bankDetails.accountNumber', 'aadharNumber', 'experienceYears', 'uanNumber', 'esiNumber'].includes(name)) {
             if (value && !/^\d*$/.test(value)) return; // Only allow digits
         }
 
@@ -228,6 +278,8 @@ export default function MasterHelpdeskProfileSettings() {
         if (name === 'panNumber' && value.length > 10) return;
         if (name === 'bankDetails.ifscCode' && value.length > 11) return;
         if (name === 'uanNumber' && value.length > 12) return;
+        if (name === 'esiNumber' && value.length > 17) return;
+        if (name === 'bankDetails.accountNumber' && value.length > 18) return;
 
         setErrors((prev: Record<string, string>) => ({ ...prev, [name]: fieldError }));
         if (!fieldError && errors[name]) {
@@ -276,7 +328,56 @@ export default function MasterHelpdeskProfileSettings() {
 
         setIsSaving(true);
         try {
-            // 🚀 FE-Only Persistence: Save local overrides since backend strips non-schema fields
+            console.log("[Settings] Saving profile data:", {
+                bankDetails: formData.bankDetails,
+                panNumber: formData.panNumber,
+                aadharNumber: formData.aadharNumber
+            });
+
+            // 1️⃣ Update master helpdesk user profile (name, email, mobile, etc. + Profile fields)
+            await helpdeskService.updateMasterProfile({
+                name: formData.name,
+                email: formData.email,
+                mobile: formData.mobile,
+                address: formData.address,
+                gender: formData.gender,
+                dateOfBirth: formData.dateOfBirth,
+                image: formData.profilePic,
+                // Profile & Payroll fields
+                bankDetails: formData.bankDetails,
+                panNumber: formData.panNumber,
+                aadharNumber: formData.aadharNumber,
+                pfNumber: formData.pfNumber,
+                esiNumber: formData.esiNumber,
+                uanNumber: formData.uanNumber,
+                baseSalary: formData.baseSalary,
+                experienceYears: formData.experienceYears,
+                designation: formData.designation,
+            } as any);
+
+            // 2️⃣ Persist hospital branding fields directly to the Hospital document in MongoDB
+            // This is the actual DB update — previously only localStorage was used
+            const hospitalUpdatePayload: Record<string, any> = {};
+            if (formData.hospitalName) hospitalUpdatePayload.name = formData.hospitalName;
+            if (formData.hospitalAddress) hospitalUpdatePayload.address = formData.hospitalAddress;
+            if (formData.hospitalEmail) hospitalUpdatePayload.email = formData.hospitalEmail;
+            if (formData.hospitalMobile) hospitalUpdatePayload.phone = formData.hospitalMobile;
+            if (formData.profilePic && formData.profilePic.startsWith('data:')) {
+                hospitalUpdatePayload.logo = formData.profilePic;
+            }
+
+            if (Object.keys(hospitalUpdatePayload).length > 0) {
+                try {
+                    await hospitalAdminService.updateHospital(hospitalUpdatePayload);
+                } catch (hospitalError: any) {
+                    console.warn('[Settings] Hospital update partial failure:', hospitalError?.message);
+                    // Don't fail the whole save if profile update succeeded
+                    toast.error('Profile saved, but hospital branding update failed. Check permissions.');
+                    return;
+                }
+            }
+
+            // 3️⃣ Also keep localStorage in sync as a fast-read cache
             try {
                 localStorage.setItem(`master_branding_${hospitalId}`, JSON.stringify({
                     hospitalName: formData.hospitalName,
@@ -285,32 +386,8 @@ export default function MasterHelpdeskProfileSettings() {
                     hospitalMobile: formData.hospitalMobile
                 }));
             } catch (e) {
-                console.warn("Failed to save local branding overrides");
+                // non-critical
             }
-
-            // Update Profile & Institutional Overrides
-            // We use a nested hospital object in case the backend supports structured updates via /helpdesk/me
-            await helpdeskService.updateProfile({
-                name: formData.name,
-                email: formData.email,
-                mobile: formData.mobile,
-                address: formData.address,
-                gender: formData.gender,
-                dateOfBirth: formData.dateOfBirth,
-                image: formData.profilePic,
-                // Top-level overrides
-                hospitalName: formData.hospitalName,
-                hospitalAddress: formData.hospitalAddress,
-                hospitalEmail: formData.hospitalEmail,
-                hospitalMobile: formData.hospitalMobile,
-                // Structured fallback
-                hospital: {
-                    name: formData.hospitalName,
-                    address: formData.hospitalAddress,
-                    email: formData.hospitalEmail,
-                    mobile: formData.hospitalMobile
-                }
-            } as any);
 
             toast.success('Settings updated successfully!');
             router.push(`/${hospitalId}/masterhelpdesk`);
@@ -475,8 +552,20 @@ export default function MasterHelpdeskProfileSettings() {
                         <div className="space-y-8 animate-in fade-in duration-300">
                             <div>
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Hospital Branding Details</h3>
-                                
+
                                 {/* Hospital Logo Updater */}
+                                {cropperSrc && (
+                                    <ImageCropper
+                                        src={cropperSrc}
+                                        circular={true}
+                                        aspectRatio={1}
+                                        onCrop={(croppedImage) => {
+                                            setFormData((prev: FormData) => ({ ...prev, profilePic: croppedImage }));
+                                            setCropperSrc(null);
+                                        }}
+                                        onCancel={() => setCropperSrc(null)}
+                                    />
+                                )}
                                 <div className="mb-8 flex items-center gap-6">
                                     <div className="relative group w-24 h-24 rounded-full border-4 border-white dark:border-[#111]  overflow-hidden bg-gray-50 dark:bg-gray-900 flex-shrink-0">
                                         {formData.profilePic ? (
@@ -490,15 +579,18 @@ export default function MasterHelpdeskProfileSettings() {
                                                 const file = e.target.files?.[0];
                                                 if (file) {
                                                     const reader = new FileReader();
-                                                    reader.onloadend = () => setFormData((prev: FormData) => ({ ...prev, profilePic: reader.result as string }));
+                                                    reader.onloadend = () => setCropperSrc(reader.result as string);
                                                     reader.readAsDataURL(file);
                                                 }
+                                                // Reset input so same file can be picked again
+                                                e.target.value = '';
                                             }} className="hidden" />
                                         </label>
                                     </div>
                                     <div>
                                         <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider mb-1">Hospital Logo</h4>
                                         <p className="text-xs text-gray-400">JPG, GIF or PNG. Used for printed receipts.</p>
+                                        <p className="text-[10px] text-teal-500 mt-1 font-semibold">Click the logo to open image cropper.</p>
                                     </div>
                                 </div>
 
@@ -653,18 +745,23 @@ export default function MasterHelpdeskProfileSettings() {
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Account Holder Name</label>
                                         <input type="text" name="bankDetails.accountName" value={formData.bankDetails.accountName} onChange={handleChange} placeholder="e.g. John Doe" className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.accountName'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none`} />
+                                        {errors['bankDetails.accountName'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.accountName']}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Bank Name</label>
                                         <input type="text" name="bankDetails.bankName" value={formData.bankDetails.bankName} onChange={handleChange} placeholder="e.g. State Bank of India" className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.bankName'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none`} />
+                                        {errors['bankDetails.bankName'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.bankName']}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Account Number</label>
                                         <input type="text" name="bankDetails.accountNumber" value={formData.bankDetails.accountNumber} onChange={handleChange} placeholder="e.g. 1234567890" className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.accountNumber'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none`} />
+                                        {errors['bankDetails.accountNumber'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.accountNumber']}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">IFSC Code</label>
-                                        <input type="text" name="bankDetails.ifscCode" value={formData.bankDetails.ifscCode} onChange={handleChange} placeholder="e.g. HDFC0001234" className={`w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm uppercase outline-none focus:ring-2 focus:ring-teal-500`} />
+                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">IFSC Code <span className="text-gray-400 normal-case font-normal">(Format: ABCD0123456)</span></label>
+                                        <input type="text" name="bankDetails.ifscCode" value={formData.bankDetails.ifscCode} onChange={handleChange} placeholder="e.g. HDFC0001234" className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.ifscCode'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm uppercase outline-none focus:ring-2 focus:ring-teal-500`} />
+                                        {errors['bankDetails.ifscCode'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.ifscCode']}</p>}
+                                        {formData.bankDetails.ifscCode && !errors['bankDetails.ifscCode'] && formData.bankDetails.ifscCode.length === 11 && <p className="text-[10px] font-bold text-teal-500 mt-1">✓ Valid IFSC format</p>}
                                     </div>
                                 </div>
                             </div>
@@ -673,24 +770,28 @@ export default function MasterHelpdeskProfileSettings() {
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Payroll & Tax Identifiers</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">PAN Card Number</label>
-                                        <input type="text" name="panNumber" value={formData.panNumber} onChange={handleChange} placeholder="e.g. ABCDE1234F" className={`w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-500`} />
+                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">PAN Card Number <span className="text-gray-400 normal-case font-normal">(ABCDE1234F)</span></label>
+                                        <input type="text" name="panNumber" value={formData.panNumber} onChange={handleChange} placeholder="e.g. ABCDE1234F" className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.panNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-500 uppercase`} />
+                                        {errors.panNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.panNumber}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Aadhar Number</label>
-                                        <input type="text" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} placeholder="e.g. 123456789012" className={`w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-500`} />
+                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Aadhar Number <span className="text-gray-400 normal-case font-normal">(12 digits)</span></label>
+                                        <input type="text" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} placeholder="e.g. 123456789012" className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.aadharNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-500`} />
+                                        {errors.aadharNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.aadharNumber}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">ESI Number</label>
-                                        <input type="text" name="esiNumber" value={formData.esiNumber} onChange={handleChange} placeholder="e.g. 11000000000000000" className={`w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-500`} />
+                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">ESI Number <span className="text-gray-400 normal-case font-normal">(10-17 digits)</span></label>
+                                        <input type="text" name="esiNumber" value={formData.esiNumber} onChange={handleChange} placeholder="e.g. 11000000000000000" className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.esiNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-500`} />
+                                        {errors.esiNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.esiNumber}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-black uppercase text-gray-400 tracking-wider">PF Number</label>
                                         <input type="text" name="pfNumber" value={formData.pfNumber} onChange={handleChange} placeholder="e.g. MHBAN0000000000" className={`w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-500`} />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">UAN Number</label>
-                                        <input type="text" name="uanNumber" value={formData.uanNumber} onChange={handleChange} placeholder="e.g. 100000000000" className={`w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-500`} />
+                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">UAN Number <span className="text-gray-400 normal-case font-normal">(12 digits)</span></label>
+                                        <input type="text" name="uanNumber" value={formData.uanNumber} onChange={handleChange} placeholder="e.g. 100000000000" className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.uanNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-500`} />
+                                        {errors.uanNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.uanNumber}</p>}
                                     </div>
                                 </div>
                             </div>
