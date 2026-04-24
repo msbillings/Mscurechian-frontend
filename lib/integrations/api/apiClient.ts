@@ -40,6 +40,7 @@ export const isValidHospitalId = (segment: string): boolean => {
     "helpdesk",
     "doctor",
     "staff",
+    "masterhelpdesk",
     // Public landing pages — must NOT be treated as hospital slugs
     "about",
     "blogs",
@@ -676,3 +677,4 @@ export async function apiClient<T>(
 
   return requestPromise;
 }
+

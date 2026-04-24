@@ -24,7 +24,7 @@ import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { useTransactions } from "@/lib/integrations/hooks";
+import { useMasterTransactions } from "@/lib/integrations/hooks";
 
 export default function TransactionsPage() {
     const router = useRouter();
@@ -52,14 +52,9 @@ export default function TransactionsPage() {
         return typeMap[filterValue] || filterValue;
     };
 
-    const { data: txRaw, isLoading, isFetching, refetch } = useTransactions(
+    const { data: txRaw, isLoading, isFetching, refetch } = useMasterTransactions(
         page,
-        limit,
-        undefined,
-        false,
-        startDate,
-        endDate,
-        getBackendTypeFilter(typeFilter)
+        limit
     );
 
     // ✅ DEBUG LOGGING: Track filtering and data retrieval

@@ -28,7 +28,8 @@ import {
     Thermometer,
     X
 } from "lucide-react";
-import { helpdeskService, adminService, doctorService } from "@/lib/integrations";
+import { helpdeskService, adminService, doctorService, MASTER_HELPDESK_ENDPOINTS, useMasterDashboard } from "@/lib/integrations";
+import { apiClient } from "@/lib/integrations/api";
 import type { HelpdeskDoctor, Appointment } from "@/lib/integrations/types";
 import toast from "react-hot-toast";
 import { sanitizePatientName } from "@/lib/utils/name-utils";
@@ -296,42 +297,49 @@ export default function MasterDashboard() {
     const [selectedOnlineDate, setSelectedOnlineDate] = useState(new Date().toDateString());
 
     // ── Data Fetching ───────────────────────────────────────────────────────
+    const { data: dashboardData, isLoading: dashboardLoading, refetch: refetchDashboard } = useMasterDashboard();
+
     const loadData = useCallback(async (isSilent = false) => {
         if (!isSilent) setLoading(true);
         else setRefreshing(true);
         try {
-            const [profile, docs, apts] = await Promise.all([
-                helpdeskService.getMe(),
+            const [docs, profile] = await Promise.all([
                 helpdeskService.getDoctors(),
-                helpdeskService.getAppointments(1, 100)
+                helpdeskService.getMe()
             ]);
 
-            const rawApts = apts as any;
             const docList = Array.isArray(docs) ? docs : (docs?.doctors || docs?.data || []);
-            const aptList = Array.isArray(rawApts) ? rawApts : (rawApts?.appointments || rawApts?.data || []);
-
-            setStats({
-                totalPatients: aptList.length * 4.5, // Mock total for visual
-                todayPatients: aptList.filter((a: any) => a.date && new Date(a.date).toDateString() === new Date().toDateString()).length,
-                emergencyPatients: aptList.filter((a: any) => a.type === 'EMERGENCY').length,
-                completedAppointments: aptList.filter((a: any) => a.status === 'completed').length,
-                hospitalName: profile?.hospital?.name
-            });
             setDoctors(docList);
-            setAppointments(aptList);
+            
+            if (dashboardData) {
+                const aptList = dashboardData.appointments || [];
+                setStats({
+                    totalPatients: dashboardData.stats?.todayAppointments * 4 || 0,
+                    todayPatients: dashboardData.stats?.todayAppointments || 0,
+                    emergencyPatients: aptList.filter((a: any) => a.type === 'EMERGENCY').length,
+                    completedAppointments: dashboardData.stats?.completed || 0,
+                    hospitalName: profile?.hospital?.name
+                });
+                setAppointments(aptList);
+            }
         } catch (err) {
-            toast.error("Failed to synchronize dashboard");
+            console.error("Dashboard Sync Error:", err);
+            toast.error("Failed to synchronize global dashboard");
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
-    }, []);
+    }, [dashboardData]);
 
     useEffect(() => {
         loadData();
-        const interval = setInterval(() => loadData(true), 30000);
-        return () => clearInterval(interval);
-    }, [loadData]);
+    }, [loadData, dashboardData]);
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        await Promise.all([refetchDashboard(), loadData(true)]);
+        setRefreshing(false);
+    };
 
     // ── Handlers ────────────────────────────────────────────────────────────
     const handleCheckIn = useCallback((apt: any) => {

@@ -25,7 +25,7 @@ import { useRouter } from "next/navigation";
 import { useTenantLink } from "@/hooks/useTenantLink";
 import { useAuthStore } from "@/stores/authStore";
 import { helpdeskService } from "@/lib/integrations/services/helpdesk.service";
-import { useAppointments, useHelpdeskDoctors, useUpdateAppointmentStatus } from "@/lib/integrations/hooks";
+import { useMasterQueue, useHelpdeskDoctors, useUpdateAppointmentStatus } from "@/lib/integrations/hooks";
 import toast from "react-hot-toast";
 import { formatLocalTime } from "@/lib/utils/date-utils";
 import { OnlineClinicalLedger } from "@/components/masterhelpdesk/OnlineClinicalLedger";
@@ -49,14 +49,11 @@ export default function MasterAppointmentsLedger() {
     const [page, setPage] = useState(1);
     const limit = 20;
 
-    // Fetch Appointments
-    const { data: appointmentsData, isLoading, refetch } = useAppointments(
+    // Fetch Global Master Queue
+    const { data: appointmentsData, isLoading, refetch } = useMasterQueue(
         page,
         limit,
-        undefined, // Query is handled by filter logic or Backend Search
-        startDate,
-        endDate,
-        channelFilter
+        statusFilter === "all" ? undefined : statusFilter
     );
 
     // Fetch Doctors for filter
