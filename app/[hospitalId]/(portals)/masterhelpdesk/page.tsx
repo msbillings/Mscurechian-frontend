@@ -31,7 +31,7 @@ import {
 import { helpdeskService, adminService, doctorService } from "@/lib/integrations";
 import type { HelpdeskDoctor, Appointment } from "@/lib/integrations/types";
 import toast from "react-hot-toast";
-import Link from "next/link";
+import { sanitizePatientName } from "@/lib/utils/name-utils";
 import { useRouter, useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -127,19 +127,6 @@ const StatCard = React.memo(function StatCard({ icon, title, value, trend, color
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colors[color]} group-hover:scale-110 shadow-lg transition-transform`}>
                     {React.cloneElement(icon, { size: 18, strokeWidth: 3 })}
                 </div>
-                {onTypeChange && (
-                    <div className="flex items-center p-1 bg-slate-100 rounded-lg border border-slate-200 shadow-inner">
-                        {(['all', 'opd', 'ipd'] as const).map((type) => (
-                            <button
-                                key={type}
-                                onClick={(e) => { e.stopPropagation(); onTypeChange(type); }}
-                                className={`px-2 py-0.5 text-[8px] font-black uppercase rounded-md transition-all ${typeFilter === type ? 'bg-white text-teal-600 shadow-sm ring-1 ring-slate-200' : 'text-slate-400 hover:text-slate-600'}`}
-                            >
-                                {type}
-                            </button>
-                        ))}
-                    </div>
-                )}
                 <div className="flex flex-col items-end gap-1.5">
                     <div className="flex items-center gap-1 text-[8px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded uppercase border border-teal-100">
                         <Activity size={8} /> Live
@@ -178,10 +165,10 @@ const OnlineAdmissionsTable = React.memo(({ appointments, onCheckIn }: { appoint
                                 <td className="bg-slate-50 border-y border-l border-slate-100 rounded-l-[20px] px-6 py-4 transition-all group-hover/row:bg-teal-50/50 group-hover/row:border-teal-200">
                                     <div className="flex items-center gap-4">
                                         <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 font-extrabold group-hover/row:bg-teal-600 group-hover/row:text-white transition-all">
-                                            {apt.patientName?.[0]}
+                                            {sanitizePatientName(apt.patientName)?.[0]}
                                         </div>
                                         <div>
-                                            <div className="text-slate-900 text-xs font-black uppercase tracking-tight">{apt.patientName}</div>
+                                            <div className="text-slate-900 text-xs font-black uppercase tracking-tight">{sanitizePatientName(apt.patientName)}</div>
                                             <div className="text-slate-400 text-[9px] font-bold uppercase mt-0.5">{apt.mrn || 'MOB-PENDING'}</div>
                                         </div>
                                     </div>
@@ -249,6 +236,7 @@ const OnlineAdmissionsTable = React.memo(({ appointments, onCheckIn }: { appoint
 });
 
 const PhysicianMonitor = React.memo(({ doctors, hospitalId }: { doctors: any[], hospitalId: string }) => {
+    const router = useRouter();
     return (
         <div className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm flex flex-col h-[500px]">
             <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
@@ -280,9 +268,9 @@ const PhysicianMonitor = React.memo(({ doctors, hospitalId }: { doctors: any[], 
                 ))}
             </div>
             <div className="p-4 bg-slate-50 border-t border-slate-100 text-center">
-                <Link href={`/${hospitalId}/masterhelpdesk/doctors`} className="text-[9px] font-black text-teal-600 uppercase tracking-widest hover:underline flex items-center justify-center gap-1">
+                <button onClick={() => router.push(`/${hospitalId}/masterhelpdesk/doctors`)} className="text-[9px] font-black text-teal-600 uppercase tracking-widest hover:underline flex items-center justify-center gap-1">
                     Full Roster Access <ArrowUpRight size={10} />
-                </Link>
+                </button>
             </div>
         </div>
     );
@@ -303,7 +291,6 @@ export default function MasterDashboard() {
     const [doctors, setDoctors] = useState<HelpdeskDoctor[]>([]);
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
-    const [selectedType, setSelectedType] = useState<'all' | 'opd' | 'ipd'>('all');
     const [searchQuery, setSearchQuery] = useState("");
     const [refreshing, setRefreshing] = useState(false);
     const [selectedOnlineDate, setSelectedOnlineDate] = useState(new Date().toDateString());
@@ -355,20 +342,19 @@ export default function MasterDashboard() {
     // ── Filtering ──────────────────────────────────────────────────────────
     const { offlineAppointments, onlineAppointments } = useMemo(() => {
         const filtered = appointments.filter(apt => {
-            const matchesType = selectedType === 'all' || (selectedType === 'opd' && apt.type !== 'IPD') || (selectedType === 'ipd' && apt.type === 'IPD');
             const matchesSearch = !searchQuery || apt.patientName?.toLowerCase().includes(searchQuery.toLowerCase()) || apt.mrn?.toLowerCase().includes(searchQuery.toLowerCase());
             const status = apt.status?.toLowerCase();
             const matchesTab = activeTab === 'active' 
                 ? ['confirmed', 'in-progress', 'booked', 'pending', 'arrived', 'waiting', 'scheduled'].includes(status) 
                 : ['completed', 'cancelled'].includes(status);
-            return matchesType && matchesSearch && matchesTab;
+            return matchesSearch && matchesTab;
         });
 
         return {
             offlineAppointments: filtered.filter(a => !a.isOnline).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
             onlineAppointments: filtered.filter(a => a.isOnline && new Date(a.date).toDateString() === selectedOnlineDate).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         };
-    }, [appointments, selectedType, searchQuery, activeTab, selectedOnlineDate]);
+    }, [appointments, searchQuery, activeTab, selectedOnlineDate]);
 
     const displayAppointments = offlineAppointments;
 
@@ -430,16 +416,16 @@ export default function MasterDashboard() {
                         <Clock className="text-teal-500" size={14} />
                         <span className="text-[10px] font-black text-slate-500">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
-                    <Link href={`/${hospitalId}/masterhelpdesk/registration`} className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 shadow-lg shadow-teal-500/20 active:scale-95 transition-all">
+                    <button onClick={() => router.push(`/${hospitalId}/masterhelpdesk/registration`)} className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 shadow-lg shadow-teal-500/20 active:scale-95 transition-all">
                         <UserPlus size={14} /> New Admission
-                    </Link>
+                    </button>
                 </div>
             </div>
 
             {/* STATS GRID */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard icon={<Users />} title="Institutional Registry" value={stats.totalPatients} trend="+12.5% vs Prev Month" color="slate" />
-                <StatCard icon={<CalendarCheck />} title="Today's Sessions" value={stats.todayPatients} trend="Active Live Queue" color="teal" typeFilter={selectedType} onTypeChange={setSelectedType} />
+                <StatCard icon={<CalendarCheck />} title="Today's Sessions" value={stats.todayPatients} trend="Active Live Queue" color="teal" />
                 <StatCard icon={<Activity />} title="Emergency Triage" value={stats.emergencyPatients} trend="Critical Oversight" color="rose" />
             <StatCard icon={<CheckCircle2 />} title="Completed Manifests" value={stats.completedAppointments} trend="Archived Success" color="emerald" />
             </div>
@@ -457,7 +443,7 @@ export default function MasterDashboard() {
                                 <Smartphone size={24} className="text-teal-600" />
                             </div>
                             <div>
-                                <h2 className="text-slate-900 text-xl font-black uppercase tracking-tighter">
+                                <h2 className="text-slate-900 text-lg md:text-xl lg:text-xl font-bold uppercase tracking-tighter">
                                     Digital Front Door: <span className="text-teal-600">Online Admissions</span>
                                 </h2>
                                 <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">
@@ -551,7 +537,7 @@ export default function MasterDashboard() {
                             {displayAppointments.length > 0 ? (
                                 <div className="divide-y divide-slate-50">
                                     {displayAppointments.map((apt: any, idx) => {
-                                        const patientName = apt.patient?.name || apt.patientName || "UNKNOWN";
+                                        const patientName = sanitizePatientName(apt.patient?.name || apt.patientName);
                                         const mrn = apt.mrn || (apt as any).patientDetails?.mrn || 'MRN-PENDING';
                                         const age = (apt as any).patientDetails?.age || (apt as any).patient?.age || '--';
                                         const gender = (apt as any).patientDetails?.gender || (apt as any).patient?.gender || '--';
@@ -597,9 +583,9 @@ export default function MasterDashboard() {
                                                                 {apt.status}
                                                             </div>
                                                         )}
-                                                        <Link href={`/${hospitalId}/masterhelpdesk/appointment-booking?patientId=${apt.patientId || apt.patient?._id}&type=${apt.type || 'OPD'}`} className="p-2 bg-slate-100 text-slate-400 hover:text-teal-600 rounded-xl transition-all">
+                                                        <button onClick={() => router.push(`/${hospitalId}/masterhelpdesk/appointment-booking?patientId=${apt.patientId || apt.patient?._id}&type=${apt.type || 'OPD'}`)} className="p-2 bg-slate-100 text-slate-400 hover:text-teal-600 rounded-xl transition-all">
                                                             <ArrowRight size={14} />
-                                                        </Link>
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -618,9 +604,9 @@ export default function MasterDashboard() {
                         
                         <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Institutional Command Matrix v2.0</p>
-                            <Link href={`/${hospitalId}/masterhelpdesk/appointments`} className="text-[8px] font-black text-teal-600 uppercase tracking-[0.2em] hover:underline flex items-center gap-1">
+                            <button onClick={() => router.push(`/${hospitalId}/masterhelpdesk/appointments`)} className="text-[8px] font-black text-teal-600 uppercase tracking-[0.2em] hover:underline flex items-center gap-1">
                                 View Full Clinical Ledger <ArrowRight size={10} />
-                            </Link>
+                            </button>
                         </div>
                     </div>
                 </div>

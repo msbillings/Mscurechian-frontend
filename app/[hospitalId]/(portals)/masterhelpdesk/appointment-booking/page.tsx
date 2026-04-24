@@ -33,7 +33,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { helpdeskService } from "@/lib/integrations";
 import type { HelpdeskDoctor, HelpdeskProfile } from "@/lib/integrations/types";
 import toast from "react-hot-toast";
-import Link from "next/link";
 import { renderToStaticMarkup } from 'react-dom/server';
 import MasterHeader from '@/components/printers/MasterHeader';
 import MasterFooter from '@/components/printers/MasterFooter';
@@ -62,16 +61,17 @@ export default function MasterAppointmentBooking() {
     const [selectedDoctor, setSelectedDoctor] = useState<HelpdeskDoctor | null>(null);
     const [selectedDept, setSelectedDept] = useState("");
     const [selectedDate, setSelectedDate] = useState(() => {
-        const today = new Date();
-        today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
-        return today.toISOString().split('T')[0];
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setMinutes(tomorrow.getMinutes() - tomorrow.getTimezoneOffset());
+        return tomorrow.toISOString().split('T')[0];
     });
-    const [selectedTime, setSelectedTime] = useState(() => {
-        const now = new Date();
-        const h = String(now.getHours()).padStart(2, '0');
-        const m = String(now.getMinutes()).padStart(2, '0');
-        return `${h}:${m}`;
-    });
+    const [selectedTime, setSelectedTime] = useState("");
+    const [availableSlots, setAvailableSlots] = useState<any[]>([]);
+    const [loadingSlots, setLoadingSlots] = useState(false);
+    const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+    const [bookingMode, setBookingMode] = useState<'queue' | 'slot'>('slot');
+    const [timeOfDayFilter, setTimeOfDayFilter] = useState<'all' | 'morning' | 'afternoon' | 'evening' | 'night'>('all');
 
     // For Master Helpdesk, we hardcode registrationType to OPD
     const registrationType = 'OPD';
@@ -308,12 +308,77 @@ export default function MasterAppointmentBooking() {
         return () => clearTimeout(timer);
     }, [patientSearch]);
 
+    const fetchSlots = useCallback(async () => {
+        if (!selectedDoctor?._id || !profile?.hospital?._id || !selectedDate) return;
+        try {
+            setLoadingSlots(true);
+            setSelectedSlot(null);
+            
+            // 1. Get availability (hourly containers)
+            const res = await helpdeskService.getAvailability(selectedDoctor._id, profile.hospital._id, selectedDate);
+            const hourlySlots = res.slots || [];
+            
+            // 2. Get all appointments for this doctor on this day to find exact occupied 5-min slots
+            const aptRes = await helpdeskService.getAppointments(1, 200, undefined, selectedDate, selectedDate);
+            const allApts = Array.isArray(aptRes) ? aptRes : (aptRes.appointments || aptRes.data || []);
+            const doctorApts = allApts.filter((a: any) => {
+                const aDocId = a.doctor?._id || a.doctor || a.doctorId;
+                return aDocId === selectedDoctor._id;
+            });
+
+            const occupiedTimes = new Set(doctorApts.map((a: any) => {
+                const t = a.startTime || a.time || a.timeSlot;
+                if (!t) return null;
+                // Normalize to "H:MM AM/PM"
+                try {
+                    const d = new Date(`2000-01-01 ${t}`);
+                    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                } catch (e) { return t; }
+            }).filter(Boolean));
+
+            // 3. Expand each hourly container into 12 x 5-min slots
+            const allExpandedSlots: any[] = [];
+            hourlySlots.forEach((hour: any) => {
+                const [startPart] = hour.timeSlot.split(' - ');
+                const [hStr, mStrPart] = startPart.split(':');
+                const [mStr, ampm] = mStrPart.split(' ');
+                
+                let h = parseInt(hStr);
+                let m = parseInt(mStr);
+                if (ampm === 'PM' && h < 12) h += 12;
+                if (ampm === 'AM' && h === 12) h = 0;
+
+                for (let i = 0; i < 12; i++) {
+                    const slotDate = new Date(2000, 0, 1, h, m + (i * 5));
+                    const timeLabel = slotDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                    allExpandedSlots.push({
+                        time: timeLabel,
+                        available: !occupiedTimes.has(timeLabel)
+                    });
+                }
+            });
+
+            setAvailableSlots(allExpandedSlots);
+            setBookingMode('slot');
+        } catch (e) {
+            setAvailableSlots([]);
+            setBookingMode('queue');
+        } finally {
+            setLoadingSlots(false);
+        }
+    }, [selectedDoctor, profile, selectedDate]);
+
+    useEffect(() => {
+        fetchSlots();
+    }, [fetchSlots]);
+
     const filteredDoctors = selectedDept
         ? doctors.filter((d: any) => (d.specialty === selectedDept || d.specialties?.[0] === selectedDept))
         : doctors;
 
     const isBookingValid = () => {
         if (!selectedPatient || !selectedDoctor) return false;
+        if (bookingMode === 'slot' && !selectedSlot) return false;
         const hasVitalErrors = Object.values(vitalsErrors).some(err => !!err);
         return !hasVitalErrors && notes.trim().length > 0 && notes.length <= 400;
     };
@@ -346,10 +411,10 @@ export default function MasterAppointmentBooking() {
                 patientId: selectedPatient?._id || selectedPatient?.id,
                 doctorId: selectedDoctor?._id,
                 date: selectedDate,
-                time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
-                timeSlot: "General Queue",
-                startTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
-                endTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                time: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                timeSlot: bookingMode === 'slot' ? selectedSlot : "General Queue",
+                startTime: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                endTime: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
                 type: appointmentType,
                 notes: notes,
                 paymentMethod: paymentMethod,
@@ -419,7 +484,7 @@ export default function MasterAppointmentBooking() {
                     logo: latestHospital.logo
                 },
                 patient: { name: selectedPatient.name, mrn: selectedPatient.mrn, age: selectedPatient.age, gender: selectedPatient.gender, mobile: selectedPatient.mobile, dob: selectedPatient.dob, address: selectedPatient.address, email: selectedPatient.email, bloodGroup: selectedPatient.bloodGroup, emergencyContact: selectedPatient.emergencyContact, allergies: Array.isArray(selectedPatient.allergies) ? selectedPatient.allergies.join(', ') : selectedPatient.allergies, medicalHistory: selectedPatient.medicalHistory, vitals: { ...vitals } },
-                appointment: { doctorName: selectedDoctor.user?.name || selectedDoctor.name, specialization: selectedDoctor.specialties?.[0] || 'General', qualification: selectedDoctor.qualifications?.[0] || 'MBBS', date: new Date(selectedDate).toLocaleDateString(), time: payload.time, type: appointmentType.toUpperCase(), notes: notes, appointmentId: appointment._id || appointment.id || 'PENDING' },
+                appointment: { doctorName: selectedDoctor.user?.name || selectedDoctor.name, specialization: selectedDoctor.specialties?.[0] || 'General', qualification: selectedDoctor.qualifications?.[0] || 'MBBS', date: new Date(selectedDate).toLocaleDateString(), time: bookingMode === 'slot' ? selectedSlot : payload.time, type: appointmentType.toUpperCase(), notes: notes, appointmentId: appointment._id || appointment.id || 'PENDING' },
                 payment: { amount: selectedDoctor?.consultationFee || 0, totalBillAmount: selectedDoctor?.consultationFee || 0, totalPaidAmount: selectedDoctor?.consultationFee || 0, advanceAmount: 0, method: paymentMethod.toUpperCase(), status: paymentStatus.toUpperCase(), date: new Date().toISOString() },
                 registrationType: 'OPD',
                 headerHtml, footerHtml, returnUrl: '/masterhelpdesk'
@@ -456,9 +521,9 @@ export default function MasterAppointmentBooking() {
             {/* HEADER */}
             <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-2 px-1 gap-2">
                 <div className="flex items-center gap-2 z-10">
-                    <Link href="/masterhelpdesk" className="p-1.5 bg-slate-100 rounded-lg text-slate-400 hover:text-teal-600 transition-all">
+                    <button onClick={() => router.push("/masterhelpdesk")} className="p-1.5 bg-slate-100 rounded-lg text-slate-400 hover:text-teal-600 transition-all">
                         <ArrowLeft size={14} />
-                    </Link>
+                    </button>
                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Master Scheduling / Booking</span>
                 </div>
                 <div className="sm:absolute sm:inset-0 flex flex-col items-center justify-center text-center sm:pointer-events-none">
@@ -541,9 +606,9 @@ export default function MasterAppointmentBooking() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Date</label>
-                                    <div className="relative group opacity-80">
+                                    <div className="relative group">
                                         <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                        <input type="date" value={selectedDate} readOnly disabled className="w-full pl-10 pr-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-xs font-black uppercase cursor-not-allowed" />
+                                        <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black uppercase focus:border-teal-500 outline-none transition-all" />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
@@ -566,6 +631,101 @@ export default function MasterAppointmentBooking() {
                                     </button>
                                 ))}
                             </div>
+
+                            {selectedDoctor && (
+                                <div className="mt-8 space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-5 h-5 rounded-md bg-teal-100 flex items-center justify-center text-teal-600"><Clock size={12} /></div>
+                                            <h3 className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Select Booking Slot</h3>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200">
+                                            {[
+                                                { id: 'all', label: 'All' },
+                                                { id: 'morning', label: 'Morning' },
+                                                { id: 'afternoon', label: 'Afternoon' },
+                                                { id: 'evening', label: 'Evening' },
+                                                { id: 'night', label: 'Night' }
+                                            ].map(f => (
+                                                <button 
+                                                    key={f.id} 
+                                                    onClick={() => setTimeOfDayFilter(f.id as any)} 
+                                                    className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase transition-all ${timeOfDayFilter === f.id ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                                >
+                                                    {f.label}
+                                                </button>
+                                            ))}
+                                            <div className="w-px h-4 bg-slate-200 mx-1 self-center" />
+                                            <button onClick={() => setBookingMode('slot')} className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase transition-all ${bookingMode === 'slot' ? 'bg-teal-500 text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>Slot</button>
+                                            <button onClick={() => setBookingMode('queue')} className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase transition-all ${bookingMode === 'queue' ? 'bg-teal-500 text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>Queue</button>
+                                        </div>
+                                    </div>
+
+                                    {bookingMode === 'slot' ? (
+                                        <div className="space-y-4">
+                                            {loadingSlots ? (
+                                                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                                                    {[...Array(16)].map((_, i) => <div key={i} className="h-10 bg-slate-100 animate-pulse rounded-xl" />)}
+                                                </div>
+                                            ) : (
+                                                (() => {
+                                                    const filtered = availableSlots.filter(s => {
+                                                        if (timeOfDayFilter === 'all') return true;
+                                                        
+                                                        // Parse time "H:MM AM/PM"
+                                                        const [timePart, ampm] = s.time.split(' ');
+                                                        const [hStr, mStr] = timePart.split(':');
+                                                        let h = parseInt(hStr);
+                                                        if (ampm === 'PM' && h < 12) h += 12;
+                                                        if (ampm === 'AM' && h === 12) h = 0;
+
+                                                        if (timeOfDayFilter === 'morning') return h >= 5 && h < 12;
+                                                        if (timeOfDayFilter === 'afternoon') return h >= 12 && h < 16;
+                                                        if (timeOfDayFilter === 'evening') return h >= 16 && h < 20;
+                                                        if (timeOfDayFilter === 'night') return h >= 20 || h < 5;
+                                                        return true;
+                                                    });
+
+                                                    return filtered.length > 0 ? (
+                                                        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                                                            {filtered.map((s) => (
+                                                                <button
+                                                                    key={s.time}
+                                                                    onClick={() => setSelectedSlot(s.time)}
+                                                                    disabled={!s.available}
+                                                                    className={`py-2.5 rounded-xl border-2 text-[8px] font-black transition-all ${
+                                                                        selectedSlot === s.time
+                                                                            ? 'bg-teal-600 border-teal-600 text-white shadow-lg shadow-teal-500/20'
+                                                                            : s.available
+                                                                                ? 'bg-white border-slate-100 text-slate-600 hover:border-teal-200 hover:bg-teal-50/30'
+                                                                                : 'bg-slate-50 border-slate-50 text-slate-300 cursor-not-allowed opacity-50'
+                                                                    }`}
+                                                                >
+                                                                    {s.time}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-col items-center justify-center p-12 bg-slate-50 rounded-[32px] border border-dashed border-slate-200">
+                                                            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-300 mb-4"><Clock size={24} /></div>
+                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No slots found for this category</p>
+                                                            <button onClick={() => setTimeOfDayFilter('all')} className="mt-4 text-[9px] font-black text-teal-600 uppercase underline">View all slots</button>
+                                                        </div>
+                                                    );
+                                                })()
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="p-6 bg-teal-50/50 rounded-2xl border border-teal-100 flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-600"><Activity size={20} /></div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-teal-900 uppercase">General Queue Entry</p>
+                                                <p className="text-[9px] font-bold text-teal-600/70 uppercase">Patient will be added to the current queue</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </section>
 
                         {/* 3. VITALS & MANIFEST */}

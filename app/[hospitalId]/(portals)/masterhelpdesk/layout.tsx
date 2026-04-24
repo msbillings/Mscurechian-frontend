@@ -22,16 +22,17 @@ import LogoutModal from "@/components/auth/LogoutModal";
 import { useTenantLink } from "@/hooks/useTenantLink";
 import ProgressBar from "@/components/ui/ProgressBar";
 import AIAssistantModal from "@/components/masterhelpdesk/AIAssistantModal";
+import MasterHelpdeskQuickActions from "./components/MasterHelpdeskQuickActions";
 
 const masterhelpdeskMenu: any[] = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/masterhelpdesk" },
     { icon: Clock, label: "Queue", path: "/masterhelpdesk/queue" },
-    { icon: UserPlus, label: "Patient Registration", path: "/masterhelpdesk/registration" },
     { icon: CalendarPlus, label: "Book Appointment", path: "/masterhelpdesk/appointment-booking" },
     { icon: ClipboardList, label: "Patients List", path: "/masterhelpdesk/patients" },
     { icon: Stethoscope, label: "Doctors", path: "/masterhelpdesk/doctors" },
     { icon: ClipboardList, label: "Transactions", path: "/masterhelpdesk/transactions" },
    
+    { icon: Bot, label: "AI Assistant", path: "/masterhelpdesk/assistant" },
     { icon: Headphones, label: "Support", path: "/masterhelpdesk/support" },
     { icon: Settings, label: "Settings", path: "/masterhelpdesk/settings" },
 ];
@@ -138,6 +139,11 @@ export function MasterHelpdeskLayout({ children }: { children: React.ReactNode }
                             <h2 className="text-sm font-bold text-slate-800">Master portal</h2>
                         </div>
                     </div>
+
+                    <div className="flex-1 flex justify-center">
+                        <MasterHelpdeskQuickActions startTransition={startTransition} />
+                    </div>
+
                     <div className="flex items-center gap-4">
                         <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors relative">
                             <Bell size={20} />

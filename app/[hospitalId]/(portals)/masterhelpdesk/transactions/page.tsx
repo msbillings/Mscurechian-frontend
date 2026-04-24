@@ -21,12 +21,13 @@ import {
 } from "lucide-react";
 import { helpdeskService } from "@/lib/integrations";
 import toast from "react-hot-toast";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { useTransactions } from "@/lib/integrations/hooks";
 
 export default function TransactionsPage() {
+    const router = useRouter();
     const [exporting, setExporting] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [page, setPage] = useState(1);
@@ -274,9 +275,9 @@ export default function TransactionsPage() {
             <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm space-y-4 max-w-full mx-auto">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-2 pt-2">
                     <div className="flex items-center gap-3">
-                        <Link href="/helpdesk" className="p-2 bg-slate-100 rounded-xl text-slate-400 hover:text-teal-600 transition-all shadow-sm">
+                        <button onClick={() => router.back()} className="p-2 bg-slate-100 rounded-xl text-slate-400 hover:text-teal-600 transition-all shadow-sm">
                             <ArrowLeft size={20} />
-                        </Link>
+                        </button>
                         <div>
                             <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
                                 Transactions
