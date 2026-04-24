@@ -30,6 +30,7 @@ import {
 import { HelpdeskDashboardSkeleton } from "@/components/ui/skeletons";
 import { useAuthStore } from "@/stores/authStore";
 import { formatLocalTime } from "@/lib/utils/date-utils";
+import { sanitizePatientName } from "@/lib/utils/name-utils";
 
 function HelpdeskDashboard() {
     const formatTimeTo12h = (timeStr?: string) => {
@@ -741,11 +742,11 @@ function HelpdeskDashboard() {
                                                     <div className="col-span-3 flex items-center gap-4 min-w-0">
                                                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-base shrink-0 ${apt.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-900 text-white'
                                                             }`}>
-                                                            {(apt.patientName || "U").charAt(0).toUpperCase()}
+                                                            {sanitizePatientName(apt.patientName).charAt(0).toUpperCase()}
                                                         </div>
                                                         <div className="min-w-0">
                                                             <h4 className="text-xs font-bold text-slate-900 uppercase tracking-tight truncate">
-                                                                {apt.patientName || "Unknown Patient"}
+                                                                {sanitizePatientName(apt.patientName)}
                                                             </h4>
                                                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
                                                                 MRN: {(apt as any).mrn || 'N/A'}

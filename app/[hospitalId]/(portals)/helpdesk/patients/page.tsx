@@ -20,6 +20,7 @@ import Link from "next/link";
 import ClinicalReceipt from "@/components/helpdesk/ClinicalReceipt";
 import AppointmentHistoryModal from "@/components/helpdesk/AppointmentHistoryModal";
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
+import { sanitizePatientName } from "@/lib/utils/name-utils";
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
     const [debounced, setDebounced] = useState(value);
@@ -151,12 +152,13 @@ export default function PatientsPage() {
 
             // Fetch both OPD appointments AND IPD admissions
             const [opdRes, ipdRes] = await Promise.all([
-                helpdeskService.getAppointments(1, 50, patientId).catch(() => ({ data: [] })),
+                helpdeskService.getPatientVisitHistory(patientId).catch(() => []),
                 // Fetch IPD admissions for this patient via helpdeskService for proper proxying/auth
                 helpdeskService.getPatientIPDAdmissions(patientId).catch(() => ({ admissions: [] }))
             ]);
 
-            const opdAppointments = opdRes.appointments || opdRes.data || [];
+            // getPatientVisitHistory returns an array directly
+            const opdAppointments = Array.isArray(opdRes) ? opdRes : (opdRes.appointments || opdRes.data || []);
             const ipdAdmissions = ipdRes.admissions || ipdRes.data || [];
 
             // Transform IPD admissions to match appointment structure
@@ -231,7 +233,7 @@ export default function PatientsPage() {
                     logo: hospitalInfo?.logo
                 },
                 patient: {
-                    name: patient.name || patient.user?.name,
+                    name: sanitizePatientName(patient.name || patient.user?.name),
                     mrn: patient.profile?.mrn || patient.mrn || appt.patient?.mrn || "N/A",
                     age: patient.profile?.age || patient.age || appt.patientDetails?.age || appt.patient?.age,
                     gender: patient.profile?.gender || patient.gender || appt.patientDetails?.gender || appt.patient?.gender,
@@ -441,17 +443,17 @@ export default function PatientsPage() {
                                                     </td>
                                                     <td className="px-4 sm:px-6 py-4">
                                                         <div className="flex items-center gap-3">
-                                                            <div className={`w-9 h-9 lg:w-10 lg:h-10 rounded-lg lg:rounded-xl transition-all flex items-center justify-center font-bold text-sm shadow-sm border shrink-0 ${isIPD
-                                                                ? 'bg-rose-50 text-rose-300 group-hover:bg-rose-600 group-hover:text-white border-rose-100'
-                                                                : 'bg-slate-50 text-slate-300 group-hover:bg-teal-600 group-hover:text-white border-slate-100'
-                                                                }`}>
-                                                                {(patient.name || patient.user?.name || "P").charAt(0).toUpperCase()}
-                                                            </div>
-                                                            <div className="min-w-0">
-                                                                <span className="text-[13px] lg:text-[15px] font-[550] text-slate-700 uppercase tracking-tight truncate block">
-                                                                    {patient.name || patient.user?.name}
-                                                                </span>
-                                                            </div>
+                                                                <div className={`w-9 h-9 lg:w-10 lg:h-10 rounded-lg lg:rounded-xl transition-all flex items-center justify-center font-bold text-sm shadow-sm border shrink-0 ${isIPD
+                                                                    ? 'bg-rose-50 text-rose-300 group-hover:bg-rose-600 group-hover:text-white border-rose-100'
+                                                                    : 'bg-slate-50 text-slate-300 group-hover:bg-teal-600 group-hover:text-white border-slate-100'
+                                                                    }`}>
+                                                                    {sanitizePatientName(patient.name || patient.user?.name).charAt(0).toUpperCase()}
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <span className="text-[13px] lg:text-[15px] font-[550] text-slate-700 uppercase tracking-tight truncate block">
+                                                                        {sanitizePatientName(patient.name || patient.user?.name)}
+                                                                    </span>
+                                                                </div>
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-4 text-center">

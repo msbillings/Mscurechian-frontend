@@ -28,9 +28,9 @@ import { helpdeskService } from "@/lib/integrations/services/helpdesk.service";
 import { useAppointments, useHelpdeskDoctors, useUpdateAppointmentStatus } from "@/lib/integrations/hooks";
 import toast from "react-hot-toast";
 import { formatLocalTime } from "@/lib/utils/date-utils";
-import Link from "next/link";
 import { OnlineClinicalLedger } from "@/components/masterhelpdesk/OnlineClinicalLedger";
 import { OfflineClinicalLedger } from "@/components/masterhelpdesk/OfflineClinicalLedger";
+import { sanitizePatientName } from "@/lib/utils/name-utils";
 
 export default function MasterAppointmentsLedger() {
     const router = useRouter();
@@ -128,16 +128,16 @@ export default function MasterAppointmentsLedger() {
                             <ArrowLeft size={16} />
                         </button>
                         <div>
-                            <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Master Clinical Ledger</h1>
+                            <h1 className="text-lg md:text-xl lg:text-xl font-black text-slate-900 uppercase tracking-tight">Master Clinical Ledger</h1>
                             <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em]">Hospital-Wide Deployment Tracker</p>
                         </div>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                     <Link href={getPath("/masterhelpdesk/appointment-booking")} className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95">
+                     <button onClick={() => router.push(getPath("/masterhelpdesk/appointment-booking"))} className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95">
                         <Plus size={16} /> New Enrollment
-                    </Link>
+                    </button>
                 </div>
             </div>
 
@@ -260,11 +260,11 @@ export default function MasterAppointmentsLedger() {
                                             <td className="p-6">
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white font-black text-base group-hover:scale-110 transition-transform shadow-lg shadow-slate-200">
-                                                        {(apt.patientName || apt.patient?.name || "U")[0]}
+                                                        {sanitizePatientName(apt.patientName || apt.patient?.name).charAt(0).toUpperCase()}
                                                     </div>
                                                     <div>
                                                         <h4 className="text-xs font-black text-slate-900 uppercase tracking-tight">
-                                                            {apt.patientName || apt.patient?.name || "Unknown Patient"}
+                                                            {sanitizePatientName(apt.patientName || apt.patient?.name)}
                                                         </h4>
                                                         <div className="flex flex-wrap items-center gap-2 mt-1">
                                                             <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg uppercase tracking-widest border border-indigo-100">
