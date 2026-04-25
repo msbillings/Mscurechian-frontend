@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from 'react';
 import AppointmentsQueueDynamic from './AppointmentsQueueDynamic';
@@ -13,11 +13,17 @@ function DoctorAppointmentsSection() {
     showQueue: true
   });
 
+  const [visitTypeFilter, setVisitTypeFilter] = useState<'All' | 'OPD' | 'IPD'>('All');
+
   return (
     <>
       {/* Appointments Queue */}
       <div className="lg:col-span-2">
-        <AppointmentsQueueDynamic onStatsChange={setQueueStats} />
+        <AppointmentsQueueDynamic 
+          onStatsChange={setQueueStats} 
+          visitTypeFilter={visitTypeFilter}
+          setVisitTypeFilter={setVisitTypeFilter}
+        />
       </div>
 
       {/* Stats Sidebar */}

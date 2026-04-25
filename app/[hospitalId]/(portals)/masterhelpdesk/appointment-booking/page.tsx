@@ -31,6 +31,7 @@ import {
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { helpdeskService, masterHelpdeskService } from "@/lib/integrations";
+import masterDoctorLeaveService from "@/lib/integrations/masterDoctorLeaveService";
 import type { HelpdeskDoctor, HelpdeskProfile } from "@/lib/integrations/types";
 import toast from "react-hot-toast";
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -61,10 +62,8 @@ export default function MasterAppointmentBooking() {
     const [selectedDoctor, setSelectedDoctor] = useState<HelpdeskDoctor | null>(null);
     const [selectedDept, setSelectedDept] = useState("");
     const [selectedDate, setSelectedDate] = useState(() => {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setMinutes(tomorrow.getMinutes() - tomorrow.getTimezoneOffset());
-        return tomorrow.toISOString().split('T')[0];
+        const today = new Date();
+        return today.toISOString().split('T')[0];
     });
     const [selectedTime, setSelectedTime] = useState("");
     const [availableSlots, setAvailableSlots] = useState<any[]>([]);
@@ -72,6 +71,7 @@ export default function MasterAppointmentBooking() {
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [bookingMode, setBookingMode] = useState<'slot' | 'queue'>('queue');
     const [timeOfDayFilter, setTimeOfDayFilter] = useState<'all' | 'morning' | 'afternoon' | 'evening' | 'night'>('all');
+    const [isDoctorOnLeave, setIsDoctorOnLeave] = useState(false);
 
     // For Master Helpdesk, we hardcode registrationType to OPD
     const registrationType = 'OPD';
@@ -316,6 +316,40 @@ export default function MasterAppointmentBooking() {
             
             // 1. Get availability (hourly containers)
             const res = await helpdeskService.getAvailability(selectedDoctor._id, profile.hospital._id, selectedDate);
+            
+            // Re-check specifically if the doctor is on leave on THIS selectedDate
+            try {
+                const targetStr = selectedDate; // "YYYY-MM-DD"
+                const leaves = await masterDoctorLeaveService.getLeavesByDoctor(selectedDoctor._id);
+                
+                const onLeaveThisDate = leaves.some(l => {
+                    if (l.status !== 'approved') return false;
+                    
+                    // Convert l.startDate and l.endDate to "YYYY-MM-DD" in local timezone for reliable comparison
+                    const getLocalDateStr = (dateInput: string | Date) => {
+                        const d = new Date(dateInput);
+                        const year = d.getFullYear();
+                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        return `${year}-${month}-${day}`;
+                    };
+                    
+                    const startStr = getLocalDateStr(l.startDate);
+                    const endStr = getLocalDateStr(l.endDate);
+                    
+                    return targetStr >= startStr && targetStr <= endStr;
+                });
+                
+                setIsDoctorOnLeave(onLeaveThisDate);
+                if (onLeaveThisDate) {
+                    setAvailableSlots([]);
+                    return;
+                }
+            } catch (e) {
+                console.error("Error in leave check:", e);
+                setIsDoctorOnLeave(false);
+            }
+            
             const hourlySlots = res.slots || [];
             
             // 2. Get all appointments for this doctor on this day to find exact occupied 5-min slots
@@ -467,7 +501,7 @@ export default function MasterAppointmentBooking() {
 
             const response = await masterHelpdeskService.registerPatient({
                 ...payload,
-                hospitalId: hospitalId || selectedDoctor?.hospital || profile?.hospital?._id, // Ensure hospital context is passed
+                hospitalId: hospitalId || profile?.hospital?._id, // Ensure hospital context is passed
                 type: 'OPD',
                 amount: selectedDoctor?.consultationFee || 0
             });
@@ -646,8 +680,16 @@ export default function MasterAppointmentBooking() {
                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Date</label>
                                     <div className="relative group">
                                         <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                        <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black uppercase focus:border-teal-500 outline-none transition-all" />
+                                        <input 
+                                            type="date" 
+                                            value={selectedDate} 
+                                            min={new Date().toISOString().split('T')[0]}
+                                            max={new Date().toISOString().split('T')[0]}
+                                            onChange={(e) => setSelectedDate(e.target.value)} 
+                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black uppercase focus:border-teal-500 outline-none transition-all cursor-not-allowed opacity-80" 
+                                        />
                                     </div>
+                                    <p className="text-[8px] font-bold text-teal-600 uppercase tracking-widest ml-1">Today only (Master Portal Restriction)</p>
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Department</label>
@@ -670,7 +712,21 @@ export default function MasterAppointmentBooking() {
                                 ))}
                             </div>
 
-                            {selectedDoctor && (
+                             {selectedDoctor && isDoctorOnLeave && (
+                                <div className="mt-8 p-6 bg-rose-50 border-2 border-rose-200 rounded-3xl flex items-center gap-5 animate-in zoom-in duration-500 shadow-lg shadow-rose-500/10">
+                                    <div className="w-14 h-14 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 shrink-0 shadow-inner">
+                                        <AlertCircle size={28} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black text-rose-900 uppercase tracking-tight">Doctor is on Leave</h3>
+                                        <p className="text-xs font-bold text-rose-600 uppercase mt-1 leading-relaxed">
+                                            Don't book appointments for {new Date(selectedDate).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedDoctor && !isDoctorOnLeave && (
                                 <div className="mt-8 space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                         <div className="flex items-center gap-2">
@@ -744,7 +800,7 @@ export default function MasterAppointmentBooking() {
                                 <div className="pt-4 border-t border-white/10">
                                     <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest leading-none">Net Consultation Fee</p>
                                     <h4 className="text-4xl font-black text-white mt-1">₹{selectedDoctor?.consultationFee || 0}.00</h4>
-                                    <button onClick={handleBooking} disabled={submitting || !selectedDoctor} className="w-full mt-8 py-5 bg-teal-500 text-slate-900 rounded-[20px] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-teal-400 transition-all shadow-2xl shadow-teal-500/30 flex items-center justify-center gap-2 group relative overflow-hidden">
+                                    <button onClick={handleBooking} disabled={submitting || !selectedDoctor || isDoctorOnLeave} className="w-full mt-8 py-5 bg-teal-500 text-slate-900 rounded-[20px] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-teal-400 transition-all shadow-2xl shadow-teal-500/30 flex items-center justify-center gap-2 group relative overflow-hidden disabled:opacity-50 disabled:grayscale disabled:pointer-events-none disabled:cursor-not-allowed">
                                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] transition-all" />
                                         {submitting ? <Loader2 size={18} className="animate-spin" /> : <><Receipt size={16} /> Finalize Engagement & Print</>}
                                     </button>

@@ -1,13 +1,13 @@
-﻿/**
+/**
  * Calculates the duration between an admission date and the current time.
  * Returns a formatted string like "2 Days 5 Hours" or "0 Days 45 Mins".
  */
-export const calculateStayDuration = (admissionDate: string | Date): string => {
+export const calculateStayDuration = (admissionDate: string | Date, endDate?: string | Date): string => {
     if (!admissionDate) return 'N/A';
 
     const start = new Date(admissionDate).getTime();
-    const now = Date.now();
-    const diffMs = now - start;
+    const end = endDate ? new Date(endDate).getTime() : Date.now();
+    const diffMs = end - start;
 
     if (diffMs < 0) return "0 Days 0 Mins";
 

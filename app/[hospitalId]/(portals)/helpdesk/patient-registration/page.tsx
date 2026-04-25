@@ -242,7 +242,7 @@ export default function PatientRegistration() {
                 ]);
                 setDoctors(docsData);
                 setBeds(bedsData);
-                const depts = Array.from(new Set(docsData.map(d => d.specialty).filter(Boolean)));
+                const depts = Array.from(new Set(docsData.map((d: any) => d.specialty).filter(Boolean)));
                 setDepartments(depts as string[]);
             } catch {
                 toast.error("Failed to load initial data");

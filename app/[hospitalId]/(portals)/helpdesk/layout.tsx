@@ -33,7 +33,7 @@ const helpdeskMenu: any[] = [
     { icon: Bell, label: "Hospital Announcements", path: "/helpdesk/announcements" },
 ];
 
-export function DashboardLayout({ children }: { children: React.ReactNode }) {
+function DashboardLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const { user, logout, isAuthenticated, checkAuth, isLoading, isInitialized } = useAuthStore();

@@ -51,7 +51,7 @@ function DoctorsList() {
     // ⚡ Memoized unique departments list
     const departments = useMemo(() => {
         const depts = new Set(doctors.map((doc: any) => doc.department || doc.specialties?.[0]).filter(Boolean));
-        return Array.from(depts).sort();
+        return Array.from(depts).sort() as string[];
     }, [doctors]);
 
     const filteredDoctors = useMemo(() => {
@@ -140,7 +140,7 @@ function DoctorsList() {
 
             {/* DOCTORS GRID */}
             <div className="max-w-full mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredDoctors.length > 0 ? filteredDoctors.map((doc) => {
+                {filteredDoctors.length > 0 ? filteredDoctors.map((doc: any) => {
                     const name = (doc.user?.name || doc.name || "Dr. Anonymous").toUpperCase();
                     const specialty = (doc.specialties?.[0] || doc.specialty || "General Medicine").toUpperCase();
                     const qualifications = doc.qualifications?.join(", ") || (doc as any).qualification || "MBBS, MD";

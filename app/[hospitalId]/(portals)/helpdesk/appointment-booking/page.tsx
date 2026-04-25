@@ -299,7 +299,7 @@ export default function AppointmentBooking() {
                 }
                 else {
                     // Extract unique departments/specialties from physicians anyway
-                    const uniqueDepts = Array.from(new Set(validDocs.map(d => d.specialty || d.specialties?.[0]).filter(Boolean)));
+                    const uniqueDepts = Array.from(new Set(validDocs.map((d: any) => d.specialty || d.specialties?.[0]).filter(Boolean)));
                     setDepartments(uniqueDepts as string[]);
                     // Still fetch unit types for the dropdown if registration type changes
                     ipdService.getUnitTypes().then(setUnitTypes).catch(() => []);

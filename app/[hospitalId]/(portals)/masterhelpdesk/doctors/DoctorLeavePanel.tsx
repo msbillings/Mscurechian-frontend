@@ -89,8 +89,8 @@ export default function LeaveManagementModal({
   });
 
   const reviewMut = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: "approved" | "rejected" }) =>
-      masterDoctorLeaveService.updateStatus(id, status, reviewNote || undefined),
+    mutationFn: ({ id, status, note }: { id: string; status: "approved" | "rejected"; note?: string }) =>
+      masterDoctorLeaveService.updateStatus(id, status, note !== undefined ? note : (reviewNote || undefined)),
     onSuccess: (_, { status }) => {
       toast.success(`Leave ${status}`);
       qc.invalidateQueries({ queryKey: ["doctor-leaves", doctor._id] });
@@ -220,6 +220,20 @@ export default function LeaveManagementModal({
                           <button onClick={() => deleteMut.mutate(leave._id)} disabled={deleteMut.isPending}
                             className="p-1.5 border border-rose-200 text-rose-400 rounded-xl hover:bg-rose-50 transition-all">
                             <Trash2 size={11} />
+                          </button>
+                        </div>
+                      )}
+                      {leave.status === "approved" && (
+                        <div className="flex gap-1.5 shrink-0">
+                          <button 
+                            onClick={() => {
+                              if (confirm("Are you sure you want to withdraw this approved leave?")) {
+                                reviewMut.mutate({ id: leave._id, status: "rejected", note: "Withdrawn after approval" });
+                              }
+                            }}
+                            disabled={reviewMut.isPending}
+                            className="px-3 py-1.5 border border-amber-200 text-amber-600 bg-amber-50 rounded-xl text-[8px] font-black uppercase hover:bg-amber-100 transition-all disabled:opacity-50">
+                            Withdraw
                           </button>
                         </div>
                       )}

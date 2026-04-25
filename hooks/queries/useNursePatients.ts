@@ -1,4 +1,4 @@
-﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { NurseService, NursePatient, NurseTask } from '@/lib/integrations/services/nurse.service';
 
 /**
@@ -53,7 +53,7 @@ export function useUpdateTaskStatus() {
 
     return useMutation({
         mutationFn: ({ id, status }: { id: string; status: string }) =>
-            NurseService.updateTaskStatus(id, status as "pending" | "completed" | "in-progress"),
+            NurseService.updateTaskStatus(id, status as "Pending" | "Completed" | "In Progress" | "Cancelled"),
         onSuccess: () => {
             // Invalidate tasks list to refetch
             queryClient.invalidateQueries({

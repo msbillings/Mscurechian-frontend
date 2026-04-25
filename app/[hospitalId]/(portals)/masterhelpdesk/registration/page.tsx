@@ -23,6 +23,7 @@ import {
     SpellCheck
 } from "lucide-react";
 import { helpdeskService, ipdService, spellCheckService, masterHelpdeskService } from "@/lib/integrations";
+import masterDoctorLeaveService from "@/lib/integrations/masterDoctorLeaveService";
 import type { HelpdeskDoctor, Bed, SpellMatch, SpellState, SpellPopupState } from "@/lib/integrations/types";
 import toast from "react-hot-toast";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
@@ -196,10 +197,18 @@ export default function MasterPatientRegistration() {
     }, [formData.dob]);
 
     useEffect(() => {
-        const initialType = searchParams.get('type') as 'OPD' | 'IPD' || 'OPD';
-        setFormData(prev => ({ ...prev, registrationType: initialType }));
-        setLoadingInitial(false);
-    }, [searchParams]);
+        const init = async () => {
+            try {
+                const initialType = searchParams.get('type') as 'OPD' | 'IPD' || 'OPD';
+                setFormData(prev => ({ ...prev, registrationType: initialType }));
+            } catch (err) {
+                console.error("Error initializing registration", err);
+            } finally {
+                setLoadingInitial(false);
+            }
+        };
+        init();
+    }, [searchParams, hospitalId]);
 
     useEffect(() => {
         if (formData.dob) {
