@@ -22,8 +22,6 @@ const PORTAL_PATHS = [
   "/hr",
   "/emergency",
   "/ambulance",
-  "/admin",
-  "/patient",
 ];
 
 // Paths that are completely public / don't need tenant context
@@ -538,14 +536,13 @@ export default async function middleware(request: NextRequest) {
         return NextResponse.redirect(loginUrl);
       }
 
-      // 🚨 FAST PATH: Patients should ALWAYS be on the global root dashboard. No tenant prefix allowed.
-      if (userRole === "patient") {
-        console.log(
-          `[Middleware] Patient on tenant path ${pathname}. Redirecting to global...`,
-        );
-        return NextResponse.redirect(
-          new URL("/patient/dashboard", request.url),
-        );
+      // 🚨 FAST PATH: Global roles (Patient, SuperAdmin) should ALWAYS be on their global dashboards. No tenant prefix allowed.
+      if (userRole === "patient" || userRole === "super-admin" || userRole === "admin") {
+        const globalPortal = userRole === "patient" ? "/patient/dashboard" : "/admin";
+        if (pathname.startsWith(`/${firstSegment}${globalPortal}`)) {
+          console.log(`[Middleware] ${userRole} on tenant path ${pathname}. Redirecting to global...`);
+          return NextResponse.redirect(new URL(globalPortal, request.url));
+        }
       }
 
       // 🚨 TENANT MISMATCH PROTECTION
