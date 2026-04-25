@@ -349,7 +349,9 @@ export default function MasterDashboard() {
 
     // ── Filtering ──────────────────────────────────────────────────────────
     const { offlineAppointments, onlineAppointments } = useMemo(() => {
-        const filtered = appointments.filter(apt => {
+        // Filter for the bottom "Appointment Ledger" (Offline/OPD)
+        const offlineFiltered = appointments.filter(apt => {
+            if (apt.isOnline) return false;
             const matchesSearch = !searchQuery || apt.patientName?.toLowerCase().includes(searchQuery.toLowerCase()) || apt.mrn?.toLowerCase().includes(searchQuery.toLowerCase());
             const status = apt.status?.toLowerCase();
             const matchesTab = activeTab === 'active' 
@@ -358,9 +360,17 @@ export default function MasterDashboard() {
             return matchesSearch && matchesTab;
         });
 
+        // Filter for the top "Digital Front Door" (Online) - Show ALL for the date regardless of activeTab
+        const onlineFiltered = appointments.filter(apt => {
+            if (!apt.isOnline) return false;
+            const matchesSearch = !searchQuery || apt.patientName?.toLowerCase().includes(searchQuery.toLowerCase()) || apt.mrn?.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesDate = new Date(apt.date).toDateString() === selectedOnlineDate;
+            return matchesSearch && matchesDate;
+        });
+
         return {
-            offlineAppointments: filtered.filter(a => !a.isOnline).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-            onlineAppointments: filtered.filter(a => a.isOnline && new Date(a.date).toDateString() === selectedOnlineDate).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            offlineAppointments: offlineFiltered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+            onlineAppointments: onlineFiltered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         };
     }, [appointments, searchQuery, activeTab, selectedOnlineDate]);
 
