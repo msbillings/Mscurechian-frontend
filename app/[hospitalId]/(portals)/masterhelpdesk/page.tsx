@@ -442,7 +442,7 @@ export default function MasterDashboard() {
 
             {/* STATS GRID */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard icon={<Users />} title="Institutional Registry" value={stats.totalPatients} trend="+12.5% vs Prev Month" color="slate" />
+                <StatCard icon={<Users />} title="Total Registries" value={stats.totalPatients} trend="+12.5% vs Prev Month" color="slate" />
                 <StatCard icon={<CalendarCheck />} title="Today's Sessions" value={stats.todayPatients} trend="Active Live Queue" color="teal" />
                 <StatCard icon={<Activity />} title="Emergency Triage" value={stats.emergencyPatients} trend="Critical Oversight" color="rose" />
             <StatCard icon={<CheckCircle2 />} title="Completed Manifests" value={stats.completedAppointments} trend="Archived Success" color="emerald" />
