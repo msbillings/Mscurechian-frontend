@@ -269,11 +269,16 @@ export default function MasterHelpdeskProfileSettings() {
             if (value.length > 0 && (value.length < 9 || value.length > 18)) fieldError = "Account number must be 9-18 digits";
         }
 
-        if (['mobile', 'bankDetails.accountNumber', 'aadharNumber', 'experienceYears', 'uanNumber', 'esiNumber'].includes(name)) {
+        if (name === 'hospitalName') {
+            if (value && !/^[A-Za-z ]*$/.test(value)) return; // Only allow characters and spaces
+        }
+
+        if (['mobile', 'hospitalMobile', 'bankDetails.accountNumber', 'aadharNumber', 'experienceYears', 'uanNumber', 'esiNumber'].includes(name)) {
             if (value && !/^\d*$/.test(value)) return; // Only allow digits
         }
 
         if (name === 'mobile' && value.length > 10) return;
+        if (name === 'hospitalMobile' && value.length > 10) return;
         if (name === 'aadharNumber' && value.length > 12) return;
         if (name === 'panNumber' && value.length > 10) return;
         if (name === 'bankDetails.ifscCode' && value.length > 11) return;
@@ -440,10 +445,10 @@ export default function MasterHelpdeskProfileSettings() {
                 <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-4 sm:px-8 py-2.5 sm:py-3 bg-teal-600 hover:bg-teal-700 text-white text-[10px] sm:text-sm font-black uppercase tracking-widest rounded-xl sm:rounded-2xl active:scale-95 transition-all disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 sm:px-8 py-2.5 sm:py-3 bg-primary-theme hover:bg-primary-theme/80 text-white text-[10px] sm:text-sm font-black uppercase tracking-widest rounded-xl sm:rounded-2xl active:scale-95 transition-all disabled:opacity-50"
                 >
                     {isSaving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Save size={16} className="sm:size-4" />}
-                    Save Changes
+                    Save 
                 </button>
             </div>
 
@@ -474,7 +479,7 @@ export default function MasterHelpdeskProfileSettings() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab.id
-                                    ? 'bg-teal-600 text-white  translate-x-1'
+                                    ? 'bg-primary-theme text-white  translate-x-1'
                                     : 'bg-white dark:bg-[#111] text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900 border border-gray-100 dark:border-gray-800'
                                     }`}
                             >
