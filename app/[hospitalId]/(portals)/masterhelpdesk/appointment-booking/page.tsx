@@ -183,13 +183,20 @@ export default function MasterAppointmentBooking() {
                         const profileData = patientData.profile || {};
                         const lastVisitVitals = patientData.lastVisit?.vitals || {};
 
+                        const getSafeName = (p: any) => {
+                            return p.user?.name || p.name || (p.profile?.firstName ? `${p.profile.firstName} ${p.profile.lastName || ''}` : null) || p.profile?.name || 'Unknown Patient';
+                        };
+                        const getSafeMobile = (p: any) => {
+                            return p.user?.mobile || p.mobile || p.profile?.contactNumber || p.profile?.mobile || 'N/A';
+                        };
+
                         const transformed = {
                             _id: patientData.user?._id || patientData._id,
                             id: patientData.user?._id || patientData._id,
                             patientId: patientData._id,
-                            name: patientData.user?.name || patientData.name,
+                            name: getSafeName(patientData),
                             honorific: profileData.honorific || patientData.honorific || '',
-                            mobile: patientData.user?.mobile || profileData.contactNumber || patientData.profile?.contactNumber || patientData.mobile || 'N/A',
+                            mobile: getSafeMobile(patientData),
                             mrn: patientData.mrn || profileData.mrn || 'CC-' + (patientData.user?._id || patientData._id).slice(-6).toUpperCase(),
                             gender: profileData.gender || patientData.gender || 'N/A',
                             age: profileData.age || patientData.age || 'N/A',
@@ -511,6 +518,7 @@ export default function MasterAppointmentBooking() {
             });
             console.log("Booking successful, response received:", response);
             const appointment = response.appointment || response;
+            console.log("DEBUG: MASTER PORTAL APPOINTMENT BOOKING SUCCESS - APPOINTMENT DETAILS", appointment);
 
             if (sendToDoctor && (appointment._id || appointment.id)) {
                 try {
@@ -677,10 +685,17 @@ export default function MasterAppointmentBooking() {
                                                 <button key={p._id} onClick={async () => {
                                                     const full = await helpdeskService.getPatientById(p._id);
                                                     const profileData = full.profile || {};
+                                                    const getSafeName = (p: any) => {
+                                                        return p.user?.name || p.name || (p.profile?.firstName ? `${p.profile.firstName} ${p.profile.lastName || ''}` : null) || p.profile?.name || 'Unknown Patient';
+                                                    };
+                                                    const getSafeMobile = (p: any) => {
+                                                        return p.user?.mobile || p.mobile || p.profile?.contactNumber || p.profile?.mobile || 'N/A';
+                                                    };
+
                                                     setSelectedPatient({
                                                         _id: full.user?._id || full._id, id: full.user?._id || full._id, patientId: full._id,
-                                                        name: full.user?.name || full.name, honorific: profileData.honorific || '',
-                                                        mobile: full.user?.mobile || full.mobile, mrn: full.mrn, gender: full.gender, age: full.age,
+                                                        name: getSafeName(full), honorific: profileData.honorific || '',
+                                                        mobile: getSafeMobile(full), mrn: full.mrn, gender: full.gender, age: full.age,
                                                         vitals: full.lastVisit?.vitals || {}, ...profileData
                                                     });
                                                     setPatientSearch("");

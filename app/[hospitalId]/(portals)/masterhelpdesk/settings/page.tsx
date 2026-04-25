@@ -426,7 +426,8 @@ export default function MasterHelpdeskProfileSettings() {
             <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-100 dark:border-gray-800">
                 <div className="flex items-center gap-4">
                     <button
-                        onClick={() => router.back()}
+                        type="button"
+                        onClick={() => router.push(`/${hospitalId}/masterhelpdesk`)}
                         className="p-1 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-400 transition-colors"
                     >
                         <ArrowLeft size={20} className="sm:size-6" />

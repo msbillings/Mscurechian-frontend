@@ -167,21 +167,20 @@ function CreateDoctor() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto py-8 space-y-6 px-4">
+    <div className="max-w-5xl mx-auto py-6 space-y-6 px-1">
       <div className="flex items-center gap-4 mb-6">
         <button 
-          onClick={() => router.back()} 
+          type="button"
+          onClick={() => router.push(getPath("/masterhelpdesk/doctors"))} 
           className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-indigo-600 hover:border-indigo-100 hover:bg-indigo-50/50 shadow-sm transition-all active:scale-95"
           title="Go Back"
         >
           <ArrowLeft size={20} />
         </button>
-        <div className="p-3 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200 text-white shrink-0">
-          <UserPlus size={24} />
-        </div>
+        
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Onboard New Physician</h1>
-          <p className="text-slate-500">Register a new doctor to the hospital mainframe</p>
+          <h1 className="text-2xl  max-sm:text-[18px] font-bold text-slate-900">Onboard New Physician</h1>
+          <p className="text-slate-500 max-sm:text-[14px]">Register a new doctor to the hospital mainframe</p>
         </div>
       </div>
 
@@ -313,10 +312,10 @@ function CreateDoctor() {
           </div>
         </Card>
 
-        <div className="flex justify-end gap-4 pt-6">
-          <Button type="button" variant="secondary" onClick={() => router.back()} disabled={loading} className="px-8 py-3 rounded-xl">Cancel</Button>
-          <Button type="submit" variant="primary" loading={loading} icon={<UserPlus size={18} />} className="px-12 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200">
-            Onboard Doctor
+        <div className="flex max-sm:flex-col-reverse justify-end gap-4 pt-6 max-sm:pb-24">
+          <Button type="button" variant="secondary" onClick={() => router.push(getPath("/masterhelpdesk/doctors"))} disabled={loading} className="px-8 py-3 rounded-xl max-sm:w-full flex justify-center">Cancel</Button>
+          <Button type="submit" variant="primary" loading={loading} icon={<UserPlus size={18} />} className="px-12 py-3 max-sm:py-3 rounded-xl bg-indigo-600 max-sm:text-[15px] hover:bg-indigo-700 shadow-lg shadow-indigo-200 max-sm:w-full flex justify-center">
+            Create Doctor
           </Button>
         </div>
       </form>
