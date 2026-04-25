@@ -1,5 +1,6 @@
 import {
   HELPDESK_ENDPOINTS,
+  MASTERHELPDESK_ENDPOINTS,
   BOOKING_ENDPOINTS,
   DOCTOR_ENDPOINTS,
   TRANSIT_ENDPOINTS,
@@ -37,11 +38,27 @@ export const helpdeskService = {
   getMe: () => apiClient<HelpdeskProfile>(HELPDESK_ENDPOINTS.ME),
 
   /**
+   * Get master helpdesk profile information
+   * @returns Profile data 
+   */
+  getMasterMe: () => apiClient<HelpdeskProfile>(MASTERHELPDESK_ENDPOINTS.ME),
+
+  /**
    * Update helpdesk profile
    * @param data Updated profile information
    */
   updateProfile: (data: Partial<HelpdeskProfile>) =>
     apiClient<HelpdeskProfile>(HELPDESK_ENDPOINTS.ME, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  /**
+   * Update master helpdesk profile
+   * @param data Updated profile information
+   */
+  updateMasterProfile: (data: Partial<HelpdeskProfile>) =>
+    apiClient<HelpdeskProfile>(MASTERHELPDESK_ENDPOINTS.ME, {
       method: "PUT",
       body: JSON.stringify(data),
     }),
