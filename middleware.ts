@@ -49,9 +49,9 @@ const ROUTE_MAP: Record<string, string> = {
   doctor: "/doctor",
   "hospital-admin": "/hospital-admin",
   lab: "/lab/dashboard",
-  "pharma": "/pharmacy/dashboard",
+  pharma: "/pharmacy/dashboard",
   "pharma-owner": "/pharmacy/dashboard",
-  "pharmacist": "/pharmacy/dashboard",
+  pharmacist: "/pharmacy/dashboard",
   "super-admin": "/admin",
   admin: "/admin",
   helpdesk: "/helpdesk",
@@ -96,23 +96,39 @@ function isTokenExpired(token: string | undefined): boolean {
   const payload = decodeJwt(token);
   if (!payload || !payload.exp) return true;
   // Buffer of 10 seconds to avoid edge-case expiry during request
-  return Date.now() >= (payload.exp * 1000 - 10000);
+  return Date.now() >= payload.exp * 1000 - 10000;
 }
 
 // Global cache to pool concurrent refreshes for the same session across all parallel middleware executions
-const refreshPool = new Map<string, Promise<{ accessToken: string; csrfToken: string; setCookies: string[] | string | null } | null>>();
+const refreshPool = new Map<
+  string,
+  Promise<{
+    accessToken: string;
+    csrfToken: string;
+    setCookies: string[] | string | null;
+  } | null>
+>();
 
 /**
  * Perform a silent refresh call to the backend.
  * Uses a promise pool to ensure parallel requests for the same session don't trigger concurrent rotations.
  */
-async function silentRefresh(refreshToken: string, hospitalId?: string, csrfToken?: string, sessionId?: string, role?: string) {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5003/api";
+async function silentRefresh(
+  refreshToken: string,
+  hospitalId?: string,
+  csrfToken?: string,
+  sessionId?: string,
+  role?: string,
+) {
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:5003/api";
   const poolKey = sessionId || refreshToken.slice(-20); // Fallback to token suffix if sessionId missing
 
   // 1. Check if a refresh for this session is already in flight
   if (refreshPool.has(poolKey)) {
-    console.log(`[Middleware] 🤝 Joining existing refresh pool for session: ${poolKey}`);
+    console.log(
+      `[Middleware] 🤝 Joining existing refresh pool for session: ${poolKey}`,
+    );
     return refreshPool.get(poolKey);
   }
 
@@ -120,20 +136,25 @@ async function silentRefresh(refreshToken: string, hospitalId?: string, csrfToke
   const refreshPromise = (async () => {
     try {
       const rtRoleSuffix = (role || "").toLowerCase().replace("-", "_");
-      const rtCookieName = rtRoleSuffix ? `refreshToken_${rtRoleSuffix}` : "refreshToken";
+      const rtCookieName = rtRoleSuffix
+        ? `refreshToken_${rtRoleSuffix}`
+        : "refreshToken";
 
       const headers: HeadersInit = {
         "Content-Type": "application/json",
-        "Cookie": `${rtCookieName}=${refreshToken}${csrfToken ? `; csrf_token=${csrfToken}` : ""}`,
+        Cookie: `${rtCookieName}=${refreshToken}${csrfToken ? `; csrf_token=${csrfToken}` : ""}`,
       };
 
       if (csrfToken) (headers as any)["X-CSRF-Token"] = csrfToken;
       if (hospitalId) (headers as any)["X-Hospital-Id"] = hospitalId;
       if (sessionId) (headers as any)["X-Session-Id"] = sessionId;
 
-      const endpoint = role === "ambulance" ? "/emergency/auth/refresh" : "/auth/refresh";
-      
-      console.log(`[Middleware] 🚀 Triggering actual refresh call for ${poolKey} to ${endpoint}`);
+      const endpoint =
+        role === "ambulance" ? "/emergency/auth/refresh" : "/auth/refresh";
+
+      console.log(
+        `[Middleware] 🚀 Triggering actual refresh call for ${poolKey} to ${endpoint}`,
+      );
       const res = await fetch(`${API_URL}${endpoint}`, {
         method: "POST",
         headers,
@@ -144,24 +165,41 @@ async function silentRefresh(refreshToken: string, hospitalId?: string, csrfToke
         // MODERN API: getSetCookie() returns string[] natively.
         // FALLBACK: get('set-cookie') returns aggregated string (comma separated).
         const setCookieHeader = res.headers.get("set-cookie");
-        const rawCookies = (res.headers as any).getSetCookie ? (res.headers as any).getSetCookie() : (setCookieHeader ? [setCookieHeader] : []);
-        
-        return { 
+        const rawCookies = (res.headers as any).getSetCookie
+          ? (res.headers as any).getSetCookie()
+          : setCookieHeader
+            ? [setCookieHeader]
+            : [];
+
+        return {
           accessToken: data.accessToken,
           csrfToken: data.csrfToken,
-          setCookies: rawCookies
+          setCookies: rawCookies,
         };
       } else if (res.status === 409) {
-        // Backend retry logic 
-        console.log(`[Middleware] ⏳ Backend busy (409) — waiting and retrying once for ${poolKey}...`);
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        const retryRes = await fetch(`${API_URL}${endpoint}`, { method: "POST", headers });
+        // Backend retry logic
+        console.log(
+          `[Middleware] ⏳ Backend busy (409) — waiting and retrying once for ${poolKey}...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+
+        const retryRes = await fetch(`${API_URL}${endpoint}`, {
+          method: "POST",
+          headers,
+        });
         if (retryRes.ok) {
           const data = await retryRes.json();
           const sch = retryRes.headers.get("set-cookie");
-          const rawCookies = (retryRes.headers as any).getSetCookie ? (retryRes.headers as any).getSetCookie() : (sch ? [sch] : []);
-          return { accessToken: data.accessToken, csrfToken: data.csrfToken, setCookies: rawCookies };
+          const rawCookies = (retryRes.headers as any).getSetCookie
+            ? (retryRes.headers as any).getSetCookie()
+            : sch
+              ? [sch]
+              : [];
+          return {
+            accessToken: data.accessToken,
+            csrfToken: data.csrfToken,
+            setCookies: rawCookies,
+          };
         }
       }
       return null;
@@ -230,7 +268,9 @@ export default async function middleware(request: NextRequest) {
     const cleanPath = pathname.replace(/%20| /g, "-");
     const redirectUrl = new URL(cleanPath, request.url);
     redirectUrl.search = request.nextUrl.search;
-    console.log(`[Middleware] 🧹 Sanitizing malformed path: ${pathname} -> ${cleanPath}`);
+    console.log(
+      `[Middleware] 🧹 Sanitizing malformed path: ${pathname} -> ${cleanPath}`,
+    );
     return NextResponse.redirect(redirectUrl);
   }
 
@@ -239,7 +279,9 @@ export default async function middleware(request: NextRequest) {
     const cleanPath = pathname.replace(/^\/global/, "");
     const redirectUrl = new URL(cleanPath || "/", request.url);
     redirectUrl.search = request.nextUrl.search;
-    console.log(`[Middleware] 🧹 Stripping global prefix: ${pathname} -> ${cleanPath}`);
+    console.log(
+      `[Middleware] 🧹 Stripping global prefix: ${pathname} -> ${cleanPath}`,
+    );
     return NextResponse.redirect(redirectUrl);
   }
 
@@ -255,7 +297,10 @@ export default async function middleware(request: NextRequest) {
 
   // 1.5 IDENTIFY TENANT FROM PATH OR COOKIE
   const pathParts = pathname.split("/").filter(Boolean);
-  const pathHospitalId = pathParts.length >= 1 && isValidHospitalId(pathParts[0]) ? pathParts[0] : "";
+  const pathHospitalId =
+    pathParts.length >= 1 && isValidHospitalId(pathParts[0])
+      ? pathParts[0]
+      : "";
   const cookieHospitalId = request.cookies.get("hospitalId")?.value || "";
 
   // Use path context first, fallback to cookie for discovery on global routes (like /ambulance)
@@ -264,10 +309,12 @@ export default async function middleware(request: NextRequest) {
   // 2. RESOLVE ACCESS TOKEN (Priority: Tenant-suffixed > Global)
   let accessToken = request.cookies.get("accessToken")?.value || "";
   if (pathHospitalId) {
-    const tenantToken = request.cookies.get(`accessToken_${pathHospitalId}`)?.value;
+    const tenantToken = request.cookies.get(
+      `accessToken_${pathHospitalId}`,
+    )?.value;
     if (tenantToken) accessToken = tenantToken;
   }
-  
+
   // ✅ FIX (Bug 3): Resolve Refresh Token with role-suffix priority.
   // Backend sets refreshToken_hospital_admin, refreshToken_doctor, etc. NOT the plain refreshToken.
   // Without this, hasRefreshToken is always false → silent refresh never fires → session dies.
@@ -275,7 +322,8 @@ export default async function middleware(request: NextRequest) {
 
   // Priority 1: suffixed by hospitalId (most specific)
   if (pathHospitalId) {
-    refreshToken = request.cookies.get(`refreshToken_${pathHospitalId}`)?.value || "";
+    refreshToken =
+      request.cookies.get(`refreshToken_${pathHospitalId}`)?.value || "";
   }
 
   // Priority 2: suffixed by role (decode access token to get the role first)
@@ -284,9 +332,10 @@ export default async function middleware(request: NextRequest) {
   if (!refreshToken && _rtRolePre) {
     const _rNorm = _rtRolePre.replace(/-/g, "_");
     const _rHyph = _rtRolePre.replace(/_/g, "-");
-    refreshToken = request.cookies.get(`refreshToken_${_rNorm}`)?.value
-                || request.cookies.get(`refreshToken_${_rHyph}`)?.value
-                || "";
+    refreshToken =
+      request.cookies.get(`refreshToken_${_rNorm}`)?.value ||
+      request.cookies.get(`refreshToken_${_rHyph}`)?.value ||
+      "";
   }
 
   // Priority 3: plain global refreshToken (super-admin / ambulance / fallback)
@@ -295,8 +344,11 @@ export default async function middleware(request: NextRequest) {
   }
 
   // 2.6 METADATA RESOLUTION (Required for CSRF check below)
-  const payloadBeforeRefresh = (accessToken ? decodeJwt(accessToken) : null) || (refreshToken ? decodeJwt(refreshToken) : null);
-  const userRoleInitial = payloadBeforeRefresh?.role?.toLowerCase() || _rtRolePre || "";
+  const payloadBeforeRefresh =
+    (accessToken ? decodeJwt(accessToken) : null) ||
+    (refreshToken ? decodeJwt(refreshToken) : null);
+  const userRoleInitial =
+    payloadBeforeRefresh?.role?.toLowerCase() || _rtRolePre || "";
 
   // 2.5 PROACTIVE SILENT REFRESH Variables
   let isRefreshed = false;
@@ -304,16 +356,25 @@ export default async function middleware(request: NextRequest) {
   let refreshResponseCookies: string | string[] | null = null;
   let refreshData: any = null;
 
-  const isPublicPage = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+  const isPublicPage = PUBLIC_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(p + "/"),
+  );
 
   // ✅ REFRESH TRIGGER: If token expired OR CSRF is missing (important for POST/PUT)
   const hasRefreshToken = !!refreshToken;
-  const isCsrfMissing = !request.cookies.get("csrf_token")?.value && 
-                        !request.cookies.get(`csrf_token_${effectiveId}`)?.value &&
-                        !request.cookies.get(`csrf_token_${userRoleInitial.replace("-", "_")}`)?.value &&
-                        !request.cookies.get(`csrf_token_${userRoleInitial.replace("_", "-")}`)?.value;
+  const isCsrfMissing =
+    !request.cookies.get("csrf_token")?.value &&
+    !request.cookies.get(`csrf_token_${effectiveId}`)?.value &&
+    !request.cookies.get(`csrf_token_${userRoleInitial.replace("-", "_")}`)
+      ?.value &&
+    !request.cookies.get(`csrf_token_${userRoleInitial.replace("_", "-")}`)
+      ?.value;
 
-  if ((isTokenExpired(accessToken) || (hasRefreshToken && isCsrfMissing)) && hasRefreshToken && !isPublicPage) {
+  if (
+    (isTokenExpired(accessToken) || (hasRefreshToken && isCsrfMissing)) &&
+    hasRefreshToken &&
+    !isPublicPage
+  ) {
     // ✅ FIX: Extract sessionId from refreshToken so we can pass X-Session-Id
     // to the backend — enabling the Redis mutex to serialize this middleware
     // silentRefresh with any concurrent proactive refresh from the browser.
@@ -329,15 +390,24 @@ export default async function middleware(request: NextRequest) {
     if (!csrfForRefresh) {
       const r = rtRole.replace(/-/g, "_");
       const rh = rtRole.replace(/_/g, "-");
-      csrfForRefresh = request.cookies.get(`csrf_token_${r}`)?.value
-                    || request.cookies.get(`csrf_token_${rh}`)?.value
-                    || request.cookies.get("csrf_token_super_admin")?.value
-                    || request.cookies.get("csrf_token_admin")?.value
-                    || request.cookies.get("csrf_token_super-admin")?.value;
+      csrfForRefresh =
+        request.cookies.get(`csrf_token_${r}`)?.value ||
+        request.cookies.get(`csrf_token_${rh}`)?.value ||
+        request.cookies.get("csrf_token_super_admin")?.value ||
+        request.cookies.get("csrf_token_admin")?.value ||
+        request.cookies.get("csrf_token_super-admin")?.value;
     }
 
-    console.log(`[Middleware] 🔄 Token expired/missing. Attempting silent refresh for ${pathname}...`);
-    refreshData = await silentRefresh(refreshToken, effectiveId || undefined, csrfForRefresh, rtSessionId, rtRole);
+    console.log(
+      `[Middleware] 🔄 Token expired/missing. Attempting silent refresh for ${pathname}...`,
+    );
+    refreshData = await silentRefresh(
+      refreshToken,
+      effectiveId || undefined,
+      csrfForRefresh,
+      rtSessionId,
+      rtRole,
+    );
     if (refreshData) {
       accessToken = refreshData.accessToken;
       newAccessToken = refreshData.accessToken;
@@ -358,21 +428,33 @@ export default async function middleware(request: NextRequest) {
   }
 
   // Fallback metadata resolution (Prefer accessToken payload, fallback to refreshToken)
-  const payload = (accessToken ? decodeJwt(accessToken) : null) || (refreshToken ? decodeJwt(refreshToken) : null);
+  const payload =
+    (accessToken ? decodeJwt(accessToken) : null) ||
+    (refreshToken ? decodeJwt(refreshToken) : null);
   const userRole = payload?.role?.toLowerCase() || "";
   const userHospitalIdRaw = payload?.hospitalId || payload?.hospital;
-  const userHospitalId = (userHospitalIdRaw === "global") ? null : userHospitalIdRaw;
+  const userHospitalId =
+    userHospitalIdRaw === "global" ? null : userHospitalIdRaw;
 
   // ✅ DEBUG LOGGING
-  if (pathname.includes("/admin") || pathname.includes("/doctor") || pathname.includes("/hospital-admin") || pathname.includes("/auth")) {
-    console.log(`[Middleware] 📋 Path: ${pathname} | Token: ${!!accessToken}${isRefreshed ? " (REFRESHED)" : ""} | Session: ${currentSessionId} | Role: ${userRole} | Hosp: ${userHospitalId}`);
+  if (
+    pathname.includes("/admin") ||
+    pathname.includes("/doctor") ||
+    pathname.includes("/hospital-admin") ||
+    pathname.includes("/auth")
+  ) {
+    console.log(
+      `[Middleware] 📋 Path: ${pathname} | Token: ${!!accessToken}${isRefreshed ? " (REFRESHED)" : ""} | Session: ${currentSessionId} | Role: ${userRole} | Hosp: ${userHospitalId}`,
+    );
   }
 
   // 3. ENFORCE PATIENT PORTAL RESTRICTIONS
   // Patients should ONLY be on /patient paths. Others should be redirected AWAY.
   if (pathname.startsWith("/patient")) {
     if (!accessToken && !currentSessionId) {
-      console.log(`[Middleware] 🔐 Redirect to Login (Patient Path): No Token/Session`);
+      console.log(
+        `[Middleware] 🔐 Redirect to Login (Patient Path): No Token/Session`,
+      );
       const loginUrl = new URL("/auth/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
@@ -402,12 +484,11 @@ export default async function middleware(request: NextRequest) {
 
   if (isLegacyPortalPath) {
     if (userHospitalId && accessToken && userRole !== "patient") {
-      const redirectUrl = new URL(
-        `/${userHospitalId}${pathname}`,
-        request.url,
-      );
+      const redirectUrl = new URL(`/${userHospitalId}${pathname}`, request.url);
       redirectUrl.search = request.nextUrl.search;
-      console.log(`[Middleware] 🔄 Legacy Redirect: ${pathname} -> ${redirectUrl.pathname}`);
+      console.log(
+        `[Middleware] 🔄 Legacy Redirect: ${pathname} -> ${redirectUrl.pathname}`,
+      );
       return NextResponse.redirect(redirectUrl);
     }
     return NextResponse.next();
@@ -421,24 +502,37 @@ export default async function middleware(request: NextRequest) {
       // 🚨 PORTAL REDIRECT: If user visits /[hospitalId]/dashboard or /[hospitalId]/portals,
       // redirect them specifically to their role's portal.
       if (
-        (pathParts.length === 2 && (pathParts[1] === "dashboard" || pathParts[1] === "portals")) ||
+        (pathParts.length === 2 &&
+          (pathParts[1] === "dashboard" || pathParts[1] === "portals")) ||
         pathParts.length === 1
       ) {
         if (userRole && userRole !== "patient") {
           const portalBase = ROUTE_MAP[userRole] || "/hospital-admin";
-          const target = portalBase.startsWith("/") ? portalBase : `/${portalBase}`;
+          const target = portalBase.startsWith("/")
+            ? portalBase
+            : `/${portalBase}`;
 
           // If the target is already absolute (like /admin), don't prefix with hospitalId
-          const isGlobalPortal = ["/admin", "/patient/dashboard", "/ambulance"].includes(target);
-          const finalRedirect = isGlobalPortal ? target : `/${firstSegment}${target}`;
+          const isGlobalPortal = [
+            "/admin",
+            "/patient/dashboard",
+            "/ambulance",
+          ].includes(target);
+          const finalRedirect = isGlobalPortal
+            ? target
+            : `/${firstSegment}${target}`;
 
-          console.log(`[Middleware] 🧭 Routing user ${userRole} from ${pathname} to ${finalRedirect}`);
+          console.log(
+            `[Middleware] 🧭 Routing user ${userRole} from ${pathname} to ${finalRedirect}`,
+          );
           return NextResponse.redirect(new URL(finalRedirect, request.url));
         }
       }
 
       if (!accessToken && !currentSessionId) {
-        console.log(`[Middleware] 🔐 Redirect to Login (Tenant Path): No Token/Session`);
+        console.log(
+          `[Middleware] 🔐 Redirect to Login (Tenant Path): No Token/Session`,
+        );
         const loginUrl = new URL("/auth/login", request.url);
         loginUrl.searchParams.set("redirect", pathname);
         return NextResponse.redirect(loginUrl);
@@ -457,7 +551,12 @@ export default async function middleware(request: NextRequest) {
       // 🚨 TENANT MISMATCH PROTECTION
       const userHospitalId = payload?.hospitalId || payload?.hospital;
 
-      if (userHospitalId && userHospitalId !== firstSegment && userRole !== "super-admin") {
+      if (
+        userHospitalId &&
+        userHospitalId !== firstSegment &&
+        userRole !== "super-admin" &&
+        userRole !== "masterhelpdesk"
+      ) {
         console.warn(
           `[Middleware] Tenant mismatch: path=${firstSegment}, token=${userHospitalId}. Redirecting...`,
         );
@@ -474,7 +573,7 @@ export default async function middleware(request: NextRequest) {
   // 7. FINAL RESPONSE ASSEMBLY
   // If we refreshed the token, we MUST forward it to the server and set it in the browser
   const requestHeaders = new Headers(request.headers);
-  
+
   // ✅ ALWAYS Propagate current state to headers for apiServer (Server Components)
   if (accessToken) {
     requestHeaders.set("X-Access-Token", accessToken);
@@ -484,8 +583,9 @@ export default async function middleware(request: NextRequest) {
   }
   // If we have a fresh CSRF from refresh, use it. Otherwise use existing.
   // Resolve with multi-tenant context (suffixed cookies support)
-  let currentCsrf = refreshData?.csrfToken || request.cookies.get("csrf_token")?.value;
-  
+  let currentCsrf =
+    refreshData?.csrfToken || request.cookies.get("csrf_token")?.value;
+
   if (!currentCsrf) {
     if (effectiveId && effectiveId !== "global") {
       currentCsrf = request.cookies.get(`csrf_token_${effectiveId}`)?.value;
@@ -493,12 +593,13 @@ export default async function middleware(request: NextRequest) {
     if (!currentCsrf && userRole) {
       const r = userRole.replace(/-/g, "_");
       const rh = userRole.replace(/_/g, "-");
-      currentCsrf = request.cookies.get(`csrf_token_${r}`)?.value 
-                 || request.cookies.get(`csrf_token_${rh}`)?.value
-                 || request.cookies.get("csrf_token_super_admin")?.value
-                 || request.cookies.get("csrf_token_admin")?.value
-                 || request.cookies.get("csrf_token_super-admin")?.value
-                 || request.cookies.get("csrf_token_hospital-admin")?.value;
+      currentCsrf =
+        request.cookies.get(`csrf_token_${r}`)?.value ||
+        request.cookies.get(`csrf_token_${rh}`)?.value ||
+        request.cookies.get("csrf_token_super_admin")?.value ||
+        request.cookies.get("csrf_token_admin")?.value ||
+        request.cookies.get("csrf_token_super-admin")?.value ||
+        request.cookies.get("csrf_token_hospital-admin")?.value;
     }
   }
 
@@ -520,43 +621,49 @@ export default async function middleware(request: NextRequest) {
   if (isRefreshed && newAccessToken) {
     // Also set it in the response for the browser for subsequent client-side usage
     response.headers.set("X-Access-Token", newAccessToken);
-    
+
     // ✅ SYNC CSRF: Also set X-CSRF-Token header for apiServer downstream
     if (refreshData?.csrfToken) {
       response.headers.set("X-CSRF-Token", refreshData.csrfToken);
     }
-    
+
     // Set cookies for the browser (Access Token matches its JWT expiry or defaults to 15m)
     const payload = decodeJwt(newAccessToken);
-    const maxAge = payload?.exp ? Math.max(0, payload.exp - Math.floor(Date.now() / 1000)) : 1800;
+    const maxAge = payload?.exp
+      ? Math.max(0, payload.exp - Math.floor(Date.now() / 1000))
+      : 1800;
 
     const cookieOptions = {
-        path: "/",
-        maxAge: maxAge,
-        httpOnly: false,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax" as const,
+      path: "/",
+      maxAge: maxAge,
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax" as const,
     };
     response.cookies.set("accessToken", newAccessToken, cookieOptions);
-    
-    // ✅ SYNC TENANT TOKEN: Ensure the suffixed cookie is updated alongside global 
+
+    // ✅ SYNC TENANT TOKEN: Ensure the suffixed cookie is updated alongside global
     // to prevent apiClient from picking up a stale/expired tenant cookie.
     if (effectiveId) {
-      response.cookies.set(`accessToken_${effectiveId}`, newAccessToken, cookieOptions);
+      response.cookies.set(
+        `accessToken_${effectiveId}`,
+        newAccessToken,
+        cookieOptions,
+      );
     }
 
     // Also forward any other cookies the backend sent (like rotated CSRF and REFRESH token)
     if (refreshResponseCookies) {
       // ✅ FIX 5: Robust Cookie Parsing for Next.js 15 / Node 20
-      // We process each string in the array. If a string contains multiple cookies 
-      // (comma-aggregated), we split them using a regex that avoids splitting on 
-      // commas inside date strings (Expires). 
+      // We process each string in the array. If a string contains multiple cookies
+      // (comma-aggregated), we split them using a regex that avoids splitting on
+      // commas inside date strings (Expires).
       const rawCookieList = Array.isArray(refreshResponseCookies)
         ? refreshResponseCookies
         : [refreshResponseCookies as string];
 
       const processedCookies: string[] = [];
-      rawCookieList.forEach(cStr => {
+      rawCookieList.forEach((cStr) => {
         // Split by comma followed by a space and then a key=value pattern (avoids Expires commas)
         const parts = cStr.split(/, (?=[a-zA-Z0-9_-]+=)/);
         processedCookies.push(...parts);
@@ -564,7 +671,7 @@ export default async function middleware(request: NextRequest) {
 
       processedCookies.forEach((c) => {
         if (!c || !c.includes("=")) return;
-        
+
         const parts = c.split(";").map((p) => p.trim());
         const [nameValue, ...directives] = parts;
         const eqIdx = nameValue.indexOf("=");
@@ -575,7 +682,8 @@ export default async function middleware(request: NextRequest) {
         if (!name) return;
 
         const host = request.headers.get("host") || "";
-        const isLocal = host.includes("localhost") || host.includes("127.0.0.1");
+        const isLocal =
+          host.includes("localhost") || host.includes("127.0.0.1");
         const secureFlag = process.env.NODE_ENV === "production" && !isLocal;
 
         const options: any = {
@@ -590,7 +698,8 @@ export default async function middleware(request: NextRequest) {
           const dVal = ei > -1 ? dir.slice(ei + 1).trim() : "";
           if (dName === "max-age" && dVal) options.maxAge = parseInt(dVal, 10);
           if (dName === "httponly") options.httpOnly = true;
-          if (dName === "samesite" && dVal) options.sameSite = dVal.toLowerCase() as any;
+          if (dName === "samesite" && dVal)
+            options.sameSite = dVal.toLowerCase() as any;
           if (dName === "secure") options.secure = true;
           if (dName === "path" && dVal) options.path = dVal;
         });

@@ -13,7 +13,7 @@ import {
     MonitorSmartphone,
     Building
 } from "lucide-react";
-import { useAppointments, useUpdateAppointmentStatus } from "@/lib/integrations/hooks";
+import { useMasterQueue, useUpdateAppointmentStatus } from "@/lib/integrations/hooks";
 import { toast } from "react-hot-toast";
 
 export default function MasterQueuePage() {
@@ -22,12 +22,10 @@ export default function MasterQueuePage() {
     
     // Fetch today's appointments specifically for queue management
     const today = new Date().toISOString().split('T')[0];
-    const { data: appointmentsData, isLoading, refetch } = useAppointments(
+    const { data: appointmentsData, isLoading, refetch } = useMasterQueue(
         1,
         250, // High limit for complete table
-        undefined,
-        today,
-        today
+        undefined
     );
 
     const updateStatusMutation = useUpdateAppointmentStatus();
@@ -212,7 +210,7 @@ export default function MasterQueuePage() {
 // Table Row Component
 function QueueRow({ apt, idx, onUpdateStatus, isProcessing }: { apt: any, idx: number, onUpdateStatus: any, isProcessing: boolean }) {
     const isConsulting = apt.status === "in-progress";
-    const patientName = (apt.patient?.name || apt.patientName || "UNKNOWN").trim();
+    const patientName = (apt.patientName || apt.patient?.name || apt.patient?.user?.name || "UNKNOWN").trim();
     const status = (apt.status || "").toLowerCase();
     
     // Status Badge Styling Logic
@@ -237,7 +235,7 @@ function QueueRow({ apt, idx, onUpdateStatus, isProcessing }: { apt: any, idx: n
                     </div>
                     <div>
                         <h3 className="text-sm font-black text-slate-900 uppercase">{patientName}</h3>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">{apt.mrn || "N/A"}</p>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">{apt.mrn || apt.patient?.mrn || "N/A"}</p>
                     </div>
                 </div>
             </td>

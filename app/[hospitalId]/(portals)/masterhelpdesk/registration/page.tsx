@@ -22,7 +22,7 @@ import {
     Clock,
     SpellCheck
 } from "lucide-react";
-import { helpdeskService, ipdService, spellCheckService } from "@/lib/integrations";
+import { helpdeskService, ipdService, spellCheckService, masterHelpdeskService } from "@/lib/integrations";
 import type { HelpdeskDoctor, Bed, SpellMatch, SpellState, SpellPopupState } from "@/lib/integrations/types";
 import toast from "react-hot-toast";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
@@ -259,8 +259,9 @@ export default function MasterPatientRegistration() {
 
         try {
             setSubmitting(true);
-            const res = await helpdeskService.registerPatient({
+            const res = await masterHelpdeskService.registerPatient({
                 ...formData,
+                hospitalId: hospitalId, // Explicitly pass hospital context from URL
                 email: formData.patientEmail || undefined,
                 age: parseInt(formData.age),
                 allergies: formData.allergies ? [formData.allergies] : []

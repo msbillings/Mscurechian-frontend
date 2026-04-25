@@ -8,11 +8,13 @@ import {
     ChevronRight,
     ChevronLeft,
     Activity,
-    ExternalLink,
+    Edit3,
     RefreshCw,
-    Printer
+    Printer,
+    History,
+    Eye
 } from "lucide-react";
-import { helpdeskService, useHelpdeskPatients } from "@/lib/integrations";
+import { helpdeskService, useMasterPatients } from "@/lib/integrations";
 import toast from "react-hot-toast";
 import { useRouter, useParams } from "next/navigation";
 import ClinicalReceipt from "@/components/helpdesk/ClinicalReceipt";
@@ -87,13 +89,10 @@ export default function MasterPatientsPage() {
 
     const debouncedSearch = useDebouncedValue(searchTerm, 300);
 
-    const { data: patientsRaw, isLoading, isFetching, refetch } = useHelpdeskPatients(
-        debouncedSearch,
+    const { data: patientsRaw, isLoading, isFetching, refetch } = useMasterPatients(
         page,
         limit,
-        undefined,
-        undefined,
-        true
+        debouncedSearch
     );
 
     const { patients, total } = useMemo(() => {
@@ -369,23 +368,25 @@ export default function MasterPatientsPage() {
                                                         <div className="flex items-center justify-center gap-1.5">
                                                             {/* Edit patient — navigates to helpdesk edit page */}
                                                             <button
-                                                                onClick={() => router.push(`/helpdesk/patients/${patientId}`)}
+                                                                onClick={() => router.push(`/${hospitalId}/masterhelpdesk/patients/${patientId}`)}
                                                                 className="p-1.5 bg-slate-100 text-slate-500 rounded-lg hover:bg-slate-900 hover:text-white transition-all shadow-sm"
-                                                                title="Edit Patient"
+                                                                title="Edit Patient Profile"
                                                             >
-                                                                <ExternalLink size={14} />
+                                                                <Edit3 size={14} />
                                                             </button>
-                                                            {/* Print OPD receipts */}
+
+                                                            {/* View History & Print OPD receipts */}
                                                             <button
                                                                 onClick={() => handleFetchHistory(patient)}
                                                                 className="p-1.5 bg-white border border-slate-200 text-slate-500 rounded-lg hover:text-teal-600 hover:border-teal-200 shadow-sm transition-all active:scale-95"
-                                                                title="Print OPD Receipt"
+                                                                title="View Appointment History"
                                                             >
-                                                                <Printer size={14} />
+                                                                <History size={14} />
                                                             </button>
+
                                                             {/* New appointment booking with patient autofill */}
                                                             <button
-                                                                onClick={() => router.push(`/masterhelpdesk/appointment-booking?patientId=${patientId}`)}
+                                                                onClick={() => router.push(`/${hospitalId}/masterhelpdesk/appointment-booking?patientId=${patientId}`)}
                                                                 className="p-1.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 shadow-md shadow-teal-900/10 transition-all"
                                                                 title="New Appointment"
                                                             >

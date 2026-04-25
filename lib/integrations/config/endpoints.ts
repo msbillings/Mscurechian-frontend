@@ -223,6 +223,19 @@ export const HELPDESK_ENDPOINTS = {
   TRANSACTIONS: "/helpdesk/transactions",
   IPD_ADMISSIONS: (id: string) => `/helpdesk/patients/${id}/ipd-admissions`,
 };
+export const MASTER_HELPDESK_ENDPOINTS = {
+  DASHBOARD: "/masterhelpdesk/dashboard",
+  QUEUE: "/masterhelpdesk/queue",
+  TRANSACTIONS: "/masterhelpdesk/transactions",
+  PATIENTS: "/masterhelpdesk/patients",
+  PATIENT_DETAILS: (id: string) => `/masterhelpdesk/patients/${id}`,
+  REGISTER_PATIENT: "/masterhelpdesk/patients/register",
+  VISITS_TODAY: "/masterhelpdesk/visits/today",
+  VISIT_HISTORY: (id: string) => `/masterhelpdesk/visits/history/${id}`,
+  ACTIVE_VISITS: "/masterhelpdesk/visits/active",
+  ALL_VISITS: "/masterhelpdesk/visits/all",
+  IPD_ADMISSIONS: (id: string) => `/masterhelpdesk/patients/${id}/ipd-admissions`,
+};
 
 export const MASTERHELPDESK_ENDPOINTS = {
   ME: "/masterhelpdesk/me",
