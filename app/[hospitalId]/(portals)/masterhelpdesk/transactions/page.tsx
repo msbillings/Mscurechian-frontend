@@ -19,15 +19,17 @@ import {
     IndianRupee,
     X
 } from "lucide-react";
-import { helpdeskService } from "@/lib/integrations";
+import { helpdeskService, masterHelpdeskService } from "@/lib/integrations";
 import toast from "react-hot-toast";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { useMasterTransactions } from "@/lib/integrations/hooks";
 
 export default function TransactionsPage() {
     const router = useRouter();
+    const params = useParams();
+    const hospitalId = params?.hospitalId as string;
     const [exporting, setExporting] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [page, setPage] = useState(1);
@@ -54,7 +56,8 @@ export default function TransactionsPage() {
 
     const { data: txRaw, isLoading, isFetching, refetch } = useMasterTransactions(
         page,
-        limit
+        limit,
+        hospitalId
     );
 
     // ✅ DEBUG LOGGING: Track filtering and data retrieval
@@ -63,9 +66,9 @@ export default function TransactionsPage() {
         console.log("[Transactions] Backend Filter Query:", getBackendTypeFilter(typeFilter));
     }, [typeFilter]);
 
-    const { transactions, total, totalRevenue } = useMemo(() => {
+    const { transactions, total, totalRevenue } = useMemo<{ transactions: any[], total: number, totalRevenue: number }>(() => {
         const raw: any = txRaw;
-        if (!raw) return { transactions: [] as any[], total: 0, totalRevenue: 0 };
+        if (!raw) return { transactions: [], total: 0, totalRevenue: 0 };
 
         console.log("[Transactions] Raw Data Received:", {
             resultCount: Array.isArray(raw) ? raw.length : (raw.data?.length || 0),
@@ -86,16 +89,15 @@ export default function TransactionsPage() {
             setShowExportCard(false);
 
             // Fetch ALL transactions for the selected range (nopage=true)
-            const data = await helpdeskService.getTransactions(
+            const response = await masterHelpdeskService.getTransactions(
                 1,
                 2000, // Large limit for export
-                undefined,
-                true,
+                hospitalId,
                 exportStartDate,
                 exportEndDate,
                 getBackendTypeFilter(typeFilter)
             );
-            let exportData = Array.isArray(data) ? data : (data.data || []);
+            let exportData = Array.isArray(response) ? response : (response.data || []);
 
             // ✅ CLIENT-SIDE FILTERING: Ensure we respect the Online/Offline selection
             if (exportType !== 'all') {
@@ -213,23 +215,18 @@ export default function TransactionsPage() {
     // Filter transactions based on search term (frontend filtering for better UX)
     // Filter transactions based on search term and payment mode
     const filteredTransactions = transactions.filter((tx: any) => {
-        const name = tx.patient?.name || tx.patientName || "Unknown";
+        const name = tx.patient?.name || tx.patientName || "";
         const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
         const isCancelled = tx.status?.toLowerCase() === 'cancelled' || tx.referenceId?.status?.toLowerCase() === 'cancelled';
 
         const rawMethod = (tx.paymentMethod || tx.paymentMode || 'CASH').toUpperCase();
-        const txType = tx.type?.toLowerCase() || 'appointment_booking';
-
-        // Categorize Helpdesk/OPD transactions as OFFLINE category (including those paid by card/upi at counter)
-        const isOfflineCategory = ['CASH', 'OFFLINE'].includes(rawMethod) ||
-            ['appointment_booking', 'opd', 'consultation', 'opd_consultation'].includes(txType);
+        const isOnlinePayment = ['UPI', 'CARD', 'ONLINE', 'NETBANKING', 'RAZORPAY'].includes(rawMethod);
 
         let matchesPaymentMode = true;
         if (paymentModeFilter === 'online') {
-            // Purely online payments (not counter appointments)
-            matchesPaymentMode = !isOfflineCategory && ['UPI', 'CARD', 'ONLINE', 'NETBANKING'].includes(rawMethod);
+            matchesPaymentMode = isOnlinePayment;
         } else if (paymentModeFilter === 'offline') {
-            matchesPaymentMode = isOfflineCategory;
+            matchesPaymentMode = !isOnlinePayment;
         }
 
         return matchesSearch && !isCancelled && matchesPaymentMode;
@@ -408,9 +405,7 @@ export default function TransactionsPage() {
                             <thead>
                                 <tr className="bg-slate-50 border-b border-slate-200 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest">
                                     <th className="px-4 sm:px-6 py-4 sm:py-6 text-left">Patient Name / ID</th>
-                                    <th className="px-6 py-6 text-center">Service Type</th>
-                                    <th className="px-6 py-6 text-left font-bold">Reason</th>
-                                    <th className="px-6 py-6 text-left font-bold">Doctor / Status</th>
+                                    <th className="px-6 py-6 text-left font-bold">Doctor</th>
                                     <th className="px-6 py-6 text-right">Amount (INR)</th>
                                     <th className="px-6 py-6 text-center">Sync State</th>
                                     <th className="px-6 py-6 text-right pr-6">Payment Mode</th>
@@ -428,7 +423,7 @@ export default function TransactionsPage() {
 
                                     const rawType = tx.type || "appointment_booking";
                                     // 🔧 FIX: Don't use "Emergency Patient" fallback
-                                    const patientName = (tx.patientName || tx.patient?.name || tx.referenceId?.patientName || "Unknown").toUpperCase();
+                                    const patientName = (tx.patientName || tx.patient?.name || tx.referenceId?.patientName || "").toUpperCase();
 
                                     // Map transaction type to human-readable format
                                     const typeMapping: Record<string, string> = {
@@ -451,16 +446,6 @@ export default function TransactionsPage() {
                                     // 🔧 FIX: Prioritize 'reason' over 'diagnosis' for discharge transactions
                                     // For discharge: reason > disease > symptoms (skip diagnosis)
                                     // For others: reason > disease > diagnosis > symptoms
-                                    const clinicalDetail = isDischargeTransaction
-                                        ? (appointmentData.reason ||
-                                            appointmentData.disease ||
-                                            (appointmentData.symptoms && appointmentData.symptoms.length > 0 ? appointmentData.symptoms.join(', ') : null) ||
-                                            '-')
-                                        : (appointmentData.reason ||
-                                            appointmentData.disease ||
-                                            appointmentData.diagnosis ||
-                                            (appointmentData.symptoms && appointmentData.symptoms.length > 0 ? appointmentData.symptoms.join(', ') : null) ||
-                                            '-');
 
                                     // 🔧 FIX: Amount display logic based on filter type
                                     // - Only show Discharge totals when "Discharge Only" filter is explicitly selected
@@ -470,7 +455,7 @@ export default function TransactionsPage() {
                                     // Let all transactions flow through and be rendered based on their available data
 
                                     // 🔧 FIX: Sanitize doctor name — never show raw ObjectId
-                                    const rawDoctorName = appointmentData.primaryDoctor || appointmentData.suggestedDoctorName;
+                                    const rawDoctorName = tx.doctorName || appointmentData.primaryDoctor || appointmentData.suggestedDoctorName;
                                     const isObjectId = rawDoctorName && rawDoctorName.length === 24 && /^[a-f0-9]{24}$/i.test(rawDoctorName);
                                     const resolvedDoctorName = isObjectId ? null : rawDoctorName;
 
@@ -520,17 +505,6 @@ export default function TransactionsPage() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className={`inline-flex px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${(tx.registrationType === 'IPD' || type.includes('IPD'))
-                                                    ? 'bg-rose-50 text-rose-600 border-rose-100'
-                                                    : 'bg-teal-50 text-teal-600 border-teal-100'
-                                                    }`}>
-                                                    {(tx.registrationType === 'IPD' || type.includes('IPD')) ? 'IPD' : 'OPD'}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{clinicalDetail}</p>
-                                            </td>
-                                            <td className="px-6 py-4">
                                                 <div className="space-y-1">
                                                     {resolvedDoctorName ? (
                                                         <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest">
@@ -538,19 +512,6 @@ export default function TransactionsPage() {
                                                         </p>
                                                     ) : (
                                                         <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">N/A</p>
-                                                    )}
-                                                    {appointmentData.conditionAtDischarge && (
-                                                        <div className="flex items-center gap-1.5">
-                                                            <div className={`w-1.5 h-1.5 rounded-full ${appointmentData.conditionAtDischarge === 'Stable' || appointmentData.conditionAtDischarge === 'Improved'
-                                                                ? 'bg-emerald-500'
-                                                                : appointmentData.conditionAtDischarge === 'Critical'
-                                                                    ? 'bg-rose-500'
-                                                                    : 'bg-amber-500'
-                                                                }`} />
-                                                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                                                                {appointmentData.conditionAtDischarge}
-                                                            </span>
-                                                        </div>
                                                     )}
                                                 </div>
                                             </td>

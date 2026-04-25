@@ -8,9 +8,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface NotificationCenterProps {
   showAuditHistory?: boolean;
+  hospitalId?: string;
 }
 
-function NotificationCenter({ showAuditHistory = true }: NotificationCenterProps) {
+function NotificationCenter({ showAuditHistory = true, hospitalId }: NotificationCenterProps) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
@@ -175,7 +176,7 @@ function NotificationCenter({ showAuditHistory = true }: NotificationCenterProps
 
   const fetchNotifications = async () => {
     try {
-      const data = await notificationService.getNotifications();
+      const data = await notificationService.getNotifications(hospitalId);
       setNotifications(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);

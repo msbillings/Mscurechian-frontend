@@ -1,4 +1,4 @@
-﻿import { NOTIFICATION_ENDPOINTS } from '../config';
+import { NOTIFICATION_ENDPOINTS } from '../config';
 import { apiClient } from '../api';
 
 export interface AppNotification {
@@ -13,8 +13,10 @@ export interface AppNotification {
 }
 
 export const notificationService = {
-  getNotifications: () =>
-    apiClient<AppNotification[]>(NOTIFICATION_ENDPOINTS.BASE),
+  getNotifications: (hospitalId?: string) => {
+    const url = hospitalId ? `${NOTIFICATION_ENDPOINTS.BASE}?hospitalId=${hospitalId}` : NOTIFICATION_ENDPOINTS.BASE;
+    return apiClient<AppNotification[]>(url);
+  },
 
   markAsRead: (id: string) =>
     apiClient<AppNotification>(NOTIFICATION_ENDPOINTS.READ(id), {

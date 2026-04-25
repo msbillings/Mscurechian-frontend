@@ -21,6 +21,7 @@ import ClinicalReceipt from "@/components/helpdesk/ClinicalReceipt";
 import AppointmentHistoryModal from "@/components/helpdesk/AppointmentHistoryModal";
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
 import { sanitizePatientName } from "@/lib/utils/name-utils";
+import { calculateAge } from "@/lib/utils/date-utils";
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
     const [debounced, setDebounced] = useState(value);
@@ -92,7 +93,8 @@ export default function MasterPatientsPage() {
     const { data: patientsRaw, isLoading, isFetching, refetch } = useMasterPatients(
         page,
         limit,
-        debouncedSearch
+        debouncedSearch,
+        hospitalId
     );
 
     const { patients, total } = useMemo(() => {
@@ -213,16 +215,8 @@ export default function MasterPatientsPage() {
         }
     };
 
-    if (showSkeleton) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="flex flex-col items-center gap-4">
-                    <RefreshCw className="w-8 h-8 text-teal-600 animate-spin" />
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Synchronizing Registry...</p>
-                </div>
-            </div>
-        );
-    }
+    // Initial loading state should only show skeleton for the list, not the whole page
+    // to prevent losing focus on the search input.
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -243,13 +237,13 @@ export default function MasterPatientsPage() {
                         {/* SEARCH + REFRESH + COUNT + PAGINATION all in one row */}
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-1 justify-end">
                             {/* Search */}
-                            <div className="relative flex-1 max-w-xs group">
+                            <div className="relative w-full md:flex-1 md:max-w-sm group order-first md:order-none">
                                 <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-slate-400 size-[14px] sm:size-[16px]" />
                                 <input
                                     type="text"
                                     value={searchTerm}
                                     onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-                                    placeholder="SEARCH..."
+                                    placeholder="Search Name, MRN, Mobile..."
                                     className="w-full pl-9 sm:pl-11 pr-3 sm:pr-4 py-2 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-tight outline-none focus:bg-white focus:border-teal-500 shadow-inner transition-all"
                                 />
                             </div>
@@ -302,7 +296,7 @@ export default function MasterPatientsPage() {
                 <div className="max-w-full mx-auto">
                     <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[500px]">
                         <div className="overflow-x-auto w-full no-scrollbar">
-                            {isFetching && patients.length === 0 ? (
+                            {(isLoading && patients.length === 0) ? (
                                 <div className="py-40 flex flex-col items-center justify-center gap-4">
                                     <RefreshCw className="w-8 h-8 text-teal-600 animate-spin" />
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest animate-pulse">Syncing Registry...</p>
@@ -351,7 +345,7 @@ export default function MasterPatientsPage() {
                                                     </td>
                                                     <td className="px-4 py-4 text-center">
                                                         <span className="text-[12px] lg:text-[13px] font-bold text-slate-600 bg-slate-50 border border-slate-200/50 px-2 py-1 rounded-lg">
-                                                            {patient.profile?.age || patient.age} <span className="text-[9px] text-slate-400">YRS</span>
+                                                            {patient.profile?.age || patient.age || calculateAge(patient.profile?.dob || patient.dob)} <span className="text-[9px] text-slate-400">YRS</span>
                                                         </span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center">
