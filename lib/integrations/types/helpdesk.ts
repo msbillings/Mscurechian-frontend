@@ -100,6 +100,7 @@ export interface HelpdeskDoctor {
   consultationDuration?: number;
   experienceStart?: string | Date;
   experienceYears?: number;
+  hospital?: string | { _id: string; name?: string; [key: string]: any };
   user?: {
     _id?: string;
     name?: string;

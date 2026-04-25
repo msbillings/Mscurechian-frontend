@@ -42,6 +42,14 @@ export default function TransactionsPage() {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const limit = 10;
+    const formatDate = (dateStr: string) => {
+        try {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString("en-IN", { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
+        } catch (e) {
+            return dateStr;
+        }
+    };
 
     // Map frontend filter values to backend transaction types
     const getBackendTypeFilter = (filterValue: string): string | undefined => {
@@ -102,8 +110,19 @@ export default function TransactionsPage() {
             // ✅ CLIENT-SIDE FILTERING: Ensure we respect the Online/Offline selection
             if (exportType !== 'all') {
                 exportData = exportData.filter((tx: any) => {
-                    const txType = tx.type?.toLowerCase();
-                    return txType === exportType.toLowerCase();
+                    const rawMethod = (tx.paymentMethod || tx.paymentMode || 'CASH').toUpperCase();
+                    const txType = (tx.type || 'appointment_booking').toLowerCase();
+
+                    // Categorize Helpdesk/OPD transactions as OFFLINE category (consistent with UI)
+                    const isOfflineCategory = ['CASH', 'OFFLINE'].includes(rawMethod) ||
+                        ['appointment_booking', 'opd', 'consultation', 'opd_consultation'].includes(txType);
+
+                    if (exportType === 'online') {
+                        return !isOfflineCategory && ['UPI', 'CARD', 'ONLINE', 'NETBANKING'].includes(rawMethod);
+                    } else if (exportType === 'offline') {
+                        return isOfflineCategory;
+                    }
+                    return true;
                 });
             }
 
@@ -118,18 +137,30 @@ export default function TransactionsPage() {
             const worksheet = workbook.addWorksheet("Transactions");
 
             // Add Report Title
-            worksheet.mergeCells("A1:G1");
+            worksheet.mergeCells("A1:H1");
             const titleRow = worksheet.getRow(1);
             worksheet.getCell("A1").value = "TRANSACTION REVENUE REPORT";
             titleRow.font = { bold: true, size: 16, color: { argb: "0F172A" } };
             titleRow.alignment = { vertical: "middle", horizontal: "center" };
             titleRow.height = 30;
 
+            const periodText = `PERIOD: ${formatDate(exportStartDate)} TO ${formatDate(exportEndDate)}`;
+            const typeText = `TYPE: ${exportType === 'all' ? 'ALL' : exportType.toUpperCase()}`;
+            
+            worksheet.mergeCells("A2:I2");
+            const filterRow = worksheet.getRow(2);
+            worksheet.getCell("A2").value = `${periodText} | ${typeText}`;
+            filterRow.font = { bold: true, size: 11, color: { argb: "475569" } };
+            filterRow.alignment = { vertical: "middle", horizontal: "center" };
+            filterRow.height = 25;
+
             // Define Headers (Row 3)
             worksheet.getRow(3).values = [
                 "DATE",
+                "PATIENT NAME",
                 "TRANSACTION ID",
                 "MOBILE",
+                "EMAIL",
                 "SERVICE TYPE",
                 "AMOUNT (INR)",
                 "PAYMENT MODE",
@@ -139,8 +170,10 @@ export default function TransactionsPage() {
             // Set column mapping (uses the same columns for addRow logic)
             worksheet.columns = [
                 { key: "date", width: 20 },
+                { key: "name", width: 25 },
                 { key: "id", width: 25 },
                 { key: "mobile", width: 15 },
+                { key: "email", width: 25 },
                 { key: "type", width: 20 },
                 { key: "amount", width: 15 },
                 { key: "mode", width: 15 },
@@ -158,7 +191,8 @@ export default function TransactionsPage() {
             headerRow.alignment = { vertical: "middle", horizontal: "center" };
 
             // Add Data
-            exportData.forEach((tx: any) => {
+            exportData.forEach((tx: any, index: number) => {
+                if (index === 0) console.log("DEBUG: EXPORT TRANSACTION OBJECT", tx);
                 // Safe date handling
                 const txDate = tx.date || tx.createdAt || tx.transactionTime;
                 const formattedDate = txDate
@@ -181,8 +215,35 @@ export default function TransactionsPage() {
 
                 worksheet.addRow({
                     date: formattedDate,
+                    name: (
+                        tx.patientName || 
+                        getSafeName(tx.patient) || 
+                        getSafeName(tx.patientDetails) || 
+                        getSafeName(tx.referenceId) || 
+                        getSafeName(tx.referenceId?.patient) || 
+                        getSafeName(tx.patientId) ||
+                        "Unknown"
+                    ).toUpperCase(),
                     id: txId ? txId.toUpperCase() : "—",
-                    mobile: tx.patientMobile || tx.mobile || "N/A",
+                    mobile: (
+                        tx.patientMobile || 
+                        getSafeMobile(tx.patient) || 
+                        getSafeMobile(tx.referenceId) || 
+                        getSafeMobile(tx.referenceId?.patient) || 
+                        getSafeMobile(tx.patientId) ||
+                        "N/A"
+                    ),
+                    email: (
+                        tx.patientEmail || 
+                        tx.email || 
+                        tx.patient?.email || 
+                        tx.patient?.user?.email || 
+                        tx.patient?.profile?.email ||
+                        tx.referenceId?.patientEmail || 
+                        tx.referenceId?.email || 
+                        tx.patientId?.email ||
+                        "N/A"
+                    ),
                     type: serviceType,
                     amount: tx.amount || 0,
                     mode: (tx.paymentMethod || tx.paymentMode || "CASH").toUpperCase(),
@@ -208,6 +269,18 @@ export default function TransactionsPage() {
         } finally {
             setExporting(false);
         }
+    };
+
+    const getSafeName = (obj: any) => {
+        if (!obj) return null;
+        if (typeof obj === 'string') return null;
+        return obj.name || obj.patientName || (obj.firstName ? `${obj.firstName} ${obj.lastName || ''}` : null) || (obj.user?.name) || (obj.profile?.name) || (obj.profile?.firstName ? `${obj.profile.firstName} ${obj.profile.lastName || ''}` : null);
+    };
+
+    const getSafeMobile = (obj: any) => {
+        if (!obj) return null;
+        if (typeof obj === 'string') return null;
+        return obj.mobile || obj.patientMobile || obj.contact || (obj.user?.mobile) || (obj.profile?.mobile);
     };
 
     // Re-fetch on search if needed or filter client-side for immediate feedback
@@ -359,7 +432,7 @@ export default function TransactionsPage() {
 
                     </div>
 
-                    <div className="flex items-center justify-between md:justify-end gap-4 w-full xl:w-auto">
+                    <div className="flex items-start justify-start md:justify-end gap-4 w-full xl:w-auto">
                         <div className="flex flex-col border-l border-slate-100 pl-4 md:hidden">
                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Active Pool</span>
                             <span className="text-xs font-bold text-teal-600 uppercase tracking-tight">{filteredTransactions.length} ENTRIES</span>
@@ -370,7 +443,7 @@ export default function TransactionsPage() {
                             {totalPages > 1 && (
                                 <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-inner">
                                     <button
-                                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                                        onClick={() => setPage((p: number) => Math.max(1, p - 1))}
                                         disabled={page === 1}
                                         className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-teal-600 disabled:opacity-20 transition-all"
                                     >
@@ -380,7 +453,7 @@ export default function TransactionsPage() {
                                         {page} / {totalPages}
                                     </div>
                                     <button
-                                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                        onClick={() => setPage((p: number) => Math.min(totalPages, p + 1))}
                                         disabled={page === totalPages}
                                         className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-teal-600 disabled:opacity-20 transition-all"
                                     >
@@ -407,8 +480,8 @@ export default function TransactionsPage() {
                                     <th className="px-4 sm:px-6 py-4 sm:py-6 text-left">Patient Name / ID</th>
                                     <th className="px-6 py-6 text-left font-bold">Doctor</th>
                                     <th className="px-6 py-6 text-right">Amount (INR)</th>
-                                    <th className="px-6 py-6 text-center">Sync State</th>
-                                    <th className="px-6 py-6 text-right pr-6">Payment Mode</th>
+                                    <th className="px-6 py-6 text-center">Status</th>
+                                    <th className="px-6 py-6 text-right pr-6">Mode</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -515,7 +588,7 @@ export default function TransactionsPage() {
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-center">
+                                            <td className="px-6 py-4 text-right">
                                                 <p className="text-sm font-bold text-slate-900 tracking-tight">
                                                     {amount !== null ? `₹${Math.round(amount).toLocaleString()}` : '-'}
                                                 </p>

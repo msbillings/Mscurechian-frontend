@@ -27,7 +27,7 @@ import { useTenantLink } from '@/hooks/useTenantLink';
 
 type Errors = Partial<Record<string, string>>;
 const docValidators: Record<string, (v: string) => string> = {
-  name:  v => !v.trim() ? "Full name is required" : !/^[a-zA-Z\s.'-]+$/.test(v.trim()) ? "Only letters, spaces, dots & hyphens allowed" : "",
+  name: v => !v.trim() ? "Full name is required" : !/^[a-zA-Z\s.'-]+$/.test(v.trim()) ? "Only letters, spaces, dots & hyphens allowed" : "",
   email: v => !v.trim() ? "Email is required" : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? "Invalid email" : "",
   mobile: v => !v ? "Mobile is required" : !/^\d{10}$/.test(v) ? "Must be exactly 10 digits (numbers only)" : "",
   medicalRegistrationNumber: v => !v ? "Registration Number is mandatory" : !/^\d{12}$/.test(v) ? "Must be exactly 12 digits (numbers only)" : "",
@@ -38,7 +38,7 @@ const dValidate = (n: string, v: string) => docValidators[n] ? docValidators[n](
 
 function DErr({ msg }: { msg?: string }) {
   if (!msg) return null;
-  return <p className="flex items-center gap-1 text-[11px] font-semibold text-rose-500 mt-1"><AlertCircle size={12}/>{msg}</p>;
+  return <p className="flex items-center gap-1 text-[11px] font-semibold text-rose-500 mt-1"><AlertCircle size={12} />{msg}</p>;
 }
 
 const HONORIFIC_OPTIONS = [
@@ -71,7 +71,7 @@ function EditDoctor() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [errors, setErrors] = useState<Errors>({});
-  const [touched, setTouched] = useState<Record<string,boolean>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const handleBlur = (n: string, v: string) => {
     setTouched(p => ({ ...p, [n]: true }));
@@ -195,15 +195,15 @@ function EditDoctor() {
   if (fetching) return <div className="p-20 text-center text-slate-400">Loading profile...</div>;
 
   return (
-    <div className="max-w-5xl mx-auto py-8 space-y-6 px-4">
+    <div className="max-w-5xl mx-auto py-8 space-y-6 px-1">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <button onClick={() => router.back()} className="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all">
+          <button type="button" onClick={() => router.push(getPath("/masterhelpdesk/doctors"))} className="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all">
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Edit Doctor Profile</h1>
-            <p className="text-slate-500">Updating details for Dr. {formData.name}</p>
+            <h1 className="text-2xl font-bold text-slate-900 max-sm:text-[18px] tracking-tight">Edit Doctor Profile</h1>
+            <p className="text-slate-500 max-sm:text-[14px]">Updating details for Dr. {formData.name}</p>
           </div>
         </div>
         <div className="p-3 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200 text-white">
@@ -218,34 +218,34 @@ function EditDoctor() {
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Title</label>
               <select name="honorific" value={formData.honorific} onChange={handleFieldChange}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 outline-none">
-                {HONORIFIC_OPTIONS.map(opt=><option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                {HONORIFIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
               </select>
             </div>
             <div className="md:col-span-3">
               <div className="space-y-1.5">
                 <label className="block text-sm font-medium text-slate-700">Full Name<span className="text-red-500 ml-0.5">*</span></label>
-                <input name="name" value={formData.name} onChange={handleFieldChange} 
-                  onBlur={e=>handleBlur("name", e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border focus:ring-2 transition-all ${touched.name&&errors.name?"border-rose-400 bg-rose-50/20":"border-slate-200 focus:ring-indigo-500/20"}`}/>
-                <DErr msg={touched.name?errors.name:undefined}/>
+                <input name="name" value={formData.name} onChange={handleFieldChange}
+                  onBlur={e => handleBlur("name", e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl border focus:ring-2 transition-all ${touched.name && errors.name ? "border-rose-400 bg-rose-50/20" : "border-slate-200 focus:ring-indigo-500/20"}`} />
+                <DErr msg={touched.name ? errors.name : undefined} />
               </div>
             </div>
             <div className="md:col-span-2">
               <div className="space-y-1.5">
                 <label className="block text-sm font-medium text-slate-700">Email Address<span className="text-red-500 ml-0.5">*</span></label>
-                <input type="email" name="email" value={formData.email} onChange={handleFieldChange} 
-                  onBlur={e=>handleBlur("email", e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border focus:ring-2 transition-all ${touched.email&&errors.email?"border-rose-400 bg-rose-50/20":"border-slate-200 focus:ring-indigo-500/20"}`}/>
-                <DErr msg={touched.email?errors.email:undefined}/>
+                <input type="email" name="email" value={formData.email} onChange={handleFieldChange}
+                  onBlur={e => handleBlur("email", e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl border focus:ring-2 transition-all ${touched.email && errors.email ? "border-rose-400 bg-rose-50/20" : "border-slate-200 focus:ring-indigo-500/20"}`} />
+                <DErr msg={touched.email ? errors.email : undefined} />
               </div>
             </div>
             <div className="md:col-span-2">
               <div className="space-y-1.5">
                 <label className="block text-sm font-medium text-slate-700">Mobile Number<span className="text-red-500 ml-0.5">*</span></label>
-                <input name="mobile" value={formData.mobile} onChange={handleFieldChange} 
-                  onBlur={e=>handleBlur("mobile", e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border focus:ring-2 transition-all ${touched.mobile&&errors.mobile?"border-rose-400 bg-rose-50/20":"border-slate-200 focus:ring-indigo-500/20"}`}/>
-                <DErr msg={touched.mobile?errors.mobile:undefined}/>
+                <input name="mobile" value={formData.mobile} onChange={handleFieldChange}
+                  onBlur={e => handleBlur("mobile", e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl border focus:ring-2 transition-all ${touched.mobile && errors.mobile ? "border-rose-400 bg-rose-50/20" : "border-slate-200 focus:ring-indigo-500/20"}`} />
+                <DErr msg={touched.mobile ? errors.mobile : undefined} />
               </div>
             </div>
           </div>
@@ -256,27 +256,27 @@ function EditDoctor() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <label className="block text-sm font-medium text-slate-700">Registration No.<span className="text-red-500 ml-0.5">*</span></label>
-                <input name="medicalRegistrationNumber" value={formData.medicalRegistrationNumber} onChange={handleFieldChange} 
-                  onBlur={e=>handleBlur("medicalRegistrationNumber", e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border focus:ring-2 transition-all ${touched.medicalRegistrationNumber&&errors.medicalRegistrationNumber?"border-rose-400 bg-rose-50/20":"border-slate-200 focus:ring-indigo-500/20"}`}/>
-                <DErr msg={touched.medicalRegistrationNumber?errors.medicalRegistrationNumber:undefined}/>
+                <input name="medicalRegistrationNumber" value={formData.medicalRegistrationNumber} onChange={handleFieldChange}
+                  onBlur={e => handleBlur("medicalRegistrationNumber", e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl border focus:ring-2 transition-all ${touched.medicalRegistrationNumber && errors.medicalRegistrationNumber ? "border-rose-400 bg-rose-50/20" : "border-slate-200 focus:ring-indigo-500/20"}`} />
+                <DErr msg={touched.medicalRegistrationNumber ? errors.medicalRegistrationNumber : undefined} />
               </div>
               <div className="space-y-1.5">
                 <label className="block text-sm font-medium text-slate-700">Employee ID<span className="text-red-500 ml-0.5">*</span></label>
-                <input name="employeeId" value={formData.employeeId} onChange={handleFieldChange} 
-                  onBlur={e=>handleBlur("employeeId", e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border focus:ring-2 transition-all ${touched.employeeId&&errors.employeeId?"border-rose-400 bg-rose-50/20":"border-slate-200 focus:ring-indigo-500/20"}`}/>
-                <DErr msg={touched.employeeId?errors.employeeId:undefined}/>
+                <input name="employeeId" value={formData.employeeId} onChange={handleFieldChange}
+                  onBlur={e => handleBlur("employeeId", e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl border focus:ring-2 transition-all ${touched.employeeId && errors.employeeId ? "border-rose-400 bg-rose-50/20" : "border-slate-200 focus:ring-indigo-500/20"}`} />
+                <DErr msg={touched.employeeId ? errors.employeeId : undefined} />
               </div>
               <div className="relative space-y-1.5">
                 <label className="block text-sm font-medium text-slate-700">Fee (₹)<span className="text-red-500 ml-0.5">*</span></label>
                 <div className="relative">
                   <input type="text" name="consultationFee" value={formData.consultationFee} onChange={handleFieldChange}
-                    onBlur={e=>handleBlur("consultationFee", e.target.value)}
-                    className={`w-full pl-10 pr-4 py-3 rounded-xl border focus:ring-2 transition-all ${touched.consultationFee&&errors.consultationFee?"border-rose-400 bg-rose-50/20":"border-slate-200 focus:ring-indigo-500/20"}`}/>
-                  <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
+                    onBlur={e => handleBlur("consultationFee", e.target.value)}
+                    className={`w-full pl-10 pr-4 py-3 rounded-xl border focus:ring-2 transition-all ${touched.consultationFee && errors.consultationFee ? "border-rose-400 bg-rose-50/20" : "border-slate-200 focus:ring-indigo-500/20"}`} />
+                  <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                 </div>
-                <DErr msg={touched.consultationFee?errors.consultationFee:undefined}/>
+                <DErr msg={touched.consultationFee ? errors.consultationFee : undefined} />
               </div>
             </div>
             <TagInput label="Specialties" placeholder="Search specialties..." options={COMMON_SPECIALTIES} selectedItems={formData.specialties}
@@ -309,9 +309,9 @@ function EditDoctor() {
           </div>
         </Card>
 
-        <div className="flex justify-end gap-4">
-          <Button type="button" variant="secondary" onClick={() => router.back()} disabled={loading} className="px-8 py-3 rounded-xl">Discard</Button>
-          <Button type="submit" variant="primary" loading={loading} icon={<CheckCircle2 size={18} />} className="px-12 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200">
+        <div className="flex max-sm:flex-col-reverse justify-end gap-4 max-sm:pb-24">
+          <Button type="button" variant="secondary" onClick={() => router.push(getPath("/masterhelpdesk/doctors"))} disabled={loading} className="px-8 py-3 rounded-xl max-sm:w-full flex justify-center">Discard</Button>
+          <Button type="submit" variant="primary" loading={loading} icon={<CheckCircle2 size={18} />} className="px-12 py-3 rounded-xl bg-indigo-600 max-sm:text-[15px] hover:bg-indigo-700 shadow-lg shadow-indigo-200 max-sm:w-full flex justify-center">
             Save Changes
           </Button>
         </div>

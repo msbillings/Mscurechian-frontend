@@ -275,6 +275,7 @@ export default function MasterPatientRegistration() {
                 age: parseInt(formData.age),
                 allergies: formData.allergies ? [formData.allergies] : []
             } as any);
+            console.log("DEBUG: MASTER PORTAL PATIENT REGISTRATION SUCCESS - PATIENT DETAILS", res.patient);
             toast.success(`Successfully Registered: ${res.patient.mrn}`);
             setTimeout(() => {
                 router.push(`/${hospitalId}/masterhelpdesk/appointment-booking?patientId=${res.patient.id}&type=${formData.registrationType}`);
