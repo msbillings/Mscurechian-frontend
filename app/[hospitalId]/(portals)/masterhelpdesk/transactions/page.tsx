@@ -383,6 +383,13 @@ export default function TransactionsPage() {
 
                     <div className="flex items-center gap-2 w-full sm:w-auto">
                         <button
+                            onClick={() => router.push(`/${hospitalId}/masterhelpdesk/transactions/summary?startDate=${startDate}&endDate=${endDate}`)}
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all shadow-md active:scale-95 text-[11px] font-bold uppercase tracking-widest"
+                        >
+                            <TrendingUp size={16} />
+                            <span>Summary</span>
+                        </button>
+                        <button
                             onClick={() => setShowExportCard(true)}
                             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/10 active:scale-95 text-[11px] font-bold uppercase tracking-widest"
                         >
