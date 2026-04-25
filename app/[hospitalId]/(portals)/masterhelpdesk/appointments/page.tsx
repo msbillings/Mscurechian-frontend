@@ -21,7 +21,7 @@ import {
     FileDown,
     X
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useTenantLink } from "@/hooks/useTenantLink";
 import { useAuthStore } from "@/stores/authStore";
 import { helpdeskService } from "@/lib/integrations/services/helpdesk.service";
@@ -36,6 +36,8 @@ export default function MasterAppointmentsLedger() {
     const router = useRouter();
     const { getPath } = useTenantLink();
     const { user } = useAuthStore();
+    const params = useParams();
+    const hospitalId = params.hospitalId as string;
     
     // Filters State
     const [searchTerm, setSearchTerm] = useState("");
@@ -53,7 +55,8 @@ export default function MasterAppointmentsLedger() {
     const { data: appointmentsData, isLoading, refetch } = useMasterQueue(
         page,
         limit,
-        statusFilter === "all" ? undefined : statusFilter
+        statusFilter === "all" ? undefined : statusFilter,
+        hospitalId
     );
 
     // Fetch Doctors for filter
@@ -139,31 +142,31 @@ export default function MasterAppointmentsLedger() {
             </div>
 
             {/* Filter Bar */}
-            <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm space-y-4">
+            <div className="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    <div className="col-span-1 lg:col-span-2 relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <div className="col-span-1 lg:col-span-2 relative flex items-center">
+                        <Search className="absolute left-4 text-slate-400" size={16} />
                         <input 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder="SEARCH BY MRN / NAME..." 
-                            className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest outline-none focus:border-indigo-500 transition-all"
+                            className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none focus:border-indigo-500 transition-all leading-none"
                         />
                     </div>
 
                     <div className="space-y-1.5">
                         <label className="text-[9px] font-black text-slate-400 uppercase ml-2 tracking-widest">Start Date</label>
-                        <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-[1.2rem] text-[10px] font-black outline-none" />
+                        <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black outline-none" />
                     </div>
 
                     <div className="space-y-1.5">
                         <label className="text-[9px] font-black text-slate-400 uppercase ml-2 tracking-widest">End Date</label>
-                        <input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-[1.2rem] text-[10px] font-black outline-none" />
+                        <input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black outline-none" />
                     </div>
 
                     <div className="space-y-1.5">
                         <label className="text-[9px] font-black text-slate-400 uppercase ml-2 tracking-widest">Status</label>
-                        <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-[1.2rem] text-[10px] font-black uppercase outline-none">
+                        <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase outline-none">
                             <option value="all">ALL STATUS</option>
                             <option value="pending">PENDING</option>
                             <option value="confirmed">CONFIRMED</option>
@@ -174,7 +177,7 @@ export default function MasterAppointmentsLedger() {
 
                     <div className="space-y-1.5">
                         <label className="text-[9px] font-black text-slate-400 uppercase ml-2 tracking-widest">Consultant</label>
-                        <select value={selectedDoctorId} onChange={e=>setSelectedDoctorId(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-[1.2rem] text-[10px] font-black uppercase outline-none">
+                        <select value={selectedDoctorId} onChange={e=>setSelectedDoctorId(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase outline-none">
                             <option value="all">ALL CONSULTANTS</option>
                             {(Array.isArray(doctorsData) ? doctorsData : (doctorsData as any)?.doctors || (doctorsData as any)?.data || [])?.map((doc: any) => (
                                 <option key={doc._id} value={doc._id}>{doc.user?.name || doc.name}</option>
@@ -186,7 +189,7 @@ export default function MasterAppointmentsLedger() {
             
             {/* Channel Toggles */}
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 p-1.5 bg-white border border-slate-200 rounded-[1.5rem] w-fit shadow-sm">
+                <div className="flex items-center gap-2 p-1.5 bg-white border border-slate-200 rounded-2xl w-fit shadow-sm">
                     <button 
                         onClick={() => setChannelFilter("all")}
                         className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${channelFilter === "all" ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"}`}
@@ -215,7 +218,7 @@ export default function MasterAppointmentsLedger() {
             </div>
 
             {/* Main Ledger Table */}
-            <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
                 {channelFilter === "online" ? (
                     <OnlineClinicalLedger 
                         appointments={appointments} 
@@ -234,17 +237,16 @@ export default function MasterAppointmentsLedger() {
                             <thead>
                                 <tr className="bg-slate-50/50 border-b border-slate-100">
                                     <th className="text-left p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Clinical Entity</th>
-                                    <th className="text-left p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Consultant</th>
+                                    <th className="text-left p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest hidden md:table-cell">Consultant</th>
                                     <th className="text-center p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Schedule</th>
-                                    <th className="text-center p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Engagement</th>
+                                    <th className="text-center p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest hidden sm:table-cell">Engagement</th>
                                     <th className="text-right p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol Status</th>
-                                    <th className="text-right p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Execution</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
                                 {isLoading ? (
                                     <tr>
-                                        <td colSpan={6} className="p-20 text-center">
+                                        <td colSpan={5} className="p-20 text-center">
                                             <div className="flex flex-col items-center">
                                                 <RefreshCw className="animate-spin text-indigo-600 mb-4" size={32} />
                                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Synchronizing Manifest...</p>
@@ -282,7 +284,7 @@ export default function MasterAppointmentsLedger() {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="p-6">
+                                            <td className="p-6 hidden md:table-cell">
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
                                                         <Stethoscope size={14} />
@@ -305,7 +307,7 @@ export default function MasterAppointmentsLedger() {
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="p-6 text-center">
+                                            <td className="p-6 text-center hidden sm:table-cell">
                                                 <span className={`px-2 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border ${
                                                     apt.type?.toLowerCase() === 'emergency' ? 'bg-rose-50 text-rose-600 border-rose-100' : 
                                                     apt.type?.toLowerCase() === 'ipd' ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-blue-50 text-blue-600 border-blue-100'
@@ -319,26 +321,11 @@ export default function MasterAppointmentsLedger() {
                                                     {apt.status || "Pending"}
                                                 </div>
                                             </td>
-                                            <td className="p-6 text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    {['Booked', 'pending', 'Booked'].includes(apt.status) && (
-                                                        <button 
-                                                            onClick={() => handleUpdateStatus(apt._id || apt.id, 'confirmed')}
-                                                            className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 shadow-md transition-all active:scale-95"
-                                                        >
-                                                            Confirm
-                                                        </button>
-                                                    )}
-                                                    <button className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all">
-                                                        <FileText size={18} />
-                                                    </button>
-                                                </div>
-                                            </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={6} className="p-32 text-center text-slate-400 uppercase font-black text-xs tracking-widest">
+                                        <td colSpan={5} className="p-32 text-center text-slate-400 uppercase font-black text-xs tracking-widest">
                                             No clinical engagements found for the selected manifest scope
                                         </td>
                                     </tr>

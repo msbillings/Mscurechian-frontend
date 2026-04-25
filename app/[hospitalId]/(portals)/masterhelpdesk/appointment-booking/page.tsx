@@ -35,8 +35,8 @@ import masterDoctorLeaveService from "@/lib/integrations/masterDoctorLeaveServic
 import type { HelpdeskDoctor, HelpdeskProfile } from "@/lib/integrations/types";
 import toast from "react-hot-toast";
 import { renderToStaticMarkup } from 'react-dom/server';
-import MasterHeader from '@/components/printers/MasterHeader';
-import MasterFooter from '@/components/printers/MasterFooter';
+import MainHeader from '@/components/printers/MainHeader';
+import MainFooter from '@/components/printers/MainFooter';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 import { generateClinicalReceiptHtml } from "@/lib/print-utils";
 
@@ -165,8 +165,12 @@ export default function MasterAppointmentBooking() {
         const init = async () => {
             try {
                 setLoading(true);
-                const [me, allDocs] = await Promise.all([helpdeskService.getMe(), helpdeskService.getDoctors()]);
+                const [me, allDocsRes] = await Promise.all([
+                    helpdeskService.getMe(),
+                    hospitalAdminService.getDoctors()
+                ]);
                 setProfile(me);
+                const allDocs = Array.isArray(allDocsRes) ? allDocsRes : (allDocsRes as any)?.doctors || (allDocsRes as any)?.data || [];
                 const validDocs = allDocs.filter((doc: any) => (doc.user?.name && doc.user.name !== 'Unknown') || (doc.name && doc.name !== 'Unknown'));
                 setDoctors(validDocs);
 
@@ -298,7 +302,7 @@ export default function MasterAppointmentBooking() {
         const timer = setTimeout(async () => {
             try {
                 setSearchingPatients(true);
-                const results = await helpdeskService.searchPatients(patientSearch);
+                const results = await masterHelpdeskService.getPatients(1, 20, patientSearch, hospitalId);
                 setSearchResults(Array.isArray(results) ? results : ((results as any).data || []));
             } catch (error) {
             } finally {
@@ -524,16 +528,45 @@ export default function MasterAppointmentBooking() {
                 if (saved) localOverrides = JSON.parse(saved);
             } catch (e) { }
 
+            // Fetch fresh hospital details from admin service to ensure "Settings" changes are reflected
+            let fetchedHospital: any = null;
+            try {
+                const hRes = await hospitalAdminService.getHospital();
+                if (hRes?.hospital) fetchedHospital = hRes.hospital;
+            } catch (e) { }
+
             const latestHospital: any = {
-                name: localOverrides.hospitalName || profileAsAny?.hospitalName || profile?.hospital?.name || "Hospital",
-                address: localOverrides.hospitalAddress || profileAsAny?.hospitalAddress || profile?.hospital?.address || "",
-                phone: localOverrides.hospitalMobile || profileAsAny?.hospitalMobile || profile?.hospital?.mobile || (profile?.hospital as any)?.phone || "",
-                email: localOverrides.hospitalEmail || profileAsAny?.hospitalEmail || profile?.hospital?.email || "",
-                logo: profileAsAny?.image || (profile?.hospital as any)?.logo
+                name: localOverrides.hospitalName || profileAsAny?.hospitalName || fetchedHospital?.name || profile?.hospital?.name || "Hospital Name",
+                address: localOverrides.hospitalAddress || profileAsAny?.hospitalAddress || fetchedHospital?.address || profile?.hospital?.address || "Hospital Address",
+                phone: localOverrides.hospitalMobile || profileAsAny?.hospitalMobile || fetchedHospital?.phone || profile?.hospital?.mobile || (profile?.hospital as any)?.phone || "Phone Number",
+                email: localOverrides.hospitalEmail || profileAsAny?.hospitalEmail || fetchedHospital?.email || profile?.hospital?.email || "Email Address",
+                logo: localOverrides.hospitalLogo || profileAsAny?.image || fetchedHospital?.logo || (profile?.hospital as any)?.logo || ""
             };
 
-            const headerHtml = renderToStaticMarkup(<MasterHeader initialDetails={{ ...latestHospital }} />);
-            const footerHtml = renderToStaticMarkup(<MasterFooter initialDetails={{ ...latestHospital }} />);
+            const headerHtml = renderToStaticMarkup(
+                <MainHeader initialDetails={{
+                    name: latestHospital.name,
+                    address: latestHospital.address,
+                    phone: latestHospital.phone,
+                    email: latestHospital.email,
+                    logo: latestHospital.logo
+                }} />
+            );
+            const footerHtml = renderToStaticMarkup(
+                <MainFooter
+                    initialDetails={{
+                        name: latestHospital.name,
+                        address: latestHospital.address,
+                        phone: latestHospital.phone,
+                        email: latestHospital.email,
+                    }}
+                    instructions={[
+                        "Please arrive 15 minutes before your appointment time.",
+                        "Carry this receipt for verification at the reception.",
+                        "This receipt is only valid for the date and time mentioned."
+                    ]}
+                />
+            );
 
             const receiptData = {
                 hospital: {

@@ -35,11 +35,10 @@ export const OfflineClinicalLedger = ({ appointments, isLoading, onUpdateStatus 
                 <thead>
                     <tr className="bg-slate-50/50 border-b border-slate-100">
                         <th className="text-left p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Helpdesk Registry Entry</th>
-                        <th className="text-left p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Consultant</th>
+                        <th className="text-left p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest hidden md:table-cell">Consultant</th>
                         <th className="text-center p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Schedule</th>
-                        <th className="text-center p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Engagement</th>
+                        <th className="text-center p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest hidden sm:table-cell">Engagement</th>
                         <th className="text-right p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol Status</th>
-                        <th className="text-right p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Execution</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -70,7 +69,7 @@ export const OfflineClinicalLedger = ({ appointments, isLoading, onUpdateStatus 
                                     </div>
                                 </div>
                             </td>
-                            <td className="p-6">
+                            <td className="p-6 hidden md:table-cell">
                                 <div className="flex items-center gap-2">
                                     <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-600">
                                         <Stethoscope size={14} />
@@ -88,7 +87,7 @@ export const OfflineClinicalLedger = ({ appointments, isLoading, onUpdateStatus 
                                     <Clock size={10} /> {apt.startTime || "No Slot"}
                                 </span>
                             </td>
-                            <td className="p-6 text-center">
+                            <td className="p-6 text-center hidden sm:table-cell">
                                 <span className={`px-2 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border ${
                                     apt.type?.toLowerCase() === 'ipd' ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-blue-50 text-blue-600 border-blue-100'
                                 }`}>
@@ -101,17 +100,9 @@ export const OfflineClinicalLedger = ({ appointments, isLoading, onUpdateStatus 
                                     {apt.status || "Pending"}
                                 </div>
                             </td>
-                            <td className="p-6 text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                    {['Booked', 'pending'].includes(apt.status) && (
-                                        <button onClick={() => onUpdateStatus(apt.id || apt._id, 'confirmed')} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase hover:bg-indigo-700 transition-all">Confirm</button>
-                                    )}
-                                    <button className="p-2 text-slate-400 hover:text-indigo-600"><FileText size={18} /></button>
-                                </div>
-                            </td>
                         </tr>
                     )) : (
-                        <tr><td colSpan={6} className="p-32 text-center text-slate-400 uppercase font-black text-xs tracking-widest">No Manual Registry Found</td></tr>
+                        <tr><td colSpan={5} className="p-32 text-center text-slate-400 uppercase font-black text-xs tracking-widest">No Manual Registry Found</td></tr>
                     )}
                 </tbody>
             </table>

@@ -183,47 +183,49 @@ function MasterEditPatient() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-12">
+    <div className="space-y-4 sm:space-y-8 animate-in fade-in duration-500">
       {/* PROFESSIONAL HEADER SECTION */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Link href={`/${hospitalId}/masterhelpdesk/patients`} className="p-2 bg-slate-100 rounded-xl text-slate-400 hover:text-teal-600 transition-all hover:scale-110">
-              <ArrowLeft size={18} />
+      <div className="flex flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-2 sm:mb-3">
+            <Link href={`/${hospitalId}/masterhelpdesk/patients`} className="p-1.5 sm:p-2 bg-slate-100 rounded-lg sm:rounded-xl text-slate-400 hover:text-teal-600 transition-all hover:scale-110 shrink-0">
+              <ArrowLeft size={16} className="sm:w-[18px] sm:h-[18px]" />
             </Link>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            <span className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">
               Master Registry / {patientData?.profile?.mrn || 'NODE'}
             </span>
           </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tighter flex items-center gap-3">
-            {editing ? 'Modify Institutional Manifest' : 'Master Clinical Profile'}
-            <span className="text-[10px] bg-slate-900 text-white px-3 py-1 rounded-full uppercase tracking-tighter shadow-lg">Global ID</span>
-          </h1>
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-2 italic">Institutional Node Access / EHR-CORE</p>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tighter truncate max-w-full">
+              {editing ? 'Modify Manifest' : 'Clinical Profile'}
+            </h1>
+            <span className="hidden xs:inline-block text-[8px] sm:text-[10px] bg-slate-900 text-white px-2 sm:px-3 py-0.5 sm:py-1 rounded-full uppercase tracking-tighter shadow-lg shrink-0">Global ID</span>
+          </div>
+          <p className="text-[8px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em] mt-1 sm:mt-2 italic truncate opacity-70">Institutional Node Access / EHR-CORE</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center sm:shrink-0 pt-8 sm:pt-0">
           {!editing ? (
             <button
               onClick={() => setEditing(true)}
-              className="flex items-center gap-2 px-8 py-3 bg-teal-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 shadow-xl shadow-teal-500/20 active:scale-95 transition-all"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 sm:px-8 py-2.5 sm:py-3 bg-teal-600 text-white rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 shadow-xl shadow-teal-500/20 active:scale-95 transition-all"
             >
-              <Edit2 size={14} /> Master Edit
+              <Edit2 size={12} className="sm:w-[14px] sm:h-[14px]" /> Master Edit
             </button>
           ) : (
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
               <button 
                 onClick={() => setEditing(false)} 
-                className="px-6 py-3 bg-white border border-slate-200 text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all"
+                className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 bg-white border border-slate-200 text-slate-400 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center gap-2 px-8 py-3 bg-teal-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 shadow-xl shadow-teal-500/20 active:scale-95 transition-all"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 sm:px-8 py-2.5 sm:py-3 bg-teal-600 text-white rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 shadow-xl shadow-teal-500/20 active:scale-95 transition-all"
               >
-                {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                {saving ? 'Synchronizing...' : 'Commit Changes'}
+                {saving ? <Loader2 size={12} className="animate-spin sm:size-[14px]" /> : <Save size={12} className="sm:size-[14px]" />}
+                {saving ? 'Syncing...' : 'Commit'}
               </button>
             </div>
           )}
@@ -232,23 +234,23 @@ function MasterEditPatient() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* MAIN IDENTITY CARD */}
-        <div className="lg:col-span-8 space-y-8">
-          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden group">
+        <div className="lg:col-span-8 space-y-4 sm:space-y-8">
+          <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-12 opacity-[0.02] pointer-events-none group-hover:scale-110 transition-transform duration-700">
                <User size={200} className="text-teal-600" />
             </div>
 
-            <h2 className="text-[12px] font-black text-slate-900 uppercase tracking-widest mb-8 flex items-center gap-3">
-              <Activity size={18} className="text-teal-600" /> Identity Matrix
+            <h2 className="text-[10px] sm:text-[12px] font-black text-slate-900 uppercase tracking-widest mb-6 sm:mb-8 flex items-center gap-3">
+              <Activity size={16} className="text-teal-600 sm:size-[18px]" /> Identity Matrix
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 relative z-10">
               <ProfileField label="Honorific" editing={editing}>
                 <select 
                   name="honorific" 
                   value={formData.honorific} 
                   onChange={handleChange} 
-                  className="w-full px-5 py-3 rounded-2xl bg-slate-50 border border-slate-100 focus:border-teal-500 focus:bg-white outline-none text-[11px] font-black uppercase appearance-none transition-all cursor-pointer"
+                  className="w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100 focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black uppercase appearance-none transition-all cursor-pointer"
                 >
                   <option value="Mr">MR</option>
                   <option value="Mrs">MRS</option>
@@ -263,7 +265,7 @@ function MasterEditPatient() {
                   value={formData.name} 
                   onChange={handleChange} 
                   placeholder="ENTER FULL NAME" 
-                  className={`w-full px-5 py-3 rounded-2xl bg-slate-50 border ${errors.name ? 'border-rose-500' : 'border-slate-100'} focus:border-teal-500 focus:bg-white outline-none text-[11px] font-black uppercase transition-all`} 
+                  className={`w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border ${errors.name ? 'border-rose-500' : 'border-slate-100'} focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black uppercase transition-all`} 
                 />
               </ProfileField>
 
@@ -273,7 +275,7 @@ function MasterEditPatient() {
                   value={formData.mobile} 
                   onChange={handleChange} 
                   placeholder="10 DIGIT MOBILE" 
-                  className={`w-full px-5 py-3 rounded-2xl bg-slate-50 border ${errors.mobile ? 'border-rose-500' : 'border-slate-100'} focus:border-teal-500 focus:bg-white outline-none text-[11px] font-black tracking-widest transition-all`} 
+                  className={`w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border ${errors.mobile ? 'border-rose-500' : 'border-slate-100'} focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black tracking-widest transition-all`} 
                 />
               </ProfileField>
 
@@ -283,7 +285,7 @@ function MasterEditPatient() {
                   value={formData.email} 
                   onChange={handleChange} 
                   placeholder="PATIENT@DOMAIN.COM" 
-                  className={`w-full px-5 py-3 rounded-2xl bg-slate-50 border ${errors.email ? 'border-rose-500' : 'border-slate-100'} focus:border-teal-500 focus:bg-white outline-none text-[11px] font-black uppercase transition-all`} 
+                  className={`w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border ${errors.email ? 'border-rose-500' : 'border-slate-100'} focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black uppercase transition-all`} 
                 />
               </ProfileField>
 
@@ -293,7 +295,7 @@ function MasterEditPatient() {
                   name="dob" 
                   value={formData.dob} 
                   onChange={handleChange} 
-                  className={`w-full px-5 py-3 rounded-2xl bg-slate-50 border ${errors.dob ? 'border-rose-500' : 'border-slate-100'} focus:border-teal-500 focus:bg-white outline-none text-[11px] font-black transition-all`} 
+                  className={`w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border ${errors.dob ? 'border-rose-500' : 'border-slate-100'} focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black transition-all`} 
                 />
               </ProfileField>
 
@@ -302,7 +304,7 @@ function MasterEditPatient() {
                   name="gender" 
                   value={formData.gender} 
                   onChange={handleChange} 
-                  className="w-full px-5 py-3 rounded-2xl bg-slate-50 border border-slate-100 focus:border-teal-500 focus:bg-white outline-none text-[11px] font-black uppercase appearance-none transition-all cursor-pointer"
+                  className="w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100 focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black uppercase appearance-none transition-all cursor-pointer"
                 >
                   <option value="male">MALE</option>
                   <option value="female">FEMALE</option>
@@ -315,7 +317,7 @@ function MasterEditPatient() {
                   name="bloodGroup" 
                   value={formData.bloodGroup} 
                   onChange={handleChange} 
-                  className="w-full px-5 py-3 rounded-2xl bg-slate-50 border border-slate-100 focus:border-teal-500 focus:bg-white outline-none text-[11px] font-black appearance-none transition-all cursor-pointer"
+                  className="w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100 focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black appearance-none transition-all cursor-pointer"
                 >
                   {['None', 'O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map(bg => <option key={bg} value={bg}>{bg}</option>)}
                 </select>
@@ -329,7 +331,7 @@ function MasterEditPatient() {
                     onChange={handleChange} 
                     placeholder="RESIDENTIAL ADDRESS" 
                     rows={2} 
-                    className={`w-full px-5 py-4 rounded-2xl bg-slate-50 border ${errors.address ? 'border-rose-500' : 'border-slate-100'} focus:border-teal-500 focus:bg-white outline-none text-[11px] font-black uppercase resize-none transition-all`} 
+                    className={`w-full px-4 sm:px-5 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-slate-50 border ${errors.address ? 'border-rose-500' : 'border-slate-100'} focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black uppercase resize-none transition-all`} 
                   />
                 </ProfileField>
               </div>
@@ -337,18 +339,18 @@ function MasterEditPatient() {
           </div>
 
           {/* CLINICAL SUMMARY */}
-          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden group">
-            <h2 className="text-[12px] font-black text-slate-900 uppercase tracking-widest mb-8 flex items-center gap-3">
-              <FileText size={18} className="text-teal-600" /> Clinical Oversight Summary
+          <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden group">
+            <h2 className="text-[10px] sm:text-[12px] font-black text-slate-900 uppercase tracking-widest mb-6 sm:mb-8 flex items-center gap-3">
+              <FileText size={16} className="text-teal-600 sm:size-[18px]" /> Clinical Oversight Summary
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 relative z-10">
               <ProfileField label="Registered Allergies" editing={editing}>
                 <input 
                   name="allergies" 
                   value={formData.allergies} 
                   onChange={handleChange} 
                   placeholder="NO ALLERGIES REGISTERED" 
-                  className="w-full px-5 py-3 rounded-2xl bg-slate-50 border border-slate-100 focus:border-teal-500 focus:bg-white outline-none text-[11px] font-black uppercase transition-all" 
+                  className="w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100 focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black uppercase transition-all" 
                 />
               </ProfileField>
 
@@ -358,25 +360,25 @@ function MasterEditPatient() {
                   value={formData.medicalHistory} 
                   onChange={handleChange} 
                   placeholder="NO HISTORICAL LOGS" 
-                  className="w-full px-5 py-3 rounded-2xl bg-slate-50 border border-slate-100 focus:border-teal-500 focus:bg-white outline-none text-[11px] font-black uppercase h-24 resize-none transition-all" 
+                  className="w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100 focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black uppercase h-24 resize-none transition-all" 
                 />
               </ProfileField>
             </div>
           </div>
 
           {/* EMERGENCY PROTOCOL */}
-          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-            <h2 className="text-[12px] font-black text-rose-600 uppercase tracking-widest mb-8 flex items-center gap-3">
-              <Shield size={18} /> Emergency Contact Matrix
+          <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm">
+            <h2 className="text-[10px] sm:text-[12px] font-black text-rose-600 uppercase tracking-widest mb-6 sm:mb-8 flex items-center gap-3">
+              <Shield size={16} className="sm:size-[18px]" /> Emergency Contact Matrix
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
               <ProfileField label="Kin Contact Number" editing={editing} error={errors.emergencyContact}>
                 <input 
                   name="emergencyContact" 
                   value={formData.emergencyContact} 
                   onChange={handleChange} 
                   placeholder="10 DIGIT CONTACT" 
-                  className={`w-full px-5 py-3 rounded-2xl bg-slate-50 border ${errors.emergencyContact ? 'border-rose-500' : 'border-slate-100'} focus:border-teal-500 focus:bg-white outline-none text-[11px] font-black tracking-widest transition-all`} 
+                  className={`w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border ${errors.emergencyContact ? 'border-rose-500' : 'border-slate-100'} focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black tracking-widest transition-all`} 
                 />
               </ProfileField>
 
@@ -386,7 +388,7 @@ function MasterEditPatient() {
                   value={formData.emergencyContactEmail} 
                   onChange={handleChange} 
                   placeholder="EMERGENCY@DOMAIN.COM" 
-                  className={`w-full px-5 py-3 rounded-2xl bg-slate-50 border ${errors.emergencyContactEmail ? 'border-rose-500' : 'border-slate-100'} focus:border-teal-500 focus:bg-white outline-none text-[11px] font-black uppercase transition-all`} 
+                  className={`w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border ${errors.emergencyContactEmail ? 'border-rose-500' : 'border-slate-100'} focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black uppercase transition-all`} 
                 />
               </ProfileField>
             </div>
@@ -395,23 +397,23 @@ function MasterEditPatient() {
 
         {/* SIDE ACTIONS */}
         <div className="lg:col-span-4 space-y-8 sticky top-6">
-          <div className="bg-slate-900 p-8 rounded-[3rem] text-white shadow-2xl shadow-slate-900/20 space-y-10 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none group-hover:rotate-12 transition-transform duration-700">
-               <Activity size={180} />
+          <div className="bg-slate-900 p-6 sm:p-8 rounded-3xl sm:rounded-[3rem] text-white shadow-2xl shadow-slate-900/20 space-y-6 sm:space-y-10 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-8 sm:p-12 opacity-10 pointer-events-none group-hover:rotate-12 transition-transform duration-700">
+               <Activity size={120} className="sm:size-[180px]" />
             </div>
 
             <div className="relative z-10">
-              <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center justify-between mb-6 sm:mb-8">
                 <div>
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Institutional Age</p>
-                  <h3 className="text-5xl font-black tracking-tighter mt-2">{ageData} <span className="text-xs font-bold text-teal-500 uppercase tracking-widest italic ml-1">Years</span></h3>
+                  <p className="text-[8px] sm:text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em]">Institutional Age</p>
+                  <h3 className="text-3xl sm:text-5xl font-black tracking-tighter mt-1 sm:mt-2">{ageData} <span className="text-[10px] sm:text-xs font-bold text-teal-500 uppercase tracking-widest italic ml-1">Years</span></h3>
                 </div>
-                <div className="w-16 h-16 bg-white/5 rounded-[1.5rem] flex items-center justify-center border border-white/10 group-hover:bg-teal-600 transition-all duration-300">
-                  <HeartIcon size={32} className="text-teal-400 group-hover:text-white" />
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/5 rounded-xl sm:rounded-[1.5rem] flex items-center justify-center border border-white/10 group-hover:bg-teal-600 transition-all duration-300">
+                  <HeartIcon size={24} className="text-teal-400 group-hover:text-white sm:size-[32px]" />
                 </div>
               </div>
 
-              <div className="h-px bg-white/5 w-full mb-10" />
+              <div className="h-px bg-white/5 w-full mb-6 sm:mb-10" />
 
               <div className="space-y-4">
                 <button
@@ -428,12 +430,12 @@ function MasterEditPatient() {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-[2rem] border border-slate-200 space-y-5 shadow-sm group">
-            <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
-              <Shield size={16} className="text-emerald-500" /> Security Protocol
+          <div className="bg-white p-5 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-200 space-y-4 sm:space-y-5 shadow-sm group">
+            <p className="text-[10px] sm:text-[11px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
+              <Shield size={14} className="text-emerald-500 sm:size-[16px]" /> Security Protocol
             </p>
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-              <div className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em] leading-loose">
+            <div className="p-3 sm:p-4 bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-100">
+              <div className="text-[8px] sm:text-[9px] text-slate-500 font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] leading-relaxed sm:leading-loose">
                 Log: MASTER-HELP-SYNC<br />
                 Status: ENCRYPTED-READ<br />
                 Node: {hospitalId.slice(0, 8)}...<br />
@@ -454,9 +456,9 @@ function ProfileField({ label, editing, children, error }: any) {
     if (children.props?.name === 'honorific') displayValue = displayValue.toUpperCase();
     
     return (
-      <div className="space-y-2 group/field">
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 transition-colors group-hover/field:text-teal-600">{label}</label>
-        <div className="text-[11px] font-black text-slate-900 uppercase bg-slate-50/50 px-5 py-4 rounded-2xl border border-slate-100 group-hover/field:bg-slate-50 transition-all">
+      <div className="space-y-1.5 sm:space-y-2 group/field">
+        <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] sm:tracking-[0.2em] ml-1 transition-colors group-hover/field:text-teal-600">{label}</label>
+        <div className="text-[10px] sm:text-[11px] font-black text-slate-900 uppercase bg-slate-50/50 px-4 sm:px-5 py-3 sm:py-4 rounded-xl sm:rounded-2xl border border-slate-100 group-hover/field:bg-slate-50 transition-all truncate">
           {displayValue}
         </div>
       </div>
@@ -464,10 +466,10 @@ function ProfileField({ label, editing, children, error }: any) {
   }
 
   return (
-    <div className="space-y-2 group/field">
+    <div className="space-y-1.5 sm:space-y-2 group/field">
       <div className="flex justify-between items-center ml-1">
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] transition-colors group-hover/field:text-teal-600">{label}</label>
-        {error && <span className="text-[9px] font-black text-rose-500 uppercase tracking-tight animate-pulse">{error}</span>}
+        <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-colors group-hover/field:text-teal-600">{label}</label>
+        {error && <span className="text-[8px] sm:text-[9px] font-black text-rose-500 uppercase tracking-tight animate-pulse">{error}</span>}
       </div>
       <div className="relative">
         {children}

@@ -95,8 +95,8 @@ const CountdownTimer = React.memo(({ targetDate, startTime }: { targetDate: stri
         return () => clearInterval(timer);
     }, [targetDate, startTime]);
 
-    if (timeLeft === "IN PROGRESS") return <span className="text-emerald-500 font-black animate-pulse">IN PROGRESS</span>;
-    if (timeLeft === "PASSED") return <span className="text-slate-400 font-bold">COMPLETED</span>;
+    if (timeLeft === "IN PROGRESS") return <span className="text-emerald-500 font-black animate-pulse text-[8px] md:text-[10px] uppercase tracking-wider">IN PROGRESS</span>;
+    if (timeLeft === "PASSED") return <span className="text-slate-400 font-bold text-[8px] md:text-[10px] uppercase tracking-wider">COMPLETED</span>;
     
     return (
         <span className="text-teal-600 font-black flex items-center gap-1.5 whitespace-nowrap">
@@ -123,7 +123,7 @@ const StatCard = React.memo(function StatCard({ icon, title, value, trend, color
     };
 
     return (
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm group flex flex-col gap-3 hover:border-teal-500/30 transition-all duration-200">
+        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm group flex flex-col gap-3 hover:border-teal-500/30 transition-all duration-200">
             <div className="flex items-center justify-between">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colors[color]} group-hover:scale-110 shadow-lg transition-transform`}>
                     {React.cloneElement(icon, { size: 18, strokeWidth: 3 })}
@@ -239,7 +239,7 @@ const OnlineAdmissionsTable = React.memo(({ appointments, onCheckIn }: { appoint
 const PhysicianMonitor = React.memo(({ doctors, hospitalId }: { doctors: any[], hospitalId: string }) => {
     const router = useRouter();
     return (
-        <div className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm flex flex-col h-[500px]">
+        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm flex flex-col h-[500px]">
             <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                 <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
                     <Stethoscope size={14} className="text-teal-600" /> Physician Load Monitor
@@ -297,7 +297,7 @@ export default function MasterDashboard() {
     const [selectedOnlineDate, setSelectedOnlineDate] = useState(new Date().toDateString());
 
     // ── Data Fetching ───────────────────────────────────────────────────────
-    const { data: dashboardData, isLoading: dashboardLoading, refetch: refetchDashboard } = useMasterDashboard();
+    const { data: dashboardData, isLoading: dashboardLoading, refetch: refetchDashboard } = useMasterDashboard(hospitalId);
 
     const loadData = useCallback(async (isSilent = false) => {
         if (!isSilent) setLoading(true);
@@ -431,7 +431,7 @@ export default function MasterDashboard() {
             </div>
 
             {/* STATS GRID */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard icon={<Users />} title="Institutional Registry" value={stats.totalPatients} trend="+12.5% vs Prev Month" color="slate" />
                 <StatCard icon={<CalendarCheck />} title="Today's Sessions" value={stats.todayPatients} trend="Active Live Queue" color="teal" />
                 <StatCard icon={<Activity />} title="Emergency Triage" value={stats.emergencyPatients} trend="Critical Oversight" color="rose" />
@@ -439,7 +439,7 @@ export default function MasterDashboard() {
             </div>
 
             {/* ONLINE APPOINTMENTS SECTION - LIST VIEW & FILTERS */}
-            <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm relative overflow-hidden group">
+            <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-100 shadow-sm relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-12 opacity-[0.02] pointer-events-none">
                     <Zap size={240} className="text-teal-600" />
                 </div>
@@ -524,7 +524,7 @@ export default function MasterDashboard() {
 
                 {/* APPOINTMENT LEDGER DISPLAY */}
                 <div className="lg:col-span-8 space-y-4">
-                    <div className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm flex flex-col h-[500px]">
+                    <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm flex flex-col h-[500px]">
                         <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="flex items-center p-1 bg-slate-100 rounded-xl w-fit">
                                 <button onClick={() => setActiveTab('active')} className={`px-5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === 'active' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>Session Live</button>

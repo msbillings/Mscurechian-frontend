@@ -35,10 +35,9 @@ export const OnlineClinicalLedger = ({ appointments, isLoading, onUpdateStatus }
                 <thead>
                     <tr className="bg-indigo-50/30 border-b border-indigo-100">
                         <th className="text-left p-6 text-[10px] font-black text-indigo-400   uppercase tracking-widest">Mobile Clinical Entity</th>
-                        <th className="text-left p-6 text-[10px] font-black text-indigo-400 uppercase tracking-widest">Consultant</th>
+                        <th className="text-left p-6 text-[10px] font-black text-indigo-400 uppercase tracking-widest hidden md:table-cell">Consultant</th>
                         <th className="text-center p-6 text-[10px] font-black text-indigo-400 uppercase tracking-widest">Mobile Schedule</th>
                         <th className="text-right p-6 text-[10px] font-black text-indigo-400 uppercase tracking-widest">Protocol Status</th>
-                        <th className="text-right p-6 text-[10px] font-black text-indigo-400 uppercase tracking-widest">Execution</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -74,7 +73,7 @@ export const OnlineClinicalLedger = ({ appointments, isLoading, onUpdateStatus }
                                     </div>
                                 </div>
                             </td>
-                            <td className="p-6">
+                            <td className="p-6 hidden md:table-cell">
                                 <div className="flex items-center gap-2">
                                     <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
                                         <Stethoscope size={14} />
@@ -98,17 +97,9 @@ export const OnlineClinicalLedger = ({ appointments, isLoading, onUpdateStatus }
                                     {apt.status || "Booked"}
                                 </div>
                             </td>
-                            <td className="p-6 text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                    {apt.status === 'Booked' && (
-                                        <button onClick={() => onUpdateStatus(apt.id || apt._id, 'confirmed')} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase hover:bg-indigo-700 transition-all">Confirm</button>
-                                    )}
-                                    <button className="p-2 text-slate-400 hover:text-indigo-600"><FileText size={18} /></button>
-                                </div>
-                            </td>
                         </tr>
                     )) : (
-                        <tr><td colSpan={5} className="p-20 text-center text-slate-400 uppercase font-black text-xs tracking-widest">No Mobile Engagements Found</td></tr>
+                        <tr><td colSpan={4} className="p-20 text-center text-slate-400 uppercase font-black text-xs tracking-widest">No Mobile Engagements Found</td></tr>
                     )}
                 </tbody>
             </table>

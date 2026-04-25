@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useTransition } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useParams } from "next/navigation";
 import { useAuthStore } from '@/stores/authStore';
 import {
     LayoutDashboard,
@@ -23,6 +23,7 @@ import { useTenantLink } from "@/hooks/useTenantLink";
 import ProgressBar from "@/components/ui/ProgressBar";
 import AIAssistantModal from "@/components/masterhelpdesk/AIAssistantModal";
 import MasterHelpdeskQuickActions from "./components/MasterHelpdeskQuickActions";
+import NotificationCenter from "@/components/navbar/NotificationCenter";
 
 const masterhelpdeskMenu: any[] = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/masterhelpdesk" },
@@ -40,6 +41,8 @@ const masterhelpdeskMenu: any[] = [
 export function MasterHelpdeskLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
+    const params = useParams();
+    const currentHospitalId = params?.hospitalId as string;
     const { user, logout, isAuthenticated, checkAuth, isLoading, isInitialized } = useAuthStore();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -145,10 +148,7 @@ export function MasterHelpdeskLayout({ children }: { children: React.ReactNode }
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors relative">
-                            <Bell size={20} />
-                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-                        </button>
+                        <NotificationCenter hospitalId={currentHospitalId} />
                         <div className="h-6 w-px bg-slate-200"></div>
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-sm shadow-indigo-200">

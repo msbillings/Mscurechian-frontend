@@ -63,3 +63,25 @@ export const formatLocalTime = (dateInput: string | Date | undefined, fallback?:
         return fallback || "N/A";
     }
 };
+
+/**
+ * Calculates age from date of birth.
+ * Returns age as a string or "N/A".
+ */
+export const calculateAge = (dob: string | Date | undefined): string => {
+    if (!dob) return "N/A";
+    try {
+        const birthDate = new Date(dob);
+        if (isNaN(birthDate.getTime())) return "N/A";
+
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        return age >= 0 ? age.toString() : "N/A";
+    } catch (error) {
+        return "N/A";
+    }
+};

@@ -47,8 +47,8 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
         <div style={{
             width: '100%',
             backgroundColor: '#ffffff',
-            fontFamily: "'Segoe UI', Roboto, Arial, sans-serif",
-            marginBottom: '10px',
+            fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+            marginBottom: '12px',
             printColorAdjust: 'exact',
             WebkitPrintColorAdjust: 'exact',
             padding: '0',
@@ -59,17 +59,14 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                 alignItems: 'center',
                 justifyContent: 'flex-start',
                 flexWrap: 'wrap',
-                gap: 'clamp(8px, 1.5vw, 20px)',
-                padding: '6px 0',
+                gap: '20px',
+                padding: '8px 0',
                 width: '100%',
                 boxSizing: 'border-box'
             }}>
                 {/* Logo Section */}
                 <div style={{
-                    flex: '0 0 fit-content',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'flex-start',
+                    flex: '0 0 auto',
                     paddingRight: '15px',
                 }}>
                     {details.logo ? (
@@ -77,79 +74,82 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                             src={details.logo}
                             alt="Hospital Logo"
                             style={{
-                                maxWidth: 'clamp(80px, 18vw, 160px)',
-                                maxHeight: '100px',
+                                width: '100px',
+                                height: '100px',
                                 objectFit: 'contain',
-                                flexShrink: 0
                             }}
                         />
                     ) : (
                         <div style={{
-                            width: '100px',
-                            height: '100px',
-                            border: '1px solid #000',
+                            width: '90px',
+                            height: '90px',
+                            border: '1.5px solid #1e3a8a',
+                            borderRadius: '12px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: '#e2e8f0',
-                            fontSize: '12px',
-                            fontWeight: 'bold'
-                        }}></div>
+                            color: '#1e3a8a',
+                            fontSize: '10px',
+                            fontWeight: 'bold',
+                            textTransform: 'uppercase'
+                        }}>LOGO</div>
                     )}
                 </div>
 
-
-                {/* Vertical Divider (Desktop Only) */}
+                {/* Vertical Divider Line */}
                 <div style={{
-                    width: '1px',
-                    height: '50px',
-                    backgroundColor: '#e2e8f0',
+                    width: '2px',
+                    height: '70px',
+                    backgroundColor: '#1e3a8a',
+                    opacity: 0.1,
                     display: 'block'
                 }}></div>
 
-                {/* DETAILS SECTION */}
+                {/* Details Section */}
                 <div style={{
                     flex: '1',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'flex-start',
-                    gap: 'clamp(4px, 0.8vw, 10px)',
-                    padding: '2px 0',
-                    overflow: 'hidden'
+                    gap: '4px',
+                    paddingLeft: '5px'
                 }}>
                     <h1 style={{
                         margin: 0,
                         fontWeight: '900',
                         color: '#1e3a8a',
-                        lineHeight: '1.2',
-                        textAlign: 'left',
-                        fontSize: 'clamp(16px, 4vw, 32px)',
+                        lineHeight: '1.1',
+                        fontSize: 'clamp(20px, 4.5vw, 36px)',
                         textTransform: 'uppercase',
-                        letterSpacing: '0.2px',
-                        wordBreak: 'break-word',
-                        width: '100%'
+                        letterSpacing: '-0.5px'
                     }}>
                         {details.name}
                     </h1>
 
-                    {/* Email Row */}
+                    {/* Email Row with Icon */}
                     {details.email && details.email !== 'N/A' && details.email !== 'Email Address' && (
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 'clamp(4px, 1vw, 8px)',
+                            gap: '6px',
                             color: '#1e40af',
-                            fontSize: 'clamp(9px, 1.5vw, 13px)',
-                            fontWeight: '700'
+                            fontSize: 'clamp(10px, 1.6vw, 14px)',
+                            fontWeight: '700',
+                            marginTop: '2px'
                         }}>
                             <div style={{
-                                width: '10px',
-                                height: '10px',
+                                width: '12px',
+                                height: '12px',
                                 backgroundColor: '#1e3a8a',
-                                borderRadius: '1px',
-                                flexShrink: 0
-                            }}></div>
-                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{details.email}</span>
+                                borderRadius: '2px',
+                                flexShrink: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <Mail size={8} color="white" />
+                            </div>
+                            <span>{details.email}</span>
                         </div>
                     )}
 
@@ -158,41 +158,48 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                         display: 'flex',
                         alignItems: 'center',
                         flexWrap: 'wrap',
-                        gap: 'clamp(6px, 1.5vw, 12px)',
-                        fontSize: 'clamp(8px, 1.2vw, 12px)',
-                        color: '#334155',
-                        fontWeight: '700',
-                        marginTop: '1px',
-                        width: '100%',
-                        overflow: 'hidden'
+                        gap: '12px',
+                        fontSize: 'clamp(9px, 1.4vw, 13px)',
+                        color: '#475569',
+                        fontWeight: '600',
+                        marginTop: '2px',
+                        width: '100%'
                     }}>
                         {details.address && details.address !== 'N/A' && details.address !== 'Hospital Address' && (
-                            <span style={{ color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{details.address}</span>
+                            <span style={{ color: '#64748b' }}>{details.address}</span>
                         )}
-                        {details.address && details.phone && details.phone !== 'N/A' && (
-                            <div style={{ width: '1px', height: 'clamp(8px, 1.2vw, 12px)', backgroundColor: '#cbd5e1', flexShrink: 0 }}></div>
-                        )}
+                        
                         {details.phone && details.phone !== 'N/A' && details.phone !== 'Phone Number' && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                                <Phone size={12} fill="#22c55e" color="#22c55e" strokeWidth={0} />
-                                <span style={{ color: '#22c55e' }}>{details.phone}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: details.address ? '8px' : '0' }}>
+                                <div style={{
+                                    width: '16px',
+                                    height: '16px',
+                                    backgroundColor: '#22c55e',
+                                    borderRadius: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}>
+                                    <Phone size={10} color="white" fill="white" />
+                                </div>
+                                <span style={{ color: '#16a34a', fontWeight: '800' }}>{details.phone}</span>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
 
-            {/* Bottom Gradient line */}
+            {/* Bottom Accent line */}
             <div style={{
                 width: '100%',
-                height: '3px',
-                background: 'linear-gradient(to right, #22c55e, #10b981, #3b82f6)',
-                marginTop: '8px',
-                marginBottom: '8px',
+                height: '4px',
+                backgroundColor: '#10b981', // Solid teal/green like Image 2
+                marginTop: '10px',
                 borderRadius: '2px'
             }}></div>
         </div>
     );
 };
+
 
 export default MainHeader;
