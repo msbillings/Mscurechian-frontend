@@ -37,4 +37,11 @@ export const masterHelpdeskService = {
 
   getIPDAdmissions: (id: string) =>
     apiClient<any>(MASTER_HELPDESK_ENDPOINTS.IPD_ADMISSIONS(id)),
+
+  // ==================== Registration ====================
+  registerPatient: (data: any) =>
+    apiClient<any>(MASTER_HELPDESK_ENDPOINTS.REGISTER_PATIENT, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 };
