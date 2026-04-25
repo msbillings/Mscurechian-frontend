@@ -990,7 +990,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
           </div>
           <div class="bill-meta">
             <div><strong>Date:</strong> ${payment.date ? new Date(payment.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : appointment.date}</div>
-            <div><strong>Time:</strong> ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</div>
+            <div><strong>Booking Time:</strong> ${appointment.bookedAt ? formatTime12Hr(appointment.bookedAt) : new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</div>
             <div><strong>Receipt No:</strong> ${payment.receiptNumber || payment.receiptNo || appointment.appointmentId}</div>
           </div>
         </div>
@@ -1039,7 +1039,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
                         <div style="font-size: 10px; font-weight: 700; color: #0c4a6e;">${appointment.date}</div>
                     </div>
                     <div>
-                        <div style="font-size: 8px; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px;">Arrival Time</div>
+                        <div style="font-size: 8px; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px;">Appointment Slot</div>
                         <div style="font-size: 10px; font-weight: 700; color: #0c4a6e;">${formatTime12Hr(appointment.time || new Date())}</div>
                     </div>
                     <div>

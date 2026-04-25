@@ -488,6 +488,7 @@ export default function AppointmentBooking() {
 
     const isBookingValid = () => {
         if (!selectedPatient || !selectedDoctor) return false;
+        if (bookingMode === 'slot' && !selectedSlot) return false;
 
         const hasEmptyRequired = false; // Vitals are no longer required
         const hasVitalErrors = Object.values(vitalsErrors).some(err => !!err);
@@ -709,6 +710,7 @@ export default function AppointmentBooking() {
                         d.setMinutes(parseInt(m, 10));
                         return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
                     })(),
+                    bookedAt: new Date().toISOString(),
                     type: appointmentType.toUpperCase(),
                     notes: notes,
                     appointmentId: appointment._id || appointment.id || 'PENDING'

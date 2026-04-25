@@ -269,6 +269,7 @@ export default function PatientsPage() {
                     specialization: appt.doctor?.specialization || appt.department || "",
                     date: new Date(appt.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
                     time: appt.appointmentTime || appt.startTime || "N/A",
+                    bookedAt: appt.createdAt || appt.date || new Date().toISOString(),
                     type: appt.type || "OPD",
                     appointmentId: appt.appointmentId || appt._id?.substring(0, 8).toUpperCase()
                 },

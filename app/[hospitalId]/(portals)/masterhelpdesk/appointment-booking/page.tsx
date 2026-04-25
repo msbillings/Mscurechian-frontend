@@ -26,7 +26,11 @@ import {
     Check,
     Phone,
     X,
-    Droplets
+    Droplets,
+    Sunrise,
+    Sun,
+    Sunset,
+    Moon
 } from "lucide-react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -486,6 +490,8 @@ export default function MasterAppointmentBooking() {
                 endTime: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
                 type: appointmentType,
                 notes: notes,
+                symptoms: notes,
+                reason: notes,
                 paymentMethod: paymentMethod,
                 paymentStatus: backendPaymentStatus,
                 patientDetails: {
@@ -585,7 +591,17 @@ export default function MasterAppointmentBooking() {
                     logo: latestHospital.logo
                 },
                 patient: { name: selectedPatient.name, mrn: selectedPatient.mrn, age: selectedPatient.age, gender: selectedPatient.gender, mobile: selectedPatient.mobile, dob: selectedPatient.dob, address: selectedPatient.address, email: selectedPatient.email, bloodGroup: selectedPatient.bloodGroup, emergencyContact: selectedPatient.emergencyContact, allergies: Array.isArray(selectedPatient.allergies) ? selectedPatient.allergies.join(', ') : selectedPatient.allergies, medicalHistory: selectedPatient.medicalHistory, vitals: { ...vitals } },
-                appointment: { doctorName: selectedDoctor.user?.name || selectedDoctor.name, specialization: selectedDoctor.specialties?.[0] || 'General', qualification: selectedDoctor.qualifications?.[0] || 'MBBS', date: new Date(selectedDate).toLocaleDateString(), time: bookingMode === 'slot' ? selectedSlot : payload.time, type: appointmentType.toUpperCase(), notes: notes, appointmentId: appointment._id || appointment.id || 'PENDING' },
+                appointment: { 
+                    doctorName: selectedDoctor.user?.name || selectedDoctor.name, 
+                    specialization: selectedDoctor.specialties?.[0] || 'General', 
+                    qualification: selectedDoctor.qualifications?.[0] || 'MBBS', 
+                    date: new Date(selectedDate).toLocaleDateString(), 
+                    time: bookingMode === 'slot' ? selectedSlot : payload.time, 
+                    bookedAt: new Date().toISOString(),
+                    type: appointmentType.toUpperCase(), 
+                    notes: notes, 
+                    appointmentId: appointment._id || appointment.id || 'PENDING' 
+                },
                 payment: { amount: selectedDoctor?.consultationFee || 0, totalBillAmount: selectedDoctor?.consultationFee || 0, totalPaidAmount: selectedDoctor?.consultationFee || 0, advanceAmount: 0, method: paymentMethod.toUpperCase(), status: paymentStatus.toUpperCase(), date: new Date().toISOString() },
                 registrationType: 'OPD',
                 headerHtml, footerHtml, returnUrl: '/masterhelpdesk'
@@ -779,16 +795,112 @@ export default function MasterAppointmentBooking() {
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                         <div className="flex items-center gap-2">
                                             <div className="w-5 h-5 rounded-md bg-teal-100 flex items-center justify-center text-teal-600"><Clock size={12} /></div>
-                                            <h3 className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Select Booking Slot</h3>
+                                            <h3 className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Select Clinical Slot</h3>
+                                        </div>
+                                        
+                                        {/* Time of Day Filter */}
+                                        <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                                            {[
+                                                { id: 'all', label: 'All', icon: Clock },
+                                                { id: 'morning', label: 'Morning', icon: Sunrise },
+                                                { id: 'afternoon', label: 'Afternoon', icon: Sun },
+                                                { id: 'evening', label: 'Evening', icon: Sunset },
+                                                { id: 'night', label: 'Night', icon: Moon },
+                                            ].map(t => (
+                                                <button
+                                                    key={t.id}
+                                                    onClick={() => setTimeOfDayFilter(t.id as any)}
+                                                    className={`px-3 py-1.5 rounded-md text-[8px] font-black uppercase transition-all flex items-center gap-1.5 ${timeOfDayFilter === t.id ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-400'}`}
+                                                >
+                                                    <t.icon size={10} /> {t.label}
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
-                                    <div className="p-6 bg-teal-50/50 rounded-2xl border border-teal-100 flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-600"><Activity size={20} /></div>
-                                        <div>
-                                            <p className="text-[10px] font-black text-teal-900 uppercase">General Queue Entry</p>
-                                            <p className="text-[9px] font-bold text-teal-600/70 uppercase">Patient will be added to the current queue</p>
+
+                                    {/* Confirmation for past time slots */}
+                                    {selectedSlot && (() => {
+                                        const now = new Date();
+                                        const [t, ampm] = selectedSlot.split(' ');
+                                        let [h, m] = t.split(':').map(Number);
+                                        if (ampm === 'PM' && h < 12) h += 12;
+                                        if (ampm === 'AM' && h === 12) h = 0;
+                                        
+                                        const slotDate = new Date(selectedDate);
+                                        slotDate.setHours(h, m, 0, 0);
+                                        
+                                        if (slotDate < now) {
+                                            return (
+                                                <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                    <AlertTriangle size={14} className="text-amber-500" />
+                                                    <p className="text-[9px] font-bold text-amber-700 uppercase tracking-tight">
+                                                        Note: This slot time has already passed. Continue booking for this time?
+                                                    </p>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+
+                                    {loadingSlots ? (
+                                        <div className="flex flex-col items-center justify-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200 gap-3">
+                                            <Loader2 size={24} className="text-teal-500 animate-spin" />
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Scanning Availability Matrix...</p>
                                         </div>
-                                    </div>
+                                    ) : availableSlots.length > 0 ? (
+                                        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                                            {availableSlots
+                                                .filter(slot => {
+                                                    if (timeOfDayFilter === 'all') return true;
+                                                    const [t, ampm] = slot.time.split(' ');
+                                                    let [h] = t.split(':').map(Number);
+                                                    if (ampm === 'PM' && h < 12) h += 12;
+                                                    if (ampm === 'AM' && h === 12) h = 0;
+                                                    
+                                                    if (timeOfDayFilter === 'morning') return h >= 6 && h < 12;
+                                                    if (timeOfDayFilter === 'afternoon') return h >= 12 && h < 16;
+                                                    if (timeOfDayFilter === 'evening') return h >= 16 && h < 20;
+                                                    if (timeOfDayFilter === 'night') return h >= 20 || h < 6;
+                                                    return true;
+                                                })
+                                                .map((slot, i) => {
+                                                    const now = new Date();
+                                                    const [t, ampm] = slot.time.split(' ');
+                                                    let [h, m] = t.split(':').map(Number);
+                                                    if (ampm === 'PM' && h < 12) h += 12;
+                                                    if (ampm === 'AM' && h === 12) h = 0;
+                                                    const slotDate = new Date(selectedDate);
+                                                    slotDate.setHours(h, m, 0, 0);
+                                                    const isPast = slotDate < now;
+
+                                                    return (
+                                                        <button
+                                                            key={i}
+                                                            disabled={!slot.available}
+                                                            onClick={() => setSelectedSlot(slot.time)}
+                                                            className={`py-2 px-1 rounded-lg text-[9px] font-black transition-all border relative ${
+                                                                selectedSlot === slot.time 
+                                                                    ? 'bg-teal-600 border-teal-600 text-white shadow-lg scale-110 z-10' 
+                                                                    : slot.available 
+                                                                        ? `bg-white border-slate-100 text-slate-600 hover:border-teal-200 hover:bg-teal-50 shadow-sm ${isPast ? 'opacity-60 grayscale-[0.5]' : ''}` 
+                                                                        : 'bg-slate-50 border-slate-50 text-slate-300 cursor-not-allowed opacity-50'
+                                                            }`}
+                                                        >
+                                                            {slot.time.replace(':00', '').replace(' ', '')}
+                                                            {isPast && slot.available && <span className="absolute top-0 right-0 w-1.5 h-1.5 bg-amber-400 rounded-full border border-white" />}
+                                                        </button>
+                                                    );
+                                                })}
+                                        </div>
+                                    ) : (
+                                        <div className="p-10 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center text-center gap-3">
+                                            <AlertTriangle size={24} className="text-amber-400" />
+                                            <div>
+                                                <p className="text-[10px] font-black text-slate-900 uppercase">No Clinical Slots Available</p>
+                                                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Check doctor schedule or select a different date</p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </section>
@@ -800,13 +912,30 @@ export default function MasterAppointmentBooking() {
                                 <h2 className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">Clinical Matrix (Vitals)</h2>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                {['height', 'weight', 'bp', 'pulse', 'temperature', 'spo2', 'glucose'].map(v => (
-                                    <div key={v} className="space-y-2">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">{v.toUpperCase()}</label>
-                                        <input type="text" value={(vitals as any)[v]} onChange={(e) => handleVitalChange(v, e.target.value)} className={`w-full bg-slate-50 border ${vitalsErrors[v] ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-4 py-3 text-xs font-bold text-slate-900 focus:border-teal-500 outline-none transition-all placeholder:text-slate-200`} />
-                                        {vitalsErrors[v] && <p className="text-[8px] font-black text-rose-500 uppercase tracking-widest px-1">{vitalsErrors[v]}</p>}
-                                    </div>
-                                ))}
+                                {['height', 'weight', 'bp', 'pulse', 'temperature', 'spo2', 'glucose'].map(v => {
+                                    const placeholders: Record<string, string> = {
+                                        height: '170 CM',
+                                        weight: '70 KG',
+                                        bp: '120/80 MMHG',
+                                        pulse: '72 BPM',
+                                        temperature: '98.6 °F',
+                                        spo2: '98 %',
+                                        glucose: '90 MG/DL'
+                                    };
+                                    return (
+                                        <div key={v} className="space-y-2">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">{v.toUpperCase()}</label>
+                                            <input 
+                                                type="text" 
+                                                value={(vitals as any)[v]} 
+                                                onChange={(e) => handleVitalChange(v, e.target.value)} 
+                                                placeholder={placeholders[v]}
+                                                className={`w-full bg-slate-50 border ${vitalsErrors[v] ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-4 py-3 text-xs font-bold text-slate-900 focus:border-teal-500 outline-none transition-all placeholder:text-slate-200`} 
+                                            />
+                                            {vitalsErrors[v] && <p className="text-[8px] font-black text-rose-500 uppercase tracking-widest px-1">{vitalsErrors[v]}</p>}
+                                        </div>
+                                    );
+                                })}
                             </div>
                             <div className="space-y-3">
                                 <FormLabel label="Reason for Visit / Symptoms" />
@@ -848,7 +977,7 @@ export default function MasterAppointmentBooking() {
                                 <div className="pt-4 border-t border-white/10">
                                     <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest leading-none">Net Consultation Fee</p>
                                     <h4 className="text-4xl font-black text-white mt-1">₹{selectedDoctor?.consultationFee || 0}.00</h4>
-                                    <button onClick={handleBooking} disabled={submitting || !selectedDoctor || isDoctorOnLeave} className="w-full mt-8 py-5 bg-teal-500 text-slate-900 rounded-[20px] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-teal-400 transition-all shadow-2xl shadow-teal-500/30 flex items-center justify-center gap-2 group relative overflow-hidden disabled:opacity-50 disabled:grayscale disabled:pointer-events-none disabled:cursor-not-allowed">
+                                    <button onClick={handleBooking} disabled={submitting || !selectedDoctor || isDoctorOnLeave || !isBookingValid()} className="w-full mt-8 py-5 bg-teal-500 text-slate-900 rounded-[20px] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-teal-400 transition-all shadow-2xl shadow-teal-500/30 flex items-center justify-center gap-2 group relative overflow-hidden disabled:opacity-50 disabled:grayscale disabled:pointer-events-none disabled:cursor-not-allowed">
                                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] transition-all" />
                                         {submitting ? <Loader2 size={18} className="animate-spin" /> : <><Receipt size={16} /> Finalize Engagement & Print</>}
                                     </button>

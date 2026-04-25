@@ -79,7 +79,7 @@ export const OnlineClinicalLedger = ({ appointments, isLoading, onUpdateStatus }
                                         <Stethoscope size={14} />
                                     </div>
                                     <p className="text-[10px] font-black text-slate-900 uppercase">
-                                        {apt.doctorName || "Pending"}
+                                        {apt.doctorName || "UNASSIGNED"}
                                     </p>
                                 </div>
                             </td>

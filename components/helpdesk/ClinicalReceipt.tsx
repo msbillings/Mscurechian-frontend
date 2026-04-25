@@ -66,6 +66,7 @@ interface ReceiptProps {
     type: string;
     appointmentId: string;
     stayDuration?: string;
+    notes?: string;
   };
   payment: {
     amount: number;
@@ -152,7 +153,7 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
           patient: mappedPatient,
           appointment: {
             ...appointment,
-            notes: patient.symptoms // Map symptoms to appointment notes as existing receipts do
+            notes: patient.symptoms || appointment.notes // Preserve existing notes if symptoms not explicitly provided
           },
           payment,
           registrationType: ((patient.dischargeType && patient.dischargeType.toUpperCase() !== 'NONE') ||

@@ -40,10 +40,23 @@ import { motion, AnimatePresence } from "framer-motion";
 interface DashboardStats {
     totalPatients: number;
     todayPatients: number;
-    emergencyPatients: number;
     completedAppointments: number;
+    onlineRevenue: number;
+    offlineRevenue: number;
+    totalRevenue: number;
+    onlineCount: number;
+    offlineCount: number;
     hospitalName?: string;
 }
+
+const isSameDay = (d1: any, d2: any) => {
+    if (!d1 || !d2) return false;
+    const date1 = new Date(d1);
+    const date2 = new Date(d2);
+    return date1.getFullYear() === date2.getFullYear() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getDate() === date2.getDate();
+};
 
 // ── Components ──────────────────────────────────────────────────────────────
 
@@ -106,15 +119,28 @@ const CountdownTimer = React.memo(({ targetDate, startTime }: { targetDate: stri
     );
 });
 
-const StatCard = React.memo(function StatCard({ icon, title, value, trend, color, typeFilter, onTypeChange }: {
+const StatCard = React.memo(function StatCard({ 
+    icon, 
+    title, 
+    value, 
+    trend, 
+    color, 
+    path,
+    showFilter,
+    filterValue,
+    onFilterChange
+}: {
     icon: React.ReactElement<{ size?: number; strokeWidth?: number }>;
     title: string;
     value: string | number;
     trend?: string;
     color: 'teal' | 'slate' | 'rose' | 'emerald';
-    typeFilter?: 'all' | 'opd' | 'ipd';
-    onTypeChange?: (type: 'all' | 'opd' | 'ipd') => void;
+    path?: string;
+    showFilter?: boolean;
+    filterValue?: 'all' | 'online' | 'offline';
+    onFilterChange?: (val: 'all' | 'online' | 'offline') => void;
 }) {
+    const router = useRouter();
     const colors = {
         teal: "bg-teal-600 text-white shadow-teal-500/10",
         slate: "bg-slate-900 text-white shadow-slate-900/10",
@@ -123,22 +149,56 @@ const StatCard = React.memo(function StatCard({ icon, title, value, trend, color
     };
 
     return (
-        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm group flex flex-col gap-3 hover:border-teal-500/30 transition-all duration-200">
+        <div 
+            onClick={() => path && !showFilter && router.push(path)}
+            className={`bg-white p-4 rounded-2xl border border-slate-100 shadow-sm group flex flex-col gap-3 transition-all duration-200 ${path && !showFilter ? 'cursor-pointer hover:border-teal-500/30 hover:shadow-md' : ''}`}
+        >
             <div className="flex items-center justify-between">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colors[color]} group-hover:scale-110 shadow-lg transition-transform`}>
                     {React.cloneElement(icon, { size: 18, strokeWidth: 3 })}
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
-                    <div className="flex items-center gap-1 text-[8px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded uppercase border border-teal-100">
-                        <Activity size={8} /> Live
-                    </div>
+                    {showFilter ? (
+                        <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 shadow-inner">
+                            {['all', 'online', 'offline'].map((mode) => (
+                                <button
+                                    key={mode}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onFilterChange?.(mode as any);
+                                    }}
+                                    className={`px-2 py-1 rounded-md text-[7px] font-black uppercase tracking-widest transition-all ${
+                                        filterValue === mode 
+                                            ? 'bg-white text-slate-900 shadow-sm' 
+                                            : 'text-slate-400 hover:text-slate-600'
+                                    }`}
+                                >
+                                    {mode}
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1 text-[8px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded uppercase border border-teal-100">
+                            <Activity size={8} /> Live
+                        </div>
+                    )}
                 </div>
             </div>
             <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">{title}</p>
                 <div className="flex items-baseline justify-between">
                     <h3 className="text-xl font-black text-slate-900 tabular-nums tracking-tighter">{value}</h3>
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{trend}</p>
+                    <div className="flex items-center gap-2">
+                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{trend}</p>
+                        {path && showFilter && (
+                             <button 
+                                onClick={() => router.push(path)}
+                                className="p-1 hover:bg-slate-100 rounded-md text-slate-400 hover:text-teal-600 transition-all"
+                             >
+                                <ArrowRight size={10} />
+                             </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
@@ -191,7 +251,7 @@ const OnlineAdmissionsTable = React.memo(({ appointments, onCheckIn }: { appoint
                                 <td className="bg-slate-50 border-y border-slate-100 px-6 py-4 group-hover/row:bg-teal-50/50 group-hover/row:border-teal-200">
                                     <div className="flex items-center gap-3">
                                         <Stethoscope size={14} className="text-teal-600" />
-                                        <span className="text-slate-600 text-xs font-black uppercase">DR. {apt.doctorName}</span>
+                                        <span className="text-slate-600 text-xs font-black uppercase">{apt.doctorName ? `DR. ${apt.doctorName}` : "UNASSIGNED"}</span>
                                     </div>
                                 </td>
                                 <td className="bg-slate-50 border-y border-r border-slate-100 rounded-r-[20px] px-6 py-4 text-right group-hover/row:bg-teal-50/50 group-hover/row:border-teal-200">
@@ -285,8 +345,12 @@ export default function MasterDashboard() {
     const [stats, setStats] = useState<DashboardStats>({
         totalPatients: 0,
         todayPatients: 0,
-        emergencyPatients: 0,
-        completedAppointments: 0
+        completedAppointments: 0,
+        onlineRevenue: 0,
+        offlineRevenue: 0,
+        totalRevenue: 0,
+        onlineCount: 0,
+        offlineCount: 0,
     });
     
     const [doctors, setDoctors] = useState<HelpdeskDoctor[]>([]);
@@ -295,6 +359,7 @@ export default function MasterDashboard() {
     const [searchQuery, setSearchQuery] = useState("");
     const [refreshing, setRefreshing] = useState(false);
     const [selectedOnlineDate, setSelectedOnlineDate] = useState(new Date().toDateString());
+    const [protocolFilter, setProtocolFilter] = useState<'all' | 'online' | 'offline'>('all');
 
     // ── Data Fetching ───────────────────────────────────────────────────────
     const { data: dashboardData, isLoading: dashboardLoading, refetch: refetchDashboard } = useMasterDashboard(hospitalId);
@@ -314,10 +379,14 @@ export default function MasterDashboard() {
             if (dashboardData) {
                 const aptList = dashboardData.appointments || [];
                 setStats({
-                    totalPatients: dashboardData.stats?.todayAppointments * 4 || 0,
+                    totalPatients: dashboardData.stats?.totalPatients || 0,
                     todayPatients: dashboardData.stats?.todayAppointments || 0,
-                    emergencyPatients: aptList.filter((a: any) => a.type === 'EMERGENCY').length,
                     completedAppointments: dashboardData.stats?.completed || 0,
+                    onlineRevenue: dashboardData.stats?.onlineRevenue || 0,
+                    offlineRevenue: dashboardData.stats?.offlineRevenue || 0,
+                    totalRevenue: dashboardData.stats?.revenue || 0,
+                    onlineCount: dashboardData.stats?.onlineAppointments || 0,
+                    offlineCount: dashboardData.stats?.offlineAppointments || 0,
                     hospitalName: profile?.hospital?.name
                 });
                 setAppointments(aptList);
@@ -341,6 +410,33 @@ export default function MasterDashboard() {
         setRefreshing(false);
     };
 
+    const filteredStats = useMemo(() => {
+        const today = new Date();
+        const todayApts = appointments.filter(a => isSameDay(a.date, today));
+        
+        let filteredToday = todayApts;
+        if (protocolFilter === 'online') filteredToday = todayApts.filter(a => a.isOnline);
+        if (protocolFilter === 'offline') filteredToday = todayApts.filter(a => !a.isOnline);
+        
+        const completed = filteredToday.filter(a => a.status?.toLowerCase() === 'completed');
+        
+        // Sync revenue with protocol filter
+        let revenue = stats.totalRevenue;
+        if (protocolFilter === 'online') revenue = stats.onlineRevenue;
+        if (protocolFilter === 'offline') revenue = stats.offlineRevenue;
+
+        // Sync counts with backend if possible, or fallback to filteredToday
+        let count = filteredToday.length;
+        if (protocolFilter === 'online') count = stats.onlineCount || filteredToday.length;
+        if (protocolFilter === 'offline') count = stats.offlineCount || filteredToday.length;
+
+        return {
+            today: count,
+            completed: completed.length,
+            revenue: revenue
+        };
+    }, [appointments, protocolFilter, stats]);
+
     // ── Handlers ────────────────────────────────────────────────────────────
     const handleCheckIn = useCallback((apt: any) => {
         router.push(`/${hospitalId}/masterhelpdesk/admission/${apt._id || apt.id}`);
@@ -349,9 +445,12 @@ export default function MasterDashboard() {
 
     // ── Filtering ──────────────────────────────────────────────────────────
     const { offlineAppointments, onlineAppointments } = useMemo(() => {
-        // Filter for the bottom "Appointment Ledger" (Offline/OPD)
+        // Filter for the bottom "Appointment Ledger"
         const offlineFiltered = appointments.filter(apt => {
-            if (apt.isOnline) return false;
+            // Protocol Filter Sync
+            if (protocolFilter === 'online' && !apt.isOnline) return false;
+            if (protocolFilter === 'offline' && apt.isOnline) return false;
+
             const matchesSearch = !searchQuery || apt.patientName?.toLowerCase().includes(searchQuery.toLowerCase()) || apt.mrn?.toLowerCase().includes(searchQuery.toLowerCase());
             const status = apt.status?.toLowerCase();
             const matchesTab = activeTab === 'active' 
@@ -360,11 +459,14 @@ export default function MasterDashboard() {
             return matchesSearch && matchesTab;
         });
 
-        // Filter for the top "Digital Front Door" (Online) - Show ALL for the date regardless of activeTab
+        // Filter for the top "Digital Front Door" (Online)
         const onlineFiltered = appointments.filter(apt => {
             if (!apt.isOnline) return false;
+            // Sync with global protocol filter
+            if (protocolFilter === 'offline') return false;
+            
             const matchesSearch = !searchQuery || apt.patientName?.toLowerCase().includes(searchQuery.toLowerCase()) || apt.mrn?.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesDate = new Date(apt.date).toDateString() === selectedOnlineDate;
+            const matchesDate = isSameDay(apt.date, selectedOnlineDate);
             return matchesSearch && matchesDate;
         });
 
@@ -372,7 +474,7 @@ export default function MasterDashboard() {
             offlineAppointments: offlineFiltered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
             onlineAppointments: onlineFiltered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         };
-    }, [appointments, searchQuery, activeTab, selectedOnlineDate]);
+    }, [appointments, searchQuery, activeTab, selectedOnlineDate, protocolFilter]);
 
     const displayAppointments = offlineAppointments;
 
@@ -422,7 +524,7 @@ export default function MasterDashboard() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
                 <div>
                     <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                        Institutional Command <span className="text-[10px] bg-slate-900 text-white px-3 py-0.5 rounded-full uppercase tracking-tighter shadow-lg">Master Oversight</span>
+                        Frontdesk Dashboard <span className="text-[10px] bg-slate-900 text-white px-3 py-0.5 rounded-full uppercase tracking-tighter shadow-lg">Master Oversight</span>
                     </h1>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 flex items-center gap-2">
                         {stats.hospitalName || "Protocol Hospital"} • LIVE REGISTRY MONITORING
@@ -441,11 +543,37 @@ export default function MasterDashboard() {
             </div>
 
             {/* STATS GRID */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard icon={<Users />} title="Institutional Registry" value={stats.totalPatients} trend="+12.5% vs Prev Month" color="slate" />
-                <StatCard icon={<CalendarCheck />} title="Today's Sessions" value={stats.todayPatients} trend="Active Live Queue" color="teal" />
-                <StatCard icon={<Activity />} title="Emergency Triage" value={stats.emergencyPatients} trend="Critical Oversight" color="rose" />
-            <StatCard icon={<CheckCircle2 />} title="Completed Manifests" value={stats.completedAppointments} trend="Archived Success" color="emerald" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <StatCard 
+                    icon={<Users />} 
+                    title="Total Patients" 
+                    value={stats.totalPatients} 
+                    trend="+12.5% vs Prev Month" 
+                    color="slate" 
+                    path={`/${hospitalId}/masterhelpdesk/patients`} 
+                />
+                <StatCard 
+                    icon={<CalendarCheck />} 
+                    title="Today's Appointments" 
+                    value={filteredStats.today} 
+                    trend={filteredStats.revenue > 0 ? `₹${filteredStats.revenue.toLocaleString()} Revenue` : "Active Live Queue"} 
+                    color="teal" 
+                    path={`/${hospitalId}/masterhelpdesk/queue`} 
+                    showFilter
+                    filterValue={protocolFilter}
+                    onFilterChange={setProtocolFilter}
+                />
+                <StatCard 
+                    icon={<CheckCircle2 />} 
+                    title="Completed Appointments" 
+                    value={filteredStats.completed} 
+                    trend={filteredStats.revenue > 0 ? `₹${filteredStats.revenue.toLocaleString()} Revenue` : "Archived Success"} 
+                    color="emerald" 
+                    path={`/${hospitalId}/masterhelpdesk/transactions`} 
+                    showFilter
+                    filterValue={protocolFilter}
+                    onFilterChange={setProtocolFilter}
+                />
             </div>
 
             {/* ONLINE APPOINTMENTS SECTION - LIST VIEW & FILTERS */}
@@ -465,7 +593,7 @@ export default function MasterDashboard() {
                                     Digital Front Door: <span className="text-teal-600">Online Admissions</span>
                                 </h2>
                                 <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">
-                                    Total Synchronized: {onlineAppointments.length} Active Records
+                                    Total Synchronized: {onlineAppointments.length} Active Records {protocolFilter === 'offline' && <span className="text-rose-500 ml-2 font-black">• FILTERED BY OFFLINE</span>}
                                 </p>
                             </div>
                         </div>
@@ -621,7 +749,7 @@ export default function MasterDashboard() {
                         </div>
                         
                         <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Institutional Command Matrix v2.0</p>
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Frontdesk Dashboard Matrix v2.0</p>
                             <button onClick={() => router.push(`/${hospitalId}/masterhelpdesk/appointments`)} className="text-[8px] font-black text-teal-600 uppercase tracking-[0.2em] hover:underline flex items-center gap-1">
                                 View Full Clinical Ledger <ArrowRight size={10} />
                             </button>
