@@ -7,6 +7,7 @@ import {
     Search,
     Stethoscope,
     ChevronRight,
+    ChevronLeft,
     Activity,
     AlertCircle,
     Plus,
@@ -44,8 +45,8 @@ export default function MasterAppointmentsLedger() {
     const [statusFilter, setStatusFilter] = useState("all");
     const [typeFilter, setTypeFilter] = useState("all");
     const [selectedDoctorId, setSelectedDoctorId] = useState("all");
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
+    const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
+    const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
     const [channelFilter, setChannelFilter] = useState("all");
 
     const [page, setPage] = useState(1);
@@ -56,7 +57,9 @@ export default function MasterAppointmentsLedger() {
         page,
         limit,
         statusFilter === "all" ? undefined : statusFilter,
-        hospitalId
+        hospitalId,
+        startDate,
+        endDate
     );
 
     // Fetch Doctors for filter
@@ -84,7 +87,19 @@ export default function MasterAppointmentsLedger() {
                 apt.patient?.mrn?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 apt.mrn?.toLowerCase().includes(searchTerm.toLowerCase());
             
-            const matchesStatus = statusFilter === "all" || apt.status?.toLowerCase() === statusFilter.toLowerCase();
+            // Status Logic: Pending includes in-progress
+            const s = (apt.status || "").toLowerCase();
+            let matchesStatus = true;
+            if (statusFilter === "pending") {
+                matchesStatus = s === "pending" || s === "in-progress" || s === "booked" || s === "waiting";
+            } else if (statusFilter === "confirmed") {
+                matchesStatus = s === "confirmed";
+            } else if (statusFilter === "completed") {
+                matchesStatus = s === "completed";
+            } else if (statusFilter !== "all") {
+                matchesStatus = s === statusFilter.toLowerCase();
+            }
+
             const matchesType = typeFilter === "all" || apt.type?.toLowerCase() === typeFilter.toLowerCase();
             const matchesDoctor = selectedDoctorId === "all" || 
                 apt.doctorId === selectedDoctorId || 
@@ -96,7 +111,7 @@ export default function MasterAppointmentsLedger() {
 
             return matchesSearch && matchesStatus && matchesType && matchesDoctor && matchesChannel;
         }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [appointmentsData, searchTerm, statusFilter, typeFilter, selectedDoctorId, channelFilter]);
+    }, [appointmentsData, searchTerm, statusFilter, typeFilter, selectedDoctorId, channelFilter, startDate, endDate]);
 
     const handleUpdateStatus = useCallback(async (appointmentId: string, status: string) => {
         try {
@@ -121,63 +136,60 @@ export default function MasterAppointmentsLedger() {
     return (
         <div className="space-y-6 animate-in fade-in duration-500 pb-12">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b pb-6">
-                <div>
-                    <div className="flex items-center gap-3 mb-1">
-                        <button onClick={() => router.back()} className="p-2 border rounded-xl hover:bg-slate-50 transition-colors">
-                            <ArrowLeft size={16} />
-                        </button>
-                        <div>
-                            <h1 className="text-lg md:text-xl lg:text-xl font-black text-slate-900 uppercase tracking-tight">Master Clinical Ledger</h1>
-                            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em]">Hospital-Wide Deployment Tracker</p>
-                        </div>
+            <div className="flex items-center justify-between gap-4 border-b pb-4 md:pb-6">
+                <div className="flex items-center gap-2 md:gap-3">
+                    <button onClick={() => router.back()} className="p-1.5 md:p-2 border rounded-xl hover:bg-slate-50 transition-colors shrink-0">
+                        <ArrowLeft size={14} className="md:w-4 md:h-4" />
+                    </button>
+                    <div className="min-w-0">
+                        <h1 className="text-sm md:text-xl font-black text-slate-900 uppercase tracking-tight truncate">Master Clinical Ledger</h1>
+                        <p className="text-[8px] md:text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] md:tracking-[0.3em] truncate">Hospital-Wide Tracker</p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                     <button onClick={() => router.push(getPath("/masterhelpdesk/appointment-booking"))} className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95">
-                        <Plus size={16} /> New Enrollment
-                    </button>
-                </div>
+                <button onClick={() => router.push(getPath("/masterhelpdesk/appointment-booking"))} className="flex items-center gap-1.5 md:gap-2 px-3 md:px-6 py-2 md:py-3 bg-indigo-600 text-white rounded-xl md:rounded-2xl text-[8px] md:text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95 shrink-0">
+                    <Plus size={14} className="md:w-4 md:h-4" /> 
+                    <span className="hidden sm:inline">New Enrollment</span>
+                    <span className="sm:hidden">New</span>
+                </button>
             </div>
 
             {/* Filter Bar */}
-            <div className="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    <div className="col-span-1 lg:col-span-2 relative flex items-center">
-                        <Search className="absolute left-4 text-slate-400" size={16} />
+            <div className="bg-white p-3 md:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
+                    <div className="col-span-2 lg:col-span-2 relative flex items-center">
+                        <Search className="absolute left-3 md:left-4 text-slate-400" size={14} />
                         <input 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder="SEARCH BY MRN / NAME..." 
-                            className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none focus:border-indigo-500 transition-all leading-none"
+                            className="w-full pl-9 md:pl-11 pr-4 py-2.5 md:py-3 bg-slate-50 border border-slate-200 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest outline-none focus:border-indigo-500 transition-all leading-none"
                         />
                     </div>
 
-                    <div className="space-y-1.5">
-                        <label className="text-[9px] font-black text-slate-400 uppercase ml-2 tracking-widest">Start Date</label>
-                        <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black outline-none" />
+                    <div className="space-y-1">
+                        <label className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase ml-1 md:ml-2 tracking-widest">Start Date</label>
+                        <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)} className="w-full p-2 md:p-3 bg-slate-50 border border-slate-200 rounded-xl text-[9px] md:text-[10px] font-black outline-none" />
                     </div>
 
-                    <div className="space-y-1.5">
-                        <label className="text-[9px] font-black text-slate-400 uppercase ml-2 tracking-widest">End Date</label>
-                        <input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black outline-none" />
+                    <div className="space-y-1">
+                        <label className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase ml-1 md:ml-2 tracking-widest">End Date</label>
+                        <input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)} className="w-full p-2 md:p-3 bg-slate-50 border border-slate-200 rounded-xl text-[9px] md:text-[10px] font-black outline-none" />
                     </div>
 
-                    <div className="space-y-1.5">
-                        <label className="text-[9px] font-black text-slate-400 uppercase ml-2 tracking-widest">Status</label>
-                        <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase outline-none">
+                    <div className="space-y-1">
+                        <label className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase ml-1 md:ml-2 tracking-widest">Status</label>
+                        <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="w-full p-2 md:p-3 bg-slate-50 border border-slate-200 rounded-xl text-[9px] md:text-[10px] font-black uppercase outline-none">
                             <option value="all">ALL STATUS</option>
                             <option value="pending">PENDING</option>
                             <option value="confirmed">CONFIRMED</option>
-                            <option value="in-progress">IN-PROGRESS</option>
                             <option value="completed">COMPLETED</option>
                         </select>
                     </div>
 
-                    <div className="space-y-1.5">
-                        <label className="text-[9px] font-black text-slate-400 uppercase ml-2 tracking-widest">Consultant</label>
-                        <select value={selectedDoctorId} onChange={e=>setSelectedDoctorId(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase outline-none">
+                    <div className="space-y-1 col-span-1 lg:col-span-1">
+                        <label className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase ml-1 md:ml-2 tracking-widest">Consultant</label>
+                        <select value={selectedDoctorId} onChange={e=>setSelectedDoctorId(e.target.value)} className="w-full p-2 md:p-3 bg-slate-50 border border-slate-200 rounded-xl text-[9px] md:text-[10px] font-black uppercase outline-none">
                             <option value="all">ALL CONSULTANTS</option>
                             {(Array.isArray(doctorsData) ? doctorsData : (doctorsData as any)?.doctors || (doctorsData as any)?.data || [])?.map((doc: any) => (
                                 <option key={doc._id} value={doc._id}>{doc.user?.name || doc.name}</option>
@@ -187,33 +199,58 @@ export default function MasterAppointmentsLedger() {
                 </div>
             </div>
             
-            {/* Channel Toggles */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 p-1.5 bg-white border border-slate-200 rounded-2xl w-fit shadow-sm">
+            {/* Channel Toggles & Pagination */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="flex items-center gap-1.5 p-1 bg-white border border-slate-200 rounded-xl w-full sm:w-fit shadow-sm overflow-x-auto no-scrollbar">
                     <button 
                         onClick={() => setChannelFilter("all")}
-                        className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${channelFilter === "all" ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"}`}
+                        className={`flex-1 sm:flex-none px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all ${channelFilter === "all" ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"}`}
                     >
-                        Total ({ (appointmentsData as any)?.pagination?.total || 0 })
+                        Total ({(appointmentsData as any)?.pagination?.total || 0})
                     </button>
                     <button 
                          onClick={() => setChannelFilter("online")}
-                         className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${channelFilter === "online" ? "bg-indigo-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"}`}
+                         className={`flex-1 sm:flex-none px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all ${channelFilter === "online" ? "bg-indigo-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"}`}
                     >
-                        Online ({ (appointmentsData as any)?.pagination?.onlineCount || 0 })
+                        Online ({(appointmentsData as any)?.pagination?.onlineCount || 0})
                     </button>
                     <button 
                          onClick={() => setChannelFilter("offline")}
-                         className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${channelFilter === "offline" ? "bg-indigo-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"}`}
+                         className={`flex-1 sm:flex-none px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all ${channelFilter === "offline" ? "bg-indigo-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"}`}
                     >
-                        Offline ({ (appointmentsData as any)?.pagination?.offlineCount || 0 })
+                        Offline ({(appointmentsData as any)?.pagination?.offlineCount || 0})
                     </button>
                 </div>
 
-                <div className="bg-white px-4 py-2 rounded-2xl border border-slate-100 italic">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                       Showing {appointments.length} clinical engagements
-                    </p>
+                <div className="flex flex-row items-center justify-between sm:justify-end gap-3 w-full lg:w-auto">
+                    {/* Pagination */}
+                    <div className="flex items-center gap-1 p-1 bg-white border border-slate-200 rounded-xl shadow-sm">
+                        <button 
+                            disabled={page === 1}
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            className="p-1.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                        >
+                            <ChevronLeft size={14} />
+                        </button>
+                        <div className="px-2 border-x border-slate-100">
+                            <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest whitespace-nowrap">
+                                {page} <span className="text-slate-300 mx-0.5">/</span> {(appointmentsData as any)?.pagination?.totalPages || 1}
+                            </span>
+                        </div>
+                        <button 
+                            disabled={page >= ((appointmentsData as any)?.pagination?.totalPages || 1)}
+                            onClick={() => setPage(p => p + 1)}
+                            className="p-1.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                        >
+                            <ChevronRight size={14} />
+                        </button>
+                    </div>
+
+                    <div className="bg-white px-3 py-1.5 rounded-xl border border-slate-100 italic shrink-0">
+                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+                           {appointments.length} Records
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -291,7 +328,7 @@ export default function MasterAppointmentsLedger() {
                                                     </div>
                                                     <div className="min-w-0">
                                                         <p className="text-[10px] font-black text-slate-900 uppercase truncate max-w-[150px]">
-                                                            {apt.doctor?.user?.name || apt.doctor?.name || apt.doctor?.profile?.name || apt.doctorName || "Pending Assign"}
+                                                            {apt.doctor?.user?.name || apt.doctor?.name || apt.doctor?.profile?.name || apt.doctorName || "UNASSIGNED"}
                                                         </p>
                                                         <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Facility Expert</p>
                                                     </div>

@@ -102,11 +102,11 @@ export const usePatientSearch = (
   return useQuery({
     queryKey: helpdeskKeys.patients(query, page, limit, type, channel),
     queryFn: () => helpdeskService.searchPatients(query, page, limit, type, channel),
-    staleTime: 2 * 60 * 1000, 
+    staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     enabled: enabled && query.length > 0,
     refetchOnWindowFocus: false,
-    refetchOnMount: false, 
+    refetchOnMount: false,
     retry: 1,
   });
 };
@@ -127,12 +127,12 @@ export const useHelpdeskPatients = (
     queryKey: helpdeskKeys.patients(query, page, limit, type, channel),
     queryFn: () =>
       helpdeskService.searchPatients(query || "", page, limit, type, channel),
-    staleTime: 2 * 60 * 1000, 
+    staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     enabled,
     placeholderData: (previousData) => previousData,
     refetchOnWindowFocus: false,
-    refetchOnMount: false, 
+    refetchOnMount: false,
     retry: 1,
   });
 };

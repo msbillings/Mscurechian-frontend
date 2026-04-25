@@ -25,6 +25,7 @@ import { useRouter, useParams } from "next/navigation";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { useMasterTransactions } from "@/lib/integrations/hooks";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export default function TransactionsPage() {
     const router = useRouter();
@@ -39,9 +40,12 @@ export default function TransactionsPage() {
     const [exportType, setExportType] = useState('all');
     const [typeFilter] = useState("opd"); // Locked to 'opd'
     const [paymentModeFilter, setPaymentModeFilter] = useState<'all' | 'online' | 'offline'>('all');
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
+    const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const limit = 10;
+
+    const debouncedSearch = useDebounce(searchTerm, 500);
+
     const formatDate = (dateStr: string) => {
         try {
             const date = new Date(dateStr);
@@ -65,7 +69,12 @@ export default function TransactionsPage() {
     const { data: txRaw, isLoading, isFetching, refetch } = useMasterTransactions(
         page,
         limit,
-        hospitalId
+        hospitalId,
+        startDate || undefined,
+        endDate || undefined,
+        getBackendTypeFilter(typeFilter),
+        debouncedSearch || undefined,
+        paymentModeFilter !== 'all' ? paymentModeFilter : undefined
     );
 
     // ✅ DEBUG LOGGING: Track filtering and data retrieval
@@ -74,20 +83,22 @@ export default function TransactionsPage() {
         console.log("[Transactions] Backend Filter Query:", getBackendTypeFilter(typeFilter));
     }, [typeFilter]);
 
-    const { transactions, total, totalRevenue } = useMemo<{ transactions: any[], total: number, totalRevenue: number }>(() => {
+    const { transactions, total, totalRevenue, backendStats } = useMemo(() => {
         const raw: any = txRaw;
-        if (!raw) return { transactions: [], total: 0, totalRevenue: 0 };
+        if (!raw) return { transactions: [], total: 0, totalRevenue: 0, backendStats: null };
 
         console.log("[Transactions] Raw Data Received:", {
             resultCount: Array.isArray(raw) ? raw.length : (raw.data?.length || 0),
-            totalInDB: raw.pagination?.total
+            totalInDB: raw.pagination?.total,
+            stats: raw.stats
         });
 
-        if (Array.isArray(raw)) return { transactions: raw, total: raw.length, totalRevenue: 0 };
+        if (Array.isArray(raw)) return { transactions: raw, total: raw.length, totalRevenue: 0, backendStats: null };
         return {
             transactions: raw.transactions || raw.data || [],
             total: raw.pagination?.total || raw.total || (raw.transactions?.length || raw.data?.length || 0),
-            totalRevenue: raw.totalRevenue || 0
+            totalRevenue: raw.stats?.totalRevenue || raw.totalRevenue || 0,
+            backendStats: raw.stats || null
         };
     }, [txRaw]);
 
@@ -96,14 +107,19 @@ export default function TransactionsPage() {
             setExporting(true);
             setShowExportCard(false);
 
+            // Use export specific dates if they were set in modal, else fallback to UI filters
+            const finalStartDate = exportStartDate || startDate;
+            const finalEndDate = exportEndDate || endDate;
+
             // Fetch ALL transactions for the selected range (nopage=true)
             const response = await masterHelpdeskService.getTransactions(
                 1,
-                2000, // Large limit for export
+                5000, // Large limit for export
                 hospitalId,
-                exportStartDate,
-                exportEndDate,
-                getBackendTypeFilter(typeFilter)
+                finalStartDate || undefined,
+                finalEndDate || undefined,
+                getBackendTypeFilter(typeFilter),
+                debouncedSearch || undefined
             );
             let exportData = Array.isArray(response) ? response : (response.data || []);
 
@@ -160,7 +176,6 @@ export default function TransactionsPage() {
                 "PATIENT NAME",
                 "TRANSACTION ID",
                 "MOBILE",
-                "EMAIL",
                 "SERVICE TYPE",
                 "AMOUNT (INR)",
                 "PAYMENT MODE",
@@ -173,7 +188,6 @@ export default function TransactionsPage() {
                 { key: "name", width: 25 },
                 { key: "id", width: 25 },
                 { key: "mobile", width: 15 },
-                { key: "email", width: 25 },
                 { key: "type", width: 20 },
                 { key: "amount", width: 15 },
                 { key: "mode", width: 15 },
@@ -233,17 +247,6 @@ export default function TransactionsPage() {
                         getSafeMobile(tx.patientId) ||
                         "N/A"
                     ),
-                    email: (
-                        tx.patientEmail || 
-                        tx.email || 
-                        tx.patient?.email || 
-                        tx.patient?.user?.email || 
-                        tx.patient?.profile?.email ||
-                        tx.referenceId?.patientEmail || 
-                        tx.referenceId?.email || 
-                        tx.patientId?.email ||
-                        "N/A"
-                    ),
                     type: serviceType,
                     amount: tx.amount || 0,
                     mode: (tx.paymentMethod || tx.paymentMode || "CASH").toUpperCase(),
@@ -253,9 +256,45 @@ export default function TransactionsPage() {
 
             // Summary Row
             const totalAmount = exportData.reduce((sum: number, tx: any) => sum + (tx.amount || 0), 0);
+            
+            // Calculate detailed stats for Excel
+            const excelStats = exportData.reduce((acc: any, tx: any) => {
+                const mode = (tx.paymentMethod || tx.paymentMode || "CASH").toUpperCase();
+                const amount = tx.amount || 0;
+                const isOnline = ["UPI", "CARD", "ONLINE", "NETBANKING", "RAZORPAY"].includes(mode);
+                
+                if (isOnline) {
+                    acc.onlineCount++;
+                    acc.onlineRevenue += amount;
+                } else {
+                    acc.offlineCount++;
+                    acc.offlineRevenue += amount;
+                }
+
+                if (mode === "CASH") acc.cashRevenue += amount;
+                if (mode === "UPI") acc.upiRevenue += amount;
+                if (mode === "CARD") acc.cardRevenue += amount;
+
+                return acc;
+            }, { onlineCount: 0, offlineCount: 0, onlineRevenue: 0, offlineRevenue: 0, cashRevenue: 0, upiRevenue: 0, cardRevenue: 0 });
+
             worksheet.addRow({});
-            const summaryRow = worksheet.addRow({ mode: "TOTAL REVENUE", amount: totalAmount });
-            summaryRow.font = { bold: true };
+            worksheet.addRow({ mode: "TOTAL REVENUE", amount: totalAmount }).font = { bold: true };
+            
+            worksheet.addRow({});
+            worksheet.addRow({ name: "PAYMENT BREAKDOWN" }).font = { bold: true, underline: true };
+            
+            worksheet.addRow({ name: "OFFLINE TRANSACTIONS", id: excelStats.offlineCount });
+            worksheet.addRow({ name: "ONLINE TRANSACTIONS", id: excelStats.onlineCount });
+            
+            worksheet.addRow({});
+            worksheet.addRow({ name: "CASH REVENUE", amount: excelStats.cashRevenue });
+            worksheet.addRow({ name: "UPI REVENUE", amount: excelStats.upiRevenue });
+            worksheet.addRow({ name: "CARD REVENUE", amount: excelStats.cardRevenue });
+            
+            worksheet.addRow({});
+            worksheet.addRow({ name: "OFFLINE TOTAL", amount: excelStats.offlineRevenue }).font = { bold: true };
+            worksheet.addRow({ name: "ONLINE TOTAL", amount: excelStats.onlineRevenue }).font = { bold: true };
 
             // Generate File
             const buffer = await workbook.xlsx.writeBuffer();
@@ -292,17 +331,7 @@ export default function TransactionsPage() {
         const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
         const isCancelled = tx.status?.toLowerCase() === 'cancelled' || tx.referenceId?.status?.toLowerCase() === 'cancelled';
 
-        const rawMethod = (tx.paymentMethod || tx.paymentMode || 'CASH').toUpperCase();
-        const isOnlinePayment = ['UPI', 'CARD', 'ONLINE', 'NETBANKING', 'RAZORPAY'].includes(rawMethod);
-
-        let matchesPaymentMode = true;
-        if (paymentModeFilter === 'online') {
-            matchesPaymentMode = isOnlinePayment;
-        } else if (paymentModeFilter === 'offline') {
-            matchesPaymentMode = !isOnlinePayment;
-        }
-
-        return matchesSearch && !isCancelled && matchesPaymentMode;
+        return matchesSearch && !isCancelled;
     });
 
     // Calculate stats based on filtered transactions
@@ -337,133 +366,166 @@ export default function TransactionsPage() {
         <div className="space-y-6 animate-in fade-in duration-500 pb-12">
 
             {/* CONSOLIDATED HEADER & CONTROLS */}
-            <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm space-y-4 max-w-full mx-auto">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-2 pt-2">
-                    <div className="flex items-center gap-3">
-                        <button onClick={() => router.back()} className="p-2 bg-slate-100 rounded-xl text-slate-400 hover:text-teal-600 transition-all shadow-sm">
+            <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-sm space-y-6 max-w-full mx-auto">
+                {/* TOP BAR: TITLE & ACTIONS */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <button onClick={() => router.back()} className="flex-none p-2 sm:p-2.5 bg-slate-100 rounded-xl text-slate-400 hover:text-teal-600 transition-all shadow-sm">
                             <ArrowLeft size={20} />
                         </button>
                         <div>
-                            <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate">
                                 Transactions
                             </h1>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Financial Revenue Ledger</p>
                         </div>
                     </div>
 
-                    <div className="hidden sm:flex items-center gap-2">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
                         <button
                             onClick={() => setShowExportCard(true)}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/10 active:scale-95 text-[11px] font-bold uppercase tracking-widest"
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/10 active:scale-95 text-[11px] font-bold uppercase tracking-widest"
                         >
                             <Download size={16} />
-                            Export Excel
+                            <span>Export Excel</span>
                         </button>
-                        <button onClick={() => refetch()} className="p-2 sm:p-2.5 bg-white border border-slate-200 text-slate-400 rounded-lg sm:rounded-xl hover:text-teal-600 shadow-sm active:scale-95">
-                            <RefreshCw size={16} className={`${isFetching ? 'animate-spin' : ''} sm:size-[18px]`} />
+                        <button onClick={() => refetch()} className="p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-teal-600 shadow-sm active:scale-95">
+                            <RefreshCw size={18} className={`${isFetching ? 'animate-spin' : ''}`} />
                         </button>
                     </div>
                 </div>
 
+                {/* REVENUE SUMMARY CARDS */}
+                {backendStats && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4">
+                        {/* TOTAL REVENUE - FULL WIDTH ON MOBILE */}
+                        <div className="col-span-2 md:col-span-1 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
+                            <div className="absolute -right-4 -top-4 text-slate-100 group-hover:text-slate-200 transition-all">
+                                <TrendingUp size={80} className="sm:size-[100px]" />
+                            </div>
+                            <div className="relative z-10 flex items-center gap-3 sm:gap-4">
+                                <div className="p-2.5 sm:p-3 bg-slate-900 text-white rounded-xl shadow-md shadow-slate-900/10">
+                                    <IndianRupee size={18} className="sm:size-[22px]" />
+                                </div>
+                                <div>
+                                    <p className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5 sm:mb-1">Total Revenue</p>
+                                    <p className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">₹{Math.round(totalRevenue).toLocaleString()}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* OFFLINE REVENUE - HALF WIDTH ON MOBILE */}
+                        <div className="col-span-1 bg-emerald-50/50 p-2 sm:p-4 rounded-2xl border border-emerald-100 shadow-sm relative overflow-hidden group">
+                            <div className="absolute -right-4 -top-4 text-emerald-100/30 group-hover:text-emerald-200/30 transition-all">
+                                <Activity size={80} className="sm:size-[100px]" />
+                            </div>
+                            <div className="relative z-10 flex items-center gap-2 sm:gap-4">
+                                <div className="p-2 sm:p-3 bg-emerald-600 text-white rounded-xl shadow-md shadow-emerald-600/10 shrink-0">
+                                    <CreditCard size={14} className="sm:size-[22px]" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[7px] sm:text-[9px] font-black text-emerald-600/60 uppercase tracking-[0.2em] truncate">Offline</p>
+                                    <p className="text-sm sm:text-xl font-black text-slate-900 tracking-tight truncate">₹{Math.round(backendStats.offlineRevenue || 0).toLocaleString()}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ONLINE REVENUE - HALF WIDTH ON MOBILE */}
+                        <div className="col-span-1 bg-indigo-50/50 p-2 sm:p-4 rounded-2xl border border-indigo-100 shadow-sm relative overflow-hidden group">
+                            <div className="absolute -right-4 -top-4 text-indigo-100/30 group-hover:text-indigo-200/30 transition-all">
+                                <Shield size={80} className="sm:size-[100px]" />
+                            </div>
+                            <div className="relative z-10 flex items-center gap-2 sm:gap-4">
+                                <div className="p-2 sm:p-3 bg-indigo-600 text-white rounded-xl shadow-md shadow-indigo-600/10 shrink-0">
+                                    <TrendingUp size={14} className="sm:size-[22px]" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[7px] sm:text-[9px] font-black text-indigo-600/60 uppercase tracking-[0.2em] truncate">Online</p>
+                                    <p className="text-sm sm:text-xl font-black text-slate-900 tracking-tight truncate">₹{Math.round(backendStats.onlineRevenue || 0).toLocaleString()}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* SEARCH & FILTER BAR */}
-                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-t border-slate-100 pt-3 px-2">
-                    <div className="flex flex-col lg:grid lg:grid-cols-2 xl:flex xl:flex-row items-stretch xl:items-center gap-3 w-full">
-
-                        {/* ROW 1: SEARCH & REFRESH (On Small Screens) */}
-                        <div className="flex items-center gap-2 w-full xl:w-80">
-                            <div className="relative flex-1 group">
-                                <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-slate-400 size-[14px] sm:size-[16px]" />
-                                <input
-                                    type="text"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    placeholder="SEARCH BY NAME OR ID..."
-                                    className="w-full pl-9 sm:pl-11 pr-3 sm:pr-4 py-2 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-tight outline-none focus:bg-white focus:border-teal-500 shadow-inner transition-all"
-                                />
-                            </div>
-                            <button onClick={() => refetch()} className="sm:hidden p-2.5 bg-slate-100 border border-slate-200 text-slate-500 rounded-lg active:scale-95">
-                                <RefreshCw size={16} className={`${isFetching ? 'animate-spin' : ''}`} />
-                            </button>
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-t border-slate-100 pt-5 px-1">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                        {/* SEARCH BAR */}
+                        <div className="relative group w-full sm:w-72">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 size-4" />
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="Search by name or ID..."
+                                className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold uppercase tracking-tight outline-none focus:bg-white focus:border-teal-500 shadow-inner transition-all placeholder:text-slate-300"
+                            />
                         </div>
 
-                        {/* ROW 2: DATE RANGE */}
-                        <div className="flex items-center gap-2 w-full lg:w-auto">
-                            <div className="flex-1 lg:w-44 relative">
-                                <input
-                                    type="date"
-                                    value={startDate}
-                                    onChange={(e) => setStartDate(e.target.value)}
-                                    className="w-full px-3 py-2 sm:py-2.5 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-bold text-slate-600 uppercase tracking-widest outline-none focus:border-teal-500 shadow-sm"
-                                />
-                            </div>
+                        {/* DATE RANGE */}
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="flex-1 sm:w-36 px-4 py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-600 uppercase tracking-widest outline-none focus:border-teal-500 shadow-sm"
+                            />
                             <span className="text-slate-300 font-bold">-</span>
-                            <div className="flex-1 lg:w-44 relative">
-                                <input
-                                    type="date"
-                                    value={endDate}
-                                    onChange={(e) => setEndDate(e.target.value)}
-                                    className="w-full px-3 py-2 sm:py-2.5 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-bold text-slate-600 uppercase tracking-widest outline-none focus:border-teal-500 shadow-sm"
-                                />
-                            </div>
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="flex-1 sm:w-36 px-4 py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-600 uppercase tracking-widest outline-none focus:border-teal-500 shadow-sm"
+                            />
                         </div>
-                        {/* ROW 3: CATEGORY & PAYMENT MODE */}
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
-                            {/* Payment Mode (Online / Offline) Toggle */}
-                            <div className="flex bg-slate-100 p-1 rounded-lg sm:rounded-xl border border-slate-200 shadow-inner">
-                                <button
-                                    onClick={() => setPaymentModeFilter('all')}
-                                    className={`flex-none px-4 py-2 rounded-md text-[9px] sm:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap ${paymentModeFilter === 'all' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
-                                >
-                                    All
-                                </button>
-                                <button
-                                    onClick={() => setPaymentModeFilter('online')}
-                                    className={`flex-none px-4 py-2 rounded-md text-[9px] sm:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap ${paymentModeFilter === 'online' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
-                                >
-                                    Online
-                                </button>
-                                <button
-                                    onClick={() => setPaymentModeFilter('offline')}
-                                    className={`flex-none px-4 py-2 rounded-md text-[9px] sm:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap ${paymentModeFilter === 'offline' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
-                                >
-                                    Offline
-                                </button>
-                            </div>
-                        </div>
-
                     </div>
 
-                    <div className="flex items-start justify-start md:justify-end gap-4 w-full xl:w-auto">
-                        <div className="flex flex-col border-l border-slate-100 pl-4 md:hidden">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Active Pool</span>
-                            <span className="text-xs font-bold text-teal-600 uppercase tracking-tight">{filteredTransactions.length} ENTRIES</span>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full lg:w-auto">
+                        {/* Payment Mode (Online / Offline) Toggle */}
+                        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-inner">
+                            {['all', 'online', 'offline'].map((mode) => (
+                                <button
+                                    key={mode}
+                                    onClick={() => setPaymentModeFilter(mode as any)}
+                                    className={`flex-1 sm:flex-none px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] transition-all whitespace-nowrap ${
+                                        paymentModeFilter === mode 
+                                            ? 'bg-white text-slate-900 shadow-md' 
+                                            : 'text-slate-400 hover:text-slate-600'
+                                    }`}
+                                >
+                                    {mode}
+                                </button>
+                            ))}
                         </div>
 
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-between sm:justify-end gap-6 border-l border-slate-100 sm:pl-6">
                             {/* PAGINATION */}
                             {totalPages > 1 && (
-                                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-inner">
+                                <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200">
                                     <button
                                         onClick={() => setPage((p: number) => Math.max(1, p - 1))}
                                         disabled={page === 1}
-                                        className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-teal-600 disabled:opacity-20 transition-all"
+                                        className="p-2 rounded-lg hover:bg-white text-slate-400 hover:text-teal-600 disabled:opacity-20 transition-all"
                                     >
                                         <ChevronLeft size={16} />
                                     </button>
-                                    <div className="px-3 py-1.5 text-xs font-black text-slate-900 bg-white rounded-md shadow-sm border border-slate-100 min-w-[55px] text-center">
+                                    <div className="px-4 py-1.5 text-[11px] font-black text-slate-900 bg-white rounded-lg shadow-sm border border-slate-100 min-w-[60px] text-center">
                                         {page} / {totalPages}
                                     </div>
                                     <button
                                         onClick={() => setPage((p: number) => Math.min(totalPages, p + 1))}
                                         disabled={page === totalPages}
-                                        className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-teal-600 disabled:opacity-20 transition-all"
+                                        className="p-2 rounded-lg hover:bg-white text-slate-400 hover:text-teal-600 disabled:opacity-20 transition-all"
                                     >
                                         <ChevronRight size={16} />
                                     </button>
                                 </div>
                             )}
-                            <div className="flex-col border-l border-slate-100 pl-4 hidden md:flex">
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Active Pool</span>
-                                <span className="text-xs font-bold text-teal-600 uppercase tracking-tight">{filteredTransactions.length} ENTRIES</span>
+                            
+                            <div className="flex flex-col shrink-0">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Active Pool</span>
+                                <span className="text-xs font-black text-teal-600 uppercase tracking-tight">{total} ENTRIES</span>
                             </div>
                         </div>
                     </div>
@@ -477,7 +539,10 @@ export default function TransactionsPage() {
                         <table className="w-full min-w-[1000px] sm:min-w-0 text-left">
                             <thead>
                                 <tr className="bg-slate-50 border-b border-slate-200 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest">
-                                    <th className="px-4 sm:px-6 py-4 sm:py-6 text-left">Patient Name / ID</th>
+                                    <th className="px-6 py-6 text-left">Date</th>
+                                    <th className="px-6 py-6 text-left">Time</th>
+                                    <th className="px-6 py-6 text-left">Patient Name</th>
+                                    <th className="px-6 py-6 text-left">Patient ID</th>
                                     <th className="px-6 py-6 text-left font-bold">Doctor</th>
                                     <th className="px-6 py-6 text-right">Amount (INR)</th>
                                     <th className="px-6 py-6 text-center">Status</th>
@@ -554,28 +619,38 @@ export default function TransactionsPage() {
                                         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
                                     }
 
+                                    const txDate = tx.date || tx.createdAt || tx.transactionTime;
+                                    const dateStr = txDate ? new Date(txDate).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+                                    const timeStr = txDate ? new Date(txDate).toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit', hour12: true }) : '—';
+
                                     return (
                                         <tr key={tx._id || index} className="group hover:bg-slate-50 transition-colors">
                                             <td className="px-6 py-4">
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`w-11 h-11 rounded-xl transition-all flex items-center justify-center font-bold text-lg shadow-sm border shrink-0 ${tx.patientMRN && tx.patientMRN !== 'Resolving...'
+                                                <p className="text-xs font-bold text-slate-600 uppercase tracking-tight">{dateStr}</p>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <p className="text-xs font-bold text-slate-500 uppercase tracking-tight">{timeStr}</p>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-9 h-9 rounded-lg transition-all flex items-center justify-center font-bold text-sm shadow-sm border shrink-0 ${tx.patientMRN && tx.patientMRN !== 'Resolving...'
                                                         ? 'bg-slate-900 text-white'
                                                         : 'bg-slate-50 text-slate-300 group-hover:bg-slate-900 group-hover:text-white border-slate-100'
                                                         }`}>
                                                         {patientName.charAt(0)}
                                                     </div>
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-bold text-slate-900 uppercase tracking-tight truncate max-w-[200px]">{patientName}</p>
-                                                        <p className={`text-[10px] font-black uppercase tracking-[0.1em] mt-1 px-2 py-0.5 rounded-md inline-block border ${tx.referenceId?.transactionId?.startsWith('OPD') || tx.referenceId?.transactionId?.startsWith('APT')
-                                                            ? 'bg-teal-50 text-teal-600 border-teal-100/50'
-                                                            : tx.referenceId?.transactionId?.startsWith('IPD') || tx.referenceId?.admissionId
-                                                                ? 'bg-rose-50 text-rose-600 border-rose-100/50'
-                                                                : 'bg-slate-50 text-slate-500 border-slate-100'
-                                                            }`}>
-                                                            {tx.transactionId || tx.receiptNumber || tx.invoiceNumber || tx.referenceId?.appointmentId || tx.referenceId?.transactionId || tx.referenceId?.admissionId || (tx.patientMRN && tx.patientMRN !== 'Resolving...' ? `#${tx.patientMRN}` : "—")}
-                                                        </p>
-                                                    </div>
+                                                    <p className="text-sm font-bold text-slate-900 uppercase tracking-tight truncate max-w-[150px]">{patientName}</p>
                                                 </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <p className={`text-[10px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded-md inline-block border ${tx.referenceId?.transactionId?.startsWith('OPD') || tx.referenceId?.transactionId?.startsWith('APT')
+                                                    ? 'bg-teal-50 text-teal-600 border-teal-100/50'
+                                                    : tx.referenceId?.transactionId?.startsWith('IPD') || tx.referenceId?.admissionId
+                                                        ? 'bg-rose-50 text-rose-600 border-rose-100/50'
+                                                        : 'bg-slate-50 text-slate-500 border-slate-100'
+                                                    }`}>
+                                                    {tx.transactionId || tx.receiptNumber || tx.invoiceNumber || tx.referenceId?.appointmentId || tx.referenceId?.transactionId || tx.referenceId?.admissionId || (tx.patientMRN && tx.patientMRN !== 'Resolving...' ? `#${tx.patientMRN}` : "—")}
+                                                </p>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="space-y-1">
@@ -605,7 +680,7 @@ export default function TransactionsPage() {
                                             <td className="px-6 py-4 text-right">
                                                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-slate-200 shadow-sm">
                                                     <CreditCard size={12} className="text-slate-400" />
-                                                    {tx.paymentMethod || 'CASH'}
+                                                    {tx.paymentMode || tx.paymentMethod || 'CASH'}
                                                 </div>
                                             </td>
                                         </tr>

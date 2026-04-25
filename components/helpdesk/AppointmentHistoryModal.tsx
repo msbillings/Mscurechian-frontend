@@ -1,11 +1,12 @@
 import React from "react";
-import { X, Calendar, Clock, Stethoscope, FileText, CheckCircle2 } from "lucide-react";
+import { X, Calendar, Clock, Stethoscope, FileText, CheckCircle2, Trash2 } from "lucide-react";
 import { sanitizePatientName } from "@/lib/utils/name-utils";
 
 interface AppointmentHistoryModalProps {
     patientName: string;
     appointments: any[];
     onSelect: (appointment: any) => void;
+    onDelete?: (appointmentId: string) => void;
     onClose: () => void;
     isLoading: boolean;
     doctorMap?: Record<string, string>; // Optional doctor map
@@ -15,6 +16,7 @@ export default function AppointmentHistoryModal({
     patientName,
     appointments,
     onSelect,
+    onDelete,
     onClose,
     isLoading,
     doctorMap
@@ -139,9 +141,23 @@ export default function AppointmentHistoryModal({
                                             </div>
                                         </div>
 
-                                        {/* Arrow */}
-                                        <div className="hidden sm:flex shrink-0 w-8 h-8 rounded-full bg-slate-50 items-center justify-center text-slate-300 group-hover:bg-teal-500 group-hover:text-white transition-all">
-                                            <CheckCircle2 size={16} />
+                                        {/* Arrow/Delete */}
+                                        <div className="flex items-center gap-2">
+                                            {onDelete && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onDelete(apt._id || apt.id);
+                                                    }}
+                                                    className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+                                                    title="Delete Appointment"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            )}
+                                            <div className="hidden sm:flex shrink-0 w-8 h-8 rounded-full bg-slate-50 items-center justify-center text-slate-300 group-hover:bg-teal-500 group-hover:text-white transition-all">
+                                                <CheckCircle2 size={16} />
+                                            </div>
                                         </div>
                                     </button>
                                 );

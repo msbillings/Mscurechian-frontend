@@ -14,7 +14,7 @@ import {
     History,
     Eye
 } from "lucide-react";
-import { helpdeskService, useMasterPatients } from "@/lib/integrations";
+import { helpdeskService, useMasterPatients, useMasterDeleteAppointment } from "@/lib/integrations";
 import toast from "react-hot-toast";
 import { useRouter, useParams } from "next/navigation";
 import ClinicalReceipt from "@/components/helpdesk/ClinicalReceipt";
@@ -96,6 +96,7 @@ export default function MasterPatientsPage() {
         debouncedSearch,
         hospitalId
     );
+    const deleteMutation = useMasterDeleteAppointment();
 
     const { patients, total } = useMemo(() => {
         const raw: any = patientsRaw;
@@ -145,6 +146,20 @@ export default function MasterPatientsPage() {
         }
     };
 
+    const handleDeleteAppointment = async (appointmentId: string) => {
+        if (!window.confirm("Are you sure you want to delete this appointment and its related transaction?")) return;
+        try {
+            await deleteMutation.mutateAsync(appointmentId);
+            toast.success("Appointment deleted successfully");
+            // Refresh history
+            if (selectedPatientForHistory) {
+                handleFetchHistory(selectedPatientForHistory);
+            }
+        } catch (err) {
+            toast.error("Failed to delete appointment");
+        }
+    };
+
     // Select appointment & generate receipt
     const handleSelectAppointment = async (appt: any) => {
         try {
@@ -174,9 +189,9 @@ export default function MasterPatientsPage() {
                     email: patient.profile?.emergencyContactEmail || patient.email || patient.user?.email,
                     dateOfBirth: patient.profile?.dob || appt.patient?.dob,
                     emergencyContact: patient.profile?.alternateNumber || appt.patient?.emergencyContact,
-                    medicalHistory: patient.profile?.medicalHistory,
-                    allergies: patient.profile?.allergies,
-                    symptoms: appt.symptoms || appt.reason || appt.chiefComplaint,
+                    medicalHistory: patient.profile?.medicalHistory || patient.profile?.conditions || "None",
+                    allergies: patient.profile?.allergies || "None",
+                    symptoms: appt.symptoms || appt.reason || appt.notes || appt.chiefComplaint || "None",
                     vitals: {
                         height: appt.vitals?.height || patient.profile?.height,
                         weight: appt.vitals?.weight || patient.profile?.weight,
@@ -196,6 +211,7 @@ export default function MasterPatientsPage() {
                     specialization: appt.doctor?.specialization || appt.department || "",
                     date: new Date(appt.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
                     time: appt.appointmentTime || appt.startTime || "N/A",
+                    bookedAt: appt.createdAt || appt.date || new Date().toISOString(),
                     type: "OPD",
                     appointmentId: appt.appointmentId || appt._id?.substring(0, 8).toUpperCase()
                 },
@@ -402,61 +418,7 @@ export default function MasterPatientsPage() {
                         </div>
                     </div>
 
-                    {/* BOTTOM PAGINATION */}
-                    {totalPages > 1 && patients.length > 0 && (
-                        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mt-4">
-                            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                    Showing {((page - 1) * limit) + 1}-{Math.min(page * limit, total)} of {total} patients
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => setPage(p => Math.max(1, p - 1))}
-                                        disabled={page === 1}
-                                        className="px-4 py-2 bg-gray-300 border border-slate-200 text-slate-600 rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 transition-all"
-                                    >
-                                        <ChevronLeft size={14} /> Previous
-                                    </button>
-
-                                    <div className="flex items-center gap-1">
-                                        {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => {
-                                            const pageNum = i + 1;
-                                            const showPage = pageNum <= 5 ||
-                                                pageNum === totalPages ||
-                                                (pageNum >= page - 1 && pageNum <= page + 1);
-
-                                            if (!showPage && pageNum === 6 && page > 7) {
-                                                return <span key={pageNum} className="px-2 text-slate-400">...</span>;
-                                            }
-                                            if (!showPage) return null;
-
-                                            return (
-                                                <button
-                                                    key={pageNum}
-                                                    onClick={() => setPage(pageNum)}
-                                                    className={`w-8 h-8 rounded-lg text-[10px] font-bold transition-all ${page === pageNum
-                                                        ? 'bg-teal-600 text-white shadow-lg shadow-teal-900/20'
-                                                        : 'bg-white border border-slate-200 text-slate-400 hover:text-slate-600'
-                                                        }`}
-                                                >
-                                                    {pageNum}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-
-                                    <button
-                                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                        disabled={page === totalPages}
-                                        className="px-4 py-2 bg-gray-300 border border-slate-200 text-slate-600 rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 transition-all"
-                                    >
-                                        Next <ChevronRight size={14} />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    {/* BOTTOM PAGINATION REMOVED AS PER USER REQUEST */}
                 </div>
             </div>
 
@@ -467,6 +429,7 @@ export default function MasterPatientsPage() {
                     appointments={appointmentHistory}
                     isLoading={historyLoading}
                     onSelect={handleSelectAppointment}
+                    onDelete={handleDeleteAppointment}
                     onClose={() => setShowHistoryModal(false)}
                     doctorMap={doctorMap}
                 />
