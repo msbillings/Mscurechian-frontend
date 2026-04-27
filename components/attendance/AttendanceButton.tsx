@@ -1,9 +1,10 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Clock, LogIn, LogOut, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { apiClient } from '@/lib/integrations/api/apiClient';
+import { AttendanceModal } from './AttendanceModal';
 import { API_CONFIG } from '@/lib/integrations/config/api-config';
 
 interface AttendanceButtonProps {
@@ -22,6 +23,7 @@ export const AttendanceButton: React.FC<AttendanceButtonProps> = ({ userRole, cl
   const [todayAttendance, setTodayAttendance] = useState<TodayAttendance | null>(null);
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchTodayStatus = useCallback(async () => {
     try {
@@ -41,7 +43,11 @@ export const AttendanceButton: React.FC<AttendanceButtonProps> = ({ userRole, cl
     fetchTodayStatus();
   }, [fetchTodayStatus]);
 
-  const handleCheckIn = async () => {
+  const handleCheckIn = () => {
+    setIsModalOpen(true);
+  };
+
+  const confirmCheckIn = async () => {
     try {
       setChecking(true);
       const data = await apiClient<any>('/attendance/check-in', {
@@ -129,6 +135,11 @@ export const AttendanceButton: React.FC<AttendanceButtonProps> = ({ userRole, cl
             Shift Ended
           </div>
         )}
+        <AttendanceModal 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          onConfirm={confirmCheckIn} 
+        />
       </div>
     );
   }
@@ -220,6 +231,11 @@ export const AttendanceButton: React.FC<AttendanceButtonProps> = ({ userRole, cl
           )}
         </div>
       </div>
+      <AttendanceModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onConfirm={confirmCheckIn} 
+      />
     </div>
   );
 };

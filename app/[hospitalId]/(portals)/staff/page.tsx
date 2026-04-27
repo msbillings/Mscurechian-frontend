@@ -26,6 +26,7 @@ import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { useStaffDashboard, useAttendanceHistory, useAnnouncements, useCheckIn, useCheckOut, useTodayStatus } from '@/lib/integrations/hooks';
 import { StaffDashboardSkeleton } from '@/components/ui/skeletons';
+import { AttendanceModal } from '@/components/attendance/AttendanceModal';
 
 const StaffDashboardPage = React.memo(function StaffDashboardPage() {
     const router = useRouter();
@@ -34,6 +35,7 @@ const StaffDashboardPage = React.memo(function StaffDashboardPage() {
         password: string;
         hospital: string;
     } | null>(null);
+    const [isAttendanceModalOpen, setIsAttendanceModalOpen] = React.useState(false);
 
     // ✅ React Query hooks with placeholderData for instant cached display
     const { data: dashboard, isLoading: dashboardLoading, isPlaceholderData: isDashboardPlaceholder } = useStaffDashboard();
@@ -99,11 +101,16 @@ const StaffDashboardPage = React.memo(function StaffDashboardPage() {
                 ? new Date(result.attendance.checkIn.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
                 : null;
             toast.success(checkInTime ? `Checked in at ${checkInTime}` : 'Checked in successfully!');
+            setIsAttendanceModalOpen(false);
         } catch (error: any) {
             console.error('Check-in failed:', error);
             toast.error(error?.message || 'Failed to check in. Please try again.');
         }
     }, [checkInMutation]);
+
+    const triggerCheckIn = useCallback(() => {
+        setIsAttendanceModalOpen(true);
+    }, []);
 
     const handleCheckOut = useCallback(async () => {
         try {
@@ -245,7 +252,7 @@ const StaffDashboardPage = React.memo(function StaffDashboardPage() {
                     <div className="flex items-center gap-2 mr-2 bg-slate-50 p-1 rounded-xl border border-slate-200 shadow-inner">
                         {!todayAttendance?.checkIn ? (
                             <button
-                                onClick={handleCheckIn}
+                                onClick={triggerCheckIn}
                                 disabled={checkInMutation.isPending}
                                 className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-md active:scale-95 disabled:opacity-50 transition-all border border-emerald-500/20"
                             >
@@ -447,6 +454,11 @@ const StaffDashboardPage = React.memo(function StaffDashboardPage() {
                     </div>
                 </div>
             </div>
+            <AttendanceModal 
+                isOpen={isAttendanceModalOpen} 
+                onClose={() => setIsAttendanceModalOpen(false)} 
+                onConfirm={handleCheckIn} 
+            />
         </div>
     );
 });
