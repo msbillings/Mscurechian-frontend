@@ -328,51 +328,27 @@ export default function MasterAppointmentBooking() {
         try {
             setLoadingSlots(true);
             setSelectedSlot(null);
-            
-            // 1. Get availability (hourly containers)
-            const res = await helpdeskService.getAvailability(selectedDoctor._id, profile.hospital._id, selectedDate);
-            
-            // Re-check specifically if the doctor is on leave on THIS selectedDate
-            try {
-                const targetStr = selectedDate; // "YYYY-MM-DD"
-                const leaves = await masterDoctorLeaveService.getLeavesByDoctor(selectedDoctor._id);
-                
-                const onLeaveThisDate = leaves.some(l => {
-                    if (l.status !== 'approved') return false;
-                    
-                    // Convert l.startDate and l.endDate to "YYYY-MM-DD" in local timezone for reliable comparison
-                    const getLocalDateStr = (dateInput: string | Date) => {
-                        const d = new Date(dateInput);
-                        const year = d.getFullYear();
-                        const month = String(d.getMonth() + 1).padStart(2, '0');
-                        const day = String(d.getDate()).padStart(2, '0');
-                        return `${year}-${month}-${day}`;
-                    };
-                    
-                    const startStr = getLocalDateStr(l.startDate);
-                    const endStr = getLocalDateStr(l.endDate);
-                    
-                    return targetStr >= startStr && targetStr <= endStr;
-                });
-                
-                setIsDoctorOnLeave(onLeaveThisDate);
-                if (onLeaveThisDate) {
-                    setAvailableSlots([]);
-                    return;
-                }
-            } catch (e) {
-                console.error("Error in leave check:", e);
-                setIsDoctorOnLeave(false);
+
+            // 1. Get availability (hourly containers) using master service
+            const res = await masterHelpdeskService.getAvailability(selectedDoctor._id, profile.hospital._id, selectedDate);
+
+            setIsDoctorOnLeave(res.isHoliday); 
+            if (res.isHoliday) {
+                setAvailableSlots([]);
+                setLoadingSlots(false);
+                return;
             }
-            
+
             const hourlySlots = res.slots || [];
-            
+
             // 2. Get all appointments for this doctor on this day to find exact occupied 5-min slots
-            const aptRes = await helpdeskService.getAppointments(1, 200, undefined, selectedDate, selectedDate);
+            const aptRes = await helpdeskService.getAppointments(1, 200, undefined, selectedDate, selectedDate, undefined, undefined, hospitalId as string);
             const allApts = Array.isArray(aptRes) ? aptRes : (aptRes.appointments || aptRes.data || []);
             const doctorApts = allApts.filter((a: any) => {
                 const aDocId = a.doctor?._id || a.doctor || a.doctorId;
-                return aDocId === selectedDoctor._id;
+                const isSameDoctor = aDocId?.toString() === selectedDoctor?._id?.toString();
+                const isActive = !['cancelled', 'rejected'].includes((a.status || a.paymentStatus || '').toLowerCase());
+                return isSameDoctor && isActive;
             });
 
             const occupiedTimes = new Set(doctorApts.map((a: any) => {
@@ -386,19 +362,31 @@ export default function MasterAppointmentBooking() {
             }).filter(Boolean));
 
             // 3. Expand each hourly container into 12 x 5-min slots
-            const allExpandedSlots: any[] = [];
-            hourlySlots.forEach((hour: any) => {
-                const [startPart] = hour.timeSlot.split(' - ');
-                const [hStr, mStrPart] = startPart.split(':');
-                const [mStr, ampm] = mStrPart.split(' ');
-                
+            const parseTime = (timeStr: string) => {
+                const [hStr, mPart] = timeStr.split(':');
+                const [mStr, ampm] = mPart.split(' ');
                 let h = parseInt(hStr);
-                let m = parseInt(mStr);
                 if (ampm === 'PM' && h < 12) h += 12;
                 if (ampm === 'AM' && h === 12) h = 0;
+                return h;
+            };
 
+            const allExpandedSlots: any[] = [];
+            const isToday = new Date(selectedDate).toDateString() === new Date().toDateString();
+            const now = new Date();
+            const hour15Ago = new Date(now.getTime() - 90 * 60000); // 1.5 hours ago
+
+            hourlySlots.forEach((hour: any) => {
+                if (hour.isFull) return;
+
+                const [startPart] = hour.timeSlot.split(" - ");
+                const startHour = parseTime(startPart);
+                const [y, m, d] = selectedDate.split('-').map(Number);
                 for (let i = 0; i < 12; i++) {
-                    const slotDate = new Date(2000, 0, 1, h, m + (i * 5));
+                    const slotDate = new Date(y, m - 1, d, startHour, i * 5, 0, 0);
+                    
+                    if (isToday && slotDate < hour15Ago) continue;
+
                     const timeLabel = slotDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
                     allExpandedSlots.push({
                         time: timeLabel,
@@ -591,16 +579,16 @@ export default function MasterAppointmentBooking() {
                     logo: latestHospital.logo
                 },
                 patient: { name: selectedPatient.name, mrn: selectedPatient.mrn, age: selectedPatient.age, gender: selectedPatient.gender, mobile: selectedPatient.mobile, dob: selectedPatient.dob, address: selectedPatient.address, email: selectedPatient.email, bloodGroup: selectedPatient.bloodGroup, emergencyContact: selectedPatient.emergencyContact, allergies: Array.isArray(selectedPatient.allergies) ? selectedPatient.allergies.join(', ') : selectedPatient.allergies, medicalHistory: selectedPatient.medicalHistory, vitals: { ...vitals } },
-                appointment: { 
-                    doctorName: selectedDoctor.user?.name || selectedDoctor.name, 
-                    specialization: selectedDoctor.specialties?.[0] || 'General', 
-                    qualification: selectedDoctor.qualifications?.[0] || 'MBBS', 
-                    date: new Date(selectedDate).toLocaleDateString(), 
-                    time: bookingMode === 'slot' ? selectedSlot : payload.time, 
+                appointment: {
+                    doctorName: selectedDoctor.user?.name || selectedDoctor.name,
+                    specialization: selectedDoctor.specialties?.[0] || 'General',
+                    qualification: selectedDoctor.qualifications?.[0] || 'MBBS',
+                    date: new Date(selectedDate).toLocaleDateString(),
+                    time: bookingMode === 'slot' ? selectedSlot : payload.time,
                     bookedAt: new Date().toISOString(),
-                    type: appointmentType.toUpperCase(), 
-                    notes: notes, 
-                    appointmentId: appointment._id || appointment.id || 'PENDING' 
+                    type: appointmentType.toUpperCase(),
+                    notes: notes,
+                    appointmentId: appointment.appointmentId || appointment.visitId || appointment._id || appointment.id || 'PENDING'
                 },
                 payment: { amount: selectedDoctor?.consultationFee || 0, totalBillAmount: selectedDoctor?.consultationFee || 0, totalPaidAmount: selectedDoctor?.consultationFee || 0, advanceAmount: 0, method: paymentMethod.toUpperCase(), status: paymentStatus.toUpperCase(), date: new Date().toISOString() },
                 registrationType: 'OPD',
@@ -744,13 +732,13 @@ export default function MasterAppointmentBooking() {
                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Date</label>
                                     <div className="relative group">
                                         <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                        <input 
-                                            type="date" 
-                                            value={selectedDate} 
+                                        <input
+                                            type="date"
+                                            value={selectedDate}
                                             min={new Date().toISOString().split('T')[0]}
                                             max={new Date().toISOString().split('T')[0]}
-                                            onChange={(e) => setSelectedDate(e.target.value)} 
-                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black uppercase focus:border-teal-500 outline-none transition-all cursor-not-allowed opacity-80" 
+                                            onChange={(e) => setSelectedDate(e.target.value)}
+                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black uppercase focus:border-teal-500 outline-none transition-all cursor-not-allowed opacity-80"
                                         />
                                     </div>
                                     <p className="text-[8px] font-bold text-teal-600 uppercase tracking-widest ml-1">Today only (Master Portal Restriction)</p>
@@ -776,7 +764,7 @@ export default function MasterAppointmentBooking() {
                                 ))}
                             </div>
 
-                             {selectedDoctor && isDoctorOnLeave && (
+                            {selectedDoctor && isDoctorOnLeave && (
                                 <div className="mt-8 p-6 bg-rose-50 border-2 border-rose-200 rounded-3xl flex items-center gap-5 animate-in zoom-in duration-500 shadow-lg shadow-rose-500/10">
                                     <div className="w-14 h-14 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 shrink-0 shadow-inner">
                                         <AlertCircle size={28} />
@@ -797,7 +785,7 @@ export default function MasterAppointmentBooking() {
                                             <div className="w-5 h-5 rounded-md bg-teal-100 flex items-center justify-center text-teal-600"><Clock size={12} /></div>
                                             <h3 className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Select Clinical Slot</h3>
                                         </div>
-                                        
+
                                         {/* Time of Day Filter */}
                                         <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
                                             {[
@@ -825,10 +813,10 @@ export default function MasterAppointmentBooking() {
                                         let [h, m] = t.split(':').map(Number);
                                         if (ampm === 'PM' && h < 12) h += 12;
                                         if (ampm === 'AM' && h === 12) h = 0;
-                                        
+
                                         const slotDate = new Date(selectedDate);
                                         slotDate.setHours(h, m, 0, 0);
-                                        
+
                                         if (slotDate < now) {
                                             return (
                                                 <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -856,7 +844,7 @@ export default function MasterAppointmentBooking() {
                                                     let [h] = t.split(':').map(Number);
                                                     if (ampm === 'PM' && h < 12) h += 12;
                                                     if (ampm === 'AM' && h === 12) h = 0;
-                                                    
+
                                                     if (timeOfDayFilter === 'morning') return h >= 6 && h < 12;
                                                     if (timeOfDayFilter === 'afternoon') return h >= 12 && h < 16;
                                                     if (timeOfDayFilter === 'evening') return h >= 16 && h < 20;
@@ -878,13 +866,12 @@ export default function MasterAppointmentBooking() {
                                                             key={i}
                                                             disabled={!slot.available}
                                                             onClick={() => setSelectedSlot(slot.time)}
-                                                            className={`py-2 px-1 rounded-lg text-[9px] font-black transition-all border relative ${
-                                                                selectedSlot === slot.time 
-                                                                    ? 'bg-teal-600 border-teal-600 text-white shadow-lg scale-110 z-10' 
-                                                                    : slot.available 
-                                                                        ? `bg-white border-slate-100 text-slate-600 hover:border-teal-200 hover:bg-teal-50 shadow-sm ${isPast ? 'opacity-60 grayscale-[0.5]' : ''}` 
+                                                            className={`py-2 px-1 rounded-lg text-[9px] font-black transition-all border relative ${selectedSlot === slot.time
+                                                                    ? 'bg-teal-600 border-teal-600 text-white shadow-lg scale-110 z-10'
+                                                                    : slot.available
+                                                                        ? `bg-white border-slate-100 text-slate-600 hover:border-teal-200 hover:bg-teal-50 shadow-sm ${isPast ? 'opacity-60 grayscale-[0.5]' : ''}`
                                                                         : 'bg-slate-50 border-slate-50 text-slate-300 cursor-not-allowed opacity-50'
-                                                            }`}
+                                                                }`}
                                                         >
                                                             {slot.time.replace(':00', '').replace(' ', '')}
                                                             {isPast && slot.available && <span className="absolute top-0 right-0 w-1.5 h-1.5 bg-amber-400 rounded-full border border-white" />}
@@ -925,12 +912,12 @@ export default function MasterAppointmentBooking() {
                                     return (
                                         <div key={v} className="space-y-2">
                                             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">{v.toUpperCase()}</label>
-                                            <input 
-                                                type="text" 
-                                                value={(vitals as any)[v]} 
-                                                onChange={(e) => handleVitalChange(v, e.target.value)} 
+                                            <input
+                                                type="text"
+                                                value={(vitals as any)[v]}
+                                                onChange={(e) => handleVitalChange(v, e.target.value)}
                                                 placeholder={placeholders[v]}
-                                                className={`w-full bg-slate-50 border ${vitalsErrors[v] ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-4 py-3 text-xs font-bold text-slate-900 focus:border-teal-500 outline-none transition-all placeholder:text-slate-200`} 
+                                                className={`w-full bg-slate-50 border ${vitalsErrors[v] ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-4 py-3 text-xs font-bold text-slate-900 focus:border-teal-500 outline-none transition-all placeholder:text-slate-200`}
                                             />
                                             {vitalsErrors[v] && <p className="text-[8px] font-black text-rose-500 uppercase tracking-widest px-1">{vitalsErrors[v]}</p>}
                                         </div>

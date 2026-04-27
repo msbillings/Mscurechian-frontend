@@ -83,10 +83,18 @@ export default function AppointmentHistoryModal({
                                 const doctorName = getDoctorName(apt);
 
                                 return (
-                                    <button
+                                    <div
                                         key={apt._id || apt.id}
+                                        role="button"
+                                        tabIndex={0}
                                         onClick={() => onSelect(apt)}
-                                        className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 p-4 rounded-xl border border-slate-100 hover:border-teal-500/30 hover:bg-teal-50/30 hover:shadow-md transition-all group text-left w-full bg-white sm:h-auto"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                onSelect(apt);
+                                            }
+                                        }}
+                                        className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 p-4 rounded-xl border border-slate-100 hover:border-teal-500/30 hover:bg-teal-50/30 hover:shadow-md transition-all group text-left w-full bg-white sm:h-auto cursor-pointer"
                                     >
                                         {/* Date Box */}
                                         <div className="shrink-0 flex items-center justify-between sm:flex-col sm:justify-center gap-2 sm:gap-0 min-w-[80px] text-slate-500 border-b sm:border-b-0 pb-2 sm:pb-0 mb-2 sm:mb-0">
@@ -159,7 +167,7 @@ export default function AppointmentHistoryModal({
                                                 <CheckCircle2 size={16} />
                                             </div>
                                         </div>
-                                    </button>
+                                    </div>
                                 );
                             })}
                         </div>

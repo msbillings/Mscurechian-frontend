@@ -1,4 +1,4 @@
-import { MASTER_HELPDESK_ENDPOINTS } from "../config";
+import { MASTER_HELPDESK_ENDPOINTS, DOCTOR_ENDPOINTS } from "../config";
 import { apiClient } from "../api";
 
 /**
@@ -78,4 +78,39 @@ export const masterHelpdeskService = {
     apiClient<any>(`/masterhelpdesk/appointments/${appointmentId}`, {
       method: "DELETE",
     }),
+
+  getAvailability: async (doctorId: string, hospitalId: string, date: string) => {
+    const response = await apiClient<any>(
+      `${DOCTOR_ENDPOINTS.CALENDAR_STATS}?view=weekly&startDate=${date}&doctorId=${doctorId}`
+    );
+
+    const targetDateStr = date; // "YYYY-MM-DD"
+    const dayData = response.days?.find((d: any) => {
+      const dDate = new Date(d.date);
+      const dStr = `${dDate.getFullYear()}-${String(dDate.getMonth() + 1).padStart(2, '0')}-${String(dDate.getDate()).padStart(2, '0')}`;
+      return dStr === targetDateStr;
+    });
+
+    const isHoliday = dayData?.isNotAvailable || dayData?.isLeave || !dayData;
+
+    const slots =
+      response.timeSlots?.map((slot: string) => {
+        const slotInfo = dayData?.slots?.[slot] || { count: 0, isFull: isHoliday };
+        const HOURLY_LIMIT = 12;
+        const count = slotInfo.count || 0;
+
+        return {
+          timeSlot: slot,
+          isFull: slotInfo.isFull || count >= HOURLY_LIMIT || isHoliday,
+          availableCount: Math.max(0, HOURLY_LIMIT - count),
+          totalCapacity: HOURLY_LIMIT,
+        };
+      }) || [];
+
+    return {
+      slots,
+      isHoliday,
+      isLeave: dayData?.isLeave || false,
+    };
+  },
 };

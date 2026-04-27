@@ -256,7 +256,8 @@ export const helpdeskService = {
     startDate?: string,
     endDate?: string,
     date?: string,
-    channel?: string
+    channel?: string,
+    hospitalId?: string
   ) => {
     let query = `${HELPDESK_ENDPOINTS.APPOINTMENTS}?page=${page}&limit=${limit}`;
     if (patientId) query += `&patientId=${patientId}`;
@@ -264,6 +265,7 @@ export const helpdeskService = {
     if (endDate) query += `&endDate=${endDate}`;
     if (date) query += `&date=${date}`;
     if (channel && channel !== 'all') query += `&channel=${channel}`;
+    if (hospitalId) query += `&hospitalId=${hospitalId}`;
     return apiClient<any>(query);
   },
 
