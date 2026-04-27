@@ -144,11 +144,8 @@ export default function TransactionSummaryPage() {
                             </div>
                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Total Appointments</span>
                         </div>
-                        <p className="text-2xl font-black tracking-tighter">{total} <span className="text-[10px] font-normal text-slate-400 uppercase ml-1">TX</span></p>
-                        <div className="mt-3 flex items-center gap-1.5 text-[8px] font-black uppercase text-emerald-400">
-                            <TrendingUp size={10} />
-                            Verified Flow
-                        </div>
+                        <p className="text-2xl font-black tracking-tighter">{total}</p>
+                        
                     </div>
 
                     <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm group hover:border-indigo-200 transition-all">
@@ -163,7 +160,7 @@ export default function TransactionSummaryPage() {
                                 <p className="text-2xl font-black text-slate-900 tracking-tighter">{backendStats?.onlineCount || 0}</p>
                                 <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">₹{Math.round(backendStats?.onlineRevenue || 0).toLocaleString()}</p>
                             </div>
-                            <span className="text-[8px] font-black text-slate-300 uppercase">{totalRevenue > 0 ? Math.round((backendStats?.onlineRevenue / totalRevenue) * 100) : 0}% Share</span>
+                       
                         </div>
                     </div>
 
@@ -179,7 +176,6 @@ export default function TransactionSummaryPage() {
                                 <p className="text-2xl font-black text-slate-900 tracking-tighter">{backendStats?.offlineCount || 0}</p>
                                 <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">₹{Math.round(backendStats?.offlineRevenue || 0).toLocaleString()}</p>
                             </div>
-                            <span className="text-[8px] font-black text-slate-300 uppercase">{totalRevenue > 0 ? Math.round((backendStats?.offlineRevenue / totalRevenue) * 100) : 0}% Share</span>
                         </div>
                     </div>
                 </div>
@@ -221,21 +217,7 @@ export default function TransactionSummaryPage() {
                                 </div>
                             </div>
 
-                            <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Application Integrity</h3>
-                                    <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">100% Synced</span>
-                                </div>
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 text-[10px] font-black text-slate-900 uppercase">
-                                        <div className="flex items-center gap-3">
-                                            <Shield size={14} className="text-indigo-600" />
-                                            <span>Unified Transaction Audit</span>
-                                        </div>
-                                        <ArrowUpRight size={14} className="text-slate-300" />
-                                    </div>
-                                </div>
-                            </div>
+                            
                         </div>
                     </div>
 
@@ -252,7 +234,7 @@ export default function TransactionSummaryPage() {
                             {[
                                 { label: 'Cash Flow', revenue: backendStats?.cashRevenue || 0, color: 'bg-slate-900', icon: IndianRupee },
                                 { label: 'UPI App', revenue: backendStats?.upiRevenue || 0, color: 'bg-indigo-500', icon: Zap },
-                                { label: 'Card Swipes', revenue: backendStats?.cardRevenue || 0, color: 'bg-emerald-500', icon: CreditCard }
+                                { label: 'Card', revenue: backendStats?.cardRevenue || 0, color: 'bg-emerald-500', icon: CreditCard }
                             ].map((item, idx) => (
                                 <div key={idx} className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">

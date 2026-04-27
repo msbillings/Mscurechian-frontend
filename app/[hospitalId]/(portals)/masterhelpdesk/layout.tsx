@@ -148,16 +148,16 @@ export function MasterHelpdeskLayout({ children }: { children: React.ReactNode }
                         <NotificationCenter hospitalId={currentHospitalId} />
                         <div className="h-6 w-px bg-slate-200"></div>
                         <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-sm shadow-indigo-200">
+                            <button
+                                onClick={() => router.push(getPath('/masterhelpdesk/settings'))}
+                                className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-sm shadow-indigo-200 hover:scale-110 hover:shadow-md transition-all active:scale-95"
+                                title="Settings"
+                            >
                                 {user?.name?.charAt(0).toUpperCase() || 'M'}
-                            </div>
-                            <div className="hidden md:block">
-                                <p className="text-xs font-bold text-slate-800">{user?.name}</p>
-                                <p className="text-[10px] font-medium text-slate-500">Master Helpdesk</p>
-                            </div>
+                            </button>
                             <button 
                                 onClick={() => setIsLogoutModalOpen(true)}
-                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-1"
+                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                             >
                                 <LogOut size={16} />
                             </button>
