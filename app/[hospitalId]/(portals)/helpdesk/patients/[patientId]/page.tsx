@@ -43,6 +43,7 @@ function ViewEditPatient({ params }: { params: Promise<{ patientId: string }> })
     address: '',
     emergencyContact: '',
     emergencyContactName: '',
+    emergencyContactEmail: '',
     bloodGroup: 'O+',
     allergies: '',
     medicalHistory: ''
@@ -63,6 +64,7 @@ function ViewEditPatient({ params }: { params: Promise<{ patientId: string }> })
         address: data.profile?.address || '',
         emergencyContact: data.profile?.alternateNumber || data.profile?.emergencyContactPhone || '',
         emergencyContactName: data.profile?.emergencyContactName || '',
+        emergencyContactEmail: data.profile?.emergencyContactEmail || '',
         bloodGroup: data.profile?.bloodGroup || 'O+',
         allergies: data.profile?.allergies || data.profile?.conditions || '',
         medicalHistory: data.profile?.medicalHistory || data.profile?.notes || ''
@@ -302,6 +304,10 @@ function ViewEditPatient({ params }: { params: Promise<{ patientId: string }> })
 
               <ProfileField label="Identity (Name)" editing={editing} error={errors.emergencyContactName}>
                 <input name="emergencyContactName" value={formData.emergencyContactName} onChange={handleChange} placeholder="FULL NAME OF CONTACT" className={`w-full px-4 py-2.5 rounded-xl bg-slate-50 border ${errors.emergencyContactName ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-xs font-bold`} />
+              </ProfileField>
+
+              <ProfileField label="Protocol Email" editing={editing} error={errors.emergencyContactEmail}>
+                <input name="emergencyContactEmail" value={formData.emergencyContactEmail} onChange={handleChange} placeholder="EMERGENCY@EMAIL.COM" className={`w-full px-4 py-2.5 rounded-xl bg-slate-50 border ${errors.emergencyContactEmail ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-xs font-bold`} />
               </ProfileField>
             </div>
           </div>

@@ -178,7 +178,7 @@ export default function TransactionsPage() {
             titleCell.value = `${hospitalName.toUpperCase()} FINANCIAL REVENUE LEDGER`;
             titleCell.font = { bold: true, size: 16, color: { argb: "FFFFFF" }, name: 'Arial' };
             titleCell.alignment = { vertical: "middle", horizontal: "center" };
-            titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "0F172A" } };
+            titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "0F172A" } } as ExcelJS.Fill;
             worksheet.getRow(1).height = 40;
 
             // 2. REPORT METADATA
@@ -190,16 +190,16 @@ export default function TransactionsPage() {
             metaCell.value = `${periodText}  |  ${typeText}  |  ${generatedText}`;
             metaCell.font = { bold: true, size: 10, color: { argb: "475569" } };
             metaCell.alignment = { vertical: "middle", horizontal: "center" };
-            metaCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "F8FAFC" } };
+            metaCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "F8FAFC" } } as ExcelJS.Fill;
             worksheet.getRow(2).height = 25;
 
             // 3. TABLE HEADERS (Row 4 - leaving a gap)
             worksheet.getRow(3).height = 10; // Spacer
             const headerRow = worksheet.getRow(4);
-            headerRow.values = worksheet.columns?.map(c => c.header) || [];
+            headerRow.values = worksheet.columns?.map(c => c.header as string) || [];
             headerRow.eachCell((cell) => {
                 cell.font = { bold: true, color: { argb: "FFFFFF" }, size: 11 };
-                cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "334155" } };
+                cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "334155" } } as ExcelJS.Fill;
                 cell.alignment = { vertical: "middle", horizontal: "center" };
                 cell.border = {
                     top: { style: 'thin' },
@@ -281,7 +281,7 @@ export default function TransactionsPage() {
             const summaryTitle = worksheet.getCell(`A${summaryStartRow}`);
             summaryTitle.value = "FINANCIAL PERFORMANCE SUMMARY";
             summaryTitle.font = { bold: true, size: 12, color: { argb: "FFFFFF" } };
-            summaryTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "334155" } };
+            summaryTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "334155" } } as ExcelJS.Fill;
             summaryTitle.alignment = { horizontal: "center" };
 
             // Accurate Calculations
@@ -338,8 +338,8 @@ export default function TransactionsPage() {
                     
                     if (labelCell.value.toString().includes("GROSS")) {
                         labelCell.font = { bold: true, size: 11, color: { argb: "0F172A" } };
-                        labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
-                        valCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
+                        labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } } as ExcelJS.Fill;
+                        valCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } } as ExcelJS.Fill;
                     }
                 }
             });
