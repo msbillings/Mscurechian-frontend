@@ -342,28 +342,67 @@ export default function MasterAppointmentBooking() {
             const hourlySlots = res.slots || [];
 
             // 2. Get all appointments for this doctor on this day to find exact occupied 5-min slots
-            const aptRes = await helpdeskService.getAppointments(1, 200, undefined, selectedDate, selectedDate, undefined, undefined, hospitalId as string);
-            const allApts = Array.isArray(aptRes) ? aptRes : (aptRes.appointments || aptRes.data || []);
+            // Use Master Queue for comprehensive offline + online aggregation in the Master Portal
+            const isMasterPortal = typeof window !== 'undefined' && window.location.pathname.includes('/masterhelpdesk');
+            // 2. Fetch ALL appointments for this hospital today and filter on frontend for maximum reliability
+            // This avoids potential issues with doctor ID format mismatches in the backend query
+            const aptRes = await helpdeskService.getMasterQueue(1, 1000, hospitalId as string, selectedDate, selectedDate);
+            
+            const allApts = aptRes?.data || aptRes?.appointments || (Array.isArray(aptRes) ? aptRes : []);
+            
             const doctorApts = allApts.filter((a: any) => {
-                const aDocId = a.doctor?._id || a.doctor || a.doctorId;
-                const isSameDoctor = aDocId?.toString() === selectedDoctor?._id?.toString();
-                const isActive = !['cancelled', 'rejected'].includes((a.status || a.paymentStatus || '').toLowerCase());
+                // 1. Check ID (Highest Priority)
+                const aDocId = (a.doctor?._id || a.doctor || a.doctorId || a.doctorProfileId || a.doctorProfile?._id || a.doctor?._id)?.toString();
+                const sDocId = (selectedDoctor as any)?._id?.toString() || (selectedDoctor as any)?.id?.toString() || selectedDoctor?.toString();
+                
+                const isSameId = aDocId && sDocId && aDocId === sDocId;
+
+                // 2. Check Name (Fallback - extremely important for cross-portal consistency)
+                const aDocName = (a.doctorName || a.doctor?.name || a.doctor?.user?.name || "").toLowerCase().replace(/dr\.|prof\.|sir\./g, '').replace(/[^a-z]/g, '').trim();
+                const sDocName = (selectedDoctor?.name || (selectedDoctor as any)?.user?.name || "").toLowerCase().replace(/dr\.|prof\.|sir\./g, '').replace(/[^a-z]/g, '').trim();
+                const isSameName = aDocName && sDocName && aDocName === sDocName;
+                
+                const isSameDoctor = isSameId || isSameName;
+                
+                // Block slot for ANY active-like status
+                const status = (a.status || '').toLowerCase();
+                const isActive = !['cancelled', 'rejected', 'failed', 'no-show', 'available', 'no show'].includes(status);
+                
                 return isSameDoctor && isActive;
             });
 
-            const occupiedTimes = new Set(doctorApts.map((a: any) => {
-                const t = a.startTime || a.time || a.timeSlot;
-                if (!t) return null;
-                // Normalize to "H:MM AM/PM"
+            const normalizeTimeStr = (t: string) => {
+                if (!t || typeof t !== 'string' || t === 'N/A') return '';
+                let time = t.trim().toUpperCase();
+                if (time.includes(' - ')) time = time.split(' - ')[0];
+                
+                // Strip all non-alphanumeric except colon
+                const cleanTime = time.replace(/[^A-Z0-9:]/g, '');
+                
                 try {
-                    const d = new Date(`2000-01-01 ${t}`);
-                    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                } catch (e) { return t; }
-            }).filter(Boolean));
+                    const match = cleanTime.match(/(\d+)(?::(\d+))?(AM|PM)/);
+                    if (match) {
+                        let [_, h, m, ampm] = match;
+                        let hour = parseInt(h);
+                        const minute = parseInt(m || '0');
+                        
+                        // Manual deterministic format: H:MM AM/PM
+                        const h12 = hour % 12 || 12;
+                        const mStr = minute.toString().padStart(2, '0');
+                        return `${h12}:${mStr} ${ampm.toUpperCase()}`;
+                    }
+                } catch (e) {}
+                return time.replace(/\s+/g, ' ');
+            };
+
+            const occupiedTimes = new Set(doctorApts.map((a: any) => 
+                normalizeTimeStr(a.startTime || a.appointmentTime || a.time || a.timeSlot || a.time_slot)
+            ).filter(Boolean));
 
             // 3. Expand each hourly container into 12 x 5-min slots
             const parseTime = (timeStr: string) => {
-                const [hStr, mPart] = timeStr.split(':');
+                const normalized = normalizeTimeStr(timeStr);
+                const [hStr, mPart] = normalized.split(':');
                 const [mStr, ampm] = mPart.split(' ');
                 let h = parseInt(hStr);
                 if (ampm === 'PM' && h < 12) h += 12;
@@ -374,7 +413,6 @@ export default function MasterAppointmentBooking() {
             const allExpandedSlots: any[] = [];
             const isToday = new Date(selectedDate).toDateString() === new Date().toDateString();
             const now = new Date();
-            const hour15Ago = new Date(now.getTime() - 90 * 60000); // 1.5 hours ago
 
             hourlySlots.forEach((hour: any) => {
                 if (hour.isFull) return;
@@ -385,12 +423,17 @@ export default function MasterAppointmentBooking() {
                 for (let i = 0; i < 12; i++) {
                     const slotDate = new Date(y, m - 1, d, startHour, i * 5, 0, 0);
                     
-                    if (isToday && slotDate < hour15Ago) continue;
+                    if (isToday && slotDate < now) continue;
 
-                    const timeLabel = slotDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                    const h = slotDate.getHours();
+                    const minute = slotDate.getMinutes();
+                    const h12 = h % 12 || 12;
+                    const ampm = h >= 12 ? 'PM' : 'AM';
+                    const timeStr = `${h12}:${minute.toString().padStart(2, '0')} ${ampm}`;
+
                     allExpandedSlots.push({
-                        time: timeLabel,
-                        available: !occupiedTimes.has(timeLabel)
+                        time: timeStr,
+                        available: !occupiedTimes.has(timeStr)
                     });
                 }
             });
@@ -424,6 +467,21 @@ export default function MasterAppointmentBooking() {
         if (!selectedPatient || !selectedDoctor) {
             toast.error("Please select a patient and a doctor.");
             return;
+        }
+
+        if (bookingMode === 'slot') {
+            if (!selectedSlot) {
+                toast.error("Please select a time slot");
+                return;
+            }
+            
+            // Final safety check: is this slot actually available?
+            const slotData = availableSlots.find(s => s.time === selectedSlot);
+            if (slotData && !slotData.available) {
+                toast.error("This slot has just been booked. Please select another slot.");
+                fetchSlots(); // Refresh to show current status
+                return;
+            }
         }
 
         if (notes.trim().length === 0) {
@@ -472,10 +530,10 @@ export default function MasterAppointmentBooking() {
                 mobile: selectedPatient.mobile || selectedPatient.user?.mobile,
                 doctorId: selectedDoctor?._id,
                 date: selectedDate,
-                time: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                time: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
                 timeSlot: bookingMode === 'slot' ? selectedSlot : "General Queue",
-                startTime: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
-                endTime: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                startTime: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+                endTime: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
                 type: appointmentType,
                 notes: notes,
                 symptoms: notes,
@@ -610,6 +668,8 @@ export default function MasterAppointmentBooking() {
             }
 
             toast.success("Booking Recorded Successfully.");
+            fetchSlots();
+            setSelectedSlot(null);
             setTimeout(() => {
                 router.push(`/${hospitalId}/masterhelpdesk/queue`);
             }, 1000);
@@ -870,7 +930,7 @@ export default function MasterAppointmentBooking() {
                                                                     ? 'bg-teal-600 border-teal-600 text-white shadow-lg scale-110 z-10'
                                                                     : slot.available
                                                                         ? `bg-white border-slate-100 text-slate-600 hover:border-teal-200 hover:bg-teal-50 shadow-sm ${isPast ? 'opacity-60 grayscale-[0.5]' : ''}`
-                                                                        : 'bg-slate-50 border-slate-50 text-slate-300 cursor-not-allowed opacity-50'
+                                                                        : 'bg-slate-200 border-slate-300 text-slate-500 cursor-not-allowed opacity-80 shadow-inner'
                                                                 }`}
                                                         >
                                                             {slot.time.replace(':00', '').replace(' ', '')}
@@ -957,8 +1017,7 @@ export default function MasterAppointmentBooking() {
                                 <div className="space-y-2">
                                     <FormLabel label="Payment Status" className="text-white/40" />
                                     <div className="flex p-1 bg-white/5 rounded-xl border border-white/10">
-                                        <button onClick={() => setPaymentStatus('paid')} className={`flex-1 py-2 rounded-lg text-[8px] font-black uppercase transition-all ${paymentStatus === 'paid' ? 'bg-teal-500 text-white shadow-lg' : 'text-white/30'}`}>Paid</button>
-                                        <button onClick={() => setPaymentStatus('unpaid')} className={`flex-1 py-2 rounded-lg text-[8px] font-black uppercase transition-all ${paymentStatus === 'unpaid' ? 'bg-rose-500 text-white shadow-lg' : 'text-white/30'}`}>Unpaid</button>
+                                        <div className="flex-1 py-2 rounded-lg text-[8px] font-black uppercase transition-all bg-teal-500 text-slate-900 shadow-lg text-center">Paid Only</div>
                                     </div>
                                 </div>
                                 <div className="pt-4 border-t border-white/10">
