@@ -400,15 +400,38 @@ export default function MasterAppointmentBooking() {
             ).filter(Boolean));
 
             // 3. Expand each hourly container into 12 x 5-min slots
-            const parseTime = (timeStr: string) => {
+            const getTimeInMinutes = (timeStr: string) => {
                 const normalized = normalizeTimeStr(timeStr);
-                const [hStr, mPart] = normalized.split(':');
-                const [mStr, ampm] = mPart.split(' ');
-                let h = parseInt(hStr);
-                if (ampm === 'PM' && h < 12) h += 12;
-                if (ampm === 'AM' && h === 12) h = 0;
-                return h;
+                if (!normalized) return -1;
+                try {
+                    const parts = normalized.split(':');
+                    if (parts.length < 2) return -1;
+                    const hPart = parts[0];
+                    const mPartWithAmpm = parts[1];
+                    const mParts = mPartWithAmpm.split(' ');
+                    const mPart = mParts[0];
+                    const ampm = mParts[1];
+                    
+                    let h = parseInt(hPart);
+                    let m = parseInt(mPart);
+                    if (ampm === 'PM' && h < 12) h += 12;
+                    if (ampm === 'AM' && h === 12) h = 0;
+                    return h * 60 + m;
+                } catch (e) { return -1; }
             };
+
+            const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            const selectedDayName = daysOfWeek[new Date(selectedDate).getDay()];
+            
+            const doctorData = selectedDoctor as any;
+            const availability = doctorData?.availability || doctorData?.profile?.availability || [];
+            
+            const daySchedule = availability.find((a: any) => 
+                a.days?.includes(selectedDayName)
+            );
+            
+            const breakStartMin = daySchedule?.breakStart ? getTimeInMinutes(daySchedule.breakStart) : -1;
+            const breakEndMin = daySchedule?.breakEnd ? getTimeInMinutes(daySchedule.breakEnd) : -1;
 
             const allExpandedSlots: any[] = [];
             const isToday = new Date(selectedDate).toDateString() === new Date().toDateString();
@@ -418,10 +441,16 @@ export default function MasterAppointmentBooking() {
                 if (hour.isFull) return;
 
                 const [startPart] = hour.timeSlot.split(" - ");
-                const startHour = parseTime(startPart);
+                const startMinutes = getTimeInMinutes(startPart);
+                if (startMinutes === -1) return;
+
+                const startHour = Math.floor(startMinutes / 60);
                 const [y, m, d] = selectedDate.split('-').map(Number);
+                
                 for (let i = 0; i < 12; i++) {
-                    const slotDate = new Date(y, m - 1, d, startHour, i * 5, 0, 0);
+                    const slotMinute = i * 5;
+                    const slotTotalMinutes = startHour * 60 + slotMinute;
+                    const slotDate = new Date(y, m - 1, d, startHour, slotMinute, 0, 0);
                     
                     if (isToday && slotDate < now) continue;
 
@@ -430,6 +459,12 @@ export default function MasterAppointmentBooking() {
                     const h12 = h % 12 || 12;
                     const ampm = h >= 12 ? 'PM' : 'AM';
                     const timeStr = `${h12}:${minute.toString().padStart(2, '0')} ${ampm}`;
+
+                    // Check if this specific 5-min slot falls within the doctor's break
+                    const isInBreak = breakStartMin !== -1 && breakEndMin !== -1 && 
+                                     slotTotalMinutes >= breakStartMin && slotTotalMinutes < breakEndMin;
+
+                    if (isInBreak) continue;
 
                     allExpandedSlots.push({
                         time: timeStr,
