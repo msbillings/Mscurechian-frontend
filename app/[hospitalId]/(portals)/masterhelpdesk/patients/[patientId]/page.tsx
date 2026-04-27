@@ -45,7 +45,7 @@ function MasterEditPatient() {
     dob: '',
     address: '',
     emergencyContact: '',
-    emergencyContactEmail: '',
+    emergencyContactName: '',
     bloodGroup: 'O+',
     allergies: '',
     medicalHistory: ''
@@ -64,11 +64,11 @@ function MasterEditPatient() {
         gender: data.profile?.gender || 'male',
         dob: data.profile?.dob ? new Date(data.profile.dob).toISOString().split('T')[0] : '',
         address: data.profile?.address || '',
-        emergencyContact: data.profile?.alternateNumber || '',
-        emergencyContactEmail: data.profile?.emergencyContactEmail || '',
+        emergencyContact: data.profile?.alternateNumber || data.profile?.emergencyContactPhone || '',
+        emergencyContactName: data.profile?.emergencyContactName || '',
         bloodGroup: data.profile?.bloodGroup || 'O+',
-        allergies: data.profile?.allergies || '',
-        medicalHistory: data.profile?.medicalHistory || ''
+        allergies: data.profile?.allergies || data.profile?.conditions || '',
+        medicalHistory: data.profile?.medicalHistory || data.profile?.notes || ''
       });
     } catch (error: any) {
       toast.error("Patient manifest retrieval failed");
@@ -123,9 +123,9 @@ function MasterEditPatient() {
     if (formData.emergencyContact && !/^\d{10}$/.test(formData.emergencyContact)) {
       newErrors.emergencyContact = "Must be 10 digits";
     }
-
-    if (formData.emergencyContactEmail && !/\S+@\S+\.\S+/.test(formData.emergencyContactEmail)) {
-      newErrors.emergencyContactEmail = "Invalid email format";
+    
+    if (formData.emergencyContactName && formData.emergencyContactName.length < 3) {
+      newErrors.emergencyContactName = "Name too short";
     }
 
     setErrors(newErrors);
@@ -372,7 +372,7 @@ function MasterEditPatient() {
               <Shield size={16} className="sm:size-[18px]" /> Emergency Contact Matrix
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
-              <ProfileField label="Kin Contact Number" editing={editing} error={errors.emergencyContact}>
+              <ProfileField label="Contact Number" editing={editing} error={errors.emergencyContact}>
                 <input 
                   name="emergencyContact" 
                   value={formData.emergencyContact} 
@@ -381,14 +381,14 @@ function MasterEditPatient() {
                   className={`w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border ${errors.emergencyContact ? 'border-rose-500' : 'border-slate-100'} focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black tracking-widest transition-all`} 
                 />
               </ProfileField>
-
-              <ProfileField label="Kin Email Access" editing={editing} error={errors.emergencyContactEmail}>
+ 
+              <ProfileField label="Identity (Name)" editing={editing} error={errors.emergencyContactName}>
                 <input 
-                  name="emergencyContactEmail" 
-                  value={formData.emergencyContactEmail} 
+                  name="emergencyContactName" 
+                  value={formData.emergencyContactName} 
                   onChange={handleChange} 
-                  placeholder="EMERGENCY@DOMAIN.COM" 
-                  className={`w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border ${errors.emergencyContactEmail ? 'border-rose-500' : 'border-slate-100'} focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black uppercase transition-all`} 
+                  placeholder="FULL NAME OF CONTACT" 
+                  className={`w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border ${errors.emergencyContactName ? 'border-rose-500' : 'border-slate-100'} focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black uppercase transition-all`} 
                 />
               </ProfileField>
             </div>
@@ -452,13 +452,14 @@ function MasterEditPatient() {
 
 function ProfileField({ label, editing, children, error }: any) {
   if (!editing) {
-    let displayValue = (children.props?.value || 'N/A').toString();
-    if (children.props?.name === 'honorific') displayValue = displayValue.toUpperCase();
+    let val = children.props?.value;
+    const isClinical = label.toLowerCase().includes('allergies') || label.toLowerCase().includes('clinical') || label.toLowerCase().includes('history');
+    const displayValue = (val || (isClinical ? 'None' : 'N/A')).toString();
     
     return (
       <div className="space-y-1.5 sm:space-y-2 group/field">
         <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] sm:tracking-[0.2em] ml-1 transition-colors group-hover/field:text-teal-600">{label}</label>
-        <div className="text-[10px] sm:text-[11px] font-black text-slate-900 uppercase bg-slate-50/50 px-4 sm:px-5 py-3 sm:py-4 rounded-xl sm:rounded-2xl border border-slate-100 group-hover/field:bg-slate-50 transition-all truncate">
+        <div className={`text-[10px] sm:text-[11px] font-black text-slate-900 uppercase bg-slate-50/50 px-4 sm:px-5 py-3 sm:py-4 rounded-xl sm:rounded-2xl border border-slate-100 group-hover/field:bg-slate-50 transition-all truncate ${!val ? 'opacity-40' : ''}`}>
           {displayValue}
         </div>
       </div>

@@ -95,7 +95,6 @@ const hospitalAdminMenu: MenuItem[] = [
   },
   { icon: ClipboardCheck, label: "Discharge Audit", path: "/hospital-admin/discharge/history" },
   { icon: Bell, label: "Notice Board", path: "/hospital-admin/announcements" },
-  { icon: QrCode, label: "QR Booking Code", path: "/hospital-admin/qr-generator" },
   {
     icon: Pill,
     label: "Pharmacy Unit",

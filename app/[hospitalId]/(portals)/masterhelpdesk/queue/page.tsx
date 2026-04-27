@@ -18,7 +18,8 @@ import {
     Clock,
     Sun,
     MonitorSmartphone,
-    Building
+    Building,
+    Calendar
 } from "lucide-react";
 import { useMasterQueue, useMasterUpdateAppointmentStatus, useMasterDeleteAppointment } from "@/lib/integrations/hooks";
 import { useParams } from "next/navigation";
@@ -34,12 +35,16 @@ export default function MasterQueuePage() {
     const params = useParams();
     const hospitalId = params.hospitalId as string;
     
-    // Fetch today's appointments
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    
+    // Fetch appointments for selected date
     const { data: appointmentsData, isLoading, isFetching, refetch } = useMasterQueue(
         1,
         500, // High limit for complete table
         undefined,
-        hospitalId
+        hospitalId,
+        selectedDate,
+        selectedDate
     );
 
     const updateStatusMutation = useMasterUpdateAppointmentStatus();
@@ -78,17 +83,17 @@ export default function MasterQueuePage() {
         let list = [...appointments];
 
         // 1. Status Filtering
-        if (statusFilter === 'consulting') {
-            list = list.filter((apt: any) => apt.status === 'in-progress');
-        } else if (statusFilter === 'completed') {
-            list = list.filter((apt: any) => apt.status === 'completed');
-        } else {
-            list = list.filter((apt: any) => {
-                const s = (apt.status || "").toLowerCase();
-                if (statusFilter === 'all') return s !== "completed" && s !== "cancelled";
-                return true; 
-            });
-        }
+        list = list.filter((apt: any) => {
+            const s = (apt.status || "").toLowerCase();
+            if (statusFilter === 'consulting') {
+                return s === 'in-progress';
+            }
+            if (statusFilter === 'completed') {
+                return s === 'completed';
+            }
+            // By default (Active), show only pending/in-progress
+            return s !== "completed" && s !== "cancelled";
+        });
 
         // 2. Time Filtering
         if (timeFilter !== 'all') {
@@ -187,15 +192,27 @@ export default function MasterQueuePage() {
 
             {/* Responsive Filter Toolbar */}
             <div className="flex flex-col gap-3">
-                <div className="relative group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                    <input 
-                        type="text" 
-                        placeholder="SEARCH PATIENT, MRN, DR..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-bold text-slate-700 uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 transition-all outline-none"
-                    />
+                <div className="flex flex-col lg:flex-row items-center gap-3">
+                    <div className="relative group w-full lg:max-w-xl">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input 
+                            type="text" 
+                            placeholder="SEARCH PATIENT, MRN, DR..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-bold text-slate-700 uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 transition-all outline-none"
+                        />
+                    </div>
+                    
+                    <div className="relative group w-full lg:w-52">
+                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500" size={14} />
+                        <input 
+                            type="date" 
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="w-full pl-11 pr-8 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black text-slate-700 uppercase focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 transition-all outline-none cursor-pointer"
+                        />
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -226,7 +243,7 @@ export default function MasterQueuePage() {
                     <div className="flex bg-white p-1 rounded-2xl border border-slate-200 shadow-sm">
                         {[
                             { id: 'all', label: 'Active', color: 'indigo' },
-                            { id: 'consulting', label: 'Consult', color: 'amber' },
+                            { id: 'consulting', label: 'Consulting', color: 'amber' },
                             { id: 'completed', label: 'Done', color: 'emerald' },
                         ].map((s) => (
                             <button
