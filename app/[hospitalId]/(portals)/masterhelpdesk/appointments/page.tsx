@@ -105,9 +105,10 @@ export default function MasterAppointmentsLedger() {
                 apt.doctorId === selectedDoctorId || 
                 apt.doctor?._id === selectedDoctorId;
             
+        const isAptOnline = apt.isOnline || apt.source === "online" || apt.type?.toLowerCase() === 'online' || apt.bookingSource?.toLowerCase() === 'online';
             const matchesChannel = channelFilter === "all" || 
-                (channelFilter === "online" && apt.isOnline) || 
-                (channelFilter === "offline" && !apt.isOnline);
+                (channelFilter === "online" && isAptOnline) || 
+                (channelFilter === "offline" && !isAptOnline);
 
             return matchesSearch && matchesStatus && matchesType && matchesDoctor && matchesChannel;
         }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -345,12 +346,23 @@ export default function MasterAppointmentsLedger() {
                                                 </div>
                                             </td>
                                             <td className="p-6 text-center hidden sm:table-cell">
-                                                <span className={`px-2 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border ${
-                                                    apt.type?.toLowerCase() === 'emergency' ? 'bg-rose-50 text-rose-600 border-rose-100' : 
-                                                    apt.type?.toLowerCase() === 'ipd' ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-blue-50 text-blue-600 border-blue-100'
-                                                }`}>
-                                                    {apt.type || "OPD"}
-                                                </span>
+                                                {(() => {
+                                                    const isMobileType = ['consultation', 'follow-up', 'follow up', 'routine'].includes(apt.type?.toLowerCase() || '');
+                                                    const isOnlineType = apt.type?.toLowerCase() === 'online';
+                                                    const isEmergency = apt.type?.toLowerCase() === 'emergency';
+                                                    const isIPD = apt.type?.toLowerCase() === 'ipd';
+                                                    const showOnline = isMobileType || isOnlineType;
+                                                    return (
+                                                        <span className={`px-2 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border ${
+                                                            showOnline ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                            isEmergency ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                                            isIPD ? 'bg-purple-50 text-purple-600 border-purple-100' :
+                                                            'bg-blue-50 text-blue-600 border-blue-100'
+                                                        }`}>
+                                                            {showOnline ? 'Online' : (apt.type || 'OPD')}
+                                                        </span>
+                                                    );
+                                                })()}
                                             </td>
                                             <td className="p-6 text-right">
                                                 <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-[9px] font-black uppercase tracking-widest border ${getStatusColor(apt.status || 'pending')}`}>

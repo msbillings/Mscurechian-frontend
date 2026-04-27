@@ -46,6 +46,7 @@ interface DashboardStats {
     totalRevenue: number;
     onlineCount: number;
     offlineCount: number;
+    emergencyPatients: number;
     hospitalName?: string;
 }
 
@@ -54,8 +55,8 @@ const isSameDay = (d1: any, d2: any) => {
     const date1 = new Date(d1);
     const date2 = new Date(d2);
     return date1.getFullYear() === date2.getFullYear() &&
-           date1.getMonth() === date2.getMonth() &&
-           date1.getDate() === date2.getDate();
+        date1.getMonth() === date2.getMonth() &&
+        date1.getDate() === date2.getDate();
 };
 
 // ── Components ──────────────────────────────────────────────────────────────
@@ -110,7 +111,7 @@ const CountdownTimer = React.memo(({ targetDate, startTime }: { targetDate: stri
 
     if (timeLeft === "IN PROGRESS") return <span className="text-emerald-500 font-black animate-pulse text-[8px] md:text-[10px] uppercase tracking-wider">IN PROGRESS</span>;
     if (timeLeft === "PASSED") return <span className="text-slate-400 font-bold text-[8px] md:text-[10px] uppercase tracking-wider">COMPLETED</span>;
-    
+
     return (
         <span className="text-teal-600 font-black flex items-center gap-1.5 whitespace-nowrap">
             <span className="w-1 h-1 rounded-full bg-teal-500 animate-pulse" />
@@ -119,12 +120,12 @@ const CountdownTimer = React.memo(({ targetDate, startTime }: { targetDate: stri
     );
 });
 
-const StatCard = React.memo(function StatCard({ 
-    icon, 
-    title, 
-    value, 
-    trend, 
-    color, 
+const StatCard = React.memo(function StatCard({
+    icon,
+    title,
+    value,
+    trend,
+    color,
     path,
     showFilter,
     filterValue,
@@ -149,7 +150,7 @@ const StatCard = React.memo(function StatCard({
     };
 
     return (
-        <div 
+        <div
             onClick={() => path && !showFilter && router.push(path)}
             className={`bg-white p-4 rounded-2xl border border-slate-100 shadow-sm group flex flex-col gap-3 transition-all duration-200 ${path && !showFilter ? 'cursor-pointer hover:border-teal-500/30 hover:shadow-md' : ''}`}
         >
@@ -167,11 +168,10 @@ const StatCard = React.memo(function StatCard({
                                         e.stopPropagation();
                                         onFilterChange?.(mode as any);
                                     }}
-                                    className={`px-2 py-1 rounded-md text-[7px] font-black uppercase tracking-widest transition-all ${
-                                        filterValue === mode 
-                                            ? 'bg-white text-slate-900 shadow-sm' 
+                                    className={`px-2 py-1 rounded-md text-[7px] font-black uppercase tracking-widest transition-all ${filterValue === mode
+                                            ? 'bg-white text-slate-900 shadow-sm'
                                             : 'text-slate-400 hover:text-slate-600'
-                                    }`}
+                                        }`}
                                 >
                                     {mode}
                                 </button>
@@ -191,12 +191,12 @@ const StatCard = React.memo(function StatCard({
                     <div className="flex items-center gap-2">
                         <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{trend}</p>
                         {path && showFilter && (
-                             <button 
+                            <button
                                 onClick={() => router.push(path)}
                                 className="p-1 hover:bg-slate-100 rounded-md text-slate-400 hover:text-teal-600 transition-all"
-                             >
+                            >
                                 <ArrowRight size={10} />
-                             </button>
+                            </button>
                         )}
                     </div>
                 </div>
@@ -229,8 +229,8 @@ const OnlineAdmissionsTable = React.memo(({ appointments, onCheckIn }: { appoint
                                             {sanitizePatientName(apt.patientName)?.[0]}
                                         </div>
                                         <div>
-                                            <div className="text-slate-900 text-xs font-black uppercase tracking-tight">{sanitizePatientName(apt.patientName)}</div>
-                                            <div className="text-slate-400 text-[9px] font-bold uppercase mt-0.5">{apt.mrn || 'MOB-PENDING'}</div>
+                                            <div className="text-slate-900 text-xs font-black uppercase tracking-tight">{sanitizePatientName(apt.patientName || apt.patient?.name || apt.patientDetails?.name)}</div>
+                                            <div className="text-slate-400 text-[9px] font-bold uppercase mt-0.5">{apt.mrn || apt.patient?.mrn || apt.patientDetails?.mrn || 'MOB-PENDING'}</div>
                                         </div>
                                     </div>
                                 </td>
@@ -240,9 +240,9 @@ const OnlineAdmissionsTable = React.memo(({ appointments, onCheckIn }: { appoint
                                         <div>
                                             <div className="text-slate-900 text-xs font-black">{apt.time}</div>
                                             <div className="text-[9px] font-bold mt-0.5 uppercase flex items-center gap-2">
-                                                <CountdownTimer 
-                                                    targetDate={apt.date} 
-                                                    startTime={apt.startTime || apt.time.split(' - ')[0]} 
+                                                <CountdownTimer
+                                                    targetDate={apt.date}
+                                                    startTime={apt.startTime || apt.time.split(' - ')[0]}
                                                 />
                                             </div>
                                         </div>
@@ -260,9 +260,9 @@ const OnlineAdmissionsTable = React.memo(({ appointments, onCheckIn }: { appoint
                                             <CheckCircle2 size={12} className="text-teal-500" />
                                             {apt.status}
                                         </div>
-                                        
+
                                         {['booked', 'confirmed', 'arrived', 'pending'].includes(apt.status?.toLowerCase()) && (
-                                            <button 
+                                            <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     onCheckIn(apt);
@@ -351,8 +351,9 @@ export default function MasterDashboard() {
         totalRevenue: 0,
         onlineCount: 0,
         offlineCount: 0,
+        emergencyPatients: 0,
     });
-    
+
     const [doctors, setDoctors] = useState<HelpdeskDoctor[]>([]);
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
@@ -375,7 +376,7 @@ export default function MasterDashboard() {
 
             const docList = Array.isArray(docs) ? docs : (docs?.doctors || docs?.data || []);
             setDoctors(docList);
-            
+
             if (dashboardData) {
                 const aptList = dashboardData.appointments || [];
                 setStats({
@@ -387,6 +388,7 @@ export default function MasterDashboard() {
                     totalRevenue: dashboardData.stats?.revenue || 0,
                     onlineCount: dashboardData.stats?.onlineAppointments || 0,
                     offlineCount: dashboardData.stats?.offlineAppointments || 0,
+                    emergencyPatients: dashboardData.stats?.emergencyPatients || 0,
                     hospitalName: profile?.hospital?.name
                 });
                 setAppointments(aptList);
@@ -413,13 +415,13 @@ export default function MasterDashboard() {
     const filteredStats = useMemo(() => {
         const today = new Date();
         const todayApts = appointments.filter(a => isSameDay(a.date, today));
-        
+
         let filteredToday = todayApts;
         if (protocolFilter === 'online') filteredToday = todayApts.filter(a => a.isOnline);
         if (protocolFilter === 'offline') filteredToday = todayApts.filter(a => !a.isOnline);
-        
+
         const completed = filteredToday.filter(a => a.status?.toLowerCase() === 'completed');
-        
+
         // Sync revenue with protocol filter
         let revenue = stats.totalRevenue;
         if (protocolFilter === 'online') revenue = stats.onlineRevenue;
@@ -445,27 +447,30 @@ export default function MasterDashboard() {
 
     // ── Filtering ──────────────────────────────────────────────────────────
     const { offlineAppointments, onlineAppointments } = useMemo(() => {
-        // Filter for the bottom "Appointment Ledger"
+        // Filter for the bottom "Appointment Ledger" — OFFLINE only
         const offlineFiltered = appointments.filter(apt => {
-            // Protocol Filter Sync
-            if (protocolFilter === 'online' && !apt.isOnline) return false;
-            if (protocolFilter === 'offline' && apt.isOnline) return false;
+            const isAptOnline = apt.isOnline || (apt as any).source === "online" || apt.type?.toLowerCase() === 'online' || apt.bookingSource?.toLowerCase() === 'online';
+            // Only offline appointments in Session Live / History Registry
+            if (isAptOnline) return false;
 
-            const matchesSearch = !searchQuery || apt.patientName?.toLowerCase().includes(searchQuery.toLowerCase()) || apt.mrn?.toLowerCase().includes(searchQuery.toLowerCase());
-            const status = apt.status?.toLowerCase();
-            const matchesTab = activeTab === 'active' 
-                ? ['confirmed', 'in-progress', 'booked', 'pending', 'arrived', 'waiting', 'scheduled'].includes(status) 
+            const patientNameStr = apt.patientName || apt.patient?.name || apt.patientDetails?.name || "";
+            const matchesSearch = !searchQuery || patientNameStr.toLowerCase().includes(searchQuery.toLowerCase()) || apt.mrn?.toLowerCase().includes(searchQuery.toLowerCase()) || apt.patient?.mrn?.toLowerCase().includes(searchQuery.toLowerCase());
+            const status = (apt.status || "").toLowerCase();
+            const matchesTab = activeTab === 'active'
+                ? ['confirmed', 'in-progress', 'booked', 'pending', 'arrived', 'waiting', 'scheduled'].includes(status)
                 : ['completed', 'cancelled'].includes(status);
             return matchesSearch && matchesTab;
         });
 
         // Filter for the top "Digital Front Door" (Online)
         const onlineFiltered = appointments.filter(apt => {
-            if (!apt.isOnline) return false;
+            const isAptOnline = apt.isOnline || (apt as any).source === "online" || apt.type?.toLowerCase() === 'online' || apt.bookingSource?.toLowerCase() === 'online';
+            if (!isAptOnline) return false;
             // Sync with global protocol filter
             if (protocolFilter === 'offline') return false;
-            
-            const matchesSearch = !searchQuery || apt.patientName?.toLowerCase().includes(searchQuery.toLowerCase()) || apt.mrn?.toLowerCase().includes(searchQuery.toLowerCase());
+
+            const patientNameStr = apt.patientName || apt.patient?.name || apt.patientDetails?.name || "";
+            const matchesSearch = !searchQuery || patientNameStr.toLowerCase().includes(searchQuery.toLowerCase()) || apt.mrn?.toLowerCase().includes(searchQuery.toLowerCase()) || apt.patient?.mrn?.toLowerCase().includes(searchQuery.toLowerCase());
             const matchesDate = isSameDay(apt.date, selectedOnlineDate);
             return matchesSearch && matchesDate;
         });
@@ -543,37 +548,11 @@ export default function MasterDashboard() {
             </div>
 
             {/* STATS GRID */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <StatCard 
-                    icon={<Users />} 
-                    title="Total Patients" 
-                    value={stats.totalPatients} 
-                    trend="+12.5% vs Prev Month" 
-                    color="slate" 
-                    path={`/${hospitalId}/masterhelpdesk/patients`} 
-                />
-                <StatCard 
-                    icon={<CalendarCheck />} 
-                    title="Today's Appointments" 
-                    value={filteredStats.today} 
-                    trend={filteredStats.revenue > 0 ? `₹${filteredStats.revenue.toLocaleString()} Revenue` : "Active Live Queue"} 
-                    color="teal" 
-                    path={`/${hospitalId}/masterhelpdesk/queue`} 
-                    showFilter
-                    filterValue={protocolFilter}
-                    onFilterChange={setProtocolFilter}
-                />
-                <StatCard 
-                    icon={<CheckCircle2 />} 
-                    title="Completed Appointments" 
-                    value={filteredStats.completed} 
-                    trend={filteredStats.revenue > 0 ? `₹${filteredStats.revenue.toLocaleString()} Revenue` : "Archived Success"} 
-                    color="emerald" 
-                    path={`/${hospitalId}/masterhelpdesk/transactions`} 
-                    showFilter
-                    filterValue={protocolFilter}
-                    onFilterChange={setProtocolFilter}
-                />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatCard icon={<Users />} title="Total Registries" value={stats.totalPatients} color="slate" />
+                <StatCard icon={<CalendarCheck />} title="Today's Sessions" value={stats.todayPatients} color="teal" />
+                <StatCard icon={<Activity />} title="Emergency Triage" value={stats.emergencyPatients} color="rose" />
+                <StatCard icon={<CheckCircle2 />} title="Completed Manifests" value={stats.completedAppointments} color="emerald" />
             </div>
 
             {/* ONLINE APPOINTMENTS SECTION - LIST VIEW & FILTERS */}
@@ -581,7 +560,7 @@ export default function MasterDashboard() {
                 <div className="absolute top-0 right-0 p-12 opacity-[0.02] pointer-events-none">
                     <Zap size={240} className="text-teal-600" />
                 </div>
-                
+
                 <div className="relative z-10">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
                         <div className="flex items-center gap-5">
@@ -605,16 +584,15 @@ export default function MasterDashboard() {
                                 d.setDate(d.getDate() + i);
                                 const dateStr = d.toDateString();
                                 const isSelected = selectedOnlineDate === dateStr;
-                                
+
                                 return (
-                                    <button 
+                                    <button
                                         key={i}
                                         onClick={() => setSelectedOnlineDate(dateStr)}
-                                        className={`flex flex-col items-center min-w-[60px] py-1.5 px-3 rounded-2xl border transition-all active:scale-95 ${
-                                            isSelected 
-                                            ? 'bg-teal-600 border-teal-500 text-white shadow-lg shadow-teal-500/20' 
-                                            : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-teal-200 hover:text-teal-600'
-                                        }`}
+                                        className={`flex flex-col items-center min-w-[60px] py-1.5 px-3 rounded-2xl border transition-all active:scale-95 ${isSelected
+                                                ? 'bg-teal-600 border-teal-500 text-white shadow-lg shadow-teal-500/20'
+                                                : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-teal-200 hover:text-teal-600'
+                                            }`}
                                     >
                                         <span className="text-[7px] font-black uppercase tracking-widest">{d.toLocaleDateString('en-US', { weekday: 'short' })}</span>
                                         <span className="text-sm font-black mt-0.5">{d.getDate()}</span>
@@ -625,9 +603,9 @@ export default function MasterDashboard() {
                     </div>
 
                     {/* Table-like List */}
-                    <OnlineAdmissionsTable 
-                        appointments={onlineAppointments} 
-                        onCheckIn={handleCheckIn} 
+                    <OnlineAdmissionsTable
+                        appointments={onlineAppointments}
+                        onCheckIn={handleCheckIn}
                     />
 
                     {/* Proper Pagination */}
@@ -683,11 +661,11 @@ export default function MasterDashboard() {
                             {displayAppointments.length > 0 ? (
                                 <div className="divide-y divide-slate-50">
                                     {displayAppointments.map((apt: any, idx) => {
-                                        const patientName = sanitizePatientName(apt.patient?.name || apt.patientName);
-                                        const mrn = apt.mrn || (apt as any).patientDetails?.mrn || 'MRN-PENDING';
-                                        const age = (apt as any).patientDetails?.age || (apt as any).patient?.age || '--';
-                                        const gender = (apt as any).patientDetails?.gender || (apt as any).patient?.gender || '--';
-                                        
+                                        const patientName = sanitizePatientName(apt.patient?.name || apt.patientDetails?.name || apt.patientName);
+                                        const mrn = apt.mrn || apt.patient?.mrn || (apt as any).patientDetails?.mrn || 'MRN-PENDING';
+                                        const age = apt.age || (apt as any).patient?.age || (apt as any).patientDetails?.age || '--';
+                                        const gender = apt.gender || (apt as any).patient?.gender || (apt as any).patientDetails?.gender || '--';
+
                                         return (
                                             <div key={apt._id || idx} className="group p-4 hover:bg-slate-50 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                                 <div className="flex items-center gap-4">
@@ -698,7 +676,19 @@ export default function MasterDashboard() {
                                                     <div>
                                                         <div className="flex items-center gap-2">
                                                             <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{patientName}</h4>
-                                                            <span className={`text-[7px] font-black px-1.5 py-0.5 rounded uppercase ${(apt as any).type === 'EMERGENCY' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-teal-50 text-teal-600 border border-teal-100'}`}>{(apt as any).type || 'OPD'}</span>
+                                                            {(() => {
+                                                                const aptType = (apt as any).type?.toLowerCase() || '';
+                                                                const isMobileOnline = ['consultation', 'follow-up', 'follow up', 'routine', 'online'].includes(aptType);
+                                                                const isEmergency = aptType === 'emergency';
+                                                                return (
+                                                                    <span className={`text-[7px] font-black px-1.5 py-0.5 rounded uppercase border ${isMobileOnline ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                                            isEmergency ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                                                                'bg-teal-50 text-teal-600 border-teal-100'
+                                                                        }`}>
+                                                                        {isMobileOnline ? 'Online' : ((apt as any).type || 'OPD')}
+                                                                    </span>
+                                                                );
+                                                            })()}
                                                         </div>
                                                         <div className="flex items-center gap-1.5 mt-0.5">
                                                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{mrn}</p>
@@ -713,9 +703,9 @@ export default function MasterDashboard() {
                                                     <div className="text-right">
                                                         <div className="flex items-center justify-end gap-1.5 mb-1">
                                                             <Clock size={10} className="text-teal-500" />
-                                                            <CountdownTimer 
-                                                                targetDate={apt.date} 
-                                                                startTime={apt.startTime || apt.appointmentTime || "09:00 AM"} 
+                                                            <CountdownTimer
+                                                                targetDate={apt.date}
+                                                                startTime={apt.startTime || apt.appointmentTime || "09:00 AM"}
                                                             />
                                                         </div>
                                                         <p className="text-[10px] font-black text-slate-900 uppercase leading-none">{new Date(apt.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</p>
@@ -747,7 +737,7 @@ export default function MasterDashboard() {
                                 </div>
                             )}
                         </div>
-                        
+
                         <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Frontdesk Dashboard Matrix v2.0</p>
                             <button onClick={() => router.push(`/${hospitalId}/masterhelpdesk/appointments`)} className="text-[8px] font-black text-teal-600 uppercase tracking-[0.2em] hover:underline flex items-center gap-1">
