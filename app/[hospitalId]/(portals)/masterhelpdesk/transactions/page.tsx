@@ -24,7 +24,7 @@ import toast from "react-hot-toast";
 import { useRouter, useParams } from "next/navigation";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { useMasterTransactions } from "@/lib/integrations/hooks";
+import { useMasterTransactions, useMasterDashboard } from "@/lib/integrations/hooks";
 import { useDebounce } from "@/hooks/useDebounce";
 
 export default function TransactionsPage() {
@@ -45,6 +45,9 @@ export default function TransactionsPage() {
     const limit = 10;
 
     const debouncedSearch = useDebounce(searchTerm, 500);
+
+    const { data: dashboardData } = useMasterDashboard(hospitalId);
+    const hospitalName = dashboardData?.hospital?.name || "CureChain";
     
     // ✅ RESET PAGE ON FILTER CHANGE: Ensure user doesn't get stuck on an empty high-number page
     React.useEffect(() => {
@@ -155,84 +158,80 @@ export default function TransactionsPage() {
             }
 
             const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet("Transactions");
+            const worksheet = workbook.addWorksheet("Revenue Ledger");
 
-            // Add Report Title
-            worksheet.mergeCells("A1:H1");
-            const titleRow = worksheet.getRow(1);
-            worksheet.getCell("A1").value = "TRANSACTION REVENUE REPORT";
-            titleRow.font = { bold: true, size: 16, color: { argb: "0F172A" } };
-            titleRow.alignment = { vertical: "middle", horizontal: "center" };
-            titleRow.height = 30;
-
-            const periodText = `PERIOD: ${formatDate(exportStartDate)} TO ${formatDate(exportEndDate)}`;
-            const typeText = `TYPE: ${exportType === 'all' ? 'ALL' : exportType.toUpperCase()}`;
-            
-            worksheet.mergeCells("A2:I2");
-            const filterRow = worksheet.getRow(2);
-            worksheet.getCell("A2").value = `${periodText} | ${typeText}`;
-            filterRow.font = { bold: true, size: 11, color: { argb: "475569" } };
-            filterRow.alignment = { vertical: "middle", horizontal: "center" };
-            filterRow.height = 25;
-
-            // Define Headers (Row 3)
-            worksheet.getRow(3).values = [
-                "DATE",
-                "PATIENT NAME",
-                "TRANSACTION ID",
-                "MOBILE",
-                "SERVICE TYPE",
-                "AMOUNT (INR)",
-                "PAYMENT MODE",
-                "STATUS"
-            ];
-
-            // Set column mapping (uses the same columns for addRow logic)
+            // Define Columns First
             worksheet.columns = [
-                { key: "date", width: 20 },
-                { key: "name", width: 25 },
-                { key: "id", width: 25 },
-                { key: "mobile", width: 15 },
-                { key: "type", width: 20 },
-                { key: "amount", width: 15 },
-                { key: "mode", width: 15 },
-                { key: "status", width: 15 }
+                { header: "DATE & TIME", key: "date", width: 22 },
+                { header: "PATIENT IDENTITY", key: "name", width: 28 },
+                { header: "REFERENCE ID", key: "id", width: 24 },
+                { header: "CONTACT", key: "mobile", width: 15 },
+                { header: "SERVICE CATEGORY", key: "type", width: 22 },
+                { header: "REVENUE (INR)", key: "amount", width: 16 },
+                { header: "PAYMENT MODE", key: "mode", width: 18 },
+                { header: "SETTLEMENT", key: "status", width: 15 }
             ];
 
-            // Style Headers (Row 3)
-            const headerRow = worksheet.getRow(3);
-            headerRow.font = { bold: true, color: { argb: "FFFFFF" } };
-            headerRow.fill = {
-                type: "pattern",
-                pattern: "solid",
-                fgColor: { argb: "0F172A" }
-            };
-            headerRow.alignment = { vertical: "middle", horizontal: "center" };
+            // 1. BRANDING HEADER
+            worksheet.mergeCells("A1:H1");
+            const titleCell = worksheet.getCell("A1");
+            titleCell.value = `${hospitalName.toUpperCase()} FINANCIAL REVENUE LEDGER`;
+            titleCell.font = { bold: true, size: 16, color: { argb: "FFFFFF" }, name: 'Arial' };
+            titleCell.alignment = { vertical: "middle", horizontal: "center" };
+            titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "0F172A" } };
+            worksheet.getRow(1).height = 40;
 
-            // Add Data
+            // 2. REPORT METADATA
+            worksheet.mergeCells("A2:H2");
+            const metaCell = worksheet.getCell("A2");
+            const periodText = `PERIOD: ${formatDate(exportStartDate)} TO ${formatDate(exportEndDate)}`;
+            const typeText = `SCOPE: ${exportType === 'all' ? 'FULL INSTITUTIONAL' : exportType.toUpperCase() + ' CHANNEL'}`;
+            const generatedText = `GENERATED ON: ${new Date().toLocaleString()}`;
+            metaCell.value = `${periodText}  |  ${typeText}  |  ${generatedText}`;
+            metaCell.font = { bold: true, size: 10, color: { argb: "475569" } };
+            metaCell.alignment = { vertical: "middle", horizontal: "center" };
+            metaCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "F8FAFC" } };
+            worksheet.getRow(2).height = 25;
+
+            // 3. TABLE HEADERS (Row 4 - leaving a gap)
+            worksheet.getRow(3).height = 10; // Spacer
+            const headerRow = worksheet.getRow(4);
+            headerRow.values = worksheet.columns?.map(c => c.header) || [];
+            headerRow.eachCell((cell) => {
+                cell.font = { bold: true, color: { argb: "FFFFFF" }, size: 11 };
+                cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "334155" } };
+                cell.alignment = { vertical: "middle", horizontal: "center" };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'medium' },
+                    right: { style: 'thin' }
+                };
+            });
+            headerRow.height = 30;
+
+            // 4. DATA POPULATION
             exportData.forEach((tx: any, index: number) => {
-                if (index === 0) console.log("DEBUG: EXPORT TRANSACTION OBJECT", tx);
-                // Safe date handling
                 const txDate = tx.date || tx.createdAt || tx.transactionTime;
                 const formattedDate = txDate
-                    ? new Date(txDate).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    ? new Date(txDate).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).toUpperCase()
                     : 'N/A';
 
-                // Map transaction type
                 const typeMapping: Record<string, string> = {
-                    'appointment_booking': 'OPD Consultation',
-                    'opd': 'OPD Consultation',
-                    'ipd': 'IPD Admission',
-                    'ipd_advance': 'IPD Advance Payment',
-                    'ipd_final_settlement': 'IPD Final Settlement',
-                    'discharge': 'Discharge Settlement'
+                    'appointment_booking': 'OPD CONSULTATION',
+                    'opd': 'OPD CONSULTATION',
+                    'consultation': 'OPD CONSULTATION',
+                    'ipd': 'IPD ADMISSION',
+                    'ipd_advance': 'IPD ADVANCE',
+                    'ipd_final_settlement': 'IPD SETTLEMENT',
+                    'discharge': 'DISCHARGE DUES'
                 };
                 const rawType = tx.type || 'appointment_booking';
                 const serviceType = typeMapping[rawType.toLowerCase()] || rawType.toUpperCase();
 
                 const txId = tx.transactionId || tx.receiptNumber || tx.invoiceNumber || tx.referenceId?.appointmentId || tx.referenceId?.transactionId || tx.referenceId?.admissionId || (tx.patientMRN && tx.patientMRN !== 'Resolving...' ? `#${tx.patientMRN}` : "—");
 
-                worksheet.addRow({
+                const row = worksheet.addRow({
                     date: formattedDate,
                     name: (
                         tx.patientName || 
@@ -241,9 +240,9 @@ export default function TransactionsPage() {
                         getSafeName(tx.referenceId) || 
                         getSafeName(tx.referenceId?.patient) || 
                         getSafeName(tx.patientId) ||
-                        "Unknown"
+                        "UNKNOWN"
                     ).toUpperCase(),
-                    id: txId ? txId.toUpperCase() : "—",
+                    id: (txId || "—").toUpperCase(),
                     mobile: (
                         tx.patientMobile || 
                         getSafeMobile(tx.patient) || 
@@ -257,59 +256,109 @@ export default function TransactionsPage() {
                     mode: (tx.paymentMethod || tx.paymentMode || "CASH").toUpperCase(),
                     status: tx.status.toUpperCase()
                 });
+
+                // Styling row
+                row.eachCell((cell, colNumber) => {
+                    cell.font = { size: 10, color: { argb: "1E293B" } };
+                    cell.alignment = { vertical: "middle", horizontal: colNumber === 6 ? "right" : "left" };
+                    if (index % 2 === 0) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } } as ExcelJS.Fill;
+                    }
+                    if (colNumber === 8) { // Status column
+                        const isPaid = cell.value === "PAID" || cell.value === "COMPLETED";
+                        cell.font = { bold: true, color: { argb: isPaid ? "059669" : "DC2626" }, size: 9 };
+                        cell.alignment = { vertical: "middle", horizontal: "center" };
+                    }
+                });
             });
 
-            // Summary Row
-            const totalAmount = exportData.reduce((sum: number, tx: any) => sum + (tx.amount || 0), 0);
+            // 5. SUMMARY DASHBOARD
+            worksheet.addRow({}); // Spacer
+            const lastRowNum = worksheet.lastRow?.number || 0;
+            const summaryStartRow = lastRowNum + 1;
             
-            // Calculate detailed stats for Excel
-            const excelStats = exportData.reduce((acc: any, tx: any) => {
-                const mode = (tx.paymentMethod || tx.paymentMode || "CASH").toUpperCase();
+            worksheet.mergeCells(`A${summaryStartRow}:H${summaryStartRow}`);
+            const summaryTitle = worksheet.getCell(`A${summaryStartRow}`);
+            summaryTitle.value = "FINANCIAL PERFORMANCE SUMMARY";
+            summaryTitle.font = { bold: true, size: 12, color: { argb: "FFFFFF" } };
+            summaryTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "334155" } };
+            summaryTitle.alignment = { horizontal: "center" };
+
+            // Accurate Calculations
+            const stats = exportData.reduce((acc: any, tx: any) => {
+                const rawMethod = (tx.paymentMethod || tx.paymentMode || 'CASH').toUpperCase();
+                const txType = (tx.type || 'appointment_booking').toLowerCase();
                 const amount = tx.amount || 0;
-                const isOnline = ["UPI", "CARD", "ONLINE", "NETBANKING", "RAZORPAY"].includes(mode);
+
+                // Sync with UI categorization logic
+                const isOfflineCategory = ['CASH', 'OFFLINE'].includes(rawMethod) ||
+                    ['appointment_booking', 'opd', 'consultation', 'opd_consultation'].includes(txType);
                 
-                if (isOnline) {
-                    acc.onlineCount++;
-                    acc.onlineRevenue += amount;
-                } else {
-                    acc.offlineCount++;
+                if (isOfflineCategory) {
                     acc.offlineRevenue += amount;
+                    acc.offlineCount++;
+                } else {
+                    acc.onlineRevenue += amount;
+                    acc.onlineCount++;
                 }
 
-                if (mode === "CASH") acc.cashRevenue += amount;
-                if (mode === "UPI") acc.upiRevenue += amount;
-                if (mode === "CARD") acc.cardRevenue += amount;
+                if (rawMethod === "CASH") acc.cashRevenue += amount;
+                else if (["UPI", "GPAY", "PHONEPE"].includes(rawMethod)) acc.upiRevenue += amount;
+                else if (["CARD", "VISA", "MASTERCARD"].includes(rawMethod)) acc.cardRevenue += amount;
+                else acc.otherRevenue += amount;
 
+                acc.totalRevenue += amount;
                 return acc;
-            }, { onlineCount: 0, offlineCount: 0, onlineRevenue: 0, offlineRevenue: 0, cashRevenue: 0, upiRevenue: 0, cardRevenue: 0 });
+            }, { 
+                totalRevenue: 0, offlineRevenue: 0, onlineRevenue: 0, 
+                offlineCount: 0, onlineCount: 0,
+                cashRevenue: 0, upiRevenue: 0, cardRevenue: 0, otherRevenue: 0 
+            });
 
-            worksheet.addRow({});
-            worksheet.addRow({ mode: "TOTAL REVENUE", amount: totalAmount }).font = { bold: true };
-            
-            worksheet.addRow({});
-            worksheet.addRow({ name: "PAYMENT BREAKDOWN" }).font = { bold: true, underline: true };
-            
-            worksheet.addRow({ name: "OFFLINE TRANSACTIONS", id: excelStats.offlineCount });
-            worksheet.addRow({ name: "ONLINE TRANSACTIONS", id: excelStats.onlineCount });
-            
-            worksheet.addRow({});
-            worksheet.addRow({ name: "CASH REVENUE", amount: excelStats.cashRevenue });
-            worksheet.addRow({ name: "UPI REVENUE", amount: excelStats.upiRevenue });
-            worksheet.addRow({ name: "CARD REVENUE", amount: excelStats.cardRevenue });
-            
-            worksheet.addRow({});
-            worksheet.addRow({ name: "OFFLINE TOTAL", amount: excelStats.offlineRevenue }).font = { bold: true };
-            worksheet.addRow({ name: "ONLINE TOTAL", amount: excelStats.onlineRevenue }).font = { bold: true };
+            const summaryRows = [
+                ["", "", "", "", "GROSS TOTAL REVENUE", stats.totalRevenue, "", ""],
+                ["", "", "", "", "OFFLINE CHANNEL TOTAL", stats.offlineRevenue, "COUNT:", stats.offlineCount],
+                ["", "", "", "", "ONLINE CHANNEL TOTAL", stats.onlineRevenue, "COUNT:", stats.onlineCount],
+                ["", "", "", "", "", "", "", ""],
+                ["", "", "", "", "CASH SETTLEMENTS", stats.cashRevenue, "", ""],
+                ["", "", "", "", "UPI/DIGITAL SETTLEMENTS", stats.upiRevenue, "", ""],
+                ["", "", "", "", "CARD SETTLEMENTS", stats.cardRevenue, "", ""],
+                ["", "", "", "", "OTHER SETTLEMENTS", stats.otherRevenue, "", ""]
+            ];
 
-            // Generate File
+            summaryRows.forEach((rowData) => {
+                const row = worksheet.addRow(rowData);
+                const labelCell = row.getCell(5);
+                const valCell = row.getCell(6);
+                
+                if (labelCell.value) {
+                    labelCell.font = { bold: true, size: 10, color: { argb: "475569" } };
+                    valCell.font = { bold: true, size: 11, color: { argb: "0F172A" } };
+                    valCell.numFmt = '"₹"#,##0.00';
+                    
+                    if (labelCell.value.toString().includes("GROSS")) {
+                        labelCell.font = { bold: true, size: 11, color: { argb: "0F172A" } };
+                        labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
+                        valCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
+                    }
+                }
+            });
+
+            // 6. FOOTER / SIGNATURE
+            worksheet.addRow({});
+            worksheet.addRow({});
+            const footerRow = worksheet.addRow(["", "REPORT VERIFIED BY:", "________________________", "", "", "INSTITUTIONAL STAMP:", "________________________", ""]);
+            footerRow.font = { size: 9, italic: true, color: { argb: "64748B" } };
+
+            // Generate and Save
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-            saveAs(blob, `CureChain_Revenue_${exportType.toUpperCase()}_${new Date().toISOString().split('T')[0]}.xlsx`);
+            saveAs(blob, `CureChain_Revenue_Report_${exportType.toUpperCase()}_${new Date().toISOString().split('T')[0]}.xlsx`);
 
-            toast.success(`${exportType.toUpperCase()} manifest exported successfully`);
+            toast.success(`PROFESSIONAL REPORT GENERATED SUCCESSFULLY`);
         } catch (error) {
             console.error("Export Error:", error);
-            toast.error("Export Failed");
+            toast.error("Professional Export Failed");
         } finally {
             setExporting(false);
         }
@@ -516,7 +565,7 @@ export default function TransactionsPage() {
                             {totalPages > 1 && (
                                 <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200">
                                     <button
-                                        onClick={() => setPage((p: number) => Math.max(1, p - 1))}
+                                        onClick={() => setPage((p) => Math.max(1, p - 1))}
                                         disabled={page === 1}
                                         className="p-2 rounded-lg hover:bg-white text-slate-400 hover:text-teal-600 disabled:opacity-20 transition-all"
                                     >
@@ -526,7 +575,7 @@ export default function TransactionsPage() {
                                         {page} / {totalPages}
                                     </div>
                                     <button
-                                        onClick={() => setPage((p: number) => Math.min(totalPages, p + 1))}
+                                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                                         disabled={page === totalPages}
                                         className="p-2 rounded-lg hover:bg-white text-slate-400 hover:text-teal-600 disabled:opacity-20 transition-all"
                                     >
