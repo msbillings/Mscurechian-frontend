@@ -1,6 +1,6 @@
 import {
   HELPDESK_ENDPOINTS,
-  MASTERHELPDESK_ENDPOINTS,
+  MASTER_HELPDESK_ENDPOINTS,
   BOOKING_ENDPOINTS,
   DOCTOR_ENDPOINTS,
   TRANSIT_ENDPOINTS,
@@ -41,7 +41,7 @@ export const helpdeskService = {
    * Get master helpdesk profile information
    * @returns Profile data 
    */
-  getMasterMe: () => apiClient<HelpdeskProfile>(MASTERHELPDESK_ENDPOINTS.ME),
+  getMasterMe: () => apiClient<HelpdeskProfile>(MASTER_HELPDESK_ENDPOINTS.ME),
 
   /**
    * Update helpdesk profile
@@ -58,7 +58,7 @@ export const helpdeskService = {
    * @param data Updated profile information
    */
   updateMasterProfile: (data: Partial<HelpdeskProfile>) =>
-    apiClient<HelpdeskProfile>(MASTERHELPDESK_ENDPOINTS.ME, {
+    apiClient<HelpdeskProfile>(MASTER_HELPDESK_ENDPOINTS.ME, {
       method: "PUT",
       body: JSON.stringify(data),
     }),
@@ -266,6 +266,28 @@ export const helpdeskService = {
     if (date) query += `&date=${date}`;
     if (channel && channel !== 'all') query += `&channel=${channel}`;
     if (hospitalId) query += `&hospitalId=${hospitalId}`;
+    return apiClient<any>(query);
+  },
+
+  /**
+   * Get global master queue for the helpdesk (includes offline + online)
+   * @returns List of appointments
+   */
+  getMasterQueue: (
+    page: number = 1,
+    limit: number = 10,
+    hospitalId?: string,
+    startDate?: string,
+    endDate?: string,
+    status?: string,
+    doctorId?: string
+  ) => {
+    let query = `${MASTER_HELPDESK_ENDPOINTS.QUEUE}?page=${page}&limit=${limit}`;
+    if (hospitalId) query += `&hospitalId=${hospitalId}`;
+    if (startDate) query += `&startDate=${startDate}`;
+    if (endDate) query += `&endDate=${endDate}`;
+    if (status) query += `&status=${status}`;
+    if (doctorId) query += `&doctorId=${doctorId}`;
     return apiClient<any>(query);
   },
 

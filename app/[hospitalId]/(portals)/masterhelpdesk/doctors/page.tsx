@@ -85,7 +85,7 @@ function MasterHelpdeskDoctors() {
       && (!filterSpecialty || d.specialties?.includes(filterSpecialty));
   }), [doctors, searchTerm, filterSpecialty]);
 
-  if (loading && !doctors.length) return <div className="p-6"><RegistrySkeleton gridCol={3} count={6} /></div>;
+  if (loading && !doctors.length) return <div className="pF-6"><RegistrySkeleton gridCol={3} count={6} /></div>;
 
   return (
     <div className="space-y-6 min-h-screen p-2 md:p-6 pb-28 md:pb-6">
@@ -102,7 +102,7 @@ function MasterHelpdeskDoctors() {
           <p className="text-xs md:text-sm text-slate-400 mt-0.5">{doctors.length} registered doctor{doctors.length !== 1 ? "s" : ""}</p>
         </div>
         <button onClick={() => router.push(getPath('/masterhelpdesk/doctors/create'))}
-          className="flex items-center gap-1.5 md:gap-2 px-3 md:px-5 py-2 md:py-2.5 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all shadow-lg shadow-teal-500/20 shrink-0">
+          className="flex items-center gap-1.5 md:gap-2 px-3 md:px-5 py-2 md:py-2.5 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all  shrink-0">
           <Plus size={14} strokeWidth={3} /> <span className="hidden sm:inline">Add Doctor</span><span className="sm:hidden">Add Doctor</span>
         </button>
       </div>

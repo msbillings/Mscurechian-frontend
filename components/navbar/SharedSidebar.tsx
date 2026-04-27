@@ -287,23 +287,7 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
                     })}
                 </nav>
 
-                {/* Footer */}
-                <div className="p-3 border-t border-slate-100 overflow-hidden shrink-0">
-                    <div className="bg-slate-50 p-2.5 rounded-2xl flex items-center gap-3 border border-slate-200/50 overflow-hidden">
-                        <div className="w-8 h-8 rounded-lg bg-white shadow-sm shrink-0 flex items-center justify-center text-primary-theme font-bold text-xs border border-primary-theme-100">
-                            SYS
-                        </div>
-                        <div
-                            className={`
-                                transition-all duration-300 min-w-0 overflow-hidden
-                                ${isExpanded ? "opacity-100 max-w-[180px]" : "opacity-0 max-w-0 lg:opacity-100 lg:max-w-[180px]"}
-                            `}
-                        >
-                            <p className="text-[10px] font-black text-slate-900 uppercase tracking-tighter whitespace-nowrap">System Node</p>
-                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Active Status</p>
-                        </div>
-                    </div>
-                </div>
+
             </aside>
 
             <style jsx global>{`

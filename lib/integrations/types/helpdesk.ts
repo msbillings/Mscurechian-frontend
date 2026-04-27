@@ -32,11 +32,18 @@ export interface HelpdeskAppointment {
   mrn?: string;
   patientId?: string;
   isOnline?: boolean;
+  bookingSource?: string;
   startTime?: string;
   endTime?: string;
+  age?: string | number;
+  gender?: string;
+  patientDetails?: any;
   patient?: {
     _id: string;
     name: string;
+    mrn?: string;
+    age?: string | number;
+    gender?: string;
   };
 }
 
