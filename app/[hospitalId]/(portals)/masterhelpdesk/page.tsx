@@ -551,7 +551,7 @@ export default function MasterDashboard() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard icon={<Users />} title="Total Registries" value={stats.totalPatients} color="slate" />
                 <StatCard icon={<CalendarCheck />} title="Today's Sessions" value={stats.todayPatients} color="teal" />
-                <StatCard icon={<Activity />} title="Emergency Triage" value={stats.emergencyPatients} color="rose" />
+        
                 <StatCard icon={<CheckCircle2 />} title="Completed Manifests" value={stats.completedAppointments} color="emerald" />
             </div>
 
