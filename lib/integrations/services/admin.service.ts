@@ -234,9 +234,10 @@ export const adminService = {
 
   // Legacy hospital update/delete (hospital-admin routes)
   updateHospitalClient: (id: string, data: Partial<CreateHospitalRequest>) =>
-    apiClient<Hospital>(ADMIN_ENDPOINTS.UPDATE_HOSPITAL(id), {
+    apiClient<Hospital>("/hospital/hospital", {
       method: "PUT",
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, hospitalId: id }),
+      headers: { "x-hospital-id": id },
     }),
 
   deleteHospitalClient: (id: string) =>

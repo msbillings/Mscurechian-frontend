@@ -207,7 +207,7 @@ function MasterEditPatient() {
           {!editing ? (
             <button
               onClick={() => setEditing(true)}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 sm:px-8 py-2.5 sm:py-3 bg-teal-600 text-white rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 shadow-xl shadow-teal-500/20 active:scale-95 transition-all"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 sm:px-8 py-2.5 sm:py-3 bg-teal-600 text-white rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 shadow-xl active:scale-95 transition-all"
             >
               <Edit2 size={12} className="sm:w-[14px] sm:h-[14px]" /> Master Edit
             </button>
@@ -259,7 +259,7 @@ function MasterEditPatient() {
                 </select>
               </ProfileField>
 
-              <ProfileField label="Legal Identity" editing={editing} error={errors.name}>
+              <ProfileField label="Name" editing={editing} error={errors.name}>
                 <input 
                   name="name" 
                   value={formData.name} 
@@ -269,7 +269,7 @@ function MasterEditPatient() {
                 />
               </ProfileField>
 
-              <ProfileField label="Primary Uplink (Mobile)" editing={editing} error={errors.mobile}>
+              <ProfileField label="Mobile" editing={editing} error={errors.mobile}>
                 <input 
                   name="mobile" 
                   value={formData.mobile} 
@@ -279,7 +279,7 @@ function MasterEditPatient() {
                 />
               </ProfileField>
 
-              <ProfileField label="Electronic Mail" editing={editing} error={errors.email}>
+              <ProfileField label="Mail" editing={editing} error={errors.email}>
                 <input 
                   name="email" 
                   value={formData.email} 
@@ -289,7 +289,7 @@ function MasterEditPatient() {
                 />
               </ProfileField>
 
-              <ProfileField label="Chronological Origin (DOB)" editing={editing} error={errors.dob}>
+              <ProfileField label="DOB" editing={editing} error={errors.dob}>
                 <input 
                   type="date" 
                   name="dob" 
@@ -299,7 +299,7 @@ function MasterEditPatient() {
                 />
               </ProfileField>
 
-              <ProfileField label="Biological Gender" editing={editing}>
+              <ProfileField label="Gender" editing={editing}>
                 <select 
                   name="gender" 
                   value={formData.gender} 
@@ -312,7 +312,7 @@ function MasterEditPatient() {
                 </select>
               </ProfileField>
 
-              <ProfileField label="Blood Classification" editing={editing}>
+              <ProfileField label="Blood Group" editing={editing}>
                 <select 
                   name="bloodGroup" 
                   value={formData.bloodGroup} 
@@ -324,7 +324,7 @@ function MasterEditPatient() {
               </ProfileField>
 
               <div className="md:col-span-2">
-                <ProfileField label="Institutional Residency (Address)" editing={editing} error={errors.address}>
+                <ProfileField label="Address" editing={editing} error={errors.address}>
                   <textarea 
                     name="address" 
                     value={formData.address} 
@@ -405,7 +405,7 @@ function MasterEditPatient() {
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-6 sm:mb-8">
                 <div>
-                  <p className="text-[8px] sm:text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em]">Institutional Age</p>
+                  <p className="text-[8px] sm:text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em]"> Age</p>
                   <h3 className="text-3xl sm:text-5xl font-black tracking-tighter mt-1 sm:mt-2">{ageData} <span className="text-[10px] sm:text-xs font-bold text-teal-500 uppercase tracking-widest italic ml-1">Years</span></h3>
                 </div>
                 <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/5 rounded-xl sm:rounded-[1.5rem] flex items-center justify-center border border-white/10 group-hover:bg-teal-600 transition-all duration-300">
