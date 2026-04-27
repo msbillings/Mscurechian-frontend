@@ -17,7 +17,9 @@ import {
   ArrowLeft,
   Shield,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  Trash2
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Card, FormInput, Button } from "@/components/admin";
@@ -50,6 +52,36 @@ const HONORIFIC_OPTIONS = [
 
 const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
+function TimePicker({ label, value, onChange }: { label: string; value: string; onChange: (val: string) => void }) {
+  const [time, ampm] = value.split(" ");
+  const [h, m] = time.split(":");
+
+  const update = (newH: string, newM: string, newAmPm: string) => {
+    onChange(`${newH}:${newM} ${newAmPm}`);
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-sm font-medium text-slate-700">{label}</label>
+      <div className="flex gap-1">
+        <select value={h} onChange={(e) => update(e.target.value, m, ampm)}
+          className="w-full px-2 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm">
+          {Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, "0")).map(v => <option key={v} value={v}>{v}</option>)}
+        </select>
+        <select value={m} onChange={(e) => update(h, e.target.value, ampm)}
+          className="w-full px-2 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm">
+          {["00", "15", "30", "45"].map(v => <option key={v} value={v}>{v}</option>)}
+        </select>
+        <select value={ampm} onChange={(e) => update(h, m, e.target.value)}
+          className="w-full px-2 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-bold text-indigo-600">
+          <option value="AM">AM</option>
+          <option value="PM">PM</option>
+        </select>
+      </div>
+    </div>
+  );
+}
+
 function EditDoctor() {
   const router = useRouter();
   const params = useParams();
@@ -67,7 +99,24 @@ function EditDoctor() {
     bio: "", languages: [] as string[], awards: [] as string[]
   });
 
-  const [availability, setAvailability] = useState([{ days: [] as string[], startTime: "09:00", breakStart: "13:00", breakEnd: "14:00", endTime: "17:00" }]);
+  const [availability, setAvailability] = useState([{ days: [] as string[], startTime: "09:00 AM", breakStart: "01:00 PM", breakEnd: "02:00 PM", endTime: "05:00 PM" }]);
+
+  const formatTo12H = (time24: string) => {
+    if (!time24) return "09:00 AM";
+    if (time24.includes("AM") || time24.includes("PM")) return time24;
+    const [h, m] = time24.split(":").map(Number);
+    const ampm = h >= 12 ? "PM" : "AM";
+    const h12 = h % 12 || 12;
+    return `${h12.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")} ${ampm}`;
+  };
+
+  const formatTo24H = (time12: string) => {
+    const [time, ampm] = time12.split(" ");
+    let [h, m] = time.split(":").map(Number);
+    if (ampm === "PM" && h < 12) h += 12;
+    if (ampm === "AM" && h === 12) h = 0;
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+  };
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [errors, setErrors] = useState<Errors>({});
@@ -128,7 +177,13 @@ function EditDoctor() {
       });
 
       if (doctor.availability?.length > 0) {
-        setAvailability(doctor.availability);
+        setAvailability(doctor.availability.map((a: any) => ({
+          ...a,
+          startTime: formatTo12H(a.startTime),
+          endTime: formatTo12H(a.endTime),
+          breakStart: formatTo12H(a.breakStart),
+          breakEnd: formatTo12H(a.breakEnd),
+        })));
       }
     } catch (error) {
       toast.error("Failed to load doctor details");
@@ -172,7 +227,13 @@ function EditDoctor() {
         ...formData,
         consultationFee: parseInt(formData.consultationFee),
         baseSalary: parseInt(formData.baseSalary),
-        availability: availability.filter(slot => slot.days.length > 0),
+        availability: availability.filter(slot => slot.days.length > 0).map(slot => ({
+          ...slot,
+          startTime: formatTo24H(slot.startTime),
+          endTime: formatTo24H(slot.endTime),
+          breakStart: formatTo24H(slot.breakStart),
+          breakEnd: formatTo24H(slot.breakEnd),
+        })),
         address: {
           street: formData.street,
           city: formData.city,
@@ -288,24 +349,47 @@ function EditDoctor() {
           </div>
         </Card>
 
-        <Card title="Schedules" icon={<Clock className="text-orange-500" />}>
-          <div className="p-2 space-y-4">
+        <Card 
+          title="Schedules" 
+          icon={<Clock className="text-orange-500" />}
+          extra={
+            <button type="button" onClick={() => setAvailability([...availability, { days: [], startTime: "09:00", breakStart: "13:00", breakEnd: "14:00", endTime: "17:00" }])}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-colors">
+              <Plus size={14} />
+              Add Shift
+            </button>
+          }
+        >
+          <div className="p-2 space-y-6">
             {availability.map((slot, idx) => (
-              <div key={idx} className="p-4 border border-slate-100 rounded-2xl bg-slate-50/50">
-                <div className="grid grid-cols-7 gap-2 mb-4">
+              <div key={idx} className="p-5 border border-slate-100 rounded-2xl bg-slate-50/50 relative group">
+                {availability.length > 1 && (
+                  <button type="button" onClick={() => setAvailability(availability.filter((_, i) => i !== idx))}
+                    className="absolute -top-2 -right-2 p-1.5 bg-white border border-rose-100 text-rose-500 rounded-lg shadow-sm hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100">
+                    <Trash2 size={14} />
+                  </button>
+                )}
+                <div className="grid grid-cols-7 gap-2 mb-5">
                   {DAYS_OF_WEEK.map(day => (
                     <button key={day} type="button" onClick={() => toggleDay(idx, day)}
-                      className={`py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${slot.days.includes(day) ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400 border border-slate-200'}`}>
+                      className={`py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${slot.days.includes(day) ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-slate-400 border border-slate-200 hover:border-indigo-200'}`}>
                       {day.substring(0, 3)}
                     </button>
                   ))}
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <FormInput label="Start" type="time" value={slot.startTime} onChange={(e) => { const u = [...availability]; u[idx].startTime = e.target.value; setAvailability(u); }} />
-                  <FormInput label="End" type="time" value={slot.endTime} onChange={(e) => { const u = [...availability]; u[idx].endTime = e.target.value; setAvailability(u); }} />
+                  <TimePicker label="Start" value={slot.startTime} onChange={(val) => { const u = [...availability]; u[idx].startTime = val; setAvailability(u); }} />
+                  <TimePicker label="End" value={slot.endTime} onChange={(val) => { const u = [...availability]; u[idx].endTime = val; setAvailability(u); }} />
+                  <TimePicker label="Break Start" value={slot.breakStart} onChange={(val) => { const u = [...availability]; u[idx].breakStart = val; setAvailability(u); }} />
+                  <TimePicker label="Break End" value={slot.breakEnd} onChange={(val) => { const u = [...availability]; u[idx].breakEnd = val; setAvailability(u); }} />
                 </div>
               </div>
             ))}
+            {availability.length === 0 && (
+              <div className="text-center py-10 text-slate-400 text-sm">
+                No active schedules. Click "Add Shift" to configure availability.
+              </div>
+            )}
           </div>
         </Card>
 
