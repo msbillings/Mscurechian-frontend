@@ -45,8 +45,8 @@ export default function MasterAppointmentsLedger() {
     const [statusFilter, setStatusFilter] = useState("all");
     const [typeFilter, setTypeFilter] = useState("all");
     const [selectedDoctorId, setSelectedDoctorId] = useState("all");
-    const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
-    const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
     const [channelFilter, setChannelFilter] = useState("all");
 
     const [page, setPage] = useState(1);
@@ -58,8 +58,8 @@ export default function MasterAppointmentsLedger() {
         limit,
         statusFilter === "all" ? undefined : statusFilter,
         hospitalId,
-        startDate,
-        endDate
+        startDate || undefined,
+        endDate || undefined
     );
 
     // Fetch Doctors for filter

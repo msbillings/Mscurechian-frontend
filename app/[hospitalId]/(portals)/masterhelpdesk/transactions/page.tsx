@@ -45,6 +45,11 @@ export default function TransactionsPage() {
     const limit = 10;
 
     const debouncedSearch = useDebounce(searchTerm, 500);
+    
+    // ✅ RESET PAGE ON FILTER CHANGE: Ensure user doesn't get stuck on an empty high-number page
+    React.useEffect(() => {
+        setPage(1);
+    }, [debouncedSearch, startDate, endDate, paymentModeFilter]);
 
     const formatDate = (dateStr: string) => {
         try {
@@ -336,16 +341,16 @@ export default function TransactionsPage() {
 
     // Calculate stats based on filtered transactions
     const stats = useMemo(() => {
-        // Use global revenue from backend
-        const grossRevenue = totalRevenue;
+        // Use global revenue from backend stats to ensure it doesn't filter out context
+        const grossRevenue = backendStats?.totalRevenue || totalRevenue;
 
-        // Use global total from backend instead of page length
-        const operationVolume = total;
+        // Use global operation volume (Online + Offline) instead of filtered total
+        const operationVolume = (backendStats?.onlineCount || 0) + (backendStats?.offlineCount || 0) || total;
 
-        const quantumDensity = total > 0 ? (totalRevenue / total) : 0;
+        const quantumDensity = operationVolume > 0 ? (grossRevenue / operationVolume) : 0;
 
         return { grossRevenue, operationVolume, quantumDensity };
-    }, [totalRevenue, total]);
+    }, [totalRevenue, total, backendStats]);
 
     const totalPages = Math.ceil(total / limit);
 
@@ -531,8 +536,8 @@ export default function TransactionsPage() {
                             )}
                             
                             <div className="flex flex-col shrink-0">
-                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Active Pool</span>
-                                <span className="text-xs font-black text-teal-600 uppercase tracking-tight">{total} ENTRIES</span>
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Institutional Total</span>
+                                <span className="text-xs font-black text-teal-600 uppercase tracking-tight">{stats.operationVolume} ENTRIES</span>
                             </div>
                         </div>
                     </div>

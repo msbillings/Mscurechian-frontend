@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
     User, Mail, Phone, Briefcase, Award,
     CreditCard, Building, Landmark, Wallet,
     Save, ArrowLeft, Plus, X,
-    Calendar, FileText, MapPin
+    Calendar, FileText, MapPin, QrCode, Copy, Printer
 } from 'lucide-react';
+import QRCode from 'react-qr-code';
 import { toast } from 'react-hot-toast';
 import { helpdeskService } from '@/lib/integrations/services/helpdesk.service';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
@@ -88,6 +89,197 @@ export default function MasterHelpdeskProfileSettings() {
     const [viewer, setViewer] = useState({ isOpen: false, url: '', title: '' });
     const [isIFSCValidating, setIsIFSCValidating] = useState(false);
     const [cropperSrc, setCropperSrc] = useState<string | null>(null);
+    const qrRef = useRef<HTMLDivElement>(null);
+
+    const handlePrintQR = () => {
+        const printWindow = window.open('', '_blank', 'width=800,height=1000');
+        if (!printWindow) return;
+
+        const qrSvg = qrRef.current?.querySelector('svg')?.outerHTML || '';
+        const hospitalName = formData.hospitalName || 'Our Hospital';
+        const hospitalAddress = formData.hospitalAddress || '';
+        const hospitalLogo = formData.profilePic || '';
+
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Print QR - ${hospitalName}</title>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
+                        body {
+                            font-family: 'Outfit', sans-serif;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            min-height: 100vh;
+                            margin: 0;
+                            background-color: #f8fafc;
+                        }
+                        .card {
+                            background: white;
+                            width: 450px;
+                            padding: 60px 40px;
+                            border-radius: 40px;
+                            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+                            text-align: center;
+                            border: 1px solid #e2e8f0;
+                            position: relative;
+                            overflow: hidden;
+                        }
+                        .card::before {
+                            content: '';
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            right: 0;
+                            height: 10px;
+                            background: linear-gradient(90deg, #0d9488, #0ea5e9);
+                        }
+                        .logo {
+                            width: 80px;
+                            height: 80px;
+                            object-fit: cover;
+                            border-radius: 20px;
+                            margin-bottom: 24px;
+                            border: 4px solid #f1f5f9;
+                        }
+                        .hospital-name {
+                            font-size: 28px;
+                            font-weight: 900;
+                            color: #0f172a;
+                            margin: 0 0 8px 0;
+                            letter-spacing: -0.5px;
+                            text-transform: uppercase;
+                        }
+                        .hospital-address {
+                            font-size: 14px;
+                            color: #64748b;
+                            margin-bottom: 40px;
+                            line-height: 1.5;
+                            max-width: 300px;
+                            margin-left: auto;
+                            margin-right: auto;
+                        }
+                        .qr-container {
+                            background: #f8fafc;
+                            padding: 30px;
+                            border-radius: 30px;
+                            display: inline-block;
+                            margin-bottom: 40px;
+                            border: 2px solid #f1f5f9;
+                        }
+                        .qr-container svg {
+                            width: 240px !important;
+                            height: 240px !important;
+                        }
+                        .instruction {
+                            font-size: 18px;
+                            font-weight: 700;
+                            color: #0f172a;
+                            margin-bottom: 12px;
+                        }
+                        .sub-instruction {
+                            font-size: 13px;
+                            color: #94a3b8;
+                            margin-bottom: 40px;
+                            line-height: 1.6;
+                        }
+                        .footer {
+                            border-top: 1px solid #f1f5f9;
+                            padding-top: 24px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 8px;
+                        }
+                        .footer-text {
+                            font-size: 11px;
+                            font-weight: 900;
+                            color: #94a3b8;
+                            text-transform: uppercase;
+                            letter-spacing: 2px;
+                        }
+                        @media print {
+                            @page {
+                                size: portrait;
+                                margin: 0;
+                            }
+                            body { 
+                                background: white !important; 
+                                margin: 0 !important; 
+                                padding: 0 !important; 
+                                -webkit-print-color-adjust: exact;
+                            }
+                            .card { 
+                                box-shadow: none !important; 
+                                border: none !important; 
+                                width: 100vw !important; 
+                                height: 100vh !important; 
+                                border-radius: 0 !important; 
+                                padding: 20px !important; 
+                                margin: 0 !important;
+                                display: flex !important;
+                                flex-direction: column !important;
+                                justify-content: center !important;
+                                align-items: center !important;
+                                page-break-after: avoid !important;
+                                page-break-inside: avoid !important;
+                                overflow: hidden !important;
+                            }
+                            .logo {
+                                width: 70px !important;
+                                height: 70px !important;
+                            }
+                            .hospital-name {
+                                font-size: 24px !important;
+                            }
+                            .hospital-address {
+                                margin-bottom: 20px !important;
+                            }
+                            .qr-container {
+                                padding: 20px !important;
+                                margin-bottom: 20px !important;
+                            }
+                            .qr-container svg {
+                                width: 220px !important;
+                                height: 220px !important;
+                            }
+                            .sub-instruction {
+                                margin-bottom: 20px !important;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="card">
+                        ${hospitalLogo ? `<img src="${hospitalLogo}" class="logo" />` : ''}
+                        <h1 class="hospital-name">${hospitalName}</h1>
+                        <p class="hospital-address">${hospitalAddress}</p>
+                        
+                        <div class="qr-container">
+                            ${qrSvg}
+                        </div>
+                        
+                        <div class="instruction">Scan to Book Appointment</div>
+                        <p class="sub-instruction">Open your camera or CureChain app to scan this QR and book your slot instantly.</p>
+                        
+                        <div class="footer">
+                            <span class="footer-text">Powered by CureChain</span>
+                        </div>
+                    </div>
+                    <script>
+                        window.onload = () => {
+                            setTimeout(() => {
+                                window.print();
+                                setTimeout(() => window.close(), 500);
+                            }, 500);
+                        };
+                    </script>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
 
     const [formData, setFormData] = useState<FormData>({
         // Personal & Account
@@ -417,6 +609,7 @@ export default function MasterHelpdeskProfileSettings() {
         { id: 'professional', label: 'Work & Employment', icon: <Briefcase size={18} /> },
         { id: 'qualifications', label: 'Qualifications', icon: <Award size={18} /> },
         { id: 'bank', label: 'Bank & Payroll', icon: <Landmark size={18} /> },
+        { id: 'qrcode', label: 'Hospital QR', icon: <QrCode size={18} /> },
     ];
 
     return (
@@ -633,6 +826,68 @@ export default function MasterHelpdeskProfileSettings() {
                             </div>
                         </div>
                     ) || <></>}
+
+                    {activeTab === 'qrcode' && (
+                        <div className="space-y-8 animate-in fade-in duration-300">
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                                    <QrCode className="text-teal-500" /> Hospital QR Code
+                                </h3>
+                                <p className="text-sm text-gray-500 mb-8">
+                                    This QR code allows patients to instantly book appointments at <strong>{formData.hospitalName || 'your hospital'}</strong> using the MSCurechain app.
+                                </p>
+
+                                <div className="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border border-dashed border-gray-200 dark:border-gray-800">
+                                    <div ref={qrRef} className="bg-white p-6 rounded-2xl shadow-xl mb-6 border border-gray-100">
+                                        <QRCode
+                                            value={`mscurechain://book?hospitalId=${hospitalId}`}
+                                            size={200}
+                                            fgColor="#0f172a"
+                                            bgColor="#ffffff"
+                                            level="H"
+                                        />
+                                    </div>
+                                    
+                                    <div className="text-center space-y-4 max-w-sm">
+                                        <div className="bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-teal-100 dark:border-teal-900/30 inline-block">
+                                            Ready for Print
+                                        </div>
+                                        <p className="text-xs text-gray-500 font-medium">
+                                            Display this QR code at your front desk or include it in your hospital brochures.
+                                        </p>
+                                        
+                                        <div className="flex gap-3">
+                                            
+                                            <button 
+                                                type="button"
+                                                onClick={handlePrintQR}
+                                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-600 text-white rounded-xl text-xs font-bold hover:bg-teal-700 transition-all active:scale-95 shadow-lg shadow-teal-500/20"
+                                            >
+                                                <Printer size={14} /> Print QR
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(`mscurechain://book?hospitalId=${hospitalId}`);
+                                                    toast.success("Deep link copied!");
+                                                }}
+                                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-all active:scale-95"
+                                            >
+                                                <Copy size={14} /> Copy Link
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-2xl">
+                                    <h4 className="text-xs font-black text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-2">Technical Info</h4>
+                                    <p className="text-[10px] text-blue-600/70 dark:text-blue-400/70 font-mono break-all">
+                                        mscurechain://book?hospitalId={hospitalId}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {activeTab === 'professional' && (
                         <div className="space-y-8 animate-in fade-in duration-300">

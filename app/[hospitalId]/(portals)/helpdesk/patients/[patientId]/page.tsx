@@ -42,7 +42,7 @@ function ViewEditPatient({ params }: { params: Promise<{ patientId: string }> })
     dob: '',
     address: '',
     emergencyContact: '',
-    emergencyContactEmail: '',
+    emergencyContactName: '',
     bloodGroup: 'O+',
     allergies: '',
     medicalHistory: ''
@@ -61,11 +61,11 @@ function ViewEditPatient({ params }: { params: Promise<{ patientId: string }> })
         gender: data.profile?.gender || 'male',
         dob: data.profile?.dob ? new Date(data.profile.dob).toISOString().split('T')[0] : '',
         address: data.profile?.address || '',
-        emergencyContact: data.profile?.alternateNumber || '',
-        emergencyContactEmail: data.profile?.emergencyContactEmail || '',
+        emergencyContact: data.profile?.alternateNumber || data.profile?.emergencyContactPhone || '',
+        emergencyContactName: data.profile?.emergencyContactName || '',
         bloodGroup: data.profile?.bloodGroup || 'O+',
-        allergies: data.profile?.allergies || '',
-        medicalHistory: data.profile?.medicalHistory || ''
+        allergies: data.profile?.allergies || data.profile?.conditions || '',
+        medicalHistory: data.profile?.medicalHistory || data.profile?.notes || ''
       });
     } catch (error: any) {
       toast.error("Manifest retrieval failed");
@@ -296,12 +296,12 @@ function ViewEditPatient({ params }: { params: Promise<{ patientId: string }> })
               <Shield size={16} className="text-rose-600" /> Emergency Protocol
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <ProfileField label="Kin Contact Number" editing={editing} error={errors.emergencyContact}>
+              <ProfileField label="Contact Number" editing={editing} error={errors.emergencyContact}>
                 <input name="emergencyContact" value={formData.emergencyContact} onChange={handleChange} placeholder="10 DIGIT CONTACT" className={`w-full px-4 py-2.5 rounded-xl bg-slate-50 border ${errors.emergencyContact ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-xs font-bold`} />
               </ProfileField>
 
-              <ProfileField label="Kin Email Access" editing={editing} error={errors.emergencyContactEmail}>
-                <input name="emergencyContactEmail" value={formData.emergencyContactEmail} onChange={handleChange} placeholder="CONTACT@EMAIL.COM" className={`w-full px-4 py-2.5 rounded-xl bg-slate-50 border ${errors.emergencyContactEmail ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-xs font-bold`} />
+              <ProfileField label="Identity (Name)" editing={editing} error={errors.emergencyContactName}>
+                <input name="emergencyContactName" value={formData.emergencyContactName} onChange={handleChange} placeholder="FULL NAME OF CONTACT" className={`w-full px-4 py-2.5 rounded-xl bg-slate-50 border ${errors.emergencyContactName ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-xs font-bold`} />
               </ProfileField>
             </div>
           </div>
