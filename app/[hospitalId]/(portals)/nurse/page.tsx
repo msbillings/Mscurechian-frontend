@@ -19,6 +19,7 @@ import { ipdService, staffService } from '@/lib/integrations';
 import toast from 'react-hot-toast';
 import { useTodayStatus, useCheckIn, useCheckOut, useNotifications } from '@/lib/integrations/hooks';
 import { format } from 'date-fns';
+import { AttendanceModal } from '@/components/attendance/AttendanceModal';
 
 export default function NurseDashboard() {
     const [stats, setStats] = useState({
@@ -33,6 +34,7 @@ export default function NurseDashboard() {
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
 
     const { data: attendanceData, refetch: refetchAttendance } = useTodayStatus();
     const checkInMutation = useCheckIn();
@@ -116,9 +118,14 @@ export default function NurseDashboard() {
             await checkInMutation.mutateAsync(undefined);
             toast.success('Shift started');
             refetchAttendance();
+            setIsAttendanceModalOpen(false);
         } catch (e) {
             toast.error('Failed to clock in');
         }
+    };
+
+    const triggerCheckIn = () => {
+        setIsAttendanceModalOpen(true);
     };
 
     const handleCheckOut = async () => {
@@ -158,7 +165,7 @@ export default function NurseDashboard() {
                         <div className="flex items-center gap-2 mr-2 bg-slate-50 p-1 rounded-xl border border-slate-200 shadow-inner">
                             {!todayAttendance?.checkIn ? (
                                 <button
-                                    onClick={handleCheckIn}
+                                    onClick={triggerCheckIn}
                                     disabled={checkInMutation.isPending}
                                     className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-md active:scale-95 disabled:opacity-50 transition-all border border-emerald-500/20"
                                 >
@@ -356,6 +363,11 @@ export default function NurseDashboard() {
                     </div>
                 </div>
             </div>
+            <AttendanceModal 
+                isOpen={isAttendanceModalOpen} 
+                onClose={() => setIsAttendanceModalOpen(false)} 
+                onConfirm={handleCheckIn} 
+            />
         </div>
     );
 }

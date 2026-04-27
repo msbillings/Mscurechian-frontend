@@ -27,6 +27,7 @@ import {
     useTodayStatus,
     useAppointments
 } from "@/lib/integrations/hooks";
+import { AttendanceModal } from "@/components/attendance/AttendanceModal";
 import { HelpdeskDashboardSkeleton } from "@/components/ui/skeletons";
 import { useAuthStore } from "@/stores/authStore";
 import { formatLocalTime } from "@/lib/utils/date-utils";
@@ -69,7 +70,8 @@ function HelpdeskDashboard() {
         return today.toISOString().split('T')[0];
     });
     const [historyPage, setHistoryPage] = useState(1);
-    const itemsPerPage = 10;
+    const [itemsPerPage] = useState(6);
+    const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
 
     // ✅ Smart Date Handlers: Prevent Start > End or End < Start gracefully
     const handleStartDateChange = (val: string) => {
@@ -117,10 +119,15 @@ function HelpdeskDashboard() {
         try {
             await checkInMutation.mutateAsync(undefined);
             toast.success("Clocked in successfully!");
+            setIsAttendanceModalOpen(false);
         } catch (err: any) {
             toast.error(err.message || "Clock-in failed");
         }
     }, [checkInMutation]);
+
+    const triggerCheckIn = useCallback(() => {
+        setIsAttendanceModalOpen(true);
+    }, []);
 
     const handleCheckOut = useCallback(async () => {
         try {
@@ -465,7 +472,7 @@ function HelpdeskDashboard() {
 
                         {!todayAttendance?.checkIn ? (
                             <button
-                                onClick={handleCheckIn}
+                                onClick={triggerCheckIn}
                                 disabled={checkInMutation.isPending || attendanceLoading}
                                 className="flex items-center gap-0.5 px-1.5 sm:px-4 py-1.5 sm:py-2 bg-emerald-600 text-white rounded-lg text-[7.5px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-md active:scale-95 disabled:opacity-50 transition-all border border-emerald-500/20"
                             >
@@ -532,6 +539,12 @@ function HelpdeskDashboard() {
                     </Link>
                 </div>
             </div>
+
+            <AttendanceModal 
+                isOpen={isAttendanceModalOpen} 
+                onClose={() => setIsAttendanceModalOpen(false)} 
+                onConfirm={handleCheckIn} 
+            />
 
             {/* STATS GRID */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 max-w-full mx-auto">

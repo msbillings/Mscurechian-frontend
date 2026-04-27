@@ -240,7 +240,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Import apiClient lazily to avoid circular deps
       const { apiClient } = await import("@/lib/integrations");
       const data = await apiClient<{ valid: boolean; hospitalName?: string }>(
-        `/api/auth/verify-hospital/${hospitalId}`,
+        `/auth/verify-hospital/${hospitalId}`,
         { method: 'GET' }
       );
       return data;
