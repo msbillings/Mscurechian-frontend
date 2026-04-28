@@ -50,7 +50,7 @@ async function handler(
       method: req.method,
       headers: forwardHeaders,
       body: body ? Buffer.from(body) : undefined,
-      // @ts-ignore — Node.js fetch supports this
+      // @ts-expect-error — Node.js fetch supports this
       duplex: "half",
     });
 

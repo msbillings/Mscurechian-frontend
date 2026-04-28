@@ -74,7 +74,7 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
             }
         },
         enabled: !!hospitalId && !isExcluded,
-        staleTime: 1000 * 60 * 30, // 30 minutes cache
+        staleTime: 1000 * 60 * 5, // 5 minutes cache
         retry: 2,
     });
 

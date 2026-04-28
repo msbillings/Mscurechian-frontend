@@ -6,12 +6,13 @@ const MASTER_KEY = ["masterhelpdesk"] as const;
 export const masterHelpdeskKeys = {
   all: MASTER_KEY,
   dashboard: (hospitalId?: string) => [...MASTER_KEY, "dashboard", { hospitalId }] as const,
-  queue: (page: number, limit: number, status?: string, hospitalId?: string, startDate?: string, endDate?: string) => 
-    [...MASTER_KEY, "queue", { page, limit, status, hospitalId, startDate, endDate }] as const,
-  transactions: (page: number, limit: number, hospitalId?: string, startDate?: string, endDate?: string, type?: string, search?: string, paymentMode?: string) => 
-    [...MASTER_KEY, "transactions", { page, limit, hospitalId, startDate, endDate, type, search, paymentMode }] as const,
+  queue: (page: number, limit: number, status?: string, hospitalId?: string, startDate?: string, endDate?: string, doctorId?: string) => 
+    [...MASTER_KEY, "queue", { page, limit, status, hospitalId, startDate, endDate, doctorId }] as const,
+  transactions: (page: number, limit: number, hospitalId?: string, startDate?: string, endDate?: string, type?: string, search?: string, paymentMode?: string, doctorId?: string) => 
+    [...MASTER_KEY, "transactions", { page, limit, hospitalId, startDate, endDate, type, search, paymentMode, doctorId }] as const,
   patients: (page: number, limit: number, search?: string, hospitalId?: string) => 
     [...MASTER_KEY, "patients", { page, limit, search, hospitalId }] as const,
+  doctors: (hospitalId?: string) => [...MASTER_KEY, "doctors", { hospitalId }] as const,
 };
 
 export const useMasterDashboard = (hospitalId?: string) => {
@@ -29,11 +30,12 @@ export const useMasterQueue = (
   status?: string,
   hospitalId?: string,
   startDate?: string,
-  endDate?: string
+  endDate?: string,
+  doctorId?: string
 ) => {
   return useQuery({
-    queryKey: masterHelpdeskKeys.queue(page, limit, status, hospitalId, startDate, endDate),
-    queryFn: () => masterHelpdeskService.getQueue(page, limit, status, hospitalId, startDate, endDate),
+    queryKey: masterHelpdeskKeys.queue(page, limit, status, hospitalId, startDate, endDate, doctorId),
+    queryFn: () => masterHelpdeskService.getQueue(page, limit, status, hospitalId, startDate, endDate, doctorId),
     staleTime: 60 * 1000,
   });
 };
@@ -46,11 +48,12 @@ export const useMasterTransactions = (
   endDate?: string,
   type?: string,
   search?: string,
-  paymentMode?: string
+  paymentMode?: string,
+  doctorId?: string
 ) => {
   return useQuery({
-    queryKey: masterHelpdeskKeys.transactions(page, limit, hospitalId, startDate, endDate, type, search, paymentMode),
-    queryFn: () => masterHelpdeskService.getTransactions(page, limit, hospitalId, startDate, endDate, type, search, paymentMode),
+    queryKey: masterHelpdeskKeys.transactions(page, limit, hospitalId, startDate, endDate, type, search, paymentMode, doctorId),
+    queryFn: () => masterHelpdeskService.getTransactions(page, limit, hospitalId, startDate, endDate, type, search, paymentMode, doctorId),
     staleTime: 5 * 60 * 1000,
   });
 };
@@ -60,6 +63,14 @@ export const useMasterPatients = (page: number = 1, limit: number = 20, search?:
     queryKey: masterHelpdeskKeys.patients(page, limit, search, hospitalId),
     queryFn: () => masterHelpdeskService.getPatients(page, limit, search, hospitalId),
     staleTime: 2 * 60 * 1000,
+  });
+};
+
+export const useMasterDoctors = (hospitalId?: string) => {
+  return useQuery({
+    queryKey: masterHelpdeskKeys.doctors(hospitalId),
+    queryFn: () => masterHelpdeskService.getDoctors(hospitalId),
+    staleTime: 5 * 60 * 1000,
   });
 };
 

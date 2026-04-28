@@ -26,6 +26,7 @@ import {
     AlertCircle,
     Smartphone,
     Thermometer,
+    Shield,
     X
 } from "lucide-react";
 import { helpdeskService, adminService, doctorService, MASTER_HELPDESK_ENDPOINTS, useMasterDashboard } from "@/lib/integrations";
@@ -296,8 +297,13 @@ const OnlineAdmissionsTable = React.memo(({ appointments, onCheckIn }: { appoint
     );
 });
 
-const PhysicianMonitor = React.memo(({ doctors, hospitalId }: { doctors: any[], hospitalId: string }) => {
+const PhysicianMonitor = React.memo(({ doctors, hospitalId, appointments }: { doctors: any[], hospitalId: string, appointments: any[] }) => {
     const router = useRouter();
+
+    const handleDoctorClick = (doctorId: string) => {
+        const today = new Date().toISOString().split('T')[0];
+        router.push(`/${hospitalId}/masterhelpdesk/appointments?doctorId=${doctorId}&startDate=${today}&endDate=${today}`);
+    };
     return (
         <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm flex flex-col h-[500px]">
             <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
@@ -308,7 +314,11 @@ const PhysicianMonitor = React.memo(({ doctors, hospitalId }: { doctors: any[], 
             </div>
             <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
                 {doctors.map((doc, idx) => (
-                    <div key={doc._id} className="p-3.5 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all group">
+                    <div 
+                        key={doc._id} 
+                        onClick={() => handleDoctorClick(doc._id)}
+                        className="p-3.5 rounded-2xl hover:bg-teal-50/50 border border-transparent hover:border-teal-100 transition-all group cursor-pointer"
+                    >
                         <div className="flex items-center gap-4">
                             <div className="relative">
                                 <div className="w-11 h-11 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-lg overflow-hidden group-hover:scale-105 transition-transform">
@@ -321,7 +331,12 @@ const PhysicianMonitor = React.memo(({ doctors, hospitalId }: { doctors: any[], 
                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{doc.specialties?.[0] || 'Clinician'}</p>
                             </div>
                             <div className="text-right">
-                                <p className="text-[10px] font-black text-slate-900 leading-none">{Math.floor(Math.random() * 8)}</p>
+                                <p className="text-[10px] font-black text-slate-900 leading-none">
+                                    {appointments.filter(a => 
+                                        (a.doctorId === doc._id || a.doctor?._id === doc._id) && 
+                                        isSameDay(a.date, new Date())
+                                    ).length}
+                                </p>
                                 <p className="text-[7px] font-bold text-slate-400 uppercase mt-1">Waiting</p>
                             </div>
                         </div>
@@ -635,7 +650,7 @@ export default function MasterDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* DOCTOR QUEUE TRACKER */}
                 <div className="lg:col-span-4 space-y-4">
-                    <PhysicianMonitor doctors={doctors} hospitalId={hospitalId} />
+                    <PhysicianMonitor doctors={doctors} hospitalId={hospitalId} appointments={appointments} />
                 </div>
 
                 {/* APPOINTMENT LEDGER DISPLAY */}
@@ -744,7 +759,41 @@ export default function MasterDashboard() {
                                 View Full Clinical Ledger <ArrowRight size={10} />
                             </button>
                         </div>
+                </div>
+            </div>
+            </div>
+
+            {/* PROMOTIONAL BANNER */}
+            <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 rounded-2xl p-4 sm:p-5 text-white shadow-xl relative overflow-hidden group mt-6">
+                {/* Decorative Elements */}
+                <div className="absolute right-0 top-0 text-indigo-500/10 -translate-y-1/4 translate-x-1/4 group-hover:scale-110 transition-transform duration-700">
+                    <Shield size={200} />
+                </div>
+
+                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="text-center md:text-left space-y-2">
+                        <div className="inline-flex items-center gap-2 px-2 py-0.5 bg-teal-500/20 text-teal-400 rounded-full text-[8px] font-black uppercase tracking-widest border border-teal-500/20">
+                            <Activity size={10} />
+                            Institutional Growth
+                        </div>
+                        <h2 className="text-lg sm:text-xl font-black tracking-tight leading-tight">
+                            Expand Your Hospital’s Digital Ecosystem
+                        </h2>
+                        <p className="text-slate-400 text-[10px] sm:text-xs font-medium max-w-lg">
+                            Looking for specialized modules? Our platform offers integrated portals for Lab, 
+                            Pharmacy, and Advanced IPD Billing.
+                        </p>
                     </div>
+
+                    <a 
+                        href="https://www.mscurechain.com/portals" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="group/btn flex items-center gap-2 px-5 py-2.5 bg-white text-slate-900 rounded-xl font-black text-[9px] uppercase tracking-[0.15em] hover:bg-teal-500 hover:text-white transition-all shadow-lg active:scale-95 whitespace-nowrap"
+                    >
+                        Explore More Portals
+                        <ChevronRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                    </a>
                 </div>
             </div>
         </div>

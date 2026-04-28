@@ -22,7 +22,7 @@ import {
     FileDown,
     X
 } from "lucide-react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useTenantLink } from "@/hooks/useTenantLink";
 import { useAuthStore } from "@/stores/authStore";
 import { helpdeskService } from "@/lib/integrations/services/helpdesk.service";
@@ -40,14 +40,26 @@ export default function MasterAppointmentsLedger() {
     const params = useParams();
     const hospitalId = params.hospitalId as string;
     
+    const searchParams = useSearchParams();
+    const doctorIdParam = searchParams.get('doctorId');
+    const startDateParam = searchParams.get('startDate');
+    const endDateParam = searchParams.get('endDate');
+    
     // Filters State
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [typeFilter, setTypeFilter] = useState("all");
-    const [selectedDoctorId, setSelectedDoctorId] = useState("all");
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
+    const [selectedDoctorId, setSelectedDoctorId] = useState(doctorIdParam || "all");
+    const [startDate, setStartDate] = useState(startDateParam || "");
+    const [endDate, setEndDate] = useState(endDateParam || "");
     const [channelFilter, setChannelFilter] = useState("all");
+
+    // Update filter if params change
+    React.useEffect(() => {
+        if (doctorIdParam) setSelectedDoctorId(doctorIdParam);
+        if (startDateParam) setStartDate(startDateParam);
+        if (endDateParam) setEndDate(endDateParam);
+    }, [doctorIdParam, startDateParam, endDateParam]);
 
     const [page, setPage] = useState(1);
     const limit = 20;
@@ -59,7 +71,8 @@ export default function MasterAppointmentsLedger() {
         statusFilter === "all" ? undefined : statusFilter,
         hospitalId,
         startDate || undefined,
-        endDate || undefined
+        endDate || undefined,
+        selectedDoctorId === "all" ? undefined : selectedDoctorId
     );
 
     // Fetch Doctors for filter
@@ -143,8 +156,8 @@ export default function MasterAppointmentsLedger() {
                         <ArrowLeft size={14} className="md:w-4 md:h-4" />
                     </button>
                     <div className="min-w-0">
-                        <h1 className="text-sm md:text-xl font-black text-slate-900 uppercase tracking-tight truncate">Master Clinical Ledger</h1>
-                        <p className="text-[8px] md:text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] md:tracking-[0.3em] truncate">Hospital-Wide Tracker</p>
+                        <h1 className="text-sm md:text-xl font-black text-slate-900 uppercase tracking-tight truncate">Appointments</h1>
+                        <p className="text-[8px] md:text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] md:tracking-[0.3em] truncate">Hospital Appointments List</p>
                     </div>
                 </div>
 
