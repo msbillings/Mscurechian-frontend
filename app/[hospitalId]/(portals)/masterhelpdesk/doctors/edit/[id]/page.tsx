@@ -314,7 +314,7 @@ function EditDoctor() {
 
         <Card title="Professional Details" icon={<Briefcase className="text-purple-500" />}>
           <div className="space-y-6 p-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-1.5">
                 <label className="block text-sm font-medium text-slate-700">Registration No.<span className="text-red-500 ml-0.5">*</span></label>
                 <input name="medicalRegistrationNumber" value={formData.medicalRegistrationNumber} onChange={handleFieldChange}
@@ -338,6 +338,11 @@ function EditDoctor() {
                   <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                 </div>
                 <DErr msg={touched.consultationFee ? errors.consultationFee : undefined} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-slate-700">Experience From</label>
+                <input type="date" name="experienceStart" value={formData.experienceStart} onChange={handleFieldChange}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" />
               </div>
             </div>
             <TagInput label="Specialties" placeholder="Search specialties..." options={COMMON_SPECIALTIES} selectedItems={formData.specialties}

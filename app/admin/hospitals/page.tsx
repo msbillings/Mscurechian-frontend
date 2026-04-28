@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
@@ -17,7 +17,8 @@ import {
   Clock, 
   Bed, 
   ShieldCheck, 
-  CheckCircle 
+  CheckCircle,
+  Edit
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { adminService } from '@/lib/integrations';
@@ -198,13 +199,24 @@ const HospitalsList = () => {
                                         {(hospital.status || 'pending').toUpperCase()}
                                     </span>
                                 </Badge>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); handleDelete(hospital._id); }}
-                                    className="p-1 text-gray-400 hover:text-red-500 bg-gray-50 dark:bg-gray-900 rounded-lg border border-transparent hover:border-red-500/20"
-                                    title="Decommission Node"
-                                >
-                                    <Trash2 size={14} />
-                                </button>
+                                <div className="flex items-center gap-1 mt-1">
+                                    <Link href={`/admin/edit-hospital/${hospital._id}`}>
+                                        <button
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="p-1.5 text-gray-400 hover:text-blue-500 bg-gray-50 dark:bg-gray-900 rounded-lg border border-transparent hover:border-blue-500/20 transition-colors"
+                                            title="Edit Node"
+                                        >
+                                            <Edit size={14} />
+                                        </button>
+                                    </Link>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleDelete(hospital._id); }}
+                                        className="p-1.5 text-gray-400 hover:text-red-500 bg-gray-50 dark:bg-gray-900 rounded-lg border border-transparent hover:border-red-500/20 transition-colors"
+                                        title="Decommission Node"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
