@@ -54,9 +54,12 @@ const nextConfig: NextConfig = {
     // !! WARN !!
     // Dangerously allow production builds to successfully complete even if
     // your project has type errors.
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
 
+  eslint: {
+    ignoreDuringBuilds: false,
+  },
   // Proxy handled by /app/api/proxy/[...path]/route.ts (reliable with Turbopack)
 };
 

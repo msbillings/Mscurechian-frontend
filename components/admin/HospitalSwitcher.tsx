@@ -35,9 +35,6 @@ export default function HospitalSwitcher() {
     const [activeHospitalId, setActiveHospitalId] = useState<string | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Only render for super-admin
-    if (user?.role !== 'super-admin' && user?.role !== 'admin') return null;
-
     // Close dropdown on outside click
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -48,6 +45,9 @@ export default function HospitalSwitcher() {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Only render for super-admin
+    if (user?.role !== 'super-admin' && user?.role !== 'admin') return null;
 
     // Load hospitals when dropdown opens
     useEffect(() => {

@@ -13,13 +13,20 @@ export const masterHelpdeskService = {
     return apiClient<any>(query);
   },
 
+  getDoctors: (hospitalId?: string) => {
+    let query = `/helpdesk/doctors`;
+    if (hospitalId) query += `?hospitalId=${hospitalId}`;
+    return apiClient<any>(query);
+  },
+
   // ==================== Queue/Appointments ====================
-  getQueue: (page: number = 1, limit: number = 20, status?: string, hospitalId?: string, startDate?: string, endDate?: string) => {
+  getQueue: (page: number = 1, limit: number = 20, status?: string, hospitalId?: string, startDate?: string, endDate?: string, doctorId?: string) => {
     let query = `${MASTER_HELPDESK_ENDPOINTS.QUEUE}?page=${page}&limit=${limit}`;
     if (status) query += `&status=${status}`;
     if (hospitalId) query += `&hospitalId=${hospitalId}`;
     if (startDate) query += `&startDate=${startDate}`;
     if (endDate) query += `&endDate=${endDate}`;
+    if (doctorId && doctorId !== 'all') query += `&doctorId=${doctorId}`;
     return apiClient<any>(query);
   },
 
@@ -32,7 +39,8 @@ export const masterHelpdeskService = {
     endDate?: string,
     type?: string,
     search?: string,
-    paymentMode?: string
+    paymentMode?: string,
+    doctorId?: string
   ) => {
     let query = `${MASTER_HELPDESK_ENDPOINTS.TRANSACTIONS}?page=${page}&limit=${limit}`;
     if (hospitalId) query += `&hospitalId=${hospitalId}`;
@@ -41,6 +49,7 @@ export const masterHelpdeskService = {
     if (type) query += `&type=${type}`;
     if (search) query += `&search=${encodeURIComponent(search)}`;
     if (paymentMode) query += `&paymentMode=${paymentMode}`;
+    if (doctorId && doctorId !== 'all') query += `&doctorId=${doctorId}`;
     return apiClient<any>(query);
   },
 
@@ -111,6 +120,7 @@ export const masterHelpdeskService = {
       slots,
       isHoliday,
       isLeave: dayData?.isLeave || false,
+      isNotAvailable: dayData?.isNotAvailable || false,
     };
   },
 };

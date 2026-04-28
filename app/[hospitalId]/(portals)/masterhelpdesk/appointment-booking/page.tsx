@@ -76,6 +76,7 @@ export default function MasterAppointmentBooking() {
     const [bookingMode, setBookingMode] = useState<'slot' | 'queue'>('queue');
     const [timeOfDayFilter, setTimeOfDayFilter] = useState<'all' | 'morning' | 'afternoon' | 'evening' | 'night'>('all');
     const [isDoctorOnLeave, setIsDoctorOnLeave] = useState(false);
+    const [isDoctorNotAvailable, setIsDoctorNotAvailable] = useState(false);
 
     // For Master Helpdesk, we hardcode registrationType to OPD
     const registrationType = 'OPD';
@@ -332,7 +333,8 @@ export default function MasterAppointmentBooking() {
             // 1. Get availability (hourly containers) using master service
             const res = await masterHelpdeskService.getAvailability(selectedDoctor._id, profile.hospital._id, selectedDate);
 
-            setIsDoctorOnLeave(res.isHoliday); 
+            setIsDoctorOnLeave(res.isLeave);
+            setIsDoctorNotAvailable(res.isNotAvailable && !res.isLeave);
             if (res.isHoliday) {
                 setAvailableSlots([]);
                 setLoadingSlots(false);
@@ -867,7 +869,21 @@ export default function MasterAppointmentBooking() {
                                     <div>
                                         <h3 className="text-sm font-black text-rose-900 uppercase tracking-tight">Doctor is on Leave</h3>
                                         <p className="text-xs font-bold text-rose-600 uppercase mt-1 leading-relaxed">
-                                            Don't book appointments for {new Date(selectedDate).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}.
+                                            The doctor has approved leave for {new Date(selectedDate).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedDoctor && isDoctorNotAvailable && !isDoctorOnLeave && (
+                                <div className="mt-8 p-6 bg-amber-50 border-2 border-amber-200 rounded-3xl flex items-center gap-5 animate-in zoom-in duration-500 shadow-lg shadow-amber-500/10">
+                                    <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 shrink-0 shadow-inner">
+                                        <Calendar size={28} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black text-amber-900 uppercase tracking-tight">No Schedule Defined</h3>
+                                        <p className="text-xs font-bold text-amber-600 uppercase mt-1 leading-relaxed">
+                                            The doctor has no availability scheduled for {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' })}.
                                         </p>
                                     </div>
                                 </div>

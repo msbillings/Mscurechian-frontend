@@ -356,9 +356,9 @@ export default function NurseDashboard() {
                             ) : (
                                 <TaskItem time="--" task="No Tasks" patient="System Idle" />
                             )}
-                            <a href="/nurse/tasks" className="block w-full text-center py-2 sm:py-4 bg-primary-theme rounded-lg sm:rounded-2xl text-[8px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all mt-2 sm:mt-4 text-white">
+                            <Link href="/nurse/tasks" className="block w-full text-center py-2 sm:py-4 bg-primary-theme rounded-lg sm:rounded-2xl text-[8px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all mt-2 sm:mt-4 text-white">
                                 Task Center
-                            </a>
+                            </Link>
                         </div>
                     </div>
                 </div>

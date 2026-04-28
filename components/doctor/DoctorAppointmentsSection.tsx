@@ -13,7 +13,7 @@ function DoctorAppointmentsSection() {
     showQueue: true
   });
 
-  const [visitTypeFilter, setVisitTypeFilter] = useState<'All' | 'OPD' | 'IPD'>('All');
+  const [visitTypeFilter, setVisitTypeFilter] = useState<'all' | 'opd' | 'ipd'>('all');
 
   return (
     <>

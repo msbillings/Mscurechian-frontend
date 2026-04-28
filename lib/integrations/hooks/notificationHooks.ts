@@ -1,4 +1,4 @@
-﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '../services/notification.service';
 
 export const notificationKeys = {
@@ -9,7 +9,7 @@ export const notificationKeys = {
 export const useNotifications = () => {
     return useQuery({
         queryKey: notificationKeys.list(),
-        queryFn: notificationService.getNotifications,
+        queryFn: () => notificationService.getNotifications(),
         staleTime: 30 * 1000, // 30 seconds
         gcTime: 5 * 60 * 1000,
     });

@@ -24,7 +24,7 @@ import toast from "react-hot-toast";
 import { useRouter, useParams } from "next/navigation";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { useMasterTransactions, useMasterDashboard } from "@/lib/integrations/hooks";
+import { useMasterTransactions, useMasterDashboard, useMasterDoctors } from "@/lib/integrations/hooks";
 import { useDebounce } from "@/hooks/useDebounce";
 
 export default function TransactionsPage() {
@@ -42,17 +42,22 @@ export default function TransactionsPage() {
     const [paymentModeFilter, setPaymentModeFilter] = useState<'all' | 'online' | 'offline'>('all');
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+    const [doctorIdFilter, setDoctorIdFilter] = useState<string>("all");
     const limit = 10;
 
     const debouncedSearch = useDebounce(searchTerm, 500);
 
     const { data: dashboardData } = useMasterDashboard(hospitalId);
+    const { data: doctorsData } = useMasterDoctors(hospitalId);
+    const doctors = Array.isArray(doctorsData) 
+        ? doctorsData 
+        : (doctorsData as any)?.doctors || (doctorsData as any)?.data || [];
     const hospitalName = dashboardData?.hospital?.name || "CureChain";
     
     // ✅ RESET PAGE ON FILTER CHANGE: Ensure user doesn't get stuck on an empty high-number page
     React.useEffect(() => {
         setPage(1);
-    }, [debouncedSearch, startDate, endDate, paymentModeFilter]);
+    }, [debouncedSearch, startDate, endDate, paymentModeFilter, doctorIdFilter]);
 
     const formatDate = (dateStr: string) => {
         try {
@@ -82,7 +87,8 @@ export default function TransactionsPage() {
         endDate || undefined,
         getBackendTypeFilter(typeFilter),
         debouncedSearch || undefined,
-        paymentModeFilter !== 'all' ? paymentModeFilter : undefined
+        paymentModeFilter !== 'all' ? paymentModeFilter : undefined,
+        doctorIdFilter !== 'all' ? doctorIdFilter : undefined
     );
 
     // ✅ DEBUG LOGGING: Track filtering and data retrieval
@@ -137,12 +143,11 @@ export default function TransactionsPage() {
                     const rawMethod = (tx.paymentMethod || tx.paymentMode || 'CASH').toUpperCase();
                     const txType = (tx.type || 'appointment_booking').toLowerCase();
 
-                    // Categorize Helpdesk/OPD transactions as OFFLINE category (consistent with UI)
-                    const isOfflineCategory = ['CASH', 'OFFLINE'].includes(rawMethod) ||
-                        ['appointment_booking', 'opd', 'consultation', 'opd_consultation'].includes(txType);
+                    // Categorize based on payment method (Digital = Online, Cash = Offline)
+                    const isOfflineCategory = ['CASH', 'OFFLINE'].includes(rawMethod);
 
                     if (exportType === 'online') {
-                        return !isOfflineCategory && ['UPI', 'CARD', 'ONLINE', 'NETBANKING'].includes(rawMethod);
+                        return !isOfflineCategory && ['UPI', 'CARD', 'ONLINE', 'NETBANKING', 'RAZORPAY', 'DIGITAL'].includes(rawMethod);
                     } else if (exportType === 'offline') {
                         return isOfflineCategory;
                     }
@@ -291,8 +296,8 @@ export default function TransactionsPage() {
                 const amount = tx.amount || 0;
 
                 // Sync with UI categorization logic
-                const isOfflineCategory = ['CASH', 'OFFLINE'].includes(rawMethod) ||
-                    ['appointment_booking', 'opd', 'consultation', 'opd_consultation'].includes(txType);
+                // Sync with UI categorization logic (Digital vs Cash)
+                const isOfflineCategory = ['CASH', 'OFFLINE'].includes(rawMethod);
                 
                 if (isOfflineCategory) {
                     acc.offlineRevenue += amount;
@@ -510,8 +515,8 @@ export default function TransactionsPage() {
                 )}
 
                 {/* SEARCH & FILTER BAR */}
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-t border-slate-100 pt-5 px-1">
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 border-t border-slate-100 pt-6 px-1">
+                    <div className="flex flex-wrap items-center gap-4 w-full xl:w-auto">
                         {/* SEARCH BAR */}
                         <div className="relative group w-full sm:w-72">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 size-4" />
@@ -540,9 +545,25 @@ export default function TransactionsPage() {
                                 className="flex-1 sm:w-36 px-4 py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-600 uppercase tracking-widest outline-none focus:border-teal-500 shadow-sm"
                             />
                         </div>
+                        {/* DOCTOR FILTER */}
+                        <div className="relative group w-full sm:w-60">
+                            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 size-4" />
+                            <select
+                                value={doctorIdFilter}
+                                onChange={(e) => setDoctorIdFilter(e.target.value)}
+                                className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-600 uppercase tracking-widest outline-none focus:border-teal-500 shadow-sm appearance-none"
+                            >
+                                <option value="all">All Doctors</option>
+                                {doctors.map((doc: any) => (
+                                    <option key={doc._id} value={doc._id}>
+                                        {doc.name || doc.user?.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full lg:w-auto">
+                    <div className="flex flex-wrap items-center gap-6 w-full xl:w-auto">
                         {/* Payment Mode (Online / Offline) Toggle */}
                         <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-inner">
                             {['all', 'online', 'offline'].map((mode) => (
@@ -560,7 +581,7 @@ export default function TransactionsPage() {
                             ))}
                         </div>
 
-                        <div className="flex items-center justify-between sm:justify-end gap-6 border-l border-slate-100 sm:pl-6">
+                        <div className="flex items-center gap-6 xl:border-l xl:border-slate-100 xl:pl-6">
                             {/* PAGINATION */}
                             {totalPages > 1 && (
                                 <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200">
@@ -757,7 +778,7 @@ export default function TransactionsPage() {
                     )}
                 </div>
             </div>
-
+            
             {/* EXPORT MODAL */}
             {showExportCard && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">

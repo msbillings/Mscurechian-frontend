@@ -12,6 +12,7 @@ import QRCode from 'react-qr-code';
 import { toast } from 'react-hot-toast';
 import { helpdeskService } from '@/lib/integrations/services/helpdesk.service';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
+import { useQueryClient } from '@tanstack/react-query';
 import ImageCropper from '@/components/ui/ImageCropper';
 
 const DocumentViewerModal = ({ isOpen, onClose, url, title }: any) => {
@@ -79,6 +80,7 @@ interface FormData {
 export default function MasterHelpdeskProfileSettings() {
     const router = useRouter();
     const params = useParams();
+    const queryClient = useQueryClient();
     const hospitalId = params?.hospitalId as string;
 
     const [loading, setLoading] = useState(true);
@@ -585,6 +587,9 @@ export default function MasterHelpdeskProfileSettings() {
             } catch (e) {
                 // non-critical
             }
+            
+            // 4️⃣ Invalidate sidebar branding cache to force immediate UI update
+            queryClient.invalidateQueries({ queryKey: ["sidebar-hospital-branding", hospitalId] });
 
             toast.success('Settings updated successfully!');
             router.push(`/${hospitalId}/masterhelpdesk`);
