@@ -727,8 +727,16 @@ export default function MasterDashboard() {
                                                         <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">{apt.appointmentTime || 'Scheduled'}</p>
                                                     </div>
                                                     <div className="flex items-center gap-2">
+                                                        {['confirmed', 'booked', 'pending', 'arrived', 'waiting'].includes(apt.status?.toLowerCase()) && (
+                                                            <button 
+                                                                onClick={() => handleCheckIn(apt)} 
+                                                                className={`px-4 py-2 ${apt.status?.toLowerCase() === 'booked' ? 'bg-teal-600' : 'bg-slate-900'} text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg`}
+                                                            >
+                                                                {apt.status?.toLowerCase() === 'booked' ? 'Admission' : 'Edit Admission'}
+                                                            </button>
+                                                        )}
                                                         {['confirmed', 'in-progress', 'booked', 'pending', 'arrived', 'waiting'].includes(apt.status?.toLowerCase()) ? (
-                                                            <button onClick={() => apt._id && handleUpdateStatus(apt._id, 'completed')} className="px-4 py-2 bg-teal-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-teal-700 active:scale-95 transition-all shadow-lg shadow-teal-500/20">Finalize</button>
+                                                            <button onClick={() => apt._id && handleUpdateStatus(apt._id, 'completed')} className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 active:scale-95 transition-all shadow-lg shadow-emerald-500/20">Finalize</button>
                                                         ) : (
                                                             <div className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border ${apt.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
                                                                 {apt.status}
@@ -738,6 +746,7 @@ export default function MasterDashboard() {
                                                             <ArrowRight size={14} />
                                                         </button>
                                                     </div>
+
                                                 </div>
                                             </div>
                                         );

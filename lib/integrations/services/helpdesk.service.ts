@@ -174,11 +174,14 @@ export const helpdeskService = {
    * @param appointmentId Appointment ID
    * @param status New status
    */
-  updateAppointmentStatus: (appointmentId: string, status: string) =>
-    apiClient<any>(HELPDESK_ENDPOINTS.APPOINTMENT_STATUS(appointmentId), {
+  updateAppointmentStatus: (appointmentId: string, statusOrData: string | any) => {
+    const body = typeof statusOrData === 'string' ? { status: statusOrData } : statusOrData;
+    return apiClient<any>(HELPDESK_ENDPOINTS.APPOINTMENT_STATUS(appointmentId), {
       method: "PATCH",
-      body: JSON.stringify({ status }),
-    }),
+      body: JSON.stringify(body),
+    });
+  },
+
 
   /**
    * Cancel appointment

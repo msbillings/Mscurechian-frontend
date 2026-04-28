@@ -77,11 +77,14 @@ export const masterHelpdeskService = {
       body: JSON.stringify(data),
     }),
 
-  updateAppointmentStatus: (appointmentId: string, status: string, duration?: number) =>
-    apiClient<any>(MASTER_HELPDESK_ENDPOINTS.APPOINTMENT_STATUS(appointmentId), {
+  updateAppointmentStatus: (appointmentId: string, statusOrData: string | any, duration?: number) => {
+    const body = typeof statusOrData === 'string' ? { status: statusOrData, duration } : statusOrData;
+    return apiClient<any>(MASTER_HELPDESK_ENDPOINTS.APPOINTMENT_STATUS(appointmentId), {
       method: "PATCH",
-      body: JSON.stringify({ status, duration }),
-    }),
+      body: JSON.stringify(body),
+    });
+  },
+
   
   deleteAppointment: (appointmentId: string) =>
     apiClient<any>(`/masterhelpdesk/appointments/${appointmentId}`, {
