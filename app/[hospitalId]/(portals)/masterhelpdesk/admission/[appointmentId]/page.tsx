@@ -30,13 +30,22 @@ export default function ClinicalAdmissionPage() {
     const [submitting, setSubmitting] = useState(false);
     const [appointment, setAppointment] = useState<any>(null);
 
-    const [vitals, setVitals] = useState({
+    const [vitals, setVitals] = useState<{
+        height: string;
+        weight: string;
+        bp: string;
+        pulse: string;
+        spo2: string;
+        temperature: string;
+        glucose: string;
+    }>({
         height: "",
         weight: "",
         bp: "",
         pulse: "",
         spo2: "",
-        temperature: ""
+        temperature: "",
+        glucose: ""
     });
     const [symptoms, setSymptoms] = useState("");
     const [reason, setReason] = useState("");
@@ -67,22 +76,28 @@ export default function ClinicalAdmissionPage() {
                 setAppointment(apt);
 
                 // Pre-fill fields for editing if they exist
-                if (res.vitals) {
-                    setVitals({
-                        height: res.vitals.height || "",
-                        weight: res.vitals.weight || "",
-                        bp: res.vitals.bp || res.vitals.bloodPressure || "",
-                        pulse: res.vitals.pulse || "",
-                        spo2: res.vitals.spo2 || res.vitals.spO2 || "",
-                        temperature: res.vitals.temperature || ""
-                    });
-                }
+                // Unified Vitals Pre-fill (Merge Appointment + Profile)
+                const aptVitals = res.vitals || {};
+                const profVitals = res.patientProfile?.vitals || {};
+
+                setVitals({
+                    height: aptVitals.height || profVitals.height || "",
+                    weight: aptVitals.weight || profVitals.weight || "",
+                    bp: aptVitals.bp || aptVitals.bloodPressure || profVitals.bp || profVitals.bloodPressure || "",
+                    pulse: aptVitals.pulse || aptVitals.pulseRate || profVitals.pulse || profVitals.pulseRate || "",
+                    spo2: aptVitals.spo2 || aptVitals.spO2 || profVitals.spo2 || profVitals.spO2 || "",
+                    temperature: aptVitals.temperature || aptVitals.temp || profVitals.temperature || profVitals.temp || "",
+                    glucose: aptVitals.glucose || aptVitals.sugar || profVitals.glucose || profVitals.sugar || ""
+                });
+                
                 if (res.symptoms) {
                     setSymptoms(Array.isArray(res.symptoms) ? res.symptoms.join(", ") : res.symptoms);
+                } else if (res.notes) {
+                    setSymptoms(res.notes);
                 }
-                if (res.reason) {
-                    setReason(res.reason);
-                }
+
+                setReason(res.reason || res.notes || "");
+
             } else {
                 toast.error("Appointment not found");
                 router.push(`/${hospitalId}/masterhelpdesk`);
@@ -101,16 +116,46 @@ export default function ClinicalAdmissionPage() {
 
     const validateVitals = () => {
         const errors: Record<string, string> = {};
-        if (vitals.bp && !/^\d{2,3}\/\d{2,3}$/.test(vitals.bp)) errors.bp = "Format: XXX/XX";
-        if (vitals.temperature && (isNaN(Number(vitals.temperature)) || Number(vitals.temperature) < 90 || Number(vitals.temperature) > 110)) errors.temperature = "Range: 90-110°F";
-        if (vitals.spo2 && (isNaN(Number(vitals.spo2)) || Number(vitals.spo2) < 50 || Number(vitals.spo2) > 100)) errors.spo2 = "Range: 50-100%";
-        if (vitals.pulse && (isNaN(Number(vitals.pulse)) || Number(vitals.pulse) < 30 || Number(vitals.pulse) > 250)) errors.pulse = "Range: 30-250";
-        if (vitals.height && (isNaN(Number(vitals.height)) || Number(vitals.height) < 20 || Number(vitals.height) > 300)) errors.height = "Range: 20-300cm";
-        if (vitals.weight && (isNaN(Number(vitals.weight)) || Number(vitals.weight) < 1 || Number(vitals.weight) > 500)) errors.weight = "Range: 1-500kg";
+        
+        // Height Validation
+        if (vitals.height && (isNaN(Number(vitals.height)) || Number(vitals.height) < 20 || Number(vitals.height) > 300)) {
+            errors.height = "Range: 20-300 cm";
+        }
+
+        // Weight Validation
+        if (vitals.weight && (isNaN(Number(vitals.weight)) || Number(vitals.weight) < 1 || Number(vitals.weight) > 500)) {
+            errors.weight = "Range: 1-500 kg";
+        }
+
+        // Blood Pressure Validation
+        if (vitals.bp && !/^\d{2,3}\/\d{2,3}$/.test(vitals.bp)) {
+            errors.bp = "Format: 120/80";
+        }
+
+        // Pulse Validation
+        if (vitals.pulse && (isNaN(Number(vitals.pulse)) || Number(vitals.pulse) < 30 || Number(vitals.pulse) > 250)) {
+            errors.pulse = "Range: 30-250 bpm";
+        }
+
+        // SpO2 Validation
+        if (vitals.spo2 && (isNaN(Number(vitals.spo2)) || Number(vitals.spo2) < 50 || Number(vitals.spo2) > 100)) {
+            errors.spo2 = "Range: 50-100%";
+        }
+
+        // Temperature Validation
+        if (vitals.temperature && (isNaN(Number(vitals.temperature)) || Number(vitals.temperature) < 90 || Number(vitals.temperature) > 110)) {
+            errors.temperature = "Range: 90-110°F";
+        }
+        
+        // Glucose Validation (Optional)
+        if (vitals.glucose && (isNaN(Number(vitals.glucose)) || Number(vitals.glucose) < 20 || Number(vitals.glucose) > 600)) {
+            errors.glucose = "Invalid range";
+        }
         
         setFieldErrors(errors);
         return Object.keys(errors).length === 0;
     };
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -127,18 +172,15 @@ export default function ClinicalAdmissionPage() {
 
         try {
             setSubmitting(true);
-            await helpdeskService.updateAppointmentStatus(appointmentId, 'confirmed');
-            
-            const targetPatientId = appointment?.patientId || appointment?.patient?._id;
-            if (targetPatientId) {
-                 await helpdeskService.updatePatient(targetPatientId, {
-                     vitals,
-                     symptoms,
-                     reason
-                 });
-            }
+            await helpdeskService.updateAppointmentStatus(appointmentId, {
+                status: 'confirmed',
+                vitals,
+                symptoms,
+                reason
+            });
 
             toast.success("Patient Admission Successful");
+
             router.push(`/${hospitalId}/masterhelpdesk`);
         } catch (err: any) {
             console.error(err);
@@ -242,7 +284,8 @@ export default function ClinicalAdmissionPage() {
                                     { label: 'Blood Pressure', key: 'bp', unit: 'mmHg', range: '120/80' },
                                     { label: 'Pulse', key: 'pulse', unit: 'bpm', range: '30-250' },
                                     { label: 'SpO2', key: 'spo2', unit: '%', range: '50-100' },
-                                    { label: 'Temperature', key: 'temperature', unit: '°F', range: '90-110' }
+                                    { label: 'Temperature', key: 'temperature', unit: '°F', range: '90-110' },
+                                    { label: 'Blood Sugar', key: 'glucose', unit: 'mg/dL', range: '70-200' }
                                 ].map((field) => (
                                     <div key={field.key} className={`space-y-1.5 p-3 rounded-2xl bg-slate-50/50 border transition-all group ${fieldErrors[field.key] ? 'border-rose-400 bg-rose-50/30' : 'border-slate-100 hover:bg-white hover:border-teal-200'}`}>
                                         <div className="flex items-center justify-between px-1">
@@ -253,11 +296,11 @@ export default function ClinicalAdmissionPage() {
                                         </div>
                                         <div className="relative">
                                             <input 
-                                                required
                                                 type="text" 
                                                 placeholder={field.unit}
                                                 className={`w-full bg-white border rounded-xl py-2.5 px-4 text-sm font-black text-slate-900 focus:ring-4 transition-all outline-none ${fieldErrors[field.key] ? 'border-rose-400 focus:ring-rose-500/10 focus:border-rose-500' : 'border-slate-200 focus:ring-teal-500/10 focus:border-teal-500'}`}
-                                                value={(vitals as any)[field.key]}
+                                                value={(vitals as any)[field.key] || ""}
+                                                onBlur={() => validateVitals()}
                                                 onChange={(e) => {
                                                     setVitals(prev => ({...prev, [field.key]: e.target.value}));
                                                     if (fieldErrors[field.key]) {
@@ -269,6 +312,7 @@ export default function ClinicalAdmissionPage() {
                                                     }
                                                 }}
                                             />
+
                                             <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300 uppercase tracking-tighter">
                                                 {field.unit}
                                             </div>
@@ -332,8 +376,14 @@ export default function ClinicalAdmissionPage() {
                                 disabled={submitting}
                                 className="bg-teal-600 px-12 py-3 rounded-2xl text-[11px] font-black text-white shadow-xl shadow-teal-500/30 hover:bg-teal-700 hover:-translate-y-0.5 transition-all active:scale-95 flex items-center gap-3 disabled:opacity-50 disabled:translate-y-0"
                             >
-                                {submitting ? <Loader2 size={16} className="animate-spin" /> : <><CheckCircle2 size={16} /> FINALIZE ADMISSION</>}
+                                {submitting ? <Loader2 size={16} className="animate-spin" /> : (
+                                    <>
+                                        <CheckCircle2 size={16} /> 
+                                        {appointment?.status?.toLowerCase() === 'confirmed' ? 'UPDATE ADMISSION RECORD' : 'FINALIZE ADMISSION'}
+                                    </>
+                                )}
                             </button>
+
                         </div>
                     </div>
                 </form>
