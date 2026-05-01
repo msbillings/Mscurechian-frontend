@@ -54,6 +54,7 @@ export default function MasterAppointmentBooking() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [profile, setProfile] = useState<HelpdeskProfile | null>(null);
+    const [hospitalBranding, setHospitalBranding] = useState<any>(null);
     const [doctors, setDoctors] = useState<HelpdeskDoctor[]>([]);
     const [departments, setDepartments] = useState<string[]>([]);
 
@@ -170,11 +171,17 @@ export default function MasterAppointmentBooking() {
         const init = async () => {
             try {
                 setLoading(true);
-                const [me, allDocsRes] = await Promise.all([
+                const [me, allDocsRes, hRes] = await Promise.all([
                     helpdeskService.getMe(),
-                    hospitalAdminService.getDoctors()
+                    hospitalAdminService.getDoctors(),
+                    hospitalAdminService.getHospital().catch(() => null)
                 ]);
                 setProfile(me);
+                if (hRes?.hospital) {
+                    setHospitalBranding(hRes.hospital);
+                } else if (me?.hospital) {
+                    setHospitalBranding(me.hospital);
+                }
                 const allDocs = Array.isArray(allDocsRes) ? allDocsRes : (allDocsRes as any)?.doctors || (allDocsRes as any)?.data || [];
                 const validDocs = allDocs.filter((doc: any) => (doc.user?.name && doc.user.name !== 'Unknown') || (doc.name && doc.name !== 'Unknown'));
                 setDoctors(validDocs);
@@ -544,17 +551,37 @@ export default function MasterAppointmentBooking() {
 
         let printWindow: Window | null = null;
         try {
-            console.log("Opening print window...");
-            printWindow = window.open('', '_blank');
+            printWindow = window.open('about:blank', '_blank');
             if (printWindow) {
-                printWindow.document.write('<html><head><title>Processing Receipt...</title><style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f8fafc;color:#64748b;}</style></head><body><div style="text-align:center;"><h2>Generating Receipt...</h2><p>Please do not close this window.</p></div></body></html>');
-            } else {
-                console.warn("Popup blocked by browser.");
-                toast.error("Popup blocked! Please allow popups to print the receipt.", { duration: 5000 });
+                printWindow.document.write(
+                    `<html><head><title>Processing Receipt...</title>
+                    <style>
+                        body { 
+                            display: flex; align-items: center; justify-content: center; 
+                            height: 100vh; margin: 0; font-family: 'Inter', sans-serif; 
+                            background: #f8fafc; color: #1e293b;
+                        }
+                        .container { text-align: center; max-width: 400px; padding: 40px; }
+                        .spinner {
+                            width: 50px; height: 50px; border: 4px solid #f1f5f9;
+                            border-top: 4px solid #14b8a6; border-radius: 50%;
+                            animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+                            margin: 0 auto 24px;
+                        }
+                        @keyframes spin { to { transform: rotate(360deg); } }
+                        h2 { font-size: 1.25rem; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.025em; }
+                        p { font-size: 0.875rem; color: #64748b; font-weight: 500; }
+                    </style></head>
+                    <body>
+                        <div class="container">
+                            <div class="spinner"></div>
+                            <h2>Finalizing Booking</h2>
+                            <p>Preparing your clinical receipt and synchronizing records...</p>
+                        </div>
+                    </body></html>`
+                );
             }
-        } catch (e) {
-            console.error("Error opening print window:", e);
-        }
+        } catch (_) { printWindow = null; }
 
         try {
             setSubmitting(true);
@@ -615,29 +642,13 @@ export default function MasterAppointmentBooking() {
                 } catch (e) { }
             }
 
-            // Prioritize details from Master Helpdesk Setting profile - Strictly use Helpdesk overrides
-            const profileAsAny = profile as any;
-
-            // 🚀 FE-Only Persistence: Load local overrides since backend strips non-schema fields
-            let localOverrides: any = {};
-            try {
-                const saved = localStorage.getItem(`master_branding_${hospitalId}`);
-                if (saved) localOverrides = JSON.parse(saved);
-            } catch (e) { }
-
-            // Fetch fresh hospital details from admin service to ensure "Settings" changes are reflected
-            let fetchedHospital: any = null;
-            try {
-                const hRes = await hospitalAdminService.getHospital();
-                if (hRes?.hospital) fetchedHospital = hRes.hospital;
-            } catch (e) { }
-
-            const latestHospital: any = {
-                name: localOverrides.hospitalName || profileAsAny?.hospitalName || fetchedHospital?.name || profile?.hospital?.name || "Hospital Name",
-                address: localOverrides.hospitalAddress || profileAsAny?.hospitalAddress || fetchedHospital?.address || profile?.hospital?.address || "Hospital Address",
-                phone: localOverrides.hospitalMobile || profileAsAny?.hospitalMobile || fetchedHospital?.phone || profile?.hospital?.mobile || (profile?.hospital as any)?.phone || "Phone Number",
-                email: localOverrides.hospitalEmail || profileAsAny?.hospitalEmail || fetchedHospital?.email || profile?.hospital?.email || "Email Address",
-                logo: localOverrides.hospitalLogo || profileAsAny?.image || fetchedHospital?.logo || (profile?.hospital as any)?.logo || ""
+            // 3. Prepare Branding Data (Strictly use pre-fetched branding for zero-latency printing)
+            const latestHospital: any = hospitalBranding || {
+                name: (profile as any)?.hospitalName || profile?.hospital?.name || "Hospital Name",
+                address: (profile as any)?.hospitalAddress || profile?.hospital?.address || "Hospital Address",
+                phone: (profile as any)?.hospitalMobile || profile?.hospital?.mobile || (profile?.hospital as any)?.phone || "Phone Number",
+                email: (profile as any)?.hospitalEmail || profile?.hospital?.email || "Email Address",
+                logo: (profile as any)?.image || (profile?.hospital as any)?.logo || (profile?.hospital as any)?.logo || ""
             };
 
             const headerHtml = renderToStaticMarkup(
@@ -667,10 +678,10 @@ export default function MasterAppointmentBooking() {
 
             const receiptData = {
                 hospital: {
-                    name: latestHospital.name,
-                    address: latestHospital.address,
-                    contact: latestHospital.phone,
-                    email: latestHospital.email,
+                    name: latestHospital.name || "CureChain Medical Center",
+                    address: latestHospital.address || "Main Medical Node",
+                    contact: latestHospital.phone || latestHospital.mobile || "System Support",
+                    email: latestHospital.email || "healthcare@curechain.io",
                     logo: latestHospital.logo
                 },
                 patient: { name: selectedPatient.name, mrn: selectedPatient.mrn, age: selectedPatient.age, gender: selectedPatient.gender, mobile: selectedPatient.mobile, dob: selectedPatient.dob, address: selectedPatient.address, email: selectedPatient.email, bloodGroup: selectedPatient.bloodGroup, emergencyContact: selectedPatient.emergencyContact, allergies: Array.isArray(selectedPatient.allergies) ? selectedPatient.allergies.join(', ') : selectedPatient.allergies, medicalHistory: selectedPatient.medicalHistory, vitals: { ...vitals } },
@@ -685,7 +696,16 @@ export default function MasterAppointmentBooking() {
                     notes: notes,
                     appointmentId: appointment.appointmentId || appointment.visitId || appointment._id || appointment.id || 'PENDING'
                 },
-                payment: { amount: selectedDoctor?.consultationFee || 0, totalBillAmount: selectedDoctor?.consultationFee || 0, totalPaidAmount: selectedDoctor?.consultationFee || 0, advanceAmount: 0, method: paymentMethod.toUpperCase(), status: paymentStatus.toUpperCase(), date: new Date().toISOString() },
+                payment: { 
+                    amount: selectedDoctor?.consultationFee || 0, 
+                    totalBillAmount: selectedDoctor?.consultationFee || 0, 
+                    totalPaidAmount: selectedDoctor?.consultationFee || 0, 
+                    advanceAmount: 0, 
+                    method: paymentMethod.toUpperCase(), 
+                    status: paymentStatus.toUpperCase(), 
+                    date: new Date().toISOString(),
+                    receiptNumber: appointment.payment?.receiptNumber || appointment.receiptNumber
+                },
                 registrationType: 'OPD',
                 headerHtml, footerHtml, returnUrl: '/masterhelpdesk'
             };

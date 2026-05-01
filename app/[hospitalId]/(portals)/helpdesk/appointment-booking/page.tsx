@@ -48,6 +48,7 @@ export default function AppointmentBooking() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [profile, setProfile] = useState<HelpdeskProfile | null>(null);
+    const [hospitalBranding, setHospitalBranding] = useState<any>(null);
     const [doctors, setDoctors] = useState<HelpdeskDoctor[]>([]);
     const [departments, setDepartments] = useState<string[]>([]);
 
@@ -227,8 +228,17 @@ export default function AppointmentBooking() {
         const init = async () => {
             try {
                 setLoading(true);
-                const [me, allDocs] = await Promise.all([helpdeskService.getMe(), helpdeskService.getDoctors()]);
+                const [me, allDocs, hRes] = await Promise.all([
+                    helpdeskService.getMe(), 
+                    helpdeskService.getDoctors(),
+                    hospitalAdminService.getHospital().catch(() => null)
+                ]);
                 setProfile(me);
+                if (hRes?.hospital) {
+                    setHospitalBranding(hRes.hospital);
+                } else if (me?.hospital) {
+                    setHospitalBranding(me.hospital);
+                }
                 const validDocs = allDocs.filter((doc: any) => (doc.user?.name && doc.user.name !== 'Unknown') || (doc.name && doc.name !== 'Unknown'));
                 setDoctors(validDocs);
 
@@ -529,17 +539,31 @@ export default function AppointmentBooking() {
             printWindow = window.open('about:blank', '_blank');
             if (printWindow) {
                 printWindow.document.write(
-                    '<html><head><title>Generating Receipt...</title>' +
-                    '<style>body{display:flex;align-items:center;justify-content:center;' +
-                    'height:100vh;margin:0;font-family:sans-serif;background:#f8fafc;color:#475569;}' +
-                    '.box{text-align:center;}.spinner{width:40px;height:40px;border:3px solid #e2e8f0;' +
-                    'border-top-color:#0d9488;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;}' +
-                    '@keyframes spin{to{transform:rotate(360deg)}}h2{font-size:1.1rem;margin:0 0 6px;color:#1e293b;}' +
-                    'p{font-size:.85rem;margin:0;}</style></head>' +
-                    '<body><div class="box"><div class="spinner"></div>' +
-                    '<h2>Processing Appointment…</h2>' +
-                    '<p>Please wait while we generate your receipt.</p>' +
-                    '</div></body></html>'
+                    `<html><head><title>Processing Receipt...</title>
+                    <style>
+                        body { 
+                            display: flex; align-items: center; justify-content: center; 
+                            height: 100vh; margin: 0; font-family: 'Inter', sans-serif; 
+                            background: #f8fafc; color: #1e293b;
+                        }
+                        .container { text-align: center; max-width: 400px; padding: 40px; }
+                        .spinner {
+                            width: 50px; height: 50px; border: 4px solid #f1f5f9;
+                            border-top: 4px solid #14b8a6; border-radius: 50%;
+                            animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+                            margin: 0 auto 24px;
+                        }
+                        @keyframes spin { to { transform: rotate(360deg); } }
+                        h2 { font-size: 1.25rem; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.025em; }
+                        p { font-size: 0.875rem; color: #64748b; font-weight: 500; }
+                    </style></head>
+                    <body>
+                        <div class="container">
+                            <div class="spinner"></div>
+                            <h2>Finalizing Booking</h2>
+                            <p>Preparing your clinical receipt and synchronizing records...</p>
+                        </div>
+                    </body></html>`
                 );
             }
         } catch (_) { printWindow = null; }
@@ -632,16 +656,10 @@ export default function AppointmentBooking() {
                 } catch (e) { }
             }
 
-            // Fetch Hospital Branding
-            let latestHospital: any = profile?.hospital;
-            try {
-                const hRes = await hospitalAdminService.getHospital();
-                if (hRes?.hospital) {
-                    latestHospital = { ...profile?.hospital, ...hRes.hospital };
-                }
-            } catch (e) { }
-
-            // Render Header/Footer
+            // 3. Prepare Branding Data (Using pre-fetched branding to ensure zero-latency printing)
+            const latestHospital: any = hospitalBranding || profile?.hospital;
+            
+            // Render Header/Footer immediately using cached data to avoid blocking
             const headerHtml = renderToStaticMarkup(
                 <MainHeader
                     initialDetails={{
@@ -669,7 +687,7 @@ export default function AppointmentBooking() {
                 hospital: {
                     name: latestHospital?.name || "CureChain Medical Center",
                     address: latestHospital?.address || "Main Medical Node",
-                    contact: latestHospital?.mobile || latestHospital?.phone || "System Support",
+                    contact: latestHospital?.phone || latestHospital?.mobile || "System Support",
                     email: latestHospital?.email || "healthcare@curechain.io",
                     logo: latestHospital?.logo
                 },
@@ -713,7 +731,7 @@ export default function AppointmentBooking() {
                     bookedAt: new Date().toISOString(),
                     type: appointmentType.toUpperCase(),
                     notes: notes,
-                    appointmentId: appointment._id || appointment.id || 'PENDING'
+                    appointmentId: appointment.appointmentId || appointment._id || appointment.id || 'PENDING'
                 },
                 payment: {
                     amount: registrationType === 'IPD' ? parseFloat(ipdFee) : (selectedDoctor?.consultationFee || 0),
@@ -722,7 +740,8 @@ export default function AppointmentBooking() {
                     advanceAmount: registrationType === 'IPD' ? parseFloat(ipdFee) : 0,
                     method: paymentMethod.toUpperCase(),
                     status: (paymentStatus === 'unpaid' ? 'pending' : paymentStatus).toUpperCase(),
-                    date: new Date().toISOString()
+                    date: new Date().toISOString(),
+                    receiptNumber: appointment.payment?.receiptNumber || appointment.receiptNumber
                 },
                 registrationType: registrationType,
                 headerHtml: headerHtml,
