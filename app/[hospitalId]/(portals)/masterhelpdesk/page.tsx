@@ -386,7 +386,7 @@ export default function MasterDashboard() {
         try {
             const [docs, profile] = await Promise.all([
                 helpdeskService.getDoctors(),
-                helpdeskService.getMe()
+                helpdeskService.getMasterMe()
             ]);
 
             const docList = Array.isArray(docs) ? docs : (docs?.doctors || docs?.data || []);

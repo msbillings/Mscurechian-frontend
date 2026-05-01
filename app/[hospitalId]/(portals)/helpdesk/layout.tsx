@@ -12,8 +12,12 @@ import {
     AlertCircle,
     ClipboardList,
     Bell,
-    Headphones
+    Headphones,
+    ShieldCheck,
+    Clock
 } from "lucide-react";
+import { helpdeskService } from '@/lib/integrations/services/helpdesk.service';
+import { useParams } from "next/navigation";
 import SharedSidebar from "@/components/navbar/SharedSidebar";
 import HelpdeskNavbar from "@/components/navbar/HelpdeskNavbar";
 import LogoutModal from "@/components/auth/LogoutModal";
@@ -21,6 +25,7 @@ import HelpdeskSupportFloatingBox from "./components/HelpdeskSupportFloatingBox"
 import { useTenantLink } from "@/hooks/useTenantLink";
 import ProgressBar from "@/components/ui/ProgressBar";
 import { useRealtime } from '@/hooks/useRealtime';
+import LicenseLock from "@/components/License/LicenseLock";
 
 const helpdeskMenu: any[] = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/helpdesk" },
@@ -42,6 +47,11 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [isPending, startTransition] = useTransition();
     const [isMounted, setIsMounted] = useState(false);
     const { getPath } = useTenantLink();
+    const params_obj = useParams();
+    const hospitalId = params_obj.hospitalId as string;
+
+    const [isLicenseChecking, setIsLicenseChecking] = useState(true);
+    const [licenseError, setLicenseError] = useState<{ message: string; locked: boolean } | null>(null);
 
     useRealtime(['helpdesk', 'appointments', 'patients', 'billing', 'staff', 'system', 'emergency']);
 
@@ -49,7 +59,26 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
         setIsMounted(true);
         useAuthStore.getState().initEvents();
         checkAuth();
+        verifyLicense();
     }, [checkAuth]);
+
+    const verifyLicense = async () => {
+        if (!isAuthenticated) return;
+        setIsLicenseChecking(true);
+        try {
+            await helpdeskService.getMe();
+            setLicenseError(null);
+        } catch (err: any) {
+            if (err.status === 403 && err.body?.locked) {
+                setLicenseError({
+                    message: err.body.message,
+                    locked: true
+                });
+            }
+        } finally {
+            setIsLicenseChecking(false);
+        }
+    };
 
     useEffect(() => {
         if (isInitialized) {
@@ -73,17 +102,29 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
         }
     }, [isAuthenticated, isInitialized, user?.role]);
 
-    if (!isMounted || isLoading || !isInitialized) {
+    if (!isMounted || isLoading || !isInitialized || isLicenseChecking) {
         return (
             <div key="helpdesk-init-loader" className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
                 <div key="helpdesk-init-loader-inner" className="flex flex-col items-center gap-6">
                     <div key="helpdesk-spinner" className="w-16 h-16 border-4 border-teal-600/10 border-t-teal-600 rounded-full animate-spin"></div>
                     <div>
                         <p className="text-sm font-black text-slate-900 uppercase tracking-[0.3em] text-center">CureChain</p>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] text-center mt-1">Starting System...</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] text-center mt-1">Checking License...</p>
                     </div>
                 </div>
             </div>
+        );
+    }
+
+    if (licenseError?.locked) {
+        return (
+            <LicenseLock 
+                message={licenseError.message}
+                onRefresh={() => window.location.reload()}
+                onLogout={() => logout()}
+                hospitalId={hospitalId}
+                portalName="Helpdesk"
+            />
         );
     }
 

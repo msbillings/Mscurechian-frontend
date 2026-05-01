@@ -35,7 +35,9 @@ function EditHospital() {
         rating: "4.5",
         location: { lat: "", lng: "" },
         specialities: [] as string[],
-        services: [] as string[]
+        services: [] as string[],
+        availablePortals: [] as string[],
+        portalLicenses: {} as Record<string, { enabled: boolean; startDate: string; endDate: string }>
     });
 
     const [loading, setLoading] = useState(false);
@@ -66,6 +68,34 @@ function EditHospital() {
                      lng = hospitalData.location.lng.toString();
                  }
             }
+            
+            // Auto-detect allocated portals based on existing personnel and licenses
+            let detectedPortals = [...(hospitalData.availablePortals || [])];
+            const personnel = result.personnel || {};
+            
+            // Always ensure portals with existing personnel/credentials are included (Additive)
+            if (personnel.doctors?.length > 0 && !detectedPortals.includes('doctor')) detectedPortals.push('doctor');
+            if (personnel.nurses?.length > 0 && !detectedPortals.includes('nurse')) detectedPortals.push('nurse');
+            if (personnel.lab?.length > 0 && !detectedPortals.includes('lab')) detectedPortals.push('lab');
+            if (personnel.pharma?.length > 0 && !detectedPortals.includes('pharmacy')) detectedPortals.push('pharmacy');
+            if (personnel.helpdesk?.length > 0 && !detectedPortals.includes('helpdesk')) detectedPortals.push('helpdesk');
+            if (personnel.hospitalAdmins?.length > 0 && !detectedPortals.includes('hospitalAdmin')) detectedPortals.push('hospitalAdmin');
+            if (personnel.staff?.length > 0 && !detectedPortals.includes('staff')) detectedPortals.push('staff');
+            if (personnel.hr?.length > 0 && !detectedPortals.includes('hr')) detectedPortals.push('hr');
+            if (personnel.discharge?.length > 0 && !detectedPortals.includes('discharge')) detectedPortals.push('discharge');
+            
+            // masterhelpdesk is the entry point
+            if (!detectedPortals.includes('masterhelpdesk')) {
+                detectedPortals.push('masterhelpdesk');
+            }
+
+            // Always ensure portals with active/enabled licenses are included
+            const existingLicenses = hospitalData.portalLicenses || {};
+            Object.keys(existingLicenses).forEach(p => {
+                if (existingLicenses[p]?.enabled && !detectedPortals.includes(p)) {
+                    detectedPortals.push(p);
+                }
+            });
 
             setFormData({
                 name: hospitalData.name || "",
@@ -85,7 +115,9 @@ function EditHospital() {
                 rating: hospitalData.rating?.toString() || "4.5",
                 location: { lat, lng },
                 specialities: hospitalData.specialities || hospitalData.specialties || [],
-                services: hospitalData.services || []
+                services: hospitalData.services || [],
+                availablePortals: detectedPortals,
+                portalLicenses: hospitalData.portalLicenses || {}
             });
         } catch (err: any) {
             console.error("Failed to fetch hospital details", err);
@@ -156,6 +188,20 @@ function EditHospital() {
         setFormData(prev => ({ ...prev, [field]: prev[field].filter((_, i) => i !== index) }));
     };
 
+
+    const handlePortalLicenseChange = (portal: string, field: string, value: any) => {
+        setFormData(prev => ({
+            ...prev,
+            portalLicenses: {
+                ...prev.portalLicenses,
+                [portal]: {
+                    ...(prev.portalLicenses[portal] || { enabled: false, startDate: "", endDate: "" }),
+                    [field]: value
+                }
+            }
+        }));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -200,6 +246,8 @@ function EditHospital() {
                 rating: formData.rating || "",
                 specialities: formData.specialities || [],
                 services: formData.services || [],
+                availablePortals: formData.availablePortals || [],
+                portalLicenses: formData.portalLicenses
             };
 
             if (formData.location.lat && formData.location.lng) {
@@ -312,6 +360,7 @@ function EditHospital() {
                         />
                     </div>
                 </Card>
+
 
                 {/* Location Info */}
                 <Card title="Location & Address" padding="p-8">
@@ -473,6 +522,78 @@ function EditHospital() {
                                     <p className="text-xs text-gray-400 italic">No services added yet.</p>
                                 )}
                             </div>
+                        </div>
+                    </Card>
+                </div>
+
+                {/* Portal Wise Licenses */}
+                <div className="mt-8">
+                    <Card title="Portal-wise License Management" padding="p-8">
+                        <p className="text-sm text-gray-500 mb-8 -mt-2 font-medium">
+                            Enable specific portals for this hospital and set their individual license validity periods. If a portal is disabled, no date restriction will be applied.
+                        </p>
+                        
+                        <div className="space-y-4">
+                            {[
+                                { id: 'masterhelpdesk', label: 'Master Helpdesk' },
+                                { id: 'helpdesk', label: 'Helpdesk / Frontdesk' },
+                                { id: 'doctor', label: 'Doctor Portal' },
+                                { id: 'pharmacy', label: 'Pharmacy Portal' },
+                                { id: 'lab', label: 'Laboratory Portal' },
+                                { id: 'nurse', label: 'Nursing Portal' },
+                                { id: 'hospitalAdmin', label: 'Hospital Admin' },
+                                { id: 'staff', label: 'Staff Attendance' },
+                                { id: 'hr', label: 'HR Management' },
+                                { id: 'discharge', label: 'Discharge Portal' },
+                            ].filter(p => formData.availablePortals?.includes(p.id)).map((portal) => (
+                                <div key={portal.id} className="p-4 rounded-2xl border border-gray-100 bg-gray-50/30 hover:bg-white hover:border-blue-100 hover:shadow-sm transition-all duration-200">
+                                    <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-8">
+                                        <div className="flex items-center gap-4 lg:w-[220px]">
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input 
+                                                    type="checkbox" 
+                                                    className="sr-only peer" 
+                                                    checked={formData.portalLicenses[portal.id]?.enabled || false}
+                                                    onChange={(e) => handlePortalLicenseChange(portal.id, 'enabled', e.target.checked)}
+                                                />
+                                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                            </label>
+                                            <span className="font-bold text-gray-900 text-sm tracking-tight">{portal.label}</span>
+                                        </div>
+
+                                        <div className="flex-1 grid grid-cols-2 gap-4">
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 ml-1">Start Date</label>
+                                                <input
+                                                    type="date"
+                                                    disabled={!formData.portalLicenses[portal.id]?.enabled}
+                                                    value={formData.portalLicenses[portal.id]?.startDate ? new Date(formData.portalLicenses[portal.id].startDate).toISOString().split('T')[0] : ""}
+                                                    onChange={(e) => handlePortalLicenseChange(portal.id, 'startDate', e.target.value)}
+                                                    className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all disabled:opacity-40 disabled:bg-gray-100/50"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 ml-1">End Date</label>
+                                                <input
+                                                    type="date"
+                                                    disabled={!formData.portalLicenses[portal.id]?.enabled}
+                                                    value={formData.portalLicenses[portal.id]?.endDate ? new Date(formData.portalLicenses[portal.id].endDate).toISOString().split('T')[0] : ""}
+                                                    onChange={(e) => handlePortalLicenseChange(portal.id, 'endDate', e.target.value)}
+                                                    className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all disabled:opacity-40 disabled:bg-gray-100/50"
+                                                />
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="hidden lg:flex items-center justify-end w-[120px]">
+                                            {formData.portalLicenses[portal.id]?.enabled ? (
+                                                <span className="text-[9px] font-black bg-blue-600/10 text-blue-600 px-3 py-1 rounded-full uppercase tracking-widest border border-blue-600/10">Locked</span>
+                                            ) : (
+                                                <span className="text-[9px] font-black bg-gray-100 text-gray-400 px-3 py-1 rounded-full uppercase tracking-widest border border-gray-200/50">Open</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </Card>
                 </div>

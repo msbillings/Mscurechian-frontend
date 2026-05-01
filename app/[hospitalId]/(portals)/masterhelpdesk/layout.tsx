@@ -15,7 +15,8 @@ import {
     UserPlus,
     CalendarPlus,
     Clock,
-    Bot
+    Bot,
+    ShieldCheck
 } from "lucide-react";
 import SharedSidebar from "@/components/navbar/SharedSidebar";
 import LogoutModal from "@/components/auth/LogoutModal";
@@ -24,6 +25,7 @@ import ProgressBar from "@/components/ui/ProgressBar";
 import AIAssistantModal from "@/components/masterhelpdesk/AIAssistantModal";
 import MasterHelpdeskQuickActions from "./components/MasterHelpdeskQuickActions";
 import NotificationCenter from "@/components/navbar/NotificationCenter";
+import LicenseLock from "@/components/License/LicenseLock";
 
 const masterhelpdeskMenu: any[] = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/masterhelpdesk" },
@@ -46,13 +48,35 @@ export function MasterHelpdeskLayout({ children }: { children: React.ReactNode }
     const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
     const [isMounted, setIsMounted] = useState(false);
+    const [licenseError, setLicenseError] = useState<{message: string; locked: boolean} | null>(null);
+    const [isLicenseChecking, setIsLicenseChecking] = useState(true);
     const { getPath } = useTenantLink();
 
     useEffect(() => {
         setIsMounted(true);
         useAuthStore.getState().initEvents();
         checkAuth();
+        verifyLicense();
     }, [checkAuth]);
+
+    const verifyLicense = async () => {
+        try {
+            const { masterHelpdeskService } = await import("@/lib/integrations/services/masterHelpdesk.service");
+            const res = await masterHelpdeskService.getMe();
+            console.log("[MasterHelpdesk] License check passed:", res);
+        } catch (err: any) {
+            console.error("[MasterHelpdesk] License check failed:", err);
+            const errorData = err.error || err.data || {};
+            if (err.status === 403 && errorData.locked) {
+                setLicenseError({
+                    message: errorData.message || "Your license has expired or is not yet active.",
+                    locked: true
+                });
+            }
+        } finally {
+            setIsLicenseChecking(false);
+        }
+    }
 
     useEffect(() => {
         if (isInitialized) {
@@ -77,7 +101,7 @@ export function MasterHelpdeskLayout({ children }: { children: React.ReactNode }
         }
     }, [isAuthenticated, isInitialized, user?.role]);
 
-    if (!isMounted || isLoading || !isInitialized) {
+    if (!isMounted || isLoading || !isInitialized || isLicenseChecking) {
         return (
             <div key="loader" className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
                 <div key="loader-inner" className="flex flex-col items-center gap-6">
@@ -88,6 +112,18 @@ export function MasterHelpdeskLayout({ children }: { children: React.ReactNode }
                     </div>
                 </div>
             </div>
+        );
+    }
+
+    if (licenseError?.locked) {
+        return (
+            <LicenseLock 
+                message={licenseError.message}
+                onRefresh={() => window.location.reload()}
+                onLogout={() => logout()}
+                hospitalId={currentHospitalId}
+                portalName="Master Helpdesk"
+            />
         );
     }
 

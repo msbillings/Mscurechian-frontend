@@ -13,6 +13,8 @@ export const masterHelpdeskService = {
     return apiClient<any>(query);
   },
 
+  getMe: () => apiClient<any>(MASTER_HELPDESK_ENDPOINTS.ME),
+
   getDoctors: (hospitalId?: string) => {
     let query = `/helpdesk/doctors`;
     if (hospitalId) query += `?hospitalId=${hospitalId}`;

@@ -628,10 +628,11 @@ export async function apiClient<T>(
         // (if 'res' was already consumed by 403 logic, this would fail if we didn't clone at the top)
         const rawRes = await resClone.text();
         
-        // ✅ SUPPRESS NOISY AUTH LOGS: 401 on /me or /refresh is a standard status check, not a failure.
+        // ✅ SUPPRESS NOISY AUTH/LICENSE LOGS: 401 on /me or 403 License Lock is handled by layout
         const isAuthStatusCheck = res.status === 401 && (path.includes("/auth/me") || path.includes("/auth/refresh"));
+        const isLicenseLock = res.status === 403 && rawRes.includes('"locked":true');
         
-        if (!isAuthStatusCheck) {
+        if (!isAuthStatusCheck && !isLicenseLock) {
           console.error(`[API ERROR] ${path}: status=${res.status}, body=${rawRes.slice(0, 500)}`);
         }
 

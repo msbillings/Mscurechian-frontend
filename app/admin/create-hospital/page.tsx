@@ -31,7 +31,9 @@ function CreateHospital() {
         rating: "4.5",
         location: { lat: "", lng: "" },
         specialities: [] as string[],
-        services: [] as string[]
+        services: [] as string[],
+        availablePortals: ['masterhelpdesk', 'hospitalAdmin'] as string[],
+        portalLicenses: {} as Record<string, { enabled: boolean; startDate: string; endDate: string }>
     });
 
     const [loading, setLoading] = useState(false);
@@ -101,6 +103,20 @@ function CreateHospital() {
         setFormData(prev => ({ ...prev, [field]: prev[field].filter((_, i) => i !== index) }));
     };
 
+
+    const handlePortalLicenseChange = (portal: string, field: string, value: any) => {
+        setFormData(prev => ({
+            ...prev,
+            portalLicenses: {
+                ...prev.portalLicenses,
+                [portal]: {
+                    ...(prev.portalLicenses[portal] || { enabled: false, startDate: "", endDate: "" }),
+                    [field]: value
+                }
+            }
+        }));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -145,8 +161,10 @@ function CreateHospital() {
                 operatingHours: formData.operatingHours?.trim() || "24/7",
                 ambulanceAvailability: formData.ambulanceAvailability,
                 rating: formData.rating || "",
-                specialities: formData.specialities || [],
-                services: formData.services || [],
+                specialities: formData.specialities,
+                services: formData.services,
+                availablePortals: formData.availablePortals,
+                portalLicenses: formData.portalLicenses
             };
 
             // Add location only if both lat and lng are provided
@@ -185,7 +203,8 @@ function CreateHospital() {
                 phone: "", email: "", pincode: "",
                 establishedYear: "", website: "", operatingHours: "24/7",
                 ambulanceAvailability: true, rating: "4.5",
-                location: { lat: "", lng: "" }, specialities: [], services: []
+                location: { lat: "", lng: "" }, specialities: [], services: [],
+                licenseStartDate: "", licenseEndDate: ""
             });
         } catch (err: any) {
             toast.dismiss(loadingToast);
@@ -271,6 +290,69 @@ function CreateHospital() {
                             placeholder="Eg. 4.5"
                             icon={<Star size={18} className="text-yellow-500" />}
                         />
+                    </div>
+                </Card>
+
+
+                {/* Portal Wise Licenses */}
+                <Card title="Portal-wise License Management" padding="p-8">
+                    <p className="text-sm text-gray-500 mb-8 -mt-2 font-medium">
+                        Enable specific portals for this hospital and set their individual license validity periods. Only allocated portals selected above will appear here.
+                    </p>
+                    
+                    <div className="space-y-4">
+                        {[
+                            { id: 'masterhelpdesk', label: 'Master Helpdesk' },
+                            { id: 'helpdesk', label: 'Helpdesk / Frontdesk' },
+                            { id: 'doctor', label: 'Doctor Portal' },
+                            { id: 'pharmacy', label: 'Pharmacy Portal' },
+                            { id: 'lab', label: 'Laboratory Portal' },
+                            { id: 'nurse', label: 'Nursing Portal' },
+                            { id: 'hospitalAdmin', label: 'Hospital Admin' },
+                            { id: 'staff', label: 'Staff Attendance' },
+                            { id: 'hr', label: 'HR Management' },
+                            { id: 'discharge', label: 'Discharge Portal' },
+                        ].filter(p => formData.availablePortals?.includes(p.id)).map((portal) => (
+                            <div key={portal.id} className="p-4 rounded-2xl border border-gray-100 bg-gray-50/30 hover:bg-white hover:border-blue-100 hover:shadow-sm transition-all duration-200">
+                                <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-8">
+                                    <div className="flex items-center gap-4 lg:w-[220px]">
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input 
+                                                type="checkbox" 
+                                                className="sr-only peer" 
+                                                checked={formData.portalLicenses[portal.id]?.enabled || false}
+                                                onChange={(e) => handlePortalLicenseChange(portal.id, 'enabled', e.target.checked)}
+                                            />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </label>
+                                        <span className="font-bold text-gray-900 text-sm tracking-tight">{portal.label}</span>
+                                    </div>
+
+                                    <div className="flex-1 grid grid-cols-2 gap-4">
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 ml-1">Start Date</label>
+                                            <input
+                                                type="date"
+                                                disabled={!formData.portalLicenses[portal.id]?.enabled}
+                                                value={formData.portalLicenses[portal.id]?.startDate || ""}
+                                                onChange={(e) => handlePortalLicenseChange(portal.id, 'startDate', e.target.value)}
+                                                className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all disabled:opacity-40 disabled:bg-gray-100/50"
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 ml-1">End Date</label>
+                                            <input
+                                                type="date"
+                                                disabled={!formData.portalLicenses[portal.id]?.enabled}
+                                                value={formData.portalLicenses[portal.id]?.endDate || ""}
+                                                onChange={(e) => handlePortalLicenseChange(portal.id, 'endDate', e.target.value)}
+                                                className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all disabled:opacity-40 disabled:bg-gray-100/50"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </Card>
 

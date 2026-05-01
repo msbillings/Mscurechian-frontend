@@ -4,6 +4,7 @@ import React, { useState, useEffect, useTransition } from "react";
 import { useRouter, usePathname, useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from '@/stores/authStore';
+import LicenseLock from "@/components/License/LicenseLock";
 import {
     LayoutDashboard,
     Users,
@@ -15,8 +16,10 @@ import {
     TestTube,
     Pause,
     FileText,
-    Calendar
+    Calendar,
+    ShieldCheck
 } from "lucide-react";
+import { doctorService } from '@/lib/integrations/services/doctor.service';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import NotificationCenter from "@/components/navbar/NotificationCenter";
 import LogoutModal from "@/components/auth/LogoutModal";
@@ -62,6 +65,11 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
     const [isPending, startTransition] = useTransition();
     const queryClient = useQueryClient();
     const { getPath } = useTenantLink();
+    const params_obj = useParams();
+    const hospitalId = params_obj.hospitalId as string;
+
+    const [isLicenseChecking, setIsLicenseChecking] = useState(true);
+    const [licenseError, setLicenseError] = useState<{ message: string; locked: boolean } | null>(null);
 
     // ... useNotifications, useDoctorInpatients, realtime hooks ...
     useRealtime(['appointments', 'patients', 'lab', 'pharmacy', 'beds', 'emergency', 'system']);
@@ -70,7 +78,26 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
         setIsMounted(true);
         useAuthStore.getState().initEvents();
         checkAuth();
+        verifyLicense();
     }, [checkAuth]);
+
+    const verifyLicense = async () => {
+        if (!isAuthenticated) return;
+        setIsLicenseChecking(true);
+        try {
+            await doctorService.getMe();
+            setLicenseError(null);
+        } catch (err: any) {
+            if (err.status === 403 && err.body?.locked) {
+                setLicenseError({
+                    message: err.body.message,
+                    locked: true
+                });
+            }
+        } finally {
+            setIsLicenseChecking(false);
+        }
+    };
 
     const { data: inpatientData } = useDoctorInpatients(user?.id, user?.role);
     const inpatientStats = React.useMemo(() => {
@@ -102,7 +129,7 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
         }
     }, [isAuthenticated, isInitialized, user?.role, router]);
 
-    if (!isMounted || isLoading || !isInitialized) {
+    if (!isMounted || isLoading || !isInitialized || isLicenseChecking) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-background">
                 <div className="flex flex-col items-center gap-6">
@@ -113,8 +140,21 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
                         </div>
                     </div>
                     <p className="text-xl font-black text-foreground uppercase tracking-tighter italic">Doctor Portal</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest -mt-4 animate-pulse">Checking License...</p>
                 </div>
             </div>
+        );
+    }
+
+    if (licenseError?.locked) {
+        return (
+            <LicenseLock 
+                message={licenseError.message}
+                onRefresh={() => window.location.reload()}
+                onLogout={() => logout()}
+                hospitalId={hospitalId}
+                portalName="Doctor"
+            />
         );
     }
 

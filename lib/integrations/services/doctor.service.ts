@@ -37,6 +37,7 @@ export const doctorService = {
   getDashboard: () => apiClient<DoctorDashboard>(DOCTOR_ENDPOINTS.DASHBOARD),
 
   // Profile
+  getMe: () => apiClient<any>(DOCTOR_ENDPOINTS.PROFILE),
   getProfile: () => apiClient<any>(DOCTOR_ENDPOINTS.PROFILE),
 
   // Patients

@@ -214,10 +214,10 @@ export const adminService = {
   },
 
   /** PATCH /super-admin/hospitals/:id/status */
-  updateHospitalStatusClient: (id: string, status: string) =>
+  updateHospitalStatusClient: (id: string, status: string, licenseStartDate?: string, licenseEndDate?: string, portalLicenses?: any) =>
     apiClient<Hospital>(ADMIN_ENDPOINTS.UPDATE_HOSPITAL_STATUS(id), {
       method: "PATCH",
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, licenseStartDate, licenseEndDate, portalLicenses }),
     }),
 
   /** GET /super-admin/hospitals/:id/personnel */

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from '@/stores/authStore';
+import LicenseLock from "@/components/License/LicenseLock";
 import { useThemeStore } from '@/stores/themeStore';
 import Navbar from '@/components/navbar/Navbar';
 import LogoutModal from '@/components/auth/LogoutModal';
@@ -25,7 +26,10 @@ import {
     ShoppingCart,
     ShoppingBag,
     ArrowLeftRight,
+    ShieldCheck,
+    Clock
 } from "lucide-react";
+import { useParams } from "next/navigation";
 
 const PharmacyLayout = ({ children }: { children: React.ReactNode }) => {
     const router = useRouter();
@@ -37,6 +41,11 @@ const PharmacyLayout = ({ children }: { children: React.ReactNode }) => {
     const [isPending, startTransition] = React.useTransition();
     const [isMounted, setIsMounted] = useState(false);
     const { getPath } = useTenantLink();
+    const params_obj = useParams();
+    const hospitalId = params_obj.hospitalId as string;
+
+    const [isLicenseChecking, setIsLicenseChecking] = useState(true);
+    const [licenseError, setLicenseError] = useState<{ message: string; locked: boolean } | null>(null);
 
     useRealtime(['pharmacy', 'inventory', 'billing', 'patients', 'system']);
 
@@ -54,7 +63,26 @@ const PharmacyLayout = ({ children }: { children: React.ReactNode }) => {
         setIsMounted(true);
         useAuthStore.getState().initEvents();
         checkAuth();
+        verifyLicense();
     }, [checkAuth]);
+
+    const verifyLicense = async () => {
+        if (isLoginPage || !isAuthenticated) return;
+        setIsLicenseChecking(true);
+        try {
+            await pharmacyService.getMe();
+            setLicenseError(null);
+        } catch (err: any) {
+            if (err.status === 403 && err.body?.locked) {
+                setLicenseError({
+                    message: err.body.message,
+                    locked: true
+                });
+            }
+        } finally {
+            setIsLicenseChecking(false);
+        }
+    };
 
     useEffect(() => {
         if (!isLoginPage && isInitialized) {
@@ -73,7 +101,7 @@ const PharmacyLayout = ({ children }: { children: React.ReactNode }) => {
         }
     }, [isAuthenticated, isInitialized, user?.role, router, isPharma, isLoginPage, getPath]);
 
-    if (!isLoginPage && (!isMounted || isLoading || !isInitialized)) {
+    if (!isLoginPage && (!isMounted || isLoading || !isInitialized || isLicenseChecking)) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center gap-6">
@@ -82,8 +110,21 @@ const PharmacyLayout = ({ children }: { children: React.ReactNode }) => {
                         <div className="absolute inset-0 flex items-center justify-center text-teal-600 font-bold">PHARMA</div>
                     </div>
                     <p className="text-xl font-black text-gray-900 uppercase tracking-tighter italic">Pharmacy Panel</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest -mt-4 animate-pulse">Checking License...</p>
                 </div>
             </div>
+        );
+    }
+
+    if (licenseError?.locked) {
+        return (
+            <LicenseLock 
+                message={licenseError.message}
+                onRefresh={() => window.location.reload()}
+                onLogout={() => logout()}
+                hospitalId={hospitalId}
+                portalName="Pharmacy"
+            />
         );
     }
 

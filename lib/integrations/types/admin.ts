@@ -1,4 +1,4 @@
-﻿export interface Hospital {
+export interface Hospital {
   _id: string;
   hospitalId?: string; // Human readable ID if available
   name: string;
@@ -42,9 +42,28 @@
   departmentCount?: number;
   medicalStaffCount?: number;
   unitTypes?: string[];
-  createdAt: string;
-  updatedAt: string;
   logo?: string;
+  availablePortals?: string[];
+  portalLicenses?: {
+    masterhelpdesk?: PortalLicense;
+    helpdesk?: PortalLicense;
+    doctor?: PortalLicense;
+    pharmacy?: PortalLicense;
+    lab?: PortalLicense;
+    nurse?: PortalLicense;
+    hospitalAdmin?: PortalLicense;
+    staff?: PortalLicense;
+    hr?: PortalLicense;
+    discharge?: PortalLicense;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PortalLicense {
+  enabled: boolean;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface Doctor {
@@ -367,6 +386,10 @@ export interface CreateHospitalRequest {
   operatingHours?: string;
   rating?: string;
   logo?: string;
+  availablePortals?: string[];
+  portalLicenses?: {
+    [key: string]: PortalLicense;
+  };
 }
 
 export interface AssignDoctorRequest {

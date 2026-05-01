@@ -155,6 +155,11 @@ const normalizeDashboardResponse = (response: any): PharmacyDashboardStats => {
 // ─── Service ────────────────────────────────────────────────────────────
 
 export const pharmacyService = {
+  // ─── Profile & Auth ─────────────────────────────────────────────────────────
+
+  /** GET /pharmacy/reports/dashboard - used as lightweight check */
+  getMe: () => apiClient(PHARMACY_ENDPOINTS.REPORTS.DASHBOARD),
+
   // ─── Dashboard & Reports ─────────────────────────────────────────────────────
 
   /** GET /pharmacy/reports/dashboard */
