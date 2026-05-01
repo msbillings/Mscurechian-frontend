@@ -9,8 +9,10 @@ import {
     ChevronRight,
     PlusCircle,
     TrendingUp,
+    TrendingDown,
     Wallet,
     Activity,
+    Clock,
     Search,
     RefreshCcw
 } from 'lucide-react';
@@ -391,48 +393,75 @@ const PharmacyDashboard = () => {
                     </div>
                 </div>
 
-                {/* Top Selling Products */}
+                {/* Slow Movers + Near Expiry (Right 2 cols) */}
                 <div className="xl:col-span-2">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm h-full flex flex-col overflow-hidden hover:shadow-md transition-all">
-                        <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/20 dark:bg-gray-800/10">
+                        <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-amber-50/30 dark:bg-amber-950/10">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-teal-50 dark:bg-teal-950/20 text-teal-600 rounded-xl">
-                                    <TrendingUp size={18} />
+                                <div className="p-2 bg-amber-50 dark:bg-amber-950/20 text-amber-600 rounded-xl">
+                                    <TrendingDown size={18} />
                                 </div>
                                 <div>
-                                    <h4 className="text-[10px] md:text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">Top Selling Medicines</h4>
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase mt-0.5 tracking-tight">Best Selling Items</p>
+                                    <h4 className="text-[10px] md:text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">Slow Movers · Near Expiry</h4>
+                                    <p className="text-[9px] font-bold text-amber-500 uppercase mt-0.5 tracking-tight">Least Sold · Expiring 6–9 Months</p>
                                 </div>
                             </div>
+                            <Link href={`/${hospitalId}/hospital-admin/pharma/products`}>
+                                <span className="text-[9px] font-black text-teal-600 hover:underline cursor-pointer uppercase tracking-widest">View All</span>
+                            </Link>
                         </div>
-                        <div className="p-2 md:p-4 flex-1">
-                            {stats.topProducts && stats.topProducts.length > 0 ? (
-                                <div className="space-y-1 md:space-y-2">
-                                    {stats.topProducts.map((product: any, i: number) => (
-                                        <div key={`top-product-${product.name}-${i}`} className="p-3 md:p-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded-2xl transition-all flex items-center justify-between group border border-transparent hover:border-gray-100 dark:hover:border-gray-700">
-                                            <div className="flex items-center gap-3 md:gap-4 min-w-0">
-                                                <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center border border-gray-100 dark:border-gray-700 group-hover:bg-teal-600 transition-all shrink-0">
-                                                    <span className="text-[10px] md:text-xs font-black text-gray-400 group-hover:text-white">{i + 1}</span>
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="text-[10px] md:text-xs font-black text-gray-700 dark:text-gray-200 uppercase truncate mb-0.5">{product.name}</p>
-                                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                                        <span className="text-[8px] md:text-[9px] font-bold text-gray-400 uppercase whitespace-nowrap">{product.quantity} Units Sold</span>
-                                                        <span className="w-1 h-1 bg-gray-300 rounded-full" />
-                                                        <span className="text-[8px] md:text-[9px] font-black text-teal-600 uppercase whitespace-nowrap">Peak Sales</span>
+                        <div className="p-2 md:p-3 flex-1 overflow-y-auto max-h-[420px] no-scrollbar">
+                            {stats.leastSellingProducts && stats.leastSellingProducts.length > 0 ? (
+                                <div className="space-y-1">
+                                    {stats.leastSellingProducts.map((product: any, i: number) => {
+                                        const expiry = new Date(product.expiryDate);
+                                        const monthsLeft = Math.ceil(
+                                            (expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30)
+                                        );
+                                        const expiryColor =
+                                            monthsLeft <= 6
+                                                ? 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-950/20 dark:border-rose-900/30'
+                                                : monthsLeft <= 7
+                                                    ? 'bg-orange-50 text-orange-500 border-orange-100 dark:bg-orange-950/20 dark:border-orange-900/30'
+                                                    : 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/20 dark:border-amber-900/30';
+                                        return (
+                                            <div
+                                                key={`slow-mover-${product.name}-${i}`}
+                                                className="p-2.5 md:p-3 hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded-xl transition-all flex items-center justify-between group border border-transparent hover:border-amber-100 dark:hover:border-amber-900/30"
+                                            >
+                                                <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                                                    <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center border border-amber-100 dark:border-amber-800/40 group-hover:bg-amber-500 transition-all shrink-0">
+                                                        <span className="text-[9px] md:text-[10px] font-black text-amber-500 group-hover:text-white">{i + 1}</span>
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-[10px] md:text-xs font-black text-gray-700 dark:text-gray-200 uppercase truncate mb-0.5">{product.name}</p>
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            {product.brand && (
+                                                                <span className="text-[8px] font-bold text-gray-400 uppercase whitespace-nowrap">{product.brand}</span>
+                                                            )}
+                                                            <span className="text-[8px] font-bold text-gray-300">·</span>
+                                                            <span className="text-[8px] font-bold text-teal-500 uppercase whitespace-nowrap">{product.qtySold} Sold</span>
+                                                            <span className="text-[8px] font-bold text-gray-300">·</span>
+                                                            <span className="text-[8px] font-bold text-gray-400 uppercase whitespace-nowrap">{product.stock} In Stock</span>
+                                                        </div>
                                                     </div>
                                                 </div>
+                                                <div className="flex flex-col items-end gap-1 ml-2 shrink-0">
+                                                    <span className={`flex items-center gap-1 text-[8px] font-black px-1.5 py-0.5 rounded border uppercase ${expiryColor}`}>
+                                                        <Clock size={8} />
+                                                        {monthsLeft}M
+                                                    </span>
+                                                    <span className="text-[9px] font-black text-gray-500 dark:text-gray-400 font-mono">₹{product.mrp}</span>
+                                                </div>
                                             </div>
-                                            <div className="text-right ml-2 shrink-0">
-                                                <p className="text-[11px] md:text-sm font-black text-gray-900 dark:text-white font-mono tracking-tighter">{formatCurrency(product.revenue)}</p>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             ) : (
-                                <div className="h-full flex flex-col items-center justify-center py-20 text-gray-300 dark:text-gray-600 opacity-50">
-                                    <Search size={40} strokeWidth={1.5} className="mb-4" />
-                                    <p className="text-xs font-black uppercase tracking-[0.3em]">No registry data</p>
+                                <div className="h-full flex flex-col items-center justify-center py-16 text-gray-300 dark:text-gray-600 opacity-50">
+                                    <TrendingDown size={36} strokeWidth={1.5} className="mb-3" />
+                                    <p className="text-xs font-black uppercase tracking-[0.3em]">No slow movers</p>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest mt-1 text-gray-400">All medicines selling well</p>
                                 </div>
                             )}
                         </div>

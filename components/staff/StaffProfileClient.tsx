@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -9,7 +9,7 @@ import {
     Calendar as CalendarIcon,
     Landmark, ShieldCheck,
     Building, BookOpen, FileText, CheckCircle2, Loader2,
-    Eye, Upload, X
+    Eye, Upload
 } from 'lucide-react';
 import { getStaffProfileAction, getStaffDashboardAction } from '@/lib/integrations/actions/staff.actions';
 import StaffProfileHeader from '@/components/staff/StaffProfileHeader';

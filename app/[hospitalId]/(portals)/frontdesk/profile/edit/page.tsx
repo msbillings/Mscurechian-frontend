@@ -3,14 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
-    User, Mail, Phone, Briefcase, Award,
-    CreditCard, Building, Landmark, Wallet,
-    Save, ArrowLeft, Image as ImageIcon, Plus, X,
-    Calendar, Clock, FileText, Upload, CheckCircle2, Eye
+    User, Mail, Phone, Briefcase, Award,Building, Landmark, Wallet,
+    Save, ArrowLeft, Plus, X,
+    Calendar, FileText
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getStaffProfileAction, updateStaffProfileAction } from '@/lib/integrations/actions/staff.actions';
-import { motion, AnimatePresence } from 'framer-motion';
 
 // --- SHARED COMPONENTS ---
 const DocumentViewerModal = ({ isOpen, onClose, url, title }: any) => {

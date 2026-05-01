@@ -2,12 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  ReceiptText, 
   Download, 
   ExternalLink, 
   TrendingUp, 
   ArrowUpRight, 
-  ArrowDownRight,
   Wallet,
   CreditCard,
   Banknote,

@@ -3,12 +3,8 @@
 import React, { useState } from 'react';
 import {
     X,
-    Save,
-    Calendar,
-    Box,
-    Building2,
     IndianRupee,
-    Pill
+    Save
 } from 'lucide-react';
 import { PharmacyProduct, PharmacyProductPayload } from '@/lib/integrations/types/product';
 import { SupplierService } from '@/lib/integrations/services/supplier.service';

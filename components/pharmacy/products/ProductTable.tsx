@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Edit2, Trash2, Tag, Info } from 'lucide-react';
+import { Edit2, Trash2, Info } from 'lucide-react';
 import { PharmacyProduct } from '@/lib/integrations/types/product';
 import { PharmacyTableSkeleton } from '@/components/ui/skeletons';
 

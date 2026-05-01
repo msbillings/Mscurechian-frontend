@@ -6,6 +6,7 @@ import { hospitalAdminService } from "@/lib/integrations";
 import { User, Briefcase, FileText, Clock, Globe, Eye, EyeOff, ArrowLeft, Activity, Plus, CreditCard, AlertCircle, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Card } from "@/components/admin";
+import { InfrastructureCheck } from "../../components/InfrastructureCheck";
 
 interface FormData {
   honorific:string;
@@ -61,7 +62,7 @@ function Field({label,name,value,onChange,onBlur,error,touched,type="text",place
   );
 }
 
-export default React.memo(function CreateStaff(){
+const CreateStaff = () => {
   const router=useRouter(), { hospitalId } = useParams(), queryClient=useQueryClient();
   const [shifts,setShifts]=useState<any[]>([]);
   const [availableDepts,setAvailableDepts]=useState<string[]>([]);
@@ -187,187 +188,191 @@ export default React.memo(function CreateStaff(){
   const bCls=(n:string,v:string)=>touched[n]&&errors[n]?"border-rose-400 bg-rose-50/30 focus:ring-2 focus:ring-rose-400/20":touched[n]&&!errors[n]&&v?"border-emerald-400 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-400/20":"border-gray-200 dark:border-white/10 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500/20";
 
   return(
-    <div className="max-w-7xl mx-auto pb-12 space-y-6">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 md:p-6 border border-gray-100 dark:border-white/5 shadow-sm">
-        <div className="flex items-center gap-4">
-          <button onClick={()=>router.push(`/${hospitalId}/hospital-admin/staff`)} className="p-2 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-all"><ArrowLeft size={16}/></button>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Add New Staff Member</h1>
-            <p className="text-gray-500 text-xs mt-0.5">Fields marked <span className="text-rose-500">*</span> are required.</p>
+    <InfrastructureCheck>
+      <div className="max-w-7xl mx-auto pb-12 space-y-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 md:p-6 border border-gray-100 dark:border-white/5 shadow-sm">
+          <div className="flex items-center gap-4">
+            <button onClick={()=>router.push(`/${hospitalId}/hospital-admin/staff`)} className="p-2 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-all"><ArrowLeft size={16}/></button>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Add New Staff Member</h1>
+              <p className="text-gray-500 text-xs mt-0.5">Fields marked <span className="text-rose-500">*</span> are required.</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Card title="Personal Information" icon={<User className="text-blue-500"/>} padding="p-2 md:p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Honorific<span className="text-rose-500 ml-0.5">*</span></label>
-                <select name="honorific" value={formData.honorific} onChange={handleChange} required className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all">
-                  <option value="Mr">Mr</option><option value="Mrs">Mrs</option><option value="Ms">Ms</option><option value="Dr">Dr</option>
-                </select>
-              </div>
-              <Field label="Full Name" {...f("name")} required placeholder="e.g. Amit Sharma"/>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Gender</label>
-                <select name="gender" value={formData.gender} onChange={handleChange} className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all">
-                  <option value="">Select Gender</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
-                </select>
-              </div>
-              <Field label="Email Address" {...f("email")} required type="email" placeholder="staff@hospital.com"/>
-              <Field label="Mobile Number" {...f("mobile")} required type="tel" placeholder="10-digit number"/>
-              <Field label="Father's Name" {...f("fatherName")} placeholder="Optional"/>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Date of Birth</label>
-                <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} max={new Date().toISOString().split('T')[0]} className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"/>
-              </div>
-              <Field label="Work Location" {...f("workLocation")} placeholder="e.g. Ward 2"/>
-              <div className="relative space-y-1.5 md:col-span-2">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Password<span className="text-rose-500 ml-0.5">*</span></label>
-                <div className="relative">
-                  <input type={showPwd?"text":"password"} name="password" value={formData.password} onChange={handleChange} onBlur={e=>handleBlur("password",e.target.value)} placeholder="Min 6 characters" className={`w-full px-4 py-2.5 pr-10 border rounded-xl text-sm outline-none transition-all ${bCls("password",formData.password)}`}/>
-                  <button type="button" onClick={()=>setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-500 transition-colors">{showPwd?<EyeOff size={16}/>:<Eye size={16}/>}</button>
+        <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Card title="Personal Information" icon={<User className="text-blue-500"/>} padding="p-2 md:p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Honorific<span className="text-rose-500 ml-0.5">*</span></label>
+                  <select name="honorific" value={formData.honorific} onChange={handleChange} required className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all">
+                    <option value="Mr">Mr</option><option value="Mrs">Mrs</option><option value="Ms">Ms</option><option value="Dr">Dr</option>
+                  </select>
                 </div>
-                <Err msg={touched.password?errors.password:undefined}/>
-                {touched.password&&!errors.password&&formData.password&&<p className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 mt-1"><CheckCircle2 size={12}/>Password looks good</p>}
+                <Field label="Full Name" {...f("name")} required placeholder="e.g. Amit Sharma"/>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Gender</label>
+                  <select name="gender" value={formData.gender} onChange={handleChange} className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all">
+                    <option value="">Select Gender</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
+                  </select>
+                </div>
+                <Field label="Email Address" {...f("email")} required type="email" placeholder="staff@hospital.com"/>
+                <Field label="Mobile Number" {...f("mobile")} required type="tel" placeholder="10-digit number"/>
+                <Field label="Father's Name" {...f("fatherName")} placeholder="Optional"/>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Date of Birth</label>
+                  <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} max={new Date().toISOString().split('T')[0]} className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"/>
+                </div>
+                <Field label="Work Location" {...f("workLocation")} placeholder="e.g. Ward 2"/>
+                <div className="relative space-y-1.5 md:col-span-2">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Password<span className="text-rose-500 ml-0.5">*</span></label>
+                  <div className="relative">
+                    <input type={showPwd?"text":"password"} name="password" value={formData.password} onChange={handleChange} onBlur={e=>handleBlur("password",e.target.value)} placeholder="Min 6 characters" className={`w-full px-4 py-2.5 pr-10 border rounded-xl text-sm outline-none transition-all ${bCls("password",formData.password)}`}/>
+                    <button type="button" onClick={()=>setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-500 transition-colors">{showPwd?<EyeOff size={16}/>:<Eye size={16}/>}</button>
+                  </div>
+                  <Err msg={touched.password?errors.password:undefined}/>
+                  {touched.password&&!errors.password&&formData.password&&<p className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 mt-1"><CheckCircle2 size={12}/>Password looks good</p>}
+                </div>
               </div>
-            </div>
-          </Card>
+            </Card>
 
-          <Card title="Employment Details" icon={<Briefcase className="text-indigo-500"/>} padding="p-2 md:p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Department<span className="text-rose-500 ml-0.5">*</span></label>
-                <select name="department" value={formData.department} onChange={handleChange} className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all">
-                  <option value="">Select Department</option>{availableDepts.map(d=><option key={d} value={d}>{d}</option>)}
-                </select>
+            <Card title="Employment Details" icon={<Briefcase className="text-indigo-500"/>} padding="p-2 md:p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Department<span className="text-rose-500 ml-0.5">*</span></label>
+                  <select name="department" value={formData.department} onChange={handleChange} className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all">
+                    <option value="">Select Department</option>{availableDepts.map(d=><option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+                <Field label="Designation" {...f("designation")} required placeholder="e.g. Ward Boy, Technician"/>
+                <Field label="Employee ID" {...f("employeeId")} required placeholder="Hospital Employee ID"/>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Contract Type</label>
+                  <select name="employmentType" value={formData.employmentType} onChange={handleChange} className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none cursor-pointer">
+                    <option value="full-time">Full-Time</option><option value="part-time">Part-Time</option><option value="contract">Contract</option>
+                  </select>
+                </div>
               </div>
-              <Field label="Designation" {...f("designation")} required placeholder="e.g. Ward Boy, Technician"/>
-              <Field label="Employee ID" {...f("employeeId")} required placeholder="Hospital Employee ID"/>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Contract Type</label>
-                <select name="employmentType" value={formData.employmentType} onChange={handleChange} className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none cursor-pointer">
-                  <option value="full-time">Full-Time</option><option value="part-time">Part-Time</option><option value="contract">Contract</option>
-                </select>
-              </div>
-            </div>
-          </Card>
+            </Card>
 
-          <Card title="Shift Details" icon={<Clock className="text-amber-500"/>} padding="p-2 md:p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Active Shift<span className="text-rose-500 ml-0.5">*</span></label>
-                <select name="shift" value={formData.shift} onChange={handleChange} className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none cursor-pointer">
-                  <option value="">Select Shift</option>{shifts.map((s:any)=><option key={s._id} value={s._id}>{s.name} [{s.startTime} - {s.endTime}]</option>)}
-                </select>
+            <Card title="Shift Details" icon={<Clock className="text-amber-500"/>} padding="p-2 md:p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Active Shift<span className="text-rose-500 ml-0.5">*</span></label>
+                  <select name="shift" value={formData.shift} onChange={handleChange} className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none cursor-pointer">
+                    <option value="">Select Shift</option>{shifts.map((s:any)=><option key={s._id} value={s._id}>{s.name} [{s.startTime} - {s.endTime}]</option>)}
+                  </select>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[["Start",formData.startTime],["End",formData.endTime]].map(([l,v])=>(
+                    <div key={l} className="space-y-1.5"><label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">{l}</label><div className="px-4 py-2 bg-gray-50 dark:bg-white/5 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-400 border border-gray-100 dark:border-white/5">{v}</div></div>
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {[["Start",formData.startTime],["End",formData.endTime]].map(([l,v])=>(
-                  <div key={l} className="space-y-1.5"><label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">{l}</label><div className="px-4 py-2 bg-gray-50 dark:bg-white/5 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-400 border border-gray-100 dark:border-white/5">{v}</div></div>
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Weekly Off</h4>
+                <div className="flex flex-wrap gap-2">
+                  {DAYS.map(day=><button key={day} type="button" onClick={()=>toggleDay(day)} className={`px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border ${formData.weeklyOff.includes(day)?'bg-blue-600 text-white border-blue-600 shadow-sm':'bg-gray-50 dark:bg-white/5 text-gray-400 border-gray-100 dark:border-white/10 hover:border-blue-500/30'}`}>{day.substring(0,3)}</button>)}
+                </div>
+              </div>
+            </Card>
+
+            <Card
+              title="Financial & Identity Details"
+              icon={<CreditCard className="text-blue-600"/>}
+              padding="p-2 md:p-6"
+              extra={<button type="button" onClick={markFinancialNA} className="text-[9px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-all border border-indigo-100">Mark all as N/A</button>}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Base Salary</label>
+                  <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">₹</span><input type="text" name="baseSalary" value={formData.baseSalary} onChange={handleChange} placeholder="e.g. 25000" className="w-full pl-7 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-bold text-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"/></div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">PAN Number</label>
+                  <div className="relative"><input type="text" name="panNumber" value={formData.panNumber} onChange={handleChange} onBlur={e=>handleBlur("panNumber",e.target.value)} placeholder="ABCDE1234F" maxLength={10} className={`w-full px-4 py-2.5 pr-9 border rounded-xl text-sm uppercase font-bold outline-none transition-all ${bCls("panNumber",formData.panNumber)}`}/>{touched.panNumber&&!errors.panNumber&&formData.panNumber&&<CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500"/>}</div>
+                  <Err msg={touched.panNumber?errors.panNumber:undefined}/>{!formData.panNumber&&<p className="text-[10px] text-gray-400 ml-1">Format: ABCDE1234F</p>}
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Aadhar Number</label>
+                  <div className="relative"><input type="text" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} onBlur={e=>handleBlur("aadharNumber",e.target.value)} placeholder="12-digit Aadhar" className={`w-full px-4 py-2.5 pr-9 border rounded-xl text-sm font-bold outline-none transition-all ${bCls("aadharNumber",formData.aadharNumber)}`}/>{touched.aadharNumber&&!errors.aadharNumber&&formData.aadharNumber&&<CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500"/>}</div>
+                  <Err msg={touched.aadharNumber?errors.aadharNumber:undefined}/>{!formData.aadharNumber&&<p className="text-[10px] text-gray-400 ml-1">Must be exactly 12 digits</p>}
+                </div>
+                <Field label="PF Number" {...f("pfNumber")} placeholder="PF Number"/>
+                <Field label="ESI Number" {...f("esiNumber")} placeholder="ESI Number"/>
+                <Field label="UAN Number" {...f("uanNumber")} placeholder="UAN Number"/>
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5 pt-4 border-t border-gray-50 dark:border-white/5">
+                  <div className="space-y-1.5"><label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Account Holder Name</label><input type="text" name="accountName" value={formData.bankDetails.accountName} onChange={handleBankChange} placeholder="Name as per bank" className="w-full px-4 py-2.5 uppercase bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"/></div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Account Number</label>
+                    <div className="relative"><input type="text" name="accountNumber" value={formData.bankDetails.accountNumber} onChange={handleBankChange} onBlur={e=>handleBankBlur("accountNumber",e.target.value)} placeholder="9–18 digits" className={`w-full px-4 py-2.5 pr-9 border rounded-xl text-sm font-bold outline-none transition-all ${bCls("accountNumber",formData.bankDetails.accountNumber)}`}/>{touched.accountNumber&&!errors.accountNumber&&formData.bankDetails.accountNumber&&<CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500"/>}</div>
+                    <Err msg={touched.accountNumber?errors.accountNumber:undefined}/>{!formData.bankDetails.accountNumber&&<p className="text-[10px] text-gray-400 ml-1">Must be 9 to 18 digits</p>}
+                  </div>
+                  <div className="space-y-1.5"><label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Bank Name</label><input type="text" name="bankName" value={formData.bankDetails.bankName} onChange={handleBankChange} placeholder="e.g. HDFC Bank" className="w-full px-4 py-2.5 uppercase bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"/></div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">IFSC Code</label>
+                    <div className="relative"><input type="text" name="ifscCode" value={formData.bankDetails.ifscCode} onChange={handleBankChange} onBlur={e=>handleBankBlur("ifscCode",e.target.value)} placeholder="e.g. HDFC0001234" maxLength={11} className={`w-full px-4 py-2.5 pr-9 uppercase border rounded-xl text-sm font-bold outline-none transition-all ${bCls("ifscCode",formData.bankDetails.ifscCode)}`}/>{touched.ifscCode&&!errors.ifscCode&&formData.bankDetails.ifscCode&&<CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500"/>}</div>
+                    <Err msg={touched.ifscCode?errors.ifscCode:undefined}/>{!formData.bankDetails.ifscCode&&<p className="text-[10px] text-gray-400 ml-1">Format: ABCD0123456</p>}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          <div className="space-y-6">
+            <Card title="Emergency Contact" icon={<Activity className="text-rose-500"/>} padding="p-2 md:p-6">
+              <div className="space-y-4">
+                <div className="space-y-1.5"><label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Full Name</label><input type="text" name="emergencyContactName" value={formData.emergencyContactName} onChange={handleChange} placeholder="Contact person" className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"/></div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Mobile</label>
+                  <div className="relative"><input type="tel" name="emergencyContactMobile" value={formData.emergencyContactMobile} onChange={handleChange} onBlur={e=>handleBlur("emergencyContactMobile",e.target.value)} placeholder="10-digit number" className={`w-full px-4 py-2.5 pr-9 border rounded-xl text-sm outline-none transition-all ${bCls("emergencyContactMobile",formData.emergencyContactMobile)}`}/>{touched.emergencyContactMobile&&!errors.emergencyContactMobile&&formData.emergencyContactMobile&&<CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500"/>}</div>
+                  <Err msg={touched.emergencyContactMobile?errors.emergencyContactMobile:undefined}/>
+                </div>
+                <div className="space-y-1.5"><label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Relationship</label><input type="text" name="emergencyContactRelationship" value={formData.emergencyContactRelationship} onChange={handleChange} placeholder="e.g. Spouse / Parent" className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"/></div>
+              </div>
+            </Card>
+
+            <Card title="Qualifications & Certifications" icon={<Globe className="text-indigo-500"/>} padding="p-2 md:p-6">
+              <div className="space-y-6">
+                {([{label:"Education / Degrees",temp:tempQ,setT:setTempQ,type:'qualification' as const,items:formData.qualifications,k:'qualifications' as const,ph:"e.g. MBBS, Diploma"},{label:"Certifications",temp:tempC,setT:setTempC,type:'certification' as const,items:formData.certifications,k:'certifications' as const,ph:"e.g. ACLS, BLS"}]).map(({label,temp,setT,type,items,k,ph})=>(
+                  <div key={type} className="space-y-3">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">{label}</label>
+                    <div className="flex gap-2"><input type="text" value={temp} onChange={e=>setT(e.target.value)} onKeyDown={e=>e.key==='Enter'&&(e.preventDefault(),addItem(type))} placeholder={ph} className="flex-1 px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500/10 outline-none"/><button type="button" onClick={()=>addItem(type)} className="p-2.5 bg-blue-600 text-white rounded-xl active:scale-90 transition-transform"><Plus size={16}/></button></div>
+                    <div className="flex flex-wrap gap-2">{items.map(q=><button key={q} type="button" onClick={()=>removeItem(k,q)} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 transition-all">{q}<span>×</span></button>)}</div>
+                  </div>
                 ))}
               </div>
-            </div>
-            <div className="space-y-4">
-              <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Weekly Off</h4>
-              <div className="flex flex-wrap gap-2">
-                {DAYS.map(day=><button key={day} type="button" onClick={()=>toggleDay(day)} className={`px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border ${formData.weeklyOff.includes(day)?'bg-blue-600 text-white border-blue-600 shadow-sm':'bg-gray-50 dark:bg-white/5 text-gray-400 border-gray-100 dark:border-white/10 hover:border-blue-500/30'}`}>{day.substring(0,3)}</button>)}
-              </div>
-            </div>
-          </Card>
+            </Card>
 
-          <Card
-            title="Financial & Identity Details"
-            icon={<CreditCard className="text-blue-600"/>}
-            padding="p-2 md:p-6"
-            extra={<button type="button" onClick={markFinancialNA} className="text-[9px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-all border border-indigo-100">Mark all as N/A</button>}
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <Card title="Skills & Capacities" icon={<FileText className="text-blue-500"/>} padding="p-2 md:p-6">
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Add Skills</label>
+                <div className="flex gap-2"><input type="text" value={tempS} onChange={e=>setTempS(e.target.value)} onKeyDown={e=>e.key==='Enter'&&(e.preventDefault(),addItem('skill'))} placeholder="e.g. Data Entry, Phlebotomy" className="flex-1 px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500/10 outline-none"/><button type="button" onClick={()=>addItem('skill')} className="p-2.5 bg-blue-600 text-white rounded-xl active:scale-90 transition-transform"><Plus size={16}/></button></div>
+                <div className="flex flex-wrap gap-2">{formData.skills.map(s=><button key={s} type="button" onClick={()=>removeItem('skills',s)} className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 transition-all">{s}<span>×</span></button>)}</div>
+              </div>
+            </Card>
+
+            <Card title="System Status" icon={<Activity className="text-blue-500"/>} padding="p-2 md:p-6">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Base Salary</label>
-                <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">₹</span><input type="text" name="baseSalary" value={formData.baseSalary} onChange={handleChange} placeholder="e.g. 25000" className="w-full pl-7 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-bold text-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"/></div>
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Initial Status</label>
+                <select name="status" value={formData.status} onChange={handleChange} className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all">
+                  <option value="active">Active</option><option value="inactive">Inactive</option>
+                </select>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">PAN Number</label>
-                <div className="relative"><input type="text" name="panNumber" value={formData.panNumber} onChange={handleChange} onBlur={e=>handleBlur("panNumber",e.target.value)} placeholder="ABCDE1234F" maxLength={10} className={`w-full px-4 py-2.5 pr-9 border rounded-xl text-sm uppercase font-bold outline-none transition-all ${bCls("panNumber",formData.panNumber)}`}/>{touched.panNumber&&!errors.panNumber&&formData.panNumber&&<CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500"/>}</div>
-                <Err msg={touched.panNumber?errors.panNumber:undefined}/>{!formData.panNumber&&<p className="text-[10px] text-gray-400 ml-1">Format: ABCDE1234F</p>}
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Aadhar Number</label>
-                <div className="relative"><input type="text" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} onBlur={e=>handleBlur("aadharNumber",e.target.value)} placeholder="12-digit Aadhar" className={`w-full px-4 py-2.5 pr-9 border rounded-xl text-sm font-bold outline-none transition-all ${bCls("aadharNumber",formData.aadharNumber)}`}/>{touched.aadharNumber&&!errors.aadharNumber&&formData.aadharNumber&&<CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500"/>}</div>
-                <Err msg={touched.aadharNumber?errors.aadharNumber:undefined}/>{!formData.aadharNumber&&<p className="text-[10px] text-gray-400 ml-1">Must be exactly 12 digits</p>}
-              </div>
-              <Field label="PF Number" {...f("pfNumber")} placeholder="PF Number"/>
-              <Field label="ESI Number" {...f("esiNumber")} placeholder="ESI Number"/>
-              <Field label="UAN Number" {...f("uanNumber")} placeholder="UAN Number"/>
-              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5 pt-4 border-t border-gray-50 dark:border-white/5">
-                <div className="space-y-1.5"><label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Account Holder Name</label><input type="text" name="accountName" value={formData.bankDetails.accountName} onChange={handleBankChange} placeholder="Name as per bank" className="w-full px-4 py-2.5 uppercase bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"/></div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Account Number</label>
-                  <div className="relative"><input type="text" name="accountNumber" value={formData.bankDetails.accountNumber} onChange={handleBankChange} onBlur={e=>handleBankBlur("accountNumber",e.target.value)} placeholder="9–18 digits" className={`w-full px-4 py-2.5 pr-9 border rounded-xl text-sm font-bold outline-none transition-all ${bCls("accountNumber",formData.bankDetails.accountNumber)}`}/>{touched.accountNumber&&!errors.accountNumber&&formData.bankDetails.accountNumber&&<CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500"/>}</div>
-                  <Err msg={touched.accountNumber?errors.accountNumber:undefined}/>{!formData.bankDetails.accountNumber&&<p className="text-[10px] text-gray-400 ml-1">Must be 9 to 18 digits</p>}
-                </div>
-                <div className="space-y-1.5"><label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Bank Name</label><input type="text" name="bankName" value={formData.bankDetails.bankName} onChange={handleBankChange} placeholder="e.g. HDFC Bank" className="w-full px-4 py-2.5 uppercase bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"/></div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">IFSC Code</label>
-                  <div className="relative"><input type="text" name="ifscCode" value={formData.bankDetails.ifscCode} onChange={handleBankChange} onBlur={e=>handleBankBlur("ifscCode",e.target.value)} placeholder="e.g. HDFC0001234" maxLength={11} className={`w-full px-4 py-2.5 pr-9 uppercase border rounded-xl text-sm font-bold outline-none transition-all ${bCls("ifscCode",formData.bankDetails.ifscCode)}`}/>{touched.ifscCode&&!errors.ifscCode&&formData.bankDetails.ifscCode&&<CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500"/>}</div>
-                  <Err msg={touched.ifscCode?errors.ifscCode:undefined}/>{!formData.bankDetails.ifscCode&&<p className="text-[10px] text-gray-400 ml-1">Format: ABCD0123456</p>}
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
+            </Card>
 
-        <div className="space-y-6">
-          <Card title="Emergency Contact" icon={<Activity className="text-rose-500"/>} padding="p-2 md:p-6">
-            <div className="space-y-4">
-              <div className="space-y-1.5"><label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Full Name</label><input type="text" name="emergencyContactName" value={formData.emergencyContactName} onChange={handleChange} placeholder="Contact person" className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"/></div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Mobile</label>
-                <div className="relative"><input type="tel" name="emergencyContactMobile" value={formData.emergencyContactMobile} onChange={handleChange} onBlur={e=>handleBlur("emergencyContactMobile",e.target.value)} placeholder="10-digit number" className={`w-full px-4 py-2.5 pr-9 border rounded-xl text-sm outline-none transition-all ${bCls("emergencyContactMobile",formData.emergencyContactMobile)}`}/>{touched.emergencyContactMobile&&!errors.emergencyContactMobile&&formData.emergencyContactMobile&&<CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500"/>}</div>
-                <Err msg={touched.emergencyContactMobile?errors.emergencyContactMobile:undefined}/>
-              </div>
-              <div className="space-y-1.5"><label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Relationship</label><input type="text" name="emergencyContactRelationship" value={formData.emergencyContactRelationship} onChange={handleChange} placeholder="e.g. Spouse / Parent" className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"/></div>
+            <div className="pt-4 sticky bottom-6 z-50">
+              <button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 py-2 md:py-3.5 bg-blue-600 text-white rounded-xl text-xs md:text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-blue-500/20">
+                {loading?<div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>:<><Plus size={18}/>Create Staff Record</>}
+              </button>
+              <button type="button" onClick={()=>router.push(`/${hospitalId}/hospital-admin/staff`)} disabled={loading} className="w-full mt-3 py-2 md:py-3 text-[10px] md:text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors">Cancel Registration</button>
             </div>
-          </Card>
-
-          <Card title="Qualifications & Certifications" icon={<Globe className="text-indigo-500"/>} padding="p-2 md:p-6">
-            <div className="space-y-6">
-              {([{label:"Education / Degrees",temp:tempQ,setT:setTempQ,type:'qualification' as const,items:formData.qualifications,k:'qualifications' as const,ph:"e.g. MBBS, Diploma"},{label:"Certifications",temp:tempC,setT:setTempC,type:'certification' as const,items:formData.certifications,k:'certifications' as const,ph:"e.g. ACLS, BLS"}]).map(({label,temp,setT,type,items,k,ph})=>(
-                <div key={type} className="space-y-3">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">{label}</label>
-                  <div className="flex gap-2"><input type="text" value={temp} onChange={e=>setT(e.target.value)} onKeyDown={e=>e.key==='Enter'&&(e.preventDefault(),addItem(type))} placeholder={ph} className="flex-1 px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500/10 outline-none"/><button type="button" onClick={()=>addItem(type)} className="p-2.5 bg-blue-600 text-white rounded-xl active:scale-90 transition-transform"><Plus size={16}/></button></div>
-                  <div className="flex flex-wrap gap-2">{items.map(q=><button key={q} type="button" onClick={()=>removeItem(k,q)} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 transition-all">{q}<span>×</span></button>)}</div>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card title="Skills & Capacities" icon={<FileText className="text-blue-500"/>} padding="p-2 md:p-6">
-            <div className="space-y-3">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Add Skills</label>
-              <div className="flex gap-2"><input type="text" value={tempS} onChange={e=>setTempS(e.target.value)} onKeyDown={e=>e.key==='Enter'&&(e.preventDefault(),addItem('skill'))} placeholder="e.g. Data Entry, Phlebotomy" className="flex-1 px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500/10 outline-none"/><button type="button" onClick={()=>addItem('skill')} className="p-2.5 bg-blue-600 text-white rounded-xl active:scale-90 transition-transform"><Plus size={16}/></button></div>
-              <div className="flex flex-wrap gap-2">{formData.skills.map(s=><button key={s} type="button" onClick={()=>removeItem('skills',s)} className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 transition-all">{s}<span>×</span></button>)}</div>
-            </div>
-          </Card>
-
-          <Card title="System Status" icon={<Activity className="text-blue-500"/>} padding="p-2 md:p-6">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 ml-1">Initial Status</label>
-              <select name="status" value={formData.status} onChange={handleChange} className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all">
-                <option value="active">Active</option><option value="inactive">Inactive</option>
-              </select>
-            </div>
-          </Card>
-
-          <div className="pt-4 sticky bottom-6 z-50">
-            <button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 py-2 md:py-3.5 bg-blue-600 text-white rounded-xl text-xs md:text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-blue-500/20">
-              {loading?<div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>:<><Plus size={18}/>Create Staff Record</>}
-            </button>
-            <button type="button" onClick={()=>router.push(`/${hospitalId}/hospital-admin/staff`)} disabled={loading} className="w-full mt-3 py-2 md:py-3 text-[10px] md:text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors">Cancel Registration</button>
           </div>
-        </div>
-      </form>
-    </div>
+        </form>
+      </div>
+    </InfrastructureCheck>
   );
-});
+};
+
+export default React.memo(CreateStaff);

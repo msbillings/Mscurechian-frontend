@@ -1,26 +1,21 @@
 'use client';
 
-import React, { useEffect, useMemo, useCallback, Suspense } from 'react';
+import React, { useEffect, useMemo, useCallback } from 'react';
 import {
-    Clock,
     LogIn,
     LogOut,
     CheckCircle2,
     Key,
     Copy,
     X,
-    Calendar,
     Bell,
     TrendingUp,
     ArrowUpRight,
     ChevronRight,
-    ReceiptText,
     BookOpenCheck,
-    User as UserIcon,
-    Search,
     Zap
 } from 'lucide-react';
-import type { AttendanceHistory } from '@/lib/integrations/types';
+
 import { API_CONFIG } from '@/lib/integrations/config/api-config';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
@@ -38,10 +33,10 @@ const StaffDashboardPage = React.memo(function StaffDashboardPage() {
     const [isAttendanceModalOpen, setIsAttendanceModalOpen] = React.useState(false);
 
     // ✅ React Query hooks with placeholderData for instant cached display
-    const { data: dashboard, isLoading: dashboardLoading, isPlaceholderData: isDashboardPlaceholder } = useStaffDashboard();
+    const { data: dashboard, isLoading: dashboardLoading } = useStaffDashboard();
     const { data: statusData } = useTodayStatus(); // ✅ Unified status sync
-    const { data: historyData, isPlaceholderData: isHistoryPlaceholder } = useAttendanceHistory({ limit: 5, page: 1 });
-    const { data: announcementsData, isPlaceholderData: isAnnouncementsPlaceholder } = useAnnouncements();
+    const { data: historyData } = useAttendanceHistory({ limit: 5, page: 1 });
+    const { data: announcementsData } = useAnnouncements();
 
     // ✅ Optimized mutations with automatic cache invalidation
     const checkInMutation = useCheckIn();
@@ -137,35 +132,9 @@ const StaffDashboardPage = React.memo(function StaffDashboardPage() {
     const { staff, stats } = dashboard;
     // Prioritize statusData for real-time button sync
     const todayAttendance = statusData?.attendance || dashboard.todayAttendance;
-    const hasCheckedIn = !!todayAttendance?.checkIn;
-    const hasCheckedOut = !!todayAttendance?.checkOut;
 
-    // Shift Enforcement Logic from Resolved Backend data
-    const shiftStartTime = staff.resolvedShift?.startTime || '09:00';
-    const shiftEndTime = staff.resolvedShift?.endTime || '17:00';
-    const shiftName = staff.resolvedShift?.name || 'General';
 
-    const now = new Date();
-    const [startH, startM] = shiftStartTime.split(':').map(Number);
-    const [endH, endM] = shiftEndTime.split(':').map(Number);
 
-    const shiftStart = new Date();
-    shiftStart.setHours(startH, startM, 0, 0);
-    const shiftEnd = new Date();
-    shiftEnd.setHours(endH, endM, 0, 0);
-    if (shiftEnd < shiftStart) shiftEnd.setDate(shiftEnd.getDate() + 1);
-
-    const earlyBuffer = new Date(shiftStart.getTime() - 30 * 60000); // 30 mins before
-    const isShiftTime = now >= earlyBuffer && now <= shiftEnd;
-    const isShiftEnded = now > shiftEnd;
-    const isTooEarly = now < earlyBuffer;
-
-    const formatTime = (timeStr: string) => {
-        const [h, m] = timeStr.split(':').map(Number);
-        const date = new Date();
-        date.setHours(h, m, 0, 0);
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-    };
 
     return (
         <div

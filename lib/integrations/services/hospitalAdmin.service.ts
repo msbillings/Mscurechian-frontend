@@ -161,6 +161,21 @@ export const hospitalAdminService = {
         minEscalationMinutes?: number;
       };
     }>("/hospitals/metadata", options),
+  
+  getInfrastructureReadiness: () =>
+    apiClient<{
+      success: boolean;
+      data: {
+        isReady: boolean;
+        counts: {
+          departments: number;
+          shifts: number;
+          rooms: number;
+          beds: number;
+          vitalsThresholds: number;
+        };
+      };
+    }>("/hospitals/readiness"),
 
   updateIPDPharmaSettings: (data: { enabledWards: string[] }) =>
     apiClient<{ success: boolean; data: { enabledWards: string[] } }>(

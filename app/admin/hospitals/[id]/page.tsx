@@ -89,6 +89,7 @@ const HospitalPersonnelPage = ({ params }: { params: Promise<{ id: string }> }) 
         { id: 'lab', label: 'Lab Staff', icon: <FlaskConical size={18} />, count: personnel.lab?.length || 0 },
         { id: 'emergency', label: 'Ambulance', icon: <Ambulance size={18} />, count: personnel.emergency?.length || 0 },
         { id: 'staff', label: 'Support Staff', icon: <ClipboardList size={18} />, count: personnel.staff?.length || 0 },
+        { id: 'masterhelpdesk', label: 'Master Frontdesk', icon: <ShieldCheck size={18} />, count: personnel.masterhelpdesk?.length || 0 },
     ];
 
     const currentPersonnel = (personnel[activeTab] || []).filter((person: any) =>
@@ -146,8 +147,8 @@ const HospitalPersonnelPage = ({ params }: { params: Promise<{ id: string }> }) 
                                 setSearchQuery('');
                             }}
                             className={`shrink-0 lg:w-full flex items-center justify-between p-2.5 md:p-3.5 rounded-xl transition-all text-xs md:text-sm font-semibold border lg:border-none ${activeTab === tab.id
-                                    ? 'bg-blue-600 text-white shadow-md border-blue-600'
-                                    : 'text-gray-600 hover:bg-gray-100 border-gray-200 bg-white lg:bg-transparent'
+                                ? 'bg-blue-600 text-white shadow-md border-blue-600'
+                                : 'text-gray-600 hover:bg-gray-100 border-gray-200 bg-white lg:bg-transparent'
                                 }`}
                         >
                             <div className="flex items-center gap-2">
@@ -193,7 +194,7 @@ const HospitalPersonnelPage = ({ params }: { params: Promise<{ id: string }> }) 
                                                 Active
                                             </Badge>
                                         </div>
-                                        
+
                                         <div className="space-y-1.5 mt-2 md:mt-3">
                                             <div className="flex items-center gap-1.5 md:gap-2 text-[9px] md:text-xs text-gray-600">
                                                 <Smartphone size={10} className="text-gray-400 shrink-0 md:w-3 md:h-3" />

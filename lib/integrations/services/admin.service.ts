@@ -63,7 +63,7 @@ export const adminService = {
   },
 
   /** GET /super-admin/auth-log-filters */
-  getAuthLogFiltersClient: () => 
+  getAuthLogFiltersClient: () =>
     apiClient<{ success: boolean; data: { roles: string[]; hospitals: Array<{ _id: string; name: string }> } }>(ADMIN_ENDPOINTS.AUTH_LOG_FILTERS),
 
   // ─── Profile 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     TrendingUp,
     TrendingDown,
@@ -8,18 +8,11 @@ import {
     Package,
     ShoppingCart,
     Users,
-    Calendar,
-    BarChart3,
-    PieChart,
     Activity,
     RefreshCcw,
     Download,
-    ArrowUpRight,
-    ArrowDownRight,
-    Minus,
     Clock,
     BarChart as BarChartIcon,
-    Shield
 } from 'lucide-react';
 import {
     LineChart,
@@ -258,7 +251,7 @@ const PharmacyAnalytics = () => {
         }
     };
 
-    const fetchAnalytics = async () => {
+    const fetchAnalytics = useCallback(async () => {
         if (range === 'custom') {
             if (!startDate || !endDate) return;
             if (new Date(startDate) > new Date(endDate)) {
@@ -277,11 +270,11 @@ const PharmacyAnalytics = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [range, startDate, endDate]);
 
     useEffect(() => {
         fetchAnalytics();
-    }, [range, startDate, endDate]);
+    }, [fetchAnalytics]);
 
     const formatCurrency = (val: number) => {
         return new Intl.NumberFormat('en-IN', {

@@ -8,8 +8,8 @@ import {
   PageHeader,
   Card,
   FormInput,
-  FormSelect,
-  Button
+  Button,
+  HospitalSearchSelect
 } from "@/components/admin";
 import type { Hospital, CreateHelpdeskRequest } from "@/lib/integrations";
 
@@ -52,7 +52,6 @@ function CreateMasterHelpdesk() {
     }
 
     if (name === "name") {
-      // Validate Full Name: characters and special characters only (no numbers)
       if (/^[^0-9]*$/.test(value)) {
         setFormData(prev => ({ ...prev, [name]: value }));
       }
@@ -64,6 +63,11 @@ function CreateMasterHelpdesk() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.hospitalId) {
+      toast.error("Please select a hospital.");
+      return;
+    }
 
     if (formData.mobile.length !== 10) {
       toast.error("Mobile number must be exactly 10 digits.");
@@ -106,16 +110,15 @@ function CreateMasterHelpdesk() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card title="Staff Assignment" padding="p-8">
           <div className="space-y-6">
-            <FormSelect
-              label="Assign to Hospital Location"
-              name="hospitalId"
-              required
+            {/* ── Hospital Selector (shared component) ── */}
+            <HospitalSearchSelect
+              hospitals={hospitals}
+              loading={fetchingHospitals}
               value={formData.hospitalId}
-              onChange={handleChange}
-              options={[
-                { label: fetchingHospitals ? "Loading..." : "Select Hospital", value: "" },
-                ...hospitals.map(h => ({ label: h.name, value: h._id }))
-              ]}
+              onChange={(id) => setFormData(prev => ({ ...prev, hospitalId: id }))}
+              label="Assign to Hospital Location"
+              accentColor="purple"
+              required
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

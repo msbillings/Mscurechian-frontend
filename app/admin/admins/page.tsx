@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import React, { useEffect, useState, Suspense } from "react";
-import { Trash2, User, Activity, Edit3, Search, ShieldCheck } from "lucide-react";
+import { Trash2, Edit3, Search, ShieldCheck } from "lucide-react";
 import toast from "react-hot-toast";
 import { adminService } from '@/lib/integrations';
 import { useAuthStore } from '@/stores/authStore';

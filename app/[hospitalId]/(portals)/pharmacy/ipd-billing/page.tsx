@@ -29,7 +29,7 @@ import { useTenantLink } from "@/hooks/useTenantLink";
 import { ipdService } from "@/lib/integrations/services/ipd.service";
 import { ipdIssuanceService } from "@/lib/integrations/services/pharmacy.service";
 import { ClipboardList, Clock } from "lucide-react";
-import { Frequency, FoodTiming, StandardFrequency, CustomFrequency, INITIAL_FREQUENCY, mapFrequency, formatFrequency } from "@/lib/frequencyUtils";
+import { Frequency, FoodTiming, StandardFrequency, INITIAL_FREQUENCY, mapFrequency, formatFrequency } from "@/lib/frequencyUtils";
 
 const FrequencySelector = ({ value, onChange }: { value: Frequency, onChange: (val: Frequency) => void }) => {
     const freq = mapFrequency(value);
@@ -176,7 +176,7 @@ const IPDBillingPage = () => {
     const searchParams = useSearchParams();
     const orderId = searchParams.get("orderId");
     const admissionId = searchParams.get("admissionId");
-    const { user } = useAuthStore();
+    // const { user } = useAuthStore();
     const { getPath } = useTenantLink();
 
     const [loading, setLoading] = useState(true);
@@ -198,7 +198,7 @@ const IPDBillingPage = () => {
     const [processingMedIndex, setProcessingMedIndex] = useState<number | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [searchResults, setSearchResults] = useState<any[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
+    const [, setIsSearching] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<any>(null);
     const [quantity, setQuantity] = useState(1);
     const [price, setPrice] = useState(0);
@@ -309,7 +309,7 @@ const IPDBillingPage = () => {
             }
         };
         fetchNurses();
-    }, [previousIssuances]);
+    }, [previousIssuances, selectedNurse]);
 
     // Close nurse dropdown when clicking outside
     useEffect(() => {
@@ -325,10 +325,12 @@ const IPDBillingPage = () => {
         }
     }, [showNurseDropdown]);
 
+    /* 
     const filteredNurses = nurses.filter(n => {
         const q = nurseSearch.toLowerCase();
         return !q || n.name?.toLowerCase().includes(q) || n.email?.toLowerCase().includes(q);
     });
+    */
 
     // Product search logic
     useEffect(() => {
@@ -529,7 +531,7 @@ const IPDBillingPage = () => {
                             </div>
                             <div className="space-y-3">
                                 {prescribedMedicines.map((med, i) => {
-                                    const prescribedFreq = med.freq || med.frequency || "1-1-1";
+                                    // const prescribedFreq = med.freq || med.frequency || "1-1-1";
                                     return (
                                         <div key={`${med.name}-${i}`} className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3 md:p-4 rounded-xl md:rounded-2xl border border-slate-100 shadow-sm gap-3">
                                             <div className="min-w-0">
@@ -577,7 +579,7 @@ const IPDBillingPage = () => {
                                 </div>
                             </div>
                             <div className="space-y-4">
-                                {previousIssuances.map((iss, idx) => (
+                                {previousIssuances.map((iss) => (
                                     <div key={iss._id} className="bg-white dark:bg-slate-800 p-4 md:p-5 rounded-xl md:rounded-2xl border border-amber-100/50 dark:border-amber-900/30 shadow-sm overflow-hidden">
                                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-slate-50 dark:border-slate-700 pb-3 mb-3 gap-2">
                                             <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest italic font-mono">

@@ -9,6 +9,7 @@ import {
     FileText, CreditCard, Activity, Globe, Plus, X, Eye, EyeOff
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { InfrastructureCheck } from "../../../../hospital-admin/components/InfrastructureCheck";
 
 // ─── Color palette: blue, green, yellow, white only ───────────────────────────
 const cls = {
@@ -276,6 +277,7 @@ export default function HRCreateNursePage() {
         : null;
 
     return (
+        <InfrastructureCheck>
         <div className="min-h-screen bg-gradient-to-br from-green-50/60 via-white to-blue-50/40 pb-16">
 
             {/* TOP BAR */}
@@ -651,5 +653,6 @@ export default function HRCreateNursePage() {
                 </div>
             </form>
         </div>
+        </InfrastructureCheck>
     );
 }

@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, Plus, Trash2, Printer, Save, User, ShoppingCart, CreditCard, ChevronRight, Calculator, Eye, Hash, AlertCircle, Loader2 } from 'lucide-react';
+import { Search, Plus, Trash2, Printer, User, ShoppingCart, CreditCard, Calculator, Eye, AlertCircle, Loader2 } from 'lucide-react';
 import { ProductService } from '@/lib/integrations/services/product.service';
 import { PharmacyBillingService } from '@/lib/integrations/services/pharmacyBilling.service';
 import { PharmacyProduct } from '@/lib/integrations/types/product';
-import { BillItem, PharmacyBillPayload, PharmacyBill } from '@/lib/integrations/types/pharmacyBilling';
+import { BillItem, PharmacyBill } from '@/lib/integrations/types/pharmacyBilling';
 import { toast } from 'react-hot-toast';
 import PharmacyBillPrint, { ShopDetails } from '@/components/pharmacy/billing/PharmacyBillPrint';
 import { useAuthStore } from '@/stores/authStore';
@@ -164,7 +164,7 @@ const BillingPage = () => {
         };
 
         loadDraft();
-    }, []);
+    }, [orderId]);
 
     // 2. Save draft on changes - ONLY after initialization
     useEffect(() => {
