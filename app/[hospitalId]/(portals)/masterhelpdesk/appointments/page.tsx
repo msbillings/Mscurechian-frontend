@@ -2,25 +2,16 @@
 
 import React, { useState, useMemo, useCallback } from "react";
 import {
-    Users,
-    Calendar,
     Search,
     Stethoscope,
     ChevronRight,
     ChevronLeft,
-    Activity,
-    AlertCircle,
     Plus,
     RefreshCw,
     CheckCircle2,
     Activity as ActivityIcon,
     ArrowLeft,
-    Filter,
-    FileText,
     Clock,
-    MoreVertical,
-    FileDown,
-    X
 } from "lucide-react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useTenantLink } from "@/hooks/useTenantLink";

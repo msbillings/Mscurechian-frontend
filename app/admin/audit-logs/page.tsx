@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { 
   Search, 
   RotateCcw, 
@@ -66,7 +66,7 @@ function AuditLogs() {
     setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const fetchFilters = async () => {
+  const fetchFilters = useCallback(async () => {
     try {
       const response = await adminService.getAuthLogFiltersClient();
       if (response.success) {
@@ -75,9 +75,9 @@ function AuditLogs() {
     } catch (error) {
       console.error("Failed to fetch filters:", error);
     }
-  };
+  }, []);
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
       const response = await adminService.getAuthLogsClient({
@@ -96,15 +96,15 @@ function AuditLogs() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, filters]);
 
   useEffect(() => {
     fetchFilters();
-  }, []);
+  }, [fetchFilters]);
 
   useEffect(() => {
     fetchLogs();
-  }, [page, filters]);
+  }, [fetchLogs]);
 
   useSSE('system', (payload) => {
     if (payload.resourceType === 'AuthLog') {

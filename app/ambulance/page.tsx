@@ -9,7 +9,7 @@ import {
     CreateEmergencyRequestData,
     Hospital
 } from "@/lib/integrations/types/emergency";
-import { ShieldCheck, Clock, MapPin, Activity, Building2, AlertCircle, Search, Info, ChevronLeft, ChevronRight, X, ChevronDown } from 'lucide-react';
+import { ShieldCheck, Clock, MapPin, Activity, Building2, AlertCircle, Search, ChevronLeft, ChevronRight, X, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 
 function AmbulanceDashboard() {
@@ -180,7 +180,7 @@ function AmbulanceDashboard() {
                 const currentUserId = user.id || user._id;
 
                 if (currentUserId) {
-                    subscribeToSocket(`user_${currentUserId}`, 'emergency:update', (updatedReq: any) => {
+                    subscribeToSocket('emergency:update', (updatedReq: any) => {
                         console.log('📡 [SOCKET] Emergency Mission Flux Update:', updatedReq);
                         if (isMounted) {
                             loadData();

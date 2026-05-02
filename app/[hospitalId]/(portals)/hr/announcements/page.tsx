@@ -3,16 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   Bell,
-  Search,
-  Filter,
-  Calendar,
-  ChevronRight,
-  Info,
   AlertTriangle,
   FileText,
-  User,
-  ExternalLink,
-  Sparkles
 } from 'lucide-react';
 import { staffService } from '@/lib/integrations';
 import toast from 'react-hot-toast';

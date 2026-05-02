@@ -4,10 +4,10 @@ import React, { useState, useCallback } from 'react';
 import { useRouter, useParams } from "next/navigation";
 import { hospitalAdminService } from "@/lib/integrations";
 import {
-  User, Mail, Phone, Briefcase, FileText,
+  User, Briefcase,
   Clock, Globe, Eye, EyeOff, ArrowLeft,
   Activity, Plus, CreditCard, CheckCircle2,
-  AlertCircle, Shield, MapPin, X
+  AlertCircle, Shield, X
 } from "lucide-react";
 import toast from "react-hot-toast";
 

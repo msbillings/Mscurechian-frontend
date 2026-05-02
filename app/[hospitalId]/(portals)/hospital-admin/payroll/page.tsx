@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation";
 import {
     IndianRupee,
-    Download,
     CheckCircle,
     Clock,
     AlertCircle,
@@ -12,7 +11,6 @@ import {
     ChevronRight,
     RefreshCw,
     Search,
-    CreditCard,
     Banknote,
     Calendar,
     Printer,
@@ -21,8 +19,6 @@ import {
     Users,
     CalendarDays,
     TrendingUp,
-    Briefcase,
-    X,
     ChevronDown,
     Loader2,
     FileText,

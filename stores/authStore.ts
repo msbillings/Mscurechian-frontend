@@ -83,7 +83,7 @@ const scheduleProactiveRefresh = (accessToken: string) => {
             try {
               const { updateSocketToken } = await import("@/lib/integrations/api/socket");
               updateSocketToken(data.accessToken).catch(() => {});
-            } catch (e) {}
+            } catch {}
           }
         } else {
           console.warn("[Auth] Proactive refresh response not ok:", res.status);
@@ -357,7 +357,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         try {
           const { resetSocket } = await import("@/lib/integrations/api/socket");
           resetSocket(accessToken);
-        } catch (e) {}
+        } catch {}
       }
       
       const userId = (user as any)._id || user.id;
@@ -421,7 +421,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const channel = new BroadcastChannel('msc_auth');
         channel.postMessage({ type: 'LOGIN' });
         channel.close();
-      } catch (_) { }
+      } catch {}
 
       set({
         user: stabilizeUser(user),
@@ -560,7 +560,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const { getActiveHospitalId, getActiveRoleFromUrl } = await import('@/lib/integrations/api/apiClient');
         if (!activeHospId) activeHospId = getActiveHospitalId();
         if (!fallbackRole) fallbackRole = getActiveRoleFromUrl();
-      } catch (e) {}
+      } catch {}
     }
 
     // ✅ SUFFIX-AWARE BOOTSTRAP: Try suffixed cookie first if context exists
@@ -606,7 +606,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const user = JSON.parse(sessionUser);
         console.log("[Auth] 📂 Restored user from session cache:", user.role);
         set({ user: stabilizeUser(user), isAuthenticated: true });
-      } catch (e) { }
+      } catch {}
     }
 
     // ✅ SPEED FIX: Throttle network calls unless forced

@@ -26,7 +26,7 @@ function NotificationCenter({ showAuditHistory = true, hospitalId }: Notificatio
     const initSocket = async () => {
       try {
         const { getSocket, subscribeToSocket } = await import('@/lib/integrations/api/socket');
-        const userData = localStorage.getItem('user') || localStorage.getItem('user');
+        const userData = localStorage.getItem('user');
         if (!userData) return;
 
         const user = JSON.parse(userData);
@@ -41,33 +41,44 @@ function NotificationCenter({ showAuditHistory = true, hospitalId }: Notificatio
             hospitalId: user.hospital
           });
 
-          subscribeToSocket(`user_${currentUserId}`, 'notification:new', (newNotif: any) => {
+          // Real-time notifications
+          await subscribeToSocket('notification:new', (newNotif: any) => {
             console.log('🔔 [SOCKET] New notification received:', newNotif);
             if (isMounted) {
+              const normalizedNotif: AppNotification = {
+                ...newNotif,
+                _id: typeof newNotif._id === 'object' ? newNotif._id.$oid : newNotif._id,
+                isRead: newNotif.isRead ?? false,
+                createdAt: newNotif.createdAt || new Date().toISOString()
+              };
+
               setNotifications(prev => {
-                const newId = typeof newNotif._id === 'object' ? newNotif._id.$oid : newNotif._id;
                 // Avoid duplicates
                 if (prev.some(n => {
                   const existingId = typeof n._id === 'object' ? (n._id as any).$oid : n._id;
-                  return existingId === newId;
+                  return existingId === normalizedNotif._id;
                 })) {
                   return prev;
                 }
-                return [newNotif, ...prev];
+                return [normalizedNotif, ...prev];
               });
-              toast.success(newNotif.message || 'New notification', { icon: '🔔', className: 'text-[10px] sm:text-xs' });
+
+              toast.success(normalizedNotif.message || 'New notification', { 
+                icon: '🔔', 
+                className: 'text-[10px] sm:text-xs' 
+              });
 
               // 🎵 Play notification sound
               try {
                 // Check if this is an appointment-related notification
-                const isAppointment = newNotif.type?.toLowerCase().includes('appointment') ||
-                  newNotif.message?.toLowerCase().includes('appointment');
+                const isAppointment = normalizedNotif.type?.toLowerCase().includes('appointment') ||
+                  normalizedNotif.message?.toLowerCase().includes('appointment');
 
                 if (!isAppointment) {
                   let soundFile = '/assets/nurse.mp3';
 
                   // Use emergency sound for critical alerts and hospital-wide announcements
-                  if (['emergency_alert', 'critical_vitals', 'abnormal_vitals', 'hospital_announcement'].includes(newNotif.type)) {
+                  if (['emergency_alert', 'critical_vitals', 'abnormal_vitals', 'hospital_announcement'].includes(normalizedNotif.type)) {
                     soundFile = '/assets/emergency.mp3';
                   }
 
@@ -81,21 +92,20 @@ function NotificationCenter({ showAuditHistory = true, hospitalId }: Notificatio
           });
 
           // ✅ NEW: Listen for high-priority doctoral vital alerts globally
-          // ✅ NEW: Listen for high-priority doctoral vital alerts globally
-          subscribeToSocket(`user_${currentUserId}`, 'doctoral_vital_alert', (data: any) => {
+          await subscribeToSocket('doctoral_vital_alert', (data: any) => {
             console.log('🚨 [SOCKET] High-priority vital alert:', data);
             if (isMounted) {
               if (data.severity === 'CRITICAL') {
                 toast.error(`${data.patientName}: ${data.message}`, {
                   duration: 10000,
-                   icon: '🚨',
+                  icon: '🚨',
                   className: 'text-[10px] sm:text-xs',
                   style: { background: '#dc2626', color: '#fff', fontWeight: 'bold' }
                 });
               } else {
                 toast.error(`${data.patientName}: ${data.message}`, {
                   duration: 6000,
-                   icon: '⚠️',
+                  icon: '⚠️',
                   className: 'text-[10px] sm:text-xs',
                   style: { background: '#f59e0b', color: '#fff', fontWeight: 'bold' }
                 });
@@ -130,8 +140,8 @@ function NotificationCenter({ showAuditHistory = true, hospitalId }: Notificatio
             }
           };
 
-          subscribeToSocket(`user_${currentUserId}`, 'vitals_due_alert', handleNurseAlert);
-          subscribeToSocket(`user_${currentUserId}`, 'medication_due_alert', handleNurseAlert);
+          await subscribeToSocket('vitals_due_alert', handleNurseAlert);
+          await subscribeToSocket('medication_due_alert', handleNurseAlert);
         }
       } catch (err) {
         console.error('Socket init error:', err);

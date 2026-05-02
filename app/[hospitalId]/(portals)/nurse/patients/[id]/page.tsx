@@ -5,17 +5,11 @@ import {
     Activity,
     Heart,
     Thermometer,
-    Wind,
     Droplets,
     FileText,
     Pill,
-    Clock,
     ChevronLeft,
     TrendingUp,
-    Calendar,
-    User,
-    ChevronDown,
-    Search
 } from 'lucide-react';
 import { ipdService } from '@/lib/integrations';
 import { format } from 'date-fns';

@@ -8,15 +8,12 @@ import {
     CreditCard,
     Tag,
     Lock,
-    ChevronRight,
-    AlertCircle,
     CheckCircle2,
     ArrowDownCircle,
     ArrowUpCircle,
     History,
     Wallet,
     Info,
-    Trash2,
     Bed as BedIcon
 } from 'lucide-react';
 import { ipdService } from '@/lib/integrations/services/ipd.service';

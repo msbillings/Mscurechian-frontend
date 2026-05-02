@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-    Activity, Save, AlertTriangle, Settings, Clock, ShieldAlert,
-    TrendingUp, Heart, Thermometer, Wind, Droplet, Info,
-    Plus, Copy, CheckCircle2, AlertCircle, XCircle, ChevronRight,
-    ArrowRight, Beaker, Zap, Upload,
+    Activity, Save, AlertTriangle, ShieldAlert,
+    Heart, Thermometer, Wind, Droplet, Info,
+    Plus, Copy,
+    ArrowRight, Beaker, Zap,
     Import, Trash2, Edit3
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Megaphone, Search, Calendar, ChevronLeft, ChevronRight, Loader2, Clock, Filter, AlertCircle, Info, Zap } from 'lucide-react';
+import { Megaphone, Search, ChevronLeft, ChevronRight, Clock, Filter, Info } from 'lucide-react';
 import { notificationService } from '@/lib/integrations';
 import { format, formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';

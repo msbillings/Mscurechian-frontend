@@ -1,16 +1,13 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import {
-  Download,
   Search,
   AlertCircle,
   Loader2,
   CheckSquare,
   Square,
-  FileText,
   Clock,
-  User,
   ChevronLeft,
   ChevronRight,
   FileCheck

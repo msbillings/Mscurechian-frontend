@@ -7,7 +7,6 @@ import {
     AlertTriangle,
     FileText,
     Loader2,
-    TrendingUp,
     Wallet,
     Info
 } from 'lucide-react';

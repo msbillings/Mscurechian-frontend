@@ -14,7 +14,6 @@ import {
     Lock,
     ArrowLeft,
     ChevronRight,
-    Heart
 } from "lucide-react";
 import { useTransition } from "react";
 import ProgressBar from "@/components/ui/ProgressBar";

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 const COOKIE_CONSENT_KEY = 'mscurechain_cookie_consent';
 
@@ -205,12 +206,12 @@ export default function CookieConsent() {
             and improve our platform. By clicking{' '}
             <strong style={{ color: '#0f172a', fontWeight: 700 }}>Accept All</strong>,
             you agree to our{' '}
-            <a
+            <Link
               href="/terms"
               style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'none', borderBottom: '1px solid #bfdbfe' }}
             >
               Privacy Policy
-            </a>
+            </Link>
             .
           </p>
 

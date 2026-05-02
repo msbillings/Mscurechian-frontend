@@ -8,12 +8,8 @@ import toast from "react-hot-toast";
 import {
     Eye,
     EyeOff,
-    QrCode,
-    ShieldCheck,
-    Building,
     Smartphone,
     Loader2,
-    Mail,
     User as UserIcon,
     Lock,
     ArrowLeft,

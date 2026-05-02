@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, FileText, CheckCircle2, ChevronDown, RefreshCw } from 'lucide-react';
+import { X, FileText, CheckCircle2, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ipdService } from '@/lib/integrations';
 import HybridClinicalNoteTypeSearch from './HybridClinicalNoteTypeSearch';

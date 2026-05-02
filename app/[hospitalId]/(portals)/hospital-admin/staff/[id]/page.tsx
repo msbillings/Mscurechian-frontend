@@ -1,32 +1,24 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter, useParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { hospitalAdminService, getStaffTrainingHistoryAction } from "@/lib/integrations";
 import {
   ArrowLeft,
   Mail,
-  Phone,
-  MapPin,
-  Calendar,
   Clock,
   Building,
-  Globe,
   Users,
   Edit,
   Trash2,
   FileText,
   User,
-  Briefcase,
   ShieldCheck,
   Award,
-  CircleUser,
-  MoreVertical,
   Activity,
   CreditCard,
   Building2,
-  ArrowRight,
   Eye,
   EyeOff,
   CheckCircle2
@@ -44,26 +36,16 @@ function StaffDetailPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
 
-  useEffect(() => {
-    const init = async () => {
-      await fetchShifts();
-      if (id) {
-        await fetchStaff();
-      }
-    };
-    init();
-  }, [id]);
-
-  const fetchShifts = async () => {
+  const fetchShifts = useCallback(async () => {
     try {
       const data = await hospitalAdminService.getShifts();
       setShifts(data);
     } catch (error) {
       console.error("Failed to fetch shifts:", error);
     }
-  };
+  }, []);
 
-  const fetchStaff = async () => {
+  const fetchStaff = useCallback(async () => {
     try {
       try {
         const data = await hospitalAdminService.getStaffById(id);
@@ -99,7 +81,17 @@ function StaffDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, router]);
+
+  useEffect(() => {
+    const init = async () => {
+      await fetchShifts();
+      if (id) {
+        await fetchStaff();
+      }
+    };
+    init();
+  }, [id, fetchShifts, fetchStaff]);
 
   const handleToggleStatus = async () => {
     const isActivating = staff.status !== 'active';

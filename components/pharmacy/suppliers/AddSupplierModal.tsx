@@ -11,7 +11,6 @@ import {
     FileText,
     Loader2,
     Scan,
-    Camera
 } from 'lucide-react';
 import { Supplier, SupplierPayload } from '@/lib/integrations/types/supplier';
 import { SupplierService } from '@/lib/integrations/services/supplier.service';

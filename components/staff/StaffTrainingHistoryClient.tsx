@@ -3,7 +3,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-    CheckCircle2, Clock, XCircle, FileCheck,
+    CheckCircle2, Clock, XCircle,
     EyeIcon
 } from 'lucide-react';
 import { getMyTrainingHistoryAction } from '@/lib/integrations';

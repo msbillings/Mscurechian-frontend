@@ -8,12 +8,7 @@ import {
   ClipboardList,
   Wallet,
   Activity,
-  Layers,
-  Network,
-  ArrowUpRight,
-  ChevronRight,
   RefreshCw,
-  Download,
 } from "lucide-react";
 import {
   LabDashboardService,
@@ -63,7 +58,7 @@ function LabDashboard() {
     const hospitalId = (user as any)?.hospital;
     if (hospitalId) {
       import('@/lib/integrations/api/socket').then(({ subscribeToSocket }) => {
-        subscribeToSocket(`hospital_${hospitalId}`, 'new_lab_order', () => {
+        subscribeToSocket('new_lab_order', () => {
           console.log("🔔 New Lab Order Received via Socket");
           fetchStats(true, true);
         });
@@ -81,7 +76,7 @@ function LabDashboard() {
       clearInterval(pollInterval);
       if (hospitalId) {
         import('@/lib/integrations/api/socket').then(({ unsubscribeFromSocket }) => {
-          unsubscribeFromSocket(`hospital_${hospitalId}`, 'new_lab_order', handleRefresh);
+          unsubscribeFromSocket('new_lab_order', handleRefresh);
         });
       }
     };

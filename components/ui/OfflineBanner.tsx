@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { WifiOff, Wifi, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Wifi, CheckCircle2 } from 'lucide-react';
 import { useOnlineStore } from '@/stores/onlineStore';
 
 /**

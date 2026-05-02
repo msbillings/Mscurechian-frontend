@@ -10,7 +10,7 @@ import { apiClient } from "@/lib/integrations/api";
 import {
     Search, User, BedDouble, CheckCircle2,
     AlertTriangle, Pill, ClipboardList, IndianRupee, Wallet,
-    UserCheck, ArrowLeft, Pencil, RotateCcw, Check, X, Clock, Fingerprint, ArrowRight
+    UserCheck, ArrowLeft, Pencil, RotateCcw, Check, X, Fingerprint
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { useTenantLink } from "@/hooks/useTenantLink";

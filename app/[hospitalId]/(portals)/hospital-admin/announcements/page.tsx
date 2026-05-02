@@ -3,23 +3,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Bell,
   Plus,
   Search,
-  Filter,
-  MoreVertical,
   Trash2,
-  Edit3,
-  Eye,
   CheckCircle2,
   XCircle,
   Megaphone,
   Clock,
-  User,
   AlertTriangle,
   Send,
   Calendar,
-  Layers,
   RefreshCw
 } from 'lucide-react';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';

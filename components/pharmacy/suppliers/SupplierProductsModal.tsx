@@ -1,7 +1,7 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Package, PackageOpen, Info } from 'lucide-react';
+import { X, Package, PackageOpen } from 'lucide-react';
 import { Supplier } from '@/lib/integrations/types/supplier';
 import { PharmacyProduct } from '@/lib/integrations/types/product';
 import { SupplierService } from '@/lib/integrations/services/supplier.service';
@@ -16,13 +16,7 @@ const SupplierProductsModal: React.FC<SupplierProductsModalProps> = ({ isOpen, o
     const [products, setProducts] = useState<PharmacyProduct[]>([]);
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        if (isOpen && supplier) {
-            fetchProducts();
-        }
-    }, [isOpen, supplier]);
-
-    const fetchProducts = async () => {
+    const fetchProducts = React.useCallback(async () => {
         if (!supplier) return;
         setLoading(true);
         try {
@@ -33,7 +27,13 @@ const SupplierProductsModal: React.FC<SupplierProductsModalProps> = ({ isOpen, o
         } finally {
             setLoading(false);
         }
-    };
+    }, [supplier]);
+
+    useEffect(() => {
+        if (isOpen && supplier) {
+            fetchProducts();
+        }
+    }, [isOpen, supplier, fetchProducts]);
 
     if (!isOpen || !supplier) return null;
 

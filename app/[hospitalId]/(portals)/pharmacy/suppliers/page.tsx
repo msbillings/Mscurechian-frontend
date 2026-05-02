@@ -8,8 +8,6 @@ import {
     RefreshCw,
     ShoppingCart,
     Calendar,
-    ChevronLeft,
-    ChevronRight,
     Package,
     Hash,
     FileText,
@@ -65,7 +63,7 @@ const PurchaseTransactionsTab = ({ suppliers }: { suppliers: Supplier[] }) => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
 
-    const fetchTransactions = async (page = 1) => {
+    const fetchTransactions = React.useCallback(async (page = 1) => {
         setLoading(true);
         try {
             const data = await SupplierService.getSupplierPurchases({
@@ -86,18 +84,18 @@ const PurchaseTransactionsTab = ({ suppliers }: { suppliers: Supplier[] }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [supplierFilter, searchTerm, startDate, endDate]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchTransactions(1);
         }, 300);
         return () => clearTimeout(timer);
-    }, [searchTerm, supplierFilter, startDate, endDate]);
+    }, [fetchTransactions]);
 
     useEffect(() => {
         fetchTransactions(currentPage);
-    }, [currentPage]);
+    }, [currentPage, fetchTransactions]);
 
     const formatCurrency = (amt: number) =>
         new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amt);

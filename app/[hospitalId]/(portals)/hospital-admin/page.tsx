@@ -23,7 +23,6 @@ import {
   ArrowUpRight,
   Wallet,
   CalendarCheck,
-  BedDouble,
   AlertCircle,
   RefreshCw,
   Monitor,

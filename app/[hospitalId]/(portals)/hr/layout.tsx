@@ -11,7 +11,6 @@ import {
   Building2,
   Stethoscope,
   Headphones,
-  X,
   Bell,
 } from "lucide-react";
 import LogoutModal from "@/components/auth/LogoutModal";

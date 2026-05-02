@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Upload, Search, Bed as BedIcon, MapPin, DoorOpen, Building2, FileText, AlertCircle, X, CheckCircle2, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { Plus, Trash2, Upload, Search, Bed as BedIcon, MapPin, DoorOpen, FileText, X, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { ipdService } from '@/lib/integrations/services/ipd.service';
 import { ConfirmModal } from '@/components/admin/Modal';

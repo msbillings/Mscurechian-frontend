@@ -8,10 +8,7 @@ import {
     Loader2,
     ArrowLeft,
     CheckCircle2,
-    Calendar,
-    Clock,
     User,
-    ChevronRight,
     Shield,
     Smartphone
 } from "lucide-react";

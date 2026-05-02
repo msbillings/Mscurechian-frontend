@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { sopService, SOP } from '@/lib/integrations/services/sop.service';
-import { ShieldCheck, Info, Search, X, Filter } from 'lucide-react';
+import { ShieldCheck, Search, Filter } from 'lucide-react';
 import { SOPTable } from '@/components/sop/SOPTable';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -102,7 +102,7 @@ export default function NurseSOPPage() {
                     window.URL.revokeObjectURL(link.href);
                 }
                 toast.success('Download started');
-            } catch (error) {
+            } catch {
                 toast.error('Download failed');
             }
         }

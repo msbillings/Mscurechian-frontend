@@ -9,13 +9,11 @@ import {
   Stethoscope,
   Plus,
   Edit,
-  Eye,
   Mail,
   Award,
   Calendar,
   Search,
   Filter,
-  Power,
   Ban,
   UserCheck
 } from "lucide-react";
@@ -169,7 +167,7 @@ function HRHospitalDoctors() {
                   <div className="relative z-10 flex items-center gap-3 sm:gap-4">
                     <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 overflow-hidden shadow-sm">
                       {doctor.profilePic ? (
-                        <img src={doctor.profilePic} className="w-full h-full object-cover" />
+                        <img src={doctor.profilePic} alt={doctor.name} className="w-full h-full object-cover" />
                       ) : (
                         <Stethoscope size={24} strokeWidth={2.5} />
                       )}

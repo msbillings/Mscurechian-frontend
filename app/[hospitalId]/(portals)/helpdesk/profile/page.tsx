@@ -6,16 +6,11 @@ import {
     Mail,
     Phone,
     MapPin,
-    Building,
     User as UserIcon,
     ShieldCheck,
-    Calendar,
-    Award,
-    Activity,
     Hospital,
     Edit3,
     CreditCard,
-    FileText,
     CheckCircle2,
     Briefcase,
     Landmark
@@ -74,7 +69,7 @@ export default function HelpdeskProfilePage() {
                 <div className="relative flex flex-col md:flex-row items-center gap-4 sm:gap-6">
                     <div className="relative">
                         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-900 flex items-center justify-center text-white font-black text-2xl sm:text-3xl shadow-xl relative z-10 overflow-hidden">
-                            {(user as any)?.image ? <img src={(user as any).image} className="w-full h-full object-cover" /> : name?.charAt(0)}
+                            {(user as any)?.image ? <img src={(user as any).image} alt={name} className="w-full h-full object-cover" /> : name?.charAt(0)}
                         </div>
                         <div className="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-teal-500 rounded-lg flex items-center justify-center border-2 border-white z-20 shadow">
                             <ShieldCheck size={12} className="text-white" />

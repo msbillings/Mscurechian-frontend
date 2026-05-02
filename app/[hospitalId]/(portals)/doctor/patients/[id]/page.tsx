@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, FileText, Clock, CreditCard, X, Printer, Loader2, Beaker, ClipboardList, ChevronRight } from 'lucide-react';
+import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, FileText, Clock, CreditCard, X, Printer, Loader2, Beaker} from 'lucide-react';
 import Link from 'next/link';
 import { getDoctorPatientDetailsAction, getDoctorProfileAction, getAllAppointmentsAction, getDoctorInpatientsAction, getPatientHistoryAction } from '@/lib/integrations/actions/doctor.actions';
 import { doctorService } from '@/lib/integrations/services/doctor.service';

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, Suspense, useCallback } from "react";
 import { Trash2, User, Activity, Edit3, Search, Stethoscope, Building2, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { adminService } from '@/lib/integrations';
@@ -61,33 +61,18 @@ function DoctorsList() {
     onConfirm: () => { }
   });
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchHospitals();
-    }
-  }, [isAuthenticated]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchDoctors();
-    }
-  }, [isAuthenticated, debouncedSearch, currentPage, selectedHospital]);
-
-  const fetchHospitals = async () => {
+  const fetchHospitals = useCallback(async () => {
     try {
       const resp = await adminService.getHospitalsClient();
       setHospitals(resp || []);
     } catch (err: any) {
       console.error("Failed to fetch hospitals");
     }
-  };
+  }, []);
 
-  const fetchDoctors = async () => {
+  const fetchDoctors = useCallback(async () => {
     setLoading(true);
     try {
       const resp = await adminService.getUsersClient({
@@ -116,7 +101,24 @@ function DoctorsList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, debouncedSearch, selectedHospital]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchHospitals();
+    }
+  }, [isAuthenticated, fetchHospitals]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchDoctors();
+    }
+  }, [isAuthenticated, fetchDoctors]);
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();

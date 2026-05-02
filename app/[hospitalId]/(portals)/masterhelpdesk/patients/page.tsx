@@ -4,15 +4,12 @@ import React, { useMemo, useState, useEffect } from "react";
 import {
     Search,
     Calendar,
-    Plus,
     ChevronRight,
     ChevronLeft,
     Activity,
     Edit3,
     RefreshCw,
-    Printer,
     History,
-    Eye
 } from "lucide-react";
 import { helpdeskService, useMasterPatients, useMasterDeleteAppointment } from "@/lib/integrations";
 import toast from "react-hot-toast";

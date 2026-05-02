@@ -4,8 +4,7 @@ import React, { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { feedbackService } from '@/lib/integrations/services/feedback.service';
 import { useAuthStore } from '@/stores/authStore';
-import { Card } from '@/components/admin';
-import { MessageSquare, Star, Quote, Loader, Calendar, User, Search, CheckCircle, Clock, XCircle, MoreVertical, Trash2 } from 'lucide-react';
+import { MessageSquare, Star, Quote, Loader, User, XCircle, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 
@@ -45,11 +44,11 @@ export default function FeedbacksPage() {
             });
 
             // 2. Subscribe
-            subscribeToSocket(`hospital_${hospitalId}`, 'new_feedback', handleNewFeedback);
+            subscribeToSocket('new_feedback', handleNewFeedback);
 
             // Cleanup
             return () => {
-                unsubscribeFromSocket(`hospital_${hospitalId}`, 'new_feedback', handleNewFeedback);
+                unsubscribeFromSocket('new_feedback', handleNewFeedback);
             };
         });
     }, [user, hospitalId, queryClient]);

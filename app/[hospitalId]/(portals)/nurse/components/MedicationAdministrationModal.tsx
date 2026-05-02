@@ -54,12 +54,12 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
             const initSocket = async () => {
                 try {
                     const { subscribeToSocket, unsubscribeFromSocket } = await import('@/lib/integrations/api/socket');
-                    subscribeToSocket('', 'medication_administered', handleSocketUpdate);
-                    subscribeToSocket('', 'medication_undo', handleSocketUpdate);
+                    subscribeToSocket('medication_administered', handleSocketUpdate);
+                    subscribeToSocket('medication_undo', handleSocketUpdate);
 
                     return () => {
-                        unsubscribeFromSocket('', 'medication_administered', handleSocketUpdate);
-                        unsubscribeFromSocket('', 'medication_undo', handleSocketUpdate);
+                        unsubscribeFromSocket('medication_administered', handleSocketUpdate);
+                        unsubscribeFromSocket('medication_undo', handleSocketUpdate);
                     };
                 } catch (e) {
                     console.warn('Socket subscription failed:', e);
@@ -95,7 +95,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
                 new Date(m.timestamp).toDateString() === today
             );
             setAdministeredToday(todayMeds);
-        } catch (error: any) {
+        } catch {
             toast.error("Failed to fetch patient data");
         } finally {
             if (!silent) setLoading(false);
@@ -120,7 +120,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
             await fetchData(true); // Silent refresh local state
             onSuccess?.(); // Background refresh parent
         } catch (error: any) {
-            toast.error(error.message || "Failed to mark administration");
+            toast.error(error.response?.data?.message || error.message || "Failed to mark administration");
         } finally {
             setSubmitting(null);
         }
@@ -133,7 +133,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
             toast.success(`Removed administration for ${medName}`);
             await fetchData(true);
             onSuccess?.();
-        } catch (error: any) {
+        } catch {
             toast.error("Failed to remove record");
         } finally {
             setSubmitting(null);
@@ -169,7 +169,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
             });
             await fetchData(true);
             onSuccess?.();
-        } catch (error: any) {
+        } catch {
             toast.error("Failed to log diet");
         } finally {
             setSubmitting(null);
@@ -183,7 +183,7 @@ export default function MedicationAdministrationModal({ isOpen, onClose, admissi
             toast.success("Diet record removed");
             await fetchData(true);
             onSuccess?.();
-        } catch (error: any) {
+        } catch {
             toast.error("Failed to remove record");
         } finally {
             setSubmitting(null);

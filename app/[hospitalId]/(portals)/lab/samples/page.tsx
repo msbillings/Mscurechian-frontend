@@ -4,12 +4,10 @@ import React, { useEffect, useState, useTransition, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { LabSample } from '@/lib/integrations/types/labSample';
 import { LabSampleService } from '@/lib/integrations/services/labSample.service';
-import { FlaskConical, RefreshCw, User, TestTube, Clock, CheckCircle2, FileText, AlertCircle, PlayCircle, ChevronLeft, ChevronRight, Receipt, Printer } from 'lucide-react';
+import { FlaskConical, RefreshCw, CheckCircle2, AlertCircle, PlayCircle, ChevronLeft, ChevronRight, Receipt, Printer } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { invalidateCachePattern, clearApiCache } from '@/lib/integrations/api/apiClient';
 import { getSocket } from '@/lib/integrations/api/socket';
-
-
 
 type TabType = 'pending' | 'collected' | 'ready';
 

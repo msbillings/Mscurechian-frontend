@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { subscribeToSocket, unsubscribeFromSocket } from '@/lib/integrations/api/socket';
 import { Card } from '@/components/admin';
-import { MessageSquare, Star, Quote } from 'lucide-react';
+import { MessageSquare, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function LiveFeedbackWidget() {
@@ -39,10 +39,10 @@ export default function LiveFeedbackWidget() {
         };
 
         // Subscribe
-        subscribeToSocket('feedback', 'new_feedback', handleNewFeedback);
+        subscribeToSocket('new_feedback', handleNewFeedback);
 
         return () => {
-            unsubscribeFromSocket('feedback', 'new_feedback', handleNewFeedback);
+            unsubscribeFromSocket('new_feedback', handleNewFeedback);
         };
     }, []);
 

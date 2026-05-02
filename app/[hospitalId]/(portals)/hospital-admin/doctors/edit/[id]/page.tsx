@@ -1,31 +1,25 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from "next/navigation";
 import { hospitalAdminService } from "@/lib/integrations";
 import { useQuery } from "@tanstack/react-query";
 import {
-  UserPlus,
   Eye,
   EyeOff,
-  Calendar,
   IndianRupee,
   User,
   Mail,
-  Phone,
   Briefcase,
   FileText,
   Award,
   Image as ImageIcon,
   MapPin,
   Clock,
-  Shield,
-  Building,
   CreditCard,
   Globe,
   Edit,
   ArrowLeft,
-  Upload,
   X as XIcon
 } from "lucide-react";
 import toast from "react-hot-toast";

@@ -5,9 +5,7 @@ import {
     Clock, 
     CheckCircle2, 
     Activity as ActivityIcon, 
-    FileText, 
     Stethoscope, 
-    User // Icon for Offline/Manual
 } from "lucide-react";
 import { sanitizePatientName } from "@/lib/utils/name-utils";
 

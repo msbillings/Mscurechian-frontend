@@ -149,7 +149,7 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
   });
 
   // Socket Integration
-  const { user } = useAuthStore?.() || {}; // Safe access if store not ready
+  const { user } = useAuthStore() || {}; // Corrected hook call
 
   useEffect(() => {
     let mounted = true;
@@ -171,14 +171,14 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
           if (mounted) fetchAppointments();
         };
 
-        await subscribeToSocket(`doctor_${user.id}`, 'dashboard:update', handleUpdate);
-        await subscribeToSocket(`doctor_${user.id}`, 'notification:new', handleUpdate);
-        await subscribeToSocket(`doctor_${user.id}`, 'appointment_request', handleUpdate);
+        await subscribeToSocket('dashboard:update', handleUpdate);
+        await subscribeToSocket('notification:new', handleUpdate);
+        await subscribeToSocket('appointment_request', handleUpdate);
 
         return () => {
-          unsubscribeFromSocket(`doctor_${user.id}`, 'dashboard:update', handleUpdate);
-          unsubscribeFromSocket(`doctor_${user.id}`, 'notification:new', handleUpdate);
-          unsubscribeFromSocket(`doctor_${user.id}`, 'appointment_request', handleUpdate);
+          unsubscribeFromSocket('dashboard:update', handleUpdate);
+          unsubscribeFromSocket('notification:new', handleUpdate);
+          unsubscribeFromSocket('appointment_request', handleUpdate);
         };
       }
     };

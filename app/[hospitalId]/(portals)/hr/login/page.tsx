@@ -78,7 +78,7 @@ const HRLoginPage = () => {
     };
 
     const handleIdentifierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let value = e.target.value;
+        const value = e.target.value;
         if (/^\d*$/.test(value) && value.length > 10) {
             return;
         }

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Download, Maximize2, FileText, Loader2 } from 'lucide-react';
+import { X, Download, FileText, Loader2 } from 'lucide-react';
 
 interface PDFViewerModalProps {
     isOpen: boolean;

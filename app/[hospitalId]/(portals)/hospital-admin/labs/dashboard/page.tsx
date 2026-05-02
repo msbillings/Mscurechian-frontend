@@ -8,7 +8,6 @@ import {
   ClipboardList,
   Wallet,
   Activity,
-  ArrowUpRight,
   RefreshCw,
 } from "lucide-react";
 import {
@@ -59,7 +58,7 @@ function HospitalAdminLabDashboard() {
     const hospitalId = (user as any)?.hospital;
     if (hospitalId) {
       import('@/lib/integrations/api/socket').then(({ subscribeToSocket }) => {
-        subscribeToSocket(`hospital_${hospitalId}`, 'new_lab_order', () => {
+        subscribeToSocket('new_lab_order', () => {
           fetchStats(true, true);
         });
       });
@@ -74,7 +73,7 @@ function HospitalAdminLabDashboard() {
       clearInterval(pollInterval);
       if (hospitalId) {
         import('@/lib/integrations/api/socket').then(({ unsubscribeFromSocket }) => {
-          unsubscribeFromSocket(`hospital_${hospitalId}`, 'new_lab_order', handleRefresh);
+          unsubscribeFromSocket('new_lab_order', handleRefresh);
         });
       }
     };

@@ -8,10 +8,8 @@ import {
   Calendar,
   TrendingUp,
   ArrowUpRight,
-  ArrowDownRight,
   CheckCircle2,
   XCircle,
-  AlertCircle,
   MoreHorizontal,
   Search,
   Filter,
@@ -20,8 +18,6 @@ import {
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 import { toast } from 'react-hot-toast';
 import {
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,

@@ -4,26 +4,16 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminService } from "@/lib/integrations";
 import {
-   Calendar,
-   Clock,
    CheckCircle2,
    XCircle,
    AlertCircle,
-   FileText,
    User,
-   Building,
-   Filter,
    Search,
-   MoreHorizontal,
-   ArrowRight,
-   ShieldAlert,
-   CalendarDays,
    CheckCircle,
    ClipboardList,
    ChevronLeft,
    ChevronRight,
    History,
-   Plus,
    Send
 } from "lucide-react";
 import toast from "react-hot-toast";

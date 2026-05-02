@@ -9,9 +9,6 @@ import {
     Search,
     Package,
     RotateCcw,
-    UserCheck,
-    ChevronDown,
-    ChevronUp,
     LayoutGrid,
     List,
     BedDouble,
@@ -44,11 +41,11 @@ export default function NurseMedicineReturnPage() {
                         queryClient.invalidateQueries({ queryKey: ["ipd", "nurse-active-admissions"] });
                     };
 
-                    subscribeToSocket('', 'medicine_return_requested', handleRefresh);
-                    subscribeToSocket('', 'medicine_return_approved', handleRefresh);
-                    subscribeToSocket('', 'medicine_return_rejected', handleRefresh);
-                    subscribeToSocket('', 'medication_administered', handleRefresh);
-                    subscribeToSocket('', 'medication_undo', handleRefresh);
+                    subscribeToSocket('medicine_return_requested', handleRefresh);
+                    subscribeToSocket('medicine_return_approved', handleRefresh);
+                    subscribeToSocket('medicine_return_rejected', handleRefresh);
+                    subscribeToSocket('medication_administered', handleRefresh);
+                    subscribeToSocket('medication_undo', handleRefresh);
                 } catch (e) {
                     console.warn("Socket setup failed in Return Page:", e);
                 }
@@ -252,7 +249,6 @@ export default function NurseMedicineReturnPage() {
                 items: payloadItems,
                 notes: globalReturnReason || "Submitted by nurse",
             });
-            "don"
             toast.success("Return requests submitted successfully!");
             setIsReturnMode(false);
             setReturnQtys({});

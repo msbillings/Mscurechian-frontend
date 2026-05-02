@@ -7,7 +7,7 @@ import { hospitalAdminService } from "@/lib/integrations";
 import {
     UserPlus, Eye, EyeOff, ArrowLeft, AlertCircle, CheckCircle2,
     User, Mail, MapPin, Briefcase, Clock, FileText, Landmark,
-    IndianRupee, Award, Globe, ImageIcon, CreditCard, Plus, X, CalendarDays
+    Award, Globe, CreditCard, Plus, X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { TagInput } from "@/components/common/TagInput";

@@ -3,18 +3,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     Building2,
-    Users,
     Search,
-    FileText,
-    CheckCircle2,
-    Info,
     Plus,
     Edit3,
-    ArrowRight,
     Bed,
     DoorOpen,
     Loader2,
-    Trash2,
     Save,
     X,
     Layers,

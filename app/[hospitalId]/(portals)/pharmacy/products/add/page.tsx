@@ -140,7 +140,7 @@ const AddProductPage = () => {
             try {
                 const data = await SupplierService.getSuppliers();
                 setSuppliers(data);
-            } catch (error) {
+            } catch {
                 console.error('Failed to fetch suppliers');
             }
         };

@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import {
     Pill, FlaskConical, Building2, Users,
-    Search, Download, Info
+    Search, Info
 } from 'lucide-react';
 import { apiClient } from '@/lib/integrations/api/apiClient';
 import { HOSPITAL_ADMIN_ENDPOINTS } from '@/lib/integrations/config/endpoints';

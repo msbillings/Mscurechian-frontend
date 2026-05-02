@@ -4,8 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { supportService } from '@/lib/integrations/services/support.service';
 import { SupportTicket } from '@/lib/integrations/types/support';
 import { toast } from 'react-hot-toast';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft, Send, CheckCircle, Clock, Paperclip, User, ShieldCheck, X } from 'lucide-react';
+import { ArrowLeft, Send, Clock, Paperclip, User, ShieldCheck, X } from 'lucide-react';
 import { format } from 'date-fns';
 import StatusBadge from './StatusBadge';
 
@@ -24,11 +23,7 @@ function TicketDetailView({ ticketId, isAdmin, onBack }: TicketDetailViewProps) 
     const [resolving, setResolving] = useState(false);
     const [viewImage, setViewImage] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchTicket();
-    }, [ticketId]);
-
-    const fetchTicket = async () => {
+    const fetchTicket = React.useCallback(async () => {
         try {
             const data = await supportService.getTicketDetails(ticketId);
             console.log("Fetched Ticket Data:", data); // Debug Log
@@ -36,12 +31,16 @@ function TicketDetailView({ ticketId, isAdmin, onBack }: TicketDetailViewProps) 
                 console.log("Attachments:", data.attachments);
             }
             setTicket(data);
-        } catch (error) {
+        } catch {
             toast.error("Failed to load ticket details");
         } finally {
             setLoading(false);
         }
-    };
+    }, [ticketId]);
+
+    useEffect(() => {
+        fetchTicket();
+    }, [fetchTicket]);
 
     const handleReply = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -61,7 +60,7 @@ function TicketDetailView({ ticketId, isAdmin, onBack }: TicketDetailViewProps) 
             setReplyMessage('');
             setReplyFiles([]);
             fetchTicket(); // Refresh conversation
-        } catch (error) {
+        } catch {
             toast.error("Failed to send reply");
         } finally {
             setSending(false);
@@ -77,7 +76,7 @@ function TicketDetailView({ ticketId, isAdmin, onBack }: TicketDetailViewProps) 
             await supportService.updateStatus(ticketId, newStatus);
             toast.success(`Ticket ${newStatus === 'resolved' ? 'resolved' : 're-opened'}`);
             fetchTicket();
-        } catch (error) {
+        } catch {
             toast.error("Action failed");
         } finally {
             setResolving(false);

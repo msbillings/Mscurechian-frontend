@@ -15,7 +15,6 @@ import {
     ChevronDown,
     Clock,
     AlertCircle,
-    Calendar,
     Stethoscope,
     Thermometer,
     HeartPulse,

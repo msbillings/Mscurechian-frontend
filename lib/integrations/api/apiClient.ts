@@ -493,12 +493,12 @@ export async function apiClient<T>(
                     const channel = new BroadcastChannel('msc_auth');
                     channel.postMessage({ type: 'REFRESH_SUCCESS', accessToken: newToken, csrfToken: newCsrfToken });
                     channel.close();
-                  } catch (e) {}
+                  } catch {}
 
                   try {
                     const { updateSocketToken } = await import("@/lib/integrations/api/socket");
                     updateSocketToken(newToken).catch(() => {});
-                  } catch (e) {}
+                  } catch {}
 
                   onTokenRefreshed(newToken, newCsrfToken);
                 } else if (refreshRes.status === 409) {
@@ -538,7 +538,7 @@ export async function apiClient<T>(
                   const channel = new BroadcastChannel('msc_auth');
                   channel.postMessage({ type: 'REFRESH_FAILURE' });
                   channel.close();
-                } catch (e) {}
+                } catch {}
 
                 const sessionError = new Error("Your session has expired. Please login again.");
                 (sessionError as any).isSessionExpired = true;
@@ -653,7 +653,7 @@ export async function apiClient<T>(
           const parsed = JSON.parse(rawRes);
           (error as any).error = parsed; // Standard for our UI catch blocks
           (error as any).data = parsed;  // Fallback
-        } catch (e) {}
+        } catch {}
         throw error;
       }
 

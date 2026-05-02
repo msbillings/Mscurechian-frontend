@@ -13,8 +13,6 @@ import {
     Zap,
     Lock,
     ArrowRight,
-    Menu,
-    X,
     Network,
     Target,
     Server,
@@ -29,7 +27,6 @@ import {
     Bed,
     Pill,
     LayoutGrid,
-    ArrowLeft,
     CheckCircle,
     ChevronDown
 } from "lucide-react";

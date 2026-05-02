@@ -6,11 +6,9 @@ import { LabSample } from '@/lib/integrations/types/labSample';
 import { LabSampleService } from '@/lib/integrations/services/labSample.service';
 import {
     FlaskConical,
-    Filter,
     Download,
     Eye,
     Activity,
-    Search,
     Clock,
     CheckCircle2,
     History,

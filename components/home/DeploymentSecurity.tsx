@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { ShieldCheck, Database, Lock, Activity } from 'lucide-react';
 import ScrollReveal from '../animations/ScrollReveal';
 
 const DeploymentSecurity = () => {

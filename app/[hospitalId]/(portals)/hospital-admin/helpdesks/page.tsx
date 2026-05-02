@@ -9,7 +9,7 @@ import {
   Headphones, Plus, Edit2, Trash2, Phone, Mail, Search,
   Copy, Check, KeyRound, Eye, EyeOff, ShieldCheck, ShieldOff, AlertCircle, CheckCircle2,
 } from "lucide-react";
-import { Modal, ConfirmModal, FormInput, FormSelect, FormTextarea } from "@/components/admin";
+import { Modal, ConfirmModal, FormInput, FormTextarea } from "@/components/admin";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Helpdesk {

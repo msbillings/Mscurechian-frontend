@@ -5,10 +5,8 @@ import { motion, useScroll, useSpring } from 'framer-motion';
 import { 
   Share2, 
   Bookmark, 
-  Tag, 
   Clock,
   ChevronLeft,
-  Calendar,
   Quote,
   ArrowRight,
   Facebook,

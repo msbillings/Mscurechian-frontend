@@ -12,8 +12,6 @@ import {
   Award,
   Users,
   Activity,
-  TrendingUp,
-  TrendingDown,
   AlertTriangle,
   Star,
   Stethoscope,
@@ -22,7 +20,6 @@ import {
   ChevronRight,
   Calendar,
   BarChart3,
-  Target,
   UserCheck,
   ShieldAlert,
   ArrowUpRight,
@@ -30,6 +27,7 @@ import {
   Minus,
   X,
   ChevronDown,
+  Target,
 } from "lucide-react";
 import type { PerformanceEmployee } from "@/lib/integrations/services/performance.service";
 

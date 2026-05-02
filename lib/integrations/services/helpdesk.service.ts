@@ -1,7 +1,6 @@
 import {
   HELPDESK_ENDPOINTS,
   MASTER_HELPDESK_ENDPOINTS,
-  BOOKING_ENDPOINTS,
   DOCTOR_ENDPOINTS,
   TRANSIT_ENDPOINTS,
 } from "../config";
@@ -13,7 +12,6 @@ import type {
   HelpdeskDoctor,
   PatientRegistrationRequest,
   PatientRegistrationResponse,
-  HelpdeskAppointment,
 } from "../types/helpdesk";
 
 /**

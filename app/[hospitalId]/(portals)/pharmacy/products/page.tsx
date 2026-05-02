@@ -8,8 +8,7 @@ import {
     Download,
     FileSpreadsheet,
     ChevronDown,
-    RefreshCcw,
-    LayoutGrid
+    RefreshCcw
 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -50,7 +49,7 @@ const ProductsPage = () => {
     const [supplierFilter, setSupplierFilter] = useState('All Suppliers');
     const [expiryStatusFilter, setExpiryStatusFilter] = useState(searchParams.get('expiryStatus') || 'All');
 
-    const fetchProducts = async (page = 1) => {
+    const fetchProducts = React.useCallback(async (page = 1) => {
         setIsLoading(true);
         try {
             const data = await ProductService.getProductsPaginated(
@@ -73,7 +72,7 @@ const ProductsPage = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [searchTerm, statusFilter, supplierFilter, expiryStatusFilter]);
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
@@ -81,11 +80,11 @@ const ProductsPage = () => {
         }, 300);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm, statusFilter, supplierFilter, expiryStatusFilter]);
+    }, [fetchProducts]);
 
     useEffect(() => {
         fetchProducts(currentPage);
-    }, [currentPage]);
+    }, [currentPage, fetchProducts]);
 
     const handleSaveProduct = async (data: PharmacyProductPayload) => {
         try {

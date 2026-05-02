@@ -2,7 +2,7 @@
 
 import React, { useState, use, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar, Clock, User, CheckCircle, ArrowLeft, Printer } from "lucide-react";
+import { Clock, User, CheckCircle, ArrowLeft, Printer } from "lucide-react";
 import { useHelpdeskStore } from "@/stores/helpdeskStore";
 import toast from "react-hot-toast";
 

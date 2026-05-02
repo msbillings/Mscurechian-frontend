@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from '@/stores/authStore';
 import {
     Menu,
-    Search,
     User,
     LogOut
 } from "lucide-react";

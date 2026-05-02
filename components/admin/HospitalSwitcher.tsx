@@ -47,14 +47,15 @@ export default function HospitalSwitcher() {
     }, []);
 
     // Only render for super-admin
-    if (user?.role !== 'super-admin' && user?.role !== 'admin') return null;
+    const isSuperAdmin = user?.role === 'super-admin' || user?.role === 'admin';
 
     // Load hospitals when dropdown opens
     useEffect(() => {
+        if (!isSuperAdmin) return;
         if (isOpen && hospitals.length === 0) {
             fetchHospitals();
         }
-    }, [isOpen]);
+    }, [isOpen, isSuperAdmin, hospitals.length]);
 
     // Filter hospitals by search query
     useEffect(() => {
@@ -78,6 +79,8 @@ export default function HospitalSwitcher() {
             setActiveHospitalId(maybeId);
         }
     }, []);
+
+    if (!isSuperAdmin) return null;
 
     const fetchHospitals = async () => {
         try {

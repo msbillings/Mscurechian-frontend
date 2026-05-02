@@ -8,8 +8,6 @@ import {
     Beaker,
     Pill,
     ShieldCheck,
-    Activity,
-    Layers,
     Zap,
     ChevronRight,
     ArrowRight,

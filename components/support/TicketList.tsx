@@ -1,6 +1,6 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { SupportTicket } from '@/lib/integrations/types/support';
-import { Eye, Clock, CheckCircle, AlertCircle, User, Calendar, MessageSquare } from 'lucide-react';
+import { Eye, User, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import StatusBadge from './StatusBadge';
 
