@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery} from '@tanstack/react-query';
 import {
     Printer,
     Sparkles,
@@ -12,7 +12,6 @@ import {
     X,
     FlaskConical,
     Heart,
-    Flame,
     AlertCircle,
     Eraser,
     Loader2,
@@ -22,18 +21,16 @@ import {
     Trash2,
     Search,
     ArrowLeft,
-    FileText,
-    PenTool,
     Zap,
     ZapIcon,
-    Baby,
     Mic2,
     BabyIcon,
     Eye,
     Wind,
     Beaker,
     ShieldAlert,
-    Scan
+    Scan,
+    PenTool
 } from 'lucide-react';
 import { CardiologyModule } from './create/modules/CardiologyModule';
 import { DermatologyModule, DermatologyData, INITIAL_DERMATOLOGY_DATA } from './create/modules/DermatologyModule';

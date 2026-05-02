@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  AlertTriangle,
   Siren,
   MapPin,
   Clock,
@@ -12,7 +11,6 @@ import {
   ArrowLeft,
   RefreshCw,
   Activity,
-  ShieldAlert,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";

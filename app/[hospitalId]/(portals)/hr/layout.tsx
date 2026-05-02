@@ -11,7 +11,6 @@ import {
   Building2,
   Stethoscope,
   Headphones,
-  X,
   Bell,
   ShieldCheck,
 } from "lucide-react";

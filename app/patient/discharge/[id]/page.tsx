@@ -3,14 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-    Download,
-    Share2,
     ArrowLeft,
     Activity,
-    Calendar,
-    User,
-    Phone,
-    MapPin,
     FileText,
     ShieldCheck,
     Stethoscope,

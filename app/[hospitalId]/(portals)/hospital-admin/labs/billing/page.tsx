@@ -16,9 +16,7 @@ import {
     FlaskConical,
     Calculator,
     ChevronRight,
-    CreditCard,
     Printer,
-    ArrowRightCircle,
     Activity,
     Stethoscope
 } from 'lucide-react';

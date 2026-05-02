@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { LogIn, LogOut, CheckCircle2, Clock } from 'lucide-react';
+import { LogIn, LogOut, CheckCircle2} from 'lucide-react';
 import { useTodayStatus, useCheckIn, useCheckOut } from '@/lib/integrations/hooks';
 import toast from 'react-hot-toast';
 

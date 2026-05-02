@@ -2,11 +2,11 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { PlayCircle, Clock, User, ArrowRight } from 'lucide-react';
+import { PlayCircle, User, ArrowRight } from 'lucide-react';
 
 interface CurrentSessionCardProps {
     currentAppointmentId: string | null;
-    patientName?: string;
+    patientName?: string;   
 }
 
 function CurrentSessionCard({ currentAppointmentId, patientName }: CurrentSessionCardProps) {

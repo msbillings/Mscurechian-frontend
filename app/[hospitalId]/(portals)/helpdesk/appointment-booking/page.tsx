@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
     Calendar,
     Search,
-    Clock,
     User,
     Stethoscope,
     ChevronRight,
@@ -17,10 +16,8 @@ import {
     Smartphone,
     Info,
     RefreshCw,
-    AlertCircle,
     Hash,
     PenTool,
-    CheckCircle,
     AlertTriangle,
     Receipt,
     Check,

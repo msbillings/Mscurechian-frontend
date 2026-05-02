@@ -5,7 +5,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserPlus, CalendarCheck, CreditCard, ArrowRight } from 'lucide-react';
 import { useTenantLink } from '@/hooks/useTenantLink';
-import { useTransition } from 'react';
 
 interface HelpdeskQuickActionsProps {
     startTransition: (callback: () => void) => void;

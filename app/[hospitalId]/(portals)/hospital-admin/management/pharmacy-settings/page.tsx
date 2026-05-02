@@ -3,12 +3,9 @@
 import React, { useState, useEffect } from "react";
 import {
     Pill,
-    Plus,
-    CheckCircle2,
     AlertCircle,
     Save,
     ShieldCheck,
-    Check
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { hospitalAdminService } from "@/lib/integrations";

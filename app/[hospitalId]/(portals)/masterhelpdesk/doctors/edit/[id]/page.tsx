@@ -6,16 +6,11 @@ import { hospitalAdminService } from "@/lib/integrations";
 import { useQuery } from "@tanstack/react-query";
 import {
   User,
-  Mail,
-  Phone,
   Briefcase,
-  Award,
-  MapPin,
   Clock,
   IndianRupee,
   Edit,
   ArrowLeft,
-  Shield,
   CheckCircle2,
   AlertCircle,
   Plus,

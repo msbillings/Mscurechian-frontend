@@ -4,10 +4,7 @@ import React, { useState, useMemo, useCallback } from "react";
 import {
     Users,
     Calendar,
-    Clock,
-    Search,
     Stethoscope,
-    ChevronRight,
     Activity,
     AlertCircle,
     Plus,
@@ -30,7 +27,6 @@ import {
 import { AttendanceModal } from "@/components/attendance/AttendanceModal";
 import { HelpdeskDashboardSkeleton } from "@/components/ui/skeletons";
 import { useAuthStore } from "@/stores/authStore";
-import { formatLocalTime } from "@/lib/utils/date-utils";
 import { sanitizePatientName } from "@/lib/utils/name-utils";
 
 function HelpdeskDashboard() {
@@ -412,14 +408,14 @@ function HelpdeskDashboard() {
                 };
 
                 // Subscribe to helpdesk and hospital events
-                await subscribeToSocket(`hospital_${user.hospitalId || (user as any).hospital}`, "dashboard:update", handleUpdate);
-                await subscribeToSocket(`hospital_${user.hospitalId || (user as any).hospital}`, "appointment_request", handleUpdate);
-                await subscribeToSocket(`helpdesk_${user.id}`, "appointment:updated", handleUpdate);
+                await subscribeToSocket("dashboard:update", handleUpdate);
+                await subscribeToSocket("appointment_request", handleUpdate);
+                await subscribeToSocket("appointment:updated", handleUpdate);
 
                 return () => {
-                    unsubscribeFromSocket(`hospital_${user.hospitalId || (user as any).hospital}`, "dashboard:update", handleUpdate);
-                    unsubscribeFromSocket(`hospital_${user.hospitalId || (user as any).hospital}`, "appointment_request", handleUpdate);
-                    unsubscribeFromSocket(`helpdesk_${user.id}`, "appointment:updated", handleUpdate);
+                    unsubscribeFromSocket("dashboard:update", handleUpdate);
+                    unsubscribeFromSocket("appointment_request", handleUpdate);
+                    unsubscribeFromSocket("appointment:updated", handleUpdate);
                 };
             }
         };

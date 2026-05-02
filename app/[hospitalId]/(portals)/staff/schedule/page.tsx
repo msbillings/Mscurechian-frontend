@@ -5,11 +5,9 @@ import {
   Calendar,
   Clock,
   User,
-  MapPin,
   ChevronLeft,
   ChevronRight,
   Info,
-  BookOpenCheck,
   Briefcase,
   TrendingUp
 } from 'lucide-react';

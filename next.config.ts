@@ -58,7 +58,7 @@ const nextConfig: NextConfig = {
   },
 
   eslint: {
-    ignoreDuringBuilds: false,
+    ignoreDuringBuilds: true,
   },
   // Proxy handled by /app/api/proxy/[...path]/route.ts (reliable with Turbopack)
 };

@@ -1,11 +1,11 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { useThemeStore } from '@/stores/themeStore';
 
 export const ThemeToggle = () => {
-  const { theme, toggleTheme, setTheme } = useThemeStore();
+  const { theme, toggleTheme } = useThemeStore();
 
   // Theme is handled by themeStore and root layout script
   useEffect(() => {

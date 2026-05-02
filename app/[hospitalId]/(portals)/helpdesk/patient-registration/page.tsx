@@ -3,21 +3,13 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    UserPlus,
-    Save,
-    RotateCcw,
-    Shield,
     AlertCircle,
-    CheckCircle2,
     Loader2,
     ChevronRight,
     ArrowLeft,
-    Activity,
     User,
     Phone,
     MapPin,
-    Calendar,
-    Droplets,
     Heart,
     Clock,
     SpellCheck

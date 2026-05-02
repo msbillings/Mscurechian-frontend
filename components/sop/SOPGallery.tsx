@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import {
@@ -7,9 +7,7 @@ import {
     Clock,
     User,
     AlertCircle,
-    ExternalLink,
     Search,
-    Filter,
     Archive,
     Loader2,
     CheckSquare,

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { X, Plus, Trash2, Clock, Calendar, Save, BellRing } from "lucide-react";
-import { Card, Button, FormInput } from "@/components/admin";
+import { Card, Button } from "@/components/admin";
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
 import toast from "react-hot-toast";
 

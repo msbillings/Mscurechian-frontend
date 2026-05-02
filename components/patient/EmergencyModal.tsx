@@ -6,20 +6,15 @@ import {
     Activity,
     AlertCircle,
     CheckCircle2,
-    Clock,
-    MapPin,
     Navigation,
-    Shield,
     Siren,
     X,
     MessageSquare,
-    Hospital,
     Check,
     RefreshCw,
     Building2,
     Loader2,
     Send,
-    ShieldAlert,
 } from 'lucide-react';
 import { emergencyService } from '@/lib/integrations/services/emergency.service';
 import { toast } from 'react-hot-toast';
@@ -94,15 +89,15 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose,
 
         const initSocket = async () => {
             try {
-                const { getSocket, subscribeToSocket, unsubscribeFromSocket } = await import('@/lib/integrations/api/socket');
-                const userData = localStorage.getItem('user') || localStorage.getItem('user');
+                const { getSocket, subscribeToSocket } = await import('@/lib/integrations/api/socket');
+                const userData = localStorage.getItem('user');
                 if (!userData) return;
 
                 const user = JSON.parse(userData);
                 const currentUserId = user.id || user._id;
 
                 if (currentUserId) {
-                    subscribeToSocket(`user_${currentUserId}`, 'emergency:update', (updatedReq: any) => {
+                    await subscribeToSocket('emergency:update', (updatedReq: any) => {
                         console.log('📡 [SOCKET] Emergency Mission Flux Update:', updatedReq);
                         if (isMounted) {
                             setActiveRequest(updatedReq);

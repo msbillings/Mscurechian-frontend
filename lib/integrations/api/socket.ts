@@ -178,7 +178,6 @@ export const resetSocket = async (newToken?: string): Promise<any> => {
 // ─── Pub/Sub Helpers ──────────────────────────────────────────────────────────
 
 export const subscribeToSocket = async (
-  channel: string,
   event: string,
   callback: (data: any) => void
 ) => {
@@ -189,7 +188,6 @@ export const subscribeToSocket = async (
 };
 
 export const unsubscribeFromSocket = async (
-  channel: string,
   event: string,
   callback: (data: any) => void
 ) => {

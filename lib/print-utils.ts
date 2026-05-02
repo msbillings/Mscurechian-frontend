@@ -26,7 +26,7 @@ export const formatTime12Hr = (time: any): string => {
       minute: '2-digit', 
       hour12: true 
     });
-  } catch (e) {
+  } catch {
     return String(time);
   }
 };

@@ -41,6 +41,47 @@ const AuditLogsPage = () => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
 
+    const normalizeLog = React.useCallback((log: any): AuditLog => {
+        if (!log) return {} as AuditLog;
+
+        // Default Pharmacist Identity from Profile (since there is only 1 login)
+        const pharmaName = (authUser as any)?.shopName || authUser?.name || 'Pharmacist';
+        const pharmaRole = authUser?.role || 'Admin';
+
+        let userObj = { name: pharmaName, email: authUser?.email || '', role: pharmaRole };
+
+        // Handle different user/actor field names from various backend versions
+        const rawUser = log.user || log.actor || log.actorId || log.createdBy || log.userId || log.actorDetails;
+
+        if (typeof rawUser === 'object' && rawUser !== null) {
+            userObj = {
+                name: rawUser.name || rawUser.username || rawUser.fullName || rawUser.email || pharmaName,
+                email: rawUser.email || authUser?.email || '',
+                role: rawUser.role || pharmaRole
+            };
+        } else if (typeof rawUser === 'string' && rawUser.length > 5 && !/^[0-9a-fA-F]{24}$/.test(rawUser)) {
+            // Only use the raw string if it's not a generic Mongo ID
+            userObj = {
+                name: rawUser,
+                email: '',
+                role: pharmaRole
+            };
+        }
+
+        // IP Extraction
+        const rawIp = log.ipAddress || log.ip || log.ip_address || log.clientIp || log.remoteAddress || log.remote_address;
+
+        // Final normalization
+        return {
+            ...log,
+            _id: log._id || log.id || Math.random().toString(36).substr(2, 9),
+            action: (log.action || log.type || 'SYSTEM_EVENT').toUpperCase(),
+            timestamp: log.timestamp || log.createdAt || log.date || new Date().toISOString(),
+            ipAddress: cleanIpAddress(rawIp),
+            user: userObj
+        };
+    }, [authUser]);
+
     const fetchLogs = useCallback(async (pageNum = 1) => {
         setLoading(true);
         try {
@@ -78,7 +119,7 @@ const AuditLogsPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [action, startDate, endDate, authUser]);
+    }, [action, startDate, endDate, normalizeLog]);
 
     useEffect(() => {
         fetchLogs(page);
@@ -129,46 +170,6 @@ const AuditLogsPage = () => {
         return clean;
     };
 
-    const normalizeLog = (log: any): AuditLog => {
-        if (!log) return {} as AuditLog;
-
-        // Default Pharmacist Identity from Profile (since there is only 1 login)
-        const pharmaName = (authUser as any)?.shopName || authUser?.name || 'Pharmacist';
-        const pharmaRole = authUser?.role || 'Admin';
-
-        let userObj = { name: pharmaName, email: authUser?.email || '', role: pharmaRole };
-
-        // Handle different user/actor field names from various backend versions
-        const rawUser = log.user || log.actor || log.actorId || log.createdBy || log.userId || log.actorDetails;
-
-        if (typeof rawUser === 'object' && rawUser !== null) {
-            userObj = {
-                name: rawUser.name || rawUser.username || rawUser.fullName || rawUser.email || pharmaName,
-                email: rawUser.email || authUser?.email || '',
-                role: rawUser.role || pharmaRole
-            };
-        } else if (typeof rawUser === 'string' && rawUser.length > 5 && !/^[0-9a-fA-F]{24}$/.test(rawUser)) {
-            // Only use the raw string if it's not a generic Mongo ID
-            userObj = {
-                name: rawUser,
-                email: '',
-                role: pharmaRole
-            };
-        }
-
-        // IP Extraction
-        const rawIp = log.ipAddress || log.ip || log.ip_address || log.clientIp || log.remoteAddress || log.remote_address;
-
-        // Final normalization
-        return {
-            ...log,
-            _id: log._id || log.id || Math.random().toString(36).substr(2, 9),
-            action: (log.action || log.type || 'SYSTEM_EVENT').toUpperCase(),
-            timestamp: log.timestamp || log.createdAt || log.date || new Date().toISOString(),
-            ipAddress: cleanIpAddress(rawIp),
-            user: userObj
-        };
-    };
 
     return (
         <div className="space-y-4 md:space-y-6 pb-20 max-w-[1200px] mx-auto px-4 md:px-0">

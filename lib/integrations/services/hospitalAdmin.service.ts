@@ -1,11 +1,10 @@
-import { HOSPITAL_ADMIN_ENDPOINTS, ADMIN_ENDPOINTS } from "../config";
+import { HOSPITAL_ADMIN_ENDPOINTS } from "../config";
 import { apiClient, invalidateCachePattern } from "../api";
 import type {
   Hospital,
   Doctor,
   Helpdesk,
   CreateDoctorRequest,
-  CreateHelpdeskRequest,
   CreateHospitalRequest,
   CreateHospitalHelpdeskRequest,
   AttendanceRecord,

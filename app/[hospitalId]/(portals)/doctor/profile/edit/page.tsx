@@ -4,10 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     User, Mail, Phone, Briefcase, Award,
-    CreditCard, Building, Landmark, Wallet, Globe,
+    Building, Landmark, Wallet, Globe,
     Save, ArrowLeft, Plus, X,
     Calendar, Clock, IndianRupee, FileText, Upload, CheckCircle2,
-    ShieldCheck, ChevronDown, Trash2, UploadCloud, Search
+    ShieldCheck, ChevronDown, Trash2
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getDoctorProfileAction, updateDoctorProfileAction, uploadDoctorPhotoAction } from '@/lib/integrations/actions/doctor.actions';

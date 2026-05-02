@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo, use } from 'react';
+import React, { useState, useEffect, use} from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Plus,
@@ -10,7 +10,6 @@ import {
   Loader2,
   Beaker,
   Printer,
-  Clock,
   Activity,
   CheckCircle
 } from 'lucide-react';

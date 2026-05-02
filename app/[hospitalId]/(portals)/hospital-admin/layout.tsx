@@ -5,25 +5,16 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
 import {
   Building2,
-  Stethoscope,
-  Headphones,
   Pill,
   FlaskConical,
   User,
   LayoutDashboard,
-  CreditCard,
-  LifeBuoy,
   LineChart,
   ClipboardCheck,
   Bell,
   BarChart3,
   AlertTriangle,
   MessageSquare,
-  ExternalLink,
-  BookOpenCheck,
-  Settings,
-  ShieldCheck,
-  QrCode,
 } from "lucide-react";
 import LicenseLock from "@/components/License/LicenseLock";
 import LogoutModal from "@/components/auth/LogoutModal";

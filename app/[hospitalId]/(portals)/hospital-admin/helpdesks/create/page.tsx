@@ -8,7 +8,7 @@ import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.
 import {
   Headphones, ArrowLeft, CheckCircle2, AlertCircle, 
   ChevronRight, ChevronLeft, CreditCard, Landmark, 
-  User, Briefcase, Calendar, Clock, ShieldCheck, 
+  User, Briefcase, Clock, ShieldCheck, 
   Eye, EyeOff, Copy, Check
 } from "lucide-react";
 import { Modal } from "@/components/admin";

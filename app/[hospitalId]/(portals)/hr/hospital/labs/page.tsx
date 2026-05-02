@@ -3,14 +3,12 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-    Users,
     Microscope,
     Wallet,
     IndianRupee,
     Activity,
     TestTube,
     CheckCircle2,
-    Clock,
     Info
 } from 'lucide-react';
 import { LabDashboardService } from '@/lib/integrations/services/labDashboard.service';

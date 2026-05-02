@@ -2,24 +2,15 @@
 
 import React, { useMemo, useState } from "react";
 import {
-    TrendingUp,
-    Filter,
     ArrowLeft,
     IndianRupee,
-    Shield,
-    Activity,
     CreditCard,
-    Calendar,
     RefreshCw,
-    FileText,
-    ArrowUpRight,
     Zap,
-    Target,
     Building2,
     LayoutDashboard,
     Globe,
     Wallet,
-    Receipt,
     ClipboardList,
     Smartphone,
     UserCircle2

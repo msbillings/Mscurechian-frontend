@@ -6,8 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useTenantLink } from "@/hooks/useTenantLink";
 import { ipdIssuanceService } from "@/lib/integrations/services/pharmacy.service";
 import {
-    Search, RotateCcw, Fingerprint, Layers, ArrowRight,
-    Link
+    Search, RotateCcw, Fingerprint, Layers, ArrowRight
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -39,9 +38,9 @@ export default function PharmaMedicineReturnPage() {
                         queryClient.invalidateQueries({ queryKey: ["pharmacy", "ipd-issuance"] });
                     };
 
-                    subscribeToSocket('', 'medicine_return_requested', handleRefresh);
-                    subscribeToSocket('', 'medicine_return_approved', handleRefresh);
-                    subscribeToSocket('', 'medicine_return_rejected', handleRefresh);
+                    subscribeToSocket('medicine_return_requested', handleRefresh);
+                    subscribeToSocket('medicine_return_approved', handleRefresh);
+                    subscribeToSocket('medicine_return_rejected', handleRefresh);
                 } catch (e) {
                     console.warn("Socket setup failed in Pharma Return Page:", e);
                 }

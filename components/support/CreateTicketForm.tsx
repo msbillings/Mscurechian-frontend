@@ -3,7 +3,6 @@ import { supportService } from '@/lib/integrations/services/support.service';
 import { toast } from 'react-hot-toast';
 import { Upload, X, Send, Activity } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import ImageCropper from '../ui/ImageCropper';
 import { useTenantLink } from '@/hooks/useTenantLink';
 
 interface CreateTicketFormProps {
@@ -55,7 +54,7 @@ function CreateTicketForm({ onSuccess, basePath }: CreateTicketFormProps) {
         });
 
         try {
-            const newTicket = await supportService.createTicket(data);
+            await supportService.createTicket(data);
             toast.success("Ticket submitted successfully!");
 
             // Reset form

@@ -2,18 +2,12 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import {
-    Stethoscope,
     Search,
     Phone,
     MessageSquare,
-    Loader2,
-    AlertCircle,
     RefreshCw,
     ArrowLeft,
     Activity,
-    Calendar,
-    ChevronRight,
-    HeartPulse,
     X
 } from "lucide-react";
 import { useHelpdeskDoctors } from "@/lib/integrations";

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { X, Star, Save, Loader2 } from "lucide-react";
 import { useSubmitPerformance } from "@/lib/integrations/hooks";
-import { toast } from "react-hot-toast";
+import toast from "react-hot-toast";
 
 interface PerformanceReviewModalProps {
   isOpen: boolean;

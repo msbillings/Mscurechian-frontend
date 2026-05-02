@@ -48,7 +48,7 @@ export default function DailyTasksPage() {
     const [isHistorical, setIsHistorical] = useState(false);
 
     // ── Fetch ──────────────────────────────────────────────────────────────────
-    const fetchTasks = async () => {
+    const fetchTasks = React.useCallback(async () => {
         try {
             setLoading(true);
 
@@ -68,11 +68,11 @@ export default function DailyTasksPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [selectedDate]);
 
     useEffect(() => {
         fetchTasks();
-    }, [selectedDate]);
+    }, [fetchTasks]);
 
     // ── Toggle completion ──────────────────────────────────────────────────────
     const toggleTask = async (taskId: string, currentStatus: string, e: React.MouseEvent) => {

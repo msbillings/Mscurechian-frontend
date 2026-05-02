@@ -12,12 +12,6 @@ import {
     History,
     MapPin,
     CalendarIcon,
-    ChevronLeft,
-    ChevronRight,
-    Filter,
-    TrendingUp,
-    ArrowUpRight,
-    Calendar
 } from 'lucide-react';
 import { useStaffDashboard, useAttendanceHistory, useCheckIn, useCheckOut } from '@/lib/integrations/hooks';
 import toast from 'react-hot-toast';

@@ -11,19 +11,14 @@ import {
   Phone,
   MapPin,
   Award,
-  Calendar,
   Clock,
-  Building,
   CreditCard,
-  Shield,
   Globe,
   Stethoscope,
   Edit,
   Briefcase,
-  Eye,
   UserCheck,
   Ban,
-  EyeOff
 } from "lucide-react";
 import { PageHeader, Button } from "@/components/admin";
 

@@ -12,9 +12,6 @@ import {
     Loader2,
     Lock,
     ArrowLeft,
-    ChevronRight,
-    Briefcase,
-    ShieldCheck
 } from "lucide-react";
 import { useTransition } from "react";
 import ProgressBar from "@/components/ui/ProgressBar";

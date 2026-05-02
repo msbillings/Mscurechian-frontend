@@ -5,18 +5,13 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import {
     User,
-    Settings,
-    LogOut
 } from 'lucide-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LogoutModal from '@/components/auth/LogoutModal';
 import SharedNavbar from '@/components/navbar/SharedNavbar';
 import ProgressBar from '@/components/ui/ProgressBar';
 
-
 const queryClient = new QueryClient();
-
-
 
 function PatientPortalLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();

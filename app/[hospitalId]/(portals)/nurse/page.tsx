@@ -6,7 +6,6 @@ import {
     Activity,
     Users,
     Clock,
-    UserCheck,
     AlertTriangle,
     ArrowRight,
     HeartPulse,

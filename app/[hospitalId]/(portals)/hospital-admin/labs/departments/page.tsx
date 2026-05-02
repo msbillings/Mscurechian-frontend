@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Trash2, Search, Building2, Edit3, X, FlaskConical, Upload, FileSpreadsheet, Download, CheckCircle2, AlertTriangle, SkipForward, Info } from 'lucide-react';
+import { Trash2, Search, Building2, Edit3, X, FlaskConical, Upload, FileSpreadsheet, Download, CheckCircle2, AlertTriangle, SkipForward, Info } from 'lucide-react';
 import { DepartmentService } from '@/lib/integrations/services/department.service';
 import { Department } from '@/lib/integrations/types/department';
 import { toast } from 'react-hot-toast';

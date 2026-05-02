@@ -5,10 +5,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   ClipboardList,
-  Calendar,
   AlertTriangle,
   BookOpenCheck,
-  Settings,
   Activity,
   Users,
   Clock,

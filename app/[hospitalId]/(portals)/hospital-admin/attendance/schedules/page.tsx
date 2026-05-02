@@ -3,14 +3,10 @@
 import React, {  useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Calendar,
   Clock,
   Users,
   Plus,
-  MoreHorizontal,
   ArrowRight,
-  ShieldCheck,
-  Zap,
   LayoutGrid,
   List,
   Search,

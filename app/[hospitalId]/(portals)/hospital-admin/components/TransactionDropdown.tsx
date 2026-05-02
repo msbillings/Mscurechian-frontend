@@ -2,12 +2,10 @@
 
 import React, { useState, useRef, useEffect, useTransition } from "react";
 import {
-    CreditCard,
     Headphones,
     Pill,
     FlaskConical,
     ChevronDown,
-    ArrowRightLeft
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { useTenantLink } from "@/hooks/useTenantLink";

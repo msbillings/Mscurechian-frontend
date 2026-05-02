@@ -1,4 +1,4 @@
-import { HR_ENDPOINTS, STAFF_ENDPOINTS, HOSPITAL_ADMIN_ENDPOINTS } from "../config";
+import { HR_ENDPOINTS, STAFF_ENDPOINTS } from "../config";
 import { apiClient } from "../api";
 
 export interface HRStats {

@@ -10,11 +10,9 @@ import {
     Bed as BedIcon,
     ChevronLeft,
     ChevronRight,
-    MapPin,
     Stethoscope,
     Heart,
     Clock,
-    AlertCircle,
     ShieldAlert,
     LayoutGrid,
     Table as TableIcon,
@@ -26,14 +24,13 @@ import { Bed } from '@/lib/integrations/types';
 import toast from 'react-hot-toast';
 import { calculateStayDuration } from '@/lib/utils/date-utils';
 import HybridRoomSearch from '@/components/shared/HybridRoomSearch';
-import VitalsEntryModal from '../components/VitalsEntryModal';
-import ClinicalNotesViewModal from '../components/ClinicalNotesViewModal';
-import PrescriptionViewModal from '../components/PrescriptionViewModal';
 import MedicationAdministrationModal from '../components/MedicationAdministrationModal';
 import LabReportsViewModal from '../components/LabReportsViewModal';
+import ClinicalNotesViewModal from '../components/ClinicalNotesViewModal';
+import VitalsEntryModal from '../components/VitalsEntryModal';
 import { Pill, Beaker } from 'lucide-react';
 
-const MonitoringTimer = ({ lastRecorded, status, hospitalId, wardType }: { lastRecorded?: string | Date; status?: string; hospitalId?: string; wardType?: string }) => {
+const MonitoringTimer = ({ lastRecorded, status }: { lastRecorded?: string | Date; status?: string }) => {
     const [timeLeft, setTimeLeft] = useState<string>("");
     const [isOverdue, setIsOverdue] = useState(false);
 
@@ -83,7 +80,6 @@ const AnimatedNumber = ({ value, trigger }: { value: number; trigger: any }) => 
     const [displayValue, setDisplayValue] = useState(0);
 
     useEffect(() => {
-        const start = 0;
         const end = value;
         if (end === 0) {
             setTimeout(() => setDisplayValue(0), 0);
@@ -221,7 +217,6 @@ export default function WardStatus() {
     const [isVitalsOpen, setIsVitalsOpen] = useState(false);
     const [isNotesOpen, setIsNotesOpen] = useState(false);
     const [isMedsOpen, setIsMedsOpen] = useState(false);
-    const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
     const [isLabModalOpen, setIsLabModalOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
@@ -292,7 +287,7 @@ export default function WardStatus() {
         } finally {
             setLoading(false);
         }
-    }, [filters, nurseRooms]);
+    }, [filters]);
 
     const fetchBedDetails = React.useCallback(async (id: string, silent = false) => {
         if (!id) return;
@@ -384,7 +379,7 @@ export default function WardStatus() {
         if (nurseDept !== null) { // Only fetch after init
             fetchBeds();
         }
-    }, [filters.status, filters.type, filters.room, fetchBeds, nurseDept, nurseRooms]);
+    }, [filters.status, filters.type, filters.room, fetchBeds, nurseDept]);
 
     const filteredBeds = beds.filter(bed =>
         bed.bedId.toLowerCase().includes(debouncedSearch.toLowerCase()) ||

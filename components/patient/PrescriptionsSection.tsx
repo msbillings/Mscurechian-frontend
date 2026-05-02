@@ -4,7 +4,6 @@ import { Card } from '@/components/admin';
 import { format } from 'date-fns';
 import { formatFrequency } from '@/lib/frequencyUtils';
 
-
 interface Medicine {
     name: string;
     dosage: string;

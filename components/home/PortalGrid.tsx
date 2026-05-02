@@ -10,7 +10,6 @@ import {
   Truck,
   Headset,
   Users,
-  FileText,
   ArrowRight,
   HeartPulse
 } from 'lucide-react';

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { dischargeService } from '@/lib/integrations/services/discharge.service';
-import { Clock, User, ArrowRight, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, User, ArrowRight} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/admin';
 import toast from 'react-hot-toast';
@@ -32,14 +32,14 @@ export function PendingDischargesQueue({ searchTerm, page, basePath, onPaginatio
             }
         };
 
-        subscribeToSocket('', 'notification:new', handleNewDischarge);
+        subscribeToSocket('notification:new', handleNewDischarge);
 
         // Refresh every minute as fallback
         const interval = setInterval(fetchPendingDischarges, 60000);
 
         return () => {
             clearInterval(interval);
-            unsubscribeFromSocket('', 'notification:new', handleNewDischarge);
+            unsubscribeFromSocket('notification:new', handleNewDischarge);
         };
     }, []);
 

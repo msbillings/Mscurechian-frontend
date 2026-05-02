@@ -18,14 +18,11 @@ import {
     Trash2,
     UploadCloud,
     CreditCard,
-    AlertTriangle,
     Clock,
     Bed,
     Layers,
     Shield,
-    Stethoscope,
     RefreshCw,
-    Building2,
     Activity,
     Camera
 } from 'lucide-react';

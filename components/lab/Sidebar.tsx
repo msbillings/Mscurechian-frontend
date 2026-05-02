@@ -5,13 +5,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
     LayoutDashboard,
-    FileText,
     Activity,
     FlaskConical,
     Settings,
-    LogOut,
     X,
-    TestTube,
     ClipboardList,
 } from "lucide-react";
 import { useTenantLink } from "@/hooks/useTenantLink";

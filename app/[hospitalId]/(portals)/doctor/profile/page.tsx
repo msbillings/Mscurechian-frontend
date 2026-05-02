@@ -3,9 +3,8 @@ import React from 'react';
 export const dynamic = 'force-dynamic';
 
 import {
-    Mail, Phone, Award, MapPin, Edit2,
-    Calendar as CalendarIcon, Clipboard, Briefcase,
-    Globe, Landmark, CreditCard, ShieldCheck, User as UserIcon
+    Mail, Phone, Award, MapPin,
+    Calendar, Clipboard, Landmark, ShieldCheck, User as UserIcon
 } from 'lucide-react';
 import { getDoctorProfileAction } from '@/lib/integrations';
 import { getDoctorCalendarStatsAction } from '@/lib/integrations/actions/calendar.actions';

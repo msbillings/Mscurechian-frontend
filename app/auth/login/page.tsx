@@ -6,8 +6,7 @@ import Link from "next/link";
 import { useAuthStore } from '@/stores/authStore';
 import {
   Eye, EyeOff, Loader2, User as UserIcon, Lock,
-  ArrowLeft, Cookie, CheckCircle2, XCircle,
-  ShieldCheck, Timer, ShieldX,
+  ArrowLeft, ShieldCheck, Timer, ShieldX,
 } from "lucide-react";
 import { useTransition } from "react";
 import ProgressBar from "@/components/ui/ProgressBar";

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Calendar, Clock } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { contentService } from '@/lib/integrations/services/content.service';
 import { Blog } from '@/lib/integrations/types/cms';
 import Link from 'next/link';

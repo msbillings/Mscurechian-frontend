@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useAuthStore } from '@/stores/authStore';
 import { useTenantLink } from '@/hooks/useTenantLink';
 
 /**
@@ -18,7 +17,6 @@ export default function TenantPortalRedirect() {
   const params = useParams();
   const router = useRouter();
   const hospitalId = params?.hospitalId as string;
-  const { user, isAuthenticated, isInitialized } = useAuthStore();
   const { getPath } = useTenantLink();
 
   useEffect(() => {

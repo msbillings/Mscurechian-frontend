@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Save, Plus, X, Database, FlaskConical, Clock, AlertCircle, Settings, Edit2, Trash2, Check, Activity } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Database, FlaskConical, AlertCircle, Settings, Edit2, Trash2, Check } from 'lucide-react';
 import { LabTestService } from '@/lib/integrations/services/labTest.service';
 import { DepartmentService } from '@/lib/integrations/services/department.service';
 import { Department } from '@/lib/integrations/types/department';

@@ -6,8 +6,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { hospitalAdminService } from "@/lib/integrations";
 import {
   User,
-  Mail,
-  Phone,
   ArrowLeft,
   Plus,
   Eye,

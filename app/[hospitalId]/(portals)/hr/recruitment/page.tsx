@@ -14,14 +14,11 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
-  MoreVertical,
-  ChevronRight,
-  AlertCircle,
-  FileText,
-  Eye,
   Calendar,
   ArrowRight,
   X,
+  AlertCircle,
+  FileText,
 } from 'lucide-react';
 import toast from "react-hot-toast";
 

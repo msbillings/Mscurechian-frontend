@@ -3,7 +3,7 @@
 import React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { sopService, SOP } from '@/lib/integrations/services/sop.service';
-import { ShieldCheck, Info, Search, X } from 'lucide-react';
+import { ShieldCheck, Search, X } from 'lucide-react';
 import { SOPTable } from '@/components/sop/SOPTable';
 import { toast } from 'react-hot-toast';
 import { useState } from 'react';

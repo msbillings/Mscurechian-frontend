@@ -8,7 +8,6 @@ import {
     Users,
     ShoppingBag,
     Settings,
-    HelpCircle,
     LogOut,
     Package,
     FileText,
@@ -19,9 +18,6 @@ import {
     ChevronRight
 } from 'lucide-react';
 import { useState } from 'react';
-import LogoutModal from '../auth/LogoutModal';
-import { useAuthStore } from '@/stores/authStore';
-import { useRouter } from 'next/navigation';
 import { useTenantLink } from '@/hooks/useTenantLink';
 
 export interface SidebarItem {
@@ -89,8 +85,6 @@ function Sidebar({
     width = 'w-56'
 }: SidebarProps) {
     const pathname = usePathname();
-    const router = useRouter();
-    const { user } = useAuthStore();
     const { getPath } = useTenantLink(); // ✅ MULTI-TENANCY: Prefix hrefs with hospitalId
 
     const handleLogoutClick = () => {
@@ -249,7 +243,7 @@ function CollapsibleMenuItem({ item, pathname, activeColor, getPath, onClose, is
                   <Link
                       key={subItem.id || `${subItem.href}-${subItem.label}-${sIdx}`}
                       href={tenantHref}
-                      onClick={(e) => {
+                      onClick={() => {
                           if (window.innerWidth < 1024 && onClose) {
                               onClose();
                           }

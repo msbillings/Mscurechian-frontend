@@ -54,12 +54,12 @@ function HospitalAdminActiveOrdersPage() {
             };
 
             import('@/lib/integrations/api/socket').then(({ subscribeToSocket, unsubscribeFromSocket }) => {
-                subscribeToSocket(`hospital_${hospitalId}`, 'new_pharmacy_order', handleNewOrder);
+                subscribeToSocket('new_pharmacy_order', handleNewOrder);
             });
 
              return () => {
                  import('@/lib/integrations/api/socket').then(({ unsubscribeFromSocket }) => {
-                      unsubscribeFromSocket(`hospital_${hospitalId}`, 'new_pharmacy_order', handleNewOrder);
+                      unsubscribeFromSocket('new_pharmacy_order', handleNewOrder);
                  });
              };
         }

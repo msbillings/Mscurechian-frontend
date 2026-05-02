@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -9,7 +9,7 @@ import {
     Calendar as CalendarIcon,
     Landmark, ShieldCheck,
     Building, BookOpen, FileText, CheckCircle2, Loader2,
-    Eye, Upload
+    Eye
 } from 'lucide-react';
 import { getStaffProfileAction, getStaffDashboardAction } from '@/lib/integrations/actions/staff.actions';
 import StaffProfileHeader from '@/components/staff/StaffProfileHeader';
@@ -146,7 +146,7 @@ export default function StaffProfileClient() {
     }
 
     const profile = profileRes.staff;
-    const stats = dashboardRes?.stats;
+    const _stats = dashboardRes?.stats;
 
     const staffName = profile.user?.name || 'Staff Member';
     const staffDesignation = profile.designation || 'Staff Member';

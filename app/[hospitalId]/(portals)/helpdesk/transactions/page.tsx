@@ -3,20 +3,12 @@
 import React, { useMemo, useState } from "react";
 import {
     CreditCard,
-    Download,
     Search,
-    TrendingUp,
-    Filter,
-    Loader2,
-    AlertCircle,
     ArrowLeft,
     RefreshCw,
-    FileText,
     ChevronLeft,
     ChevronRight,
     Activity,
-    Shield,
-    IndianRupee
 } from "lucide-react";
 import { helpdeskService } from "@/lib/integrations";
 import toast from "react-hot-toast";

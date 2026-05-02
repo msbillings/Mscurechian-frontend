@@ -3,11 +3,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { useReactToPrint } from 'react-to-print';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { Download, ArrowLeft, FileText, Clock, FlaskConical, CheckCircle2, ShieldCheck, Calendar, User } from 'lucide-react';
-import { API_CONFIG } from '@/lib/integrations/config/api-config';
+import { Download, ArrowLeft, FileText, Clock} from 'lucide-react';
 import { apiClient } from '@/lib/integrations/api/apiClient';
 import LabReportTemplate from '@/components/lab/LabReportTemplate';
 

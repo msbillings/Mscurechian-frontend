@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Tag, IndianRupee, Calendar as CalendarIcon, Loader2, Trash2, History } from 'lucide-react';
-import { ipdService, hospitalAdminService, ipdIssuanceService } from '@/lib/integrations';
+import { ipdService, hospitalAdminService} from '@/lib/integrations';
 import toast from 'react-hot-toast';
 
 interface AddClinicalChargeModalProps {

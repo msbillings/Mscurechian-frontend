@@ -25,10 +25,6 @@ export default function UserSupportPage({ basePath, title }: UserSupportPageProp
     const [loading, setLoading] = useState(true);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-    useEffect(() => {
-        loadTickets();
-    }, []);
-
     const loadTickets = useCallback(async () => {
         try {
             setLoading(true);
@@ -41,6 +37,11 @@ export default function UserSupportPage({ basePath, title }: UserSupportPageProp
             setLoading(false);
         }
     }, []);
+
+    useEffect(() => {
+        loadTickets();
+    }, [loadTickets]);
+
 
     // Called by the modal after a ticket is successfully created
     const handleTicketCreated = useCallback(async () => {

@@ -4,24 +4,19 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Building2,
   Save,
-  MapPin,
   Phone,
   Mail,
   Globe,
-  Calendar,
   Stethoscope,
   Activity,
   Bed,
   Shield,
   Eye,
   Edit3,
-  Hash,
-  Star,
-  Clock,
   Truck,
   Layers,
-  ChevronRight,
-  RefreshCw
+  RefreshCw,
+  Star
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';

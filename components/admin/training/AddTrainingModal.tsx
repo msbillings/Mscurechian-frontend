@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { X, Calendar, Users, Check, Search, Trash2, Image as ImageIcon, Upload, XCircle, ChevronDown } from 'lucide-react';
+import { X, Calendar, Users, Check, Search, Image as ImageIcon, Upload, XCircle, ChevronDown } from 'lucide-react';
 import { getHospitalStaffAction, getHospitalNursesAction, createTrainingAction, updateTrainingAction, getHospitalMetadataAction } from '@/lib/integrations';
 
 interface AddTrainingModalProps {

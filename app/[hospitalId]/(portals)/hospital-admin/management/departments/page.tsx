@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-    LayoutDashboard,
     Plus,
     Trash2,
     Upload,
@@ -10,9 +9,7 @@ import {
     Building2,
     Users,
     FileText,
-    ArrowLeft,
     CheckCircle2,
-    AlertCircle,
     X,
     ChevronLeft,
     ChevronRight,

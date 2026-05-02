@@ -10,16 +10,12 @@ import {
   Plus,
   Trash2,
   Edit,
-  Eye,
   Mail,
   Phone,
   Award,
   Calendar,
-  IndianRupee,
   Search,
   Filter,
-  Power,
-  Ban,
   ShieldCheck,
   ShieldOff
 } from "lucide-react";
@@ -222,7 +218,7 @@ function HospitalAdminDoctors() {
                 <div className="relative z-10 flex items-center gap-4">
                   <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 overflow-hidden shadow-sm">
                     {doctor.profilePic ? (
-                      <img src={doctor.profilePic} className="w-full h-full object-cover" />
+                      <img src={doctor.profilePic} alt={doctor.name} className="w-full h-full object-cover" />
                     ) : (
                       <Stethoscope size={24} strokeWidth={2.5} />
                     )}

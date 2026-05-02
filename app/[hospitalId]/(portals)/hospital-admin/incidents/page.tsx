@@ -6,16 +6,12 @@ import { incidentService } from '@/lib/integrations/services/incident.service';
 import { ipdService } from '@/lib/integrations/services/ipd.service';
 import {
     AlertTriangle,
-    ChevronRight,
-    History,
     Search,
-    Filter,
     MessageSquare,
     ShieldCheck,
     Clock,
     User,
     Building,
-    ArrowRight,
     Loader2,
     X,
     CheckCircle2,
@@ -25,13 +21,11 @@ import {
     Download,
     FileSpreadsheet,
     TrendingUp,
-    PieChart,
     ChevronDown,
     Package,
     ImageIcon,
-    Camera
 } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
+import { format} from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { Incident } from '@/lib/integrations/types/incident';

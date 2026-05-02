@@ -5,7 +5,6 @@ import toast from "react-hot-toast";
 import { useQuery } from '@tanstack/react-query';
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
 import {
-  Headphones,
   Phone,
   Mail,
   Search,

@@ -4,12 +4,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   ArrowLeft,
   Save,
-  User,
-  Phone,
-  Mail,
-  MapPin,
-  Calendar,
-  Droplets,
   FileText,
   Loader2,
   Edit2,

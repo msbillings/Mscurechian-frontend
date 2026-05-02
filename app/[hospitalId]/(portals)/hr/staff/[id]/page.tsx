@@ -7,7 +7,6 @@ import { hospitalAdminService, getStaffTrainingHistoryAction } from "@/lib/integ
 import {
   ArrowLeft,
   Mail,
-  Phone,
   Building,
   Clock,
   Edit,
@@ -18,7 +17,6 @@ import {
   Award,
   CreditCard,
   Building2,
-  Eye,
   EyeOff,
   CheckCircle2,
   Users,

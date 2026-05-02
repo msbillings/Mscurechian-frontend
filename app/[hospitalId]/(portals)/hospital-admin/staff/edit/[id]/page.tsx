@@ -1,6 +1,6 @@
  "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { hospitalAdminService } from "@/lib/integrations";
 import {
@@ -106,11 +106,7 @@ export default function EditStaffPage() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
-  useEffect(() => {
-    if (id) fetchStaff();
-  }, [id]);
-
-  const fetchStaff = async () => {
+  const fetchStaff = useCallback(async () => {
     try {
       setFetching(true);
       const [data, typesData, roomsData] = await Promise.all([
@@ -183,7 +179,11 @@ export default function EditStaffPage() {
     } finally {
       setFetching(false);
     }
-  };
+  }, [id, router]);
+
+  useEffect(() => {
+    if (id) fetchStaff();
+  }, [id, fetchStaff]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

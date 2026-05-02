@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Download, Eye, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Download, Eye, CheckCircle2 } from 'lucide-react';
 import { getDoctorReportsAction } from '@/lib/integrations';
 
 export default async function DoctorReportsPage() {

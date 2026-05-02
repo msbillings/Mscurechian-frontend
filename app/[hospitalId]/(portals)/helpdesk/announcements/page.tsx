@@ -3,14 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Bell,
-  Search,
-  Filter,
-  Calendar,
-  ChevronRight,
   AlertTriangle,
-  User,
-  ExternalLink,
-  Sparkles,
   FileText
 } from 'lucide-react';
 

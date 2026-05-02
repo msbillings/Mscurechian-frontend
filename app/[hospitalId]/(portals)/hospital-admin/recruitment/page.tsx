@@ -6,13 +6,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { hrService } from "@/lib/integrations/services/hr.service";
 import { useAuthStore } from "@/stores/authStore";
 import {
-  Briefcase,
   CheckCircle,
-  XCircle,
   Clock,
   Search,
   Users,
-  Eye,
   CheckCircle2,
   XCircle as XIcon,
   AlertCircle

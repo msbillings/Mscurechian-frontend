@@ -1,7 +1,7 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
-import { Menu, Bell, User, Search, LogOut, Settings, UserCircle, ChevronDown } from 'lucide-react';
+import { Menu, User, LogOut, UserCircle, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useRef, useEffect, useTransition } from 'react';
 import { useAuthStore } from '@/stores/authStore';

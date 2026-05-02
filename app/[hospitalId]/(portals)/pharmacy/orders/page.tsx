@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { PharmacyBillingService } from '@/lib/integrations/services/pharmacyBilling.service';
-import { Pill, Activity, Clock, FileText, RefreshCcw, AlertCircle } from 'lucide-react';
+import { Pill, Activity, FileText, RefreshCcw, AlertCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAuthStore } from '@/stores/authStore';
 import { PharmacyTableSkeleton } from '@/components/ui/skeletons';
@@ -81,14 +81,14 @@ function ActiveOrdersPage() {
             };
 
             import('@/lib/integrations/api/socket').then(({ subscribeToSocket }) => {
-                subscribeToSocket(`hospital_${hospitalId}`, 'new_pharmacy_order', handleNewOrder);
-                subscribeToSocket(`hospital_${hospitalId}`, 'pharmacy_order_completed', handleOrderCompleted);
+                subscribeToSocket('new_pharmacy_order', handleNewOrder);
+                subscribeToSocket('pharmacy_order_completed', handleOrderCompleted);
             });
 
             return () => {
                 import('@/lib/integrations/api/socket').then(({ unsubscribeFromSocket }) => {
-                    unsubscribeFromSocket(`hospital_${hospitalId}`, 'new_pharmacy_order', handleNewOrder);
-                    unsubscribeFromSocket(`hospital_${hospitalId}`, 'pharmacy_order_completed', handleOrderCompleted);
+                    unsubscribeFromSocket('new_pharmacy_order', handleNewOrder);
+                    unsubscribeFromSocket('pharmacy_order_completed', handleOrderCompleted);
                 });
             };
         }

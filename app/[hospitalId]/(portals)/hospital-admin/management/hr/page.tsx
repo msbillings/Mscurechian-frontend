@@ -13,14 +13,9 @@ import {
   Mail,
   Phone,
   Briefcase,
-  Calendar,
   Search,
-  Filter,
-  Power,
-  Ban,
   ShieldCheck,
   ShieldOff,
-  Shield
 } from "lucide-react";
 import { ConfirmModal } from '@/components/admin/Modal';
 

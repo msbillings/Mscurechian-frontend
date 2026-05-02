@@ -2,9 +2,9 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
-   Clock, Calendar, Search, Filter, User as UserIcon, ArrowRight,
+   Clock, Search, Filter, User as UserIcon, ArrowRight,
    ChevronLeft, ChevronRight, TrendingUp, UserCheck, UserX, Clock8,
-   CalendarDays, Download, RefreshCw, MapPin, Monitor, ShieldCheck,
+   CalendarDays, RefreshCw, MapPin, Monitor, ShieldCheck,
    Hospital, FileText, FileSpreadsheet, ChevronDown, CalendarRange, X, Printer
 } from 'lucide-react';
 import { useHRAttendance } from '@/lib/integrations/hooks';

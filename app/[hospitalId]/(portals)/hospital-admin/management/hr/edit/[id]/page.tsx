@@ -5,8 +5,6 @@ import { useRouter, useParams } from "next/navigation";
 import { hospitalAdminService } from "@/lib/integrations";
 import {
   User,
-  Mail,
-  Phone,
   ArrowLeft,
   Save,
   Eye,

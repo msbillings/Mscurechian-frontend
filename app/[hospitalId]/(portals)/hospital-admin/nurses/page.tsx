@@ -15,13 +15,11 @@ import {
     Mail,
     Phone,
     Briefcase,
-    Calendar,
     Search,
     Filter,
     ShieldCheck,
     ShieldOff,
     Building2,
-    Shield
 } from "lucide-react";
 import { PageHeader } from "@/components/admin";
 import { RegistrySkeleton } from "@/components/admin/Skeletons";

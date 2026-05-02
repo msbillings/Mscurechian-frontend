@@ -5,11 +5,9 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { hospitalAdminService } from "@/lib/integrations";
 import {
-  UserPlus, Eye, EyeOff, IndianRupee, User, Mail,
-  Briefcase, FileText, Award, MapPin,
-  Clock, CreditCard, Globe, Landmark, AlertCircle, CheckCircle2, ArrowLeft,
-  Plus,
-  Trash2
+  UserPlus, Eye, EyeOff, IndianRupee, User, Briefcase,
+  Clock, AlertCircle, CheckCircle2, ArrowLeft,
+  Plus, Trash2
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Card, FormInput, Button } from "@/components/admin";

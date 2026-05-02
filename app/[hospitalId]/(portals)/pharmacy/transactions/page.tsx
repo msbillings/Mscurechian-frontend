@@ -6,8 +6,6 @@ import {
     Printer,
     Eye,
     ChevronLeft,
-    ChevronRight,
-    ArrowUpRight,
     Download,
     Hash,
     Calendar,
@@ -63,7 +61,7 @@ const TransactionsPage = () => {
         documentTitle: billToPrint ? `Invoice_${billToPrint.invoiceId}` : 'Invoice',
     });
 
-    const fetchBills = async (page = 1) => {
+    const fetchBills = React.useCallback(async (page = 1) => {
         setLoading(true);
         try {
             const data = await PharmacyBillingService.getBills(
@@ -83,18 +81,18 @@ const TransactionsPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [searchTerm, paymentFilter, dateFilter]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchBills(1);
         }, 300);
         return () => clearTimeout(timer);
-    }, [searchTerm, paymentFilter, dateFilter]);
+    }, [fetchBills]);
 
     useEffect(() => {
         fetchBills(currentPage);
-    }, [currentPage]);
+    }, [currentPage, fetchBills]);
 
     const onPrintClick = (bill: PharmacyBill) => {
         setBillToPrint(bill);

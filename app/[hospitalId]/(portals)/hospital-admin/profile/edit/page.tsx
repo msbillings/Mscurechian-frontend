@@ -2,11 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import {
-    User, Mail, Phone, Briefcase, Award,
-    Landmark, Wallet, Save, ArrowLeft, X,
-    Calendar, FileText
-} from 'lucide-react';
+import { ArrowLeft, } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getStaffProfileAction, updateStaffProfileAction } from '@/lib/integrations/actions/staff.actions';
 
@@ -18,7 +14,6 @@ export default function EditAdminProfilePage() {
     const [isSaving, setIsSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('personal');
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const [isIFSCValidating, setIsIFSCValidating] = useState(false);
 
     const [formData, setFormData] = useState<any>({
         name: '',
