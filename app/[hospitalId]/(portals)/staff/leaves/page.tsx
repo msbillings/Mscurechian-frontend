@@ -7,17 +7,14 @@ import {
   FileText,
   Plus,
   Search,
-  Filter,
-  ChevronRight,
-  MoreHorizontal,
   CheckCircle2,
   XCircle,
   Clock3,
   AlertCircle,
   Inbox
 } from 'lucide-react';
-import { staffService } from '@/lib/integrations';
-import type { LeaveRequest, LeaveBalance } from '@/lib/integrations/types';
+
+import type { LeaveBalance } from '@/lib/integrations/types';
 import toast from 'react-hot-toast';
 import CalendarPicker from '@/components/CalendarPicker';
 
@@ -25,7 +22,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useLeaves, useLeaveBalance, useCreateLeave } from '@/lib/integrations/hooks/useStaffQueries';
 
 function LeavesPage() {
-  const queryClient = useQueryClient();
+
   const { data: leavesRes, isLoading: leavesLoading, refetch: refetchLeaves } = useLeaves();
   const { data: balanceRes, isLoading: balanceLoading, refetch: refetchBalance } = useLeaveBalance();
   const createLeaveMutation = useCreateLeave();

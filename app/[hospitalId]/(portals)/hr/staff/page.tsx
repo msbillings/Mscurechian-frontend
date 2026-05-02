@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   ShieldOff
 } from "lucide-react";
+import { InfrastructureCheck } from "../../hospital-admin/components/InfrastructureCheck";
 import { ConfirmModal } from '@/components/admin/Modal';
 
 import { useDebounce } from "@/hooks/useDebounce";
@@ -225,6 +226,7 @@ function HRStaffDirectory() {
   }, [debouncedSearch, filterDepartment]);
 
   return (
+    <InfrastructureCheck>
         <div className="space-y-6 sm:space-y-8 bg-slate-50/50 min-h-screen">
             {/* Simple Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -331,6 +333,7 @@ function HRStaffDirectory() {
         message={confirmModal.message}
       />
     </div>
+    </InfrastructureCheck>
   );
 }
 

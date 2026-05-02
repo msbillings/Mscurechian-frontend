@@ -130,16 +130,6 @@ const HospitalsList = () => {
     );
   });
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="text-sm font-medium opacity-50">Synchronizing with registry...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-7xl mx-auto pb-8 md:pb-12 md:px-0">
@@ -183,7 +173,34 @@ const HospitalsList = () => {
           />
       </div>
 
-      {filteredHospitals.length > 0 ? (
+      {/* ── Skeleton Cards while fetching ─────────────────────────── */}
+      {loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="animate-pulse rounded-xl md:rounded-2xl border p-5 space-y-4"
+              style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
+              <div className="flex justify-between items-start">
+                <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+                <div className="w-16 h-5 bg-gray-200 dark:bg-gray-700 rounded-full" />
+              </div>
+              <div className="space-y-2">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-1/2" />
+              </div>
+              <div className="space-y-1.5">
+                <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-full" />
+                <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-2/3" />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg flex-1" />
+                <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!loading && filteredHospitals.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {filteredHospitals.map((hospital) => (
                 <div key={hospital._id} className="group rounded-xl md:rounded-2xl border hover:shadow-xl hover:border-blue-500/50 flex flex-col h-full bg-linear-to-b from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 overflow-hidden"

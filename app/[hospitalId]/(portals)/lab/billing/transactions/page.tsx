@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { LabBillingService } from '@/lib/integrations/services/labBilling.service';
 import { BillResponse } from '@/lib/integrations/types/labBilling';
 import ExcelJS from 'exceljs';
@@ -46,7 +46,7 @@ function TransactionsPage() {
         setShowPreview(true);
     };
 
-    const fetchBills = async (pageNum = 1, skipCache = false, isPolling = false) => {
+    const fetchBills = useCallback(async (pageNum = 1, skipCache = false, isPolling = false) => {
         if (!isPolling) setLoading(true);
 
         try {
@@ -66,18 +66,18 @@ function TransactionsPage() {
         } finally {
             if (!isPolling) setLoading(false);
         }
-    };
+    }, [startDate, endDate]);
 
 
     // Initial Fetch & Date Filter Change
     useEffect(() => {
         fetchBills(1, true);
-    }, [startDate, endDate]);
+    }, [fetchBills]);
 
     // Page Change
     useEffect(() => {
         fetchBills(page, true);
-    }, [page]);
+    }, [page, fetchBills]);
 
     // Polling for instant updates (every 5 seconds)
     useEffect(() => {
@@ -86,7 +86,7 @@ function TransactionsPage() {
         }, 5000);
 
         return () => clearInterval(interval);
-    }, [page, startDate, endDate]);
+    }, [page, fetchBills]);
 
 
     const handleExport = async () => {

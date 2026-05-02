@@ -10,9 +10,11 @@ import {
   FormInput,
   FormSelect,
   FormTextarea,
-  Button
+  Button,
+  HospitalSearchSelect
 } from "@/components/admin";
 import type { Hospital, CreateDoctorRequest } from "@/lib/integrations";
+
 
 function CreateDoctor() {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
@@ -225,16 +227,14 @@ function CreateDoctor() {
           {/* PROFESSIONAL INFO */}
           <Card title="Professional Profile" padding="p-6">
             <div className="space-y-4">
-              <FormSelect
-                label="Assign Hospital"
-                name="hospitalId"
-                required
+              <HospitalSearchSelect
+                hospitals={hospitals}
+                loading={fetchingHospitals}
                 value={formData.hospitalId}
-                onChange={handleChange}
-                options={[
-                  { label: fetchingHospitals ? "Loading..." : "Select Hospital", value: "" },
-                  ...hospitals.map(h => ({ label: h.name, value: h._id }))
-                ]}
+                onChange={(id) => setFormData(prev => ({ ...prev, hospitalId: id }))}
+                label="Assign Hospital"
+                accentColor="blue"
+                required
               />
 
               <FormInput

@@ -12,6 +12,7 @@ import {
 import toast from "react-hot-toast";
 import { TagInput } from "@/components/common/TagInput";
 import { COMMON_SPECIALTIES, COMMON_QUALIFICATIONS, COMMON_LANGUAGES } from "@/lib/constants/medicalData";
+import { InfrastructureCheck } from "../../../../hospital-admin/components/InfrastructureCheck";
 
 // ─── Color-only palette: blue, green, yellow, white ───────────────────────────
 const cls = {
@@ -266,290 +267,292 @@ export default function HRCreateDoctorPage() {
     const E = (name: string) => errors[name] ? <p className={cls.errMsg}><AlertCircle size={11} />{errors[name]}</p> : null;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50/60 via-white to-green-50/40 pb-10">
-            {/* TOP BAR */}
-            <div className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-blue-100 px-6 py-3 flex items-center justify-between shadow-sm">
-                <div className="flex items-center gap-3">
-                    <button onClick={() => router.push(`/${hospitalId}/hr/hospital/doctors`)}
-                        className="p-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all">
-                        <ArrowLeft size={16} />
-                    </button>
-                    <div>
-                        <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">HR Portal · Doctors</p>
-                        <h1 className="text-sm md:text-base font-black text-blue-900">Onboard New Physician</h1>
-                    </div>
-                </div>
-                <div className="flex gap-3">
-                    <button type="button" onClick={() => router.push(`/${hospitalId}/hr/hospital/doctors`)}
-                        disabled={loading} className={`${cls.btn.secondary} text-[10px] md:text-sm px-8 py-2 md:px-12 md:py-4`}>Cancel</button>
-                    <button type="submit" form="doctor-form" disabled={loading} className={`${cls.btn.primary} text-[10px] md:text-sm px-8 py-2 md:px-12 md:py-4`}>
-                        {loading ? <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><UserPlus size={16} />Create Doctor</>}
-                    </button>
-                </div>
-            </div>
-
-            <form id="doctor-form" onSubmit={handleSubmit} noValidate className="max-w-7xl mx-auto px-6 pt-8 space-y-6">
-
-                {/* ① Personal Information */}
-                <div className={cls.card}>
-                    <SectionHeader icon={<User size={16} />} title="Personal Information" color="blue" />
-                    <div className={cls.cardBody}>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div>
-                                <label className={cls.label}>Honorific <span className="text-red-500">*</span></label>
-                                <select name="honorific" value={f.honorific} onChange={handleChange}
-                                    className={cls.input(!!errors.honorific, !!f.honorific)}>
-                                    <option value="Mr">Mr</option><option value="Mrs">Mrs</option><option value="Ms">Ms</option><option value="Dr">Dr</option>
-                                </select>
-                            </div>
-                            <F label="Full Name" name="name" value={f.name} onChange={handleChange} error={errors.name} required placeholder="Dr. John Smith" maxLength={100} hint="Max 100 characters" />
-                            <div>
-                                <label className={cls.label}>Gender <span className="text-red-500">*</span></label>
-                                <select name="gender" value={f.gender} onChange={handleChange}
-                                    className={cls.input(!!errors.gender, !!f.gender)}>
-                                    <option value="">Select Gender</option>
-                                    <option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
-                                </select>
-                                {E("gender")}
-                            </div>
-                            <div>
-                                <label className={cls.label}>Date of Birth</label>
-                                <input type="date" name="dob" value={f.dob} onChange={handleChange} max={new Date().toISOString().split("T")[0]}
-                                    className={cls.input(false, !!f.dob)} />
-                            </div>
+        <InfrastructureCheck>
+            <div className="min-h-screen bg-gradient-to-br from-blue-50/60 via-white to-green-50/40 pb-10">
+                {/* TOP BAR */}
+                <div className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-blue-100 px-6 py-3 flex items-center justify-between shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => router.push(`/${hospitalId}/hr/hospital/doctors`)}
+                            className="p-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all">
+                            <ArrowLeft size={16} />
+                        </button>
+                        <div>
+                            <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">HR Portal · Doctors</p>
+                            <h1 className="text-sm md:text-base font-black text-blue-900">Onboard New Physician</h1>
                         </div>
+                    </div>
+                    <div className="flex gap-3">
+                        <button type="button" onClick={() => router.push(`/${hospitalId}/hr/hospital/doctors`)}
+                            disabled={loading} className={`${cls.btn.secondary} text-[10px] md:text-sm px-8 py-2 md:px-12 md:py-4`}>Cancel</button>
+                        <button type="submit" form="doctor-form" disabled={loading} className={`${cls.btn.primary} text-[10px] md:text-sm px-8 py-2 md:px-12 md:py-4`}>
+                            {loading ? <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><UserPlus size={16} />Create Doctor</>}
+                        </button>
                     </div>
                 </div>
 
-                {/* ② Contact Information */}
-                <div className={cls.card}>
-                    <SectionHeader icon={<Mail size={16} />} title="Contact Information" color="blue" />
-                    <div className={cls.cardBody}>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
-                            <F label="Email Address" name="email" value={f.email} onChange={handleChange} error={errors.email} required type="email" placeholder="doctor@hospital.com" maxLength={150} />
-                            <F label="Mobile Number" name="mobile" value={f.mobile} onChange={handleChange} error={errors.mobile} required type="tel" placeholder="10-digit number" maxLength={10} hint={`${f.mobile.length}/10 digits`} />
-                            <div>
-                                <label className={cls.label}>Password <span className="text-red-500">*</span></label>
-                                <div className="relative">
-                                    <input type={showPwd ? "text" : "password"} name="password" value={f.password} onChange={handleChange}
-                                        placeholder="Min 6 characters" maxLength={64}
-                                        className={`${cls.input(!!errors.password && f.password !== "", !errors.password && f.password !== "")} pr-10`} />
-                                    <button type="button" onClick={() => setShowPwd(!showPwd)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-400 hover:text-blue-700">
-                                        {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
-                                    </button>
-                                </div>
-                                {errors.password && f.password && <p className={cls.errMsg}><AlertCircle size={11} />{errors.password}</p>}
-                                {!errors.password && f.password && <p className={cls.okMsg}><CheckCircle2 size={11} />Password looks good</p>}
-                            </div>
-                        </div>
+                <form id="doctor-form" onSubmit={handleSubmit} noValidate className="max-w-7xl mx-auto px-6 pt-8 space-y-6">
 
-                        {/* Address */}
-                        <div className="pt-4 border-t border-blue-50">
-                            <p className="flex items-center gap-2 text-xs font-bold text-blue-700 mb-3"><MapPin size={13} />Address (Optional)</p>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <F label="Street" name="street" value={f.street} onChange={handleChange} placeholder="Street" maxLength={100} />
-                                <F label="City" name="city" value={f.city} onChange={handleChange} placeholder="City" maxLength={60} />
-                                <F label="State" name="state" value={f.state} onChange={handleChange} placeholder="State" maxLength={60} />
-                                <F label="Pincode" name="pincode" value={f.pincode} onChange={handleChange} error={errors.pincode} placeholder="6-digit" maxLength={6} hint={`${f.pincode.length}/6`} />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* ③ Professional & Clinical */}
-                <div className={cls.card}>
-                    <SectionHeader icon={<Briefcase size={16} />} title="Professional & Clinical Details" color="green" />
-                    <div className={cls.cardBody}>
-                        {/* Medical Registration — yellow highlight */}
-                        <div className="mb-5 p-4 rounded-xl bg-yellow-50 border border-yellow-200">
-                            <p className="flex items-center gap-2 text-xs font-black text-yellow-800 uppercase tracking-wider mb-3"><CreditCard size={14} />Medical Registration (Mandatory in India)</p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <F label="NMC Registration No." name="medRegNo" value={f.medRegNo} onChange={handleChange} error={errors.medRegNo} required placeholder="NMC/State Council No." maxLength={50} />
-                                <F label="Registration Council" name="regCouncil" value={f.regCouncil} onChange={handleChange} placeholder="Council name" maxLength={100} />
-                                <F label="Registration Year" name="regYear" value={f.regYear} onChange={handleChange} error={errors.regYear} placeholder="YYYY" maxLength={4} hint="4-digit year" />
+                    {/* ① Personal Information */}
+                    <div className={cls.card}>
+                        <SectionHeader icon={<User size={16} />} title="Personal Information" color="blue" />
+                        <div className={cls.cardBody}>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div>
-                                    <label className={cls.label}>Expiry Date</label>
-                                    <input type="date" name="regExpiry" value={f.regExpiry} onChange={handleChange} min={new Date().toISOString().split("T")[0]}
-                                        className={cls.input(false, !!f.regExpiry)} />
+                                    <label className={cls.label}>Honorific <span className="text-red-500">*</span></label>
+                                    <select name="honorific" value={f.honorific} onChange={handleChange}
+                                        className={cls.input(!!errors.honorific, !!f.honorific)}>
+                                        <option value="Mr">Mr</option><option value="Mrs">Mrs</option><option value="Ms">Ms</option><option value="Dr">Dr</option>
+                                    </select>
+                                </div>
+                                <F label="Full Name" name="name" value={f.name} onChange={handleChange} error={errors.name} required placeholder="Dr. John Smith" maxLength={100} hint="Max 100 characters" />
+                                <div>
+                                    <label className={cls.label}>Gender <span className="text-red-500">*</span></label>
+                                    <select name="gender" value={f.gender} onChange={handleChange}
+                                        className={cls.input(!!errors.gender, !!f.gender)}>
+                                        <option value="">Select Gender</option>
+                                        <option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
+                                    </select>
+                                    {E("gender")}
+                                </div>
+                                <div>
+                                    <label className={cls.label}>Date of Birth</label>
+                                    <input type="date" name="dob" value={f.dob} onChange={handleChange} max={new Date().toISOString().split("T")[0]}
+                                        className={cls.input(false, !!f.dob)} />
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Specialties */}
-                        <div className="mb-5">
-                            <TagInput
-                                label="Medical Specialties"
-                                placeholder="Search & select specialties..."
-                                options={COMMON_SPECIALTIES}
-                                selectedItems={specialties}
-                                onAdd={(val) => setSpecialties([...specialties, val])}
-                                onRemove={(val) => setSpecialties(specialties.filter(i => i !== val))}
-                                accentColor="blue"
-                            />
-                            {E("specialties")}
-                        </div>
-
-                        {/* Qualifications */}
-                        <div className="mb-5">
-                            <TagInput
-                                label="Medical Qualifications"
-                                placeholder="Search & select qualifications..."
-                                options={COMMON_QUALIFICATIONS}
-                                selectedItems={qualifications}
-                                onAdd={(val) => setQualifications([...qualifications, val])}
-                                onRemove={(val) => setQualifications(qualifications.filter(i => i !== val))}
-                                accentColor="green"
-                                icon={<Award size={20} className="mb-2 opacity-20" />}
-                            />
-                        </div>
-
-                        {/* Dept / Designation / Experience */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div>
-                                <label className={cls.label}>Experience Start <span className="text-red-500">*</span></label>
-                                <input type="date" name="experienceStart" value={f.experienceStart} onChange={handleChange} max={new Date().toISOString().split("T")[0]}
-                                    className={cls.input(!!errors.experienceStart, !!f.experienceStart)} />
-                                {E("experienceStart")}
-                            </div>
-                            <F label="Employee ID" name="employeeId" value={f.employeeId} onChange={handleChange} error={errors.employeeId} required placeholder="HSP-DOC-XXXX" maxLength={30} />
                         </div>
                     </div>
-                </div>
 
-                {/* ④ Scheduling & Availability */}
-                <div className={cls.card}>
-                    <SectionHeader icon={<Clock size={16} />} title="Scheduling & Availability" color="blue" />
-                    <div className={cls.cardBody}>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                            <div>
-                                <label className={cls.label}>Consultation Fee (₹) <span className="text-red-500">*</span></label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 text-sm font-bold">₹</span>
-                                    <input type="text" name="consultationFee" value={f.consultationFee} onChange={handleChange}
-                                        placeholder="500" maxLength={6}
-                                        className={`${cls.input(!!errors.consultationFee && !!f.consultationFee, !errors.consultationFee && !!f.consultationFee)} pl-8`} />
-                                </div>
-                                {E("consultationFee")}
-                            </div>
-                            <F label="Duration (mins)" name="consultationDuration" value={f.consultationDuration} onChange={handleChange} placeholder="15" maxLength={3} hint="Default: 15 mins" />
-                            <F label="Max Appt/Day" name="maxAppt" value={f.maxAppt} onChange={handleChange} placeholder="20" maxLength={3} />
-                        </div>
-
-                        {/* Weekly Schedule */}
-                        <div>
-                            <div className="flex items-center justify-between mb-3">
-                                <p className="text-xs font-bold text-blue-800">Weekly Schedule</p>
-                                <button type="button" onClick={() => setAvailability([...availability, { days: [], startTime: "09:00", breakStart: "13:00", breakEnd: "14:00", endTime: "17:00" }])}
-                                    className="text-xs text-blue-600 font-semibold hover:underline flex items-center gap-1"><Plus size={13} />Add Schedule</button>
-                            </div>
-                            <div className="space-y-4">
-                                {availability.map((slot, i) => (
-                                    <div key={i} className="p-4 rounded-xl border border-blue-100 bg-blue-50/30">
-                                        <div className="flex justify-between items-center mb-3">
-                                            <span className="text-xs font-bold text-blue-700">Schedule {i + 1}</span>
-                                            {availability.length > 1 && <button type="button" onClick={() => setAvailability(availability.filter((_, idx) => idx !== i))} className="text-xs text-red-400 hover:text-red-600 font-semibold">Remove</button>}
-                                        </div>
-                                        <div className="flex flex-wrap gap-2 mb-3">
-                                            {DAYS.map(d => <button key={d} type="button" onClick={() => toggleDay(i, d)} className={cls.btn.day(slot.days.includes(d))}>{d.slice(0, 3)}</button>)}
-                                        </div>
-                                        <div className="grid grid-cols-4 gap-3">
-                                            {(["startTime", "breakStart", "breakEnd", "endTime"] as const).map((fld, fi) => (
-                                                <div key={fld}>
-                                                    <label className="block text-[10px] font-bold text-blue-500 mb-1">{["Start", "Break Start", "Break End", "End"][fi]}</label>
-                                                    <input type="time" value={slot[fld]} onChange={(e) => { const u = [...availability]; u[i] = { ...u[i], [fld]: e.target.value }; setAvailability(u); }}
-                                                        className="w-full px-3 py-2 rounded-lg border border-blue-100 bg-white text-sm focus:ring-2 focus:ring-blue-200 outline-none" />
-                                                    <p className="text-[10px] text-blue-400 mt-1">{formatAMPM(slot[fld])}</p>
-                                                </div>
-                                            ))}
-                                        </div>
+                    {/* ② Contact Information */}
+                    <div className={cls.card}>
+                        <SectionHeader icon={<Mail size={16} />} title="Contact Information" color="blue" />
+                        <div className={cls.cardBody}>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+                                <F label="Email Address" name="email" value={f.email} onChange={handleChange} error={errors.email} required type="email" placeholder="doctor@hospital.com" maxLength={150} />
+                                <F label="Mobile Number" name="mobile" value={f.mobile} onChange={handleChange} error={errors.mobile} required type="tel" placeholder="10-digit number" maxLength={10} hint={`${f.mobile.length}/10 digits`} />
+                                <div>
+                                    <label className={cls.label}>Password <span className="text-red-500">*</span></label>
+                                    <div className="relative">
+                                        <input type={showPwd ? "text" : "password"} name="password" value={f.password} onChange={handleChange}
+                                            placeholder="Min 6 characters" maxLength={64}
+                                            className={`${cls.input(!!errors.password && f.password !== "", !errors.password && f.password !== "")} pr-10`} />
+                                        <button type="button" onClick={() => setShowPwd(!showPwd)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-400 hover:text-blue-700">
+                                            {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
+                                        </button>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* ⑤ Additional Information */}
-                <div className={cls.card}>
-                    <SectionHeader icon={<FileText size={16} />} title="Additional Information" color="green" />
-                    <div className={cls.cardBody}>
-                        <div className="mb-4">
-                            <label className={cls.label}>Bio / About</label>
-                            <textarea name="bio" value={f.bio} onChange={handleChange} rows={3} maxLength={1000}
-                                placeholder="Brief description of the doctor's expertise..."
-                                className="w-full px-4 py-3 rounded-xl border border-blue-100 text-sm bg-white focus:ring-2 focus:ring-blue-200 outline-none resize-none transition-all" />
-                            <p className={cls.hintMsg}>{f.bio.length}/1000 characters</p>
-                        </div>
-
-
-                        {/* Languages */}
-                        <div className="mb-4">
-                            <TagInput
-                                label="Languages Spoken"
-                                placeholder="Search & select languages..."
-                                options={COMMON_LANGUAGES}
-                                selectedItems={languages}
-                                onAdd={(val) => setLanguages([...languages, val])}
-                                onRemove={(val) => setLanguages(languages.filter(i => i !== val))}
-                                accentColor="green"
-                                icon={<Globe size={20} className="mb-2 opacity-20" />}
-                            />
-                        </div>
-
-                        {/* Awards */}
-                        <div>
-                            <label className={cls.label}>Awards & Recognition</label>
-                            <div className="flex gap-2 mb-2">
-                                <input value={tempAward} onChange={(e) => setTempAward(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag(awards, setAwards, tempAward, () => setTempAward("")))}
-                                    placeholder="e.g. Best Doctor Award 2023" maxLength={100}
-                                    className={`flex-1 ${cls.input(false, !!tempAward)}`} />
-                                <button type="button" onClick={() => addTag(awards, setAwards, tempAward, () => setTempAward(""))} disabled={!tempAward} className={cls.btn.add}><Plus size={14} />Add</button>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {awards.map(a => <span key={a} className={cls.tag("yellow")}><Award size={11} />{a}<button type="button" onClick={() => removeTag(awards, setAwards, a)}><X size={12} /></button></span>)}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* ⑥ Bank & Payroll */}
-                <div className={cls.card}>
-                    <SectionHeader icon={<Landmark size={16} />} title="Bank & Payroll Details" color="green"
-                        extra={<span className="text-[10px] text-green-600 font-black uppercase tracking-wider bg-green-50 px-2 py-1 rounded-lg border border-green-100">Mandatory for Payslips</span>} />
-                    <div className={cls.cardBody}>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                            <F label="Account Holder Name" name="accountName" value={f.accountName} onChange={handleChange} placeholder="As per bank records" maxLength={100} />
-                            <F label="Bank Name" name="bankName" value={f.bankName} onChange={handleChange} placeholder="e.g. HDFC Bank" maxLength={80} />
-                            <F label="Account Number" name="accountNumber" value={f.accountNumber} onChange={handleChange} error={errors.accountNumber} placeholder="9–18 digits" maxLength={18} hint={`${f.accountNumber.length} digits`} />
-                            <F label="IFSC Code" name="ifscCode" value={f.ifscCode} onChange={handleChange} error={errors.ifscCode} placeholder="HDFC0001234" maxLength={11} hint="Format: ABCD0123456" extraClass="uppercase" />
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t border-green-50">
-                            <div>
-                                <label className={cls.label}>Base Salary (Monthly)</label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600 font-bold text-sm">₹</span>
-                                    <input type="text" name="baseSalary" value={f.baseSalary} onChange={handleChange} placeholder="e.g. 150000" maxLength={8}
-                                        className={`${cls.input(false, !!f.baseSalary)} pl-8`} />
+                                    {errors.password && f.password && <p className={cls.errMsg}><AlertCircle size={11} />{errors.password}</p>}
+                                    {!errors.password && f.password && <p className={cls.okMsg}><CheckCircle2 size={11} />Password looks good</p>}
                                 </div>
                             </div>
-                            <F label="PAN Number" name="panNumber" value={f.panNumber} onChange={handleChange} error={errors.panNumber} placeholder="ABCDE1234F" maxLength={10} hint="5 letters + 4 digits + 1 letter" extraClass="uppercase" />
-                            <F label="Aadhar Number" name="aadharNumber" value={f.aadharNumber} onChange={handleChange} error={errors.aadharNumber} placeholder="12-digit Aadhar" maxLength={12} hint={`${f.aadharNumber.length}/12 digits`} />
-                            <F label="PF Number" name="pfNumber" value={f.pfNumber} onChange={handleChange} placeholder="Provident Fund No." maxLength={30} />
-                            <F label="ESI Number" name="esiNumber" value={f.esiNumber} onChange={handleChange} placeholder="ESI Number" maxLength={20} />
-                            <F label="UAN Number" name="uanNumber" value={f.uanNumber} onChange={handleChange} placeholder="Universal Account No." maxLength={20} />
+
+                            {/* Address */}
+                            <div className="pt-4 border-t border-blue-50">
+                                <p className="flex items-center gap-2 text-xs font-bold text-blue-700 mb-3"><MapPin size={13} />Address (Optional)</p>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <F label="Street" name="street" value={f.street} onChange={handleChange} placeholder="Street" maxLength={100} />
+                                    <F label="City" name="city" value={f.city} onChange={handleChange} placeholder="City" maxLength={60} />
+                                    <F label="State" name="state" value={f.state} onChange={handleChange} placeholder="State" maxLength={60} />
+                                    <F label="Pincode" name="pincode" value={f.pincode} onChange={handleChange} error={errors.pincode} placeholder="6-digit" maxLength={6} hint={`${f.pincode.length}/6`} />
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Bottom actions */}
-                <div className="flex justify-end gap-3 pb-4">
-                    <button type="button" onClick={() => router.push(`/${hospitalId}/hr/hospital/doctors`)} disabled={loading} className={cls.btn.secondary}>Cancel</button>
-                    <button type="submit" disabled={loading} className={cls.btn.primary}>
-                        {loading ? <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><UserPlus size={16} />Create Doctor Profile</>}
-                    </button>
-                </div>
-            </form>
-        </div>
+                    {/* ③ Professional & Clinical */}
+                    <div className={cls.card}>
+                        <SectionHeader icon={<Briefcase size={16} />} title="Professional & Clinical Details" color="green" />
+                        <div className={cls.cardBody}>
+                            {/* Medical Registration — yellow highlight */}
+                            <div className="mb-5 p-4 rounded-xl bg-yellow-50 border border-yellow-200">
+                                <p className="flex items-center gap-2 text-xs font-black text-yellow-800 uppercase tracking-wider mb-3"><CreditCard size={14} />Medical Registration (Mandatory in India)</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <F label="NMC Registration No." name="medRegNo" value={f.medRegNo} onChange={handleChange} error={errors.medRegNo} required placeholder="NMC/State Council No." maxLength={50} />
+                                    <F label="Registration Council" name="regCouncil" value={f.regCouncil} onChange={handleChange} placeholder="Council name" maxLength={100} />
+                                    <F label="Registration Year" name="regYear" value={f.regYear} onChange={handleChange} error={errors.regYear} placeholder="YYYY" maxLength={4} hint="4-digit year" />
+                                    <div>
+                                        <label className={cls.label}>Expiry Date</label>
+                                        <input type="date" name="regExpiry" value={f.regExpiry} onChange={handleChange} min={new Date().toISOString().split("T")[0]}
+                                            className={cls.input(false, !!f.regExpiry)} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Specialties */}
+                            <div className="mb-5">
+                                <TagInput
+                                    label="Medical Specialties"
+                                    placeholder="Search & select specialties..."
+                                    options={COMMON_SPECIALTIES}
+                                    selectedItems={specialties}
+                                    onAdd={(val) => setSpecialties([...specialties, val])}
+                                    onRemove={(val) => setSpecialties(specialties.filter(i => i !== val))}
+                                    accentColor="blue"
+                                />
+                                {E("specialties")}
+                            </div>
+
+                            {/* Qualifications */}
+                            <div className="mb-5">
+                                <TagInput
+                                    label="Medical Qualifications"
+                                    placeholder="Search & select qualifications..."
+                                    options={COMMON_QUALIFICATIONS}
+                                    selectedItems={qualifications}
+                                    onAdd={(val) => setQualifications([...qualifications, val])}
+                                    onRemove={(val) => setQualifications(qualifications.filter(i => i !== val))}
+                                    accentColor="green"
+                                    icon={<Award size={20} className="mb-2 opacity-20" />}
+                                />
+                            </div>
+
+                            {/* Dept / Designation / Experience */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div>
+                                    <label className={cls.label}>Experience Start <span className="text-red-500">*</span></label>
+                                    <input type="date" name="experienceStart" value={f.experienceStart} onChange={handleChange} max={new Date().toISOString().split("T")[0]}
+                                        className={cls.input(!!errors.experienceStart, !!f.experienceStart)} />
+                                    {E("experienceStart")}
+                                </div>
+                                <F label="Employee ID" name="employeeId" value={f.employeeId} onChange={handleChange} error={errors.employeeId} required placeholder="HSP-DOC-XXXX" maxLength={30} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ④ Scheduling & Availability */}
+                    <div className={cls.card}>
+                        <SectionHeader icon={<Clock size={16} />} title="Scheduling & Availability" color="blue" />
+                        <div className={cls.cardBody}>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                <div>
+                                    <label className={cls.label}>Consultation Fee (₹) <span className="text-red-500">*</span></label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 text-sm font-bold">₹</span>
+                                        <input type="text" name="consultationFee" value={f.consultationFee} onChange={handleChange}
+                                            placeholder="500" maxLength={6}
+                                            className={`${cls.input(!!errors.consultationFee && !!f.consultationFee, !errors.consultationFee && !!f.consultationFee)} pl-8`} />
+                                    </div>
+                                    {E("consultationFee")}
+                                </div>
+                                <F label="Duration (mins)" name="consultationDuration" value={f.consultationDuration} onChange={handleChange} placeholder="15" maxLength={3} hint="Default: 15 mins" />
+                                <F label="Max Appt/Day" name="maxAppt" value={f.maxAppt} onChange={handleChange} placeholder="20" maxLength={3} />
+                            </div>
+
+                            {/* Weekly Schedule */}
+                            <div>
+                                <div className="flex items-center justify-between mb-3">
+                                    <p className="text-xs font-bold text-blue-800">Weekly Schedule</p>
+                                    <button type="button" onClick={() => setAvailability([...availability, { days: [], startTime: "09:00", breakStart: "13:00", breakEnd: "14:00", endTime: "17:00" }])}
+                                        className="text-xs text-blue-600 font-semibold hover:underline flex items-center gap-1"><Plus size={13} />Add Schedule</button>
+                                </div>
+                                <div className="space-y-4">
+                                    {availability.map((slot, i) => (
+                                        <div key={i} className="p-4 rounded-xl border border-blue-100 bg-blue-50/30">
+                                            <div className="flex justify-between items-center mb-3">
+                                                <span className="text-xs font-bold text-blue-700">Schedule {i + 1}</span>
+                                                {availability.length > 1 && <button type="button" onClick={() => setAvailability(availability.filter((_, idx) => idx !== i))} className="text-xs text-red-400 hover:text-red-600 font-semibold">Remove</button>}
+                                            </div>
+                                            <div className="flex flex-wrap gap-2 mb-3">
+                                                {DAYS.map(d => <button key={d} type="button" onClick={() => toggleDay(i, d)} className={cls.btn.day(slot.days.includes(d))}>{d.slice(0, 3)}</button>)}
+                                            </div>
+                                            <div className="grid grid-cols-4 gap-3">
+                                                {(["startTime", "breakStart", "breakEnd", "endTime"] as const).map((fld, fi) => (
+                                                    <div key={fld}>
+                                                        <label className="block text-[10px] font-bold text-blue-500 mb-1">{["Start", "Break Start", "Break End", "End"][fi]}</label>
+                                                        <input type="time" value={slot[fld]} onChange={(e) => { const u = [...availability]; u[i] = { ...u[i], [fld]: e.target.value }; setAvailability(u); }}
+                                                            className="w-full px-3 py-2 rounded-lg border border-blue-100 bg-white text-sm focus:ring-2 focus:ring-blue-200 outline-none" />
+                                                        <p className="text-[10px] text-blue-400 mt-1">{formatAMPM(slot[fld])}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ⑤ Additional Information */}
+                    <div className={cls.card}>
+                        <SectionHeader icon={<FileText size={16} />} title="Additional Information" color="green" />
+                        <div className={cls.cardBody}>
+                            <div className="mb-4">
+                                <label className={cls.label}>Bio / About</label>
+                                <textarea name="bio" value={f.bio} onChange={handleChange} rows={3} maxLength={1000}
+                                    placeholder="Brief description of the doctor's expertise..."
+                                    className="w-full px-4 py-3 rounded-xl border border-blue-100 text-sm bg-white focus:ring-2 focus:ring-blue-200 outline-none resize-none transition-all" />
+                                <p className={cls.hintMsg}>{f.bio.length}/1000 characters</p>
+                            </div>
+
+
+                            {/* Languages */}
+                            <div className="mb-4">
+                                <TagInput
+                                    label="Languages Spoken"
+                                    placeholder="Search & select languages..."
+                                    options={COMMON_LANGUAGES}
+                                    selectedItems={languages}
+                                    onAdd={(val) => setLanguages([...languages, val])}
+                                    onRemove={(val) => setLanguages(languages.filter(i => i !== val))}
+                                    accentColor="green"
+                                    icon={<Globe size={20} className="mb-2 opacity-20" />}
+                                />
+                            </div>
+
+                            {/* Awards */}
+                            <div>
+                                <label className={cls.label}>Awards & Recognition</label>
+                                <div className="flex gap-2 mb-2">
+                                    <input value={tempAward} onChange={(e) => setTempAward(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag(awards, setAwards, tempAward, () => setTempAward("")))}
+                                        placeholder="e.g. Best Doctor Award 2023" maxLength={100}
+                                        className={`flex-1 ${cls.input(false, !!tempAward)}`} />
+                                    <button type="button" onClick={() => addTag(awards, setAwards, tempAward, () => setTempAward(""))} disabled={!tempAward} className={cls.btn.add}><Plus size={14} />Add</button>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {awards.map(a => <span key={a} className={cls.tag("yellow")}><Award size={11} />{a}<button type="button" onClick={() => removeTag(awards, setAwards, a)}><X size={12} /></button></span>)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ⑥ Bank & Payroll */}
+                    <div className={cls.card}>
+                        <SectionHeader icon={<Landmark size={16} />} title="Bank & Payroll Details" color="green"
+                            extra={<span className="text-[10px] text-green-600 font-black uppercase tracking-wider bg-green-50 px-2 py-1 rounded-lg border border-green-100">Mandatory for Payslips</span>} />
+                        <div className={cls.cardBody}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                                <F label="Account Holder Name" name="accountName" value={f.accountName} onChange={handleChange} placeholder="As per bank records" maxLength={100} />
+                                <F label="Bank Name" name="bankName" value={f.bankName} onChange={handleChange} placeholder="e.g. HDFC Bank" maxLength={80} />
+                                <F label="Account Number" name="accountNumber" value={f.accountNumber} onChange={handleChange} error={errors.accountNumber} placeholder="9–18 digits" maxLength={18} hint={`${f.accountNumber.length} digits`} />
+                                <F label="IFSC Code" name="ifscCode" value={f.ifscCode} onChange={handleChange} error={errors.ifscCode} placeholder="HDFC0001234" maxLength={11} hint="Format: ABCD0123456" extraClass="uppercase" />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t border-green-50">
+                                <div>
+                                    <label className={cls.label}>Base Salary (Monthly)</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600 font-bold text-sm">₹</span>
+                                        <input type="text" name="baseSalary" value={f.baseSalary} onChange={handleChange} placeholder="e.g. 150000" maxLength={8}
+                                            className={`${cls.input(false, !!f.baseSalary)} pl-8`} />
+                                    </div>
+                                </div>
+                                <F label="PAN Number" name="panNumber" value={f.panNumber} onChange={handleChange} error={errors.panNumber} placeholder="ABCDE1234F" maxLength={10} hint="5 letters + 4 digits + 1 letter" extraClass="uppercase" />
+                                <F label="Aadhar Number" name="aadharNumber" value={f.aadharNumber} onChange={handleChange} error={errors.aadharNumber} placeholder="12-digit Aadhar" maxLength={12} hint={`${f.aadharNumber.length}/12 digits`} />
+                                <F label="PF Number" name="pfNumber" value={f.pfNumber} onChange={handleChange} placeholder="Provident Fund No." maxLength={30} />
+                                <F label="ESI Number" name="esiNumber" value={f.esiNumber} onChange={handleChange} placeholder="ESI Number" maxLength={20} />
+                                <F label="UAN Number" name="uanNumber" value={f.uanNumber} onChange={handleChange} placeholder="Universal Account No." maxLength={20} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bottom actions */}
+                    <div className="flex justify-end gap-3 pb-4">
+                        <button type="button" onClick={() => router.push(`/${hospitalId}/hr/hospital/doctors`)} disabled={loading} className={cls.btn.secondary}>Cancel</button>
+                        <button type="submit" disabled={loading} className={cls.btn.primary}>
+                            {loading ? <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><UserPlus size={16} />Create Doctor Profile</>}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </InfrastructureCheck>
     );
 }

@@ -63,7 +63,7 @@ const InvoicePreviewPage = () => {
             }, 1000); // Small delay to ensure rendering is complete
             return () => clearTimeout(timer);
         }
-    }, [isLoading, bill, searchParams]);
+    }, [isLoading, bill, searchParams, handlePrint]);
 
     if (isLoading) {
         return (

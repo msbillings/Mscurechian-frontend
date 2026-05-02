@@ -1,20 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Shield,
     Filter,
     Calendar,
-    User,
-    Activity,
-    Server,
-    Clock,
     ChevronLeft,
     ChevronRight,
     RefreshCcw
 } from 'lucide-react';
 import { pharmacyService } from '@/lib/integrations/services/pharmacy.service';
-import { toast } from 'react-hot-toast';
+// import { toast } from 'react-hot-toast';
 import { PharmacyTableSkeleton } from '@/components/ui/skeletons';
 
 import { useAuthStore } from '@/stores/authStore';
@@ -41,11 +37,11 @@ const AuditLogsPage = () => {
     const [totalResults, setTotalResults] = useState(0);
 
     // Filters
-    const [action, setAction] = useState('All Actions');
+    const [action] = useState('All Actions');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
 
-    const fetchLogs = async (pageNum = 1) => {
+    const fetchLogs = useCallback(async (pageNum = 1) => {
         setLoading(true);
         try {
             console.log('Fetching audit logs...', { pageNum, action, startDate, endDate });
@@ -82,11 +78,11 @@ const AuditLogsPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [action, startDate, endDate, authUser]);
 
     useEffect(() => {
         fetchLogs(page);
-    }, [page, action, startDate, endDate]);
+    }, [page, fetchLogs]);
 
     const getActionBadgeStyle = (action: string) => {
         if (action.includes('DELETED')) {

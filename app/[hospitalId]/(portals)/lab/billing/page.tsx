@@ -502,11 +502,10 @@ function LabBillingPage() {
                                 <button
                                     onClick={() => handleGenerateBill(true)}
                                     disabled={loading || selectedTests.length === 0 || !!generatedBill}
-                                    className={`w-full py-3 text-white rounded-xl font-semibold shadow-lg transition-all flex items-center justify-center gap-2 ${
-                                        generatedBill
+                                    className={`w-full py-3 text-white rounded-xl font-semibold shadow-lg transition-all flex items-center justify-center gap-2 ${generatedBill
                                             ? 'bg-green-600 cursor-not-allowed opacity-90 shadow-green-100 dark:shadow-none'
                                             : 'bg-primary-theme hover:bg-primary-theme/80 disabled:opacity-50 disabled:shadow-none shadow-indigo-100 dark:shadow-none'
-                                    }`}
+                                        }`}
                                 >
                                     {loading
                                         ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

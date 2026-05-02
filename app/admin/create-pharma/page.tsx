@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { adminService, createPharmaAction } from "@/lib/integrations";
-import { Building2, Pill, Search, Eye, EyeOff, Edit, Trash2, X, Lock } from "lucide-react";
+import { Building2, Pill, Eye, EyeOff, Edit, Trash2, X, Lock, Search } from "lucide-react";
 import toast from "react-hot-toast";
-import { PageHeader, Card, FormInput, Button } from "@/components/admin";
+import { PageHeader, Card, FormInput, Button, HospitalSearchSelect } from "@/components/admin";
 import type { Hospital } from "@/lib/integrations/types";
 
 interface PharmaData {
@@ -29,12 +29,9 @@ export default function CreatePharma() {
     });
 
     const [hospitals, setHospitals] = useState<Hospital[]>([]);
-    const [filteredHospitals, setFilteredHospitals] = useState<Hospital[]>([]);
-    const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(false);
     const [loadingHospitals, setLoadingHospitals] = useState(true);
     const [showPassword, setShowPassword] = useState(false);
-    const [showHospitalDropdown, setShowHospitalDropdown] = useState(false);
 
     // Management State
     const [existingStaff, setExistingStaff] = useState<any[]>([]);
@@ -71,40 +68,12 @@ export default function CreatePharma() {
         fetchStaff();
     }, []);
 
-    // ... (Dropdown Effects) ...
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            const target = event.target as HTMLElement;
-            if (!target.closest('.hospital-dropdown-container')) {
-                setShowHospitalDropdown(false);
-            }
-        };
-
-        if (showHospitalDropdown) {
-            document.addEventListener('mousedown', handleClickOutside);
-            return () => document.removeEventListener('mousedown', handleClickOutside);
-        }
-    }, [showHospitalDropdown]);
-
-    useEffect(() => {
-        if (searchQuery) {
-            const filtered = hospitals.filter(hospital =>
-                hospital.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                hospital.hospitalId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                hospital.address?.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-            setFilteredHospitals(filtered);
-        } else {
-            setFilteredHospitals(hospitals);
-        }
-    }, [searchQuery, hospitals]);
 
     const fetchHospitals = async () => {
         try {
             setLoadingHospitals(true);
             const data = await adminService.getHospitalsClient();
             setHospitals(data || []);
-            setFilteredHospitals(data || []);
         } catch (error: any) {
             console.error("Failed to fetch hospitals:", error);
             toast.error(error.message || "Failed to load hospitals");
@@ -132,12 +101,6 @@ export default function CreatePharma() {
             if (!/^\d{0,10}$/.test(value)) return;
         }
         setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleHospitalSelect = (hospital: Hospital) => {
-        setFormData(prev => ({ ...prev, hospitalId: hospital._id }));
-        setShowHospitalDropdown(false);
-        setSearchQuery(hospital.name);
     };
 
     const selectedHospital = hospitals.find(h => h._id === formData.hospitalId);
@@ -180,7 +143,6 @@ export default function CreatePharma() {
             toast.success(`Pharma Staff created successfully for ${selectedHospital?.name}!`);
 
             setFormData({ name: "", email: "", mobile: "", password: "", hospitalId: "" });
-            setSearchQuery("");
             fetchStaff();
 
         } catch (err: any) {
@@ -442,72 +404,16 @@ export default function CreatePharma() {
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <Card title="Pharma Staff Registration" icon={<Pill className="text-green-500" />} padding="p-6">
                                 {/* Hospital Select */}
-                                <div className="relative hospital-dropdown-container mb-6">
-                                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-color)' }}>
-                                        Select Hospital <span className="text-red-500">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            value={searchQuery || selectedHospital?.name || ""}
-                                            onChange={(e) => {
-                                                setSearchQuery(e.target.value);
-                                                setShowHospitalDropdown(true);
-                                            }}
-                                            onFocus={() => setShowHospitalDropdown(true)}
-                                            placeholder="Search hospital..."
-                                            className="w-full px-4 py-3 pr-12 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500"
-                                            style={{
-                                                backgroundColor: 'white',
-                                                color: 'var(--text-color)',
-                                                borderColor: 'var(--border-color)'
-                                            }}
-                                            required
-                                        />
-                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                                            {(searchQuery || formData.hospitalId) && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setSearchQuery("");
-                                                        setFormData(prev => ({ ...prev, hospitalId: "" }));
-                                                    }}
-                                                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-400 hover:text-red-500 transition-colors"
-                                                >
-                                                    <X size={18} />
-                                                </button>
-                                            )}
-                                            <Search className="text-gray-400" size={20} />
-                                        </div>
-                                    </div>
-
-                                    {showHospitalDropdown && filteredHospitals.length > 0 && (
-                                        <div
-                                            className="absolute z-10 w-full mt-2 rounded-xl shadow-2xl max-h-60 overflow-y-auto border border-gray-100 dark:border-gray-700"
-                                            style={{
-                                                backgroundColor: 'var(--card-bg)',
-                                                borderColor: 'var(--border-color)'
-                                            }}
-                                        >
-                                            {filteredHospitals.map((hospital) => (
-                                                <button
-                                                    key={hospital._id}
-                                                    type="button"
-                                                    onClick={() => handleHospitalSelect(hospital)}
-                                                    className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-700 border-b last:border-b-0"
-                                                    style={{ borderColor: 'var(--border-color)' }}
-                                                >
-                                                    <div className="font-semibold" style={{ color: 'var(--text-color)' }}>
-                                                        {hospital.name}
-                                                    </div>
-                                                    <div className="text-sm mt-1" style={{ color: 'var(--secondary-color)' }}>
-                                                        {hospital.hospitalId}
-                                                    </div>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                                <HospitalSearchSelect
+                                    hospitals={hospitals}
+                                    loading={loadingHospitals}
+                                    value={formData.hospitalId}
+                                    onChange={(id) => setFormData(prev => ({ ...prev, hospitalId: id }))}
+                                    label="Select Hospital"
+                                    accentColor="green"
+                                    required
+                                    className="mb-6"
+                                />
 
                                 {/* Form Fields */}
                                 <div className="space-y-4">

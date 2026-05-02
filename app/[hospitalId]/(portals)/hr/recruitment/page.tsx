@@ -168,43 +168,43 @@ export default function RecruitmentPage() {
   }
 
   return (
-        <div className="space-y-6 sm:space-y-8 bg-gray-50 min-h-screen">
-            <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-white p-4 sm:p-6 rounded-3xl sm:rounded-2xl border border-slate-100 shadow-sm w-full">
-                {/* LEFT: Title + subtitle */}
-                <div className="flex flex-col gap-1 shrink-0 w-full xl:w-auto">
-                    <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight leading-none uppercase">Recruitment Management</h1>
-                    <p className="text-slate-500 text-[10px] font-medium uppercase tracking-tight mt-1">Manage job postings and evaluate talent across departments.</p>
-                </div>
+    <div className="space-y-6 sm:space-y-8 bg-gray-50 min-h-screen">
+      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-white p-4 sm:p-6 rounded-3xl sm:rounded-2xl border border-slate-100 shadow-sm w-full">
+        {/* LEFT: Title + subtitle */}
+        <div className="flex flex-col gap-1 shrink-0 w-full xl:w-auto">
+          <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight leading-none uppercase">Recruitment Management</h1>
+          <p className="text-slate-500 text-[10px] font-medium uppercase tracking-tight mt-1">Manage job postings and evaluate talent across departments.</p>
+        </div>
 
-                {/* CENTER: Raise Request button */}
-                <div className="flex-1 flex items-center justify-center w-full md:w-auto mt-2 xl:mt-0">
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 sm:py-2 rounded-xl font-bold transition-all shadow-lg shadow-indigo-100 text-[10px] uppercase tracking-widest w-full md:w-auto"
-                    >
-                        <Plus className="w-3.5 h-3.5" />
-                        Raise Request
-                    </button>
-                </div>
+        {/* CENTER: Raise Request button */}
+        <div className="flex-1 flex items-center justify-center w-full md:w-auto mt-2 xl:mt-0">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 sm:py-2 rounded-xl font-bold transition-all shadow-lg shadow-indigo-100 text-[10px] uppercase tracking-widest w-full md:w-auto"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Raise Request
+          </button>
+        </div>
 
-                {/* RIGHT: Stats */}
-                <div className="flex items-center shrink-0 w-full xl:w-auto overflow-x-auto no-scrollbar pt-2 xl:pt-0">
-                    <div className="flex flex-nowrap items-center gap-4 sm:gap-6 px-4 sm:px-6 py-3 sm:py-2 bg-slate-50/50 rounded-xl border border-slate-100 w-full xl:w-auto">
-                        {stats.map((stat, i) => (
-                            <React.Fragment key={i}>
-                                <div className="flex flex-col min-w-[80px]">
-                                    <div className={`flex items-center gap-1.5 mb-0.5 ${stat.color}`}>
-                                        <stat.icon size={10} />
-                                        <span className="text-[7.5px] sm:text-[8px] font-black uppercase tracking-widest whitespace-nowrap">{stat.label}</span>
-                                    </div>
-                                    <p className="text-base sm:text-lg font-black text-slate-900 leading-none">{stat.value}</p>
-                                </div>
-                                {i < stats.length - 1 && <div className="w-px h-8 bg-slate-200" />}
-                            </React.Fragment>
-                        ))}
-                    </div>
+        {/* RIGHT: Stats */}
+        <div className="flex items-center shrink-0 w-full xl:w-auto overflow-x-auto no-scrollbar pt-2 xl:pt-0">
+          <div className="flex flex-nowrap items-center gap-4 sm:gap-6 px-4 sm:px-6 py-3 sm:py-2 bg-slate-50/50 rounded-xl border border-slate-100 w-full xl:w-auto">
+            {stats.map((stat, i) => (
+              <React.Fragment key={i}>
+                <div className="flex flex-col min-w-[80px]">
+                  <div className={`flex items-center gap-1.5 mb-0.5 ${stat.color}`}>
+                    <stat.icon size={10} />
+                    <span className="text-[7.5px] sm:text-[8px] font-black uppercase tracking-widest whitespace-nowrap">{stat.label}</span>
+                  </div>
+                  <p className="text-base sm:text-lg font-black text-slate-900 leading-none">{stat.value}</p>
                 </div>
-            </div>
+                {i < stats.length - 1 && <div className="w-px h-8 bg-slate-200" />}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+      </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="flex border-b border-gray-100">

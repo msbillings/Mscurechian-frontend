@@ -43,6 +43,15 @@ export interface PharmacyDashboardStats {
     quantity: number;
     revenue: number;
   }[];
+  leastSellingProducts: {
+    name: string;
+    brand?: string;
+    stock: number;
+    expiryDate: string;
+    mrp: number;
+    qtySold: number;
+    revenue: number;
+  }[];
 }
 
 export const PharmacyDashboardService = {
@@ -104,6 +113,15 @@ export const PharmacyDashboardService = {
         invoiceNumber: inv.invoiceNo || inv.invoiceNumber,
       })),
       topProducts: data.topProducts || [],
+      leastSellingProducts: (data.leastSellingWithExpiry || []).map((p: any) => ({
+        name: p.name,
+        brand: p.brand,
+        stock: p.stock,
+        expiryDate: p.expiryDate,
+        mrp: p.mrp,
+        qtySold: p.qtySold,
+        revenue: p.revenue,
+      })),
     };
   },
 };

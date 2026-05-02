@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
     User, Mail, Phone, Briefcase, Award,
-    CreditCard, Building, Landmark, Wallet,
-    Save, ArrowLeft, Image as ImageIcon, Plus, X,
+    Building, Landmark, Wallet,
+    Save, ArrowLeft, Plus, X,
     Calendar, Clock, FileText, Upload, CheckCircle2, Eye,
     Shield
 } from 'lucide-react';
@@ -13,75 +13,20 @@ import { toast } from 'react-hot-toast';
 import { getStaffProfileAction, updateStaffProfileAction } from '@/lib/integrations/actions/staff.actions';
 import { useAuthStore } from '@/stores/authStore';
 import { clearApiCache } from '@/lib/integrations/api';
-import { motion, AnimatePresence } from 'framer-motion';
+
 import { Trash2, ChevronDown, Camera } from 'lucide-react';
 import ImageCropper from '@/components/ui/ImageCropper';
 import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
 
 // Removed inline DocumentViewerModal in favor of shared component
 
-const DocUploadCard = ({ label, doc, onUpload, onView, isUploading }: any) => {
-    const hasDoc = !!doc?.url;
 
-    const fileName = doc?.name || (doc?.url ? doc.url.split('/').pop()?.split('?')[0] : null);
-    const fileSize = doc?.size ? (doc.size / 1024 / 1024).toFixed(2) + 'MB' : null;
-
-    return (
-        <div className={`p-6 rounded-[2rem] border-2 border-dashed transition-all relative group flex flex-col items-center text-center ${hasDoc
-            ? 'border-emerald-200/50 bg-emerald-50/10 dark:bg-emerald-500/5'
-            : 'border-gray-100 dark:border-gray-800 hover:border-indigo-300 dark:hover:border-indigo-500/50'
-            }`}>
-            <div className={`w-14 h-14 rounded-2xl mb-4 flex items-center justify-center shadow-sm border transition-all ${hasDoc
-                ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 border-emerald-100 dark:border-emerald-500/20'
-                : 'bg-gray-50 dark:bg-gray-800/50 text-gray-300 border-gray-100 dark:border-gray-800'
-                }`}>
-                {isUploading ? (
-                    <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                ) : hasDoc ? (
-                    <CheckCircle2 size={28} />
-                ) : (
-                    <FileText size={28} />
-                )}
-            </div>
-
-            <h4 className="text-[9px] font-black text-gray-900 dark:text-white uppercase tracking-widest mb-0.5">{label}</h4>
-
-            {hasDoc ? (
-                <div className="space-y-1.5 w-full">
-                    <p className="text-[7px] text-gray-500 font-bold truncate px-2" title={fileName}>
-                        {fileName} {fileSize && `• ${fileSize}`}
-                    </p>
-                    <div className="flex gap-1.5 justify-center pt-1">
-                        <button
-                            onClick={() => onView(doc.url, label)}
-                            className="flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-gray-700 dark:text-gray-300"
-                        >
-                            <Eye size={10} /> View
-                        </button>
-                        <label className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-all text-indigo-600 cursor-pointer">
-                            <Upload size={10} /> Replace
-                            <input type="file" className="hidden" accept="*" onChange={(e) => onUpload(e)} />
-                        </label>
-                    </div>
-                </div>
-            ) : (
-                <div className="space-y-2 w-full">
-                    <p className="text-[7px] text-gray-400 font-bold uppercase tracking-tight">PDF, JPG, PNG or DOCX • Max 5MB</p>
-                    <label className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-[8px] font-black uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer shadow-lg shadow-gray-200 dark:shadow-none">
-                        <Upload size={12} /> Upload Now
-                        <input type="file" className="hidden" accept=".pdf,image/*,.doc,.docx" onChange={(e) => onUpload(e)} />
-                    </label>
-                </div>
-            )}
-        </div>
-    );
-};
 
 export default function EditStaffProfilePage() {
     const router = useRouter();
     const params = useParams();
     const hospitalId = params?.hospitalId as string;
-    const { user, setUser, checkAuth } = useAuthStore();
+    const { user, setUser } = useAuthStore();
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('personal');
@@ -502,7 +447,7 @@ export default function EditStaffProfilePage() {
             } else {
                 toast.error(res.error || "Delete failed");
             }
-        } catch (error) {
+        } catch (_error) {
             toast.error("An error occurred during deletion");
         }
     };
@@ -578,7 +523,7 @@ export default function EditStaffProfilePage() {
             });
 
             console.log("[DEBUG] Final FormData Fields Before Submit:");
-            for (let [key, value] of (formDataToSubmit as any).entries()) {
+            for (const [key, value] of (formDataToSubmit as any).entries()) {
                 console.log(`- ${key}: ${typeof value === 'string' ? (value.length > 50 ? value.substring(0, 50) + '...' : value) : '[FILE: ' + (value as File).name + ']'}`);
             }
 
@@ -612,7 +557,7 @@ export default function EditStaffProfilePage() {
             } else {
                 toast.error(res.error || 'Failed to update profile');
             }
-        } catch (error) {
+        } catch (_error) {
             toast.error('An unexpected error occurred');
         } finally {
             setIsSaving(false);
@@ -782,7 +727,7 @@ export default function EditStaffProfilePage() {
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Profile Photo</h3>
                                 <div className="flex flex-col sm:flex-row items-center gap-6">
                                     <div className="w-16 h-16 sm:w-20 sm:h-20 bg-indigo-50 dark:bg-indigo-900/10 rounded-xl flex items-center justify-center overflow-hidden border border-indigo-100 dark:border-indigo-800 relative group">
-                                        {formData.profilePic ? <img src={formData.profilePic} className="w-full h-full object-cover" /> : <User size={24} className="text-indigo-500/50" />}
+                                        {formData.profilePic ? <img src={formData.profilePic} alt="Profile" className="w-full h-full object-cover" /> : <User size={24} className="text-indigo-500/50" />}
                                         <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-all">
                                             <Upload className="text-white" size={16} />
                                             <input type="file" name="profilePic" onChange={handleFileChange} className="hidden" accept="image/*" />
@@ -971,7 +916,6 @@ export default function EditStaffProfilePage() {
                                         const hasDoc = !!doc?.url;
                                         const isUploading = !!files[`uploading_${docType.id}`];
                                         const fileName = doc?.name || (doc?.url ? decodeURIComponent(doc.url.split('/').pop()?.split('?')[0] || '').replace(/^\d+_/, '') : null);
-                                        const isPdf = fileName?.toLowerCase().includes('.pdf');
 
                                         return (
                                             <div key={docType.id}

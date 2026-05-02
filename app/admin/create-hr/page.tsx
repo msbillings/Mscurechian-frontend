@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { adminService, createHRAction } from "@/lib/integrations";
-import { Building2, UserPlus, Eye, EyeOff, Search, ShieldCheck } from "lucide-react";
+import { UserPlus, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import toast from "react-hot-toast";
-import { PageHeader, Card, FormInput, Button } from "@/components/admin";
+import { PageHeader, Card, FormInput, Button, HospitalSearchSelect } from "@/components/admin";
 import type { Hospital } from "@/lib/integrations/types";
 
 interface FormData {
@@ -28,49 +28,19 @@ function CreateHRPage() {
   });
 
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
-  const [filteredHospitals, setFilteredHospitals] = useState<Hospital[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingHospitals, setLoadingHospitals] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [showHospitalDropdown, setShowHospitalDropdown] = useState(false);
 
   useEffect(() => {
     fetchHospitals();
   }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (!target.closest('.hospital-dropdown-container')) {
-        setShowHospitalDropdown(false);
-      }
-    };
-
-    if (showHospitalDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [showHospitalDropdown]);
-
-  useEffect(() => {
-    if (searchQuery) {
-      const filtered = hospitals.filter(hospital =>
-        hospital.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        hospital.hospitalId?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredHospitals(filtered);
-    } else {
-      setFilteredHospitals(hospitals);
-    }
-  }, [searchQuery, hospitals]);
 
   const fetchHospitals = async () => {
     try {
       setLoadingHospitals(true);
       const data = await adminService.getHospitalsClient();
       setHospitals(data || []);
-      setFilteredHospitals(data || []);
     } catch (error: any) {
       toast.error("Failed to load hospitals");
     } finally {
@@ -81,12 +51,6 @@ function CreateHRPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleHospitalSelect = (hospital: Hospital) => {
-    setFormData(prev => ({ ...prev, hospitalId: hospital._id }));
-    setShowHospitalDropdown(false);
-    setSearchQuery(hospital.name);
   };
 
   const selectedHospital = hospitals.find(h => h._id === formData.hospitalId);
@@ -126,49 +90,15 @@ function CreateHRPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card title="Station Assignment" padding="p-6">
-          <div className="relative hospital-dropdown-container">
-            <label className="block text-sm font-bold mb-2 opacity-70 uppercase tracking-widest text-[10px]">
-              Target Hospital
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery || selectedHospital?.name || ""}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setShowHospitalDropdown(true);
-                }}
-                onFocus={() => setShowHospitalDropdown(true)}
-                placeholder="Search hospital network..."
-                className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
-                style={{
-                  backgroundColor: 'var(--card-bg)',
-                  color: 'var(--text-color)',
-                  borderColor: 'var(--border-color)'
-                }}
-                required
-              />
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            </div>
-
-            {showHospitalDropdown && filteredHospitals.length > 0 && (
-              <div className="absolute z-10 w-full mt-2 rounded-xl shadow-2xl max-h-60 overflow-y-auto border"
-                style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
-                {filteredHospitals.map((hospital) => (
-                  <button
-                    key={hospital._id}
-                    type="button"
-                    onClick={() => handleHospitalSelect(hospital)}
-                    className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-800 border-b last:border-b-0"
-                    style={{ borderColor: 'var(--border-color)' }}
-                  >
-                    <div className="font-bold text-sm" style={{ color: 'var(--text-color)' }}>{hospital.name}</div>
-                    <div className="text-[10px] opacity-50 uppercase tracking-tighter mt-1">{hospital.hospitalId} • {hospital.city}</div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <HospitalSearchSelect
+            hospitals={hospitals}
+            loading={loadingHospitals}
+            value={formData.hospitalId}
+            onChange={(id) => setFormData(prev => ({ ...prev, hospitalId: id }))}
+            label="Target Hospital"
+            accentColor="blue"
+            required
+          />
         </Card>
 
         <Card title="Personnel Credentials" icon={<UserPlus className="text-blue-500" />} padding="p-6">

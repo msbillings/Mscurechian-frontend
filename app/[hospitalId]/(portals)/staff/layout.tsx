@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useTransition } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { 
     LayoutDashboard, 
@@ -32,14 +32,6 @@ import {
 import { useTenantLink } from '@/hooks/useTenantLink';
 import { useRealtime } from '@/hooks/useRealtime';
 
-const staffMenuItems: any[] = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/staff' },
-    { icon: CalendarCheck, label: 'Leave & Absence', path: '/staff/leaves' },
-    { icon: BookOpenCheck, label: 'My Schedule', path: '/staff/schedule' },
-    { icon: AlertTriangle, label: 'Medical Incident', path: '/staff/incidents' },
-    { icon: ClipboardCheck, label: 'SOP & Policies', path: '/staff/sop' },
-    { icon: Bell, label: 'Announcements', path: '/staff/announcements' },
-];
 
 function StaffLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();

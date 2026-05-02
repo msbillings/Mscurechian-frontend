@@ -12,6 +12,7 @@ import {
   Eye, EyeOff, Copy, Check
 } from "lucide-react";
 import { Modal } from "@/components/admin";
+import { InfrastructureCheck } from "../../components/InfrastructureCheck";
 
 // ─── Validators ──────────────────────────────────────────────────────────────
 const V: Record<string, (v: string) => string> = {
@@ -280,415 +281,417 @@ export default function CreateHelpdesk() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
-      <div className="max-w-7xl mx-auto space-y-6">
-        
-        {/* Header Navigation */}
-        <div className="flex items-center justify-between">
-          <button 
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors group"
-          >
-            <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center group-hover:bg-slate-50 transition-all">
-              <ArrowLeft size={16}/>
-            </div>
-            <span className="text-sm font-semibold tracking-wide">Back to Staff List</span>
-          </button>
-          <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-full">
-            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"/>
-            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">New Registration</span>
-          </div>
-        </div>
-
-        {/* Page Title */}
-        <div className="space-y-1">
-          <h1 className="text-lg  md:text-xl lg:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-              <Headphones size={22}/>
-            </div>
-           Create Front Desk
-          </h1>
-          <p className="text-slate-500 text-sm max-w-xl">
-            Configure a new front-desk operative with credentials, duty schedules, and financial profiles for seamless hospital operations.
-          </p>
-        </div>
-
-        {/* Multi-step Container */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <InfrastructureCheck>
+      <div className="min-h-screen bg-slate-50/50">
+        <div className="max-w-7xl mx-auto space-y-6">
           
-          {/* Sidebar Navigation */}
-          <div className="lg:col-span-1 space-y-2">
-            {STEPS.map((step, idx) => {
-              const Icon = step.icon;
-              const isComp = activeStep > idx;
-              const isAct = activeStep === idx;
-              return (
-                <button
-                  key={step.id}
-                  type="button"
-                  onClick={() => {
-                    if (idx < activeStep) setActiveStep(idx);
-                    else if (idx === activeStep + 1) handleNext();
-                    else if (idx === activeStep) return;
-                    else toast.error("Please complete the current step first");
-                  }}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left group
-                    ${isAct ? "bg-white border-blue-200 shadow-md shadow-blue-500/5 ring-1 ring-blue-500/10" : 
-                      isComp ? "bg-emerald-50/50 border-emerald-100 text-emerald-600 hover:bg-emerald-50" :
-                      "bg-transparent border-transparent text-slate-400 opacity-60 hover:opacity-100 hover:bg-slate-50"}`}
-                >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border
-                    ${isAct ? "bg-blue-600 text-white border-blue-500" : 
-                      isComp ? "bg-emerald-500 text-white border-emerald-400" :
-                      "bg-white text-slate-400 border-slate-200"}`}>
-                    {isComp ? <CheckCircle2 size={16}/> : <Icon size={16}/>}
-                  </div>
-                  <div>
-                    <p className={`text-[10px] font-bold uppercase tracking-widest leading-none mb-1
-                      ${isAct ? "text-blue-600" : isComp ? "text-emerald-500" : "text-slate-400"}`}>
-                      Step 0{idx + 1}
-                    </p>
-                    <p className={`text-sm font-bold ${isAct ? "text-slate-800" : "text-inherit"}`}>
-                      {step.label}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
+          {/* Header Navigation */}
+          <div className="flex items-center justify-between">
+            <button 
+              onClick={() => router.back()}
+              className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors group"
+            >
+              <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center group-hover:bg-slate-50 transition-all">
+                <ArrowLeft size={16}/>
+              </div>
+              <span className="text-sm font-semibold tracking-wide">Back to Staff List</span>
+            </button>
+            <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-full">
+              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"/>
+              <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">New Registration</span>
+            </div>
           </div>
 
-          {/* Form Area */}
-          <div className="lg:col-span-3 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col min-h-[500px]">
-            <form onSubmit={handleSubmit} className="flex flex-col flex-1 p-6 md:p-8">
-              
-              <div className="flex-1 space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                
-                {/* Section Header */}
-                <div className="flex items-center gap-4 border-b border-slate-50 pb-4">
-                  <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
-                    {React.createElement(STEPS[activeStep].icon, { size: 24 })}
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-800 tracking-tight">{STEPS[activeStep].label}</h2>
-                    <div className="flex items-center gap-2">
-                      <p className="text-[10px] text-slate-400 font-medium tracking-wide font-mono">STEP_ID: {STEPS[activeStep].id.toUpperCase()}</p>
-                      <span className="text-[10px] text-blue-500 font-bold px-1.5 py-0.5 bg-blue-50 rounded-md">Step {activeStep + 1} of {STEPS.length}</span>
+          {/* Page Title */}
+          <div className="space-y-1">
+            <h1 className="text-lg  md:text-xl lg:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                <Headphones size={22}/>
+              </div>
+             Create Front Desk
+            </h1>
+            <p className="text-slate-500 text-sm max-w-xl">
+              Configure a new front-desk operative with credentials, duty schedules, and financial profiles for seamless hospital operations.
+            </p>
+          </div>
+
+          {/* Multi-step Container */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            
+            {/* Sidebar Navigation */}
+            <div className="lg:col-span-1 space-y-2">
+              {STEPS.map((step, idx) => {
+                const Icon = step.icon;
+                const isComp = activeStep > idx;
+                const isAct = activeStep === idx;
+                return (
+                  <button
+                    key={step.id}
+                    type="button"
+                    onClick={() => {
+                      if (idx < activeStep) setActiveStep(idx);
+                      else if (idx === activeStep + 1) handleNext();
+                      else if (idx === activeStep) return;
+                      else toast.error("Please complete the current step first");
+                    }}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left group
+                      ${isAct ? "bg-white border-blue-200 shadow-md shadow-blue-500/5 ring-1 ring-blue-500/10" : 
+                        isComp ? "bg-emerald-50/50 border-emerald-100 text-emerald-600 hover:bg-emerald-50" :
+                        "bg-transparent border-transparent text-slate-400 opacity-60 hover:opacity-100 hover:bg-slate-50"}`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border
+                      ${isAct ? "bg-blue-600 text-white border-blue-500" : 
+                        isComp ? "bg-emerald-500 text-white border-emerald-400" :
+                        "bg-white text-slate-400 border-slate-200"}`}>
+                      {isComp ? <CheckCircle2 size={16}/> : <Icon size={16}/>}
                     </div>
-                  </div>
-                </div>
-
-                {/* FORM FIELDS PER TAB */}
-                {activeStep === 0 && ( /* BASIC INFO */
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-1.5 md:col-span-2">
-                      <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Honorific<span className="text-rose-500 ml-0.5">*</span></label>
-                      <select value={formData.honorific} onChange={e=>set('honorific',e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 transition-all font-medium">
-                        <option value="Mr">Mr</option><option value="Mrs">Mrs</option><option value="Ms">Ms</option><option value="Dr">Dr</option>
-                      </select>
-                    </div>
-                    <IField label="Full Name" name="name" value={formData.name} onChange={v=>set('name',v)} onBlur={()=>blur('name')}
-                      error={errors.name} touched={touched.name} required placeholder="e.g. Ramesh Kumar"/>
-                    
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Gender</label>
-                      <select value={formData.gender} onChange={e=>set('gender',e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 transition-all font-medium">
-                        <option value="">Select Gender</option>
-                        <option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
-                      </select>
-                    </div>
-
-                    <IField label="Mobile Number" name="mobile" value={formData.mobile} onChange={v=>set('mobile',v)} onBlur={()=>blur('mobile')}
-                      error={errors.mobile} touched={touched.mobile} required type="tel" placeholder="10-digit mobile number"/>
-                    
-                    <IField label="Email Address" name="email" value={formData.email} onChange={v=>set('email',v)} onBlur={()=>blur('email')}
-                      error={errors.email} touched={touched.email} type="email" placeholder="email@hospital.com"/>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Date of Birth</label>
-                      <input type="date" value={formData.dateOfBirth} onChange={e=>set('dateOfBirth',e.target.value)}
-                        max={new Date().toISOString().split('T')[0]}
-                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 transition-all font-medium uppercase"/>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex justify-between">
-                        <span>Account Password <span className="text-rose-500">*</span></span>
-                        {touched.password && errors.password && <span className="text-rose-500 text-[10px] lowercase italic font-normal">{errors.password}</span>}
-                      </label>
-                      <div className="relative">
-                        <input type={showPassword?"text":"password"} value={formData.password}
-                          onChange={e=>set('password',e.target.value)} onBlur={()=>blur('password')}
-                          placeholder="Min 6 characters"
-                          autoComplete="new-password"
-                          className={`w-full px-4 py-2.5 pr-10 border rounded-xl text-sm outline-none transition-all shadow-sm
-                            ${touched.password && errors.password ? "border-rose-300 bg-rose-50/30 ring-rose-500/5" : 
-                              touched.password && !errors.password && formData.password ? "border-emerald-200 ring-emerald-500/5" : 
-                              "border-slate-200 ring-blue-500/5 focus:border-blue-300"}`}
-                        />
-                        <button type="button" onClick={()=>setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition-colors">
-                          {showPassword ? <EyeOff size={16}/> : <Eye size={16}/>}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeStep === 1 && ( /* EMPLOYMENT */
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <IField label="Designation" name="designation" value={formData.designation} onChange={v=>set('designation',v)} onBlur={()=>blur('designation')}
-                      error={errors.designation} touched={touched.designation} required placeholder="e.g. Front Desk Lead"/>
-                    
-                    <IField label="Internal Employee ID" name="employeeId" value={formData.employeeId} onChange={v=>set('employeeId',v)} onBlur={()=>blur('employeeId')}
-                      error={errors.employeeId} touched={touched.employeeId} required
-                      placeholder="e.g. HUB-2024-001"/>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Joining Date</label>
-                      <input type="date" value={formData.joiningDate} onChange={e=>set('joiningDate',e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 transition-all font-medium uppercase"/>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Employment Type</label>
-                      <select value={formData.employmentType} onChange={e=>set('employmentType',e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 transition-all font-medium">
-                        <option value="full-time">Full-Time (On-Roll)</option>
-                        <option value="part-time">Part-Time</option>
-                        <option value="contract">Trainee / Intern</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-                {activeStep === 2 && ( /* SCHEDULE */
-                  <div className="space-y-8">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Assigned Work Shift</label>
-                      <select 
-                        value={formData.shift}
-                        onChange={e => {
-                          const s = (shifts as any[]).find(s => s._id === e.target.value);
-                          setFormData(p => ({ ...p, shift: e.target.value, startTime: s?.startTime||"09:00", endTime: s?.endTime||"17:00" }));
-                        }}
-                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 transition-all font-semibold"
-                      >
-                        <option value="">No fixed shift template</option>
-                        {(shifts as any[]).map(s => (
-                          <option key={s._id} value={s._id}>{s.name} ({s.startTime} - {s.endTime})</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Shift Start</p>
-                        <p className="text-lg font-bold text-slate-800">{formData.startTime}</p>
-                      </div>
-                      <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Shift End</p>
-                        <p className="text-lg font-bold text-slate-800">{formData.endTime}</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Weekly Rest Days</label>
-                      <div className="flex flex-wrap gap-2">
-                        {["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map(day => (
-                          <button 
-                            key={day} type="button" 
-                            onClick={() => setFormData(p => ({ ...p, weeklyOff: p.weeklyOff.includes(day) ? p.weeklyOff.filter(d => d !== day) : [...p.weeklyOff, day] }))}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest border transition-all
-                              ${formData.weeklyOff.includes(day) ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20" : 
-                              "bg-white border-slate-200 text-slate-500 hover:border-blue-300"}`}>
-                            {day.substring(0,3)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeStep === 3 && ( /* FINANCIAL */
-                  <div className="space-y-6">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Monthly Gross Salary (INR)</label>
-                      <div className="relative">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">₹</div>
-                        <input type="text" value={formData.baseSalary} onChange={e=>set('baseSalary',e.target.value)} placeholder="0"
-                          className="w-full pl-16 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-lg font-bold text-slate-800 outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 transition-all"/>
-                      </div>
-                      <p className="text-[10px] text-slate-400 font-medium italic">Fixed monthly compensation before deductions.</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <IField label="PAN Card Number" name="panNumber" value={formData.panNumber} onChange={v=>set('panNumber',v.toUpperCase())} onBlur={()=>blur('panNumber')}
-                        error={errors.panNumber} touched={touched.panNumber} placeholder="ABCDE1234F" maxLength={10} extraCls="uppercase font-mono"/>
-                      
-                      <IField label="Aadhar Card Number" name="aadharNumber" value={formData.aadharNumber} onChange={v=>set('aadharNumber',v)} onBlur={()=>blur('aadharNumber')}
-                        error={errors.aadharNumber} touched={touched.aadharNumber} placeholder="12-digit UID" maxLength={12} extraCls="font-mono"/>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-slate-50 pt-6">
-                      <div className="space-y-1.5 text-slate-500">
-                        <label className="text-[10px] font-bold uppercase tracking-widest">EPF Account No. (Optional)</label>
-                        <input type="text" value={formData.pfNumber} onChange={e=>set('pfNumber',e.target.value)}
-                          className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-300 transition-all"/>
-                      </div>
-                      <div className="space-y-1.5 text-slate-500">
-                        <label className="text-[10px] font-bold uppercase tracking-widest">ESI Account No. (Optional)</label>
-                        <input type="text" value={formData.esiNumber} onChange={e=>set('esiNumber',e.target.value)}
-                          className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-300 transition-all"/>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeStep === 4 && ( /* BANKING */
-                  <div className="space-y-6">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest border-l-4 border-blue-500 pl-3">Salary Disbursement account</p>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <IField label="Beneficiary Name" name="accountName" value={formData.accountName} onChange={v=>set('accountName',v)}
-                        placeholder="Name as per Passbook" extraCls="uppercase font-semibold"/>
-                      
-                      <IField label="Bank Account Number" name="accountNumber" value={formData.accountNumber} onChange={v=>set('accountNumber',v)} onBlur={()=>blur('accountNumber')}
-                        error={errors.accountNumber} touched={touched.accountNumber} required placeholder="9–18 digit Account No." extraCls="font-bold tracking-widest"/>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <IField label="Banking Institution" name="bankName" value={formData.bankName} onChange={v=>set('bankName',v)}
-                        placeholder="e.g. STATE BANK OF INDIA" extraCls="uppercase font-semibold"/>
-                      
-                      <IField label="IFSC Routing Code" name="ifscCode" value={formData.ifscCode} onChange={v=>set('ifscCode',v.toUpperCase())} onBlur={()=>blur('ifscCode')}
-                        error={errors.ifscCode} touched={touched.ifscCode} required placeholder="11-character IFSC" maxLength={11} extraCls="uppercase font-bold tracking-wider font-mono"/>
-                    </div>
-
-                    <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex gap-3 italic">
-                      <AlertCircle size={20} className="text-amber-500 shrink-0"/>
-                      <p className="text-[11px] text-amber-700 font-medium">
-                        Ensure account details are strictly verified against original documents. Incorrect disbursement details might lead to settlement delays.
+                    <div>
+                      <p className={`text-[10px] font-bold uppercase tracking-widest leading-none mb-1
+                        ${isAct ? "text-blue-600" : isComp ? "text-emerald-500" : "text-slate-400"}`}>
+                        Step 0{idx + 1}
+                      </p>
+                      <p className={`text-sm font-bold ${isAct ? "text-slate-800" : "text-inherit"}`}>
+                        {step.label}
                       </p>
                     </div>
-                  </div>
-                )}
+                  </button>
+                );
+              })}
+            </div>
 
-              </div>
-
-              {/* Action Bar */}
-              <div className="mt-auto pt-10 pb-4 flex justify-between items-center border-t border-slate-100 mb-2">
-                <button
-                  type="button"
-                  onClick={handleBack}
-                  disabled={activeStep === 0}
-                  className={`flex items-center gap-2 text-sm font-bold uppercase tracking-widest transition-all
-                    ${activeStep === 0 ? "opacity-0 pointer-events-none" : "text-slate-500 hover:text-slate-800"}`}
-                >
-                  <ChevronLeft size={18}/> Back
-                </button>
+            {/* Form Area */}
+            <div className="lg:col-span-3 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col min-h-[500px]">
+              <form onSubmit={handleSubmit} className="flex flex-col flex-1 p-6 md:p-8">
                 
-                <div className="flex gap-4">
-                  {activeStep === STEPS.length - 1 ? (
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="bg-blue-600 text-white px-8 py-3 rounded-xl text-sm font-bold shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-60 flex items-center gap-2"
-                    >
-                      {loading ? "Creating Account..." : "Confirm & Initialize"}
-                      {!loading && <ShieldCheck size={18}/>}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleNext}
-                      className="bg-blue-600 text-white px-8 py-3 rounded-xl text-sm font-bold shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2"
-                    >
-                      Continue to Next Step
-                      <ChevronRight size={18}/>
-                    </button>
-                  ) }
+                <div className="flex-1 space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  
+                  {/* Section Header */}
+                  <div className="flex items-center gap-4 border-b border-slate-50 pb-4">
+                    <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
+                      {React.createElement(STEPS[activeStep].icon, { size: 24 })}
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-slate-800 tracking-tight">{STEPS[activeStep].label}</h2>
+                      <div className="flex items-center gap-2">
+                        <p className="text-[10px] text-slate-400 font-medium tracking-wide font-mono">STEP_ID: {STEPS[activeStep].id.toUpperCase()}</p>
+                        <span className="text-[10px] text-blue-500 font-bold px-1.5 py-0.5 bg-blue-50 rounded-md">Step {activeStep + 1} of {STEPS.length}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* FORM FIELDS PER TAB */}
+                  {activeStep === 0 && ( /* BASIC INFO */
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-1.5 md:col-span-2">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Honorific<span className="text-rose-500 ml-0.5">*</span></label>
+                        <select value={formData.honorific} onChange={e=>set('honorific',e.target.value)}
+                          className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 transition-all font-medium">
+                          <option value="Mr">Mr</option><option value="Mrs">Mrs</option><option value="Ms">Ms</option><option value="Dr">Dr</option>
+                        </select>
+                      </div>
+                      <IField label="Full Name" name="name" value={formData.name} onChange={v=>set('name',v)} onBlur={()=>blur('name')}
+                        error={errors.name} touched={touched.name} required placeholder="e.g. Ramesh Kumar"/>
+                      
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Gender</label>
+                        <select value={formData.gender} onChange={e=>set('gender',e.target.value)}
+                          className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 transition-all font-medium">
+                          <option value="">Select Gender</option>
+                          <option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
+                        </select>
+                      </div>
+
+                      <IField label="Mobile Number" name="mobile" value={formData.mobile} onChange={v=>set('mobile',v)} onBlur={()=>blur('mobile')}
+                        error={errors.mobile} touched={touched.mobile} required type="tel" placeholder="10-digit mobile number"/>
+                      
+                      <IField label="Email Address" name="email" value={formData.email} onChange={v=>set('email',v)} onBlur={()=>blur('email')}
+                        error={errors.email} touched={touched.email} type="email" placeholder="email@hospital.com"/>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Date of Birth</label>
+                        <input type="date" value={formData.dateOfBirth} onChange={e=>set('dateOfBirth',e.target.value)}
+                          max={new Date().toISOString().split('T')[0]}
+                          className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 transition-all font-medium uppercase"/>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex justify-between">
+                          <span>Account Password <span className="text-rose-500">*</span></span>
+                          {touched.password && errors.password && <span className="text-rose-500 text-[10px] lowercase italic font-normal">{errors.password}</span>}
+                        </label>
+                        <div className="relative">
+                          <input type={showPassword?"text":"password"} value={formData.password}
+                            onChange={e=>set('password',e.target.value)} onBlur={()=>blur('password')}
+                            placeholder="Min 6 characters"
+                            autoComplete="new-password"
+                            className={`w-full px-4 py-2.5 pr-10 border rounded-xl text-sm outline-none transition-all shadow-sm
+                              ${touched.password && errors.password ? "border-rose-300 bg-rose-50/30 ring-rose-500/5" : 
+                                touched.password && !errors.password && formData.password ? "border-emerald-200 ring-emerald-500/5" : 
+                                "border-slate-200 ring-blue-500/5 focus:border-blue-300"}`}
+                          />
+                          <button type="button" onClick={()=>setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition-colors">
+                            {showPassword ? <EyeOff size={16}/> : <Eye size={16}/>}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeStep === 1 && ( /* EMPLOYMENT */
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <IField label="Designation" name="designation" value={formData.designation} onChange={v=>set('designation',v)} onBlur={()=>blur('designation')}
+                        error={errors.designation} touched={touched.designation} required placeholder="e.g. Front Desk Lead"/>
+                      
+                      <IField label="Internal Employee ID" name="employeeId" value={formData.employeeId} onChange={v=>set('employeeId',v)} onBlur={()=>blur('employeeId')}
+                        error={errors.employeeId} touched={touched.employeeId} required
+                        placeholder="e.g. HUB-2024-001"/>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Joining Date</label>
+                        <input type="date" value={formData.joiningDate} onChange={e=>set('joiningDate',e.target.value)}
+                          className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 transition-all font-medium uppercase"/>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Employment Type</label>
+                        <select value={formData.employmentType} onChange={e=>set('employmentType',e.target.value)}
+                          className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 transition-all font-medium">
+                          <option value="full-time">Full-Time (On-Roll)</option>
+                          <option value="part-time">Part-Time</option>
+                          <option value="contract">Trainee / Intern</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeStep === 2 && ( /* SCHEDULE */
+                    <div className="space-y-8">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Assigned Work Shift</label>
+                        <select 
+                          value={formData.shift}
+                          onChange={e => {
+                            const s = (shifts as any[]).find(s => s._id === e.target.value);
+                            setFormData(p => ({ ...p, shift: e.target.value, startTime: s?.startTime||"09:00", endTime: s?.endTime||"17:00" }));
+                          }}
+                          className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 transition-all font-semibold"
+                        >
+                          <option value="">No fixed shift template</option>
+                          {(shifts as any[]).map(s => (
+                            <option key={s._id} value={s._id}>{s.name} ({s.startTime} - {s.endTime})</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Shift Start</p>
+                          <p className="text-lg font-bold text-slate-800">{formData.startTime}</p>
+                        </div>
+                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Shift End</p>
+                          <p className="text-lg font-bold text-slate-800">{formData.endTime}</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Weekly Rest Days</label>
+                        <div className="flex flex-wrap gap-2">
+                          {["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map(day => (
+                            <button 
+                              key={day} type="button" 
+                              onClick={() => setFormData(p => ({ ...p, weeklyOff: p.weeklyOff.includes(day) ? p.weeklyOff.filter(d => d !== day) : [...p.weeklyOff, day] }))}
+                              className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest border transition-all
+                                ${formData.weeklyOff.includes(day) ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20" : 
+                                "bg-white border-slate-200 text-slate-500 hover:border-blue-300"}`}>
+                              {day.substring(0,3)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeStep === 3 && ( /* FINANCIAL */
+                    <div className="space-y-6">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Monthly Gross Salary (INR)</label>
+                        <div className="relative">
+                          <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">₹</div>
+                          <input type="text" value={formData.baseSalary} onChange={e=>set('baseSalary',e.target.value)} placeholder="0"
+                            className="w-full pl-16 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-lg font-bold text-slate-800 outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 transition-all"/>
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-medium italic">Fixed monthly compensation before deductions.</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <IField label="PAN Card Number" name="panNumber" value={formData.panNumber} onChange={v=>set('panNumber',v.toUpperCase())} onBlur={()=>blur('panNumber')}
+                          error={errors.panNumber} touched={touched.panNumber} placeholder="ABCDE1234F" maxLength={10} extraCls="uppercase font-mono"/>
+                        
+                        <IField label="Aadhar Card Number" name="aadharNumber" value={formData.aadharNumber} onChange={v=>set('aadharNumber',v)} onBlur={()=>blur('aadharNumber')}
+                          error={errors.aadharNumber} touched={touched.aadharNumber} placeholder="12-digit UID" maxLength={12} extraCls="font-mono"/>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-slate-50 pt-6">
+                        <div className="space-y-1.5 text-slate-500">
+                          <label className="text-[10px] font-bold uppercase tracking-widest">EPF Account No. (Optional)</label>
+                          <input type="text" value={formData.pfNumber} onChange={e=>set('pfNumber',e.target.value)}
+                            className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-300 transition-all"/>
+                        </div>
+                        <div className="space-y-1.5 text-slate-500">
+                          <label className="text-[10px] font-bold uppercase tracking-widest">ESI Account No. (Optional)</label>
+                          <input type="text" value={formData.esiNumber} onChange={e=>set('esiNumber',e.target.value)}
+                            className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-300 transition-all"/>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeStep === 4 && ( /* BANKING */
+                    <div className="space-y-6">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest border-l-4 border-blue-500 pl-3">Salary Disbursement account</p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <IField label="Beneficiary Name" name="accountName" value={formData.accountName} onChange={v=>set('accountName',v)}
+                          placeholder="Name as per Passbook" extraCls="uppercase font-semibold"/>
+                        
+                        <IField label="Bank Account Number" name="accountNumber" value={formData.accountNumber} onChange={v=>set('accountNumber',v)} onBlur={()=>blur('accountNumber')}
+                          error={errors.accountNumber} touched={touched.accountNumber} required placeholder="9–18 digit Account No." extraCls="font-bold tracking-widest"/>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <IField label="Banking Institution" name="bankName" value={formData.bankName} onChange={v=>set('bankName',v)}
+                          placeholder="e.g. STATE BANK OF INDIA" extraCls="uppercase font-semibold"/>
+                        
+                        <IField label="IFSC Routing Code" name="ifscCode" value={formData.ifscCode} onChange={v=>set('ifscCode',v.toUpperCase())} onBlur={()=>blur('ifscCode')}
+                          error={errors.ifscCode} touched={touched.ifscCode} required placeholder="11-character IFSC" maxLength={11} extraCls="uppercase font-bold tracking-wider font-mono"/>
+                      </div>
+
+                      <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex gap-3 italic">
+                        <AlertCircle size={20} className="text-amber-500 shrink-0"/>
+                        <p className="text-[11px] text-amber-700 font-medium">
+                          Ensure account details are strictly verified against original documents. Incorrect disbursement details might lead to settlement delays.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+
+                {/* Action Bar */}
+                <div className="mt-auto pt-10 pb-4 flex justify-between items-center border-t border-slate-100 mb-2">
+                  <button
+                    type="button"
+                    onClick={handleBack}
+                    disabled={activeStep === 0}
+                    className={`flex items-center gap-2 text-sm font-bold uppercase tracking-widest transition-all
+                      ${activeStep === 0 ? "opacity-0 pointer-events-none" : "text-slate-500 hover:text-slate-800"}`}
+                  >
+                    <ChevronLeft size={18}/> Back
+                  </button>
+                  
+                  <div className="flex gap-4">
+                    {activeStep === STEPS.length - 1 ? (
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="bg-blue-600 text-white px-8 py-3 rounded-xl text-sm font-bold shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-60 flex items-center gap-2"
+                      >
+                        {loading ? "Creating Account..." : "Confirm & Initialize"}
+                        {!loading && <ShieldCheck size={18}/>}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleNext}
+                        className="bg-blue-600 text-white px-8 py-3 rounded-xl text-sm font-bold shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2"
+                      >
+                        Continue to Next Step
+                        <ChevronRight size={18}/>
+                      </button>
+                    ) }
+                  </div>
+                </div>
+              </form>
+            </div>
+
+          </div>
+        </div>
+
+        {/* ─── SUCCESS MODAL ─── */}
+        <Modal 
+          isOpen={isCredModalOpen} 
+          onClose={() => {
+            setIsCredModalOpen(false);
+            router.push(`/${hospitalId}/hospital-admin/helpdesks`);
+          }} 
+          title="Account Initialized" 
+          maxWidth="max-w-md"
+        >
+          <div className="pt-2 space-y-6">
+            <div className="flex flex-col items-center text-center space-y-2">
+              <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-500 mb-2">
+                <ShieldCheck size={32}/>
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 tracking-tight">Access Credentials Ready!</h3>
+              <p className="text-xs text-slate-500 max-w-[280px]">Secure credentials generated for {createdCreds?.name}. Save these details now.</p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-2 group transition-all hover:border-blue-200">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Login Identifier</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-mono font-bold text-slate-800 tracking-wider font-mono">{createdCreds?.loginId}</span>
+                  <button onClick={() => copyToClipboard(createdCreds?.loginId, "Login ID Copied", "loginId")}
+                    className={`p-2 rounded-lg transition-all ${copiedField === 'loginId' ? "bg-emerald-100 text-emerald-600" : "bg-white border border-slate-200 text-blue-600 hover:bg-blue-50"}`}>
+                    {copiedField === 'loginId' ? <Check size={16}/> : <Copy size={16}/>}
+                  </button>
                 </div>
               </div>
-            </form>
-          </div>
 
-        </div>
+              <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4 space-y-2 group transition-all hover:border-amber-200">
+                <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Account Password</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-mono font-bold text-slate-800 tracking-wider">
+                    {showPassword ? createdCreds?.password : "••••••••"}
+                  </span>
+                  <div className="flex gap-2">
+                    <button onClick={() => setShowPassword(!showPassword)} className="p-2 text-slate-400 hover:text-slate-600">
+                      {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
+                    </button>
+                    <button onClick={() => copyToClipboard(createdCreds?.password, "Password Copied", "password")}
+                      className={`p-2 rounded-lg transition-all ${copiedField === 'password' ? "bg-emerald-100 text-emerald-600" : "bg-white border border-amber-200 text-amber-700 hover:bg-amber-100/50"}`}>
+                      {copiedField === 'password' ? <Check size={16}/> : <Copy size={16}/>}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button 
+               onClick={() => {
+                 const text = `Name: ${createdCreds?.name}\nLogin ID: ${createdCreds?.loginId}\nPassword: ${createdCreds?.password}`;
+                 copyToClipboard(text, "All Credentials Copied", "all");
+               }}
+               className="w-full py-3 rounded-xl border-2 border-dashed border-slate-200 text-slate-500 font-bold text-sm hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center gap-2"
+            >
+              {copiedField === 'all' ? <><Check size={16}/> All Details Copied</> : <><Copy size={16}/> Copy All as Text</>}
+            </button>
+
+            <button 
+              onClick={() => {
+                setIsCredModalOpen(false);
+                router.push(`/${hospitalId}/hospital-admin/helpdesks`);
+              }}
+              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-slate-800 shadow-xl shadow-slate-900/10 transition-all"
+            >
+              Complete Setup & Finish
+            </button>
+          </div>
+        </Modal>
+
       </div>
-
-      {/* ─── SUCCESS MODAL ─── */}
-      <Modal 
-        isOpen={isCredModalOpen} 
-        onClose={() => {
-          setIsCredModalOpen(false);
-          router.push(`/${hospitalId}/hospital-admin/helpdesks`);
-        }} 
-        title="Account Initialized" 
-        maxWidth="max-w-md"
-      >
-        <div className="pt-2 space-y-6">
-          <div className="flex flex-col items-center text-center space-y-2">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-500 mb-2">
-              <ShieldCheck size={32}/>
-            </div>
-            <h3 className="text-xl font-bold text-slate-800 tracking-tight">Access Credentials Ready!</h3>
-            <p className="text-xs text-slate-500 max-w-[280px]">Secure credentials generated for {createdCreds?.name}. Save these details now.</p>
-          </div>
-
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-2 group transition-all hover:border-blue-200">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Login Identifier</p>
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-mono font-bold text-slate-800 tracking-wider font-mono">{createdCreds?.loginId}</span>
-                <button onClick={() => copyToClipboard(createdCreds?.loginId, "Login ID Copied", "loginId")}
-                  className={`p-2 rounded-lg transition-all ${copiedField === 'loginId' ? "bg-emerald-100 text-emerald-600" : "bg-white border border-slate-200 text-blue-600 hover:bg-blue-50"}`}>
-                  {copiedField === 'loginId' ? <Check size={16}/> : <Copy size={16}/>}
-                </button>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4 space-y-2 group transition-all hover:border-amber-200">
-              <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Account Password</p>
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-mono font-bold text-slate-800 tracking-wider">
-                  {showPassword ? createdCreds?.password : "••••••••"}
-                </span>
-                <div className="flex gap-2">
-                  <button onClick={() => setShowPassword(!showPassword)} className="p-2 text-slate-400 hover:text-slate-600">
-                    {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
-                  </button>
-                  <button onClick={() => copyToClipboard(createdCreds?.password, "Password Copied", "password")}
-                    className={`p-2 rounded-lg transition-all ${copiedField === 'password' ? "bg-emerald-100 text-emerald-600" : "bg-white border border-amber-200 text-amber-700 hover:bg-amber-100/50"}`}>
-                    {copiedField === 'password' ? <Check size={16}/> : <Copy size={16}/>}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <button 
-             onClick={() => {
-               const text = `Name: ${createdCreds?.name}\nLogin ID: ${createdCreds?.loginId}\nPassword: ${createdCreds?.password}`;
-               copyToClipboard(text, "All Credentials Copied", "all");
-             }}
-             className="w-full py-3 rounded-xl border-2 border-dashed border-slate-200 text-slate-500 font-bold text-sm hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center gap-2"
-          >
-            {copiedField === 'all' ? <><Check size={16}/> All Details Copied</> : <><Copy size={16}/> Copy All as Text</>}
-          </button>
-
-          <button 
-            onClick={() => {
-              setIsCredModalOpen(false);
-              router.push(`/${hospitalId}/hospital-admin/helpdesks`);
-            }}
-            className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-slate-800 shadow-xl shadow-slate-900/10 transition-all"
-          >
-            Complete Setup & Finish
-          </button>
-        </div>
-      </Modal>
-
-    </div>
+    </InfrastructureCheck>
   );
 }

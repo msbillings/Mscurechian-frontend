@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import LandingNavbar from "@/components/navbar/LandingNavbar";
 import {
     User,
@@ -12,16 +12,9 @@ import {
     Headset,
     Users,
     FileText,
-    Smartphone,
     CheckCircle2,
-    Lock,
     ArrowLeft,
-    ArrowRight,
     ArrowRightCircle,
-    Sun,
-    Moon,
-    Menu,
-    X,
     ShieldCheck,
     Activity,
     HeartPulse

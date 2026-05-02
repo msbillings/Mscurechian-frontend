@@ -3,15 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Bell,
-  Search,
-  Filter,
-  Calendar,
-  ChevronRight,
-  Info,
   AlertTriangle,
   FileText,
-  User,
-  ExternalLink,
   Sparkles
 } from 'lucide-react';
 import { staffService } from '@/lib/integrations';
@@ -77,12 +70,7 @@ function AnnouncementsPage() {
     currentPage * itemsPerPage
   );
 
-  const truncateText = (text: string, wordCount: number = 2) => {
-    if (!text) return '';
-    const words = text.trim().split(/\s+/);
-    if (words.length <= wordCount) return text;
-    return words.slice(0, wordCount).join(' ') + '...';
-  };
+
 
   if (loading) {
     return (
