@@ -204,7 +204,8 @@ function CreateHospital() {
                 establishedYear: "", website: "", operatingHours: "24/7",
                 ambulanceAvailability: true, rating: "4.5",
                 location: { lat: "", lng: "" }, specialities: [], services: [],
-                licenseStartDate: "", licenseEndDate: ""
+                availablePortals: ['masterhelpdesk', 'hospitalAdmin'],
+                portalLicenses: {}
             });
         } catch (err: any) {
             toast.dismiss(loadingToast);
