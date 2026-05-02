@@ -611,7 +611,7 @@ export default function AppointmentBooking() {
                 amount: registrationType === 'IPD' ? parseFloat(ipdFee) : (selectedDoctor?.consultationFee || 0),
                 paymentStatus: registrationType === 'IPD' ? backendPaymentStatus : payload.paymentStatus
             });
-            const appointment = response.appointment || response;
+            let appointment = response.appointment || response;
 
             // 2. Then initiate admission if IPD
             if (registrationType === 'IPD') {
@@ -623,7 +623,7 @@ export default function AppointmentBooking() {
                 const selectedBed = beds.find(b => b._id === admissionData.bedId);
                 const finalAdmissionType = (selectedBed?.type || admissionData.roomType || 'GENERAL').toUpperCase();
 
-                await ipdService.initiateAdmission({
+                const ipdRes: any = await ipdService.initiateAdmission({
                     patientId: selectedPatient?._id || selectedPatient?.id,
                     doctorId: selectedDoctor?._id,
                     bedId: admissionData.bedId,
@@ -644,13 +644,20 @@ export default function AppointmentBooking() {
                     paymentMethod: paymentMethod,
                     paymentStatus: backendPaymentStatus
                 });
+
+                if (ipdRes?.receiptNumber) {
+                    appointment = { ...appointment, receiptNumber: ipdRes.receiptNumber };
+                }
+
                 toast.success("IPD Admission Initiated");
             }
 
             if (sendToDoctor && (appointment._id || appointment.id)) {
                 try {
                     await helpdeskService.updateAppointmentStatus(appointment._id || appointment.id, 'confirmed');
-                } catch (e) { }
+                } catch (e) {
+                    console.warn("[AppointmentBooking] Status sync failed (non-critical):", e);
+                }
             }
 
             // 3. Prepare Branding Data (Using pre-fetched branding to ensure zero-latency printing)

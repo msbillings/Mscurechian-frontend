@@ -424,7 +424,7 @@ function PatientDetailsPage() {
                 <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center text-muted/20">
                     <User size={40} />
                 </div>
-                <h2 className="text-xl font-black text-foreground uppercase tracking-tight italic">Patient Logic Node Empty</h2>
+                <h2 className="text-xl font-black text-foreground uppercase tracking-tight ">Patient Logic Node Empty</h2>
                 <button onClick={() => router.back()} className="px-6 py-2.5 bg-primary-theme text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-90 active:scale-95 shadow-lg shadow-primary-theme/20 transition-all">Go Back</button>
             </div>
         );
@@ -455,16 +455,18 @@ function PatientDetailsPage() {
                     <h1 className="text-lg md:text-xl lg:text-xl font-bold text-foreground tracking-tighter uppercase">{pUser.name || patient.name || 'Unknown Patient'}</h1>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 sm:mt-3 text-[10px] sm:text-xs text-muted font-bold uppercase tracking-widest leading-none">
                         <span className="flex items-center gap-1.5"><User size={14} className="text-primary-theme/50" /> {patient.age || '--'} Y / {patient.gender || '---'}</span>
-                        <span className="flex items-center gap-1.5"><Activity size={14} className="text-primary-theme/50" /> {patient.bloodGroup || 'BLOOD ---'}</span>
+                        <span className="flex items-center gap-1.5"><Activity size={14} className="text-primary-theme/50" /> {patient.bloodGroup || patient.personal?.bloodGroup || 'BLOOD ---'}</span>
                         <div className="hidden sm:block w-px h-3 bg-border-theme" />
-                        <span className="flex items-center gap-1.5"><Phone size={14} className="text-primary-theme/50" /> {patient?.personal?.mobile || pUser.mobile || patient.mobile || '---'}</span>
+                        <span className="flex items-center gap-1.5"><Phone size={14} className="text-primary-theme/50" /> {patient?.personal?.mobile && patient.personal.mobile !== 'N/A' ? patient.personal.mobile : pUser.mobile || patient.mobile || '---'}</span>
                         <span className="flex items-center gap-1.5 truncate max-w-[200px] sm:max-w-none">
                             <Mail size={14} className="text-primary-theme/50" />
-                            {patient?.personal?.email && patient.personal.email !== 'N/A'
+                            {patient?.personal?.email && patient.personal.email !== 'N/A' && patient.personal.email !== '---'
                                 ? patient.personal.email
-                                : patient?.personal?.emergencyContactEmail && patient.personal.emergencyContactEmail !== 'N/A'
-                                    ? patient.personal.emergencyContactEmail
-                                    : pUser.email || patient.email || '---'
+                                : pUser.email && pUser.email !== 'N/A'
+                                    ? pUser.email
+                                    : patient.email && patient.email !== 'N/A'
+                                        ? patient.email
+                                        : '---'
                             }
                         </span>
                     </div>
@@ -486,13 +488,13 @@ function PatientDetailsPage() {
                     {/* Inpatient Admission & Bed Info */}
                     {patient.admission && (
                         <div className="space-y-3 sm:space-y-4">
-                            <div className="bg-gradient-to-br from-emerald-600 to-teal-700 p-4 sm:p-5 rounded-xl sm:rounded-2xl text-white relative overflow-hidden shadow-xl shadow-emerald-600/20">
+                            <div className={`bg-gradient-to-br ${patient.admission.isPending ? 'from-blue-600 to-indigo-700' : 'from-emerald-600 to-teal-700'} p-4 sm:p-5 rounded-xl sm:rounded-2xl text-white relative overflow-hidden shadow-xl ${patient.admission.isPending ? 'shadow-blue-600/20' : 'shadow-emerald-600/20'}`}>
                                 <div className="absolute top-0 right-0 p-4 sm:p-6 opacity-10 rotate-12">
                                     <Activity size={80} />
                                 </div>
                                 <div className="relative z-10">
-                                    <div className="flex justify-between items-start mb-6 sm:mb-8">
-                                        <h3 className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.25em] text-emerald-100/80">Admission Sync</h3>
+                                <div className="flex justify-between items-start mb-6 sm:mb-8">
+                                    <h3 className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.25em] text-white/80">{patient.admission.isPending ? 'Admission Scheduled' : 'Admission Sync'}</h3>
                                         <MonitoringTimer
                                             lastRecorded={patient.admission.vitals?.lastVitalsRecordedAt}
                                             nextDue={patient.admission.vitals?.nextVitalsDue}
@@ -501,18 +503,18 @@ function PatientDetailsPage() {
                                     </div>
                                     <div className="space-y-5">
                                         <div className="flex justify-between items-end border-b border-white/10 pb-2">
-                                            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-tight text-emerald-100/60 italic">Bed Identification</span>
+                                            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-tight text-white/60 ">Bed Identification</span>
                                             <span className="text-lg sm:text-xl font-black uppercase tracking-tighter leading-none">{patient.admission.bed?.bedId || 'N-001'}</span>
                                         </div>
                                         <div className="flex justify-between items-end border-b border-white/10 pb-3">
-                                            <span className="text-[10px] sm:text-xs font-black uppercase tracking-tight text-emerald-100/60 italic">Level / Grid</span>
+                                            <span className="text-[10px] sm:text-xs font-black uppercase tracking-tight text-white/60">Level / Grid</span>
                                             <span className="text-xs sm:text-sm font-black uppercase tracking-[0.15em] leading-none">
                                                 {typeof patient.admission.bed?.type === 'object' ? (patient.admission.bed.type.type || 'Standard') : (patient.admission.bed?.type || 'Standard')} / {typeof patient.admission.bed?.room === 'object' ? (patient.admission.bed.room.name || 'General') : (patient.admission.bed?.room || 'General')}
                                             </span>
                                         </div>
                                         <div className="pt-2 flex justify-between items-center">
-                                            <span className="text-[8px] sm:text-[10px] font-black text-emerald-100/50 uppercase tracking-[0.2em]">Deployment Date</span>
-                                            <span className="text-[10px] sm:text-xs font-black italic text-emerald-50">
+                                            <span className="text-[8px] sm:text-[10px] font-black text-white/50 uppercase tracking-[0.2em]">{patient.admission.isPending ? 'Scheduled Date' : 'Deployment Date'}</span>
+                                            <span className="text-[10px] sm:text-xs font-black  text-emerald-50">
                                                 {patient.admission.admissionDate ? new Date(patient.admission.admissionDate).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
                                             </span>
                                         </div>
@@ -523,9 +525,9 @@ function PatientDetailsPage() {
                             {patient.admission.bedHistory && patient.admission.bedHistory.length > 0 && (
                                 <div className="bg-white dark:bg-slate-900/50 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-emerald-100/20 shadow-sm">
                                     <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest italic">Room/Bed Transfer Logic</h3>
-                                        <div className="p-1.5 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg">
-                                            <Activity size={14} className="text-emerald-500" />
+                                        <h3 className={`text-[10px] font-black ${patient.admission.isPending ? 'text-blue-600' : 'text-emerald-600'} uppercase tracking-widest `}>Room/Bed Transfer Logic</h3>
+                                        <div className={`p-1.5 ${patient.admission.isPending ? 'bg-blue-50 dark:bg-blue-500/10' : 'bg-emerald-50 dark:bg-emerald-500/10'} rounded-lg`}>
+                                            <Activity size={14} className={patient.admission.isPending ? 'text-blue-500' : 'text-emerald-500'} />
                                         </div>
                                     </div>
                                     <div className="overflow-hidden rounded-xl border border-emerald-100/30">
@@ -540,7 +542,7 @@ function PatientDetailsPage() {
                                                 {patient.admission.bedHistory.map((item: any, idx: number) => (
                                                     <tr key={idx} className="hover:bg-emerald-50/20 transition-colors">
                                                         <td className="px-3 py-3">
-                                                            <div className="text-[10px] font-black text-foreground uppercase tracking-tight italic">{item.bedId}</div>
+                                                            <div className="text-[10px] font-black text-foreground uppercase tracking-tight ">{item.bedId}</div>
                                                             <div className="text-[8px] font-bold text-muted uppercase tracking-widest mt-0.5 opacity-60">
                                                                 {item.room} / {item.type}
                                                             </div>
@@ -550,7 +552,7 @@ function PatientDetailsPage() {
                                                                 {new Date(item.startDate).toLocaleDateString([], { day: '2-digit', month: 'short' })} 
                                                                 {item.endDate ? ` - ${new Date(item.endDate).toLocaleDateString([], { day: '2-digit', month: 'short' })}` : ' (Current)'}
                                                             </div>
-                                                            <div className="text-[7px] font-bold text-muted uppercase tracking-widest mt-0.5 opacity-40 italic">
+                                                            <div className="text-[7px] font-bold text-muted uppercase tracking-widest mt-0.5 opacity-40 ">
                                                                 Rate: ₹{item.pricePerDay}/Day
                                                             </div>
                                                         </td>
@@ -567,20 +569,20 @@ function PatientDetailsPage() {
                     {/* Financial Summary - NEW */}
                     {patient.admission && billSummary && (
                         <div className="bg-card p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-border-theme transition-all hover:border-primary-theme/20">
-                            <h3 className="text-[9px] sm:text-[10px] font-black text-muted uppercase tracking-[0.25em] mb-4 sm:mb-6 italic">Financial Operations</h3>
+                            <h3 className="text-[9px] sm:text-[10px] font-black text-muted uppercase tracking-[0.25em] mb-4 sm:mb-6">Financial Operations</h3>
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center text-[10px] sm:text-xs font-black uppercase tracking-tight">
-                                    <span className="text-muted/60 italic">Gross Resource Cost</span>
+                                    <span className="text-muted/60 ">Gross Resource Cost</span>
                                     <span className="text-foreground">₹{(billSummary.bedCharges + billSummary.extraCharges).toLocaleString()}</span>
                                 </div>
                                 {billSummary.returnCredits > 0 && (
                                     <div className="flex justify-between items-center text-[10px] sm:text-xs font-black uppercase tracking-tight">
-                                        <span className="text-rose-500 italic">(-) Intelligence Return</span>
+                                        <span className="text-rose-500 ">(-) Intelligence Return</span>
                                         <span className="text-rose-600 font-black">- ₹{billSummary.returnCredits.toLocaleString()}</span>
                                     </div>
                                 )}
                                 <div className="flex justify-between items-center pt-4 border-t border-dashed border-border-theme">
-                                    <span className="text-[10px] sm:text-xs font-black text-primary-theme uppercase tracking-widest italic">Current Logic Bill</span>
+                                    <span className="text-[10px] sm:text-xs font-black text-primary-theme uppercase tracking-widest">Current Logic Bill</span>
                                     <span className="text-base sm:text-lg font-black text-primary-theme">₹{billSummary.finalAmount.toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between items-center bg-secondary-theme/50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border-theme shadow-inner">
@@ -590,7 +592,7 @@ function PatientDetailsPage() {
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[8px] sm:text-[9px] font-black text-muted uppercase tracking-widest opacity-60">Resolved</p>
-                                        <p className="text-xs sm:text-sm font-black text-emerald-500 italic">₹{(billSummary.advancePaid + billSummary.settlementPaid).toLocaleString()}</p>
+                                        <p className="text-xs sm:text-sm font-black text-emerald-500 ">₹{(billSummary.advancePaid + billSummary.settlementPaid).toLocaleString()}</p>
                                     </div>
                                 </div>
                             </div>
@@ -629,7 +631,7 @@ function PatientDetailsPage() {
                     {/* Vitals - From Active Admission */}
                     <div className="bg-card p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-border-theme">
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-[9px] sm:text-[10px] font-black text-muted uppercase tracking-[0.25em] italic">
+                            <h3 className="text-[9px] sm:text-[10px] font-black text-muted uppercase tracking-[0.25em] ">
                                 {patient.admission?.vitals ? 'Admission Sync' : 'Baseline Logic'}
                             </h3>
                             {(patient.admission?.vitals?.timestamp || patient.updatedAt) && (
@@ -641,28 +643,28 @@ function PatientDetailsPage() {
                         {patient.admission?.vitals || patient.pulse || patient.bloodPressure || patient.spO2 || patient.temperature ? (
                             <div className="grid grid-cols-2 gap-2 sm:gap-3">
                                 <div className="p-2 sm:p-3 bg-rose-50 dark:bg-rose-500/5 rounded-lg sm:rounded-xl border border-rose-100 dark:border-rose-900/10 group transition-all hover:scale-[1.02]">
-                                    <p className="text-[8px] sm:text-[9px] font-black text-rose-500 uppercase mb-0.5 tracking-widest italic leading-none">Pulse</p>
+                                    <p className="text-[8px] sm:text-[9px] font-black text-rose-500 uppercase mb-0.5 tracking-widest  leading-none">Pulse</p>
                                     <p className="text-base sm:text-xl font-black text-rose-600 tracking-tighter">
                                         {patient.admission?.vitals?.heartRate || patient.pulse || '--'}
                                         <span className="text-[9px] sm:text-[10px] font-bold text-rose-400/60 ml-1 uppercase tracking-widest">bpm</span>
                                     </p>
                                 </div>
                                 <div className="p-2 sm:p-3 bg-primary-theme/5 rounded-lg sm:rounded-xl border border-primary-theme/10 group transition-all hover:scale-[1.02]">
-                                    <p className="text-[8px] sm:text-[9px] font-black text-primary-theme uppercase mb-0.5 tracking-widest italic leading-none">Pressure</p>
+                                    <p className="text-[8px] sm:text-[9px] font-black text-primary-theme uppercase mb-0.5 tracking-widest  leading-none">Pressure</p>
                                     <p className="text-base sm:text-xl font-black text-primary-theme tracking-tighter">
                                         {patient.admission?.vitals?.bloodPressure || patient.bloodPressure || '--/--'}
                                         <span className="text-[9px] sm:text-[10px] font-bold text-primary-theme/40 ml-1 uppercase tracking-widest">mmHg</span>
                                     </p>
                                 </div>
                                 <div className="p-2 sm:p-3 bg-cyan-50 dark:bg-cyan-500/5 rounded-lg sm:rounded-xl border border-cyan-100 dark:border-cyan-900/10 group transition-all hover:scale-[1.02]">
-                                    <p className="text-[8px] sm:text-[9px] font-black text-cyan-600 uppercase mb-0.5 tracking-widest italic leading-none">Saturation</p>
+                                    <p className="text-[8px] sm:text-[9px] font-black text-cyan-600 uppercase mb-0.5 tracking-widest leading-none">Saturation</p>
                                     <p className="text-base sm:text-xl font-black text-cyan-700 tracking-tighter">
                                         {patient.admission?.vitals?.spO2 || patient.spO2 || '--'}
                                         <span className="text-[9px] sm:text-[10px] font-bold text-cyan-500/40 ml-1 uppercase tracking-widest">%</span>
                                     </p>
                                 </div>
                                 <div className="p-2 sm:p-3 bg-orange-50 dark:bg-orange-500/5 rounded-lg sm:rounded-xl border border-orange-100 dark:border-orange-900/10 group transition-all hover:scale-[1.02]">
-                                    <p className="text-[8px] sm:text-[9px] font-black text-orange-600 uppercase mb-0.5 tracking-widest italic leading-none">Thermal</p>
+                                    <p className="text-[8px] sm:text-[9px] font-black text-orange-600 uppercase mb-0.5 tracking-widest  leading-none">Thermal</p>
                                     <p className="text-base sm:text-xl font-black text-orange-700 tracking-tighter">
                                         {patient.admission?.vitals?.temperature || patient.temperature || '--'}
                                         <span className="text-[9px] sm:text-[10px] font-bold text-orange-500/40 ml-1 uppercase tracking-widest">°F</span>
@@ -672,7 +674,7 @@ function PatientDetailsPage() {
                         ) : (
                             <div className="text-center py-10 opacity-40">
                                 <Activity className="w-10 h-10 text-muted mx-auto mb-3" />
-                                <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] italic">No Logic Sequence Sync</p>
+                                <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ">No Logic Sequence Sync</p>
                             </div>
                         )}
                     </div>
@@ -697,14 +699,14 @@ function PatientDetailsPage() {
                     {/* Medical History */}
                     <div className="bg-card p-4 sm:p-7 rounded-2xl sm:rounded-[2rem] shadow-sm border border-border-theme transition-all hover:border-primary-theme/20 mb-6">
                         <div className="flex items-center justify-between mb-6 pb-2 border-b border-border-theme/30">
-                            <h3 className="text-[9px] sm:text-[10px] font-black text-muted uppercase tracking-[0.25em] italic">Clinical History Node</h3>
+                            <h3 className="text-[9px] sm:text-[10px] font-black text-muted uppercase tracking-[0.25em]">Clinical History Node</h3>
                             <Activity size={16} className="text-primary-theme/30" />
                         </div>
                         <div className="flex flex-wrap gap-2 sm:gap-3">
                             {patient.medicalHistory ? (
                                 <span className="px-3 py-1.5 sm:px-4 sm:py-2 bg-secondary-theme text-foreground text-[10px] sm:text-xs rounded-xl font-black uppercase tracking-widest border border-border-theme shadow-sm">{patient.medicalHistory}</span>
                             ) : (
-                                <p className="text-muted text-[10px] sm:text-xs font-bold uppercase tracking-widest italic opacity-50">No baseline allergic or chronic data synced.</p>
+                                <p className="text-muted text-[10px] sm:text-xs font-bold uppercase tracking-widest  opacity-50">No baseline allergic or chronic data synced.</p>
                             )}
                         </div>
                         <div className="mt-4 sm:mt-6 flex flex-wrap gap-2 sm:gap-3">
@@ -725,90 +727,85 @@ function PatientDetailsPage() {
                         <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-indigo-100 shadow-sm mb-6 transition-all hover:shadow-md animate-in slide-in-from-top-4 duration-500">
                             <div className="flex items-center justify-between mb-4 pb-2 border-b border-indigo-50 dark:border-indigo-900/20">
                                 <div>
-                                    <h3 className="text-[10px] sm:text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-[0.2em] italic">Laboratory Intelligence Tracker</h3>
+                                    <h3 className="text-[10px] sm:text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-[0.2em] ">Laboratory Intelligence Tracker</h3>
                                     <p className="text-[7px] sm:text-[8px] font-bold text-muted uppercase tracking-widest mt-0.5 opacity-60">Verified Results & Diagnostic Billing Sequence</p>
                                 </div>
                                 <div className="p-2 bg-indigo-50 rounded-lg">
                                     <Beaker className="text-indigo-500" size={16} />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {patientHistory.reports.slice(0, 4).map((report: any, idx: number) => (
-                                    <div 
-                                        key={idx} 
-                                        className={`p-3 bg-indigo-50/20 dark:bg-indigo-900/5 border border-indigo-100/30 rounded-xl relative group transition-all duration-300 ${report.status?.toLowerCase() === 'completed' ? 'cursor-pointer hover:bg-white dark:hover:bg-slate-800 hover:shadow-lg hover:border-indigo-300' : ''}`}
-                                        onClick={() => {
-                                            if (report.status?.toLowerCase() === 'completed') {
-                                                const labTests = report.results || report.tests || [];
-                                                const mappedSample = {
-                                                    ...report,
-                                                    patientDetails: {
-                                                        name: pUser.name || patient.name,
-                                                        age: patient.age,
-                                                        gender: patient.gender,
-                                                        mobile: pUser.mobile || patient.mobile,
-                                                        refDoctor: report.referredBy || 'Self'
-                                                    },
-                                                    tests: labTests.map((t: any) => ({
-                                                        ...t,
-                                                        testName: t.testName || t.name || 'Investigation',
-                                                        resultValue: t.result || t.resultValue
-                                                    })),
-                                                    reportDate: report.completedAt || report.updatedAt || report.createdAt
-                                                };
-                                                setSelectedLabReport(mappedSample);
-                                                setIsLabModalOpen(true);
-                                            }
-                                        }}
-                                    >
-                                        <div
-                                            className="flex items-center justify-between mb-2"
-                                        >
-                                            <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest leading-none">
-                                                ID: {report.tokenNumber || report._id?.slice(-6) || 'N/A'} • {new Date(report.date || report.createdAt).toLocaleDateString()}
-                                            </span>
-                                            <div className="flex items-center gap-1.5 min-h-[16px]">
-                                                <span className={`px-1.5 py-0.5 text-[7px] font-black uppercase tracking-widest rounded border ${report.status?.toLowerCase() === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
-                                                    {report.status}
-                                                </span>
-                                                <span className="px-1.5 py-0.5 text-[7px] font-black uppercase tracking-widest border border-indigo-100 bg-white/50 text-indigo-500 rounded">
-                                                    {report.paymentStatus || 'Paid'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            {(report.results || report.tests || []).slice(0, 3).map((test: any, tIdx: number) => (
-                                                <div key={tIdx} className="flex flex-col py-1 border-b border-indigo-100/10 last:border-0">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex flex-col min-w-0">
-                                                            <span className="text-[9px] font-black text-foreground uppercase tracking-tight truncate">{test.testName || test.name || 'Investigation'}</span>
-                                                            <span className="text-[7px] font-bold text-muted-foreground uppercase leading-none opacity-60">Status: {test.status || report.status}</span>
-                                                        </div>
-                                                        <span className={`text-[9px] font-black italic tracking-tighter ${test.isAbnormal ? 'text-rose-600 animate-pulse' : 'text-emerald-600'}`}>
-                                                            {test.result || test.resultValue || (test.subTests?.length > 0 ? 'Multiple' : 'Processing')}
-                                                        </span>
-                                                    </div>
-                                                    {/* Sub-tests hint if they exist */}
-                                                    {test.subTests?.length > 0 && (
-                                                        <div className="flex flex-wrap gap-1 mt-1">
-                                                            {test.subTests.slice(0, 2).map((sub: any, sIdx: number) => (
-                                                                 <span key={sIdx} className="text-[6px] font-bold text-muted uppercase bg-indigo-50/50 px-1 rounded-sm opacity-60">
-                                                                    {sub.name}: {sub.result}
+                            <div className="overflow-x-auto">
+                                <table className="w-full border-separate border-spacing-y-2">
+                                    <thead>
+                                        <tr className="border-b border-indigo-50 dark:border-indigo-900/20">
+                                            <th className="text-left py-4 px-4 text-[9px] font-black text-indigo-400 uppercase tracking-widest">Diagnostic Investigation</th>
+                                            <th className="text-center py-4 px-4 text-[9px] font-black text-indigo-400 uppercase tracking-widest">Sequence Status</th>
+                                            <th className="text-right py-4 px-4 text-[9px] font-black text-indigo-400 uppercase tracking-widest">Resolution</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="space-y-2">
+                                        {patientHistory.reports.slice(0, 8).map((report: any, idx: number) => {
+                                            const testNames = (report.results || report.tests || []).map((t: any) => t.testName || t.name).join(', ') || 'General Investigation';
+                                            const isCompleted = report.status?.toLowerCase() === 'completed';
+                                            
+                                            return (
+                                                <tr key={idx} className="group bg-white dark:bg-slate-900/40 border border-indigo-100/30 rounded-2xl transition-all duration-300 hover:bg-indigo-50/10 hover:shadow-sm">
+                                                    <td className="py-4 px-4 rounded-l-2xl border-l border-t border-b border-indigo-100/30">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black text-[10px] shadow-inner shrink-0">
+                                                                {idx + 1}
+                                                            </div>
+                                                            <div className="flex flex-col min-w-0">
+                                                                <span className="text-[10px] font-black text-foreground uppercase tracking-tight truncate max-w-[200px] sm:max-w-md">{testNames}</span>
+                                                                <span className="text-[7px] font-bold text-muted uppercase tracking-widest opacity-60 mt-0.5">
+                                                                    ID: {report.tokenNumber || report._id?.slice(-6)} • {new Date(report.date || report.createdAt).toLocaleDateString([], { day: '2-digit', month: 'short' })}
                                                                 </span>
-                                                            ))}
-                                                            {test.subTests.length > 2 && <span className="text-[6px] font-bold text-muted opacity-40">...</span>}
+                                                            </div>
                                                         </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                        {report.status?.toLowerCase() === 'completed' && (
-                                            <div className="mt-3 block w-full text-center text-[7px] font-black text-indigo-600 bg-white dark:bg-indigo-900/20 border border-indigo-100/50 py-1.5 rounded uppercase tracking-[0.2em] shadow-xs group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                                                Access Certified Report
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
+                                                    </td>
+                                                    <td className="py-4 px-4 text-center border-t border-b border-indigo-100/30">
+                                                        <span className={`px-3 py-1 text-[7px] font-black uppercase tracking-[0.15em] rounded-full border shadow-sm ${isCompleted ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-blue-500/10 text-blue-600 border-blue-500/20'}`}>
+                                                            {report.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-4 px-4 text-right rounded-r-2xl border-r border-t border-b border-indigo-100/30">
+                                                        {isCompleted ? (
+                                                            <button 
+                                                                onClick={() => {
+                                                                    const labTests = report.results || report.tests || [];
+                                                                    const mappedSample = {
+                                                                        ...report,
+                                                                        patientDetails: {
+                                                                            name: pUser.name || patient.name,
+                                                                            age: patient.age,
+                                                                            gender: patient.gender,
+                                                                            mobile: pUser.mobile || patient.mobile,
+                                                                            refDoctor: report.referredBy || 'Self'
+                                                                        },
+                                                                        tests: labTests.map((t: any) => ({
+                                                                            ...t,
+                                                                            testName: t.testName || t.name || 'Investigation',
+                                                                            resultValue: t.result || t.resultValue
+                                                                        })),
+                                                                        reportDate: report.completedAt || report.updatedAt || report.createdAt
+                                                                    };
+                                                                    setSelectedLabReport(mappedSample);
+                                                                    setIsLabModalOpen(true);
+                                                                }}
+                                                                className="px-4 py-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 text-[8px] font-black uppercase tracking-[0.2em] rounded-xl border border-indigo-100 dark:border-indigo-900/30 hover:bg-indigo-600 hover:text-white transition-all shadow-sm active:scale-95 flex items-center gap-2 ml-auto"
+                                                            >
+                                                                <FileText size={12} />
+                                                                View Result
+                                                            </button>
+                                                        ) : (
+                                                            <span className="text-[8px] font-black text-muted uppercase tracking-[0.2em] opacity-40 px-4">Processing</span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     )}
@@ -821,75 +818,90 @@ function PatientDetailsPage() {
                                 <p className="text-[10px] font-black text-muted uppercase tracking-[0.25em] mt-1 opacity-60">Historical Medical Timeline</p>
                             </div>
                             <FileText className="text-primary-theme/30" size={24} />
-                        </div>
-
-                        <div className="space-y-6 sm:space-y-10 pl-2">
-                            {appointments.length > 0 ? (
-                                appointments.map((visit: any, idx: number, arr: any[]) => (
-                                    <div
-                                        key={idx}
-                                        className="flex gap-4 sm:gap-8 relative cursor-pointer group"
-                                        onClick={() => fetchPrescriptionDetails(visit)}
-                                    >
-                                        {/* Timeline Line */}
-                                        {idx !== arr.length - 1 && (
-                                            <div className="absolute left-[19px] sm:left-[27px] top-10 sm:top-14 bottom-[-24px] sm:bottom-[-40px] w-0.5 bg-border-theme/60 dashed-timeline group-hover:bg-primary-theme/30 transition-all duration-300"></div>
-                                        )}
-                                        <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-secondary-theme text-primary-theme border border-border-theme shadow-sm flex items-center justify-center shrink-0 z-10 group-hover:bg-primary-theme group-hover:text-white transition-all group-hover:scale-110">
-                                            <FileText size={16} className="sm:w-5 sm:h-5" />
-                                        </div>
-                                        <div className="flex-1 bg-secondary-theme/20 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-transparent group-hover:border-primary-theme/20 group-hover:bg-white dark:group-hover:bg-card group-hover:shadow-xl transition-all duration-300 overflow-hidden relative">
-                                            <div className="flex flex-col sm:flex-row justify-between items-start gap-2 mb-2">
-                                                <div>
-                                                    <h4 className="text-sm sm:text-lg font-bold text-foreground uppercase tracking-tight group-hover:text-primary-theme transition-colors">{visit.reason || visit.symptoms?.[0] || 'General Node'}</h4>
-                                                    <p className="text-[10px] sm:text-xs text-muted font-bold flex items-center gap-2 mt-1 sm:mt-2 uppercase tracking-widest italic opacity-70">
-                                                        <Clock size={12} className="text-primary-theme" /> {new Date(visit.date || visit.startTime).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} @ {visit.time || 'SCAN'}
-                                                    </p>
-                                                </div>
-                                                <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                                                    <span className={`px-2 py-0.5 text-[8px] sm:text-[9px] font-black uppercase tracking-widest rounded-full shadow-xs border ${visit.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
-                                                        visit.status === 'Cancelled' ? 'bg-rose-50 text-rose-600 border-rose-200' :
-                                                            'bg-amber-50 text-amber-600 border-amber-200'
+                        </div>                        <div className="overflow-x-auto">
+                            <table className="w-full border-separate border-spacing-y-2">
+                                <thead>
+                                    <tr className="border-b border-indigo-50 dark:border-indigo-900/20">
+                                        <th className="text-left py-4 px-4 text-[9px] font-black text-indigo-400 uppercase tracking-widest">Medical Narrative / Reason</th>
+                                        <th className="text-left py-4 px-4 text-[9px] font-black text-indigo-400 uppercase tracking-widest">Temporal Log</th>
+                                        <th className="text-center py-4 px-4 text-[9px] font-black text-indigo-400 uppercase tracking-widest">Status</th>
+                                        <th className="text-right py-4 px-4 text-[9px] font-black text-indigo-400 uppercase tracking-widest">Intelligence</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="space-y-2">
+                                    {appointments.length > 0 ? (
+                                        appointments.map((visit: any, idx: number) => {
+                                            const isCompleted = visit.status?.toLowerCase() === 'completed' || visit.status?.toLowerCase() === 'finished';
+                                            return (
+                                                <tr 
+                                                    key={idx} 
+                                                    className="group bg-white dark:bg-slate-900/40 border border-indigo-100/30 rounded-2xl transition-all duration-300 hover:bg-indigo-50/10 hover:shadow-sm cursor-pointer"
+                                                    onClick={() => fetchPrescriptionDetails(visit)}
+                                                >
+                                                    <td className="py-4 px-4 rounded-l-2xl border-l border-t border-b border-indigo-100/30">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black text-[10px] shadow-inner shrink-0">
+                                                                {idx + 1}
+                                                            </div>
+                                                            <div className="flex flex-col min-w-0">
+                                                                <span className="text-[10px] font-black text-foreground uppercase tracking-tight truncate max-w-[200px] sm:max-w-md">{visit.reason || visit.symptoms?.[0] || 'General Consultation'}</span>
+                                                                <span className="text-[7px] font-bold text-muted uppercase tracking-widest opacity-60 mt-0.5">{visit.doctorName || 'Medical Professional'}</span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-4 px-4 border-t border-b border-indigo-100/30">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[9px] font-black text-indigo-600 uppercase tracking-tighter">
+                                                                {new Date(visit.date || visit.startTime).toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                            </span>
+                                                            <span className="text-[7px] font-bold text-muted uppercase tracking-widest opacity-60 mt-0.5">
+                                                                {visit.time || new Date(visit.date || visit.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-4 px-4 text-center border-t border-b border-indigo-100/30">
+                                                        <span className={`px-3 py-1 text-[7px] font-black uppercase tracking-[0.15em] rounded-full border shadow-sm ${
+                                                            visit.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
+                                                            visit.status === 'Cancelled' ? 'bg-rose-500/10 text-rose-600 border-rose-500/20' :
+                                                            'bg-amber-500/10 text-amber-600 border-amber-500/20'
                                                         }`}>
-                                                        {visit.status || 'Active'}
-                                                    </span>
-                                                    {(visit.paymentStatus || visit.prescriptionDetails?.status) && (
-                                                        <span className={`px-2 py-0.5 text-[7px] sm:text-[8px] font-black uppercase tracking-widest rounded-md flex items-center gap-1 shadow-xs border ${visit.paymentStatus === 'Paid' || visit.prescriptionDetails?.status?.toLowerCase() === 'paid' ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-gray-50 text-muted border-border-theme'}`}>
-                                                            <CreditCard size={9} /> {visit.prescriptionDetails?.status || visit.paymentStatus}
+                                                            {visit.status || 'Active'}
                                                         </span>
-                                                    )}
+                                                    </td>
+                                                    <td className="py-4 px-4 text-right rounded-r-2xl border-r border-t border-b border-indigo-100/30">
+                                                        {isCompleted ? (
+                                                            <button 
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    fetchPrescriptionDetails(visit);
+                                                                }}
+                                                                className="px-4 py-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 text-[8px] font-black uppercase tracking-[0.2em] rounded-xl border border-indigo-100 dark:border-indigo-900/30 hover:bg-indigo-600 hover:text-white transition-all shadow-sm active:scale-95 flex items-center gap-2 ml-auto"
+                                                            >
+                                                                <FileText size={12} />
+                                                                View Report
+                                                            </button>
+                                                        ) : (
+                                                            <span className="text-[8px] font-black text-muted uppercase tracking-[0.2em] opacity-40 px-4">In-Progress</span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={4}>
+                                                <div className="flex flex-col items-center justify-center py-20 bg-secondary-theme/10 rounded-3xl border border-dashed border-border-theme/40">
+                                                    <div className="p-4 bg-white dark:bg-slate-900 rounded-full shadow-lg mb-4">
+                                                        <FileText className="text-muted/20" size={40} />
+                                                    </div>
+                                                    <h4 className="text-sm font-bold text-muted uppercase tracking-[0.2em] mb-1">No Clinical Sequence Found</h4>
+                                                    <p className="text-[10px] text-muted opacity-50 uppercase tracking-widest font-bold">Historical data is empty for this profile</p>
                                                 </div>
-                                            </div>
-                                            <p className="text-[10px] sm:text-xs text-muted font-bold uppercase tracking-tight leading-tight mb-2 line-clamp-1 italic opacity-80">{visit.notes || visit.diagnosis || 'Clinical sequence recorded.'}</p>
-
-
-                                            <div className="flex flex-wrap items-center gap-3 mt-1 pt-2 border-t border-border-theme/10">
-                                                {(visit.prescriptionId || visit.prescription || visit.prescription?._id || visit.prescriptionDetails) && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            if (visit.prescriptionDetails?.medicines) {
-                                                                setSelectedPrescription(visit.prescriptionDetails);
-                                                                setIsRxModalOpen(true);
-                                                            } else {
-                                                                fetchPrescriptionDetails(visit);
-                                                            }
-                                                        }}
-                                                        className="text-[9px] sm:text-xs font-black text-primary-theme hover:opacity-80 flex items-center gap-1.5 uppercase tracking-widest transition-all p-1.5 -ml-1.5 rounded-lg hover:bg-primary-theme/5"
-                                                    >
-                                                        <FileText size={12} /> Diagnosis Node
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="text-center py-20 opacity-30">
-                                    <Calendar className="w-16 h-16 text-muted mx-auto mb-4" />
-                                    <p className="text-[10px] sm:text-xs font-black text-muted uppercase tracking-[0.3em] italic">Historic Ledger Empty</p>
-                                </div>
-                            )}
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
