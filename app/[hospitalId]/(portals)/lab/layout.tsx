@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useTransition } from "react";
 import { useRouter, usePathname, useParams } from "next/navigation";
 import { useAuthStore } from '@/stores/authStore';
-import { Menu, LogOut, LayoutDashboard, Activity, ClipboardList, FlaskConical, Settings } from "lucide-react";
+import { Menu, LogOut, LayoutDashboard, Activity, ClipboardList, FlaskConical, Settings, ShieldCheck } from "lucide-react";
+import LicenseLock from "@/components/License/LicenseLock";
 import LogoutModal from "@/components/auth/LogoutModal";
 import LabQuickActions from "@/components/lab/LabQuickActions";
 import ProgressBar from "@/components/ui/ProgressBar";
@@ -22,7 +23,10 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
     const router = useRouter();
     const pathname = usePathname();
     const routeParams = useParams();
-    const { user, logout, isAuthenticated, checkAuth, isLoading, isInitialized } = useAuthStore();
+    const { 
+        user, logout, isAuthenticated, checkAuth, isLoading, isInitialized,
+        licenseError, isLicenseChecking, setLicenseError, setIsLicenseChecking
+    } = useAuthStore();
     const [labLogo, setLabLogo] = useState<string | null>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -39,8 +43,11 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
             // Use dedicated count method — always bypasses cache for accuracy
             const count = await LabSampleService.getPendingCount();
             setActiveTestCount(count);
-        } catch (error) {
-            console.error('Failed to fetch pending test count:', error);
+        } catch (error: any) {
+            // Silence 403s as they are handled by the license lock
+            if (error.status !== 403) {
+                console.error('Failed to fetch pending test count:', error);
+            }
         }
     };
 
@@ -55,13 +62,40 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
         setIsMounted(true);
         useAuthStore.getState().initEvents();
         checkAuth();
+        verifyLicense();
         const handleRefresh = () => {
             clearApiCache();
             fetchPendingCount();
         };
         window.addEventListener('refresh-lab-data', handleRefresh);
         return () => window.removeEventListener('refresh-lab-data', handleRefresh);
-    }, [checkAuth]);
+    }, [checkAuth, isAuthenticated]);
+
+    const verifyLicense = async () => {
+        if (!isAuthenticated) {
+            setIsLicenseChecking(false);
+            return;
+        }
+        setIsLicenseChecking(true);
+        try {
+            // Use settings as a surrogate for license check since it's a core lab route
+            await LabSampleService.getPendingCount();
+            setLicenseError(null);
+        } catch (err: any) {
+            const errorData = err.error || err.data || {};
+            const errorMessage = errorData.message || err.message || "";
+            if (err.status === 403) {
+                setLicenseError({
+                    message: errorMessage || "Your license has expired or is not yet active.",
+                    locked: true
+                });
+            } else {
+                console.error("[Lab] License check error:", err);
+            }
+        } finally {
+            setIsLicenseChecking(false);
+        }
+    };
 
     const isLoginPage = pathname.includes('/lab/login');
 
@@ -140,7 +174,7 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
         };
     }, [isAuthenticated, user, routeParams?.hospitalId]);
 
-    if (!isLoginPage && (!isMounted || isLoading || !isInitialized)) {
+    if (!isLoginPage && (!isMounted || isLoading || !isInitialized || isLicenseChecking)) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center gap-6">
@@ -149,8 +183,21 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
                         <div className="absolute inset-0 flex items-center justify-center text-purple-600 font-bold">LAB</div>
                     </div>
                     <p className="text-xl font-black text-gray-900 uppercase tracking-tighter italic">Lab Panel</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest -mt-4 animate-pulse">Checking License...</p>
                 </div>
             </div>
+        );
+    }
+
+    if (licenseError?.locked) {
+        return (
+            <LicenseLock 
+                message={licenseError.message}
+                onRefresh={() => window.location.reload()}
+                onLogout={() => logout()}
+                hospitalId={routeParams?.hospitalId as string}
+                portalName="Lab"
+            />
         );
     }
 

@@ -107,6 +107,10 @@ export const getActiveHospitalId = (): string | null => {
 };
 
 const existingRequests = new Map<string, Promise<any>>();
+let _isLicenseLocked = false;
+export const setLicenseLockedStatus = (locked: boolean) => {
+    _isLicenseLocked = locked;
+};
 // 🚀 SECURITY: Access Token is ONLY in memory
 let cachedToken: string | null = null;
 let isRefreshing = false;
@@ -185,6 +189,32 @@ export async function apiClient<T>(
   options?: RequestInit & { skipCache?: boolean },
 ): Promise<T> {
   const isClient = typeof window !== "undefined";
+
+  // 🚫 LICENSE LOCK: Block non-essential calls if portal is locked
+  if (isClient && _isLicenseLocked) {
+    const pathLower = path.toLowerCase();
+    const isVerificationCall = 
+        pathLower.includes("/auth/me") || 
+        pathLower.includes("/auth/refresh") ||
+        pathLower.includes("/license") ||
+        pathLower.includes("/me") ||              // doctor, helpdesk, masterhelpdesk, pharma
+        pathLower.includes("/dashboard") ||       // hospital-admin
+        pathLower.includes("/dashboard-stats") || // lab/pharmacy
+        pathLower.includes("/settings") ||        // lab/pharmacy
+        pathLower.includes("/pending") ||         // lab/discharge
+        pathLower.includes("/today-status") ||    // staff
+        pathLower.includes("/stats");             // hr
+    
+    if (!isVerificationCall) {
+        console.warn(`[apiClient] 🛑 Request blocked (License Expired): ${path}`);
+        // Return a promise that rejects with a specific error
+        return Promise.reject({ 
+            status: 403, 
+            message: "LICENSE_EXPIRED",
+            error: { locked: true, message: "Your license has expired. Please renew to continue." }
+        }) as any;
+    }
+  }
 
   // 🚀 SECURITY: No more localStorage reliance for tokens
   let token = cachedToken;

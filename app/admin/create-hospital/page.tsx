@@ -32,13 +32,22 @@ function CreateHospital() {
         location: { lat: "", lng: "" },
         specialities: [] as string[],
         services: [] as string[],
-        availablePortals: ['masterhelpdesk', 'hospitalAdmin'] as string[],
+        availablePortals: [
+            'masterhelpdesk', 'helpdesk', 'doctor', 'pharmacy', 'lab', 
+            'nurse', 'hospitalAdmin', 'staff', 'hr', 'discharge'
+        ] as string[],
         portalLicenses: {} as Record<string, { enabled: boolean; startDate: string; endDate: string }>
     });
 
     const [loading, setLoading] = useState(false);
     const [tempSpecialty, setTempSpecialty] = useState("");
     const [tempService, setTempService] = useState("");
+
+    // ✅ Bulk License State
+    const [selectedPortals, setSelectedPortals] = useState<string[]>([]);
+    const [bulkStartDate, setBulkStartDate] = useState("");
+    const [bulkEndDate, setBulkEndDate] = useState("");
+    const [licenseMode, setLicenseMode] = useState<'individual' | 'total'>('individual');
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -115,6 +124,70 @@ function CreateHospital() {
                 }
             }
         }));
+    };
+
+    // ✅ Bulk License Actions
+    const handleSelectPortal = (portalId: string) => {
+        setSelectedPortals(prev => 
+            prev.includes(portalId) ? prev.filter(id => id !== portalId) : [...prev, portalId]
+        );
+    };
+
+    const handleSelectAll = (portals: string[]) => {
+        if (selectedPortals.length === portals.length) {
+            setSelectedPortals([]);
+        } else {
+            setSelectedPortals(portals);
+        }
+    };
+
+    const applyBulkDates = () => {
+        if (!bulkStartDate || !bulkEndDate) {
+            toast.error("Please select both start and end dates");
+            return;
+        }
+        if (selectedPortals.length === 0) {
+            toast.error("Please select at least one portal");
+            return;
+        }
+
+        setFormData(prev => {
+            const newLicenses = { ...prev.portalLicenses };
+            selectedPortals.forEach(portalId => {
+                newLicenses[portalId] = {
+                    ...(newLicenses[portalId] || { enabled: true }),
+                    enabled: true,
+                    startDate: bulkStartDate,
+                    endDate: bulkEndDate
+                };
+            });
+            return { ...prev, portalLicenses: newLicenses };
+        });
+        toast.success("Dates applied to selected portals");
+    };
+
+    const resetLicenses = () => {
+        setFormData(prev => ({ ...prev, portalLicenses: {} }));
+        setSelectedPortals([]);
+        setBulkStartDate("");
+        setBulkEndDate("");
+        toast.success("License settings reset");
+    };
+
+    const resetIndividualLicense = (portalId: string) => {
+        setFormData(prev => ({
+            ...prev,
+            portalLicenses: {
+                ...prev.portalLicenses,
+                [portalId]: {
+                    ...(prev.portalLicenses[portalId] || {}),
+                    startDate: "",
+                    endDate: "",
+                    enabled: false
+                }
+            }
+        }));
+        toast.success(`Reset license for ${portalId}`);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -204,7 +277,10 @@ function CreateHospital() {
                 establishedYear: "", website: "", operatingHours: "24/7",
                 ambulanceAvailability: true, rating: "4.5",
                 location: { lat: "", lng: "" }, specialities: [], services: [],
-                availablePortals: ['masterhelpdesk', 'hospitalAdmin'],
+                availablePortals: [
+                    'masterhelpdesk', 'helpdesk', 'doctor', 'pharmacy', 'lab', 
+                    'nurse', 'hospitalAdmin', 'staff', 'hr', 'discharge'
+                ],
                 portalLicenses: {}
             });
         } catch (err: any) {
@@ -301,6 +377,76 @@ function CreateHospital() {
                         Enable specific portals for this hospital and set their individual license validity periods. Only allocated portals selected above will appear here.
                     </p>
                     
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
+                        <div className="flex items-center gap-6">
+                            <div className="flex items-center gap-2">
+                                <Button 
+                                    type="button"
+                                    variant={licenseMode === 'individual' ? 'primary' : 'outline'}
+                                    onClick={() => setLicenseMode('individual')}
+                                    className="!py-2 !px-4 text-xs"
+                                >
+                                    Individual
+                                </Button>
+                                <Button 
+                                    type="button"
+                                    variant={licenseMode === 'total' ? 'primary' : 'outline'}
+                                    onClick={() => setLicenseMode('total')}
+                                    className="!py-2 !px-4 text-xs"
+                                >
+                                    Total
+                                </Button>
+                            </div>
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input 
+                                    type="checkbox" 
+                                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    checked={selectedPortals.length > 0 && selectedPortals.length === formData.availablePortals.length}
+                                    onChange={() => handleSelectAll(formData.availablePortals)}
+                                />
+                                <span className="text-xs font-bold text-gray-600 group-hover:text-blue-600 transition-colors">Select All</span>
+                            </label>
+                        </div>
+
+                        {licenseMode === 'total' && (
+                            <div className="flex flex-wrap items-end gap-3 transition-all duration-300">
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-[9px] font-black uppercase tracking-widest text-blue-600 ml-1">Start Date</label>
+                                    <input 
+                                        type="date" 
+                                        value={bulkStartDate}
+                                        onChange={(e) => setBulkStartDate(e.target.value)}
+                                        className="bg-white border border-blue-100 rounded-xl px-3 py-1.5 text-xs font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-[9px] font-black uppercase tracking-widest text-blue-600 ml-1">End Date</label>
+                                    <input 
+                                        type="date" 
+                                        value={bulkEndDate}
+                                        onChange={(e) => setBulkEndDate(e.target.value)}
+                                        className="bg-white border border-blue-100 rounded-xl px-3 py-1.5 text-xs font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                                    />
+                                </div>
+                                <Button 
+                                    type="button"
+                                    onClick={applyBulkDates}
+                                    className="!py-2 !px-4 text-xs"
+                                >
+                                    Apply Total
+                                </Button>
+                                <Button 
+                                    type="button"
+                                    variant="outline"
+                                    onClick={resetLicenses}
+                                    className="!py-2 !px-4 text-xs !text-red-500 !border-red-100 hover:!bg-red-50"
+                                >
+                                    Reset
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+
                     <div className="space-y-4">
                         {[
                             { id: 'masterhelpdesk', label: 'Master Helpdesk' },
@@ -314,9 +460,15 @@ function CreateHospital() {
                             { id: 'hr', label: 'HR Management' },
                             { id: 'discharge', label: 'Discharge Portal' },
                         ].filter(p => formData.availablePortals?.includes(p.id)).map((portal) => (
-                            <div key={portal.id} className="p-4 rounded-2xl border border-gray-100 bg-gray-50/30 hover:bg-white hover:border-blue-100 hover:shadow-sm transition-all duration-200">
+                            <div key={portal.id} className={`p-4 rounded-2xl border transition-all duration-200 ${selectedPortals.includes(portal.id) ? 'border-blue-200 bg-blue-50/20 shadow-sm' : 'border-gray-100 bg-gray-50/30 hover:bg-white hover:border-blue-100'}`}>
                                 <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-8">
-                                    <div className="flex items-center gap-4 lg:w-[220px]">
+                                    <div className="flex items-center gap-4 lg:w-[250px]">
+                                        <input 
+                                            type="checkbox" 
+                                            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                            checked={selectedPortals.includes(portal.id)}
+                                            onChange={() => handleSelectPortal(portal.id)}
+                                        />
                                         <label className="relative inline-flex items-center cursor-pointer">
                                             <input 
                                                 type="checkbox" 
@@ -329,28 +481,57 @@ function CreateHospital() {
                                         <span className="font-bold text-gray-900 text-sm tracking-tight">{portal.label}</span>
                                     </div>
 
-                                    <div className="flex-1 grid grid-cols-2 gap-4">
-                                        <div className="flex flex-col gap-1">
-                                            <label className="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 ml-1">Start Date</label>
-                                            <input
-                                                type="date"
-                                                disabled={!formData.portalLicenses[portal.id]?.enabled}
-                                                value={formData.portalLicenses[portal.id]?.startDate || ""}
-                                                onChange={(e) => handlePortalLicenseChange(portal.id, 'startDate', e.target.value)}
-                                                className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all disabled:opacity-40 disabled:bg-gray-100/50"
-                                            />
+                                    {licenseMode === 'individual' ? (
+                                        <div className="flex-1 flex items-center gap-4">
+                                            <div className="grid grid-cols-2 gap-4 flex-1">
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 ml-1">Start Date</label>
+                                                    <input
+                                                        type="date"
+                                                        disabled={!formData.portalLicenses[portal.id]?.enabled}
+                                                        value={formData.portalLicenses[portal.id]?.startDate || ""}
+                                                        onChange={(e) => handlePortalLicenseChange(portal.id, 'startDate', e.target.value)}
+                                                        className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all disabled:opacity-40 disabled:bg-gray-100/50"
+                                                    />
+                                                </div>
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 ml-1">End Date</label>
+                                                    <input
+                                                        type="date"
+                                                        disabled={!formData.portalLicenses[portal.id]?.enabled}
+                                                        value={formData.portalLicenses[portal.id]?.endDate || ""}
+                                                        onChange={(e) => handlePortalLicenseChange(portal.id, 'endDate', e.target.value)}
+                                                        className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all disabled:opacity-40 disabled:bg-gray-100/50"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <Button 
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => resetIndividualLicense(portal.id)}
+                                                className="!p-2 min-w-[40px] h-[40px] mt-4 !text-red-500 !border-red-100 hover:!bg-red-50"
+                                                title="Reset this portal"
+                                            >
+                                                <Trash2 size={16} />
+                                            </Button>
                                         </div>
-                                        <div className="flex flex-col gap-1">
-                                            <label className="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400 ml-1">End Date</label>
-                                            <input
-                                                type="date"
-                                                disabled={!formData.portalLicenses[portal.id]?.enabled}
-                                                value={formData.portalLicenses[portal.id]?.endDate || ""}
-                                                onChange={(e) => handlePortalLicenseChange(portal.id, 'endDate', e.target.value)}
-                                                className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all disabled:opacity-40 disabled:bg-gray-100/50"
-                                            />
+                                    ) : (
+                                        <div className="flex-1 flex items-center justify-end">
+                                            <div className="flex items-center gap-6">
+                                                {formData.portalLicenses[portal.id]?.startDate && (
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-[8px] font-black uppercase text-gray-400 tracking-widest">Valid From</span>
+                                                        <span className="text-[10px] font-bold text-gray-600">{formData.portalLicenses[portal.id].startDate} to {formData.portalLicenses[portal.id].endDate}</span>
+                                                    </div>
+                                                )}
+                                                {formData.portalLicenses[portal.id]?.enabled ? (
+                                                    <span className="text-[9px] font-black bg-blue-600/10 text-blue-600 px-3 py-1 rounded-full uppercase tracking-widest border border-blue-600/10">Locked</span>
+                                                ) : (
+                                                    <span className="text-[9px] font-black bg-gray-100 text-gray-400 px-3 py-1 rounded-full uppercase tracking-widest border border-gray-200/50">Open</span>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
                         ))}

@@ -57,7 +57,10 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
     // ... hooks ...
     const router = useRouter();
     const pathname = usePathname();
-    const { user, isAuthenticated, isInitialized, logout, checkAuth, isLoading } = useAuthStore();
+    const { 
+        user, isAuthenticated, isInitialized, logout, checkAuth, isLoading,
+        licenseError, isLicenseChecking, setLicenseError, setIsLicenseChecking 
+    } = useAuthStore();
     const { theme, toggleTheme } = useThemeStore();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -68,8 +71,6 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
     const params_obj = useParams();
     const hospitalId = params_obj.hospitalId as string;
 
-    const [isLicenseChecking, setIsLicenseChecking] = useState(true);
-    const [licenseError, setLicenseError] = useState<{ message: string; locked: boolean } | null>(null);
 
     // ... useNotifications, useDoctorInpatients, realtime hooks ...
     useRealtime(['appointments', 'patients', 'lab', 'pharmacy', 'beds', 'emergency', 'system']);
@@ -79,20 +80,27 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
         useAuthStore.getState().initEvents();
         checkAuth();
         verifyLicense();
-    }, [checkAuth]);
+    }, [checkAuth, isAuthenticated]);
 
     const verifyLicense = async () => {
-        if (!isAuthenticated) return;
+        if (!isAuthenticated) {
+            setIsLicenseChecking(false);
+            return;
+        }
         setIsLicenseChecking(true);
         try {
             await doctorService.getMe();
             setLicenseError(null);
         } catch (err: any) {
-            if (err.status === 403 && err.body?.locked) {
+            const errorData = err.error || err.data || {};
+            const errorMessage = errorData.message || err.message || "";
+            if (err.status === 403) {
                 setLicenseError({
-                    message: err.body.message,
+                    message: errorMessage || "Your license has expired or is not yet active.",
                     locked: true
                 });
+            } else {
+                console.error("[Doctor] License check error:", err);
             }
         } finally {
             setIsLicenseChecking(false);

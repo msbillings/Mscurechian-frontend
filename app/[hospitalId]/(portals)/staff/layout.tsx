@@ -9,8 +9,11 @@ import {
     AlertTriangle, 
     ClipboardCheck, 
     Bell, 
-    LogOut 
+    LogOut,
+    ShieldCheck
 } from 'lucide-react';
+import LicenseLock from "@/components/License/LicenseLock";
+import { staffService } from '@/lib/integrations/services/staff.service';
 
 import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
@@ -36,7 +39,10 @@ import { useRealtime } from '@/hooks/useRealtime';
 function StaffLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
-    const { user, logout, isInitialized, isAuthenticated, isLoading, checkAuth, initEvents } = useAuthStore();
+    const { 
+        user, logout, isInitialized, isAuthenticated, isLoading, checkAuth, initEvents,
+        licenseError, isLicenseChecking, setLicenseError, setIsLicenseChecking 
+    } = useAuthStore();
     const { theme, toggleTheme } = useThemeStore();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -50,7 +56,35 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
         setIsMounted(true);
         initEvents();
         checkAuth();
-    }, [checkAuth, initEvents]);
+        verifyLicense();
+    }, [checkAuth, initEvents, isAuthenticated]);
+
+    const verifyLicense = async () => {
+        if (!isAuthenticated) {
+            setIsLicenseChecking(false);
+            return;
+        }
+        setIsLicenseChecking(true);
+        try {
+            await staffService.getTodayStatus();
+            setLicenseError(null);
+        } catch (err: any) {
+            const errorData = err.error || err.data || {};
+            const errorMessage = errorData.message || err.message || "";
+            
+            // 🛑 CRITICAL: Any 403 on the core portal service means the portal is locked or unallocated
+            if (err.status === 403) {
+                setLicenseError({
+                    message: errorMessage || "Your license has expired or is not yet active.",
+                    locked: true
+                });
+            } else {
+                console.error("[Staff] License check error:", err);
+            }
+        } finally {
+            setIsLicenseChecking(false);
+        }
+    };
 
     useEffect(() => {
         if (isInitialized) {
@@ -159,14 +193,27 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
         }
     };
 
-    if (!isMounted || isLoading || !isInitialized) {
+    if (!isMounted || isLoading || !isInitialized || isLicenseChecking) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center gap-6">
                     <div className="w-16 h-16 border-4 border-blue-600/10 border-t-blue-600 rounded-full animate-spin"></div>
                     <p className="text-xl font-black text-gray-900 uppercase tracking-tighter italic text-center">Initializing Portal</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest -mt-4 animate-pulse">Checking License...</p>
                 </div>
             </div>
+        );
+    }
+
+    if (licenseError?.locked) {
+        return (
+            <LicenseLock 
+                message={licenseError.message}
+                onRefresh={() => window.location.reload()}
+                onLogout={() => logout()}
+                hospitalId={user?.hospital || (user as any)?.hospitalId}
+                portalName="Staff"
+            />
         );
     }
 

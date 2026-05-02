@@ -139,6 +139,10 @@ interface AuthState {
   isTabAuthorized: boolean;
   authorizeTab: () => void;
   verifyHospitalId: (hospitalId: string) => Promise<{ valid: boolean; hospitalName?: string }>;
+  licenseError: { message: string; locked: boolean } | null;
+  isLicenseChecking: boolean;
+  setLicenseError: (error: { message: string; locked: boolean } | null) => void;
+  setIsLicenseChecking: (loading: boolean) => void;
 }
 
 // ✅ PERFORMANCE FIX: Stable user reference to prevent cascade re-renders
@@ -234,6 +238,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   authorizeTab: () => {
     set({ isTabAuthorized: true });
   },
+  
+  licenseError: null,
+  isLicenseChecking: true,
+  setLicenseError: (error) => {
+    set({ licenseError: error });
+    // Sync with apiClient to block outgoing requests
+    import("@/lib/integrations/api/apiClient").then(m => m.setLicenseLockedStatus(!!error?.locked));
+  },
+  setIsLicenseChecking: (loading) => set({ isLicenseChecking: loading }),
 
   verifyHospitalId: async (hospitalId: string) => {
     try {
@@ -540,7 +553,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // 5. Clear tab authorization
     localStorage.removeItem("tabAuthorized");
 
-    set({ user: null, isAuthenticated: false, isTabAuthorized: false });
+    set({ 
+      user: null, 
+      isAuthenticated: false, 
+      isTabAuthorized: false,
+      licenseError: null,
+      isLicenseChecking: false
+    });
+    // Ensure lock is released in apiClient
+    import("@/lib/integrations/api/apiClient").then(m => m.setLicenseLockedStatus(false));
   },
 
   initializeAuth: async (force = false) => {

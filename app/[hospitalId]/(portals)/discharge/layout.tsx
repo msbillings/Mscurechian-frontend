@@ -8,6 +8,9 @@ import { useAuthStore } from '@/stores/authStore';
 import { useRealtime } from '@/hooks/useRealtime';
 import Navbar from '@/components/navbar/Navbar';
 import SharedSidebar from "@/components/navbar/SharedSidebar";
+import LicenseLock from "@/components/License/LicenseLock";
+import { dischargeService } from '@/lib/integrations/services/discharge.service';
+import { ShieldCheck } from "lucide-react";
 
 const dischargeMenuItems: any[] = [
     { icon: FileText, label: 'Discharge Form', path: '/discharge' },
@@ -18,7 +21,10 @@ const dischargeMenuItems: any[] = [
 function DischargeLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
-    const { user: authUser, checkAuth } = useAuthStore();
+    const { 
+        user: authUser, checkAuth,
+        licenseError, isLicenseChecking, setLicenseError, setIsLicenseChecking 
+    } = useAuthStore();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -53,8 +59,34 @@ function DischargeLayout({ children }: { children: React.ReactNode }) {
             return;
         }
 
-        checkAuth().finally(() => setIsLoading(false));
+        checkAuth().finally(() => {
+            setIsLoading(false);
+            if (localStorage.getItem("user")) {
+                verifyLicense();
+            }
+        });
     }, [router, isLoginPage, checkAuth]);
+
+    const verifyLicense = async () => {
+        setIsLicenseChecking(true);
+        try {
+            await dischargeService.getPendingDischarges();
+            setLicenseError(null);
+        } catch (err: any) {
+            const errorData = err.error || err.data || {};
+            const errorMessage = errorData.message || err.message || "";
+            if (err.status === 403) {
+                setLicenseError({
+                    message: errorMessage || "Your license has expired or is not yet active.",
+                    locked: true
+                });
+            } else {
+                console.error("[Discharge] License check error:", err);
+            }
+        } finally {
+            setIsLicenseChecking(false);
+        }
+    };
 
     useEffect(() => {
         const handleStorageChange = (e: StorageEvent) => { if (e.key === 'user' && e.newValue) checkAuth(); };
@@ -67,14 +99,34 @@ function DischargeLayout({ children }: { children: React.ReactNode }) {
         };
     }, [checkAuth]);
 
-    if (isLoading) {
+    if (isLoading || (!isLoginPage && isLicenseChecking)) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center gap-6">
                     <div className="w-16 h-16 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
-                    <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Checking Credentials</p>
+                    <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">
+                        {isLicenseChecking ? "Checking License..." : "Checking Credentials"}
+                    </p>
                 </div>
             </div>
+        );
+    }
+
+    if (licenseError?.locked) {
+        return (
+            <LicenseLock 
+                message={licenseError.message}
+                onRefresh={() => window.location.reload()}
+                onLogout={() => {
+                    localStorage.removeItem("accessToken");
+                    localStorage.removeItem("refreshToken");
+                    localStorage.removeItem("userRole");
+                    localStorage.removeItem("user");
+                    router.push("/");
+                }}
+                hospitalId={authUser?.hospital || (authUser as any)?.hospitalId}
+                portalName="Discharge"
+            />
         );
     }
 

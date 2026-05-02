@@ -13,7 +13,9 @@ import {
   Headphones,
   X,
   Bell,
+  ShieldCheck,
 } from "lucide-react";
+import LicenseLock from "@/components/License/LicenseLock";
 import LogoutModal from "@/components/auth/LogoutModal";
 import { useTenantLink } from "@/hooks/useTenantLink";
 import { getSocket, joinSocketRoom } from "@/lib/integrations/api/socket";
@@ -43,7 +45,10 @@ const hrMenuLinks = [
 export function HRLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isAuthenticated, isInitialized, logout, checkAuth, isLoading } = useAuthStore();
+  const { 
+    user, isAuthenticated, isInitialized, logout, checkAuth, isLoading,
+    licenseError, isLicenseChecking, setLicenseError, setIsLicenseChecking 
+  } = useAuthStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -57,7 +62,33 @@ export function HRLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setIsMounted(true);
     checkAuth();
-  }, [checkAuth]);
+    verifyLicense();
+  }, [checkAuth, isAuthenticated]);
+
+  const verifyLicense = async () => {
+    if (!isAuthenticated) {
+        setIsLicenseChecking(false);
+        return;
+    }
+    setIsLicenseChecking(true);
+    try {
+        await hrService.getStats();
+        setLicenseError(null);
+    } catch (err: any) {
+        const errorData = err.error || err.data || {};
+        const errorMessage = errorData.message || err.message || "";
+        if (err.status === 403) {
+            setLicenseError({
+                message: errorMessage || "Your license has expired or is not yet active.",
+                locked: true
+            });
+        } else {
+            console.error("[HR] License check error:", err);
+        }
+    } finally {
+        setIsLicenseChecking(false);
+    }
+  };
 
   useEffect(() => {
     if (isInitialized && !isAuthenticated && !isLoginPage) {
@@ -105,11 +136,26 @@ export function HRLayout({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, user, queryClient]);
 
-  if (!isLoginPage && (!isMounted || isLoading || !isInitialized)) {
+  if (!isLoginPage && (!isMounted || isLoading || !isInitialized || isLicenseChecking)) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="animate-spin h-10 w-10 border-4 border-indigo-600 border-t-transparent rounded-full" />
+        <div className="flex flex-col items-center gap-6">
+            <div className="animate-spin h-10 w-10 border-4 border-indigo-600 border-t-transparent rounded-full" />
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest animate-pulse">Checking License...</p>
+        </div>
       </div>
+    );
+  }
+
+  if (licenseError?.locked) {
+    return (
+        <LicenseLock 
+            message={licenseError.message}
+            onRefresh={() => window.location.reload()}
+            onLogout={() => logout()}
+            hospitalId={user?.hospital || (user as any)?.hospitalId}
+            portalName="HR"
+        />
     );
   }
 

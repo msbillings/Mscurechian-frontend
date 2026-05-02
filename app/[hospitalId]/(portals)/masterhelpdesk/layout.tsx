@@ -42,14 +42,15 @@ export function MasterHelpdeskLayout({ children }: { children: React.ReactNode }
     const pathname = usePathname();
     const params = useParams();
     const currentHospitalId = params?.hospitalId as string;
-    const { user, logout, isAuthenticated, checkAuth, isLoading, isInitialized } = useAuthStore();
+    const { 
+        user, logout, isAuthenticated, checkAuth, isLoading, isInitialized,
+        licenseError, isLicenseChecking, setLicenseError, setIsLicenseChecking 
+    } = useAuthStore();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
     const [isMounted, setIsMounted] = useState(false);
-    const [licenseError, setLicenseError] = useState<{message: string; locked: boolean} | null>(null);
-    const [isLicenseChecking, setIsLicenseChecking] = useState(true);
     const { getPath } = useTenantLink();
 
     useEffect(() => {
@@ -57,21 +58,28 @@ export function MasterHelpdeskLayout({ children }: { children: React.ReactNode }
         useAuthStore.getState().initEvents();
         checkAuth();
         verifyLicense();
-    }, [checkAuth]);
+    }, [checkAuth, isAuthenticated]);
 
     const verifyLicense = async () => {
+        if (!isAuthenticated) {
+            setIsLicenseChecking(false);
+            return;
+        }
+        setIsLicenseChecking(true);
         try {
             const { masterHelpdeskService } = await import("@/lib/integrations/services/masterHelpdesk.service");
-            const res = await masterHelpdeskService.getMe();
-            console.log("[MasterHelpdesk] License check passed:", res);
+            await masterHelpdeskService.getMe();
+            setLicenseError(null);
         } catch (err: any) {
-            console.error("[MasterHelpdesk] License check failed:", err);
             const errorData = err.error || err.data || {};
-            if (err.status === 403 && errorData.locked) {
+            const errorMessage = errorData.message || err.message || "";
+            if (err.status === 403) {
                 setLicenseError({
-                    message: errorData.message || "Your license has expired or is not yet active.",
+                    message: errorMessage || "Your license has expired or is not yet active.",
                     locked: true
                 });
+            } else {
+                console.error("[MasterHelpdesk] License check error:", err);
             }
         } finally {
             setIsLicenseChecking(false);

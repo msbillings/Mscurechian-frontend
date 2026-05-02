@@ -13,8 +13,11 @@ import {
   Users,
   Clock,
   RotateCcw,
-  Bell
+  Bell,
+  ShieldCheck,
 } from 'lucide-react';
+import LicenseLock from "@/components/License/LicenseLock";
+import { NurseService } from '@/lib/integrations/services/nurse.service';
 import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import LogoutModal from '@/components/auth/LogoutModal';
@@ -34,7 +37,10 @@ export function NurseLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const { getPath } = useTenantLink();
-    const { user, logout, isInitialized, isAuthenticated, isLoading, checkAuth, initEvents } = useAuthStore();
+    const { 
+        user, logout, isInitialized, isAuthenticated, isLoading, checkAuth, initEvents,
+        licenseError, isLicenseChecking, setLicenseError, setIsLicenseChecking 
+    } = useAuthStore();
     const { theme, toggleTheme } = useThemeStore();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -70,7 +76,33 @@ export function NurseLayout({ children }: { children: React.ReactNode }) {
     setIsMounted(true);
     initEvents();
     checkAuth();
-  }, [checkAuth, initEvents]);
+    verifyLicense();
+  }, [checkAuth, initEvents, isAuthenticated]);
+
+  const verifyLicense = async () => {
+    if (!isAuthenticated) {
+        setIsLicenseChecking(false);
+        return;
+    }
+    setIsLicenseChecking(true);
+    try {
+        await NurseService.getDashboardStats();
+        setLicenseError(null);
+    } catch (err: any) {
+        const errorData = err.error || err.data || {};
+        const errorMessage = errorData.message || err.message || "";
+        if (err.status === 403) {
+            setLicenseError({
+                message: errorMessage || "Your license has expired or is not yet active.",
+                locked: true
+            });
+        } else {
+            console.error("[Nurse] License check error:", err);
+        }
+    } finally {
+        setIsLicenseChecking(false);
+    }
+  };
 
   useEffect(() => {
     if (!isLoginPage && isInitialized) {
@@ -129,11 +161,26 @@ export function NurseLayout({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, user, queryClient]);
 
-  if (!isLoginPage && (!isMounted || isLoading || !isInitialized)) {
+  if (!isLoginPage && (!isMounted || isLoading || !isInitialized || isLicenseChecking)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="w-16 h-16 border-4 border-blue-600/10 border-t-blue-600 rounded-full animate-spin"></div>
+        <div className="flex flex-col items-center gap-6">
+            <div className="w-16 h-16 border-4 border-blue-600/10 border-t-blue-600 rounded-full animate-spin"></div>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest animate-pulse">Checking License...</p>
+        </div>
       </div>
+    );
+  }
+
+  if (licenseError?.locked) {
+    return (
+        <LicenseLock 
+            message={licenseError.message}
+            onRefresh={() => window.location.reload()}
+            onLogout={() => logout()}
+            hospitalId={user?.hospital || (user as any)?.hospitalId}
+            portalName="Nurse"
+        />
     );
   }
 

@@ -25,6 +25,7 @@ import {
   ShieldCheck,
   QrCode,
 } from "lucide-react";
+import LicenseLock from "@/components/License/LicenseLock";
 import LogoutModal from "@/components/auth/LogoutModal";
 import SharedNavbar from "@/components/navbar/SharedNavbar";
 import SharedSidebar from "@/components/navbar/SharedSidebar";
@@ -126,14 +127,15 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const queryClient = useQueryClient();
 
-  const userName = useAuthStore(state => state.user?.name);
-  const userRole = useAuthStore(state => state.user?.role);
-  const userId = useAuthStore(state => state.user?.id);
-  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const isInitialized = useAuthStore(state => state.isInitialized);
-  const isLoading = useAuthStore(state => state.isLoading);
-  const logout = useAuthStore(state => state.logout);
-  const checkAuth = useAuthStore(state => state.checkAuth);
+  const { 
+    user, isAuthenticated, isInitialized, isLoading, 
+    logout, checkAuth, initEvents,
+    licenseError, isLicenseChecking, setLicenseError, setIsLicenseChecking 
+  } = useAuthStore();
+  
+  const userName = user?.name;
+  const userRole = user?.role;
+  const userId = user?.id;
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
@@ -160,6 +162,35 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
       checkAuth();
     }
   }, []);
+
+  useEffect(() => {
+    verifyLicense();
+  }, [checkAuth, isAuthenticated]);
+
+  const verifyLicense = async () => {
+    if (!isAuthenticated) {
+        setIsLicenseChecking(false);
+        return;
+    }
+    setIsLicenseChecking(true);
+    try {
+        await hospitalAdminService.getDashboard({ range: 'today' });
+        setLicenseError(null);
+    } catch (err: any) {
+        const errorData = err.error || err.data || {};
+        const errorMessage = errorData.message || err.message || "";
+        if (err.status === 403) {
+            setLicenseError({
+                message: errorMessage || "Your license has expired or is not yet active.",
+                locked: true
+            });
+        } else {
+            console.error("[Hospital Admin] License check error:", err);
+        }
+    } finally {
+        setIsLicenseChecking(false);
+    }
+  };
 
   /** 🔁 Role-safe redirect */
   useEffect(() => {
@@ -303,11 +334,26 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
     };
   }, [isAuthenticated, userId, userRole, queryClient]);
 
-  if (!isMounted || !isInitialized || isLoading) {
+  if (!isMounted || !isInitialized || isLoading || isLicenseChecking) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="h-10 w-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        <div className="flex flex-col items-center gap-6">
+            <div className="h-10 w-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest animate-pulse">Checking License...</p>
+        </div>
       </div>
+    );
+  }
+
+  if (licenseError?.locked) {
+    return (
+        <LicenseLock 
+            message={licenseError.message}
+            onRefresh={() => window.location.reload()}
+            onLogout={() => logout()}
+            hospitalId={(useAuthStore.getState().user as any)?.hospital || (useAuthStore.getState().user as any)?.hospitalId}
+            portalName="Hospital Admin"
+        />
     );
   }
 
