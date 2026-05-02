@@ -73,13 +73,13 @@ function MasterEditPatient() {
     }
   };
 
-  useEffect(() => { 
-    if (patientId) fetchPatientData(); 
+  useEffect(() => {
+    if (patientId) fetchPatientData();
   }, [patientId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    
+
     // Restrictions
     if (name === 'mobile' || name === 'emergencyContact') {
       if (value !== '' && !/^\d*$/.test(value)) return;
@@ -99,19 +99,19 @@ function MasterEditPatient() {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.name.trim()) newErrors.name = "Name is required";
     else if (!/^[a-zA-Z\s]*$/.test(formData.name)) newErrors.name = "Name should only contain letters";
     else if (formData.name.trim().length < 3) newErrors.name = "Name must be at least 3 characters";
-    
+
     if (!formData.mobile) newErrors.mobile = "Mobile is required";
     else if (!/^\d{10}$/.test(formData.mobile)) newErrors.mobile = "Mobile must be 10 digits";
-    
+
     if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Invalid email format";
-    
+
     if (!formData.dob) newErrors.dob = "Date of birth is required";
     else if (new Date(formData.dob) > new Date()) newErrors.dob = "DOB cannot be in the future";
-    
+
     if (!formData.address.trim()) newErrors.address = "Address is required";
     else if (formData.address.trim().length < 5) newErrors.address = "Address is too short";
 
@@ -154,15 +154,15 @@ function MasterEditPatient() {
     if (!formData.dob) return 'N/A';
     const birthDate = new Date(formData.dob);
     if (isNaN(birthDate.getTime())) return 'N/A';
-    
+
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
-    
+
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
       age--;
     }
-    
+
     return age < 0 ? 0 : age;
   }, [formData.dob]);
 
@@ -192,11 +192,11 @@ function MasterEditPatient() {
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tighter truncate max-w-full">
-              {editing ? 'Modify Manifest' : 'Clinical Profile'}
+              {editing ? 'Edit Profile' : 'Patient Profile'}
             </h1>
             <span className="hidden xs:inline-block text-[8px] sm:text-[10px] bg-slate-900 text-white px-2 sm:px-3 py-0.5 sm:py-1 rounded-full uppercase tracking-tighter shadow-lg shrink-0">Global ID</span>
           </div>
-          <p className="text-[8px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em] mt-1 sm:mt-2 italic truncate opacity-70">Institutional Node Access / EHR-CORE</p>
+
         </div>
         <div className="flex items-center sm:shrink-0 pt-8 sm:pt-0">
           {!editing ? (
@@ -208,8 +208,8 @@ function MasterEditPatient() {
             </button>
           ) : (
             <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
-              <button 
-                onClick={() => setEditing(false)} 
+              <button
+                onClick={() => setEditing(false)}
                 className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 bg-white border border-slate-200 text-slate-400 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all"
               >
                 Cancel
@@ -232,19 +232,18 @@ function MasterEditPatient() {
         <div className="lg:col-span-8 space-y-4 sm:space-y-8">
           <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-12 opacity-[0.02] pointer-events-none group-hover:scale-110 transition-transform duration-700">
-               <User size={200} className="text-teal-600" />
+              <User size={200} className="text-teal-600" />
             </div>
 
             <h2 className="text-[10px] sm:text-[12px] font-black text-slate-900 uppercase tracking-widest mb-6 sm:mb-8 flex items-center gap-3">
               <Activity size={16} className="text-teal-600 sm:size-[18px]" /> Identity Matrix
             </h2>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 relative z-10">
               <ProfileField label="Honorific" editing={editing}>
-                <select 
-                  name="honorific" 
-                  value={formData.honorific} 
-                  onChange={handleChange} 
+                <select
+                  name="honorific"
+                  value={formData.honorific}
+                  onChange={handleChange}
                   className="w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100 focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black uppercase appearance-none transition-all cursor-pointer"
                 >
                   <option value="Mr">MR</option>
@@ -340,22 +339,22 @@ function MasterEditPatient() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 relative z-10">
               <ProfileField label="Registered Allergies" editing={editing}>
-                <input 
-                  name="allergies" 
-                  value={formData.allergies} 
-                  onChange={handleChange} 
-                  placeholder="NO ALLERGIES REGISTERED" 
-                  className="w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100 focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black uppercase transition-all" 
+                <input
+                  name="allergies"
+                  value={formData.allergies}
+                  onChange={handleChange}
+                  placeholder="NO ALLERGIES REGISTERED"
+                  className="w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100 focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black uppercase transition-all"
                 />
               </ProfileField>
 
               <ProfileField label="Master Clinical Notes" editing={editing}>
-                <textarea 
-                  name="medicalHistory" 
-                  value={formData.medicalHistory} 
-                  onChange={handleChange} 
-                  placeholder="NO HISTORICAL LOGS" 
-                  className="w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100 focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black uppercase h-24 resize-none transition-all" 
+                <textarea
+                  name="medicalHistory"
+                  value={formData.medicalHistory}
+                  onChange={handleChange}
+                  placeholder="NO HISTORICAL LOGS"
+                  className="w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100 focus:border-teal-500 focus:bg-white outline-none text-[10px] sm:text-[11px] font-black uppercase h-24 resize-none transition-all"
                 />
               </ProfileField>
             </div>
@@ -394,12 +393,13 @@ function MasterEditPatient() {
         <div className="lg:col-span-4 space-y-8 sticky top-6">
           <div className="bg-slate-900 p-6 sm:p-8 rounded-3xl sm:rounded-[3rem] text-white shadow-2xl shadow-slate-900/20 space-y-6 sm:space-y-10 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-8 sm:p-12 opacity-10 pointer-events-none group-hover:rotate-12 transition-transform duration-700">
-               <Activity size={120} className="sm:size-[180px]" />
+              <Activity size={120} className="sm:size-[180px]" />
             </div>
 
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-6 sm:mb-8">
                 <div>
+                  <p className="text-[8px] sm:text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em]"> Age</p>
                   <p className="text-[8px] sm:text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em]"> Age</p>
                   <h3 className="text-3xl sm:text-5xl font-black tracking-tighter mt-1 sm:mt-2">{ageData} <span className="text-[10px] sm:text-xs font-bold text-teal-500 uppercase tracking-widest italic ml-1">Years</span></h3>
                 </div>
