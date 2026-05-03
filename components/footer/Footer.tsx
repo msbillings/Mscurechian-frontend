@@ -166,17 +166,17 @@ const Footer = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
                         <p className="text-sm" style={{ color: 'var(--secondary-color)' }}>
-                            Â© {currentYear} MS Tech Hive - Hospital Management System. All rights reserved.
+                            © {currentYear} MS Tech Hive - Hospital Management System. All rights reserved.
                         </p>
                         <div className="flex space-x-6">
-                            <Link href="/privacy" className="text-sm hover:text-blue-400 transition-colors duration-200" style={{ color: 'var(--secondary-color)' }}>
+                            <Link href="/privacy-policy" className="text-sm hover:text-blue-400 transition-colors duration-200" style={{ color: 'var(--secondary-color)' }}>
                                 Privacy Policy
                             </Link>
-                            <Link href="/terms" className="text-sm hover:text-blue-400 transition-colors duration-200" style={{ color: 'var(--secondary-color)' }}>
+                            <Link href="/terms-of-service" className="text-sm hover:text-blue-400 transition-colors duration-200" style={{ color: 'var(--secondary-color)' }}>
                                 Terms of Service
                             </Link>
-                            <Link href="/privacy" className="text-sm hover:text-blue-400 transition-colors duration-200" style={{ color: 'var(--secondary-color)' }}>
-                                Cookie Policy
+                            <Link href="/delete-account" className="text-sm hover:text-blue-400 transition-colors duration-200" style={{ color: 'var(--secondary-color)' }}>
+                                Delete Account
                             </Link>
                         </div>
                     </div>

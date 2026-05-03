@@ -40,6 +40,11 @@ const PUBLIC_PATHS = [
   "/pharmacy/login",
   "/lab/login",
   "/hr/login",
+  "/privacy",
+  "/privacy-policy",
+  "/terms",
+  "/terms-of-service",
+  "/delete-account",
 ];
 
 const ROUTE_MAP: Record<string, string> = {
@@ -281,6 +286,14 @@ export default async function middleware(request: NextRequest) {
       `[Middleware] 🧹 Stripping global prefix: ${pathname} -> ${cleanPath}`,
     );
     return NextResponse.redirect(redirectUrl);
+  }
+
+  // 0.7 REDIRECT SHORT LEGAL PATHS
+  if (pathname === "/privacy") {
+    return NextResponse.redirect(new URL("/privacy-policy", request.url));
+  }
+  if (pathname === "/terms") {
+    return NextResponse.redirect(new URL("/terms-of-service", request.url));
   }
 
   // 1. SKIP STATIC FILES & API
