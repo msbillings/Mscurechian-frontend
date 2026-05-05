@@ -109,6 +109,13 @@ export const ipdService = {
   },
 
   /**
+   * Get all discharged IPD admissions
+   */
+  getDischargedAdmissions: (skipCache?: boolean) => {
+    return apiClient<any[]>(`${IPD_ENDPOINTS.ADMISSIONS}/discharged`, { skipCache });
+  },
+
+  /**
    * Get full admission details for manifest/receipt printing or discharge
    */
   getAdmissionDetails: (id: string) =>

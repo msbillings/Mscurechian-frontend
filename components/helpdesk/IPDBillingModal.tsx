@@ -232,16 +232,19 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                         // Pharmacy medicine bill — ONLY from pharmacy issuances (category "Pharmacy", positive amounts)
                                         const pharmaTotal = Math.round(catBreakdown['Pharmacy'] || 0);
 
+                                        // Lab charges — from LabOrders linked to this admission
+                                        const labTotal = Math.round(catBreakdown['Lab'] || 0);
+
                                         const otherExtra = Math.round(
                                             Object.entries(catBreakdown)
-                                                .filter(([cat]) => cat !== 'Pharmacy')
+                                                .filter(([cat]) => cat !== 'Pharmacy' && cat !== 'Lab')
                                                 .reduce((sum, [, val]) => sum + (val as number), 0)
                                         );
                                         const otherExtraCats = Object.keys(catBreakdown)
-                                            .filter(c => c !== 'Pharmacy');
+                                            .filter(c => c !== 'Pharmacy' && c !== 'Lab');
 
-                                        // Total = Bed + Pharma + Other (Admission is part of Other — already offset by Advance)
-                                        const totalAmount = bedTotal + pharmaTotal + otherExtra;
+                                        // Total = Bed + Pharma + Lab + Other
+                                        const totalAmount = bedTotal + pharmaTotal + labTotal + otherExtra;
                                         const returnCredits = Math.round(summary?.financials?.returnCredits || 0);
                                         const netAfterReturn = Math.max(0, totalAmount - returnCredits);
                                         const discount = Math.round(summary?.financials?.discount || 0);
@@ -307,10 +310,17 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                         color="text-violet-800"
                                                     />
 
+                                                    <Row
+                                                        label="Lab Investigation Charges"
+                                                        sub="Tests ordered during admission"
+                                                        amount={`₹ ${labTotal.toLocaleString()}`}
+                                                        bg="bg-cyan-50/50"
+                                                        color="text-cyan-800"
+                                                    />
                                                     {otherExtra > 0 && (
                                                         <Row
                                                             label="Other Charges"
-                                                            sub={otherExtraCats.join(', ') || 'Nursing, OT, Lab, Misc'}
+                                                            sub={otherExtraCats.join(', ') || 'Nursing, OT, Misc'}
                                                             amount={`₹ ${otherExtra.toLocaleString()}`}
                                                             bg="bg-orange-50/50"
                                                             color="text-orange-800"
