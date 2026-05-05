@@ -1,13 +1,16 @@
 export const formatTime12Hr = (time: any): string => {
   if (!time) return "N/A";
-  if (typeof time === 'string' && (time.toUpperCase().includes('AM') || time.toUpperCase().includes('PM'))) {
+  if (
+    typeof time === "string" &&
+    (time.toUpperCase().includes("AM") || time.toUpperCase().includes("PM"))
+  ) {
     return time.toUpperCase();
   }
   try {
     let date: Date;
     if (time instanceof Date) {
       date = time;
-    } else if (typeof time === 'string') {
+    } else if (typeof time === "string") {
       const timeMatch = time.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
       if (timeMatch) {
         date = new Date();
@@ -21,10 +24,10 @@ export const formatTime12Hr = (time: any): string => {
       date = new Date(time);
     }
     if (isNaN(date.getTime())) return String(time);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      hour12: true 
+    return date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
     });
   } catch {
     return String(time);
@@ -36,7 +39,7 @@ export const generatePayslipHtml = (data: any) => {
   const staff = data.staff || payroll?.user || {};
   const rx = payroll || {};
   const u = staff;
-  const h = hospital
+  const h = hospital;
   const b = rx.breakdown || {};
   const c = rx.ctc || {};
 
@@ -58,9 +61,9 @@ export const generatePayslipHtml = (data: any) => {
 
   const monthName = rx.startDate
     ? new Date(rx.startDate).toLocaleString("default", {
-      month: "short",
-      year: "numeric",
-    })
+        month: "short",
+        year: "numeric",
+      })
     : "Pay Period";
   const fullPeriod =
     rx.startDate && rx.endDate
@@ -725,21 +728,32 @@ export const generateClinicalReceiptHtml = (data: any) => {
           padding: 0;
           background: white;
           font-size: 10px;
-          display: flex;
-          flex-direction: column;
-          min-height: 100vh;
         }
         .receipt-container {
           width: 100%;
-          padding: 4px;
+          padding: 0;
           box-sizing: border-box;
-          display: flex;
-          flex-direction: column;
-          flex: 1;
         }
-        ${headerHtml
-      ? ""
-      : `
+        .print-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        
+        /* Fixed Header/Footer Styles */
+        .header-wrapper {
+          width: 100%;
+        }
+        .footer-wrapper {
+          width: 100%;
+        }
+
+        .print-header-spacer { height: 140px; }
+        .print-footer-spacer { height: 180px; }
+        
+        ${
+          headerHtml
+            ? ""
+            : `
         .hospital-header {
           display: flex;
           align-items: center;
@@ -767,7 +781,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
           font-weight: 500;
         }
         `
-    }
+        }
         .bill-title-row {
           display: flex;
           justify-content: space-between;
@@ -925,10 +939,6 @@ export const generateClinicalReceiptHtml = (data: any) => {
           font-size: 9px;
           color: #1e293b;
         }
-        .footer-wrapper {
-          margin-top: auto;
-          padding-top: 15px;
-        }
         .no-print {
           display: block;
           margin: 20px auto;
@@ -947,6 +957,41 @@ export const generateClinicalReceiptHtml = (data: any) => {
         }
         @media print {
           .no-print { display: none !important; }
+          thead { display: table-header-group; }
+          tfoot { display: table-footer-group; }
+          
+          .header-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 8mm 12mm 0;
+            background: white;
+            z-index: 1000;
+          }
+          
+          .footer-wrapper {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 0 12mm 8mm;
+            background: white;
+            z-index: 1000;
+          }
+
+          @page {
+            size: A4;
+            margin: 0; /* Handled by fixed padding for high precision */
+          }
+          
+          body {
+            padding: 0;
+          }
+          
+          .receipt-container {
+             padding: 0 12mm;
+          }
         }
       </style>
     </head>
@@ -958,15 +1003,17 @@ export const generateClinicalReceiptHtml = (data: any) => {
           }, 500);
         };
       </script>
-      <div class="no-print" style="position: sticky; top: 0; background: white; padding: 10px; z-index: 1000; border-bottom: 2px solid #0f172a;">
+      <div class="no-print" style="background: white; padding: 10px; border-bottom: 2px solid #0f172a; text-align: center;">
          <button onclick="window.close()" class="return-btn" style="width: 100%; max-width: 400px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em;">
             &#8592; CLOSE RECEIPT
          </button>
       </div>
-      <div class="receipt-container">
-        <!-- Hospital Header -->
-        ${headerHtml ||
-    `
+
+      <!-- These wrappers are fixed during print -->
+      <div class="header-wrapper">
+        ${
+          headerHtml ||
+          `
         <div class="hospital-header">
           ${hospital.logo ? `<img src="${hospital.logo}" alt="Logo" style="max-height: 85px; width: auto; object-fit: contain;" />` : ""}
           <div class="hospital-details">
@@ -976,311 +1023,437 @@ export const generateClinicalReceiptHtml = (data: any) => {
           </div>
         </div>
         `
-    }
-
-        <!-- Bill Title Row -->
-        <div class="bill-title-row">
-          <div>
-            <div class="bill-title">
-              ${(patient.dischargeType || data.registrationType === "DISCHARGE") ? "DISCHARGE SUMMARY & BILLING STATEMENT" : (data.registrationType === "IPD" ? "IPD ADMISSION RECEIPT" : "PATIENT REGISTRATION BILL")}
-            </div>
-            <div class="bill-subtitle">
-              ${(patient.dischargeType || data.registrationType === "DISCHARGE") ? "Comprehensive Clinical Summary & Final Invoice" : (data.registrationType === "IPD" ? "Hospital Admission Document" : "Appointment Receipt")}
-            </div>
-          </div>
-          <div class="bill-meta">
-            <div><strong>Date:</strong> ${payment.date ? new Date(payment.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : appointment.date}</div>
-            <div><strong>Booking Time:</strong> ${appointment.bookedAt ? formatTime12Hr(appointment.bookedAt) : new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</div>
-            <div><strong>Receipt No:</strong> ${payment.receiptNumber || payment.receiptNo || appointment.appointmentId}</div>
-          </div>
-        </div>
-
-        <!-- Patient & Appointment Context - High Fidelity Grid -->
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px;">
-            <!-- Patient Identification Card -->
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; position: relative; overflow: hidden;">
-                <div style="position: absolute; top: 0; right: 0; background: #1e293b; color: white; padding: 2px 8px; border-bottom-left-radius: 8px; font-size: 8px; font-weight: 900; letter-spacing: 0.5px;">PATIENT IDENTITY</div>
-                <div style="font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                    ${patient.name}
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <div>
-                        <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">MRN / Mobile</div>
-                        <div style="font-size: 10px; font-weight: 700; color: #1e293b;">${patient.mrn} / ${patient.mobile}</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Age / Gender</div>
-                        <div style="font-size: 10px; font-weight: 700; color: #1e293b;">${patient.age} / ${patient.gender}</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Blood Group</div>
-                        <div style="font-size: 10px; font-weight: 700; color: #e11d48;">${patient.bloodGroup || 'N/A'}</div>
-                    </div>
-                    <div>
-                         <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">DOB</div>
-                         <div style="font-size: 10px; font-weight: 700; color: #1e293b;">${patient.dob ? new Date(patient.dob).toLocaleDateString('en-GB') : 'N/A'}</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Consultant & Schedule Card -->
-            <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px; padding: 12px; position: relative; overflow: hidden;">
-                <div style="position: absolute; top: 0; right: 0; background: #0369a1; color: white; padding: 2px 8px; border-bottom-left-radius: 8px; font-size: 8px; font-weight: 900; letter-spacing: 0.5px;">ENCOUNTER DATA</div>
-                <div style="font-size: 13px; font-weight: 900; color: #0c4a6e; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                    ${appointment.doctorName?.toLowerCase().startsWith("dr") ? appointment.doctorName : `Dr. ${appointment.doctorName || "Assigned Physician"}`}
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                     <div>
-                        <div style="font-size: 8px; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px;">Specialization</div>
-                        <div style="font-size: 10px; font-weight: 700; color: #0c4a6e;">${appointment.specialization || "General Physician"}</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 8px; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px;">Visit Date</div>
-                        <div style="font-size: 10px; font-weight: 700; color: #0c4a6e;">${appointment.date}</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 8px; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px;">Appointment Slot</div>
-                        <div style="font-size: 10px; font-weight: 700; color: #0c4a6e;">${formatTime12Hr(appointment.time || new Date())}</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 8px; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px;">Engagement</div>
-                        <div style="font-size: 10px; font-weight: 700; color: #0c4a6e;">${appointment.type || "CONSULTATION"}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Vital Signs -->
-        ${data.showVitals ? `
-        <div class="section">
-          <div class="section-header">Vital Signs (Current Visit)</div>
-          <table class="vitals-grid">
-            <tr>
-              <th>Height</th>
-              <th>Weight</th>
-              <th>Temp</th>
-              <th>BP</th>
-              <th>Pulse</th>
-              <th>SpO2</th>
-              <th>Glucose</th>
-            </tr>
-            <tr>
-              <td>${patient.vitals?.height ? patient.vitals.height + " cm" : "-"}</td>
-              <td>${patient.vitals?.weight ? patient.vitals.weight + " kg" : "-"}</td>
-              <td>${patient.vitals?.temperature || patient.vitals?.temp ? (patient.vitals?.temperature || patient.vitals?.temp) + " °F" : "-"}</td>
-              <td>${patient.vitals?.bloodPressure || patient.vitals?.bp || "-"}</td>
-              <td>${patient.vitals?.pulse ? patient.vitals.pulse + " bpm" : "-"}</td>
-              <td>${patient.vitals?.spO2 || patient.vitals?.spo2 ? (patient.vitals?.spO2 || patient.vitals?.spo2) + "%" : "-"}</td>
-              <td>${patient.vitals?.glucose || patient.vitals?.sugar ? (patient.vitals?.glucose || patient.vitals?.sugar) + " mg/dL" : "-"}</td>
-            </tr>
-          </table>
-        </div>
-        ` : ""}
-
-        <!-- Medical History & Allergies + Symptoms combined row -->
-        ${((data.showVitals && ((patient.allergies && patient.allergies.length > 0 && patient.allergies !== 'None' && patient.allergies !== 'NONE') ||
-          (patient.medicalHistory && patient.medicalHistory !== 'None' && patient.medicalHistory !== 'NONE' && patient.medicalHistory !== 'CLEAR'))) ||
-          appointment.notes)
-          ? `
-        <div class="section">
-          <div class="section-header">${data.showVitals ? "Medical History, Allergies &amp; Current Symptoms" : "Reason / Symptoms"}</div>
-          <table class="data-grid">
-            ${data.showVitals ? `
-            <tr>
-              ${patient.allergies && patient.allergies.length > 0 && patient.allergies !== 'None' && patient.allergies !== 'NONE'
-            ? `<td class="label" style="color: #e11d48; width:14%;">Allergies:</td>
-                   <td class="value" style="color: #e11d48; width:36%;">
-                     ${Array.isArray(patient.allergies) ? patient.allergies.join(', ') : patient.allergies}
-                   </td>`
-            : `<td class="label" style="width:14%;">Allergies:</td><td class="value" style="width:36%;">-</td>`
-          }
-              ${patient.medicalHistory && patient.medicalHistory !== 'None' && patient.medicalHistory !== 'NONE' && patient.medicalHistory !== 'CLEAR'
-            ? `<td class="label" style="width:14%;">Hist/Issues:</td>
-                   <td class="value" style="width:36%;">${patient.medicalHistory}</td>`
-            : `<td class="label" style="width:14%;">Hist/Issues:</td><td class="value" style="width:36%;">-</td>`
-          }
-            </tr>
-            ` : ''}
-            ${(patient.symptoms || appointment.notes) ? `
-            <tr>
-              <td class="label">Reason / Symptoms:</td>
-              <td colspan="3" class="value">${patient.symptoms || appointment.notes}</td>
-            </tr>` : ''}
-          </table>
-        </div>`
-          : ''
         }
+      </div>
 
-        <!-- Discharge Clinical Summary (Nurse/Doctor Notes) -->
-        ${(patient.dischargeType || data.registrationType === "DISCHARGE" || patient.diagnosis || patient.provisionalDiagnosis || patient.treatmentGiven || patient.adviceAtDischarge || patient.hospitalCourse || patient.investigationsPerformed || patient.surgicalProcedures)
-          ? `
-        <div class="section">
-          <div class="section-header">Clinical Discharge Summary</div>
-          <table class="data-grid">
-            ${(patient.dischargeType || data.registrationType === "DISCHARGE") ? `
-            <tr>
-              <td class="label" style="width:20%; color: #1d4ed8; background-color: #eff6ff;">Discharge Status:</td>
-              <td colspan="3" class="value" style="font-weight: 800; color: #1d4ed8; background-color: #eff6ff;">${patient.dischargeType || 'FINAL DISCHARGE'}</td>
-            </tr>` : ''}
-            
-            ${patient.provisionalDiagnosis ? `
-            <tr>
-              <td class="label" style="width:20%;">Provisional Diag:</td>
-              <td colspan="3" class="value">${patient.provisionalDiagnosis}</td>
-            </tr>` : ''}
-            
-            ${patient.diagnosis ? `
-            <tr>
-              <td class="label" style="width:20%;">Final Diagnosis:</td>
-              <td colspan="3" class="value" style="font-weight: 800; color: #1e293b; text-transform: uppercase;">${patient.diagnosis}</td>
-            </tr>` : ''}
-
-            ${patient.hospitalCourse ? `
-            <tr>
-              <td class="label" style="width:20%;">Hospital Course:</td>
-              <td colspan="3" class="value">${patient.hospitalCourse}</td>
-            </tr>` : ''}
-
-            ${patient.investigationsPerformed ? `
-            <tr>
-              <td class="label" style="width:20%;">Investigations:</td>
-              <td colspan="3" class="value">${patient.investigationsPerformed}</td>
-            </tr>` : ''}
-            
-            ${patient.treatmentGiven ? `
-            <tr>
-              <td class="label" style="width:20%; background-color: #f0fdf4;">Treatment Given:</td>
-              <td colspan="3" class="value" style="background-color: #f0fdf4;">${patient.treatmentGiven}</td>
-            </tr>` : ''}
-
-            ${patient.surgicalProcedures ? `
-            <tr>
-              <td class="label" style="width:20%;">Procedures Done:</td>
-              <td colspan="3" class="value">${patient.surgicalProcedures}</td>
-            </tr>` : ''}
-
-            ${patient.medicationsPrescribed ? `
-            <tr>
-              <td class="label" style="width:20%; background-color: #f0fdf4; color: #15803d;">Meds @ Discharge:</td>
-              <td colspan="3" class="value" style="font-family: inherit; white-space: pre-wrap; background-color: #f0fdf4; font-weight: 700;">${patient.medicationsPrescribed}</td>
-            </tr>` : ''}
-            
-            ${patient.adviceAtDischarge || patient.activityRestrictions || patient.dietInstructions ? `
-            <tr>
-              <td class="label" style="width:20%;">Discharge Advice:</td>
-              <td colspan="3" class="value">
-                ${patient.adviceAtDischarge ? `<div style="margin-bottom: 6px;"><strong>General Advice:</strong> ${patient.adviceAtDischarge}</div>` : ''}
-                ${patient.activityRestrictions ? `<div style="margin-bottom: 6px;"><strong>Physical Activity:</strong> ${patient.activityRestrictions}</div>` : ''}
-                ${patient.dietInstructions ? `<div style="margin-bottom: 6px;"><strong>Dietary Instructions:</strong> ${patient.dietInstructions}</div>` : ''}
-              </td>
-            </tr>` : ''}
-
-            ${patient.followUpDate || patient.followUpInstructions || patient.warningSigns ? `
-            <tr style="background-color: #fffbeb;">
-              <td class="label" style="width:20%; border-top: 2px solid #f59e0b; background-color: #fef3c7; color: #92400e;">Follow-up & Emergency:</td>
-              <td colspan="3" class="value" style="border-top: 2px solid #f59e0b;">
-                ${patient.followUpDate ? `<div style="font-weight: 900; color: #92400e; margin-bottom: 4px; font-size: 11px;">NEXT VISIT: ${new Date(patient.followUpDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} at ${formatTime12Hr(patient.followUpDate)}</div>` : ''}
-                ${patient.followUpInstructions ? `<div style="margin-bottom: 4px; font-weight: 600;">${patient.followUpInstructions}</div>` : ''}
-                ${patient.warningSigns ? `<div style="color: #b91c1c; font-size: 10px; font-weight: 900; padding: 6px; background-color: #fee2e2; border-radius: 4px; border: 1px solid #fecaca; margin-top: 4px;">⚠️ EMERGENCY WARNING SIGNS: ${patient.warningSigns.toUpperCase()}</div>` : ''}
-              </td>
-            </tr>` : ''}
-
-            ${patient.conditionAtDischarge ? `
-            <tr>
-              <td class="label" style="width:20%; background-color: #f0fdf4; color: #166534;">Final Condition:</td>
-              <td colspan="3" class="value" style="font-weight: 900; color: #166534; background-color: #f0fdf4; text-transform: uppercase;">${patient.conditionAtDischarge}</td>
-            </tr>` : ''}
-          </table>
-        </div>`
-          : ''
-        }
-
-        <!-- Payment Summary -->
-        ${data.showVitals ? `
-        <div class="section">
-          <div class="section-header">Payment Summary</div>
-          <table class="payment-table">
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th style="text-align: right;">Amount (Rupees)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${(patient.dischargeType || data.registrationType === "DISCHARGE" || (appointment.type && (appointment.type.includes("Settlement") || appointment.type.includes("Discharge"))))
-      ? `
-                <tr>
-                  <td style="font-weight: bold; color: #475569;">Advance Amount</td>
-                  <td style="text-align: right;">₹ ${Math.round(payment.advanceAmount || 0).toLocaleString()}</td>
-                </tr>
-                <tr>
-                  <td style="font-weight: bold; color: #475569;">Remaining Amount Paid</td>
-                  <td style="text-align: right;">₹ ${Math.round(payment.remainingPaid || 0).toLocaleString()}</td>
-                </tr>
-                <tr>
-                  <td style="font-weight: bold; color: #1e40af;">Total Amount</td>
-                  <td style="text-align: right; font-weight: bold; color: #1e40af;">₹ ${Math.round(payment.totalPaidAmount || (payment.advanceAmount || 0) + (payment.remainingPaid || 0)).toLocaleString()}</td>
-                </tr>
-                ${payment.balance > 0 ? `
-                <tr style="background-color: #fef2f2;">
-                  <td style="font-weight: bold; color: #b91c1c;">BALANCE DUE (UNPAID)</td>
-                  <td style="text-align: right; font-weight: 900; color: #b91c1c;">₹ ${Math.round(payment.balance).toLocaleString()}</td>
-                </tr>` : ""}
-                <tr class="total-row">
-                  <td>TOTAL BILL AMOUNT</td>
-                  <td style="text-align: right;">₹ ${Math.round(payment.totalBillAmount || 0).toLocaleString()}</td>
-                </tr>
-              `
-      : data.registrationType === "IPD"
-        ? `
-                <tr>
-                  <td style="font-weight: bold; color: #475569;">Amount Paid (IPD)</td>
-                  <td style="text-align: right; font-weight: bold;">₹ ${Math.round(payment.totalPaidAmount || payment.advanceAmount || payment.amount || 0).toLocaleString()}</td>
-                </tr>
-                <tr class="total-row">
-                  <td>TOTAL BILL AMOUNT</td>
-                  <td style="text-align: right;">₹ ${Math.round(payment.totalBillAmount || payment.amount || 0).toLocaleString()}</td>
-                </tr>
-              `
-        : `
-                <tr>
-                  <td style="font-weight: bold; color: #475569;">Paid Amount (OPD)</td>
-                  <td style="text-align: right;">₹ ${Math.round(payment.amount || payment.totalPaidAmount || 0).toLocaleString()}</td>
-                </tr>
-                <tr class="total-row">
-                  <td>TOTAL AMOUNT</td>
-                  <td style="text-align: right;">₹ ${Math.round(payment.amount || payment.totalPaidAmount || 0).toLocaleString()}</td>
-                </tr>
-              `
-    }
-            </tbody>
-          </table>
-          <div class="payment-footer">
-            <div>Payment Method: ${payment.method || payment.mode || "N/A"}</div>
-            <div class="${payment?.status?.toUpperCase() === "PAID" ? "status-paid" : ""}">Payment Status: ${payment?.status || "Unknown"}</div>
-          </div>
-        </div>
-        ` : ""}
-
-        <!-- Footer -->
-        <div class="footer-wrapper">
-          ${footerHtml ||
-    `
-          <div class="footer">
-            <div style="flex: 1;">
-              <p style="margin: 0; font-weight: 700;">PREPARED BY: ${patient.preparedBy || "System Administrator"}</p>
-              <p style="margin: 4px 0 0 0;">This is a computer-generated document and does not require a physical signature.</p>
-              <p style="margin: 2px 0 0 0;">Print Date: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} at ${formatTime12Hr(new Date())}</p>
-            </div>
-            <div class="signatory-box">
-              <div class="sign-line"></div>
-              <div class="authorized-text">Authorized Signatory</div>
-              <div style="font-size: 8px; font-weight: 600; color: #64748b; margin-top: 2px;">${hospital.name.toUpperCase()}</div>
-            </div>
-          </div>
+      <div class="footer-wrapper">
+        ${
+          footerHtml ||
           `
-    }
+        <div class="footer">
+          <div style="flex: 1;">
+            <p style="margin: 0; font-weight: 700;">PREPARED BY: ${patient.preparedBy || "System Administrator"}</p>
+            <p style="margin: 4px 0 0 0;">This is a computer-generated document and does not require a physical signature.</p>
+            <p style="margin: 2px 0 0 0;">Print Date: ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} at ${formatTime12Hr(new Date())}</p>
+          </div>
+          <div class="signatory-box">
+            <div class="sign-line"></div>
+            <div class="authorized-text">Authorized Signatory</div>
+            <div style="font-size: 8px; font-weight: 600; color: #64748b; margin-top: 2px;">${hospital.name.toUpperCase()}</div>
+          </div>
         </div>
+        `
+        }
+      </div>
+
+      <div class="receipt-container">
+        <table class="print-table">
+          <thead>
+            <tr>
+              <td>
+                <!-- Reserved space for fixed header -->
+                <div class="print-header-spacer"></div>
+              </td>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr>
+              <td>
+                <!-- Bill Title Row -->
+                <div class="bill-title-row">
+                  <div>
+                    <div class="bill-title">
+                      ${patient.dischargeType || data.registrationType === "DISCHARGE" ? "DISCHARGE SUMMARY & BILLING STATEMENT" : data.registrationType === "IPD" ? "IPD ADMISSION RECEIPT" : "PATIENT REGISTRATION BILL"}
+                    </div>
+                    <div class="bill-subtitle">
+                      ${patient.dischargeType || data.registrationType === "DISCHARGE" ? "Comprehensive Clinical Summary & Final Invoice" : data.registrationType === "IPD" ? "Hospital Admission Document" : "Appointment Receipt"}
+                    </div>
+                  </div>
+                  <div class="bill-meta">
+                    <div><strong>Date:</strong> ${payment.date ? new Date(payment.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : appointment.date}</div>
+                    <div><strong>Booking Time:</strong> ${appointment.bookedAt ? formatTime12Hr(appointment.bookedAt) : new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}</div>
+                    <div><strong>Receipt No:</strong> ${payment.receiptNumber || payment.receiptNo || appointment.appointmentId}</div>
+                  </div>
+                </div>
+
+                <!-- Patient & Appointment Context -->
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px;">
+                    <!-- Patient Identification Card -->
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; position: relative; overflow: hidden;">
+                        <div style="position: absolute; top: 0; right: 0; background: #1e293b; color: white; padding: 2px 8px; border-bottom-left-radius: 8px; font-size: 8px; font-weight: 900; letter-spacing: 0.5px;">PATIENT IDENTITY</div>
+                        <div style="font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                            ${patient.name}
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <div>
+                                <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">MRN / Mobile</div>
+                                <div style="font-size: 10px; font-weight: 700; color: #1e293b;">${patient.mrn} / ${patient.mobile}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Age / Gender</div>
+                                <div style="font-size: 10px; font-weight: 700; color: #1e293b;">${patient.age} / ${patient.gender}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Blood Group</div>
+                                <div style="font-size: 10px; font-weight: 700; color: #e11d48;">${patient.bloodGroup || "N/A"}</div>
+                            </div>
+                            <div>
+                                 <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">DOB</div>
+                                 <div style="font-size: 10px; font-weight: 700; color: #1e293b;">${patient.dob ? new Date(patient.dob).toLocaleDateString("en-GB") : "N/A"}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Consultant & Schedule Card -->
+                    <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px; padding: 12px; position: relative; overflow: hidden;">
+                        <div style="position: absolute; top: 0; right: 0; background: #0369a1; color: white; padding: 2px 8px; border-bottom-left-radius: 8px; font-size: 8px; font-weight: 900; letter-spacing: 0.5px;">ENCOUNTER DATA</div>
+                        <div style="font-size: 13px; font-weight: 900; color: #0c4a6e; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                            ${appointment.doctorName?.toLowerCase().startsWith("dr") ? appointment.doctorName : `Dr. ${appointment.doctorName || "Assigned Physician"}`}
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                             <div>
+                                <div style="font-size: 8px; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px;">Specialization</div>
+                                <div style="font-size: 10px; font-weight: 700; color: #0c4a6e;">${appointment.specialization || "General Physician"}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 8px; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px;">Visit Date</div>
+                                <div style="font-size: 10px; font-weight: 700; color: #0c4a6e;">${appointment.date}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 8px; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px;">Appointment Slot</div>
+                                <div style="font-size: 10px; font-weight: 700; color: #0c4a6e;">${formatTime12Hr(appointment.time || new Date())}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 8px; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px;">Engagement</div>
+                                <div style="font-size: 10px; font-weight: 700; color: #0c4a6e;">${appointment.type || "CONSULTATION"}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vital Signs -->
+                ${
+                  data.showVitals
+                    ? `
+                <div class="section">
+                  <div class="section-header">Vital Signs (Current Visit)</div>
+                  <table class="vitals-grid">
+                    <tr>
+                      <th>Height</th>
+                      <th>Weight</th>
+                      <th>Temp</th>
+                      <th>BP</th>
+                      <th>Pulse</th>
+                      <th>SpO2</th>
+                      <th>Glucose</th>
+                    </tr>
+                    <tr>
+                      <td>${patient.vitals?.height ? patient.vitals.height + " cm" : "-"}</td>
+                      <td>${patient.vitals?.weight ? patient.vitals.weight + " kg" : "-"}</td>
+                      <td>${patient.vitals?.temperature || patient.vitals?.temp ? (patient.vitals?.temperature || patient.vitals?.temp) + " °F" : "-"}</td>
+                      <td>${patient.vitals?.bloodPressure || patient.vitals?.bp || "-"}</td>
+                      <td>${patient.vitals?.pulse ? patient.vitals.pulse + " bpm" : "-"}</td>
+                      <td>${patient.vitals?.spO2 || patient.vitals?.spo2 ? (patient.vitals?.spO2 || patient.vitals?.spo2) + "%" : "-"}</td>
+                      <td>${patient.vitals?.glucose || patient.vitals?.sugar ? (patient.vitals?.glucose || patient.vitals?.sugar) + " mg/dL" : "-"}</td>
+                    </tr>
+                  </table>
+                </div>
+                `
+                    : ""
+                }
+
+                <!-- Reason / Symptoms -->
+                ${
+                  (data.showVitals &&
+                    ((patient.allergies &&
+                      patient.allergies.length > 0 &&
+                      patient.allergies !== "None" &&
+                      patient.allergies !== "NONE") ||
+                      (patient.medicalHistory &&
+                        patient.medicalHistory !== "None" &&
+                        patient.medicalHistory !== "NONE" &&
+                        patient.medicalHistory !== "CLEAR"))) ||
+                  appointment.notes
+                    ? `
+                <div class="section">
+                  <div class="section-header">${data.showVitals ? "Medical History, Allergies &amp; Current Symptoms" : "Reason / Symptoms"}</div>
+                  <table class="data-grid">
+                    ${
+                      data.showVitals
+                        ? `
+                    <tr>
+                      ${
+                        patient.allergies &&
+                        patient.allergies.length > 0 &&
+                        patient.allergies !== "None" &&
+                        patient.allergies !== "NONE"
+                          ? `<td class="label" style="color: #e11d48; width:14%;">Allergies:</td>
+                           <td class="value" style="color: #e11d48; width:36%;">
+                             ${Array.isArray(patient.allergies) ? patient.allergies.join(", ") : patient.allergies}
+                           </td>`
+                          : `<td class="label" style="width:14%;">Allergies:</td><td class="value" style="width:36%;">-</td>`
+                      }
+                      ${
+                        patient.medicalHistory &&
+                        patient.medicalHistory !== "None" &&
+                        patient.medicalHistory !== "NONE" &&
+                        patient.medicalHistory !== "CLEAR"
+                          ? `<td class="label" style="width:14%;">Hist/Issues:</td>
+                           <td class="value" style="width:36%;">${patient.medicalHistory}</td>`
+                          : `<td class="label" style="width:14%;">Hist/Issues:</td><td class="value" style="width:36%;">-</td>`
+                      }
+                    </tr>
+                    `
+                        : ""
+                    }
+                    ${
+                      patient.symptoms || appointment.notes
+                        ? `
+                    <tr>
+                      <td class="label">Reason / Symptoms:</td>
+                      <td colspan="3" class="value">${patient.symptoms || appointment.notes}</td>
+                    </tr>`
+                        : ""
+                    }
+                  </table>
+                </div>`
+                    : ""
+                }
+
+                <!-- Discharge Clinical Summary -->
+                ${
+                  patient.dischargeType ||
+                  data.registrationType === "DISCHARGE" ||
+                  patient.diagnosis ||
+                  patient.provisionalDiagnosis ||
+                  patient.treatmentGiven ||
+                  patient.adviceAtDischarge ||
+                  patient.hospitalCourse ||
+                  patient.investigationsPerformed ||
+                  patient.surgicalProcedures
+                    ? `
+                <div class="section">
+                  <div class="section-header">Clinical Discharge Summary</div>
+                  <table class="data-grid">
+                    ${
+                      patient.dischargeType || data.registrationType === "DISCHARGE"
+                        ? `
+                    <tr>
+                      <td class="label" style="width:20%; color: #1d4ed8; background-color: #eff6ff;">Discharge Status:</td>
+                      <td colspan="3" class="value" style="font-weight: 800; color: #1d4ed8; background-color: #eff6ff;">${patient.dischargeType || "FINAL DISCHARGE"}</td>
+                    </tr>`
+                        : ""
+                    }
+                    
+                    ${
+                      patient.provisionalDiagnosis
+                        ? `
+                    <tr>
+                      <td class="label" style="width:20%;">Provisional Diag:</td>
+                      <td colspan="3" class="value">${patient.provisionalDiagnosis}</td>
+                    </tr>`
+                        : ""
+                    }
+                    
+                    ${
+                      patient.diagnosis
+                        ? `
+                    <tr>
+                      <td class="label" style="width:20%;">Final Diagnosis:</td>
+                      <td colspan="3" class="value" style="font-weight: 800; color: #1e293b; text-transform: uppercase;">${patient.diagnosis}</td>
+                    </tr>`
+                        : ""
+                    }
+
+                    ${
+                      patient.hospitalCourse
+                        ? `
+                    <tr>
+                      <td class="label" style="width:20%;">Hospital Course:</td>
+                      <td colspan="3" class="value">${patient.hospitalCourse}</td>
+                    </tr>`
+                        : ""
+                    }
+
+                    ${
+                      patient.investigationsPerformed
+                        ? `
+                    <tr>
+                      <td class="label" style="width:20%;">Investigations:</td>
+                      <td colspan="3" class="value">${patient.investigationsPerformed}</td>
+                    </tr>`
+                        : ""
+                    }
+                    
+                    ${
+                      patient.treatmentGiven
+                        ? `
+                    <tr>
+                      <td class="label" style="width:20%; background-color: #f0fdf4;">Treatment Given:</td>
+                      <td colspan="3" class="value" style="background-color: #f0fdf4;">${patient.treatmentGiven}</td>
+                    </tr>`
+                        : ""
+                    }
+
+                    ${
+                      patient.surgicalProcedures
+                        ? `
+                    <tr>
+                      <td class="label" style="width:20%;">Procedures Done:</td>
+                      <td colspan="3" class="value">${patient.surgicalProcedures}</td>
+                    </tr>`
+                        : ""
+                    }
+
+                    ${
+                      patient.medicationsPrescribed
+                        ? `
+                    <tr>
+                      <td class="label" style="width:20%; background-color: #f0fdf4; color: #15803d;">Meds @ Discharge:</td>
+                      <td colspan="3" class="value" style="font-family: inherit; white-space: pre-wrap; background-color: #f0fdf4; font-weight: 700;">${patient.medicationsPrescribed}</td>
+                    </tr>`
+                        : ""
+                    }
+                    
+                    ${
+                      patient.adviceAtDischarge ||
+                      patient.activityRestrictions ||
+                      patient.dietInstructions
+                        ? `
+                    <tr>
+                      <td class="label" style="width:20%;">Discharge Advice:</td>
+                      <td colspan="3" class="value">
+                        ${patient.adviceAtDischarge ? `<div style="margin-bottom: 6px;"><strong>General Advice:</strong> ${patient.adviceAtDischarge}</div>` : ""}
+                        ${patient.activityRestrictions ? `<div style="margin-bottom: 6px;"><strong>Physical Activity:</strong> ${patient.activityRestrictions}</div>` : ""}
+                        ${patient.dietInstructions ? `<div style="margin-bottom: 6px;"><strong>Dietary Instructions:</strong> ${patient.dietInstructions}</div>` : ""}
+                      </td>
+                    </tr>`
+                        : ""
+                    }
+
+                    ${
+                      patient.followUpDate ||
+                      patient.followUpInstructions ||
+                      patient.warningSigns
+                        ? `
+                    <tr style="background-color: #fffbeb;">
+                      <td class="label" style="width:20%; border-top: 2px solid #f59e0b; background-color: #fef3c7; color: #92400e;">Follow-up & Emergency:</td>
+                      <td colspan="3" class="value" style="border-top: 2px solid #f59e0b;">
+                        ${patient.followUpDate ? `<div style="font-weight: 900; color: #92400e; margin-bottom: 4px; font-size: 11px;">NEXT VISIT: ${new Date(patient.followUpDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} at ${formatTime12Hr(patient.followUpDate)}</div>` : ""}
+                        ${patient.followUpInstructions ? `<div style="margin-bottom: 4px; font-weight: 600;">${patient.followUpInstructions}</div>` : ""}
+                        ${patient.warningSigns ? `<div style="color: #b91c1c; font-size: 10px; font-weight: 900; padding: 6px; background-color: #fee2e2; border-radius: 4px; border: 1px solid #fecaca; margin-top: 4px;">⚠️ EMERGENCY WARNING SIGNS: ${patient.warningSigns.toUpperCase()}</div>` : ""}
+                      </td>
+                    </tr>`
+                        : ""
+                    }
+
+                    ${
+                      patient.conditionAtDischarge
+                        ? `
+                    <tr>
+                      <td class="label" style="width:20%; background-color: #f0fdf4; color: #166534;">Final Condition:</td>
+                      <td colspan="3" class="value" style="font-weight: 900; color: #166534; background-color: #f0fdf4; text-transform: uppercase;">${patient.conditionAtDischarge}</td>
+                    </tr>`
+                        : ""
+                    }
+                  </table>
+                </div>`
+                    : ""
+                }
+
+                <!-- Payment Summary -->
+                ${
+                  data.showVitals
+                    ? `
+                <div class="section">
+                  <div class="section-header">Payment Summary</div>
+                  <table class="payment-table">
+                    <thead>
+                      <tr>
+                        <th>Description</th>
+                        <th style="text-align: right;">Amount (Rupees)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${
+                        patient.dischargeType ||
+                        data.registrationType === "DISCHARGE" ||
+                        (appointment.type &&
+                          (appointment.type.includes("Settlement") ||
+                            appointment.type.includes("Discharge")))
+                          ? `
+                        <tr>
+                          <td style="font-weight: bold; color: #475569;">Advance Amount</td>
+                          <td style="text-align: right;">₹ ${Math.round(payment.advanceAmount || 0).toLocaleString()}</td>
+                        </tr>
+                        <tr>
+                          <td style="font-weight: bold; color: #475569;">Remaining Amount Paid</td>
+                          <td style="text-align: right;">₹ ${Math.round(payment.remainingPaid || 0).toLocaleString()}</td>
+                        </tr>
+                        <tr>
+                          <td style="font-weight: bold; color: #1e40af;">Total Amount</td>
+                          <td style="text-align: right; font-weight: bold; color: #1e40af;">₹ ${Math.round(payment.totalPaidAmount || (payment.advanceAmount || 0) + (payment.remainingPaid || 0)).toLocaleString()}</td>
+                        </tr>
+                        ${
+                          payment.balance > 0
+                            ? `
+                        <tr style="background-color: #fef2f2;">
+                          <td style="font-weight: bold; color: #b91c1c;">BALANCE DUE (UNPAID)</td>
+                          <td style="text-align: right; font-weight: 900; color: #b91c1c;">₹ ${Math.round(payment.balance).toLocaleString()}</td>
+                        </tr>`
+                            : ""
+                        }
+                        <tr class="total-row">
+                          <td>TOTAL BILL AMOUNT</td>
+                          <td style="text-align: right;">₹ ${Math.round(payment.totalBillAmount || 0).toLocaleString()}</td>
+                        </tr>
+                      `
+                          : data.registrationType === "IPD"
+                            ? `
+                        <tr>
+                          <td style="font-weight: bold; color: #475569;">Amount Paid (IPD)</td>
+                          <td style="text-align: right; font-weight: bold;">₹ ${Math.round(payment.totalPaidAmount || payment.advanceAmount || payment.amount || 0).toLocaleString()}</td>
+                        </tr>
+                        <tr class="total-row">
+                          <td>TOTAL BILL AMOUNT</td>
+                          <td style="text-align: right;">₹ ${Math.round(payment.totalBillAmount || payment.amount || 0).toLocaleString()}</td>
+                        </tr>
+                      `
+                            : `
+                        <tr>
+                          <td style="font-weight: bold; color: #475569;">Paid Amount (OPD)</td>
+                          <td style="text-align: right;">₹ ${Math.round(payment.amount || payment.totalPaidAmount || 0).toLocaleString()}</td>
+                        </tr>
+                        <tr class="total-row">
+                          <td>TOTAL AMOUNT</td>
+                          <td style="text-align: right;">₹ ${Math.round(payment.amount || payment.totalPaidAmount || 0).toLocaleString()}</td>
+                        </tr>
+                      `
+                      }
+                    </tbody>
+                  </table>
+                  <div class="payment-footer">
+                    <div>Payment Method: ${payment.method || payment.mode || "N/A"}</div>
+                    <div class="${payment?.status?.toUpperCase() === "PAID" ? "status-paid" : ""}">Payment Status: ${payment?.status || "Unknown"}</div>
+                  </div>
+                </div>
+                `
+                    : ""
+                }
+              </td>
+            </tr>
+          </tbody>
+
+          <tfoot>
+            <tr>
+              <td>
+                <!-- Reserved space for fixed footer -->
+                <div class="print-footer-spacer"></div>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
     </body>
     </html>
@@ -1473,8 +1646,9 @@ export const generatePrescriptionHtml = (data: any) => {
                     </button>
                 </div>
                 <div class="container">
-                    ${headerHtml ||
-    `
+                    ${
+                      headerHtml ||
+                      `
                     <div class="header">
                         <div class="brand">
                             ${hospital.logo ? `<img src="${hospital.logo}" style="max-height: 70px; width: auto; object-fit: contain;" />` : ""}
@@ -1486,7 +1660,7 @@ export const generatePrescriptionHtml = (data: any) => {
                         </div>
                     </div>
                     `
-    }
+                    }
 
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 1px solid #000; padding-bottom: 10px;">
                         <div style="font-size: 16px; font-weight: 700; text-transform: uppercase; color: #1e40af;">PRESCRIPTION</div>
@@ -1515,15 +1689,16 @@ export const generatePrescriptionHtml = (data: any) => {
                         </div>
                     </div>
 
-                    ${prescription.diagnosis
-      ? `
+                    ${
+                      prescription.diagnosis
+                        ? `
                     <div class="diagnosis-box">
                         <span class="diagnosis-label">Diagnosis:</span>
                         <span class="diagnosis-val">${prescription.diagnosis}</span>
                     </div>
                     `
-      : ""
-    }
+                        : ""
+                    }
 
                     <div class="section-label">Medications</div>
                     <table>
@@ -1538,8 +1713,8 @@ export const generatePrescriptionHtml = (data: any) => {
                         </thead>
                         <tbody>
                             ${medicines
-      .map(
-        (med: any) => `
+                              .map(
+                                (med: any) => `
                             <tr>
                                 <td>
                                     <div class="med-name">${med.name}</div>
@@ -1550,39 +1725,42 @@ export const generatePrescriptionHtml = (data: any) => {
                                 <td class="med-meta">${med.quantity || "-"}</td>
                             </tr>
                             `,
-      )
-      .join("")}
+                              )
+                              .join("")}
                         </tbody>
                     </table>
 
                     <div class="advice-grid">
-                        ${dietAdvice.length > 0
-      ? `
+                        ${
+                          dietAdvice.length > 0
+                            ? `
                         <div>
                             <div class="section-label" style="border-bottom: 1px solid #eee; margin-top: 10px;">Advice</div>
                             <ul class="advice-list">
                                 ${dietAdvice
-        .filter((i: string) => i.trim())
-        .map((d: string) => `<li>${d}</li>`)
-        .join("")}
+                                  .filter((i: string) => i.trim())
+                                  .map((d: string) => `<li>${d}</li>`)
+                                  .join("")}
                             </ul>
                         </div>
                         `
-      : ""
-    }
+                            : ""
+                        }
                     </div>
 
-                    ${prescription.advice
-      ? `
+                    ${
+                      prescription.advice
+                        ? `
                     <div class="follow-up">
                         <strong>Advice / Follow Up:</strong> ${prescription.advice}
                     </div>
                     `
-      : ""
-    }
+                        : ""
+                    }
 
-                    ${footerHtml ||
-    `
+                    ${
+                      footerHtml ||
+                      `
                     <div class="footer">
                         <div class="footer-l">
                             <span>Generated by MsCurechain Systems</span>
@@ -1594,7 +1772,7 @@ export const generatePrescriptionHtml = (data: any) => {
                         </div>
                     </div>
                     `
-    }
+                    }
                 </div>
             </body>
             </html>
@@ -1775,15 +1953,16 @@ export const generateLabTokenHtml = (data: any) => {
                 </button>
             </div>
             <div class="container">
-              ${headerHtml ||
-    `
+              ${
+                headerHtml ||
+                `
               <div class="header">
                   <h1 style="color: #9333ea; margin: 0; font-size: 24px;">LAB REQUISITION</h1>
                   <h2 style="margin: 8px 0; font-size: 18px;">${hospital.name || "CureChain Medical Center"}</h2>
                   <p style="margin: 4px 0; font-size: 12px; color: #6b7280;">Department of Pathology & Radiodiagnosis</p>
               </div>
               `
-    }
+              }
 
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 16px; background: #fff; border: 1.5px solid #f1f5f9; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
                   <div>
@@ -1817,9 +1996,9 @@ export const generateLabTokenHtml = (data: any) => {
                 </thead>
                 <tbody>
                   ${tests
-      .filter((t: any) => t.name.trim())
-      .map(
-        (test: any, idx: number) => `
+                    .filter((t: any) => t.name.trim())
+                    .map(
+                      (test: any, idx: number) => `
                     <tr>
                       <td>${idx + 1}</td>
                       <td>${test.name}</td>
@@ -1828,18 +2007,19 @@ export const generateLabTokenHtml = (data: any) => {
                       <td>Rupees ${(parseFloat(String(test.price || test.testPrice || test.amount || test.test?.price || test.testId?.price || 0)) || 0).toFixed(2)}</td>
                     </tr>
                   `,
-      )
-      .join("")}
+                    )
+                    .join("")}
                 </tbody>
               </table>
 
-              ${notes
-      ? `<div style="background: #fdfaff; padding: 16px; border-left: 4px solid #9333ea; margin: 24px 0; border-radius: 0 8px 8px 0;">
+              ${
+                notes
+                  ? `<div style="background: #fdfaff; padding: 16px; border-left: 4px solid #9333ea; margin: 24px 0; border-radius: 0 8px 8px 0;">
                 <p style="margin: 0; font-weight: 800; font-size: 13px; color: #9333ea; text-transform: uppercase; letter-spacing: 0.5px;">Physician Remarks:</p>
                 <p style="margin: 8px 0 0 0; font-style: italic; color: #475569; line-height: 1.5;">${notes}</p>
               </div>`
-      : ""
-    }
+                  : ""
+              }
 
               <div class="footer-push">
                 <div style="text-align: right; margin-top: 50px;">
@@ -1847,13 +2027,14 @@ export const generateLabTokenHtml = (data: any) => {
                   <p style="margin: 0; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #475569;">Medical Officer Signature</p>
                 </div>
 
-                ${footerHtml ||
-      `
+                ${
+                  footerHtml ||
+                  `
                 <div style="border-top: 1px solid #e5e7eb; margin-top: 40px; padding-top: 8px; text-align: center; font-size: 8px; color: #9ca3af;">
-                  <p style="margin: 0;">Generated by MsCureChain • ${new Date().toLocaleDateString('en-GB')} at ${formatTime12Hr(new Date())}</p>
+                  <p style="margin: 0;">Generated by MsCureChain • ${new Date().toLocaleDateString("en-GB")} at ${formatTime12Hr(new Date())}</p>
                 </div>
                 `
-      }
+                }
               </div>
             </div>
           </body>
@@ -1862,7 +2043,16 @@ export const generateLabTokenHtml = (data: any) => {
 };
 
 export const generateQualityReportHtml = (data: any) => {
-  const { metrics, trends, month, year, hospital, targets, headerHtml, footerHtml } = data;
+  const {
+    metrics,
+    trends,
+    month,
+    year,
+    hospital,
+    targets,
+    headerHtml,
+    footerHtml,
+  } = data;
   const T = targets || {
     opdWaitingTime: 30,
     bedOccupancyMin: 80,
@@ -1946,9 +2136,12 @@ export const generateQualityReportHtml = (data: any) => {
       };
     </script>
     <body onload="window.print();">
-      ${headerHtml || `<div class="header">
+      ${
+        headerHtml ||
+        `<div class="header">
         <h1 class="title">${hospital?.name || "CureChain Hospital"}</h1>
-      </div>`}
+      </div>`
+      }
 
       <div style="text-align: center; margin-top: 10px; margin-bottom: 20px;">
         <div style="font-size: 16px; font-weight: 800; color: #0f172a; text-transform: uppercase;">NABH QUALITY INDICATOR AUDIT REPORT</div>
@@ -2007,7 +2200,17 @@ export const generateQualityReportHtml = (data: any) => {
             <td><strong>Bed Occupancy Rate</strong><br><span style="color:#64748b; font-size:8px">Utilized vs Available Beds</span></td>
             <td>${T.bedOccupancyMin}-${T.bedOccupancyMax}%</td>
             <td style="font-weight:700">${indicators.bedOccupancyRate || 0}%</td>
-            <td>${(() => { const v = indicators.bedOccupancyRate || 0; const ok = v >= T.bedOccupancyMin && v <= T.bedOccupancyMax; const cls = ok ? 'success' : 'danger'; const lbl = ok ? 'COMPLIANT' : (v < T.bedOccupancyMin ? 'LOW OCCUPANCY' : 'NON-COMPLIANT'); return `<span class="status-text ${cls}">${lbl}</span>`; })()}</td>
+            <td>${(() => {
+              const v = indicators.bedOccupancyRate || 0;
+              const ok = v >= T.bedOccupancyMin && v <= T.bedOccupancyMax;
+              const cls = ok ? "success" : "danger";
+              const lbl = ok
+                ? "COMPLIANT"
+                : v < T.bedOccupancyMin
+                  ? "LOW OCCUPANCY"
+                  : "NON-COMPLIANT";
+              return `<span class="status-text ${cls}">${lbl}</span>`;
+            })()}</td>
           </tr>
           <tr>
             <td><strong>Avg Length of Stay (ALOS)</strong><br><span style="color:#64748b; font-size:8px">Admission to Discharge</span></td>
@@ -2021,7 +2224,8 @@ export const generateQualityReportHtml = (data: any) => {
             <td style="font-weight:700">${indicators.billingTat || 0} min</td>
             <td>${(() => {
               const v = indicators.billingTat;
-              if (v === undefined || v === null || v === 0) return `<span class="status-text warning">NO DATA</span>`;
+              if (v === undefined || v === null || v === 0)
+                return `<span class="status-text warning">NO DATA</span>`;
               return `<span class="status-text ${v < T.billingTat ? "success" : "danger"}">${v < T.billingTat ? "COMPLIANT" : "NON-COMPLIANT"}</span>`;
             })()}</td>
           </tr>
@@ -2029,7 +2233,12 @@ export const generateQualityReportHtml = (data: any) => {
             <td><strong>Incident Rate</strong><br><span style="color:#64748b; font-size:8px">${useRawIncidents ? "Total reported incidents this month" : "Per 1000 Patient Days"}</span></td>
             <td>&lt; ${useRawIncidents ? `${T.incidentCountMax} /mo` : `${T.incidentRateMax}\u2030`}</td>
             <td style="font-weight:700">${useRawIncidents ? metrics?.rawCounts?.totalIncidents || 0 : indicators.incidentRate || 0}${useRawIncidents ? "" : "\u2030"}</td>
-            <td>${(() => { const compliant = useRawIncidents ? (metrics?.rawCounts?.totalIncidents || 0) < T.incidentCountMax : (indicators.incidentRate || 0) < T.incidentRateMax; return `<span class="status-text ${compliant ? 'success' : 'danger'}">${compliant ? 'COMPLIANT' : 'NON-COMPLIANT'}</span>`; })()}</td>
+            <td>${(() => {
+              const compliant = useRawIncidents
+                ? (metrics?.rawCounts?.totalIncidents || 0) < T.incidentCountMax
+                : (indicators.incidentRate || 0) < T.incidentRateMax;
+              return `<span class="status-text ${compliant ? "success" : "danger"}">${compliant ? "COMPLIANT" : "NON-COMPLIANT"}</span>`;
+            })()}</td>
           </tr>
           <tr>
             <td><strong>Readmission Rate</strong><br><span style="color:#64748b; font-size:8px">Same Diagnosis within 30 days</span></td>
@@ -2075,11 +2284,219 @@ export const generateQualityReportHtml = (data: any) => {
       </div>
 
       <div style="margin-top: auto;">
-        ${footerHtml || `<div class="footer">
-          CureChain Hospital Management System | Generated on ${new Date().toLocaleDateString('en-GB')} at ${formatTime12Hr(new Date())}
-        </div>`}
+        ${
+          footerHtml ||
+          `<div class="footer">
+          CureChain Hospital Management System | Generated on ${new Date().toLocaleDateString("en-GB")} at ${formatTime12Hr(new Date())}
+        </div>`
+        }
       </div>
     </body>
     </html>
   `;
 };
+
+export const generateBlankLetterheadHtml = (data: any) => {
+  const { hospital } = data;
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Official Letterhead - ${hospital.name}</title>
+      <meta charset="UTF-8">
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        
+        @media print {
+          @page {
+            size: A4;
+            margin: 0;
+          }
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-print-color-adjust: exact;
+          }
+          .no-print { display: none !important; }
+        }
+
+        body {
+          font-family: 'Inter', sans-serif;
+          color: #1e293b;
+          line-height: 1.3;
+          margin: 0;
+          padding: 0;
+          background: white;
+          font-size: 10px;
+        }
+
+        /* Repeating Branding Elements */
+        .page-header {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          padding: 8mm 10mm 0;
+          background: white;
+          z-index: 1000;
+        }
+
+        .page-footer {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          padding: 0 10mm 8mm;
+          background: white;
+          z-index: 1000;
+        }
+
+        /* EXACT Header Style from Clinical Receipt (Lines 747-772) */
+        .hospital-header {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          margin-bottom: 10px;
+          border-bottom: 2px solid #1e293b;
+          padding-bottom: 10px;
+        }
+        .hospital-details {
+          text-align: left;
+          flex: 1;
+        }
+        .hospital-name {
+          font-size: 24px;
+          font-weight: 900;
+          margin: 0;
+          text-transform: uppercase;
+          color: #1e293b;
+          letter-spacing: -0.5px;
+        }
+        .hospital-info {
+          font-size: 10px;
+          margin: 2px 0;
+          color: #64748b;
+          font-weight: 500;
+        }
+
+        /* EXACT Footer Style from Clinical Receipt (Lines 906-931) */
+        .footer {
+          padding-top: 8px;
+          border-top: 2px solid #1e293b;
+          font-size: 9.5px;
+          color: #64748b;
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: space-between;
+          align-items: flex-end;
+          gap: 10px;
+        }
+        .signatory-box {
+          text-align: center;
+        }
+        .sign-line {
+          width: 180px;
+          border-bottom: 1px solid #1e293b;
+          margin-bottom: 8px;
+        }
+        .authorized-text {
+          font-weight: 800;
+          text-transform: uppercase;
+          font-size: 9px;
+          color: #1e293b;
+        }
+
+        /* Spacing Logic for Multi-page */
+        .report-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        .header-space { height: 135px; }
+        .footer-space { height: 110px; }
+
+        .content-area {
+          padding: 10px 10mm;
+          min-height: 400px;
+        }
+
+        .no-print {
+          position: sticky;
+          top: 0;
+          background: white;
+          padding: 15px;
+          z-index: 2000;
+          border-bottom: 2px solid #0f172a;
+          text-align: center;
+        }
+        .print-btn {
+          padding: 10px 24px;
+          background-color: #0f172a;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-weight: bold;
+          cursor: pointer;
+          font-size: 14px;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+        }
+      </style>
+    </head>
+    <body onload="window.print()">
+      <div class="no-print">
+        <button onclick="window.print()" class="print-btn">PRINT HOSPITAL TEMPLATE</button>
+        <button onclick="window.close()" class="print-btn" style="background-color: #64748b; margin-left: 10px;">CLOSE WINDOW</button>
+      </div>
+
+      <!-- Static Page Header -->
+      <div class="page-header">
+        <div class="hospital-header">
+          ${hospital.logo ? `<img src="${hospital.logo}" alt="Logo" style="max-height: 85px; width: auto; object-fit: contain;" />` : ""}
+          <div class="hospital-details">
+            <h1 class="hospital-name">${hospital.name}</h1>
+            <p class="hospital-info">${hospital.address || ""}</p>
+            <p class="hospital-info">${hospital.contact ? `Phone: ${hospital.contact}` : ""} ${hospital.email ? ` | Email: ${hospital.email}` : ""}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Static Page Footer -->
+      <div class="page-footer">
+        <div class="footer">
+          <div style="flex: 1;">
+            <p style="margin: 0; font-weight: 700;">HOSPITAL MANAGEMENT SYSTEM</p>
+            <p style="margin: 4px 0 0 0;">Official Branded Hospital Letterhead</p>
+            <p style="margin: 2px 0 0 0;">Generated on ${new Date().toLocaleDateString("en-GB")} at ${formatTime12Hr(new Date())}</p>
+          </div>
+          <div class="signatory-box">
+            <div class="sign-line"></div>
+            <div class="authorized-text">Authorized Signatory</div>
+            <div style="font-size: 8px; font-weight: 600; color: #64748b; margin-top: 2px;">${hospital.name.toUpperCase()}</div>
+          </div>
+        </div>
+      </div>
+
+      <table class="report-table">
+        <thead>
+          <tr><td><div class="header-space"></div></td></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="content-area">
+                <!-- Blank Content Area -->
+              </div>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr><td><div class="footer-space"></div></td></tr>
+        </tfoot>
+      </table>
+    </body>
+    </html>
+  `;
+};
+
+

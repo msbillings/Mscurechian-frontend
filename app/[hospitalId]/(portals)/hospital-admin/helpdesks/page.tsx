@@ -9,7 +9,7 @@ import {
   Headphones, Plus, Edit2, Trash2, Phone, Mail, Search,
   Copy, Check, KeyRound, Eye, EyeOff, ShieldCheck, ShieldOff, AlertCircle, CheckCircle2,
 } from "lucide-react";
-import { Modal, ConfirmModal, FormInput, FormTextarea } from "@/components/admin";
+import { Modal, ConfirmModal } from "@/components/admin";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Helpdesk {
@@ -98,7 +98,6 @@ export default function HelpdeskManagement() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
 
-  const [isEditModalOpen,   setIsEditModalOpen]   = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isCredModalOpen,   setIsCredModalOpen]   = useState(false);
 
@@ -197,32 +196,9 @@ export default function HelpdeskManagement() {
 
   // ── Edit / Delete / Reset ──────────────────────────────────────────────────
   const handleEditClick = (h: Helpdesk) => {
-    setSelectedHelpdesk(h);
-    setFormData({ ...EMPTY_FORM(), honorific: (h as any).honorific || "Mr", name: h.name||"", email: h.email||"", mobile: h.mobile||"", notes: h.additionalNotes||"", employeeId: (h as any).employeeId || "" });
-    setErrors({}); setTouched({});
-    setIsEditModalOpen(true);
+    router.push(`/${hospitalId}/hospital-admin/helpdesks/${h._id}/edit`);
   };
 
-  const onUpdateHelpdesk = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedHelpdesk) return;
-    if (!formData.name.trim()) return void toast.error("Name is required");
-    if (!formData.employeeId || !formData.employeeId.trim()) return void toast.error("Employee ID is required");
-    if (!/^[a-zA-Z\s.'-]+$/.test(formData.name.trim())) return void toast.error("Name has invalid characters");
-    if (!formData.mobile || formData.mobile.length !== 10) return void toast.error("Mobile must be exactly 10 digits");
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) return void toast.error("Invalid email");
-    if (formData.password && formData.password.length < 6) return void toast.error("Password must be at least 6 chars");
-    try {
-      setLoading(true);
-      const payload: any = { honorific: formData.honorific, name: formData.name.trim(), email: formData.email.trim(), mobile: formData.mobile, additionalNotes: formData.notes, employeeId: formData.employeeId.trim() };
-      if (formData.password) payload.password = formData.password;
-      await hospitalAdminService.updateHelpdesk(selectedHelpdesk._id, payload);
-      toast.success("Details updated");
-      setIsEditModalOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['helpdesks'] });
-    } catch (err: any) { toast.error(err.message || "Update failed"); }
-    finally { setLoading(false); }
-  };
 
   const handleToggleStatus = async (h: Helpdesk) => {
     const isActivating = h.status === 'inactive';
@@ -509,33 +485,6 @@ export default function HelpdeskManagement() {
         </div>
       </Modal>
 
-      {/* ─── Edit Modal ────────────────────────────────────────────────────── */}
-      <Modal isOpen={isEditModalOpen} onClose={()=>setIsEditModalOpen(false)} title="Edit Staff Details" maxWidth="max-w-md">
-        <form onSubmit={onUpdateHelpdesk} noValidate className="space-y-4 pt-2">
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700">Honorific<span className="text-rose-500 ml-0.5">*</span></label>
-            <select name="honorific" value={formData.honorific} onChange={e=>set('honorific',e.target.value)} required
-              className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/10 outline-none">
-              <option value="Mr">Mr</option><option value="Mrs">Mrs</option><option value="Ms">Ms</option><option value="Dr">Dr</option>
-            </select>
-          </div>
-          <FormInput label="Display Name" value={formData.name} onChange={e=>set('name',e.target.value)} required/>
-          <FormInput label="Employee ID" value={formData.employeeId} onChange={e=>set('employeeId',e.target.value)} required/>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormInput label="Email" type="email" value={formData.email} onChange={e=>set('email',e.target.value)}/>
-            <FormInput label="Mobile" value={formData.mobile} onChange={e=>set('mobile',e.target.value)}/>
-          </div>
-          <FormInput label="Update Password (Optional)" type="password" placeholder="Min. 6 characters" value={formData.password} onChange={e=>set('password',e.target.value)}/>
-          <FormTextarea label="Internal Notes" value={formData.notes} onChange={e=>set('notes',(e as any).target.value)} rows={2} maxLength={500}/>
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={()=>setIsEditModalOpen(false)} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">Cancel</button>
-            <button type="submit" disabled={loading}
-              className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium shadow-sm hover:bg-blue-700 transition-all disabled:opacity-60">
-              {loading?"Saving...":"Save Changes"}
-            </button>
-          </div>
-        </form>
-      </Modal>
 
       {/* ─── Delete Confirm ─────────────────────────────────────────────────── */}
       <ConfirmModal

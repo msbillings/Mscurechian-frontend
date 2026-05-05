@@ -12,7 +12,9 @@ import {
     CheckCircle2,
     LogIn,
     LogOut,
+    FileText
 } from "lucide-react";
+import { generateBlankLetterheadHtml } from "@/lib/print-utils";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
 import {
@@ -22,7 +24,8 @@ import {
     useCheckIn,
     useCheckOut,
     useTodayStatus,
-    useAppointments
+    useAppointments,
+    useHelpdeskProfile
 } from "@/lib/integrations/hooks";
 import { AttendanceModal } from "@/components/attendance/AttendanceModal";
 import { HelpdeskDashboardSkeleton } from "@/components/ui/skeletons";
@@ -110,6 +113,7 @@ function HelpdeskDashboard() {
     const todayAttendance = attendanceResponse?.attendance;
     const checkInMutation = useCheckIn();
     const checkOutMutation = useCheckOut();
+    const { data: helpdeskProfile } = useHelpdeskProfile();
 
     const handleCheckIn = useCallback(async () => {
         try {
@@ -435,6 +439,22 @@ function HelpdeskDashboard() {
             toast.error("Update Failed");
         }
     }, [updateStatusMutation]);
+    
+    const handlePrintLetterhead = useCallback(() => {
+        if (!helpdeskProfile?.hospital) {
+            toast.error("Hospital data not loaded yet");
+            return;
+        }
+
+        const printWindow = window.open("", "_blank");
+        if (printWindow) {
+            const html = generateBlankLetterheadHtml({
+                hospital: helpdeskProfile.hospital
+            });
+            printWindow.document.write(html);
+            printWindow.document.close();
+        }
+    }, [helpdeskProfile]);
 
     // ✅ Only show skeleton on true initial load (not on cached data)
     const showSkeleton = (dashboardLoading && !dashboardData) || (doctorsLoading && !doctorsData);
@@ -524,6 +544,14 @@ function HelpdeskDashboard() {
                         aria-label="Refresh Dashboard"
                     >
                         <RefreshCw size={10} className="sm:size-[16px]" />
+                    </button>
+                    <button
+                        onClick={handlePrintLetterhead}
+                        className="flex items-center gap-0.5 sm:gap-2 px-2 sm:px-5 py-1.5 sm:py-2.5 bg-white border border-slate-200 text-slate-600 rounded-lg sm:rounded-xl text-[7.5px] sm:text-[10px] font-bold uppercase tracking-widest hover:border-teal-500 hover:text-teal-600 shadow-sm"
+                    >
+                        <FileText size={10} className="sm:size-[16px]" />
+                        <span className="hidden md:inline">Print Letterhead</span>
+                        <span className="md:hidden">Template</span>
                     </button>
                     <Link
                         href="/helpdesk/patient-registration"

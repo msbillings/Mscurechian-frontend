@@ -294,6 +294,22 @@ export const hospitalAdminService = {
   getHelpdesks: () =>
     apiClient<{ helpdesks: Helpdesk[] }>(HOSPITAL_ADMIN_ENDPOINTS.HELPDESKS),
 
+  getHelpdeskById: async (id: string) => {
+    const profile: any = await apiClient(
+      HOSPITAL_ADMIN_ENDPOINTS.HELPDESK_DETAIL(id),
+      { skipCache: true }
+    );
+    const user = profile.user || {};
+    return {
+      helpdesk: {
+        ...profile,
+        ...user,
+        _id: user._id || profile._id,
+        loginId: profile.loginId || user.loginId || profile.logid || `HELP-${id.slice(-4)}`
+      }
+    };
+  },
+
   createHelpdesk: async (data: CreateHospitalHelpdeskRequest) => {
     const res = await apiClient<Helpdesk>(
       HOSPITAL_ADMIN_ENDPOINTS.CREATE_HELPDESK,
