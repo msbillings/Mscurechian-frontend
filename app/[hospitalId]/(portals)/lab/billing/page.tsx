@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useRef, useTransition } from 'react';
+import React, { useState, useRef, useTransition, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Save, Printer, CheckCircle, ArrowRight, X, Check } from 'lucide-react';
+import { Save, Printer, CheckCircle, X, Check, Search, User } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { LabBillingService } from '@/lib/integrations/services/labBilling.service';
 import { BillItem, PatientDetails, BillPayload } from '@/lib/integrations/types/labBilling';
@@ -14,6 +14,7 @@ import { LabTestService } from '@/lib/integrations/services/labTest.service';
 import { LabTest } from '@/lib/integrations/types/labTest';
 import { LabSampleService } from '@/lib/integrations/services/labSample.service';
 import { clearApiCache, invalidateCachePattern } from '@/lib/integrations/api/apiClient';
+import { patientService } from '@/lib/integrations/services/patient.service';
 
 function LabBillingPage() {
     const router = useRouter();
@@ -27,6 +28,62 @@ function LabBillingPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [closing, setClosing] = useState(false);
     const [isNavigating, startNavigation] = useTransition();
+
+    // Patient name autocomplete state
+    const [patientSuggestions, setPatientSuggestions] = useState<Array<{ _id: string; name: string; mobile: string; email?: string; age?: number; ageUnit?: string; gender?: string }>>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [searchingPatients, setSearchingPatients] = useState(false);
+    const patientSearchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const suggestionRef = useRef<HTMLDivElement>(null);
+
+    // Debounced patient search
+    const handlePatientNameChange = useCallback((value: string) => {
+        setPatient(prev => ({ ...prev, name: value }));
+        if (patientSearchDebounce.current) clearTimeout(patientSearchDebounce.current);
+        if (value.trim().length < 2) {
+            setPatientSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+        patientSearchDebounce.current = setTimeout(async () => {
+            setSearchingPatients(true);
+            try {
+                const res = await patientService.searchPatients(value.trim());
+                setPatientSuggestions(res.patients || []);
+                setShowSuggestions((res.patients || []).length > 0);
+            } catch {
+                setPatientSuggestions([]);
+                setShowSuggestions(false);
+            } finally {
+                setSearchingPatients(false);
+            }
+        }, 350);
+    }, []);
+
+    // Select a patient from suggestions and auto-fill fields
+    const handleSelectPatient = useCallback((p: { _id: string; name: string; mobile: string; email?: string; age?: number; ageUnit?: string; gender?: string }) => {
+        setPatient(prev => ({
+            ...prev,
+            name: p.name,
+            mobile: p.mobile || prev.mobile,
+            age: p.age ?? prev.age,
+            ageUnit: (p.ageUnit as any) || prev.ageUnit,
+            gender: (p.gender as any) || prev.gender,
+        }));
+        setPatientSuggestions([]);
+        setShowSuggestions(false);
+    }, []);
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (suggestionRef.current && !suggestionRef.current.contains(e.target as Node)) {
+                setShowSuggestions(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // Fetch tests on load
     React.useEffect(() => {
@@ -337,14 +394,43 @@ function LabBillingPage() {
                             <h3 className="text-base font-semibold text-gray-900 dark:text-white">Patient Information</h3>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
+                            <div className="space-y-1.5 relative" ref={suggestionRef}>
                                 <label className="text-xs font-medium text-gray-500">Patient Name</label>
-                                <input
-                                    placeholder="Enter full name"
-                                    className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-medium"
-                                    value={patient.name}
-                                    onChange={e => setPatient({ ...patient, name: e.target.value })}
-                                />
+                                <div className="relative">
+                                    <input
+                                        placeholder="Search registered patient..."
+                                        className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg pl-9 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-medium"
+                                        value={patient.name}
+                                        onChange={e => handlePatientNameChange(e.target.value)}
+                                        onFocus={() => patient.name.length >= 2 && patientSuggestions.length > 0 && setShowSuggestions(true)}
+                                        autoComplete="off"
+                                    />
+                                    <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                        {searchingPatients
+                                            ? <div className="w-4 h-4 border-2 border-indigo-400/40 border-t-indigo-500 rounded-full animate-spin" />
+                                            : <Search size={15} />}
+                                    </div>
+                                </div>
+                                {showSuggestions && patientSuggestions.length > 0 && (
+                                    <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden max-h-52 overflow-y-auto">
+                                        {patientSuggestions.map(p => (
+                                            <button
+                                                key={p._id}
+                                                type="button"
+                                                onMouseDown={() => handleSelectPatient(p)}
+                                                className="w-full text-left px-4 py-2.5 flex items-center gap-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors group border-b border-gray-100 dark:border-gray-700 last:border-0"
+                                            >
+                                                <div className="flex-shrink-0 w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
+                                                    <User size={13} className="text-indigo-600 dark:text-indigo-400" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{p.name}</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">{p.mobile}</p>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-xs font-medium text-gray-500">Mobile Number</label>

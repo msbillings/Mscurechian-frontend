@@ -1,4 +1,4 @@
-﻿import { PATIENT_ENDPOINTS } from "../config";
+import { PATIENT_ENDPOINTS } from "../config";
 import { apiClient } from "../api";
 import type {
   PatientProfile,
@@ -42,7 +42,7 @@ export const patientService = {
     const params = new URLSearchParams({ query });
     if (hospital) params.append("hospital", hospital);
     return apiClient<{
-      patients: Array<{ _id: string; name: string; patientId: string }>;
+      patients: Array<{ _id: string; name: string; mobile: string; email?: string; age?: number; ageUnit?: string; gender?: string }>;
     }>(`/patients/search?${params.toString()}`);
   },
 
