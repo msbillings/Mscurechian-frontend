@@ -353,4 +353,36 @@ export const helpdeskService = {
    */
   getAnnouncements: () =>
     apiClient<{ announcements: any[] }>(DOCTOR_ENDPOINTS.ANNOUNCEMENTS),
+
+  /**
+   * Save a transaction report (JSON summary)
+   * @param data Report data including charges and totals
+   */
+  saveTransactionReport: (data: {
+    patientId: string;
+    reportData: any;
+    totals: {
+      grandTotal: number;
+      totalPaid: number;
+      balance: number;
+    };
+    generatedBy?: string;
+  }) =>
+    apiClient<any>("/reports/transaction-reports", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  /**
+   * Get all saved transaction reports for a patient
+   * @param patientId Patient ID
+   */
+  getPatientTransactionReports: (patientId: string) =>
+    apiClient<any[]>(`/reports/transaction-reports/patient/${patientId}`),
+
+  /**
+   * Get all saved transaction reports for the hospital
+   */
+  getAllTransactionReports: () =>
+    apiClient<any[]>("/reports/transaction-reports"),
 };

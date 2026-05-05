@@ -14,7 +14,8 @@ import {
     Bell,
     Headphones,
     ShieldCheck,
-    Clock
+    Clock,
+    FileText
 } from "lucide-react";
 import { helpdeskService } from '@/lib/integrations/services/helpdesk.service';
 import { useParams } from "next/navigation";
@@ -36,6 +37,7 @@ const helpdeskMenu: any[] = [
     { icon: AlertCircle, label: "Emergency Cases", path: "/helpdesk/emergency-accept" },
     { icon: ClipboardList, label: "Discharge Queue", path: "/helpdesk/discharge" },
     { icon: Bell, label: "Hospital Announcements", path: "/helpdesk/announcements" },
+    { icon: FileText, label: "Transaction Reports", path: "/frontdesk/transaction-reports" },
 ];
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {

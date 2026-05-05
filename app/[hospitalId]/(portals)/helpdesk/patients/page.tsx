@@ -11,7 +11,8 @@ import {
     Activity,
     ExternalLink,
     RefreshCw,
-    Printer
+    Printer,
+    CreditCard
 } from "lucide-react";
 import { helpdeskService, useHelpdeskPatients } from "@/lib/integrations";
 import toast from "react-hot-toast";
@@ -34,6 +35,7 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 
 export default function PatientsPage() {
     const router = useRouter();
+    const params = useParams();
     const [searchTerm, setSearchTerm] = useState("");
     const [page, setPage] = useState(1);
     const limit = 10; // Changed from 20 to 5 to show pagination with fewer patients
@@ -496,6 +498,13 @@ export default function PatientsPage() {
                                                                 title="Print Receipt"
                                                             >
                                                                 <Printer size={14} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => router.push(`/${params.hospitalId}/frontdesk/transaction-reports?patientId=${patientId}`)}
+                                                                className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                                                                title="Transaction Report"
+                                                            >
+                                                                <CreditCard size={14} />
                                                             </button>
                                                             <button
                                                                 onClick={() => router.push(`/helpdesk/appointment-booking?patientId=${patientId}`)}
