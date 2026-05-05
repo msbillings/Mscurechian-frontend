@@ -13,6 +13,7 @@ import {
   Headphones,
   Bell,
   ShieldCheck,
+  BedDouble,
 } from "lucide-react";
 import LicenseLock from "@/components/License/LicenseLock";
 import LogoutModal from "@/components/auth/LogoutModal";
@@ -38,6 +39,7 @@ const hrMenuLinks = [
   { icon: Stethoscope, label: "Doctors", path: "/hr/hospital/doctors" },
   { icon: Users, label: "Nursing Registry", path: "/hr/hospital/nurses" },
   { icon: Headphones, label: "Helpdesk", path: "/hr/hospital/helpdesk" },
+  { icon: BedDouble, label: "Inpatients", path: "/hr/inpatients" },
   { icon: Bell, label: "Announcements", path: "/hr/announcements" },
 ];
 

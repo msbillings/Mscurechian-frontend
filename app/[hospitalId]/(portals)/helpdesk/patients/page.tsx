@@ -185,8 +185,24 @@ export default function PatientsPage() {
                 vitals: adm.vitals
             }));
 
+            // 3. De-duplicate IPD records (Hide the "Appointment" row if an "Admission" row exists for the same ID)
+            const admissionIds = new Set(transformedIPD.map((a: any) => a.appointmentId || a.admissionId || a._id));
+            
+            const filteredOPD = opdAppointments.filter((apt: any) => {
+                if (apt.type === 'IPD' || apt.registrationType === 'IPD') {
+                    // Check both the professional ID and the internal admission ID/Object ID
+                    const aptId = apt.appointmentId;
+                    const admId = apt.admissionId;
+                    const objId = apt._id;
+                    
+                    // If we find a match in the admission list for ANY of these identifiers, skip this row
+                    return !admissionIds.has(aptId) && !admissionIds.has(admId) && !admissionIds.has(objId);
+                }
+                return true;
+            });
+
             // Merge and sort by date (most recent first)
-            const allHistory = [...opdAppointments, ...transformedIPD].sort((a, b) =>
+            const allHistory = [...filteredOPD, ...transformedIPD].sort((a, b) =>
                 new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime()
             );
 
