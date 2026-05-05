@@ -133,6 +133,7 @@ export default function AppointmentBooking() {
 
     const [vitalsErrors, setVitalsErrors] = useState<Record<string, string>>({});
     const [admissionErrors, setAdmissionErrors] = useState<Record<string, string>>({});
+    const [showVitals, setShowVitals] = useState(true);
 
     const validateVital = (field: string, value: string) => {
         if (!value) return ''; // All vitals are optional
@@ -498,7 +499,7 @@ export default function AppointmentBooking() {
         if (bookingMode === 'slot' && !selectedSlot) return false;
 
         const hasEmptyRequired = false; // Vitals are no longer required
-        const hasVitalErrors = Object.values(vitalsErrors).some(err => !!err);
+        const hasVitalErrors = showVitals && Object.values(vitalsErrors).some(err => !!err);
 
         const hasNotesLimit = notes.length > 400;
         const hasEmptyNotes = notes.trim().length === 0; // Check if reason/notes is empty
@@ -593,7 +594,7 @@ export default function AppointmentBooking() {
                 emergencyContact: selectedPatient.emergencyContact || selectedPatient.profile?.alternateNumber,
                 allergies: Array.isArray(selectedPatient.allergies) ? selectedPatient.allergies.join(', ') : selectedPatient.allergies,
                 medicalHistory: selectedPatient.medicalHistory,
-                vitals: {
+                vitals: showVitals ? {
                     bp: vitals.bp || undefined,
                     temperature: vitals.temperature || undefined,
                     pulse: vitals.pulse || undefined,
@@ -601,6 +602,14 @@ export default function AppointmentBooking() {
                     height: vitals.height || undefined,
                     weight: vitals.weight || undefined,
                     glucose: vitals.glucose || undefined
+                } : {
+                    bp: undefined,
+                    temperature: undefined,
+                    pulse: undefined,
+                    spo2: undefined,
+                    height: undefined,
+                    weight: undefined,
+                    glucose: undefined
                 }
             };
 
@@ -631,7 +640,7 @@ export default function AppointmentBooking() {
                     diet: admissionData.diet,
                     clinicalNotes: admissionData.clinicalNotes,
                     reason: notes, // Pass the primary symptoms/reason for visit
-                    vitals: {
+                    vitals: showVitals ? {
                         height: vitals.height,
                         weight: vitals.weight,
                         bloodPressure: vitals.bp,
@@ -639,6 +648,14 @@ export default function AppointmentBooking() {
                         pulse: vitals.pulse,
                         spO2: vitals.spo2,
                         glucose: vitals.glucose
+                    } : {
+                        height: '',
+                        weight: '',
+                        bloodPressure: '',
+                        temperature: '',
+                        pulse: '',
+                        spO2: '',
+                        glucose: ''
                     },
                     amount: parseFloat(ipdFee),
                     paymentMethod: paymentMethod,
@@ -710,7 +727,7 @@ export default function AppointmentBooking() {
                         ? Array.from(new Set(selectedPatient.allergies)).join(', ')
                         : Array.from(new Set((selectedPatient.allergies || '').split(',').map((s: string) => s.trim()).filter(Boolean))).join(', '),
                     medicalHistory: Array.from(new Set((selectedPatient.medicalHistory || '').split(',').map((s: string) => s.trim()).filter(Boolean))).join(', '),
-                    vitals: {
+                    vitals: showVitals ? {
                         height: vitals.height,
                         weight: vitals.weight,
                         bp: vitals.bp,
@@ -718,6 +735,14 @@ export default function AppointmentBooking() {
                         pulse: vitals.pulse,
                         spo2: vitals.spo2,
                         glucose: vitals.glucose
+                    } : {
+                        height: '',
+                        weight: '',
+                        bp: '',
+                        temperature: '',
+                        pulse: '',
+                        spo2: '',
+                        glucose: ''
                     }
                 },
                 appointment: {
@@ -748,6 +773,7 @@ export default function AppointmentBooking() {
                     receiptNumber: appointment.payment?.receiptNumber || appointment.receiptNumber
                 },
                 registrationType: registrationType,
+                showVitals: showVitals,
                 headerHtml: headerHtml,
                 footerHtml: footerHtml,
                 returnUrl: '/helpdesk'
@@ -1184,16 +1210,57 @@ export default function AppointmentBooking() {
                                 </div>
 
                                 <div className="space-y-4">
-                                    <FormLabel label="Vital Indicators (Triage)" />
-                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                        <VitalField label="Height (cm)" value={vitals.height} placeholder="170" error={vitalsErrors.height} onChange={(v) => handleVitalChange('height', v)} />
-                                        <VitalField label="Weight (kg)" value={vitals.weight} placeholder="70" error={vitalsErrors.weight} onChange={(v) => handleVitalChange('weight', v)} />
-                                        <VitalField label="BP (mmHg)" value={vitals.bp} placeholder="120/80" error={vitalsErrors.bp} onChange={(v) => handleVitalChange('bp', v)} />
-                                        <VitalField label="Pulse (bpm)" value={vitals.pulse} placeholder="72" error={vitalsErrors.pulse} onChange={(v) => handleVitalChange('pulse', v)} />
-                                        <VitalField label="Temp (°F)" value={vitals.temperature} placeholder="98.6" error={vitalsErrors.temperature} onChange={(v) => handleVitalChange('temperature', v)} />
-                                        <VitalField label="SpO2 (%)" value={vitals.spo2} placeholder="99" error={vitalsErrors.spo2} onChange={(v) => handleVitalChange('spo2', v)} />
-                                        <VitalField label="Glucose (mg/dL)" value={vitals.glucose} placeholder="100" error={vitalsErrors.glucose} onChange={(v) => handleVitalChange('glucose', v)} />
+                                    <div className="flex items-center justify-between px-1">
+                                        <FormLabel label="Vital Indicators (Triage)" />
+                                        <div className="flex items-center gap-3 bg-slate-50/50 px-3 py-2 rounded-2xl border border-slate-100 shadow-sm">
+                                            <span className={`text-[8px] font-black uppercase tracking-[0.15em] transition-colors duration-300 ${showVitals ? 'text-teal-600' : 'text-slate-400'}`}>
+                                                {showVitals ? 'Vitals Active' : 'Vitals Disabled'}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowVitals(!showVitals)}
+                                                className={`group relative w-9 h-5 rounded-full p-1 transition-all duration-500 outline-none ${showVitals ? 'bg-teal-500 shadow-[0_0_12px_rgba(20,184,166,0.4)]' : 'bg-slate-300'}`}
+                                            >
+                                                <motion.div
+                                                    className="w-3 h-3 bg-white rounded-full shadow-md"
+                                                    animate={{ x: showVitals ? 16 : 0 }}
+                                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                                />
+                                            </button>
+                                        </div>
                                     </div>
+                                    <AnimatePresence mode="wait">
+                                        {showVitals && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0, y: -10 }}
+                                                animate={{ height: 'auto', opacity: 1, y: 0 }}
+                                                exit={{ height: 0, opacity: 0, y: -10 }}
+                                                transition={{ duration: 0.3, ease: "circOut" }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-2">
+                                                    <VitalField label="Height (cm)" value={vitals.height} placeholder="170" error={vitalsErrors.height} onChange={(v) => handleVitalChange('height', v)} />
+                                                    <VitalField label="Weight (kg)" value={vitals.weight} placeholder="70" error={vitalsErrors.weight} onChange={(v) => handleVitalChange('weight', v)} />
+                                                    <VitalField label="BP (mmHg)" value={vitals.bp} placeholder="120/80" error={vitalsErrors.bp} onChange={(v) => handleVitalChange('bp', v)} />
+                                                    <VitalField label="Pulse (bpm)" value={vitals.pulse} placeholder="72" error={vitalsErrors.pulse} onChange={(v) => handleVitalChange('pulse', v)} />
+                                                    <VitalField label="Temp (°F)" value={vitals.temperature} placeholder="98.6" error={vitalsErrors.temperature} onChange={(v) => handleVitalChange('temperature', v)} />
+                                                    <VitalField label="SpO2 (%)" value={vitals.spo2} placeholder="99" error={vitalsErrors.spo2} onChange={(v) => handleVitalChange('spo2', v)} />
+                                                    <VitalField label="Glucose (mg/dL)" value={vitals.glucose} placeholder="100" error={vitalsErrors.glucose} onChange={(v) => handleVitalChange('glucose', v)} />
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                    {!showVitals && (
+                                        <div className="p-8 border-2 border-dashed border-slate-100 rounded-[20px] bg-slate-50/30 flex flex-col items-center justify-center text-center gap-3 animate-in fade-in zoom-in-95 duration-500">
+                                            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-300">
+                                                <Activity size={20} />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Clinical Vitals are bypassed</p>
+                                                <p className="text-[8px] font-medium text-slate-400 mt-1 uppercase tracking-wider">Receipt will show empty clinical indicators</p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </section>

@@ -1051,6 +1051,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
         </div>
 
         <!-- Vital Signs -->
+        ${data.showVitals ? `
         <div class="section">
           <div class="section-header">Vital Signs (Current Visit)</div>
           <table class="vitals-grid">
@@ -1074,15 +1075,17 @@ export const generateClinicalReceiptHtml = (data: any) => {
             </tr>
           </table>
         </div>
+        ` : ""}
 
         <!-- Medical History & Allergies + Symptoms combined row -->
-        ${((patient.allergies && patient.allergies.length > 0 && patient.allergies !== 'None' && patient.allergies !== 'NONE') ||
-          (patient.medicalHistory && patient.medicalHistory !== 'None' && patient.medicalHistory !== 'NONE' && patient.medicalHistory !== 'CLEAR') ||
+        ${((data.showVitals && ((patient.allergies && patient.allergies.length > 0 && patient.allergies !== 'None' && patient.allergies !== 'NONE') ||
+          (patient.medicalHistory && patient.medicalHistory !== 'None' && patient.medicalHistory !== 'NONE' && patient.medicalHistory !== 'CLEAR'))) ||
           appointment.notes)
           ? `
         <div class="section">
-          <div class="section-header">Medical History, Allergies &amp; Current Symptoms</div>
+          <div class="section-header">${data.showVitals ? "Medical History, Allergies &amp; Current Symptoms" : "Reason / Symptoms"}</div>
           <table class="data-grid">
+            ${data.showVitals ? `
             <tr>
               ${patient.allergies && patient.allergies.length > 0 && patient.allergies !== 'None' && patient.allergies !== 'NONE'
             ? `<td class="label" style="color: #e11d48; width:14%;">Allergies:</td>
@@ -1097,6 +1100,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
             : `<td class="label" style="width:14%;">Hist/Issues:</td><td class="value" style="width:36%;">-</td>`
           }
             </tr>
+            ` : ''}
             ${(patient.symptoms || appointment.notes) ? `
             <tr>
               <td class="label">Reason / Symptoms:</td>
@@ -1192,6 +1196,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
         }
 
         <!-- Payment Summary -->
+        ${data.showVitals ? `
         <div class="section">
           <div class="section-header">Payment Summary</div>
           <table class="payment-table">
@@ -1255,6 +1260,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
             <div class="${payment?.status?.toUpperCase() === "PAID" ? "status-paid" : ""}">Payment Status: ${payment?.status || "Unknown"}</div>
           </div>
         </div>
+        ` : ""}
 
         <!-- Footer -->
         <div class="footer-wrapper">
