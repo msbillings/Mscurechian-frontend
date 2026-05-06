@@ -49,6 +49,22 @@ const IPDLedgerDocument: React.FC<IPDLedgerDocumentProps> = ({ summary, hospital
     const refundDue = balanceDue < 0 ? Math.abs(balanceDue) : 0;
     const displayBalance = Math.max(0, balanceDue);
 
+    // Breakdown of Payments for Summary
+    const admissionAdvance = advanceItems
+        .filter((a: any) => a.isVirtual || a.description?.toLowerCase().includes("opening advance") || a.description?.toLowerCase().includes("admission fee"))
+        .reduce((sum: number, a: any) => sum + (a.transactionType === 'Refund' ? -a.amount : a.amount), 0);
+
+    const labPaid = advanceItems
+        .filter((a: any) => a.description?.toLowerCase().includes("lab payment"))
+        .reduce((sum: number, a: any) => sum + (a.transactionType === 'Refund' ? -a.amount : a.amount), 0);
+
+    const pharmaPaid = advanceItems
+        .filter((a: any) => a.description?.toLowerCase().includes("pharmacy payment"))
+        .reduce((sum: number, a: any) => sum + (a.transactionType === 'Refund' ? -a.amount : a.amount), 0);
+
+    const totalSettlement = financials.totalSettlement || 0;
+    const otherAdvances = Math.max(0, totalDeposits - admissionAdvance - labPaid - pharmaPaid);
+
     return (
         <div className="print-block bg-white relative flex flex-col overflow-hidden text-[#1e293b] text-[11px] leading-relaxed mx-auto box-border" style={{
             width: '210mm',
@@ -142,7 +158,10 @@ const IPDLedgerDocument: React.FC<IPDLedgerDocumentProps> = ({ summary, hospital
                             <tbody>
                                 {doctorCharges.map((item: any, idx: number) => (
                                     <tr key={idx}>
-                                        <td className="p-2 border-b border-[#e2e8f0] text-[#334155]">{item.description}</td>
+                                        <td className="p-2 border-b border-[#e2e8f0] text-[#334155]">
+                                            <div className="font-semibold text-[#0f172a]">Dr. {doctorName}</div>
+                                            {item.description && <div className="text-[9px] text-[#64748b]">{item.description}</div>}
+                                        </td>
                                         <td className="p-2 border-b border-[#e2e8f0] text-[#334155]">{department}</td>
                                         <td className={`p-2 border-b border-[#e2e8f0] text-right ${item.status === 'Reversed' ? 'text-[#dc2626] line-through' : 'text-[#334155]'}`}>{item.amount.toLocaleString()}</td>
                                     </tr>
@@ -174,7 +193,10 @@ const IPDLedgerDocument: React.FC<IPDLedgerDocumentProps> = ({ summary, hospital
                                     if (item.medicines && item.medicines.length > 0) {
                                         return item.medicines.map((med: any, mIdx: number) => (
                                             <tr key={`${idx}-${mIdx}`}>
-                                                <td className="p-2 border-b border-[#e2e8f0] text-[#334155]">{med.medicineName}</td>
+                                                <td className="p-2 border-b border-[#e2e8f0] text-[#334155]">
+                                                    <div className="font-semibold text-[#0f172a]">{med.medicineName}</div>
+                                                    <div className="text-[9px] text-[#64748b]">{item.description}</div>
+                                                </td>
                                                 <td className="p-2 border-b border-[#e2e8f0] text-[#334155]">{med.rate || ''}</td>
                                                 <td className="p-2 border-b border-[#e2e8f0] text-[#334155] text-center">{med.quantity || 1}</td>
                                                 <td className={`p-2 border-b border-[#e2e8f0] text-right ${item.status === 'Reversed' ? 'text-[#dc2626] line-through' : 'text-[#334155]'}`}>{med.amount || ''}</td>
@@ -217,7 +239,10 @@ const IPDLedgerDocument: React.FC<IPDLedgerDocumentProps> = ({ summary, hospital
                                     if (item.tests && item.tests.length > 0) {
                                         return item.tests.map((testName: string, tIdx: number) => (
                                             <tr key={`${idx}-${tIdx}`}>
-                                                <td className="p-2 border-b border-[#e2e8f0] text-[#334155]">{testName}</td>
+                                                <td className="p-2 border-b border-[#e2e8f0] text-[#334155]">
+                                                    <div className="font-semibold text-[#0f172a]">{testName}</div>
+                                                    <div className="text-[9px] text-[#64748b]">{item.description}</div>
+                                                </td>
                                                 <td className="p-2 border-b border-[#e2e8f0] text-[#334155]">{tIdx === 0 ? (item.rate || item.amount) : ''}</td>
                                                 <td className="p-2 border-b border-[#e2e8f0] text-[#334155] text-center">1</td>
                                                 <td className={`p-2 border-b border-[#e2e8f0] text-right ${item.status === 'Reversed' ? 'text-[#dc2626] line-through' : 'text-[#334155]'}`}>{tIdx === 0 ? item.amount.toLocaleString() : ''}</td>
@@ -282,6 +307,7 @@ const IPDLedgerDocument: React.FC<IPDLedgerDocumentProps> = ({ summary, hospital
                             <thead>
                                 <tr>
                                     <th className="bg-[#f1f5f9] text-[9px] uppercase tracking-[0.5px] text-[#475569] font-bold p-2 border-b border-[#e2e8f0]">Transaction ID / Receipt No</th>
+                                    <th className="bg-[#f1f5f9] text-[9px] uppercase tracking-[0.5px] text-[#475569] font-bold p-2 border-b border-[#e2e8f0]">Description</th>
                                     <th className="bg-[#f1f5f9] text-[9px] uppercase tracking-[0.5px] text-[#475569] font-bold p-2 border-b border-[#e2e8f0]">Payment Mode</th>
                                     <th className="bg-[#f1f5f9] text-[9px] uppercase tracking-[0.5px] text-[#475569] font-bold p-2 border-b border-[#e2e8f0] text-right">Amount</th>
                                 </tr>
@@ -290,6 +316,7 @@ const IPDLedgerDocument: React.FC<IPDLedgerDocumentProps> = ({ summary, hospital
                                 {advanceItems.map((item: any, idx: number) => (
                                     <tr key={idx}>
                                         <td className="p-2 border-b border-[#e2e8f0] text-[#334155]">{item.reference || item.transactionId || item._id}</td>
+                                        <td className="p-2 border-b border-[#e2e8f0] text-[#334155]">{item.description || 'General Payment'}</td>
                                         <td className="p-2 border-b border-[#e2e8f0] text-[#334155]">{item.mode}</td>
                                         <td className={`p-2 border-b border-[#e2e8f0] text-right ${item.transactionType === 'Refund' ? 'text-[#dc2626]' : 'text-[#059669]'}`}>
                                             {item.transactionType === 'Refund' ? '-' : ''} {item.amount.toLocaleString()}
@@ -323,10 +350,42 @@ const IPDLedgerDocument: React.FC<IPDLedgerDocumentProps> = ({ summary, hospital
                             <span className="text-[#dc2626] font-bold">₹ {discount.toLocaleString()}</span>
                         </div>
                     )}
-                    <div className="flex justify-between p-2.5 border-b border-[#e2e8f0] text-[11px]">
-                        <span className="text-[#475569] font-semibold">(-) Total Paid Before Discharge</span>
-                        <span className="text-[#059669] font-bold">₹ {totalDeposits.toLocaleString()}</span>
-                    </div>
+                    {admissionAdvance > 0 && (
+                        <div className="flex justify-between p-2.5 border-b border-[#e2e8f0] text-[11px]">
+                            <span className="text-[#475569] font-semibold">(-) Advance at Admission</span>
+                            <span className="text-[#059669] font-bold">₹ {admissionAdvance.toLocaleString()}</span>
+                        </div>
+                    )}
+                    {labPaid > 0 && (
+                        <div className="flex justify-between p-2.5 border-b border-[#e2e8f0] text-[11px]">
+                            <span className="text-[#475569] font-semibold">(-) Lab Counter Payments</span>
+                            <span className="text-[#059669] font-bold">₹ {labPaid.toLocaleString()}</span>
+                        </div>
+                    )}
+                    {pharmaPaid > 0 && (
+                        <div className="flex justify-between p-2.5 border-b border-[#e2e8f0] text-[11px]">
+                            <span className="text-[#475569] font-semibold">(-) Pharmacy Counter Payments</span>
+                            <span className="text-[#059669] font-bold">₹ {pharmaPaid.toLocaleString()}</span>
+                        </div>
+                    )}
+                    {otherAdvances > 0 && (
+                        <div className="flex justify-between p-2.5 border-b border-[#e2e8f0] text-[11px]">
+                            <span className="text-[#475569] font-semibold">(-) Other Advances</span>
+                            <span className="text-[#059669] font-bold">₹ {otherAdvances.toLocaleString()}</span>
+                        </div>
+                    )}
+                    {totalSettlement > 0 && (
+                        <div className="flex justify-between p-2.5 border-b border-[#e2e8f0] text-[11px]">
+                            <span className="text-[#475569] font-semibold">(-) Final Settlement Paid</span>
+                            <span className="text-[#059669] font-bold">₹ {totalSettlement.toLocaleString()}</span>
+                        </div>
+                    )}
+                    {totalSettlement === 0 && otherAdvances === 0 && labPaid === 0 && pharmaPaid === 0 && admissionAdvance === 0 && (
+                         <div className="flex justify-between p-2.5 border-b border-[#e2e8f0] text-[11px]">
+                            <span className="text-[#475569] font-semibold">(-) Total Paid</span>
+                            <span className="text-[#059669] font-bold">₹ {totalDeposits.toLocaleString()}</span>
+                        </div>
+                    )}
                     <div className="flex justify-between p-2.5 bg-[#f8fafc] text-[14px]">
                         <span className="font-black text-[#0f172a]">Final Balance Amount</span>
                         <span className={`font-black ${displayBalance > 0 ? 'text-[#dc2626]' : 'text-[#059669]'}`}>
