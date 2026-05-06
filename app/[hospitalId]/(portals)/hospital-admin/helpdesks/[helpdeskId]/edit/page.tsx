@@ -8,18 +8,17 @@ import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.
 import {
   Headphones, ArrowLeft, CheckCircle2, AlertCircle, 
   ChevronRight, ChevronLeft, CreditCard, Landmark, 
-  User, Briefcase, Clock, ShieldCheck, 
-  Eye, EyeOff, Loader2
+  User, Briefcase, Clock, ShieldCheck,
+  Eye, EyeOff, Loader2, Building2
 } from "lucide-react";
-import { InfrastructureCheck } from "../../../components/InfrastructureCheck";
 
 // ─── Validators ──────────────────────────────────────────────────────────────
 const V: Record<string, (v: string) => string> = {
   name:          v => !v.trim() ? "Full name is required" : !/^[a-zA-Z\s.'-]+$/.test(v.trim()) ? "Only letters, spaces, dots & hyphens" : "",
-  email:         v => v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? "Invalid email — e.g. user@hospital.com" : "",
+  email:         v => !v ? "Email is required" : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? "Invalid email — e.g. user@hospital.com" : "",
   mobile:        v => !v ? "Mobile is required" : v.length !== 10 ? `${v.length}/10 digits — must be exactly 10` : "",
   password:      v => v && v.length < 6 ? `Too short — ${v.length}/6 chars minimum` : "",
-  employeeId:    v => !v.trim() ? "Employee Id is required" : "",
+  employeeId:    v => !v.trim() ? "Login ID is required" : "",
   designation:   v => !v.trim() ? "Designation is required" : "",
   panNumber:     v => v && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(v.toUpperCase()) ? "Invalid PAN — e.g. ABCDE1234F" : "",
   aadharNumber:  v => v && v.length !== 12 ? `${v.length}/12 digits — must be exactly 12` : "",
@@ -51,7 +50,7 @@ interface IFieldProps {
 }
 function IField({ label, name, value, onChange, onBlur, error, touched, type = "text", placeholder, required, extraCls = "", maxLength, disabled }: IFieldProps) {
   const hasErr = touched && !!error;
-  const isOk   = touched && !error && value.trim() !== "";
+  const isOk   = touched && !error && value && value.toString().trim() !== "";
   return (
     <div className="space-y-1.5">
       <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex justify-between">
@@ -71,7 +70,7 @@ function IField({ label, name, value, onChange, onBlur, error, touched, type = "
             ${disabled ? "bg-slate-50 text-slate-400 cursor-not-allowed border-slate-200" : 
               hasErr ? "border-rose-300 bg-rose-50/30 focus:ring-4 focus:ring-rose-500/5 placeholder:text-rose-300"
               : isOk  ? "border-emerald-200 bg-white focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-400"
-              : "border-slate-200 bg-white focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300"}`}
+              : "border-slate-200 bg-white focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300"} ${extraCls}`}
         />
         {isOk && !disabled && <CheckCircle2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none"/>}
         {hasErr && <AlertCircle size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-400 pointer-events-none"/>}
@@ -82,7 +81,7 @@ function IField({ label, name, value, onChange, onBlur, error, touched, type = "
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const STEPS = [
-  { id: "basic", label: "Basic Info", icon: User },
+  { id: "basic", label: "Core Profile", icon: User },
   { id: "employment", label: "Employment", icon: Briefcase },
   { id: "schedule", label: "Duty Schedule", icon: Clock },
   { id: "financial", label: "Financials", icon: CreditCard },
@@ -126,6 +125,7 @@ export default function EditHelpdesk() {
         gender: h.gender || "",
         dateOfBirth: h.dateOfBirth ? new Date(h.dateOfBirth).toISOString().split('T')[0] : "",
         designation: h.designation || "Helpdesk",
+        department: h.department || "",
         employeeId: h.employeeId || h.loginId || "",
         employmentType: h.employmentType || "full-time",
         joiningDate: h.joiningDate ? new Date(h.joiningDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
@@ -181,19 +181,19 @@ export default function EditHelpdesk() {
   const validateStep = (stepIdx: number) => {
     const stepId = STEPS[stepIdx].id;
     const stepFields: Record<string, string[]> = {
-      basic: ["honorific", "name", "mobile", "password", "email", "gender", "dateOfBirth"],
-      employment: ["designation", "employeeId", "joiningDate", "employmentType"],
+      basic: ["honorific", "name", "mobile", "password", "email", "gender", "employeeId", "designation"],
+      employment: ["joiningDate", "employmentType", "department"],
       schedule: ["shift", "startTime", "endTime"],
       financial: ["baseSalary", "panNumber", "aadharNumber", "pfNumber", "esiNumber", "uanNumber"],
       bank: ["accountName", "accountNumber", "bankName", "ifscCode"],
     };
 
     const requiredFields: Record<string, string[]> = {
-      basic: ["honorific", "name", "mobile"], // password optional in edit
-      employment: ["designation", "employeeId"],
+      basic: ["name"], // Only name is strictly required for edit
+      employment: [],
       schedule: [],
       financial: [],
-      bank: ["accountNumber", "ifscCode"],
+      bank: [],
     };
     
     const fieldsToValidate = stepFields[stepId] || [];
@@ -205,7 +205,7 @@ export default function EditHelpdesk() {
 
     fieldsToValidate.forEach(f => {
       const val = formData[f] || "";
-      const err = vld(f, val);
+      const err = vld(f, val.toString());
       
       if (requiredForThisStep.includes(f) && !val.toString().trim()) {
         newErrors[f] = V[f] ? V[f]("") : "Required field";
@@ -239,23 +239,49 @@ export default function EditHelpdesk() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateStep(activeStep)) return;
+    
+    // Validate all steps before submission
+    let allValid = true;
+    for (let i = 0; i < STEPS.length; i++) {
+      if (!validateStep(i)) {
+        allValid = false;
+        setActiveStep(i); // Jump to the first invalid step
+        break;
+      }
+    }
+    
+    if (!allValid) {
+      toast.error("Please fix the errors before saving");
+      return;
+    }
 
     try {
       setLoading(true);
+      
+      // Prepare a clean payload
+      const { 
+        accountName, accountNumber, bankName, ifscCode, 
+        startTime, endTime, 
+        password,
+        ...rest 
+      } = formData;
+
       const updatePayload = {
-        ...formData,
+        ...rest,
+        loginId: formData.employeeId, // Ensure loginId matches employeeId
         bankDetails: { 
-          accountName: formData.accountName, 
-          accountNumber: formData.accountNumber, 
-          bankName: formData.bankName, 
-          ifscCode: formData.ifscCode 
+          accountName, 
+          accountNumber, 
+          bankName, 
+          ifscCode 
         },
-        workingHours: { start: formData.startTime, end: formData.endTime }
+        workingHours: { start: startTime, end: endTime }
       };
       
-      // Don't send empty password
-      if (!formData.password) delete updatePayload.password;
+      // Only include password if explicitly changed
+      if (password && password.length >= 6) {
+        updatePayload.password = password;
+      }
 
       await hospitalAdminService.updateHelpdesk(helpdeskId, updatePayload);
       
@@ -280,11 +306,10 @@ export default function EditHelpdesk() {
   }
 
   return (
-    <InfrastructureCheck>
-      <div className="min-h-screen bg-slate-50/50">
+    <div className="min-h-screen bg-slate-50/50 pb-20">
         <div className="max-w-7xl mx-auto space-y-6">
           
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between px-4 md:px-0">
             <button 
               onClick={() => router.back()}
               className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors group"
@@ -300,7 +325,7 @@ export default function EditHelpdesk() {
             </div>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-1 px-4 md:px-0">
             <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-lg shadow-slate-500/20">
                 <Headphones size={22}/>
@@ -312,7 +337,7 @@ export default function EditHelpdesk() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 px-4 md:px-0">
             <div className="lg:col-span-1 space-y-2">
               {STEPS.map((step, idx) => {
                 const Icon = step.icon;
@@ -377,6 +402,7 @@ export default function EditHelpdesk() {
                           <option value="Mr">Mr</option><option value="Mrs">Mrs</option><option value="Ms">Ms</option><option value="Dr">Dr</option>
                         </select>
                       </div>
+
                       <IField label="Full Name" name="name" value={formData.name} onChange={v=>set('name',v)} onBlur={()=>blur('name')}
                         error={errors.name} touched={touched.name} required placeholder="e.g. Ramesh Kumar"/>
                       
@@ -393,14 +419,13 @@ export default function EditHelpdesk() {
                         error={errors.mobile} touched={touched.mobile} required type="tel" placeholder="10-digit mobile number"/>
                       
                       <IField label="Email Address" name="email" value={formData.email} onChange={v=>set('email',v)} onBlur={()=>blur('email')}
-                        error={errors.email} touched={touched.email} type="email" placeholder="email@hospital.com"/>
+                        error={errors.email} touched={touched.email} required type="email" placeholder="email@hospital.com"/>
 
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Date of Birth</label>
-                        <input type="date" value={formData.dateOfBirth} onChange={e=>set('dateOfBirth',e.target.value)}
-                          max={new Date().toISOString().split('T')[0]}
-                          className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 transition-all font-medium uppercase"/>
-                      </div>
+                      <IField label="Login ID / Employee ID" name="employeeId" value={formData.employeeId} onChange={v=>set('employeeId',v)} onBlur={()=>blur('employeeId')}
+                        error={errors.employeeId} touched={touched.employeeId} required placeholder="e.g. HELP-101" extraCls="font-mono font-bold"/>
+
+                      <IField label="Staff Designation" name="designation" value={formData.designation} onChange={v=>set('designation',v)} onBlur={()=>blur('designation')}
+                        error={errors.designation} touched={touched.designation} required placeholder="e.g. Front Desk Lead"/>
 
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex justify-between">
@@ -423,17 +448,27 @@ export default function EditHelpdesk() {
                           </button>
                         </div>
                       </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Date of Birth</label>
+                        <input type="date" value={formData.dateOfBirth} onChange={e=>set('dateOfBirth',e.target.value)}
+                          max={new Date().toISOString().split('T')[0]}
+                          className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 transition-all font-medium uppercase"/>
+                      </div>
                     </div>
                   )}
 
                   {activeStep === 1 && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <IField label="Designation" name="designation" value={formData.designation} onChange={v=>set('designation',v)} onBlur={()=>blur('designation')}
-                        error={errors.designation} touched={touched.designation} required placeholder="e.g. Front Desk Lead"/>
-                      
-                      <IField label="Internal Employee ID" name="employeeId" value={formData.employeeId} onChange={v=>set('employeeId',v)} onBlur={()=>blur('employeeId')}
-                        error={errors.employeeId} touched={touched.employeeId} required disabled
-                        placeholder="e.g. HUB-2024-001"/>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Department / Unit</label>
+                        <div className="relative">
+                          <Building2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
+                          <input type="text" value={formData.department} onChange={e=>set('department',e.target.value)}
+                            placeholder="e.g. Reception / Billing"
+                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 transition-all font-medium"/>
+                        </div>
+                      </div>
 
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Joining Date</label>
@@ -450,6 +485,16 @@ export default function EditHelpdesk() {
                           <option value="contract">Trainee / Intern</option>
                         </select>
                       </div>
+
+                      <div className="md:col-span-2">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Additional Notes</label>
+                        <textarea 
+                          value={formData.notes} 
+                          onChange={e => set('notes', e.target.value)}
+                          placeholder="Internal notes regarding staff performance or background..."
+                          className="w-full mt-1.5 px-4 py-3 min-h-[100px] bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 transition-all"
+                        />
+                      </div>
                     </div>
                   )}
 
@@ -461,7 +506,7 @@ export default function EditHelpdesk() {
                           value={formData.shift}
                           onChange={e => {
                             const s = (shifts as any[]).find(s => s._id === e.target.value);
-                            setFormData((p: any) => ({ ...p, shift: e.target.value, startTime: s?.startTime||"09:00", endTime: s?.endTime||"17:00" }));
+                            setFormData((p: any) => ({ ...p, shift: e.target.value, startTime: s?.startTime||p.startTime, endTime: s?.endTime||p.endTime }));
                           }}
                           className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 transition-all font-semibold"
                         >
@@ -475,11 +520,11 @@ export default function EditHelpdesk() {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Shift Start</p>
-                          <p className="text-lg font-bold text-slate-800">{formData.startTime}</p>
+                          <input type="time" value={formData.startTime} onChange={e=>set('startTime', e.target.value)} className="bg-transparent border-none outline-none text-lg font-bold text-slate-800 w-full"/>
                         </div>
                         <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Shift End</p>
-                          <p className="text-lg font-bold text-slate-800">{formData.endTime}</p>
+                          <input type="time" value={formData.endTime} onChange={e=>set('endTime', e.target.value)} className="bg-transparent border-none outline-none text-lg font-bold text-slate-800 w-full"/>
                         </div>
                       </div>
 
@@ -596,6 +641,5 @@ export default function EditHelpdesk() {
           </div>
         </div>
       </div>
-    </InfrastructureCheck>
   );
 }

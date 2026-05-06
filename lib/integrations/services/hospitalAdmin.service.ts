@@ -299,13 +299,21 @@ export const hospitalAdminService = {
       HOSPITAL_ADMIN_ENDPOINTS.HELPDESK_DETAIL(id),
       { skipCache: true }
     );
-    const user = profile.user || {};
+    
+    // The backend might return:
+    // 1. A StaffProfile document (with a 'user' field)
+    // 2. A User document (with an 'assignedStaff' field)
+    const user = (profile.user && typeof profile.user === 'object') ? profile.user : 
+                 (!profile.user && profile.role) ? profile : {};
+    const staff = (profile.assignedStaff && typeof profile.assignedStaff === 'object') ? profile.assignedStaff :
+                  (!profile.assignedStaff && profile.user) ? profile : {};
+
     return {
       helpdesk: {
-        ...profile,
+        ...staff,
         ...user,
-        _id: user._id || profile._id,
-        loginId: profile.loginId || user.loginId || profile.logid || `HELP-${id.slice(-4)}`
+        _id: user._id || staff._id || profile._id,
+        loginId: user.loginId || staff.loginId || profile.loginId || `HELP-${id.slice(-4)}`
       }
     };
   },
