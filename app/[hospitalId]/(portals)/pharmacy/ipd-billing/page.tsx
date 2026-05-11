@@ -343,7 +343,32 @@ const IPDBillingPage = () => {
             try {
                 setIsSearching(true);
                 const results = await ProductService.getProducts({ search: searchTerm });
-                setSearchResults(results || []);
+                const meds = results || [];
+
+                // Prioritize results starting with searchTerm
+                const q = searchTerm.toLowerCase();
+                const sortedResults = [...meds].sort((a, b) => {
+                    const aBrand = (a.brandName || '').toLowerCase();
+                    const bBrand = (b.brandName || '').toLowerCase();
+                    const aGen = (a.genericName || '').toLowerCase();
+                    const bGen = (b.genericName || '').toLowerCase();
+
+                    const getScore = (brand: string, gen: string) => {
+                        if (brand.startsWith(q) || gen.startsWith(q)) return 1;
+                        const words = [...brand.split(/\s+/), ...gen.split(/\s+/)];
+                        if (words.some(word => word.startsWith(q))) return 2;
+                        if (brand.includes(q) || gen.includes(q)) return 3;
+                        return 4;
+                    };
+
+                    const scoreA = getScore(aBrand, aGen);
+                    const scoreB = getScore(bBrand, bGen);
+
+                    if (scoreA !== scoreB) return scoreA - scoreB;
+                    return aBrand.localeCompare(bBrand);
+                });
+
+                setSearchResults(sortedResults);
             } catch (err) {
                 console.error("Search failed", err);
             } finally {
