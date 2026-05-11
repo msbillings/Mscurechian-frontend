@@ -237,7 +237,31 @@ const BillingPage = () => {
                     const cartItem = cart.find((item: any) => item.drug === p._id || item.productId === p._id);
                     return cartItem ? { ...p, availableUnits: availableUnits - cartItem.qty } : { ...p, availableUnits };
                 });
-                setSearchResults(adjustedResults);
+
+                // Prioritize results starting with searchTerm
+                const q = searchTerm.toLowerCase();
+                const sortedResults = [...adjustedResults].sort((a, b) => {
+                    const aBrand = (a.brandName || '').toLowerCase();
+                    const bBrand = (b.brandName || '').toLowerCase();
+                    const aGen = (a.genericName || '').toLowerCase();
+                    const bGen = (b.genericName || '').toLowerCase();
+
+                    const getScore = (brand: string, gen: string) => {
+                        if (brand.startsWith(q) || gen.startsWith(q)) return 1;
+                        const words = [...brand.split(/\s+/), ...gen.split(/\s+/)];
+                        if (words.some(word => word.startsWith(q))) return 2;
+                        if (brand.includes(q) || gen.includes(q)) return 3;
+                        return 4;
+                    };
+
+                    const scoreA = getScore(aBrand, aGen);
+                    const scoreB = getScore(bBrand, bGen);
+
+                    if (scoreA !== scoreB) return scoreA - scoreB;
+                    return aBrand.localeCompare(bBrand);
+                });
+
+                setSearchResults(sortedResults);
 
             } catch (err) {
                 console.error("Search failed", err);
