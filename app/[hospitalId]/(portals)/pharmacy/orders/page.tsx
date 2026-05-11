@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { PharmacyBillingService } from '@/lib/integrations/services/pharmacyBilling.service';
-import { Pill, Activity, FileText, RefreshCcw, AlertCircle } from 'lucide-react';
+import { Pill, Activity, FileText, RefreshCcw, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAuthStore } from '@/stores/authStore';
 import { PharmacyTableSkeleton } from '@/components/ui/skeletons';
@@ -38,6 +38,8 @@ function ActiveOrdersPage() {
     const [orders, setOrders] = useState<PharmacyOrder[]>([]);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const PAGE_SIZE = 15;
 
     // ✅ PERF: Get hospitalId from URL immediately (parallelize with auth check)
     const hospitalId = (params?.hospitalId as string) || (user as any)?.hospital;
@@ -53,6 +55,7 @@ function ActiveOrdersPage() {
                 setOrders(res.pharmacyOrders.filter((o: any) =>
                     (o.status === 'prescribed' || o.status === 'processing' || o.status === 'ready') && !o.isDeleted
                 ));
+                setCurrentPage(1); // reset to first page on every fetch
             }
         } catch (error) {
             console.error('❌ Error fetching active orders:', error);
@@ -102,6 +105,24 @@ function ActiveOrdersPage() {
         }
     };
 
+    // ── Pagination derived values ──────────────────────────────────────────────
+    const totalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
+    const paginatedOrders = orders.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+    const goToPage = (page: number) => {
+        if (page >= 1 && page <= totalPages) setCurrentPage(page);
+    };
+
+    // Build visible page numbers (max 5 around current)
+    const getPageNumbers = () => {
+        const delta = 2;
+        const range: number[] = [];
+        for (let i = Math.max(1, currentPage - delta); i <= Math.min(totalPages, currentPage + delta); i++) {
+            range.push(i);
+        }
+        return range;
+    };
+
     return (
         <div className="bg-gray-50 dark:bg-gray-900 min-h-screen pb-20">
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 md:gap-4 mb-4 md:mb-6">
@@ -122,6 +143,30 @@ function ActiveOrdersPage() {
                         <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-teal-500 animate-pulse" />
                         <span className="text-[10px] md:text-xs font-bold text-teal-600 uppercase tracking-wider">Live Updates</span>
                     </div>
+
+                    {/* ‹ Page X/Y › compact top nav */}
+                    {!loading && totalPages > 1 && (
+                        <div className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm px-1 py-1">
+                            <button
+                                onClick={() => goToPage(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className="p-1.5 rounded-lg text-gray-500 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-90"
+                            >
+                                <ChevronLeft size={14} />
+                            </button>
+                            <span className="px-2 text-[11px] font-bold text-gray-600 dark:text-gray-300 min-w-[36px] text-center">
+                                {currentPage}/{totalPages}
+                            </span>
+                            <button
+                                onClick={() => goToPage(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className="p-1.5 rounded-lg text-gray-500 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-90"
+                            >
+                                <ChevronRight size={14} />
+                            </button>
+                        </div>
+                    )}
+
                     <button
                         onClick={() => hospitalId && fetchActiveOrders(hospitalId, true)}
                         className="p-2 md:p-3 bg-white dark:bg-gray-800 text-gray-500 hover:text-teal-600 rounded-xl border border-gray-100 dark:border-gray-700 transition-all hover:shadow-md active:scale-95 shadow-sm"
@@ -161,7 +206,7 @@ function ActiveOrdersPage() {
                                     </div>
                                 </td></tr>
                             ) : (
-                                orders.map((order) => (
+                                paginatedOrders.map((order) => (
                                     <tr key={order._id} className="border-b dark:border-gray-700/50 last:border-0 hover:bg-teal-50/30 dark:hover:bg-teal-900/10 group transition-colors">
                                         <td className="p-4 md:p-6">
                                             <div className="flex flex-col gap-1">
@@ -185,6 +230,17 @@ function ActiveOrdersPage() {
                                             <div className="text-[10px] md:text-xs text-gray-400 uppercase font-semibold tracking-wider mt-0.5">
                                                 {order.patientAge || order.patient?.age || '-'}Y • {order.patientGender || order.patient?.gender || '-'}
                                             </div>
+                                            {order.createdAt && (
+                                                <div className="text-[9px] md:text-[10px] text-gray-400 font-medium mt-1 flex items-center gap-1">
+                                                    <span>
+                                                        {new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    </span>
+                                                    <span className="text-gray-300 dark:text-gray-600">•</span>
+                                                    <span>
+                                                        {new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="p-4 md:p-6 text-gray-600 dark:text-gray-300 font-semibold uppercase text-[10px] md:text-xs">
                                             {(order.doctor as any)?.user?.name || order.doctor?.name || 'Dr. Staff'}
@@ -220,6 +276,8 @@ function ActiveOrdersPage() {
                     </table>
                 </div>
             </div>
+
+
         </div>
     );
 }
