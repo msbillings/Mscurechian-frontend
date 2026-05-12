@@ -44,22 +44,51 @@ export default function HRInpatientsPage() {
             const admissionId = admission.admissionId || admission._id;
             setPrintingId(admissionId);
             setLedgerAdmission(admission);
-            const summary = await ipdService.getBillSummary(admissionId);
             
-            // Try to get hospital details from localStorage
-            let hd = { name: 'CureChain Hospital', address: '', phone: '', email: '' };
-            try {
-                const hospitalStr = localStorage.getItem('hospital');
-                if (hospitalStr) {
-                    const h = JSON.parse(hospitalStr);
-                    hd = {
-                        name: h.name || 'CureChain Hospital',
-                        address: h.address || '',
-                        phone: h.contactNumber || h.phone || '',
-                        email: h.email || ''
-                    };
-                }
-            } catch (e) { console.warn("Could not parse hospital details"); }
+            // Parallel fetch for speed
+            const [summary, hospitalResponse] = await Promise.all([
+                ipdService.getBillSummary(admissionId),
+                import('@/lib/integrations/services/hospitalAdmin.service').then(m => m.hospitalAdminService.getHospital())
+            ]);
+            
+            let hd = { name: 'Hospital Name', address: 'Hospital Address', phone: 'Phone Number', email: 'Email' };
+            
+            if (hospitalResponse?.hospital) {
+                const h = hospitalResponse.hospital;
+                hd = {
+                    name: h.name || 'Hospital Name',
+                    address: h.address || 'Hospital Address',
+                    phone: h.phone || 'Phone Number',
+                    email: h.email || 'Email'
+                };
+            } else {
+                // Try to get hospital details from localStorage if API fails
+                try {
+                    const hospitalStr = localStorage.getItem('hospital');
+                    const userStr = localStorage.getItem('user');
+                    
+                    if (hospitalStr) {
+                        const h = JSON.parse(hospitalStr);
+                        hd = {
+                            name: h.name || 'Hospital Name',
+                            address: h.address || 'Hospital Address',
+                            phone: h.contactNumber || h.phone || 'Phone Number',
+                            email: h.email || 'Email'
+                        };
+                    } else if (userStr) {
+                        const u = JSON.parse(userStr);
+                        if (u.hospital) {
+                            const h = u.hospital;
+                            hd = {
+                                name: h.name || 'Hospital Name',
+                                address: h.address || 'Hospital Address',
+                                phone: h.contactNumber || h.phone || 'Phone Number',
+                                email: h.email || 'Email'
+                            };
+                        }
+                    }
+                } catch (e) { console.warn("Could not parse hospital details"); }
+            }
 
             setHospitalDetails(hd);
             setLedgerSummary(summary);
@@ -231,7 +260,7 @@ export default function HRInpatientsPage() {
                                         </td>
                                         <td className="p-4">
                                             <div className="text-sm font-bold text-slate-700">
-                                                Dr. {admission.primaryDoctor?.user?.name || admission.primaryDoctor?.name || 'Unassigned'}
+                                                 {admission.primaryDoctor?.user?.name || admission.primaryDoctor?.name || 'Unassigned'}
                                             </div>
                                         </td>
                                         <td className="p-4 text-right">

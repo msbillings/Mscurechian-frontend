@@ -14,8 +14,15 @@ const IPDLedgerDocument: React.FC<IPDLedgerDocumentProps> = ({ summary, hospital
     const patientName = admission?.patient?.name || summary?.patientName || "Unknown Patient";
     const admissionId = admission?.admissionId || summary?.admissionId || "N/A";
     const mrn = admission?.patientProfile?.mrn || admission?.patient?.mrn || summary?.mrn || "N/A";
-    const age = admission?.patient?.age || admission?.patientProfile?.age || 'N/A';
-    const gender = admission?.patient?.gender || admission?.patientProfile?.gender || '';
+    // Extract Age
+    let age = admission?.patient?.age || admission?.patientProfile?.age || summary?.patientAge || '';
+    if (!age && (admission?.patient?.dateOfBirth || admission?.patientProfile?.dateOfBirth)) {
+        const dob = new Date(admission?.patient?.dateOfBirth || admission?.patientProfile?.dateOfBirth);
+        const diff = Date.now() - dob.getTime();
+        age = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25)).toString();
+    }
+    const ageDisplay = age && !isNaN(Number(age)) ? `${age}Y` : age || 'N/A';
+    const gender = admission?.patient?.gender || admission?.patientProfile?.gender || summary?.gender || '';
     const address = admission?.patientProfile?.address || 'N/A';
     const doctorName = admission?.primaryDoctor?.name || admission?.primaryDoctor?.user?.name || summary?.primaryDoctor?.name || 'N/A';
     const department = admission?.primaryDoctor?.department || 'General Medicine & Critical Care';
@@ -75,9 +82,9 @@ const IPDLedgerDocument: React.FC<IPDLedgerDocumentProps> = ({ summary, hospital
             <MainHeader
                 initialDetails={{
                     name: hospitalDetails?.name || 'Hospital Name',
-                    address: hospitalDetails?.address || 'Hospital Address details here',
-                    phone: hospitalDetails?.phone || '+91-XXXXXXXXXX',
-                    email: hospitalDetails?.email || ''
+                    address: hospitalDetails?.address || 'Hospital Address',
+                    phone: hospitalDetails?.phone || 'Phone Number',
+                    email: hospitalDetails?.email || 'Email'
                 }}
             />
 
@@ -93,9 +100,9 @@ const IPDLedgerDocument: React.FC<IPDLedgerDocumentProps> = ({ summary, hospital
                     {/* Left Column */}
                     <div className="flex flex-col gap-2">
                         <div className="flex"><span className="font-bold w-[120px] shrink-0 text-[#334155]">Patient Name :</span><span className="uppercase text-[#0f172a]">{patientName}</span></div>
-                        <div className="flex"><span className="font-bold w-[120px] shrink-0 text-[#334155]">Age & Gender :</span><span className="uppercase text-[#0f172a]">{age}Y {gender ? `& ${gender}` : ''}</span></div>
+                        <div className="flex"><span className="font-bold w-[120px] shrink-0 text-[#334155]">Age & Gender :</span><span className="uppercase text-[#0f172a]">{ageDisplay} {gender ? `& ${gender}` : ''}</span></div>
                         <div className="flex"><span className="font-bold w-[120px] shrink-0 text-[#334155]">Address :</span><span className="uppercase text-[#0f172a]">{address}</span></div>
-                        <div className="flex"><span className="font-bold w-[120px] shrink-0 text-[#334155]">Doctor Name :</span><span className="uppercase text-[#0f172a]">Dr.{doctorName}</span></div>
+                        <div className="flex"><span className="font-bold w-[120px] shrink-0 text-[#334155]">Doctor Name :</span><span className="uppercase text-[#0f172a]">{doctorName}</span></div>
                         <div className="flex"><span className="font-bold w-[120px] shrink-0 text-[#334155]">Department :</span><span className="uppercase text-[#0f172a]">{department}</span></div>
                     </div>
                     {/* Right Column */}
@@ -159,7 +166,7 @@ const IPDLedgerDocument: React.FC<IPDLedgerDocumentProps> = ({ summary, hospital
                                 {doctorCharges.map((item: any, idx: number) => (
                                     <tr key={idx}>
                                         <td className="p-2 border-b border-[#e2e8f0] text-[#334155]">
-                                            <div className="font-semibold text-[#0f172a]">Dr. {doctorName}</div>
+                                            <div className="font-semibold text-[#0f172a]">{doctorName}</div>
                                             {item.description && <div className="text-[9px] text-[#64748b]">{item.description}</div>}
                                         </td>
                                         <td className="p-2 border-b border-[#e2e8f0] text-[#334155]">{department}</td>
@@ -400,9 +407,9 @@ const IPDLedgerDocument: React.FC<IPDLedgerDocumentProps> = ({ summary, hospital
                 <MainFooter
                     initialDetails={{
                         name: hospitalDetails?.name || 'Hospital Name',
-                        address: hospitalDetails?.address || 'Hospital Address details here',
-                        phone: hospitalDetails?.phone || '+91-XXXXXXXXXX',
-                        email: hospitalDetails?.email || ''
+                        address: hospitalDetails?.address || 'Hospital Address',
+                        phone: hospitalDetails?.phone || 'Phone Number',
+                        email: hospitalDetails?.email || 'Email'
                     }}
                 />
             </div>

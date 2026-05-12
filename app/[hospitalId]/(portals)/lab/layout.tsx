@@ -14,6 +14,7 @@ import LabSupportFloatingBox from "@/components/lab/LabSupportFloatingBox";
 import { useTenantLink } from "@/hooks/useTenantLink";
 import { useRealtime } from '@/hooks/useRealtime';
 import SharedSidebar from "@/components/navbar/SharedSidebar";
+import LabNotificationPanel from "@/components/lab/LabNotificationPanel";
 import { LabSampleService } from "@/lib/integrations/services";
 
 // Menu links will be generated dynamically to include the pending count
@@ -249,7 +250,9 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
                         <LabQuickActions activeTestCount={activeTestCount} startTransition={startTransition} />
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4">
+                        <LabNotificationPanel />
+                        
                         <div className="hidden sm:flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-sm shadow-md overflow-hidden">
                                 {(labLogo || (user as any)?.image) ? (

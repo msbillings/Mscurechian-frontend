@@ -519,12 +519,12 @@ export default function LabResultEntryPage() {
                             >
                                 <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Print
                             </button>
-                            <button
+                            {/* <button
                                 onClick={handleDownload}
                                 className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-[10px] sm:text-xs md:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all shadow-sm active:scale-95"
                             >
                                 <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Download Report
-                            </button>
+                            </button> */}
                             {/* Show Send to Doctor for doctor-referred tests */}
                             {(sample.referredBy || !sample.isWalkIn) && (
                                 <button

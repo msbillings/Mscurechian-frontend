@@ -1264,7 +1264,39 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
             try {
                 const res = await doctorService.searchMedicines(query);
                 if (res.success) {
-                    setSuggestions(res.data);
+                    const results = res.data || [];
+                    const q = query.toLowerCase();
+
+                    const sortedResults = [...results].sort((a, b) => {
+                        const aName = (a.brand || '').toLowerCase();
+                        const bName = (b.brand || '').toLowerCase();
+                        const aGen = (a.generic || '').toLowerCase();
+                        const bGen = (b.generic || '').toLowerCase();
+
+                        const getScore = (name: string, gen: string) => {
+                            // 1. Exact start matches (brand or generic)
+                            if (name.startsWith(q) || gen.startsWith(q)) return 1;
+
+                            // 2. Word-start matches
+                            const nameWords = name.split(/[\s\-()]+/);
+                            const genWords = gen.split(/[\s\-()]+/);
+                            if (nameWords.some(w => w.startsWith(q)) || genWords.some(w => w.startsWith(q))) return 2;
+
+                            // 3. Contains matches
+                            if (name.includes(q) || gen.includes(q)) return 3;
+
+                            return 4;
+                        };
+
+                        const scoreA = getScore(aName, aGen);
+                        const scoreB = getScore(bName, bGen);
+
+                        if (scoreA !== scoreB) return scoreA - scoreB;
+                        // Secondary sort by name alphabetical
+                        return aName.localeCompare(bName);
+                    });
+
+                    setSuggestions(sortedResults);
                 }
             } catch (err) {
                 console.error("Search failed", err);
