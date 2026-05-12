@@ -41,7 +41,7 @@ const LabNotificationPanel = () => {
                         doctorName: order.patientDetails?.refDoctor || 'Unknown Doctor',
                         price: order.tests.reduce((acc, test) => acc + (test.price || 0), 0),
                         createdAt: order.createdAt || new Date().toISOString(),
-                        isRead: true, // Mark existing as read by default
+                        isRead: false, // Show as unread on load so count appears
                         type: 'new_order'
                     }));
                     setNotifications(initialNotifs);
@@ -137,13 +137,14 @@ const LabNotificationPanel = () => {
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="relative p-2.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl text-indigo-600 transition-all group active:scale-95"
+                aria-label="Notifications"
             >
                 <Bell size={22} className={unreadCount > 0 ? 'animate-bounce' : ''} />
                 {unreadCount > 0 && (
-                    <span className="absolute top-2 right-2 flex h-4 w-4">
+                    <span className="absolute top-1.5 right-1.5 flex h-4 w-4">
                         <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 animate-ping"></span>
                         <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-[10px] items-center justify-center text-white font-bold">
-                            {unreadCount}
+                            {unreadCount > 9 ? '9+' : unreadCount}
                         </span>
                     </span>
                 )}
