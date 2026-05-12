@@ -129,7 +129,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   isInitialized: boolean;
-  login: (identifier: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<any>;
   register: (data: any) => Promise<void>;
   logout: (broadcast?: boolean) => void;
   initializeAuth: (force?: boolean) => Promise<void>;
@@ -143,6 +143,8 @@ interface AuthState {
   isLicenseChecking: boolean;
   setLicenseError: (error: { message: string; locked: boolean } | null) => void;
   setIsLicenseChecking: (loading: boolean) => void;
+  verifySuperAdminOtp: (otp: string, tempToken: string) => Promise<void>;
+  resendSuperAdminOtp: (tempToken: string) => Promise<void>;
 }
 
 // ✅ PERFORMANCE FIX: Stable user reference to prevent cascade re-renders
@@ -336,6 +338,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             throw error;
         }
       }
+      
+      // ✅ 2FA Flow: If backend requires OTP, return early so the UI can redirect.
+      if (response?.require2FA) {
+        set({ isLoading: false });
+        return response;
+      }
+
       const {
         // ✅ FIX (Bug 5): Support both top-level (new) and nested tokens.{} (legacy fallback)
         accessToken:    _at,
@@ -443,9 +452,66 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isInitialized: true,
         isTabAuthorized: true,
       });
+
+      return response;
     } catch (error) {
       console.error("[Auth] Login failed:", error);
       set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  verifySuperAdminOtp: async (otp: string, tempToken: string) => {
+    set({ isLoading: true });
+    try {
+      const { apiClient } = await import("@/lib/integrations");
+      const response = await apiClient<any>("/auth/superadmin/verify-otp", {
+        method: "POST",
+        body: JSON.stringify({ otp, tempToken }),
+      });
+
+      const { user, accessToken, csrfToken, sessionId } = response;
+
+      if (accessToken) {
+        setAccessToken(accessToken);
+        scheduleProactiveRefresh(accessToken);
+      }
+
+      if (sessionId) {
+        sessionStorage.setItem("sessionId", sessionId);
+      }
+
+      localStorage.setItem("user", JSON.stringify(scrubUserForStorage(user)));
+      localStorage.setItem("userRole", user.role.toLowerCase());
+      localStorage.setItem("lastAuthCheck", Date.now().toString());
+
+      set({
+        user: stabilizeUser(user),
+        isAuthenticated: true,
+        isLoading: false,
+        isInitialized: true,
+        isTabAuthorized: true,
+      });
+
+      try {
+        const channel = new BroadcastChannel('msc_auth');
+        channel.postMessage({ type: 'LOGIN' });
+        channel.close();
+      } catch {}
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  resendSuperAdminOtp: async (tempToken: string) => {
+    try {
+      const { apiClient } = await import("@/lib/integrations");
+      await apiClient("/auth/superadmin/resend-otp", {
+        method: "POST",
+        body: JSON.stringify({ tempToken }),
+      });
+    } catch (error) {
       throw error;
     }
   },

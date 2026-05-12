@@ -78,6 +78,49 @@ function LockoutBanner({ secondsLeft }: { secondsLeft: number }) {
   );
 }
 
+// ─── Constants ───────────────────────────────────────────────────────────────
+const ROLE_DISPLAY_MAP: Record<string, string> = {
+  'super-admin': 'Super Admin',
+  'admin': 'Admin Portal',
+  'patient': 'Patient Portal',
+  'doctor': 'Doctor Portal',
+  'hospital-admin': 'Hospital Admin',
+  'helpdesk': 'Helpdesk Portal',
+  'masterhelpdesk': 'Master Helpdesk Portal',
+  'frontdesk': 'Front Desk Portal',
+  'staff': 'Staff Portal',
+  'nurse': 'Nurse Portal',
+  'pharma': 'Pharmacy Portal',
+  'pharma-owner': 'Pharmacy Portal',
+  'pharmacist': 'Pharmacy Portal',
+  'lab': 'Lab Portal',
+  'emergency': 'Emergency Portal',
+  'ambulance': 'Ambulance Portal',
+  'hr': 'HR Portal',
+  'discharge': 'Discharge Portal',
+};
+
+const ROLE_PATH_MAP: Record<string, string> = {
+  'admin': '/admin',
+  'super-admin': '/admin',
+  'patient': '/patient/dashboard',
+  'doctor': 'doctor',
+  'hospital-admin': 'hospital-admin',
+  'helpdesk': 'helpdesk',
+  'masterhelpdesk': 'masterhelpdesk',
+  'frontdesk': 'frontdesk',
+  'staff': 'staff',
+  'nurse': 'nurse',
+  'pharma': 'pharmacy/dashboard',
+  'pharma-owner': 'pharmacy/dashboard',
+  'pharmacist': 'pharmacy/dashboard',
+  'lab': 'lab/dashboard',
+  'emergency': '/ambulance',
+  'ambulance': '/ambulance',
+  'hr': 'hr',
+  'discharge': 'discharge',
+};
+
 // ─── Main Login Form ───────────────────────────────────────────────────────────
 const LoginForm = () => {
   const { login, isAuthenticated, user, isInitialized, isLoading, isTabAuthorized } = useAuthStore();
@@ -121,26 +164,6 @@ const LoginForm = () => {
   const [fpLoading, setFpLoading] = useState(false);
   const [fpServerMsg, setFpServerMsg] = useState('');
 
-  const roleDisplayMap: Record<string, string> = {
-    'super-admin': 'Super Admin',
-    'admin': 'Admin Portal',
-    'patient': 'Patient Portal',
-    'doctor': 'Doctor Portal',
-    'hospital-admin': 'Hospital Admin',
-    'helpdesk': 'Helpdesk Portal',
-    'masterhelpdesk': 'Master Helpdesk Portal',
-    'frontdesk': 'Front Desk Portal',
-    'staff': 'Staff Portal',
-    'nurse': 'Nurse Portal',
-    'pharma': 'Pharmacy Portal',
-    'pharma-owner': 'Pharmacy Portal',
-    'pharmacist': 'Pharmacy Portal',
-    'lab': 'Lab Portal',
-    'emergency': 'Emergency Portal',
-    'ambulance': 'Ambulance Portal',
-    'hr': 'HR Portal',
-    'discharge': 'Discharge Portal',
-  };
 
   // ── Check lockout whenever identifier changes ───────────────────────────────
   useEffect(() => {
@@ -167,15 +190,7 @@ const LoginForm = () => {
       const hosp = (rawIdVal && typeof rawIdVal === 'object') ? (rawIdVal._id || rawIdVal.id) : rawIdVal;
       let target = redirectPath ? decodeURIComponent(redirectPath) : null;
       if (!target || target === '/auth/login') {
-        const rolePathMap: Record<string, string> = {
-          'admin': '/admin', 'super-admin': '/admin', 'patient': '/patient/dashboard',
-          'doctor': 'doctor', 'hospital-admin': 'hospital-admin',
-          'helpdesk': 'helpdesk', 'masterhelpdesk': 'masterhelpdesk', 'frontdesk': 'frontdesk', 'staff': 'staff', 'nurse': 'nurse',
-          'pharma': 'pharmacy/dashboard', 'pharma-owner': 'pharmacy/dashboard', 'pharmacist': 'pharmacy/dashboard',
-          'lab': 'lab/dashboard', 'emergency': '/ambulance', 'ambulance': '/ambulance',
-          'hr': 'hr', 'discharge': 'discharge',
-        };
-        const portal = rolePathMap[role] || 'hospital-admin';
+        const portal = ROLE_PATH_MAP[role] || 'hospital-admin';
         
         // ✅ SECURITY: Prevent patients from accessing staff portals, even via redirect
         if (role === 'patient' && target && !target.includes('/patient')) {
@@ -193,14 +208,14 @@ const LoginForm = () => {
         }
       }
       if (target && target !== window.location.pathname) {
-        const roleLabel = roleDisplayMap[role] || 'Portal';
+        const roleLabel = ROLE_DISPLAY_MAP[role] || 'Portal';
         setDashboardName(roleLabel);
         setIsNavigating(true);
         router.replace(target);
         setTimeout(() => { if (window.location.pathname === '/auth/login') window.location.href = target!; }, 3000);
       }
     }
-  }, [isInitialized, isAuthenticated, user, isTabAuthorized, redirectPath, router, isNavigating]);
+  }, [isInitialized, isAuthenticated, user, isTabAuthorized, redirectPath, router, isNavigating, setDashboardName, setIsNavigating]);
 
   // ── Validation ─────────────────────────────────────────────────────────────
   const validate = () => {
@@ -237,7 +252,18 @@ const LoginForm = () => {
     setErrors({});
 
     try {
-      await login(form.identifier, form.password);
+      const response = await login(form.identifier, form.password);
+      
+      // ✅ SuperAdmin 2FA Flow
+      if (response?.require2FA) {
+        sessionStorage.setItem('msc_2fa_temp_token', response.tempToken);
+        sessionStorage.setItem('msc_2fa_email', response.email);
+        setDashboardName('Super Admin Verification');
+        setIsNavigating(true);
+        router.push('/auth/superadmin/verify-otp');
+        return;
+      }
+
       const { user: freshUser } = useAuthStore.getState();
 
       const ALLOWED_ROLES = [
@@ -254,14 +280,7 @@ const LoginForm = () => {
 
       const rawIdVal = (freshUser as any)?.hospitalId || (freshUser as any)?.hospital;
       const hosp = (rawIdVal && typeof rawIdVal === 'object') ? (rawIdVal._id || rawIdVal.id) : rawIdVal;
-      const rolePathMap: Record<string, string> = {
-        'admin': '/admin', 'super-admin': '/admin', 'patient': '/patient/dashboard',
-        'doctor': 'doctor', 'hospital-admin': 'hospital-admin',
-        'helpdesk': 'helpdesk', 'masterhelpdesk': 'masterhelpdesk', 'frontdesk': 'frontdesk', 'staff': 'staff', 'nurse': 'nurse',
-        'pharma': 'pharmacy/dashboard', 'pharma-owner': 'pharmacy/dashboard', 'pharmacist': 'pharmacy/dashboard',
-        'lab': 'lab/dashboard', 'emergency': '/ambulance', 'ambulance': '/ambulance', 'hr': 'hr', 'discharge': 'discharge',
-      };
-      const portal = rolePathMap[role] || 'hospital-admin';
+      const portal = ROLE_PATH_MAP[role] || 'hospital-admin';
 
       let finalPath = redirectPath ? decodeURIComponent(redirectPath) : null;
       
@@ -280,7 +299,7 @@ const LoginForm = () => {
         if (!finalPath.startsWith('/')) finalPath = '/' + finalPath;
       }
 
-      const roleLabel = roleDisplayMap[role] || 'Portal';
+      const roleLabel = ROLE_DISPLAY_MAP[role] || 'Portal';
       setDashboardName(roleLabel);
       setIsNavigating(true);
       router.replace(finalPath);

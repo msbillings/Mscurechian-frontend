@@ -379,7 +379,9 @@ export async function apiClient<T>(
       const isLoginRequest =
         pathLower.includes("/login") ||
         pathLower.includes("/sign-in") ||
-        pathLower.includes("/signin");
+        pathLower.includes("/signin") ||
+        pathLower.includes("/verify-otp") ||
+        pathLower.includes("/resend-otp");
       const isRefreshRequest = pathLower.includes("/refresh");
 
       // Also check if we are physically on a login page to be doubly safe
@@ -389,7 +391,9 @@ export async function apiClient<T>(
       const isOnLoginPage =
         currentPath.includes("login") ||
         currentPath.includes("sign-in") ||
-        currentPath.includes("signin");
+        currentPath.includes("signin") ||
+        currentPath.includes("verify-otp") ||
+        currentPath.includes("resend-otp");
 
       // ✅ PUBLIC PAGE GUARD
       const _pathParts = currentPath.split("/").filter(Boolean);
@@ -398,12 +402,12 @@ export async function apiClient<T>(
         currentPath === "/" ||
         currentPath === "" ||
         [
-          "about", "blogs", "features", "pricing", "solutions",
+          "auth", "about", "blogs", "features", "pricing", "solutions",
           "portals", "terms", "contact", "support", "coming-soon",
         ].includes(_firstSeg);
 
       if (res.status === 401) {
-        if (isOnPublicPage) return null as any;
+        if (isOnPublicPage && method === "GET") return null as any;
 
         if (isClient && !isLoginRequest && !isRefreshRequest && !isOnLoginPage) {
           // ✅ FIX 1: Register the subscriber BEFORE the isRefreshing check.
@@ -708,4 +712,3 @@ export async function apiClient<T>(
 
   return requestPromise;
 }
-
