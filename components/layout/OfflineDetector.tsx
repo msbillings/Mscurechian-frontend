@@ -100,7 +100,8 @@ export default function OfflineDetector() {
 
     // 🛡️ NAVIGATION GUARD: Prevent clicking <a> tags while offline
     const handleNavigationAttempt = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
+      const target = e.target as Element;
+      if (!target || typeof target.closest !== 'function') return;
       const anchor = target.closest('a');
       
       if (anchor && !useOnlineStore.getState().isOnline) {

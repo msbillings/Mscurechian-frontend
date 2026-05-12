@@ -467,6 +467,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { apiClient } = await import("@/lib/integrations");
       const response = await apiClient<any>("/auth/superadmin/verify-otp", {
         method: "POST",
+        headers: {
+          'Authorization': `Bearer ${tempToken}`
+        },
         body: JSON.stringify({ otp, tempToken }),
       });
 
@@ -509,6 +512,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { apiClient } = await import("@/lib/integrations");
       await apiClient("/auth/superadmin/resend-otp", {
         method: "POST",
+        headers: {
+          'Authorization': `Bearer ${tempToken}`
+        },
         body: JSON.stringify({ tempToken }),
       });
     } catch (error) {

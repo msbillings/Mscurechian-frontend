@@ -125,7 +125,7 @@ export default function SuperAdminVerifyOtp() {
   const [success, setSuccess] = useState('');
   const [email, setEmail] = useState('');
   const [tempToken, setTempToken] = useState('');
-  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
   const [canResend, setCanResend] = useState(false);
   
   const inputRefs = React.useMemo(() => [
@@ -154,8 +154,8 @@ export default function SuperAdminVerifyOtp() {
     const now = Date.now();
     
     if (!expiry) {
-      // If no expiry exists (e.g. direct navigation), create one (10 minutes)
-      const newExpiry = now + 600 * 1000;
+      // If no expiry exists (e.g. direct navigation), create one (5 minutes)
+      const newExpiry = now + 300 * 1000;
       sessionStorage.setItem('msc_2fa_expiry', newExpiry.toString());
       expiry = newExpiry.toString();
     }
@@ -260,16 +260,23 @@ export default function SuperAdminVerifyOtp() {
       setSuccess('New OTP sent to your email');
       
       // Reset expiry in sessionStorage
-      const newExpiry = Date.now() + 600 * 1000;
+      const newExpiry = Date.now() + 300 * 1000;
       sessionStorage.setItem('msc_2fa_expiry', newExpiry.toString());
       
-      setTimeLeft(600);
+      setTimeLeft(300);
       setCanResend(false);
       setOtp(['', '', '', '', '', '']);
       inputRefs[0].current?.focus();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
-      setError(err?.message || 'Failed to resend OTP');
+      if (err?.status === 401) {
+        setError('Verification session expired. Redirecting to login...');
+        setTimeout(() => {
+          router.replace('/auth/login');
+        }, 2000);
+      } else {
+        setError(err?.message || 'Failed to resend OTP');
+      }
     }
   };
 
@@ -281,13 +288,13 @@ export default function SuperAdminVerifyOtp() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="w-full max-w-md space-y-8 glass-card-premium p-8 rounded-3xl shine-effect"
+        className="w-full max-w-md space-y-6 glass-card-premium p-6 sm:p-8 rounded-3xl shine-effect"
       >
         
         {/* Header */}
-        <div className="text-center space-y-3 relative z-10">
-          <div className="mx-auto w-16 h-16 bg-primary-theme/10 rounded-2xl flex items-center justify-center text-primary-theme mb-4 hologram-wrapper">
-            <ShieldCheck size={32} className="relative z-10" />
+        <div className="text-center space-y-2 relative z-10">
+          <div className="mx-auto w-14 h-14 bg-primary-theme/10 rounded-2xl flex items-center justify-center text-primary-theme mb-2 hologram-wrapper">
+            <ShieldCheck size={28} className="relative z-10" />
           </div>
           <h1 className="text-2xl font-black tracking-tight text-foreground">Two-Step Verification</h1>
           <p className="text-muted text-sm leading-relaxed">
@@ -297,7 +304,7 @@ export default function SuperAdminVerifyOtp() {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleVerify} className="space-y-8 relative z-10">
+        <form onSubmit={handleVerify} className="space-y-6 relative z-10">
           <div className="flex justify-between gap-2">
             {otp.map((digit, index) => (
               <input
@@ -352,7 +359,7 @@ export default function SuperAdminVerifyOtp() {
         </form>
 
         {/* Footer */}
-        <div className="pt-6 border-t border-border/50 space-y-4 relative z-10">
+        <div className="pt-4 border-t border-border/50 space-y-3 relative z-10">
           <div className="flex items-center justify-between text-xs font-bold">
             <div className="flex items-center gap-2 text-muted">
               <Timer size={14} />
