@@ -258,6 +258,7 @@ const LoginForm = () => {
       if (response?.require2FA) {
         sessionStorage.setItem('msc_2fa_temp_token', response.tempToken);
         sessionStorage.setItem('msc_2fa_email', response.email);
+        sessionStorage.setItem('msc_2fa_expiry', (Date.now() + 600 * 1000).toString());
         setDashboardName('Super Admin Verification');
         setIsNavigating(true);
         router.push('/auth/superadmin/verify-otp');
