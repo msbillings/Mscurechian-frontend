@@ -149,19 +149,38 @@ export default function SuperAdminVerifyOtp() {
     setEmail(storedEmail || 'your email');
     setTempToken(storedToken);
     
+    // PERSISTENT TIMER LOGIC
+    let expiry = sessionStorage.getItem('msc_2fa_expiry');
+    const now = Date.now();
+    
+    if (!expiry) {
+      // If no expiry exists (e.g. direct navigation), create one (10 minutes)
+      const newExpiry = now + 600 * 1000;
+      sessionStorage.setItem('msc_2fa_expiry', newExpiry.toString());
+      expiry = newExpiry.toString();
+    }
+
+    const initialTimeLeft = Math.max(0, Math.floor((parseInt(expiry) - now) / 1000));
+    setTimeLeft(initialTimeLeft);
+    
+    if (initialTimeLeft <= 0) {
+      setCanResend(true);
+    }
+
     // Focus first input
     inputRefs[0].current?.focus();
     
     // Timer logic
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          setCanResend(true);
-          return 0;
-        }
-        return prev - 1;
-      });
+      const currentTime = Date.now();
+      const remaining = Math.max(0, Math.floor((parseInt(expiry!) - currentTime) / 1000));
+      
+      setTimeLeft(remaining);
+      
+      if (remaining <= 0) {
+        clearInterval(timer);
+        setCanResend(true);
+      }
     }, 1000);
     
     return () => clearInterval(timer);
@@ -223,6 +242,7 @@ export default function SuperAdminVerifyOtp() {
       setSuccess('Verified successfully! Redirecting...');
       sessionStorage.removeItem('msc_2fa_temp_token');
       sessionStorage.removeItem('msc_2fa_email');
+      sessionStorage.removeItem('msc_2fa_expiry');
       
       setTimeout(() => {
         router.push('/admin');
@@ -238,6 +258,11 @@ export default function SuperAdminVerifyOtp() {
     try {
       await resendSuperAdminOtp(tempToken);
       setSuccess('New OTP sent to your email');
+      
+      // Reset expiry in sessionStorage
+      const newExpiry = Date.now() + 600 * 1000;
+      sessionStorage.setItem('msc_2fa_expiry', newExpiry.toString());
+      
       setTimeLeft(600);
       setCanResend(false);
       setOtp(['', '', '', '', '', '']);
