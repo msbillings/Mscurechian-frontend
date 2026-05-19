@@ -264,13 +264,13 @@ const BulkProductUploadModal: React.FC<BulkProductUploadModalProps> = ({ isOpen,
             { header: 'MRP*', key: 'mrp', width: 12 },
             { header: 'Unit Cost', key: 'unitCost', width: 12 },
             { header: 'GST %', key: 'gstPercent', width: 10 },
-            { header: 'HSN Code', key: 'hsnCode', width: 15 },
-            { header: 'Batch Number', key: 'batchNumber', width: 18 },
-            { header: 'Expiry Date (YYYY-MM-DD)', key: 'expiryDate', width: 22 },
-            { header: 'Current Stock', key: 'stock', width: 15 },
+            { header: 'HSN', key: 'hsnCode', width: 15 },
+            { header: 'Batch', key: 'batchNumber', width: 18 },
+            { header: 'Expiry', key: 'expiryDate', width: 22 },
+            { header: 'Stock', key: 'stock', width: 15 },
             { header: 'Min Stock', key: 'minStock', width: 12 },
-            { header: 'Units/Pack', key: 'unitsPerPack', width: 12 },
-            { header: 'Supplier (info only)', key: 'supplier', width: 20 },
+            { header: 'U/Pack', key: 'unitsPerPack', width: 12 },
+            { header: 'Assigned Supplier', key: 'supplier', width: 20 },
         ];
 
         // Style header row
@@ -425,13 +425,13 @@ const BulkProductUploadModal: React.FC<BulkProductUploadModalProps> = ({ isOpen,
 
                                     {[
                                         'GST %',
-                                        'HSN Code',
-                                        'Batch Number',
-                                        'Expiry Date',
-                                        'Current Stock',
+                                        'HSN',
+                                        'Batch',
+                                        'Expiry',
+                                        'Stock',
                                         'Min Stock',
-                                        'Units/Pack',
-                                        'Supplier (info only)',
+                                        'U/Pack',
+                                        'Assigned Supplier',
                                     ].map(f => (
                                         <span key={f} className="px-3 py-1 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                                             {f}
