@@ -23,6 +23,40 @@ export const SupplierService = {
     }));
   },
 
+  getSuppliersPaginated: async (
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+  ): Promise<{
+    suppliers: Supplier[];
+    total: number;
+    totalPages: number;
+    currentPage: number;
+  }> => {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+    if (search) params.append("search", search);
+    const url = `${PHARMACY_ENDPOINTS.SUPPLIERS.BASE}?${params.toString()}`;
+    const response: any = await apiClient<any>(url, { method: "GET" });
+    const mapAddress = (s: any) => ({
+      ...s,
+      address:
+        s.address && typeof s.address === "object"
+          ? `${s.address.street || ""}${s.address.landmark ? `, ${s.address.landmark}` : ""}, ${s.address.city || ""}, ${s.address.state || ""} - ${s.address.pincode || ""}`
+              .replace(/^, |, , /g, "")
+              .trim()
+          : s.address,
+    });
+    return {
+      suppliers: (response.data || []).map(mapAddress),
+      total: response.total || 0,
+      totalPages: response.totalPages || 1,
+      currentPage: response.currentPage || page,
+    };
+  },
+
   getSupplierById: async (id: string): Promise<Supplier> => {
     return apiClient<Supplier>(PHARMACY_ENDPOINTS.SUPPLIERS.BY_ID(id), {
       method: "GET",

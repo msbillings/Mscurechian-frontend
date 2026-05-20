@@ -337,10 +337,16 @@ const PurchaseTransactionsTab = ({ suppliers }: { suppliers: Supplier[] }) => {
 };
 
 // ==== Main Page ====
+const SUPPLIERS_PER_PAGE = 10;
+
 const SuppliersPage = () => {
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalSuppliers, setTotalSuppliers] = useState(0);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
     const [activeTab, setActiveTab] = useState<'suppliers' | 'purchases'>('suppliers');
@@ -352,22 +358,34 @@ const SuppliersPage = () => {
     });
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
-    const fetchSuppliers = async () => {
+    // Debounce search input
+    useEffect(() => {
+        const t = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+            setCurrentPage(1);
+        }, 350);
+        return () => clearTimeout(t);
+    }, [searchTerm]);
+
+    const fetchSuppliers = React.useCallback(async (page: number = 1) => {
         setLoading(true);
         try {
-            const data = await SupplierService.getSuppliers();
-            setSuppliers(data);
+            const data = await SupplierService.getSuppliersPaginated(page, SUPPLIERS_PER_PAGE, debouncedSearch || undefined);
+            setSuppliers(data.suppliers);
+            setTotalPages(data.totalPages);
+            setCurrentPage(data.currentPage);
+            setTotalSuppliers(data.total);
         } catch (error) {
             console.error('Failed to fetch suppliers:', error);
             toast.error('Failed to load supplier network');
         } finally {
             setLoading(false);
         }
-    };
+    }, [debouncedSearch]);
 
     useEffect(() => {
-        fetchSuppliers();
-    }, []);
+        fetchSuppliers(currentPage);
+    }, [fetchSuppliers, currentPage]);
 
     const handleDelete = async (id: string, name: string) => {
         setConfirmModal({
@@ -379,7 +397,7 @@ const SuppliersPage = () => {
                 try {
                     await SupplierService.deleteSupplier(id);
                     toast.success('Vendor profile terminated');
-                    fetchSuppliers();
+                    fetchSuppliers(currentPage);
                 } catch (error) {
                     toast.error('Operation failed');
                 } finally {
@@ -395,11 +413,7 @@ const SuppliersPage = () => {
         setIsAddModalOpen(true);
     };
 
-    const filteredSuppliers = suppliers.filter(s =>
-        s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.phone.includes(searchTerm) ||
-        (s.gstNumber && s.gstNumber.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const filteredSuppliers = suppliers;
 
     const tabs = [
         { id: 'suppliers' as const, label: 'Suppliers', icon: Truck },
@@ -482,8 +496,8 @@ const SuppliersPage = () => {
                             <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Active Supplier Network</span>
                         </div>
                         <div className="flex items-center gap-3">
-                             <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                Total <span className="text-teal-600">{filteredSuppliers.length}</span> Vendors
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                                Total <span className="text-teal-600">{totalSuppliers}</span> Vendors
                             </span>
                         </div>
                     </div>
@@ -496,6 +510,34 @@ const SuppliersPage = () => {
                             isLoading={loading}
                         />
                     </div>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-5 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/20">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                Page <span className="text-teal-600">{currentPage}</span> of {totalPages} &middot; {totalSuppliers} vendors
+                            </span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                                    disabled={currentPage === 1 || loading}
+                                    className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    ← Previous
+                                </button>
+                                <span className="px-3 py-2 bg-teal-600 text-white text-[10px] font-black rounded-xl">
+                                    {currentPage} / {totalPages}
+                                </span>
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                                    disabled={currentPage === totalPages || loading}
+                                    className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Next →
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -510,7 +552,7 @@ const SuppliersPage = () => {
                     setIsAddModalOpen(false);
                     setEditingSupplier(null);
                 }}
-                onSuccess={fetchSuppliers}
+                onSuccess={() => fetchSuppliers(1)}
                 initialData={editingSupplier}
             />
 
