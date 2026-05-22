@@ -29,7 +29,7 @@ export interface PaymentSummary {
   paidAmount: number;
   balanceDue: number;
   paymentMode: "Cash" | "UPI" | "Card" | "Mixed" | "Credit";
-  status: "Paid" | "Partial" | "Due";
+  status: "Paid" | "Partial" | "Due" | "RETURN" | string;
   transactionId?: string;
   paymentDetails?: {
     cash: number;
