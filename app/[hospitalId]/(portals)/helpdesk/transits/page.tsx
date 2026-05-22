@@ -18,7 +18,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { helpdeskService } from '@/lib/integrations/services/helpdesk.service';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
-import { generatePrescriptionHtml, generateLabTokenHtml } from '@/lib/print-utils';
+import { generatePrescriptionHtml, generateLabTokenHtml, generateLabReportHtml } from '@/lib/print-utils';
 import Link from 'next/link';
 import { useTransits } from '@/lib/integrations/hooks';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -72,7 +72,7 @@ function TransitsPage() {
 
 
 
-    const handlePrint = (transit: any, type: 'prescription' | 'lab') => {
+    const handlePrint = (transit: any, type: 'prescription' | 'lab' | 'lab-report') => {
         const hospital = {
             ...(hospitalDetails || {}),
             ...(transit.hospital || {})
@@ -144,6 +144,33 @@ function TransitsPage() {
             };
 
             const html = generateLabTokenHtml({ ...data, returnUrl: '/helpdesk/transits' });
+            const win = window.open('', '_self');
+            if (win) {
+                win.document.write(html);
+                win.document.close();
+            }
+            return;
+        }
+
+        if (type === 'lab-report' && transit.labSample) {
+            const data = {
+                hospital,
+                patient: {
+                    name: transit.patientName,
+                    mrn: transit.patientMRN,
+                    mobile: transit.patientMobile,
+                    age: transit.patientAge,
+                    gender: transit.patientGender
+                },
+                doctor: {
+                    name: transit.doctorName
+                },
+                labSample: transit.labSample,
+                headerHtml,
+                footerHtml
+            };
+
+            const html = generateLabReportHtml({ ...data, returnUrl: '/helpdesk/transits' });
             const win = window.open('', '_self');
             if (win) {
                 win.document.write(html);
@@ -298,7 +325,12 @@ function TransitsPage() {
                                                         <Beaker size={11} /> Lab Token
                                                     </span>
                                                 )}
-                                                {!t.prescription && !t.labToken && (
+                                                {(filter === 'all' || filter === 'lab') && (t as any).labSample && (
+                                                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold uppercase tracking-wide">
+                                                        <Activity size={11} /> Lab Report
+                                                    </span>
+                                                )}
+                                                {!t.prescription && !t.labToken && !(t as any).labSample && (
                                                     <span className="text-xs text-slate-400 italic">No Docs</span>
                                                 )}
                                             </div>
@@ -328,6 +360,16 @@ function TransitsPage() {
                                                         title="Print Lab Token"
                                                     >
                                                         <Printer size={14} />
+                                                    </button>
+                                                )}
+                                                {(filter === 'all' || filter === 'lab') && (t as any).labSample && (
+                                                    <button
+                                                        onClick={() => handlePrint(t, 'lab-report')}
+                                                        className="inline-flex items-center gap-1 px-2 py-1.5 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-all text-[10px] font-bold uppercase tracking-wide"
+                                                        title="Print Lab Report"
+                                                    >
+                                                        <Printer size={12} />
+                                                        Lab Report
                                                     </button>
                                                 )}
 

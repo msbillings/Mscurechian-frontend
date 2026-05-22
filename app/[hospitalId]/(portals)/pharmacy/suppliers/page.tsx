@@ -455,7 +455,7 @@ const SuppliersPage = () => {
                     )}
 
                     <button
-                        onClick={fetchSuppliers}
+                        onClick={() => fetchSuppliers()}
                         className="p-2.5 md:py-3 md:px-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-gray-500 hover:text-teal-600 transition-all shadow-sm flex items-center justify-center w-full sm:w-auto"
                         title="Refresh List"
                     >

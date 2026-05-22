@@ -19,6 +19,8 @@ import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
 import { useTenantLink } from '@/hooks/useTenantLink';
 import { useSSE } from '@/hooks/useSSE';
 import ConsultationCompletionModal from './components/ConsultationCompletionModal';
+import { SmartPrescriptionCard } from '../../components/prescription/SmartPrescriptionCard';
+import { ClinicalNotesEditor } from '../../components/prescription/ClinicalNotesEditor';
 
 interface ConsultationPageProps {
   params: Promise<{
@@ -36,7 +38,7 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
   const [loading, setLoading] = useState(true);
   const [appointment, setAppointment] = useState<any>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [activeTab, setActiveTab] = useState<'consultation' | 'history'>('consultation');
+  const [activeTab, setActiveTab] = useState<'clinical-notes' | 'smart-prescription' | 'labs' | 'history'>('clinical-notes');
   const [historySubTab, setHistorySubTab] = useState<'visits' | 'prescriptions' | 'labs'>('visits');
   const [patientHistory, setPatientHistory] = useState<{
     visits: any[];
@@ -647,12 +649,24 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
         {/* Main Content - Consultation Area */}
         <div className="col-span-12 lg:col-span-8 xl:col-span-9 space-y-6">
           {/* Tab Navigation */}
-          <div className="flex items-center gap-1 p-1 bg-white dark:bg-gray-900 rounded-2xl border border-border-theme w-fit">
+          <div className="flex flex-wrap items-center gap-1 p-1 bg-white dark:bg-gray-900 rounded-2xl border border-border-theme w-fit">
             <TabButton
-              active={activeTab === 'consultation'}
-              onClick={() => setActiveTab('consultation')}
+              active={activeTab === 'clinical-notes'}
+              onClick={() => setActiveTab('clinical-notes')}
+              icon={<FileText size={16} />}
+              label="Clinical Notes"
+            />
+            <TabButton
+              active={activeTab === 'smart-prescription'}
+              onClick={() => setActiveTab('smart-prescription')}
               icon={<Stethoscope size={16} />}
-              label="Consultation"
+              label="Smart Prescription"
+            />
+            <TabButton
+              active={activeTab === 'labs'}
+              onClick={() => setActiveTab('labs')}
+              icon={<Beaker size={16} />}
+              label="Lab Orders"
             />
             <TabButton
               active={activeTab === 'history'}
@@ -662,7 +676,58 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
             />
           </div>
 
-          {activeTab === 'consultation' ? (
+          {activeTab === 'clinical-notes' && (
+            <div className="space-y-6">
+              <ClinicalNotesEditor 
+                initialData={{
+                  chiefComplaints: clinicalNotes || appointment?.clinicalNotes || '',
+                  assessment: diagnosis || appointment?.diagnosis || '',
+                  plan: plan || appointment?.plan || ''
+                }}
+                onSave={async (data) => {
+                  setClinicalNotes(data.chiefComplaints);
+                  setDiagnosis(data.assessment);
+                  setPlan(data.plan);
+                  try {
+                    await doctorService.saveConsultationDraft(appointmentId, {
+                      clinicalNotes: data.chiefComplaints,
+                      diagnosis: data.assessment,
+                      plan: data.plan
+                    });
+                  } catch (error) {
+                    console.error("Save failed", error);
+                  }
+                }}
+              />
+              
+              <div className="flex justify-end mt-4">
+                <button
+                  onClick={() => handleEndConsultation(false)}
+                  className="px-6 py-3 bg-primary-theme text-white rounded-xl font-bold shadow-lg shadow-primary-theme/20 hover:scale-105 transition-all"
+                >
+                  Save & Complete Consultation
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'smart-prescription' && (
+            <div className="space-y-6">
+              <SmartPrescriptionCard 
+                hospitalId={(user as any)?.hospitalId || ''}
+                appointmentId={appointmentId}
+                patientId={appointment?.patient?._id || ''}
+                patientAllergies={appointment?.patient?.allergies}
+                onSuccess={() => {
+                  setActiveTab('history');
+                  setHistorySubTab('prescriptions');
+                  fetchPatientHistory();
+                }}
+              />
+            </div>
+          )}
+
+          {activeTab === 'labs' && (
             <div className="space-y-6">
               {/* Lab Token Toggle */}
               <div className="bg-white dark:bg-gray-900 rounded-3xl border border-border-theme p-3 sm:p-4 flex items-center justify-between shadow-sm gap-2">
@@ -814,109 +879,10 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                   </div>
                 </div>
               )}
-
-              {/* Consultation Notes Section */}
-              <div className="bg-white dark:bg-gray-900 rounded-4xl border border-border-theme shadow-sm p-4 sm:p-8 space-y-6 sm:space-y-8">
-                {/* Subjective */}
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs sm:text-sm font-black uppercase tracking-widest text-primary-theme flex items-center gap-2">
-                      <ClipboardList size={18} /> Subjective (Chief Complaints)
-                    </h4>
-                    <span className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-gray-100 px-2 py-0.5 rounded-full">Compulsory</span>
-                  </div>
-                  <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800">
-                    <p className="text-[10px] sm:text-xs font-bold text-muted-foreground mb-2">Recorded by Nursing Staff:</p>
-                    <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white italic">
-                      "{appointment?.notes || appointment?.reason || 'No initial complaints described by staff'}"
-                    </p>
-                  </div>
-                  <div className="relative group">
-                    <textarea
-                      value={clinicalNotes}
-                      onChange={(e) => setClinicalNotes(e.target.value)}
-                      placeholder="Enter detailed clinical findings, patient history, and symptoms..."
-                      maxLength={1000}
-                      className="w-full min-h-[120px] p-4 sm:p-5 bg-white dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-800 text-xs sm:text-sm focus:ring-2 focus:ring-primary-theme outline-none transition-all placeholder:text-muted-foreground/50 font-medium resize-none pb-8"
-                    />
-                    <div className="absolute bottom-3 right-4 text-[9px] sm:text-[10px] font-bold text-muted-foreground/50 group-focus-within:text-primary-theme/70 transition-colors">
-                      {clinicalNotes.length} / 1000
-                    </div>
-                  </div>
-                </div>
-
-                {/* Assessment */}
-                <div className="space-y-3 sm:space-y-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs sm:text-sm font-black uppercase tracking-widest text-primary-theme flex items-center gap-2">
-                      <Stethoscope size={18} /> Assessment (Diagnosis)
-                    </h4>
-                  </div>
-                  <div className="relative group">
-                    <div className="absolute left-3.5 sm:left-4 top-3.5 sm:top-4 text-primary-theme/30 group-focus-within:text-primary-theme transition-colors">
-                      <Search size={16} />
-                    </div>
-                    <input
-                      type="text"
-                      value={diagnosis}
-                      onChange={(e) => setDiagnosis(e.target.value)}
-                      placeholder="Enter ICD-10 Diagnosis or Clinical Assessment..."
-                      maxLength={200}
-                      className="w-full pl-10 sm:pl-12 pr-12 py-3 sm:py-4 bg-white dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-800 text-xs sm:text-sm font-bold focus:ring-2 focus:ring-primary-theme outline-none transition-all"
-                    />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] sm:text-[10px] font-bold text-muted-foreground/50 group-focus-within:text-primary-theme/70 transition-colors">
-                      {diagnosis.length} / 200
-                    </div>
-                  </div>
-                </div>
-
-                {/* Plan */}
-                <div className="space-y-3 sm:space-y-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-                  <h4 className="text-xs sm:text-sm font-black uppercase tracking-widest text-primary-theme flex items-center gap-2">
-                    <History size={18} /> Plan (Treatment & Follow-up)
-                  </h4>
-                  <div className="relative group">
-                    <textarea
-                      value={plan}
-                      onChange={(e) => setPlan(e.target.value)}
-                      placeholder="Describe treatment plan, advice, and follow-up instructions..."
-                      maxLength={2000}
-                      className="w-full min-h-[140px] p-4 sm:p-5 bg-white dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-800 text-xs sm:text-sm focus:ring-2 focus:ring-primary-theme outline-none transition-all font-medium resize-none pb-8"
-                    />
-                    <div className="absolute bottom-3 right-4 text-[9px] sm:text-[10px] font-bold text-muted-foreground/50 group-focus-within:text-primary-theme/70 transition-colors">
-                      {plan.length} / 2000
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-6 border-t border-gray-100 dark:border-gray-800">
-                  <div className="flex items-center gap-2 text-muted-foreground italic text-xs">
-                    {isAutoSaving ? (
-                      <>
-                        <Loader2 size={12} className="animate-spin text-primary-theme" />
-                        <span className="animate-pulse">Saving changes...</span>
-                      </>
-                    ) : lastSaved ? (
-                      <>
-                        <CheckCircle size={12} className="text-emerald-500" />
-                        <span className="text-emerald-600/70 font-bold uppercase tracking-tighter text-[10px]">Last saved at {lastSaved.toLocaleTimeString()}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Loader2 size={12} className="animate-spin" /> Auto-saving draft enabled
-                      </>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleEndConsultation(false)}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-primary-theme text-primary-theme-foreground font-black uppercase text-[10px] tracking-wider rounded-xl shadow-lg shadow-primary-theme/20 hover:scale-105 active:scale-95 transition-all"
-                  >
-                    <Send size={14} /> Finish consultation
-                  </button>
-                </div>
-              </div>
             </div>
-          ) : (
+          )}
+
+          {activeTab === 'history' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {/* History Scoping Toggle & Filters */}
               <div className="flex flex-col gap-4">

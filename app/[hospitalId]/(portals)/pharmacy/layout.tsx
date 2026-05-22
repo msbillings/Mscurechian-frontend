@@ -22,6 +22,7 @@ import {
     PlusCircle,
     Users,
     RotateCcw,
+    Undo2,
     Receipt,
     ShoppingCart,
     ShoppingBag,
@@ -145,6 +146,7 @@ const PharmacyLayout = ({ children }: { children: React.ReactNode }) => {
         { icon: PlusCircle, label: "Create Invoice", path: "/pharmacy/billing" },
         { icon: ArrowLeftRight, label: "IPD Issuance", path: "/pharmacy/ipd-issuance" },
         { icon: RotateCcw, label: "Medicine Returns", path: "/pharmacy/medicine-return" },
+        { icon: Undo2, label: "General Return", path: "/pharmacy/general-return" },
         { icon: Package, label: "Products", path: "/pharmacy/products" },
         { icon: Users, label: "Suppliers", path: "/pharmacy/suppliers" },
     ];

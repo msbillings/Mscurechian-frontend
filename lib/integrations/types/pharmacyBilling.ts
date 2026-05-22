@@ -1,4 +1,4 @@
-﻿export interface BillItem {
+export interface BillItem {
   drug?: string; // Align with backend 'drug' field
   productId?: string; // Keep for frontend legacy
   productName: string;
@@ -17,6 +17,7 @@
   expiry?: string;
   discountPct?: number;
   discount?: number;
+  returnedQty?: number;
 }
 
 export interface PaymentSummary {

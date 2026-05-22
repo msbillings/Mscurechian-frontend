@@ -2042,6 +2042,240 @@ export const generateLabTokenHtml = (data: any) => {
     `;
 };
 
+export const generateLabReportHtml = (data: any) => {
+  const { hospital, patient, doctor, labSample, headerHtml, footerHtml } = data;
+  const tests = labSample?.tests || [];
+  const sampleId = labSample?.sampleId || 'N/A';
+  const sampleType = labSample?.sampleType || 'N/A';
+  const reportDate = labSample?.reportDate ? new Date(labSample.reportDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB');
+  const collectionDate = labSample?.collectionDate ? new Date(labSample.collectionDate).toLocaleDateString('en-GB') : 'N/A';
+  const status = labSample?.status || 'Completed';
+
+  const getDisplayRange = (test: any) => {
+    if (!test.normalRanges) return test.normalRange || '-';
+    const gender = (patient?.gender || '').toLowerCase();
+    const age = patient?.age || 0;
+    let range;
+    if (age < 12) range = test.normalRanges.child;
+    else if (gender === 'male') range = test.normalRanges.male;
+    else if (gender === 'female') range = test.normalRanges.female;
+    if (range && (range.min !== undefined || range.max !== undefined)) {
+      return `${range.min ?? 0} - ${range.max ?? 0}`;
+    }
+    return test.normalRange || '-';
+  };
+
+  const testsHtml = tests.map((test: any, idx: number) => {
+    const isAbnormal = test.isAbnormal;
+    const resultValue = test.resultValue || '-';
+    const unit = test.unit || '-';
+    const range = getDisplayRange(test);
+    const subTestsHtml = (test.subTests || []).map((sub: any, si: number) => `
+      <tr>
+        <td style="padding: 8px 10px 8px 30px; border-bottom: 1px solid #f1f5f9; font-size: 12px; color: #64748b; font-style: italic;">${sub.name || '-'}</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px; font-weight: 600;">${sub.result || '-'}</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px; color: #64748b;">${sub.unit || '-'}</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 11px; color: #94a3b8;">${sub.range || '-'}</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 11px;"></td>
+      </tr>`).join('');
+
+    return `
+      <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#fafafa'};">
+        <td style="padding: 12px 10px; border-bottom: 1.5px solid #e2e8f0; font-weight: 700; font-size: 12px; color: #1e293b;">${test.testName || '-'}</td>
+        <td style="padding: 12px 10px; border-bottom: 1.5px solid #e2e8f0; font-weight: 800; font-size: 13px; color: ${isAbnormal ? '#dc2626' : '#1e293b'};">
+          ${resultValue}
+          ${isAbnormal ? '<span style="font-size:10px; background:#fee2e2; color:#dc2626; padding: 2px 6px; border-radius:4px; margin-left:6px; font-weight:800;">▲ HIGH</span>' : ''}
+        </td>
+        <td style="padding: 12px 10px; border-bottom: 1.5px solid #e2e8f0; font-size: 12px; color: #64748b;">${unit}</td>
+        <td style="padding: 12px 10px; border-bottom: 1.5px solid #e2e8f0; font-size: 11px; color: #94a3b8;">${range}</td>
+        <td style="padding: 12px 10px; border-bottom: 1.5px solid #e2e8f0; font-size: 11px; color: ${isAbnormal ? '#dc2626' : '#16a34a'}; font-weight: 700;">${test.status || (isAbnormal ? 'Abnormal' : 'Normal')}</td>
+      </tr>
+      ${subTestsHtml}
+    `;
+  }).join('');
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Lab Report - ${patient?.name || 'Patient'}</title>
+      <meta charset="UTF-8">
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        @media print {
+          @page { size: A4; margin: 0; }
+          body { margin: 0; padding: 12mm 15mm 12mm 15mm; }
+          .no-print { display: none !important; }
+        }
+        html, body { height: 100%; margin: 0; padding: 0; }
+        body {
+          font-family: 'Inter', Arial, sans-serif;
+          background: white;
+          color: #1e293b;
+          font-size: 12px;
+          line-height: 1.5;
+        }
+        .container {
+          width: 210mm;
+          margin: 0 auto;
+          padding: 12mm 16mm;
+          box-sizing: border-box;
+        }
+        .return-btn {
+          padding: 10px 24px;
+          background-color: #000;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-weight: bold;
+          cursor: pointer;
+          text-decoration: none;
+          font-family: inherit;
+          width: 100%;
+          max-width: 400px;
+          font-size: 14px;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          display: block;
+          text-align: center;
+          margin: 12px auto;
+        }
+        .report-title {
+          text-align: center;
+          font-size: 18px;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: 2px;
+          color: #1e3a5f;
+          border-bottom: 3px double #1e3a5f;
+          padding-bottom: 10px;
+          margin: 18px 0 16px;
+        }
+        .info-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px 24px;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
+          padding: 14px 18px;
+          margin-bottom: 18px;
+        }
+        .info-row { display: flex; gap: 6px; font-size: 11px; }
+        .info-label { font-weight: 700; color: #64748b; white-space: nowrap; min-width: 90px; }
+        .info-value { font-weight: 600; color: #1e293b; }
+        table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+        thead tr {
+          background: #1e3a5f;
+          color: white;
+        }
+        thead th {
+          padding: 10px 10px;
+          font-size: 10px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          text-align: left;
+        }
+        .footer-section {
+          margin-top: 40px;
+          border-top: 2px solid #e2e8f0;
+          padding-top: 16px;
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 20px;
+          text-align: center;
+        }
+        .sig-block { }
+        .sig-line {
+          border-bottom: 1.5px solid #000;
+          margin: 0 auto 6px;
+          width: 140px;
+        }
+        .sig-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; }
+        .sig-sublabel { font-size: 9px; color: #94a3b8; margin-top: 2px; font-style: italic; }
+        .status-badge {
+          display: inline-block;
+          padding: 3px 10px;
+          border-radius: 6px;
+          font-size: 10px;
+          font-weight: 800;
+          text-transform: uppercase;
+          background: #dcfce7;
+          color: #16a34a;
+          border: 1px solid #bbf7d0;
+        }
+      </style>
+    </head>
+    <body onload="window.print();">
+      <script>
+        window.onafterprint = function() {
+          setTimeout(() => { window.location.replace('${data.returnUrl || "/helpdesk"}'); }, 500);
+        };
+      </script>
+      <div class="no-print">
+        <button onclick="window.location.replace('${data.returnUrl || "/helpdesk"}')" class="return-btn">
+          ← BACK TO HOSPITAL DASHBOARD
+        </button>
+      </div>
+      <div class="container">
+
+        ${headerHtml || `
+        <div style="text-align:center; padding-bottom: 10px; border-bottom: 2px solid #1e3a5f; margin-bottom: 12px;">
+          <h1 style="margin:0; font-size:22px; font-weight:900; text-transform:uppercase; color:#1e3a5f;">
+            ${hospital?.name || 'Medical Center'}
+          </h1>
+          <p style="margin:4px 0 0; font-size:11px; color:#64748b;">${hospital?.address || ''}</p>
+          ${hospital?.phone ? `<p style="margin:2px 0 0; font-size:10px; color:#94a3b8;">Phone: ${hospital.phone}</p>` : ''}
+        </div>`}
+
+        <div class="report-title">Laboratory Report</div>
+
+        <div class="info-grid">
+          <div class="info-row"><span class="info-label">Patient Name</span><span class="info-value">: ${patient?.name || 'N/A'}</span></div>
+          <div class="info-row"><span class="info-label">Sample ID</span><span class="info-value">: ${sampleId}</span></div>
+          <div class="info-row"><span class="info-label">Age / Gender</span><span class="info-value">: ${patient?.age || 'N/A'} Yrs / ${patient?.gender || 'N/A'}</span></div>
+          <div class="info-row"><span class="info-label">MRN</span><span class="info-value">: ${patient?.mrn || 'N/A'}</span></div>
+          <div class="info-row"><span class="info-label">Referred By</span><span class="info-value">: ${doctor?.name ? (doctor.name.toLowerCase().startsWith('dr') ? doctor.name : `Dr. ${doctor.name}`) : 'N/A'}</span></div>
+          <div class="info-row"><span class="info-label">Sample Type</span><span class="info-value">: ${sampleType}</span></div>
+          <div class="info-row"><span class="info-label">Collection Date</span><span class="info-value">: ${collectionDate}</span></div>
+          <div class="info-row"><span class="info-label">Report Date</span><span class="info-value">: ${reportDate}</span></div>
+          <div class="info-row"><span class="info-label">Status</span><span class="info-value">: <span class="status-badge">${status}</span></span></div>
+          <div class="info-row"><span class="info-label">Mobile</span><span class="info-value">: ${patient?.mobile || 'N/A'}</span></div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width:30%;">Test Name</th>
+              <th style="width:18%;">Result</th>
+              <th style="width:12%;">Units</th>
+              <th style="width:22%;">Normal Range</th>
+              <th style="width:18%;">Interpretation</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tests.length > 0 ? testsHtml : `
+              <tr>
+                <td colspan="5" style="text-align:center; padding: 30px; color:#94a3b8; font-style:italic;">
+                  No test results available yet
+                </td>
+              </tr>
+            `}
+          </tbody>
+        </table>
+
+
+        ${footerHtml || `
+        <div style="border-top: 1px solid #e5e7eb; margin-top: 20px; padding-top: 8px; text-align:center; font-size:9px; color:#9ca3af;">
+          <p style="margin:0;">Generated by MsCureChain • ${new Date().toLocaleDateString('en-GB')} at ${formatTime12Hr(new Date())}</p>
+        </div>`}
+      </div>
+    </body>
+    </html>
+  `;
+};
+
 export const generateQualityReportHtml = (data: any) => {
   const {
     metrics,

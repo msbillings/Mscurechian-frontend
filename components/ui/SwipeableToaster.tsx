@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Toaster, ToastBar, toast, Toast } from 'react-hot-toast';
+import { Toaster, ToastBar, toast, Toast, useToasterStore } from 'react-hot-toast';
+import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 
 /**
@@ -10,6 +11,35 @@ import { motion } from 'framer-motion';
  * using framer-motion and react-hot-toast.
  */
 const SwipeableToaster = () => {
+    const { toasts } = useToasterStore();
+    const processedToasts = useRef<Set<string>>(new Set());
+
+    useEffect(() => {
+        toasts.forEach((t) => {
+            if (t.visible && !processedToasts.current.has(t.id)) {
+                processedToasts.current.add(t.id);
+                // Play notification sound
+                try {
+                    const soundFile = t.type === 'error' ? '/assets/emergency.mp3' : '/assets/nurse.mp3';
+                    const audio = new Audio(soundFile);
+                    audio.volume = 0.5; // Set volume to 50% so it's not too loud
+                    audio.play().catch((e) => console.log('Audio play blocked by browser:', e));
+                } catch (error) {
+                    console.error('Failed to play notification sound', error);
+                }
+            }
+        });
+        
+        // Cleanup old toasts to prevent memory leaks
+        const visibleIds = new Set(toasts.filter(t => t.visible).map(t => t.id));
+        for (const id of processedToasts.current) {
+            if (!visibleIds.has(id)) {
+                // We don't remove it immediately because it might still be animating out, 
+                // but keeping it in the set is fine since it's just a set of strings.
+            }
+        }
+    }, [toasts]);
+
     return (
         <Toaster
             position="top-center"

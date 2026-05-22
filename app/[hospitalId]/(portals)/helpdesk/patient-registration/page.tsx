@@ -40,6 +40,10 @@ const INITIAL_FORM = {
     bloodGroup: 'Unknown',
     allergies: '',
     medicalHistory: '',
+    guardianName: '',
+    guardianRelation: '',
+    guardianMobile: '',
+    doctorReference: '',
     registrationType: 'OPD' as 'OPD' | 'IPD'
 };
 
@@ -187,6 +191,9 @@ export default function PatientRegistration() {
             case 'emergencyContact':
                 if (trimmed && !/^[6-9][0-9]{9}$/.test(trimmed.replace(/\D/g, ''))) return 'Invalid 10-digit number';
                 return '';
+            case 'guardianMobile':
+                if (trimmed && !/^[6-9][0-9]{9}$/.test(trimmed.replace(/\D/g, ''))) return 'Invalid 10-digit number';
+                return '';
             case 'patientEmail':
                 if (trimmed && trimmed.length > 100) return 'Email cannot exceed 100 characters';
                 if (trimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return 'Invalid email format';
@@ -265,7 +272,7 @@ export default function PatientRegistration() {
     }, [formData.dob, touched.age, validateField, formData.age]);
 
     useEffect(() => {
-        if (formData.honorific === 'Mr') setFormData(prev => ({ ...prev, gender: 'male' }));
+        if (formData.honorific === 'Mr' || formData.honorific === 'Master') setFormData(prev => ({ ...prev, gender: 'male' }));
         else if (formData.honorific === 'Mrs' || formData.honorific === 'Ms') setFormData(prev => ({ ...prev, gender: 'female' }));
     }, [formData.honorific]);
 
@@ -274,7 +281,7 @@ export default function PatientRegistration() {
         const { name, value } = e.target;
 
         let processedValue = value;
-        if (name === 'mobile' || name === 'emergencyContact') {
+        if (name === 'mobile' || name === 'emergencyContact' || name === 'guardianMobile') {
             processedValue = value.replace(/\D/g, '').slice(0, 10);
         } else if (name === 'name') {
             processedValue = value.slice(0, 150);
@@ -551,6 +558,8 @@ export default function PatientRegistration() {
                                             <option value="Mr">Mr.</option>
                                             <option value="Mrs">Mrs.</option>
                                             <option value="Ms">Ms.</option>
+                                            <option value="Master">Master</option>
+                                            <option value="Baby of">Baby of (B/o)</option>
                                             <option value="Dr">Dr.</option>
                                         </select>
                                     } />
@@ -636,6 +645,47 @@ export default function PatientRegistration() {
                                 <FormInput label="Emergency Mobile" error={touched.emergencyContact ? errors.emergencyContact : ''} component={
                                     <input name="emergencyContact" value={formData.emergencyContact} onChange={handleChange} onBlur={() => handleBlur('emergencyContact')} placeholder="10-digit number" className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${errors.emergencyContact && touched.emergencyContact ? 'border-rose-500' : 'border-slate-200'} outline-none text-sm font-bold transition-all`} />
                                 } />
+                            </div>
+                        </section>
+
+                        {/* ADDITIONAL DETAILS SECTION */}
+                        <section className="space-y-4">
+                            <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
+                                <User size={16} className="text-teal-600" />
+                                <h2 className="text-xs font-bold text-slate-900 uppercase tracking-widest">Additional Details</h2>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                                <div className="md:col-span-3">
+                                    <FormInput label="Guardian Name" component={
+                                        <input name="guardianName" value={formData.guardianName} onChange={handleChange} placeholder="Guardian Name" className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-teal-500 outline-none text-sm font-bold transition-all" />
+                                    } />
+                                </div>
+                                <div className="md:col-span-3">
+                                    <FormInput label="Relationship" component={
+                                        <select name="guardianRelation" value={formData.guardianRelation} onChange={handleChange} className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-teal-500 outline-none text-sm font-bold transition-all">
+                                            <option value="">Select Relation</option>
+                                            <option value="Father">Father</option>
+                                            <option value="Mother">Mother</option>
+                                            <option value="Husband">Husband</option>
+                                            <option value="Wife">Wife</option>
+                                            <option value="Son">Son</option>
+                                            <option value="Daughter">Daughter</option>
+                                            <option value="Brother">Brother</option>
+                                            <option value="Sister">Sister</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    } />
+                                </div>
+                                <div className="md:col-span-3">
+                                    <FormInput label="Guardian Mobile" error={touched.guardianMobile ? errors.guardianMobile : ''} component={
+                                        <input name="guardianMobile" value={formData.guardianMobile} onChange={handleChange} onBlur={() => handleBlur('guardianMobile')} placeholder="10-digit number" className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${errors.guardianMobile && touched.guardianMobile ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 outline-none text-sm font-bold transition-all`} />
+                                    } />
+                                </div>
+                                <div className="md:col-span-3">
+                                    <FormInput label="Doctor Reference" component={
+                                        <input name="doctorReference" value={formData.doctorReference} onChange={handleChange} placeholder="Referred By" className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-teal-500 outline-none text-sm font-bold transition-all" />
+                                    } />
+                                </div>
                             </div>
                         </section>
 

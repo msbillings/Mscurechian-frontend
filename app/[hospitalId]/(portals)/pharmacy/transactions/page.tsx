@@ -186,10 +186,12 @@ const TransactionsPage = () => {
                 { header: 'Patient Name', width: 25 },
                 { header: 'Mobile', width: 15 },
                 { header: 'Payment Mode', width: 15 },
-                { header: 'Total Amount', width: 15 },
-                { header: 'Paid Amount', width: 15 },
+                { header: 'Original Amount', width: 15 },
+                { header: 'Refund Amount', width: 15 },
+                { header: 'Final Paid', width: 15 },
                 { header: 'Balance', width: 12 },
                 { header: 'Status', width: 12 },
+                { header: 'Returned Items', width: 40 },
             ];
 
             // Header Row Styling
@@ -207,7 +209,8 @@ const TransactionsPage = () => {
                 };
             });
 
-            let totalBillAmount = 0;
+            let totalOriginalAmount = 0;
+            let totalRefundAmount = 0;
             let totalPaidAmount = 0;
             let totalBalanceAmount = 0;
 
@@ -227,6 +230,32 @@ const TransactionsPage = () => {
                 else if (mode === 'upi') upiTotal += amount;
                 else if (mode === 'mixed') mixedTotal += amount;
 
+                let refundAmount = 0;
+                let returnedItemsText: string[] = [];
+                
+                (bill.items || []).forEach(item => {
+                    if (item.returnedQty && item.returnedQty > 0) {
+                        const itemRefund = item.returnedQty * (item.rate || item.unitRate || 0);
+                        refundAmount += itemRefund;
+                        returnedItemsText.push(`${item.itemName} (${item.returnedQty})`);
+                    }
+                });
+
+                // If fully returned legacy logic
+                if (bill.paymentSummary.status === 'RETURN' || bill.paymentSummary.status.toUpperCase() === 'RETURN') {
+                     // For legacy full returns, if refundAmount is 0, recalculate
+                     if (refundAmount === 0 && bill.items) {
+                         bill.items.forEach(item => {
+                             const itemRefund = (item.qty) * (item.rate || item.unitRate || 0);
+                             refundAmount += itemRefund;
+                             returnedItemsText.push(`${item.itemName} (${item.qty})`);
+                         });
+                     }
+                }
+
+                const originalAmount = bill.paymentSummary.grandTotal + refundAmount;
+                const returnedItemsStr = returnedItemsText.length > 0 ? returnedItemsText.join(', ') : '-';
+
                 const row = worksheet.addRow([
                     index + 1,
                     new Date(bill.createdAt).toLocaleDateString(),
@@ -234,20 +263,23 @@ const TransactionsPage = () => {
                     bill.patientName || 'Walk-in',
                     bill.customerPhone || '-',
                     bill.paymentSummary.paymentMode?.toUpperCase() || 'CASH',
-                    bill.paymentSummary.grandTotal,
+                    originalAmount,
+                    refundAmount > 0 ? -refundAmount : 0,
                     bill.paymentSummary.paidAmount,
                     bill.paymentSummary.balanceDue,
-                    bill.paymentSummary.status
+                    bill.paymentSummary.status,
+                    returnedItemsStr
                 ]);
 
-                totalBillAmount += (bill.paymentSummary.grandTotal || 0);
+                totalOriginalAmount += originalAmount;
+                totalRefundAmount += refundAmount;
                 totalPaidAmount += (bill.paymentSummary.paidAmount || 0);
                 totalBalanceAmount += (bill.paymentSummary.balanceDue || 0);
 
                 // Style data cells
                 row.eachCell((cell, colNumber) => {
-                    if (colNumber <= 6 || colNumber === 10) {
-                        cell.alignment = { horizontal: colNumber === 4 ? 'left' : 'center' };
+                    if (colNumber <= 6 || colNumber === 11 || colNumber === 12) {
+                        cell.alignment = { horizontal: (colNumber === 4 || colNumber === 12) ? 'left' : 'center' };
                     } else {
                         cell.alignment = { horizontal: 'right' };
                     }
@@ -263,8 +295,11 @@ const TransactionsPage = () => {
                         right: { style: 'thin' }
                     };
 
-                    if ([7, 8, 9].includes(colNumber)) {
+                    if ([7, 8, 9, 10].includes(colNumber)) {
                         cell.numFmt = '₹#,##0.00';
+                        if (colNumber === 8 && refundAmount > 0) {
+                             cell.font = { color: { argb: 'EF4444' } }; // Red for refund
+                        }
                     }
                 });
             });
@@ -273,16 +308,17 @@ const TransactionsPage = () => {
             worksheet.addRow([]); // Blank row
             const summaryRow = worksheet.addRow([
                 '', '', '', '', '', 'TOTALS:',
-                totalBillAmount,
+                totalOriginalAmount,
+                totalRefundAmount > 0 ? -totalRefundAmount : 0,
                 totalPaidAmount,
                 totalBalanceAmount,
-                ''
+                '', ''
             ]);
 
             summaryRow.height = 25;
             summaryRow.eachCell((cell, colNumber) => {
-                if (colNumber >= 6 && colNumber <= 9) {
-                    cell.font = { bold: true };
+                if (colNumber >= 6 && colNumber <= 10) {
+                    cell.font = { bold: true, color: colNumber === 8 ? { argb: 'EF4444' } : undefined };
                     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
                     cell.border = {
                         top: { style: 'medium' },
@@ -490,7 +526,28 @@ const TransactionsPage = () => {
                                         </td>
                                     </tr>
                                 ) : (
-                                    bills.map((bill) => (
+                                    bills.map((bill) => {
+                                        let refundAmount = 0;
+                                        let returnedCount = 0;
+                                        (bill.items || []).forEach(item => {
+                                            if (item.returnedQty && item.returnedQty > 0) {
+                                                refundAmount += (item.returnedQty * (item.rate || item.unitRate || 0));
+                                                returnedCount += item.returnedQty;
+                                            }
+                                        });
+
+                                        if ((bill.paymentSummary.status === 'RETURN' || bill.paymentSummary.status.toUpperCase() === 'RETURN') && refundAmount === 0) {
+                                             if (bill.items) {
+                                                 bill.items.forEach(item => {
+                                                     refundAmount += ((item.qty) * (item.rate || item.unitRate || 0));
+                                                     returnedCount += item.qty;
+                                                 });
+                                             }
+                                        }
+
+                                        const originalAmount = bill.paymentSummary.grandTotal + refundAmount;
+
+                                        return (
                                         <tr key={bill._id} className="group hover:bg-gray-50 dark:hover:bg-gray-700/20">
                                             <td className="px-6 md:px-8 py-5">
                                                 <div className="flex items-center gap-2">
@@ -511,20 +568,33 @@ const TransactionsPage = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 md:px-8 py-5">
-                                                <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-[10px] font-black text-gray-500 uppercase">
-                                                    {bill.items?.length || 0} SKUs
+                                                <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-[10px] font-black text-gray-500 uppercase inline-block">
+                                                    {bill.items?.length || 0} SKUS
                                                 </span>
+                                                {returnedCount > 0 && (
+                                                    <span className="px-3 py-1 bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 rounded-full text-[10px] font-black uppercase inline-block ml-2 mt-1 sm:mt-0">
+                                                        {returnedCount} Returned
+                                                    </span>
+                                                )}
                                             </td>
                                             <td className="px-6 md:px-8 py-5 text-right">
-                                                <p className="font-black text-sm text-gray-900 dark:text-white">₹{Math.round(bill.paymentSummary?.grandTotal || 0).toLocaleString()}</p>
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{bill.paymentSummary?.paymentMode || 'CASH'}</p>
+                                                <p className="font-black text-sm text-gray-900 dark:text-white">₹{Math.round(originalAmount || 0).toLocaleString()}</p>
+                                                {refundAmount > 0 ? (
+                                                    <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest mt-0.5">-₹{Math.round(refundAmount).toLocaleString()} (Refund)</p>
+                                                ) : (
+                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{bill.paymentSummary?.paymentMode || 'CASH'}</p>
+                                                )}
                                             </td>
                                             <td className="px-6 md:px-8 py-5 text-center">
                                                 <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-widest ${bill.paymentSummary?.status === 'Paid'
                                                     ? 'bg-teal-50 text-teal-600 border border-teal-100 dark:bg-teal-900/20 dark:border-teal-900/30'
+                                                    : bill.paymentSummary?.status === 'Partial'
+                                                    ? 'bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-900/20 dark:border-blue-900/30'
+                                                    : bill.paymentSummary?.status?.toUpperCase() === 'RETURN'
+                                                    ? 'bg-red-50 text-red-600 border border-red-100 dark:bg-red-900/20 dark:border-red-900/30'
                                                     : 'bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-900/20 dark:border-amber-900/30'
                                                     }`}>
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${bill.paymentSummary?.status === 'Paid' ? 'bg-teal-500' : 'bg-amber-500'}`} />
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${bill.paymentSummary?.status === 'Paid' ? 'bg-teal-500' : bill.paymentSummary?.status === 'Partial' ? 'bg-blue-500' : bill.paymentSummary?.status?.toUpperCase() === 'RETURN' ? 'bg-red-500' : 'bg-amber-500'}`} />
                                                     {bill.paymentSummary?.status || 'PENDING'}
                                                 </span>
                                             </td>
@@ -548,7 +618,7 @@ const TransactionsPage = () => {
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))
+                                    )})
                                 )}
                             </tbody>
                         </table>

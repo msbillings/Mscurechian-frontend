@@ -83,7 +83,10 @@ export default function SampleCollectionPage() {
             if (!socket) return;
             socketInstance = socket;
 
-            const handleUpdate = () => {
+            const handleUpdate = (data?: any) => {
+                if (data?.message) {
+                    toast.success(data.message, { duration: 5000, icon: '🔔' });
+                }
                 console.log('📡 [SamplesPage] Real-time event → refreshing list...');
                 triggerLiveRefresh();
             };
@@ -522,13 +525,28 @@ export default function SampleCollectionPage() {
                                         <td className="px-4 md:px-6 py-3 md:py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 {activeTab === 'pending' && (
-                                                    <button
-                                                        onClick={() => handleCollect(sample._id)}
-                                                        className="px-4 py-2 bg-primary-theme hover:bg-primary-theme/90 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shadow-sm"
-                                                    >
-                                                        <FlaskConical className="w-3.5 h-3.5" />
-                                                        Collect
-                                                    </button>
+                                                    <div className="flex items-center gap-2">
+                                                        {sample.invoiceId ? (
+                                                            <div className="px-3 py-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+                                                                <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400">BILLED</span>
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleGenerateBill(sample)}
+                                                                className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shadow-sm"
+                                                            >
+                                                                <Receipt className="w-3.5 h-3.5" />
+                                                                Bill
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => handleCollect(sample._id)}
+                                                            className="px-4 py-2 bg-primary-theme hover:bg-primary-theme/90 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shadow-sm"
+                                                        >
+                                                            <FlaskConical className="w-3.5 h-3.5" />
+                                                            Collect
+                                                        </button>
+                                                    </div>
                                                 )}
 
                                                 {activeTab === 'ready' && (

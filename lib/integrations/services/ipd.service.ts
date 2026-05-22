@@ -75,8 +75,10 @@ export const ipdService = {
     reason?: string;
     vitals?: any;
     amount?: number;
+    discount?: number;
     paymentMethod?: string;
     paymentStatus?: string;
+    paymentDetails?: any;
   }) =>
     apiClient<{ admission: IPDAdmission; occupancy: any }>(
       IPD_ENDPOINTS.ADMISSIONS,

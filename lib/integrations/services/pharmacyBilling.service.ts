@@ -28,6 +28,7 @@ const mapInvoiceToBill = (b: any): PharmacyBill => ({
     mrp: item.mrp || item.unitRate,
     discountPct: item.discountPct,
     discount: item.discountAmount || item.discount,
+    returnedQty: item.returnedQty || 0,
   })),
   paymentSummary: {
     subtotal: b.subTotal,

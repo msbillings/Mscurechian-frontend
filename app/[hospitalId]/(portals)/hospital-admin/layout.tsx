@@ -93,6 +93,7 @@ const hospitalAdminMenu: MenuItem[] = [
     subItems: [
       { label: "Dashboard", path: "/hospital-admin/pharma/dashboard" },
       { label: "Medicine Inventory", path: "/hospital-admin/pharma/products" },
+      { label: "Returned Stock", path: "/hospital-admin/pharma/returns" },
       { label: "Suppliers", path: "/hospital-admin/pharma/suppliers" },
       { label: "Pharmacy Settings", path: "/hospital-admin/management/pharmacy-settings" },
     ],

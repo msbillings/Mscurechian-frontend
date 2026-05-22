@@ -15,7 +15,8 @@ import {
     Headphones,
     ShieldCheck,
     Clock,
-    FileText
+    FileText,
+    Receipt
 } from "lucide-react";
 import { helpdeskService } from '@/lib/integrations/services/helpdesk.service';
 import { useParams } from "next/navigation";
@@ -31,6 +32,7 @@ import LicenseLock from "@/components/License/LicenseLock";
 const helpdeskMenu: any[] = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/helpdesk" },
     { icon: Activity, label: "IPD Center", path: "/helpdesk/ipd" },
+    { icon: Receipt, label: "Lab Billing", path: "/helpdesk/lab-billing" },
     { icon: Users, label: "Patient List", path: "/helpdesk/patients" },
     { icon: Stethoscope, label: "Doctors List", path: "/helpdesk/doctors" },
     { icon: Truck, label: "Files & Receipts", path: "/helpdesk/transits" },

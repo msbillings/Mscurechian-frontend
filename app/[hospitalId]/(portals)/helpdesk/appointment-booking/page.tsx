@@ -75,7 +75,10 @@ export default function AppointmentBooking() {
 
     const [notes, setNotes] = useState("");
     const [appointmentType, setAppointmentType] = useState("consultation");
-    const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'upi'>('cash');
+    const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'upi' | 'mixed'>('cash');
+    const [discountAmount, setDiscountAmount] = useState('0');
+    const [discountType, setDiscountType] = useState<'flat' | 'percentage'>('flat');
+    const [mixedPayments, setMixedPayments] = useState({ cash: '', card: '', upi: '' });
     const [paymentStatus, setPaymentStatus] = useState<'paid' | 'unpaid'>('paid');
     const [sendToDoctor, setSendToDoctor] = useState(true);
 
@@ -502,21 +505,43 @@ export default function AppointmentBooking() {
         const hasVitalErrors = showVitals && Object.values(vitalsErrors).some(err => !!err);
 
         const hasNotesLimit = notes.length > 400;
-        const hasEmptyNotes = notes.trim().length === 0; // Check if reason/notes is empty
         const hasAdmissionErrors = Object.values(admissionErrors).some(err => !!err);
+
+        let hasMixedPaymentError = false;
+        if (paymentMethod === 'mixed') {
+            const baseAmount = registrationType === 'IPD' ? parseFloat(ipdFee || '0') : (selectedDoctor?.consultationFee || 0);
+            const discountValue = parseFloat(discountAmount || '0');
+            const calculatedDiscount = discountType === 'percentage' ? (baseAmount * discountValue / 100) : discountValue;
+            const finalAmount = Math.max(0, baseAmount - calculatedDiscount);
+            const totalMixed = (parseFloat(mixedPayments.cash || '0') + parseFloat(mixedPayments.card || '0') + parseFloat(mixedPayments.upi || '0'));
+            if (Math.abs(totalMixed - finalAmount) > 0.01) {
+                hasMixedPaymentError = true;
+            }
+        }
 
         if (registrationType === 'IPD') {
             if (!admissionData.bedId) return false;
             if (admissionData.diet.length > 250 || admissionData.clinicalNotes.length > 400) return false;
         }
 
-        return !hasVitalErrors && !hasNotesLimit && !hasEmptyNotes && !hasAdmissionErrors;
+        return !hasVitalErrors && !hasNotesLimit && !hasAdmissionErrors && !hasMixedPaymentError;
     };
 
     const handleBooking = async () => {
         if (!selectedPatient) { toast.error("Select a patient object"); return; }
         if (!selectedDoctor) { toast.error("Select a physician"); return; }
         if (!isBookingValid()) {
+            if (paymentMethod === 'mixed') {
+                const baseAmount = registrationType === 'IPD' ? parseFloat(ipdFee || '0') : (selectedDoctor?.consultationFee || 0);
+                const discountValue = parseFloat(discountAmount || '0');
+                const calculatedDiscount = discountType === 'percentage' ? (baseAmount * discountValue / 100) : discountValue;
+                const finalAmount = Math.max(0, baseAmount - calculatedDiscount);
+                const totalMixed = (parseFloat(mixedPayments.cash || '0') + parseFloat(mixedPayments.card || '0') + parseFloat(mixedPayments.upi || '0'));
+                if (Math.abs(totalMixed - finalAmount) > 0.01) {
+                    toast.error(`Mixed payments (₹${totalMixed}) must equal Final Amount (₹${finalAmount})`);
+                    return;
+                }
+            }
             toast.error("Please correct the highlighted errors and fill all required fields.");
             return;
         }
@@ -613,12 +638,24 @@ export default function AppointmentBooking() {
                 }
             };
 
+            const baseAmount = registrationType === 'IPD' ? parseFloat(ipdFee || '0') : (selectedDoctor?.consultationFee || 0);
+            const discountValue = parseFloat(discountAmount || '0');
+            const discount = discountType === 'percentage' ? (baseAmount * discountValue / 100) : discountValue;
+            const finalAmount = Math.max(0, baseAmount - discount);
+
             // 1. Create Appointment first (especially for IPD to generate the admissionId linkage)
             const response = await helpdeskService.createAppointment({
                 ...payload,
                 type: registrationType === 'IPD' ? 'IPD' : appointmentType,
-                amount: registrationType === 'IPD' ? parseFloat(ipdFee) : (selectedDoctor?.consultationFee || 0),
-                paymentStatus: registrationType === 'IPD' ? backendPaymentStatus : payload.paymentStatus
+                amount: finalAmount,
+                discount: discount,
+                paymentStatus: registrationType === 'IPD' ? backendPaymentStatus : payload.paymentStatus,
+                payment: {
+                    amount: finalAmount,
+                    paymentMethod: paymentMethod,
+                    paymentStatus: registrationType === 'IPD' ? backendPaymentStatus : payload.paymentStatus,
+                    paymentDetails: paymentMethod === 'mixed' ? mixedPayments : undefined
+                }
             });
             let appointment = response.appointment || response;
 
@@ -657,9 +694,11 @@ export default function AppointmentBooking() {
                         spO2: '',
                         glucose: ''
                     },
-                    amount: parseFloat(ipdFee),
+                    amount: finalAmount,
+                    discount: discount,
                     paymentMethod: paymentMethod,
-                    paymentStatus: backendPaymentStatus
+                    paymentStatus: backendPaymentStatus,
+                    paymentDetails: paymentMethod === 'mixed' ? mixedPayments : undefined
                 });
 
                 if (ipdRes?.receiptNumber) {
@@ -763,10 +802,11 @@ export default function AppointmentBooking() {
                     appointmentId: appointment.appointmentId || appointment._id || appointment.id || 'PENDING'
                 },
                 payment: {
-                    amount: registrationType === 'IPD' ? parseFloat(ipdFee) : (selectedDoctor?.consultationFee || 0),
-                    totalBillAmount: registrationType === 'IPD' ? parseFloat(ipdFee) : (selectedDoctor?.consultationFee || 0),
-                    totalPaidAmount: registrationType === 'IPD' ? parseFloat(ipdFee) : (selectedDoctor?.consultationFee || 0),
-                    advanceAmount: registrationType === 'IPD' ? parseFloat(ipdFee) : 0,
+                    amount: finalAmount,
+                    totalBillAmount: baseAmount,
+                    discount: discount,
+                    totalPaidAmount: paymentStatus === 'paid' ? finalAmount : 0,
+                    advanceAmount: registrationType === 'IPD' ? finalAmount : 0,
                     method: paymentMethod.toUpperCase(),
                     status: (paymentStatus === 'unpaid' ? 'pending' : paymentStatus).toUpperCase(),
                     date: new Date().toISOString(),
@@ -1294,11 +1334,12 @@ export default function AppointmentBooking() {
 
                                 <div className="space-y-3">
                                     <FormLabel label="Payment Method" className="text-white/40" />
-                                    <div className="grid grid-cols-3 gap-2.5">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                                         {[
                                             { id: 'cash', icon: <Banknote size={16} />, label: 'Cash' },
                                             { id: 'card', icon: <CreditCard size={16} />, label: 'Card' },
-                                            { id: 'upi', icon: <Smartphone size={16} />, label: 'UPI' }
+                                            { id: 'upi', icon: <Smartphone size={16} />, label: 'UPI' },
+                                            { id: 'mixed', icon: <CreditCard size={16} />, label: 'Mixed' }
                                         ].map(method => (
                                             <button
                                                 key={method.id}
@@ -1313,6 +1354,41 @@ export default function AppointmentBooking() {
                                             </button>
                                         ))}
                                     </div>
+                                    
+                                    {paymentMethod === 'mixed' && (
+                                        <div className="grid grid-cols-3 gap-2 mt-3 p-3 bg-white/5 border border-white/10 rounded-xl">
+                                            <div className="space-y-1">
+                                                <p className="text-[8px] font-bold text-white/40 uppercase tracking-widest">Cash</p>
+                                                <input
+                                                    type="number"
+                                                    value={mixedPayments.cash}
+                                                    onChange={(e) => setMixedPayments(prev => ({...prev, cash: e.target.value}))}
+                                                    className="w-full bg-white/5 border-b border-white/10 text-xs font-bold text-white p-1.5 outline-none focus:border-teal-400 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                    placeholder="₹ 0"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-[8px] font-bold text-white/40 uppercase tracking-widest">Card</p>
+                                                <input
+                                                    type="number"
+                                                    value={mixedPayments.card}
+                                                    onChange={(e) => setMixedPayments(prev => ({...prev, card: e.target.value}))}
+                                                    className="w-full bg-white/5 border-b border-white/10 text-xs font-bold text-white p-1.5 outline-none focus:border-teal-400 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                    placeholder="₹ 0"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-[8px] font-bold text-white/40 uppercase tracking-widest">UPI</p>
+                                                <input
+                                                    type="number"
+                                                    value={mixedPayments.upi}
+                                                    onChange={(e) => setMixedPayments(prev => ({...prev, upi: e.target.value}))}
+                                                    className="w-full bg-white/5 border-b border-white/10 text-xs font-bold text-white p-1.5 outline-none focus:border-teal-400 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                    placeholder="₹ 0"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-3">
@@ -1357,8 +1433,50 @@ export default function AppointmentBooking() {
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center text-teal-400">
+                                        <div className="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center text-teal-400 shrink-0">
                                             <Banknote size={20} />
+                                        </div>
+                                    </div>
+
+                                    {/* Discount Input */}
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Discount</p>
+                                                <div className="flex bg-white/10 rounded overflow-hidden">
+                                                    <button 
+                                                        onClick={() => setDiscountType('flat')} 
+                                                        className={`px-1.5 py-0.5 text-[8px] font-black transition-all ${discountType === 'flat' ? 'bg-teal-500 text-white' : 'text-white/40 hover:text-white/60'}`}
+                                                    >₹</button>
+                                                    <button 
+                                                        onClick={() => setDiscountType('percentage')} 
+                                                        className={`px-1.5 py-0.5 text-[8px] font-black transition-all ${discountType === 'percentage' ? 'bg-teal-500 text-white' : 'text-white/40 hover:text-white/60'}`}
+                                                    >%</button>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-lg font-black text-rose-400">{discountType === 'flat' ? '₹' : ''}</span>
+                                                <input
+                                                    type="number"
+                                                    value={discountAmount}
+                                                    onChange={(e) => setDiscountAmount(e.target.value)}
+                                                    className="w-20 bg-white/5 border-b border-white/10 text-lg font-black text-rose-400 outline-none focus:border-rose-400 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                />
+                                                {discountType === 'percentage' && <span className="text-lg font-black text-rose-400">%</span>}
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Final Amount */}
+                                        <div className="space-y-1 text-right">
+                                            <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Final Amount</p>
+                                            <h4 className="text-2xl font-black text-teal-400">
+                                                ₹{(() => {
+                                                    const baseAmount = registrationType === 'IPD' ? parseFloat(ipdFee || '0') : (selectedDoctor?.consultationFee || 0);
+                                                    const discountValue = parseFloat(discountAmount || '0');
+                                                    const calculatedDiscount = discountType === 'percentage' ? (baseAmount * discountValue / 100) : discountValue;
+                                                    return Math.max(0, baseAmount - calculatedDiscount).toFixed(2);
+                                                })()}
+                                            </h4>
                                         </div>
                                     </div>
 
@@ -1525,7 +1643,14 @@ export default function AppointmentBooking() {
                                 <FormLabel label="Allocated Bed" />
                                 <select
                                     value={admissionData.bedId}
-                                    onChange={(e) => setAdmissionData(prev => ({ ...prev, bedId: e.target.value }))}
+                                    onChange={(e) => {
+                                        const selectedBedId = e.target.value;
+                                        setAdmissionData(prev => ({ ...prev, bedId: selectedBedId }));
+                                        const bed = beds.find(b => b._id === selectedBedId);
+                                        if (bed && bed.pricePerDay !== undefined) {
+                                            setIpdFee(bed.pricePerDay.toString());
+                                        }
+                                    }}
                                     className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold uppercase focus:border-rose-500 outline-none transition-all"
                                 >
                                     <option value="">Select Bed</option>
