@@ -110,7 +110,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           port: ${{ secrets.EC2_SSH_PORT || '22' }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          timeout: 30s
+          timeout: 5m
           script: |
             set -e
             
