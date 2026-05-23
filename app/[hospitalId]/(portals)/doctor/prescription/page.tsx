@@ -820,17 +820,17 @@ function CreatePrescriptionPage() {
     const [showSuccess, setShowSuccess] = useState(false);
     const [generatedHtml, setGeneratedHtml] = useState<{ prescription: string, billing: string } | null>(null);
 
-    // ✅ REACT QUERY: Fetch Appointment Details
-    // Note: doctorService methods return data directly (already unwrapped by apiClient)
-    const { data: appointmentData, isLoading: appointmentLoading } = useQuery({
+    // ✅ REACT QUERY: Start Consultation & Fetch Details
+    const { data: appointmentResponse, isLoading: appointmentLoading } = useQuery({
         queryKey: ['appointment-details', appointmentId],
-        queryFn: () => doctorService.getAppointmentDetails(appointmentId!),
+        queryFn: () => doctorService.startConsultation(appointmentId!),
         enabled: !!appointmentId,
         staleTime: 5 * 60 * 1000,
         gcTime: 15 * 60 * 1000,
         refetchOnMount: false,
         refetchOnWindowFocus: false,
     });
+    const appointmentData = appointmentResponse?.appointment;
 
     // ✅ REACT QUERY: Fetch Patient Details (if no appointmentId)
     const { data: patientData, isLoading: patientLoading } = useQuery({
