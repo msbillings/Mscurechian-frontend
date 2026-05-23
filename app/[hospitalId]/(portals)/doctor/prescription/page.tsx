@@ -2428,7 +2428,7 @@ function CreatePrescriptionPage() {
     return (
         <div className="bg-slate-50/50">
             {/* Header */}
-            <header className="bg-white border-b border-border-theme py-4 mb-6">
+            <header className="bg-white border-b border-border-theme py-4 mb-6 sticky top-0 z-50">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
                         <button onClick={() => router.back()} className="p-2 hover:bg-secondary-theme rounded-full text-muted hover:text-foreground transition-colors shrink-0">
@@ -2442,8 +2442,19 @@ function CreatePrescriptionPage() {
                     <div className="flex gap-2 w-full sm:w-auto">
                         {/* Lab Token Quick Action */}
                         <button
-                            onClick={handleSendToLab}
-                            disabled={isSendingLab || formData.suggestedTests.length === 0}
+                            onClick={() => {
+                                if (formData.suggestedTests.length === 0) {
+                                    if (typeof document !== 'undefined') {
+                                        addArrayItem('suggestedTests');
+                                        setTimeout(() => {
+                                            document.getElementById('lab-tests-section')?.scrollIntoView({ behavior: 'smooth' });
+                                        }, 100);
+                                    }
+                                } else {
+                                    handleSendToLab();
+                                }
+                            }}
+                            disabled={isSendingLab}
                             className="flex-1 sm:flex-none px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                         >
                             {isSendingLab ? <Loader2 size={14} className="animate-spin" /> : <Beaker size={14} />}
@@ -2889,7 +2900,7 @@ function CreatePrescriptionPage() {
                         </div>
                     </div>
 
-                    <div className="bg-card rounded-xl sm:rounded-2xl shadow-sm border border-border-theme p-4 sm:p-6">
+                    <div id="lab-tests-section" className="bg-card rounded-xl sm:rounded-2xl shadow-sm border border-border-theme p-4 sm:p-6 scroll-mt-24">
                         <div className="flex items-center justify-between mb-4 pb-2 border-b border-border-theme">
                             <h2 className="text-[10px] sm:text-xs font-bold text-foreground uppercase tracking-widest">Lab Tests</h2>
                             <button onClick={() => addArrayItem('suggestedTests')} className="text-primary-theme hover:bg-secondary-theme p-1.5 rounded-lg transition-colors"><Plus size={16} /></button>
