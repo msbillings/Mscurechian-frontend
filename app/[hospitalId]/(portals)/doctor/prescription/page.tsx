@@ -47,7 +47,7 @@ import { PsychiatryModule } from './create/modules/PsychiatryModule';
 import { EndocrinologyModule } from './create/modules/EndocrinologyModule';
 import { HematologyModule } from './create/modules/HematologyModule';
 import toast from 'react-hot-toast';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { doctorService } from '@/lib/integrations/services/doctor.service';
 import { Frequency, StandardFrequency, CustomFrequency, FoodTiming, INITIAL_FREQUENCY, mapFrequency, formatFrequency } from '@/lib/frequencyUtils';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
@@ -784,6 +784,8 @@ const FrequencySelector = ({ value, onChange }: { value: Frequency, onChange: (v
 function CreatePrescriptionPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const params = useParams();
+    const hospitalId = params.hospitalId as string;
     const appointmentId = searchParams.get('appointmentId');
     const patientId = searchParams.get('patientId');
 
@@ -2443,15 +2445,10 @@ function CreatePrescriptionPage() {
                         {/* Lab Token Quick Action */}
                         <button
                             onClick={() => {
-                                if (formData.suggestedTests.length === 0) {
-                                    if (typeof document !== 'undefined') {
-                                        addArrayItem('suggestedTests');
-                                        setTimeout(() => {
-                                            document.getElementById('lab-tests-section')?.scrollIntoView({ behavior: 'smooth' });
-                                        }, 100);
-                                    }
+                                if (appointmentId) {
+                                    router.push(`/${hospitalId}/doctor/lab-token/create?appointmentId=${appointmentId}`);
                                 } else {
-                                    handleSendToLab();
+                                    toast.error("No active appointment found. Please start a consultation first.");
                                 }
                             }}
                             disabled={isSendingLab}
