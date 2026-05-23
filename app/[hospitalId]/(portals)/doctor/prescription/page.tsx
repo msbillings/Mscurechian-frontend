@@ -2440,14 +2440,29 @@ function CreatePrescriptionPage() {
                         </div>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
-                        <div className="bg-secondary-theme p-1.5 rounded-2xl flex items-center w-full sm:w-auto">
+                        {/* Lab Token Quick Action */}
+                        <button
+                            onClick={handleSendToLab}
+                            disabled={isSendingLab || formData.suggestedTests.length === 0}
+                            className="flex-1 sm:flex-none px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                        >
+                            {isSendingLab ? <Loader2 size={14} className="animate-spin" /> : <Beaker size={14} />}
+                            Lab Token
+                        </button>
+
+                        <div className="bg-secondary-theme p-1.5 rounded-2xl flex items-center w-full sm:w-auto gap-1">
                             <button
                                 onClick={() => setMode('SELF')}
                                 className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${mode === 'SELF' ? 'bg-card shadow-sm text-primary-theme' : 'text-muted hover:bg-card/50'}`}
                             >
                                 <PenTool size={14} /> Manual
                             </button>
-
+                            <button
+                                onClick={() => setMode('AI')}
+                                className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${mode === 'AI' ? 'bg-indigo-500 shadow-sm text-white' : 'text-muted hover:bg-card/50'}`}
+                            >
+                                <Mic2 size={14} className={mode === 'AI' ? 'animate-pulse' : ''} /> Voice Prescription
+                            </button>
                         </div>
                     </div>
                 </div>
