@@ -7,7 +7,7 @@ import {
   Clock, FileText, Beaker, CheckCircle, Loader2, User, Pause,
   Activity, Calendar, Heart, Thermometer, Droplets, Scale, ArrowsUpFromLine,
   History, Stethoscope, ClipboardList, Send, ArrowLeft, MoreHorizontal,
-  ChevronRight, AlertCircle, Phone, MapPin, Search, Building, Bed, Eye
+  ChevronRight, AlertCircle, Phone, MapPin, Search, Building, Bed, Eye, Mic, PenLine
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { doctorService } from '@/lib/integrations/services/doctor.service';
@@ -38,7 +38,10 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
   const [loading, setLoading] = useState(true);
   const [appointment, setAppointment] = useState<any>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [activeTab, setActiveTab] = useState<'clinical-notes' | 'smart-prescription' | 'labs' | 'history'>('clinical-notes');
+  const [showPrescriptionSection, setShowPrescriptionSection] = useState(true);
+  const [showLabSection, setShowLabSection] = useState(true);
+  const [showHistorySection, setShowHistorySection] = useState(true);
+  const [activeTab, setActiveTab] = useState<'clinical-notes' | 'smart-prescription' | 'labs' | 'history'>('history');
   const [historySubTab, setHistorySubTab] = useState<'visits' | 'prescriptions' | 'labs'>('visits');
   const [patientHistory, setPatientHistory] = useState<{
     visits: any[];
@@ -273,10 +276,10 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
   };
 
   useEffect(() => {
-    if (activeTab === 'history') {
+    if (showHistorySection) {
       fetchPatientHistory();
     }
-  }, [activeTab, showFullHistory, appointment]);
+  }, [showHistorySection, showFullHistory, appointment]);
 
   // Derived filtered history data
   const filteredHistory = React.useMemo(() => {
@@ -648,156 +651,157 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
 
         {/* Main Content - Consultation Area */}
         <div className="col-span-12 lg:col-span-8 xl:col-span-9 space-y-6">
-          {/* Tab Navigation */}
-          <div className="flex flex-wrap items-center gap-1 p-1 bg-white dark:bg-gray-900 rounded-2xl border border-border-theme w-fit">
-            <TabButton
-              active={activeTab === 'clinical-notes'}
-              onClick={() => setActiveTab('clinical-notes')}
-              icon={<FileText size={16} />}
-              label="Clinical Notes"
-            />
-            <TabButton
-              active={activeTab === 'smart-prescription'}
-              onClick={() => setActiveTab('smart-prescription')}
-              icon={<Stethoscope size={16} />}
-              label="Smart Prescription"
-            />
-            <TabButton
-              active={activeTab === 'labs'}
-              onClick={() => setActiveTab('labs')}
-              icon={<Beaker size={16} />}
-              label="Lab Orders"
-            />
-            <TabButton
-              active={activeTab === 'history'}
-              onClick={() => setActiveTab('history')}
-              icon={<History size={16} />}
-              label="Medical History"
-            />
-          </div>
 
-          {activeTab === 'clinical-notes' && (
-            <div className="space-y-6">
-              <ClinicalNotesEditor 
-                initialData={{
-                  chiefComplaints: clinicalNotes || appointment?.clinicalNotes || '',
-                  assessment: diagnosis || appointment?.diagnosis || '',
-                  plan: plan || appointment?.plan || ''
-                }}
-                onSave={async (data) => {
-                  setClinicalNotes(data.chiefComplaints);
-                  setDiagnosis(data.assessment);
-                  setPlan(data.plan);
-                  try {
-                    await doctorService.saveConsultationDraft(appointmentId, {
-                      clinicalNotes: data.chiefComplaints,
-                      diagnosis: data.assessment,
-                      plan: data.plan
-                    });
-                  } catch (error) {
-                    console.error("Save failed", error);
-                  }
-                }}
-              />
-              
-              <div className="flex justify-end mt-4">
-                <button
-                  onClick={() => handleEndConsultation(false)}
-                  className="px-6 py-3 bg-primary-theme text-white rounded-xl font-bold shadow-lg shadow-primary-theme/20 hover:scale-105 transition-all"
-                >
-                  Save & Complete Consultation
-                </button>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'smart-prescription' && (
-            <div className="space-y-6">
-              <SmartPrescriptionCard 
-                hospitalId={(user as any)?.hospitalId || ''}
-                appointmentId={appointmentId}
-                patientId={appointment?.patient?._id || ''}
-                patientAllergies={appointment?.patient?.allergies}
-                onSuccess={() => {
-                  setActiveTab('history');
-                  setHistorySubTab('prescriptions');
-                  fetchPatientHistory();
-                }}
-              />
-            </div>
-          )}
-
-          {activeTab === 'labs' && (
-            <div className="space-y-6">
-              {/* Lab Token Toggle */}
-              <div className="bg-white dark:bg-gray-900 rounded-3xl border border-border-theme p-3 sm:p-4 flex items-center justify-between shadow-sm gap-2">
-                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${wantsLabToken ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400'}`}>
-                    <Beaker size={18} className="sm:w-5 sm:h-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="text-[11px] sm:text-sm font-black uppercase tracking-tight text-foreground truncate">Issue Lab Token</h4>
-                    <p className="text-[8px] sm:text-[10px] font-bold text-muted-foreground uppercase truncate">Toggle to prioritize laboratory diagnostics</p>
-                  </div>
+          {/* ═══════════════════════════════════════════ */}
+          {/* SECTION 1: PRESCRIPTION */}
+          {/* ═══════════════════════════════════════════ */}
+          <div className="space-y-4">
+            {/* Section Header */}
+            <button
+              onClick={() => setShowPrescriptionSection(!showPrescriptionSection)}
+              className="w-full flex items-center justify-between p-4 bg-white dark:bg-gray-900 rounded-2xl border border-border-theme shadow-sm hover:shadow-md transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-teal-400 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                  <Stethoscope size={20} className="text-white" />
                 </div>
-                <button
-                  onClick={() => setWantsLabToken(!wantsLabToken)}
-                  className={`w-12 h-6 sm:w-14 sm:h-7 rounded-full transition-all relative p-1 shrink-0 ${wantsLabToken ? 'bg-purple-500' : 'bg-gray-200 dark:bg-gray-800'}`}
-                >
-                  <div className={`w-4 h-4 sm:w-5 sm:h-5 bg-white rounded-full shadow-md transition-all transform ${wantsLabToken ? 'translate-x-6 sm:translate-x-7' : 'translate-x-0'}`} />
-                </button>
+                <div className="text-left">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-gray-900 dark:text-white">Prescription</h3>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Voice or Write your prescription</p>
+                </div>
               </div>
+              <ChevronRight size={18} className={`text-muted-foreground transition-transform duration-300 ${showPrescriptionSection ? 'rotate-90' : ''}`} />
+            </button>
 
-              {/* Quick Actions Bar */}
-              <div className={`grid grid-cols-1 ${wantsLabToken ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4`}>
-                <ActionCard
-                  onClick={() => router.push(getPath(`/doctor/prescription/create?appointmentId=${appointmentId}`))}
-                  icon={<FileText size={24} />}
-                  title="Write Prescription"
-                  subtitle={isPrescriptionRestricted ? "Restricted until Lab Results" : "AI Powered Medicine Suggestion"}
-                  color="blue"
-                  disabled={isPrescriptionRestricted}
-                />
-                <ActionCard
-                  onClick={() => router.push(getPath(`/doctor/lab-token/create?appointmentId=${appointmentId}`))}
-                  icon={<Beaker size={24} />}
-                  title="Order Lab Tests"
-                  subtitle="Blood, Imaging & Diagnostics"
-                  color="purple"
-                  active={wantsLabToken}
-                />
-                {wantsLabToken && (
+            {showPrescriptionSection && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                {/* Action Cards - Voice Prescription + Write Prescription */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <ActionCard
                     onClick={() => {
-                      setActiveTab('history');
-                      setHistorySubTab('labs');
+                      // Scroll down to the SmartPrescriptionCard which has voice input built-in
+                      const el = document.getElementById('smart-prescription-section');
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }}
-                    icon={<Search size={24} />}
-                    title="Lab Results"
-                    subtitle="View Diagnostic Findings"
-                    color="emerald"
+                    icon={<Mic size={24} />}
+                    title="Voice Prescription"
+                    subtitle="Speak & auto-generate prescription"
+                    color="purple"
                   />
-                )}
-              </div>
+                  <ActionCard
+                    onClick={() => router.push(getPath(`/doctor/prescription/create?appointmentId=${appointmentId}`))}
+                    icon={<PenLine size={24} />}
+                    title="Write Prescription"
+                    subtitle={isPrescriptionRestricted ? "Restricted until Lab Results" : "AI Powered Medicine Suggestion"}
+                    color="blue"
+                    disabled={isPrescriptionRestricted}
+                  />
+                </div>
 
-              {/* Real-time Lab Results Tracking */}
-              {appointment?.labResults && appointment.labResults.length > 0 && (
-                <div className="bg-white dark:bg-gray-900 rounded-4xl border border-border-theme shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
-                  <div className="p-5 border-b border-border-theme bg-purple-50/30 dark:bg-purple-900/10 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
-                        <Beaker size={18} />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-black uppercase tracking-tight text-foreground">Active Lab Orders</h4>
-                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Real-time Diagnostic Tracking</p>
-                      </div>
+                {/* Inline Smart Prescription Card */}
+                <div id="smart-prescription-section">
+                  <SmartPrescriptionCard 
+                    hospitalId={(user as any)?.hospitalId || ''}
+                    appointmentId={appointmentId}
+                    patientId={appointment?.patient?._id || ''}
+                    patientAllergies={appointment?.patient?.allergies}
+                    onSuccess={() => {
+                      setShowHistorySection(true);
+                      setActiveTab('history');
+                      setHistorySubTab('prescriptions');
+                      fetchPatientHistory();
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ═══════════════════════════════════════════ */}
+          {/* SECTION 2: LAB TOKEN */}
+          {/* ═══════════════════════════════════════════ */}
+          <div className="space-y-4">
+            {/* Section Header */}
+            <button
+              onClick={() => setShowLabSection(!showLabSection)}
+              className="w-full flex items-center justify-between p-4 bg-white dark:bg-gray-900 rounded-2xl border border-border-theme shadow-sm hover:shadow-md transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-400 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
+                  <Beaker size={20} className="text-white" />
+                </div>
+                <div className="text-left">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-gray-900 dark:text-white">Lab Token</h3>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Order lab tests & track results</p>
+                </div>
+              </div>
+              <ChevronRight size={18} className={`text-muted-foreground transition-transform duration-300 ${showLabSection ? 'rotate-90' : ''}`} />
+            </button>
+
+            {showLabSection && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                {/* Lab Token Toggle */}
+                <div className="bg-white dark:bg-gray-900 rounded-3xl border border-border-theme p-3 sm:p-4 flex items-center justify-between shadow-sm gap-2">
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${wantsLabToken ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400'}`}>
+                      <Beaker size={18} className="sm:w-5 sm:h-5" />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Live Updates</span>
+                    <div className="min-w-0">
+                      <h4 className="text-[11px] sm:text-sm font-black uppercase tracking-tight text-foreground truncate">Issue Lab Token</h4>
+                      <p className="text-[8px] sm:text-[10px] font-bold text-muted-foreground uppercase truncate">Toggle to prioritize laboratory diagnostics</p>
                     </div>
                   </div>
+                  <button
+                    onClick={() => setWantsLabToken(!wantsLabToken)}
+                    className={`w-12 h-6 sm:w-14 sm:h-7 rounded-full transition-all relative p-1 shrink-0 ${wantsLabToken ? 'bg-purple-500' : 'bg-gray-200 dark:bg-gray-800'}`}
+                  >
+                    <div className={`w-4 h-4 sm:w-5 sm:h-5 bg-white rounded-full shadow-md transition-all transform ${wantsLabToken ? 'translate-x-6 sm:translate-x-7' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <ActionCard
+                    onClick={() => router.push(getPath(`/doctor/lab-token/create?appointmentId=${appointmentId}`))}
+                    icon={<Beaker size={24} />}
+                    title="Order Lab Tests"
+                    subtitle="Blood, Imaging & Diagnostics"
+                    color="purple"
+                    active={wantsLabToken}
+                  />
+                  {wantsLabToken && (
+                    <ActionCard
+                      onClick={() => {
+                        setShowHistorySection(true);
+                        setActiveTab('history');
+                        setHistorySubTab('labs');
+                      }}
+                      icon={<Search size={24} />}
+                      title="Lab Results"
+                      subtitle="View Diagnostic Findings"
+                      color="emerald"
+                    />
+                  )}
+                </div>
+
+                {/* Real-time Lab Results Tracking */}
+                {appointment?.labResults && appointment.labResults.length > 0 && (
+                  <div className="bg-white dark:bg-gray-900 rounded-4xl border border-border-theme shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
+                    <div className="p-5 border-b border-border-theme bg-purple-50/30 dark:bg-purple-900/10 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
+                          <Beaker size={18} />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-black uppercase tracking-tight text-foreground">Active Lab Orders</h4>
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Real-time Diagnostic Tracking</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Live Updates</span>
+                      </div>
+                    </div>
                   <div className="p-6 space-y-6">
                     {appointment.labResults.map((order: any, idx: number) => (
                       <div key={idx} className="space-y-4">
@@ -879,11 +883,36 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                   </div>
                 </div>
               )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
 
-          {activeTab === 'history' && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* ═══════════════════════════════════════════ */}
+          {/* SECTION 3: MEDICAL HISTORY */}
+          {/* ═══════════════════════════════════════════ */}
+          <div className="space-y-4">
+            {/* Section Header */}
+            <button
+              onClick={() => {
+                setShowHistorySection(!showHistorySection);
+                if (!showHistorySection) setActiveTab('history');
+              }}
+              className="w-full flex items-center justify-between p-4 bg-white dark:bg-gray-900 rounded-2xl border border-border-theme shadow-sm hover:shadow-md transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-400 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+                  <History size={20} className="text-white" />
+                </div>
+                <div className="text-left">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-gray-900 dark:text-white">Medical History</h3>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Past visits, prescriptions & lab reports</p>
+                </div>
+              </div>
+              <ChevronRight size={18} className={`text-muted-foreground transition-transform duration-300 ${showHistorySection ? 'rotate-90' : ''}`} />
+            </button>
+
+            {showHistorySection && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
               {/* History Scoping Toggle & Filters */}
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 bg-white dark:bg-gray-900 rounded-3xl border border-primary-theme/20 shadow-sm shadow-primary-theme/5 gap-4">
@@ -1197,7 +1226,8 @@ export default function ConsultationPage({ params }: ConsultationPageProps) {
                 <EmptyHistoryState message="History not initialized" />
               )}
             </div>
-          )}
+            )}
+          </div>
         </div>
       </main>
 
