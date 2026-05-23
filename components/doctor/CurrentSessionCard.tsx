@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
@@ -45,7 +45,7 @@ function CurrentSessionCard({ currentAppointmentId, patientName }: CurrentSessio
 
             <div className="mt-auto">
                 <button
-                    onClick={() => router.push(`/doctor/appointment/${currentAppointmentId}`)}
+                    onClick={() => router.push(`/doctor/prescription?appointmentId=${currentAppointmentId}`)}
                     className="w-full group flex items-center justify-center gap-2 px-4 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-lg shadow-amber-500/20 active:scale-95"
                 >
                     Return to Session 

@@ -480,7 +480,7 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
                           <Trash2 size={16} />
                         </button>
                         <button
-                          onClick={() => router.push(`/doctor/appointment/${apt.id}`)}
+                          onClick={() => router.push(`/doctor/prescription?appointmentId=${apt.id}`)}
                           className="shrink-0 px-3 lg:px-4 py-2 bg-primary-theme hover:opacity-90 text-primary-theme-foreground text-[10px] lg:text-xs font-black uppercase rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
                         >
                           <CheckCircle2 size={14} /> Start
@@ -536,7 +536,7 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
                           <Trash2 size={14} />
                         </button>
                         <button
-                          onClick={() => router.push(`/${user?.hospitalId || user?.hospital}/doctor/appointment/${apt.id}`)}
+                          onClick={() => router.push(`/${user?.hospitalId || user?.hospital}/doctor/prescription?appointmentId=${apt.id}`)}
                           className="px-4 py-1.5 flex flex-1 max-w-[120px] items-center justify-center bg-primary-theme text-primary-theme-foreground text-[10px] font-black uppercase tracking-wider rounded-lg shadow-sm"
                         >
                           <CheckCircle2 size={12} className="mr-1" /> Start

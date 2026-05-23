@@ -334,7 +334,7 @@ function DoctorAppointmentsPage() {
 
                                        {!['completed', 'cancelled', 'no show', 'finished', 'rejected'].includes(apt.status?.toLowerCase()) && (
                                           <button
-                                             onClick={() => router.push(getPath(`/doctor/appointment/${apt.id || apt._id}`))}
+                                             onClick={() => router.push(getPath(`/doctor/prescription?appointmentId=${apt.id || apt._id}`))}
                                              className="px-3 sm:px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] sm:text-xs font-black rounded-lg shadow-md shadow-blue-600/20 active:scale-95 transition-all uppercase tracking-widest"
                                           >
                                              Start

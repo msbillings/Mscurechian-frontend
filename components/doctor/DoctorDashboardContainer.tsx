@@ -68,7 +68,7 @@ function DoctorDashboardContainer({
     const handleNextPatient = () => {
         if (queueStats.nextAppointmentId) {
             toast.success('Navigating to next patient...');
-            router.push(getPath(`/doctor/appointment/${queueStats.nextAppointmentId}`));
+            router.push(getPath(`/doctor/prescription?appointmentId=${queueStats.nextAppointmentId}`));
         } else {
             toast.error('No patients in queue');
         }

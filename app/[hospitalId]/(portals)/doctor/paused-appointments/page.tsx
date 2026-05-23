@@ -49,7 +49,7 @@ export default function PausedAppointmentsPage() {
       setResuming(appointmentId);
       await doctorService.resumeConsultation(appointmentId);
       toast.success('Consultation resumed successfully!');
-      router.push(getPath(`/doctor/appointment/${appointmentId}`));
+      router.push(getPath(`/doctor/prescription?appointmentId=${appointmentId}`));
     } catch (error: any) {
       toast.error(error.message || 'Failed to resume consultation');
       setResuming(null);
