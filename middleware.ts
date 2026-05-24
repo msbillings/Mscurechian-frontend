@@ -22,6 +22,7 @@ const PORTAL_PATHS = [
   "/hr",
   "/emergency",
   "/ambulance",
+  "/radiology",
 ];
 
 // Paths that are completely public / don't need tenant context
@@ -45,6 +46,7 @@ const PUBLIC_PATHS = [
   "/terms",
   "/terms-of-service",
   "/delete-account",
+  "/radiology/login",
 ];
 
 const ROUTE_MAP: Record<string, string> = {
@@ -64,6 +66,7 @@ const ROUTE_MAP: Record<string, string> = {
   emergency: "/ambulance",
   ambulance: "/ambulance",
   discharge: "/discharge",
+  radiology: "/radiology",
 };
 
 /**
@@ -253,6 +256,7 @@ function isValidHospitalId(segment: string): boolean {
     "hospital-admin",
     "super-admin",
     "global",
+    "radiology",
   ];
   if (reserved.includes(segment.toLowerCase())) return false;
 

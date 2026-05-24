@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { apiServer } from "../api/apiServer";
 import { endpoints, ADMIN_ENDPOINTS } from "../config";
@@ -175,6 +175,22 @@ export async function createLabsAction(data: any) {
     return {
       success: false,
       error: error.message || "Failed to create labs staff",
+    };
+  }
+}
+
+export async function createRadiologyAction(data: any) {
+  try {
+    const result = await apiServer<any>(ADMIN_ENDPOINTS.CREATE_HOSPITAL_ADMIN, {
+      method: "POST",
+      body: JSON.stringify({ ...data, role: "radiology" }),
+    });
+    import("next/cache").then((m) => m.revalidatePath("/admin/users"));
+    return { success: true, data: result };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || "Failed to create radiology staff",
     };
   }
 }

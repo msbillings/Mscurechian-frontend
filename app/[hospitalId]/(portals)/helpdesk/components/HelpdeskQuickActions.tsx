@@ -3,7 +3,7 @@
 import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, CalendarCheck, CreditCard, ArrowRight } from 'lucide-react';
+import { UserPlus, CalendarCheck, CreditCard, ArrowRight, FilePlus } from 'lucide-react';
 import { useTenantLink } from '@/hooks/useTenantLink';
 
 interface HelpdeskQuickActionsProps {
@@ -26,6 +26,11 @@ const HelpdeskQuickActions: React.FC<HelpdeskQuickActionsProps> = ({ startTransi
             label: 'Book Appointment',
             icon: CalendarCheck,
             path: '/helpdesk/appointment-booking',
+        },
+        {
+            label: 'Add Bills',
+            icon: FilePlus,
+            path: '/helpdesk/add-bills',
         },
         {
             label: 'Transactions',

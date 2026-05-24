@@ -90,6 +90,16 @@ function PortalsPage() {
             loginUrl: "/auth/login"
         },
         {
+            title: "Radiology Portal",
+            slug: "radiology-imaging",
+            icon: HeartPulse,
+            desc: "Advanced imaging and diagnostics management (RIS/PACS integration).",
+            features: ["DICOM Image Viewer", "Modality Worklist (MWL)", "Radiology Reporting", "Scan Scheduling"],
+            color: "text-cyan-600",
+            bg: "bg-cyan-50",
+            loginUrl: "/radiology/login"
+        },
+        {
             title: "Lab Portal",
             slug: "lab-diagnostics",
             icon: Beaker,

@@ -29,7 +29,7 @@ import React, { useState, useEffect, useRef, useCallback, KeyboardEvent } from '
 import { Search, X, Building2, ChevronDown, Loader2 } from 'lucide-react';
 import type { Hospital } from '@/lib/integrations';
 
-type AccentColor = 'blue' | 'purple' | 'green' | 'red' | 'orange';
+type AccentColor = 'blue' | 'purple' | 'green' | 'red' | 'orange' | 'cyan';
 
 interface HospitalSearchSelectProps {
   hospitals: Hospital[];
@@ -50,6 +50,7 @@ const ACCENT: Record<AccentColor, { ring: string; badge: string; text: string; h
   green:  { ring: 'focus-within:ring-green-500/30',  badge: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300',   text: 'text-green-600',  hover: 'hover:bg-green-50 dark:hover:bg-green-900/10' },
   red:    { ring: 'focus-within:ring-red-500/30',    badge: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300',             text: 'text-red-600',    hover: 'hover:bg-red-50 dark:hover:bg-red-900/10' },
   orange: { ring: 'focus-within:ring-orange-500/30', badge: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300', text: 'text-orange-600', hover: 'hover:bg-orange-50 dark:hover:bg-orange-900/10' },
+  cyan:   { ring: 'focus-within:ring-cyan-500/30',   badge: 'bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300',   text: 'text-cyan-600',   hover: 'hover:bg-cyan-50 dark:hover:bg-cyan-900/10' },
 };
 
 // Hybrid search: name, hospitalId, city, address, pincode
