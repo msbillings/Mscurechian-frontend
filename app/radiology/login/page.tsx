@@ -97,7 +97,7 @@ const RadiologyLoginPage = () => {
 
         try {
             // ✅ Currently using generic login; update if specialized endpoint exists
-            const response = await authService.login({
+            const response = await authService.loginClient({
                 identifier: form.identifier,
                 password: form.password,
                 role: 'radiology'
