@@ -57,7 +57,7 @@ export default function TransactionsPage() {
 
         const typeMap: Record<string, string> = {
             'opd': 'appointment_booking,consultation',
-            'ipd': ipdPaymentType === 'advance' ? 'ipd_advance,ipd_refund' : ipdPaymentType === 'discharge' ? 'ipd_final_settlement,ipd_bill_payment' : 'ipd_advance,ipd,ipd_refund,ipd_admission_fee,ipd_bill_payment',
+            'ipd': ipdPaymentType === 'advance' ? 'ipd_advance,ipd_refund' : ipdPaymentType === 'discharge' ? 'discharge,ipd_final_settlement,ipd_bill_payment' : 'ipd_advance,ipd,ipd_refund,ipd_admission_fee,ipd_bill_payment,ipd_final_settlement,discharge',
             'lab': 'lab_test',
         };
 
@@ -238,14 +238,14 @@ export default function TransactionsPage() {
         const footerHtml = renderToStaticMarkup(
             <MainFooter initialDetails={{ name: h.name || 'Hospital', address: h.address || '', phone: h.phone || h.mobile || '', email: h.email || '' }} />
         );
-        const txDate = tx.date || tx.createdAt;
+        const txDate = tx.date || tx.transactionTime || tx.payment?.date || tx.createdAt || new Date();
         const formattedDate = txDate ? new Date(txDate).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
 
         let labTestsHtml = '';
         if (isLab) {
             const testsArray = apptData.tests || [];
             if (testsArray.length > 0) {
-                labTestsHtml = `<div style="margin:15px 0;"><p style="font-size:10px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px;">Test Details</p>`;
+                labTestsHtml = `<div style="margin:15px 0;"><p style="font-size:10px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px;">Test Details (Total: ${testsArray.length})</p>`;
                 testsArray.forEach((t: any) => {
                     const tName = t.name || t.testName || t.investigationName || 'Unknown Test';
                     const tCost = t.cost || t.price || t.unitCost || t.amount || 0;
@@ -256,7 +256,7 @@ export default function TransactionsPage() {
                 labTestsHtml += `</div>`;
             } else {
                 const fallbackTestName = apptData.testName || apptData.labTest?.name || apptData.description || 'Lab Diagnostics';
-                labTestsHtml = `<div style="margin:15px 0;"><p style="font-size:10px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px;">Test Details</p>
+                labTestsHtml = `<div style="margin:15px 0;"><p style="font-size:10px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px;">Test Details (Total: 1)</p>
                 <div class="breakdown-row"><span>${fallbackTestName}</span><span style="font-weight: 900;">₹${Math.round(amount).toLocaleString('en-IN')}</span></div></div>`;
             }
         }
@@ -286,7 +286,7 @@ export default function TransactionsPage() {
             <div class="info-item"><div class="label">Date & Time</div><div class="value">${formattedDate}</div></div>
             <div class="info-item"><div class="label">Payment Mode</div><div class="value"><span class="mode-badge">${tx.paymentMethod || tx.paymentMode || 'Cash'}</span></div></div>
             ${apptData.admissionId ? `<div class="info-item"><div class="label">Admission ID</div><div class="value">${apptData.admissionId}</div></div>` : ''}
-            ${apptData.primaryDoctor && !/^[a-f0-9]{24}$/i.test(apptData.primaryDoctor) ? `<div class="info-item"><div class="label">Physician</div><div class="value">${apptData.primaryDoctor}</div></div>` : ''}
+            ${apptData.primaryDoctor && !/^[a-f0-9]{24}$/i.test(apptData.primaryDoctor) ? `<div class="info-item"><div class="label">Doctor Name</div><div class="value">Dr. ${apptData.primaryDoctor.replace(/^Dr\.\s*/i, '')}</div></div>` : ''}
         </div>
         ${labTestsHtml}
         <div class="amount-box">
