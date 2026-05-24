@@ -240,6 +240,27 @@ export default function TransactionsPage() {
         );
         const txDate = tx.date || tx.createdAt;
         const formattedDate = txDate ? new Date(txDate).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+
+        let labTestsHtml = '';
+        if (isLab) {
+            const testsArray = apptData.tests || [];
+            if (testsArray.length > 0) {
+                labTestsHtml = `<div style="margin:15px 0;"><p style="font-size:10px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px;">Test Details</p>`;
+                testsArray.forEach((t: any) => {
+                    const tName = t.name || t.testName || t.investigationName || 'Unknown Test';
+                    const tCost = t.cost || t.price || t.unitCost || t.amount || 0;
+                    if(tName) {
+                       labTestsHtml += `<div class="breakdown-row"><span>${tName}</span><span style="font-weight: 900;">₹${Math.round(tCost).toLocaleString('en-IN')}</span></div>`;
+                    }
+                });
+                labTestsHtml += `</div>`;
+            } else {
+                const fallbackTestName = apptData.testName || apptData.labTest?.name || apptData.description || 'Lab Diagnostics';
+                labTestsHtml = `<div style="margin:15px 0;"><p style="font-size:10px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px;">Test Details</p>
+                <div class="breakdown-row"><span>${fallbackTestName}</span><span style="font-weight: 900;">₹${Math.round(amount).toLocaleString('en-IN')}</span></div></div>`;
+            }
+        }
+
         const receiptHtml = `<!DOCTYPE html><html><head><title>Receipt - ${patientName}</title><style>
             body{font-family:'Segoe UI',system-ui,sans-serif;padding:20px;color:#1e293b;background:#fff;font-size:12px;}
             .badge{display:inline-block;padding:4px 10px;border-radius:6px;font-weight:900;font-size:10px;text-transform:uppercase;letter-spacing:1px;}
@@ -267,6 +288,7 @@ export default function TransactionsPage() {
             ${apptData.admissionId ? `<div class="info-item"><div class="label">Admission ID</div><div class="value">${apptData.admissionId}</div></div>` : ''}
             ${apptData.primaryDoctor && !/^[a-f0-9]{24}$/i.test(apptData.primaryDoctor) ? `<div class="info-item"><div class="label">Physician</div><div class="value">${apptData.primaryDoctor}</div></div>` : ''}
         </div>
+        ${labTestsHtml}
         <div class="amount-box">
             <div class="label">Amount Paid</div>
             <div class="amount">₹${Math.round(amount).toLocaleString('en-IN')}</div>
