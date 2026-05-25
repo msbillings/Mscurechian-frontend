@@ -15,33 +15,34 @@ import toast from 'react-hot-toast';
 const fmt = (n: number) => `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const numberToWords = (num: number): string => {
-    const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+    const a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
     const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
 
-    if ((num = num.toString().replace(/[\, ]/g, '')) != parseFloat(num)) return 'not a number';
-    let x = num.indexOf('.');
-    if (x == -1) x = num.length;
+    if (isNaN(num)) return 'not a number';
+    const s = num.toString().replace(/[\, ]/g, '');
+    let x = s.indexOf('.');
+    if (x === -1) x = s.length;
     if (x > 15) return 'too big';
-    let n = num.split('');
+    const n = s.split('');
     let str = '';
     let sk = 0;
     for (let i = 0; i < x; i++) {
-        if ((x - i) % 3 == 2) {
-            if (n[i] == '1') {
+        if ((x - i) % 3 === 2) {
+            if (n[i] === '1') {
                 str += a[Number(n[i]) + Number(n[i + 1])] + ' ';
                 i++;
                 sk = 1;
-            } else if (n[i] != 0) {
-                str += b[n[i]] + ' ';
+            } else if (n[i] !== '0') {
+                str += b[Number(n[i])] + ' ';
                 sk = 1;
             }
-        } else if (n[i] != 0) {
-            str += a[n[i]] + ' ';
-            if ((x - i) % 3 == 0) str += 'Hundred ';
+        } else if (n[i] !== '0') {
+            str += a[Number(n[i])] + ' ';
+            if ((x - i) % 3 === 0) str += 'Hundred ';
             sk = 1;
         }
-        if ((x - i) % 3 == 1) {
-            if (sk) str += (x - i - 1 == 3) ? 'Thousand ' : (x - i - 1 == 6) ? 'Million ' : (x - i - 1 == 9) ? 'Billion ' : '';
+        if ((x - i) % 3 === 1) {
+            if (sk) str += (x - i - 1 === 3) ? 'Thousand ' : (x - i - 1 === 6) ? 'Million ' : (x - i - 1 === 9) ? 'Billion ' : '';
             sk = 0;
         }
     }
