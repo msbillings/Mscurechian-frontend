@@ -40,6 +40,7 @@ const helpdeskMenu: any[] = [
     { icon: ClipboardList, label: "Discharge Queue", path: "/helpdesk/discharge" },
     { icon: Bell, label: "Hospital Announcements", path: "/helpdesk/announcements" },
     { icon: FileText, label: "Transaction Reports", path: "/frontdesk/transaction-reports" },
+    { icon: FileText, label: "Final Bill", path: "/frontdesk/final-bill" },
 ];
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {

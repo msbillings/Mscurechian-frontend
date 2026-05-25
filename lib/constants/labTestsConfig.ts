@@ -11,7 +11,7 @@
 
 export function getTestsByCategory() {
     return {
-        "Haematology": [
+        "Hematology": [
             "Haemoglobin (Hb)",
             "Total WBC Count",
             "RBC Count",

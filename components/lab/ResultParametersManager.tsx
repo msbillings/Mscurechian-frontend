@@ -7,6 +7,10 @@ interface ResultParameter {
     label: string;
     unit?: string;
     normalRange?: string;
+    normalRanges?: {
+        male?: { min?: string | number; max?: string | number; text?: string };
+        female?: { min?: string | number; max?: string | number; text?: string };
+    };
     remarks?: string;
     example?: string;
     fieldType?: 'text' | 'number';
@@ -27,6 +31,12 @@ export default function ResultParametersManager({ parameters, onChange }: Result
     const [fieldLabel, setFieldLabel] = useState('');
     const [fieldUnit, setFieldUnit] = useState('');
     const [fieldRange, setFieldRange] = useState('');
+    const [fieldMaleMin, setFieldMaleMin] = useState('');
+    const [fieldMaleMax, setFieldMaleMax] = useState('');
+    const [fieldMaleText, setFieldMaleText] = useState('');
+    const [fieldFemaleMin, setFieldFemaleMin] = useState('');
+    const [fieldFemaleMax, setFieldFemaleMax] = useState('');
+    const [fieldFemaleText, setFieldFemaleText] = useState('');
     const [fieldRemarks, setFieldRemarks] = useState('');
     const [fieldExample, setFieldExample] = useState('');
     const [fieldType, setFieldType] = useState<'text' | 'number'>('text');
@@ -36,6 +46,12 @@ export default function ResultParametersManager({ parameters, onChange }: Result
         setFieldLabel('');
         setFieldUnit('');
         setFieldRange('');
+        setFieldMaleMin('');
+        setFieldMaleMax('');
+        setFieldMaleText('');
+        setFieldFemaleMin('');
+        setFieldFemaleMax('');
+        setFieldFemaleText('');
         setFieldRemarks('');
         setFieldExample('');
         setFieldType('text');
@@ -53,6 +69,10 @@ export default function ResultParametersManager({ parameters, onChange }: Result
             label: fieldLabel.trim(),
             unit: fieldUnit.trim() || undefined,
             normalRange: fieldRange.trim() || undefined,
+            normalRanges: {
+                male: { min: fieldMaleMin || undefined, max: fieldMaleMax || undefined, text: fieldMaleText.trim() || undefined },
+                female: { min: fieldFemaleMin || undefined, max: fieldFemaleMax || undefined, text: fieldFemaleText.trim() || undefined }
+            },
             remarks: fieldRemarks.trim() || undefined,
             example: fieldExample.trim() || undefined,
             fieldType: fieldType,
@@ -78,11 +98,18 @@ export default function ResultParametersManager({ parameters, onChange }: Result
         setFieldLabel(param.label);
         setFieldUnit(param.unit || '');
         setFieldRange(param.normalRange || '');
+        setFieldMaleMin(param.normalRanges?.male?.min?.toString() || '');
+        setFieldMaleMax(param.normalRanges?.male?.max?.toString() || '');
+        setFieldMaleText(param.normalRanges?.male?.text || '');
+        setFieldFemaleMin(param.normalRanges?.female?.min?.toString() || '');
+        setFieldFemaleMax(param.normalRanges?.female?.max?.toString() || '');
+        setFieldFemaleText(param.normalRanges?.female?.text || '');
         setFieldRemarks(param.remarks || '');
         setFieldExample(param.example || '');
         setFieldType(param.fieldType || 'text');
         setIsRequired(param.isRequired || false);
-        setShowOptional(!!(param.unit || param.normalRange || param.remarks || param.example));
+        const hasSpecificRanges = !!(param.normalRanges?.male?.min || param.normalRanges?.male?.max || param.normalRanges?.male?.text || param.normalRanges?.female?.min || param.normalRanges?.female?.max || param.normalRanges?.female?.text);
+        setShowOptional(!!(param.unit || param.normalRange || hasSpecificRanges || param.remarks || param.example));
         setEditingIndex(index);
         setIsAdding(true);
     };
@@ -274,7 +301,7 @@ export default function ResultParametersManager({ parameters, onChange }: Result
                                         </div>
                                         <div>
                                             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Normal Range <span className="text-gray-400 font-normal">(Optional)</span>
+                                                Normal Range (Text) <span className="text-gray-400 font-normal">(Optional)</span>
                                             </label>
                                             <input
                                                 type="text"
@@ -283,6 +310,72 @@ export default function ResultParametersManager({ parameters, onChange }: Result
                                                 value={fieldRange}
                                                 onChange={e => setFieldRange(e.target.value)}
                                             />
+                                        </div>
+                                    </div>
+
+                                    {/* Specific Reference Ranges */}
+                                    <div className="bg-slate-50 dark:bg-gray-900/50 p-4 rounded-xl border border-slate-200 dark:border-gray-700">
+                                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                                            Normal Reference Ranges <span className="text-gray-400 font-normal">(Optional)</span>
+                                        </label>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {/* Male Range */}
+                                            <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 space-y-2">
+                                                <h4 className="text-[11px] font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Male</h4>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="number"
+                                                        placeholder="Min"
+                                                        className="w-full px-3 py-2 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-md text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none"
+                                                        value={fieldMaleMin}
+                                                        onChange={e => setFieldMaleMin(e.target.value)}
+                                                    />
+                                                    <span className="text-gray-400">-</span>
+                                                    <input
+                                                        type="number"
+                                                        placeholder="Max"
+                                                        className="w-full px-3 py-2 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-md text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none"
+                                                        value={fieldMaleMax}
+                                                        onChange={e => setFieldMaleMax(e.target.value)}
+                                                    />
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Or Text (e.g., Negative, Absent)"
+                                                    className="w-full px-3 py-2 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-md text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none placeholder:text-[11px]"
+                                                    value={fieldMaleText}
+                                                    onChange={e => setFieldMaleText(e.target.value)}
+                                                />
+                                            </div>
+
+                                            {/* Female Range */}
+                                            <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 space-y-2">
+                                                <h4 className="text-[11px] font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Female</h4>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="number"
+                                                        placeholder="Min"
+                                                        className="w-full px-3 py-2 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-md text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none"
+                                                        value={fieldFemaleMin}
+                                                        onChange={e => setFieldFemaleMin(e.target.value)}
+                                                    />
+                                                    <span className="text-gray-400">-</span>
+                                                    <input
+                                                        type="number"
+                                                        placeholder="Max"
+                                                        className="w-full px-3 py-2 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-md text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none"
+                                                        value={fieldFemaleMax}
+                                                        onChange={e => setFieldFemaleMax(e.target.value)}
+                                                    />
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Or Text (e.g., Negative, Absent)"
+                                                    className="w-full px-3 py-2 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-md text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none placeholder:text-[11px]"
+                                                    value={fieldFemaleText}
+                                                    onChange={e => setFieldFemaleText(e.target.value)}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
 
