@@ -46,6 +46,13 @@ const adminMenuItems: any[] = [
         ]
     },
     {
+        icon: FlaskConical,
+        label: "Smart Laboratory",
+        subItems: [
+            { label: "Master Lab Tests", path: "/admin/master-lab-tests" },
+        ]
+    },
+    {
         icon: Globe,
         label: "CMS Management",
         subItems: [

@@ -1558,7 +1558,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
     };
 
 
-    const generatePrescriptionHTML = () => {
+    const generatePrescriptionHTML = (prescriptionId?: string) => {
         const initialHospitalDetails = {
             name: hospitalBranding?.name || 'KADAPA MULTI-SPECIALITY',
             address: hospitalBranding?.address || 'RIMS ROAD, PUTLAMPALLI, KADAPA, AP',
@@ -1569,6 +1569,8 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
 
         const headerHtml = renderToStaticMarkup(<MainHeader initialDetails={hospitalBranding} />);
         const footerHtml = renderToStaticMarkup(<MainFooter initialDetails={hospitalBranding} />);
+
+        const scanUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/${hospitalId}/pharmacy/billing?orderId=${prescriptionId || ''}`;
 
         return `
             <!DOCTYPE html>
@@ -2974,14 +2976,20 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         </div>
                         ` : ''}
 
-                        <div style="page-break-inside: avoid; margin-top: auto;">
-                            <div class="signature-area">
+                        <div style="page-break-inside: avoid; margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end;">
+                            ${prescriptionId ? `
+                            <div style="text-align: left; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(scanUrl)}" style="width: 90px; height: 90px; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 4px;" alt="Scan to enter prescription" />
+                                <span style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Scan to Enter Prescription</span>
+                            </div>
+                            ` : '<div style="width: 90px; height: 90px;"></div>'}
+                            <div class="signature-area" style="margin-top: 0; text-align: right;">
                                 ${formData.doctorSignature ? `<img src="${formData.doctorSignature}" class="sig-img" />` : '<div style="height: 50px;"></div>'}
                                 <div class="sig-line">Authorized Digital Signature</div>
                             </div>
-                            <div style="margin-top: 20px;">
-                                ${footerHtml}
-                            </div>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            ${footerHtml}
                         </div>
                     </div>
                 </div>
@@ -3304,7 +3312,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
             }
 
             // Re-use current styled generation logic
-            const prescriptionHtml = generatePrescriptionHTML();
+            const prescriptionHtml = generatePrescriptionHTML(apiResponse?.prescription?._id);
             const billingHtml = generateBillingHTML();
 
             // Save HTML for printing

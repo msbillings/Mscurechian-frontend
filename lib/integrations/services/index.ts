@@ -24,6 +24,7 @@ export * from "./unifiedDashboard.service";
 // individual files if you need the legacy sub-service types.
 export * from "./pharmacy.service";
 export * from "./lab.service";
+export * from "./universalLabService";
 export * from "./nurse.service";
 export * from "./emergency.service";
 export * from "./helpdesk-emergency.service";

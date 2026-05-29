@@ -120,12 +120,11 @@ export default function SuperAdminVerifyOtp() {
   const router = useRouter();
   const { verifySuperAdminOtp, resendSuperAdminOtp, isLoading } = useAuthStore();
   
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState(['', '', '', '']);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [email, setEmail] = useState('');
   const [tempToken, setTempToken] = useState('');
-  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
+  const [timeLeft, setTimeLeft] = useState(1800); // 30 minutes
   const [canResend, setCanResend] = useState(false);
   
   const inputRefs = React.useMemo(() => [
@@ -133,12 +132,9 @@ export default function SuperAdminVerifyOtp() {
     React.createRef<HTMLInputElement>(),
     React.createRef<HTMLInputElement>(),
     React.createRef<HTMLInputElement>(),
-    React.createRef<HTMLInputElement>(),
-    React.createRef<HTMLInputElement>(),
   ], []);
 
   useEffect(() => {
-    const storedEmail = sessionStorage.getItem('msc_2fa_email');
     const storedToken = sessionStorage.getItem('msc_2fa_temp_token');
     
     if (!storedToken) {
@@ -146,7 +142,6 @@ export default function SuperAdminVerifyOtp() {
       return;
     }
     
-    setEmail(storedEmail || 'your email');
     setTempToken(storedToken);
     
     // PERSISTENT TIMER LOGIC
@@ -154,8 +149,8 @@ export default function SuperAdminVerifyOtp() {
     const now = Date.now();
     
     if (!expiry) {
-      // If no expiry exists (e.g. direct navigation), create one (5 minutes)
-      const newExpiry = now + 300 * 1000;
+      // If no expiry exists, create one (30 minutes)
+      const newExpiry = now + 1800 * 1000;
       sessionStorage.setItem('msc_2fa_expiry', newExpiry.toString());
       expiry = newExpiry.toString();
     }
@@ -200,7 +195,7 @@ export default function SuperAdminVerifyOtp() {
     setOtp(newOtp);
     setError('');
 
-    if (value && index < 5) {
+    if (value && index < 3) {
       inputRefs[index + 1].current?.focus();
     }
   };
@@ -213,17 +208,17 @@ export default function SuperAdminVerifyOtp() {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const data = e.clipboardData.getData('text').slice(0, 6);
+    const data = e.clipboardData.getData('text').slice(0, 4);
     if (!/^\d+$/.test(data)) return;
 
     const newOtp = [...otp];
     data.split('').forEach((char, i) => {
-      if (i < 6) newOtp[i] = char;
+      if (i < 4) newOtp[i] = char;
     });
     setOtp(newOtp);
     
-    if (data.length === 6) {
-      inputRefs[5].current?.focus();
+    if (data.length === 4) {
+      inputRefs[3].current?.focus();
     } else {
       inputRefs[data.length].current?.focus();
     }
@@ -232,8 +227,8 @@ export default function SuperAdminVerifyOtp() {
   const handleVerify = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const otpString = otp.join('');
-    if (otpString.length !== 6) {
-      setError('Please enter all 6 digits');
+    if (otpString.length !== 4) {
+      setError('Please enter all 4 digits');
       return;
     }
 
@@ -257,15 +252,15 @@ export default function SuperAdminVerifyOtp() {
     
     try {
       await resendSuperAdminOtp(tempToken);
-      setSuccess('New OTP sent to your email');
+      setSuccess('PIN has been reset');
       
       // Reset expiry in sessionStorage
-      const newExpiry = Date.now() + 300 * 1000;
+      const newExpiry = Date.now() + 1800 * 1000;
       sessionStorage.setItem('msc_2fa_expiry', newExpiry.toString());
       
-      setTimeLeft(300);
+      setTimeLeft(1800);
       setCanResend(false);
-      setOtp(['', '', '', '', '', '']);
+      setOtp(['', '', '', '']);
       inputRefs[0].current?.focus();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
@@ -296,10 +291,9 @@ export default function SuperAdminVerifyOtp() {
           <div className="mx-auto w-14 h-14 bg-primary-theme/10 rounded-2xl flex items-center justify-center text-primary-theme mb-2 hologram-wrapper">
             <ShieldCheck size={28} className="relative z-10" />
           </div>
-          <h1 className="text-2xl font-black tracking-tight text-foreground">Two-Step Verification</h1>
+          <h1 className="text-2xl font-black tracking-tight text-foreground">Security PIN</h1>
           <p className="text-muted text-sm leading-relaxed">
-            We've sent a 6-digit code to <br />
-            <span className="font-bold text-primary-theme">{email}</span>
+            Enter your 4-digit security PIN to continue
           </p>
         </div>
 
@@ -351,7 +345,7 @@ export default function SuperAdminVerifyOtp() {
 
           <button
             type="submit"
-            disabled={isLoading || otp.join('').length !== 6}
+            disabled={isLoading || otp.join('').length !== 4}
             className="w-full verify-btn-premium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed py-4 rounded-2xl text-white font-black text-sm uppercase tracking-widest shadow-xl shadow-primary-theme/20 transition-all flex items-center justify-center gap-2"
           >
             {isLoading ? <Loader2 className="animate-spin" size={20} /> : "Verify & Login"}
@@ -377,7 +371,7 @@ export default function SuperAdminVerifyOtp() {
               className="flex items-center justify-center gap-2 text-xs font-bold text-primary-theme hover:opacity-80 disabled:opacity-30 transition-all"
             >
               <RefreshCcw size={14} className={isLoading ? "animate-spin" : ""} />
-              Resend Code
+              Reset PIN
             </button>
             
             <button
@@ -392,7 +386,7 @@ export default function SuperAdminVerifyOtp() {
 
         <p className="text-[10px] text-center text-muted/60 font-medium relative z-10">
           Secure Session provided by MSCureChain Shield. <br />
-          Do not share your OTP with anyone.
+          Do not share your PIN with anyone.
         </p>
         
         {/* Decorative Micro Particles */}
