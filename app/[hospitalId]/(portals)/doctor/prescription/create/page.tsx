@@ -2361,155 +2361,133 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             if (o.slitLamp?.lens?.includes('Cataract')) assessments.push(o.slitLamp.lens === 'Mature cataract' ? 'Mature Cataract — Surgical Evaluation' : 'Cataract detected');
                             
                             return `
-                        <div style="margin-bottom:25px;padding:18px;border:2px solid #e0f2fe;border-radius:16px;background:#f0f9ff;page-break-inside:avoid;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid #bae6fd;margin-bottom:14px;padding-bottom:8px;">
-                                <span style="font-size:10px;font-weight:900;text-transform:uppercase;color:#0369a1;letter-spacing:1px;">Ophthalmic Examination</span>
-                                ${o.diagnosis ? `<span style="font-size:11px;font-weight:900;color:#0369a1;background:#e0f2fe;padding:4px 12px;border-radius:6px;">${o.diagnosis}</span>` : ''}
+                        <div style="margin-bottom:15px; page-break-inside:avoid; font-family: sans-serif; color: #000;">
+                            ${(o.chiefComplaints || o.hopi) ? `
+                            <div style="font-size:10px; margin-bottom: 10px;">
+                                <b>Complaints:</b> ${[o.chiefComplaints, o.hopi].filter(Boolean).join(' | ')}
                             </div>
+                            ` : ''}
+
+                            <!-- VISUAL ACUITY TABLE -->
+                            <div style="font-size:9px; font-weight:bold; margin-bottom: 2px;">Visual Acuity</div>
+                            <table style="width:100%; border-collapse:collapse; font-size:9px; text-align:center; margin-bottom:12px; border: 1px solid #000;">
+                                <tr style="background:#e2e8f0; border-bottom: 1px solid #000;">
+                                    <th style="border-right: 1px solid #000; padding: 4px; width: 20%;"></th>
+                                    <th style="border-right: 1px solid #000; padding: 4px; font-weight:bold; width: 40%;">Right Eye</th>
+                                    <th style="padding: 4px; font-weight:bold; width: 40%;">Left Eye</th>
+                                </tr>
+                                <tr>
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9; text-align:center;">Unaided</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.vision?.od?.unaided || '--'}</td>
+                                    <td style="padding: 4px;">${o.vision?.os?.unaided || '--'}</td>
+                                </tr>
+                                <tr style="border-top: 1px solid #000;">
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9; text-align:center;">With Glasses</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.vision?.od?.corrected || '--'}</td>
+                                    <td style="padding: 4px;">${o.vision?.os?.corrected || '--'}</td>
+                                </tr>
+                            </table>
+
+                            <!-- REFRACTION TABLE -->
+                            <div style="font-size:9px; font-weight:bold; margin-bottom: 2px;">Auto Refraction - AR</div>
+                            <table style="width:100%; border-collapse:collapse; font-size:9px; text-align:center; margin-bottom:12px; border: 1px solid #000;">
+                                <tr style="background:#e2e8f0; border-bottom: 1px solid #000;">
+                                    <th style="border-right: 1px solid #000; padding: 4px; width: 10%;"></th>
+                                    <th colspan="4" style="border-right: 1px solid #000; padding: 4px; font-weight:bold; width: 45%;">Right Eye</th>
+                                    <th colspan="4" style="padding: 4px; font-weight:bold; width: 45%;">Left Eye</th>
+                                </tr>
+                                <tr style="background:#f1f5f9; border-bottom: 1px solid #000;">
+                                    <td style="border-right: 1px solid #000; padding: 4px;"></td>
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold;">SPH</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold;">CYL</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold;">Axis</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold;">V/A</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold;">SPH</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold;">CYL</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold;">Axis</td>
+                                    <td style="padding: 4px; font-weight:bold;">V/A</td>
+                                </tr>
+                                <tr>
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9; text-align:center;">DV</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.od?.distant?.sph || '--'}</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.od?.distant?.cyl || '--'}</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.od?.distant?.axis || '--'}</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.od?.distant?.va || '--'}</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.os?.distant?.sph || '--'}</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.os?.distant?.cyl || '--'}</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.os?.distant?.axis || '--'}</td>
+                                    <td style="padding: 4px;">${o.refraction?.os?.distant?.va || '--'}</td>
+                                </tr>
+                                <tr style="border-top: 1px solid #000;">
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9; text-align:center;">NV</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.od?.near?.sph || '--'}</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.od?.near?.cyl || '--'}</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.od?.near?.axis || '--'}</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.od?.near?.va || '--'}</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.os?.near?.sph || '--'}</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.os?.near?.cyl || '--'}</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.os?.near?.axis || '--'}</td>
+                                    <td style="padding: 4px;">${o.refraction?.os?.near?.va || '--'}</td>
+                                </tr>
+                            </table>
+
+                            <!-- EXAMINATION TABLE -->
+                            <div style="font-size:9px; font-weight:bold; margin-bottom: 2px;">Examination</div>
+                            <table style="width:100%; border-collapse:collapse; font-size:9px; text-align:center; margin-bottom:15px; border: 1px solid #000;">
+                                <tr style="background:#e2e8f0; border-bottom: 1px solid #000;">
+                                    <th style="border-right: 1px solid #000; padding: 4px; width:20%;"></th>
+                                    <th style="border-right: 1px solid #000; padding: 4px; font-weight:bold; width:40%;">Right Eye</th>
+                                    <th style="padding: 4px; font-weight:bold; width:40%;">Left Eye</th>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #000;">
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9;">Conjunctiva</td>
+                                    <td colspan="2" style="padding: 4px;">${o.slitLamp?.conjunctiva || '--'}</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #000;">
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9;">Cornea</td>
+                                    <td colspan="2" style="padding: 4px;">${o.slitLamp?.cornea || '--'}</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #000;">
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9;">Anterior Chamber</td>
+                                    <td colspan="2" style="padding: 4px;">${o.slitLamp?.anteriorChamber || '--'}</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #000;">
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9;">Pupil</td>
+                                    <td colspan="2" style="padding: 4px;">${o.pupils || '--'}</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #000;">
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9;">Lens</td>
+                                    <td colspan="2" style="padding: 4px;">${o.slitLamp?.lens || '--'}</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #000;">
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9;">Fundus</td>
+                                    <td colspan="2" style="padding: 4px;">
+                                        ${o.fundus?.retina || o.fundus?.opticDisc || o.fundus?.macula ? 
+                                            [
+                                                o.fundus?.retina ? `Retina: ${o.fundus.retina}` : null,
+                                                o.fundus?.opticDisc ? `Disc: ${o.fundus.opticDisc}` : null,
+                                                o.fundus?.macula ? `Macula: ${o.fundus.macula}` : null
+                                            ].filter(Boolean).join(' | ') 
+                                        : '--'}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9;">IOP (mmHg)</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.iop?.od || '--'}</td>
+                                    <td style="padding: 4px;">${o.iop?.os || '--'}</td>
+                                </tr>
+                            </table>
+
+                            ${o.diagnosis ? `<div style="font-size:10px; margin-bottom: 10px;"><b><u>Diagnosis:</u></b> <span style="text-transform:uppercase;">${o.diagnosis}</span></div>` : ''}
                             
-                            <div style="margin-bottom:15px;padding:12px;background:#fff;border-radius:12px;border:1px solid #bae6fd;">
-                                <span style="font-size:8px;color:#0369a1;font-weight:900;text-transform:uppercase;display:block;margin-bottom:8px;border-bottom:1px dashed #bae6fd;padding-bottom:4px;">Patient History</span>
-                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                                    <div><span style="font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;display:block;">Chief Complaints / Symptoms</span><span style="font-size:11px;font-weight:700;color:#0f172a;">${o.chiefComplaints || '--'}</span></div>
-                                    <div><span style="font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;display:block;">HOPI</span><span style="font-size:11px;font-weight:700;color:#0f172a;">${o.hopi || '--'}</span></div>
-                                    <div><span style="font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;display:block;">Past History</span><span style="font-size:11px;font-weight:700;color:#0f172a;">${o.pastHistory || '--'}</span></div>
-                                    <div><span style="font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;display:block;">Family History</span><span style="font-size:11px;font-weight:700;color:#0f172a;">${o.familyHistory || '--'}</span></div>
-                                </div>
-                            </div>
-                            
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:15px;">
-                                <div style="background:#fff;padding:12px;border-radius:12px;border:1px solid #bae6fd;">
-                                    <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:8px;">Visual Acuity</span>
-                                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
-                                        <div>
-                                            <span style="font-size:9px;font-weight:800;color:#1e293b;display:block;margin-bottom:6px;border-bottom:1px solid #e2e8f0;padding-bottom:3px;">OD (Right Eye)</span>
-                                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                                                <div>
-                                                    <span style="font-size:7px;font-weight:700;color:#64748b;text-transform:uppercase;display:block;">Without Glasses</span>
-                                                    <span style="font-size:11px;font-weight:800;color:#0f172a;">${o.vision?.od?.unaided || '--'}</span>
-                                                </div>
-                                                <div>
-                                                    <span style="font-size:7px;font-weight:700;color:#64748b;text-transform:uppercase;display:block;">With Glasses</span>
-                                                    <span style="font-size:11px;font-weight:800;color:#0f172a;">${o.vision?.od?.corrected || '--'}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <span style="font-size:9px;font-weight:800;color:#1e293b;display:block;margin-bottom:6px;border-bottom:1px solid #e2e8f0;padding-bottom:3px;">OS (Left Eye)</span>
-                                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                                                <div>
-                                                    <span style="font-size:7px;font-weight:700;color:#64748b;text-transform:uppercase;display:block;">Without Glasses</span>
-                                                    <span style="font-size:11px;font-weight:800;color:#0f172a;">${o.vision?.os?.unaided || '--'}</span>
-                                                </div>
-                                                <div>
-                                                    <span style="font-size:7px;font-weight:700;color:#64748b;text-transform:uppercase;display:block;">With Glasses</span>
-                                                    <span style="font-size:11px;font-weight:800;color:#0f172a;">${o.vision?.os?.corrected || '--'}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div style="background:#fff;padding:12px;border-radius:12px;border:1px solid #bae6fd;">
-                                    <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:8px;">Intraocular Pressure</span>
-                                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                                        <div>
-                                            <span style="font-size:8px;font-weight:700;color:#64748b;display:block;">OD</span>
-                                            <div style="font-size:13px;font-weight:800;color:${iopOD > 21 ? '#dc2626' : '#0f172a'};">${o.iop.od || '--'} <small>mmHg</small></div>
-                                        </div>
-                                        <div>
-                                            <span style="font-size:8px;font-weight:700;color:#64748b;display:block;">OS</span>
-                                            <div style="font-size:13px;font-weight:800;color:${iopOS > 21 ? '#dc2626' : '#0f172a'};">${o.iop.os || '--'} <small>mmHg</small></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style="margin-bottom:12px;padding:10px;background:#fff;border-radius:10px;border:1px solid #bae6fd;">
-                                <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:8px;">Refraction</span>
-                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
-                                    <div>
-                                        <span style="font-size:8px;font-weight:800;color:#2563eb;display:block;margin-bottom:4px;">Right Eye (OD)</span>
-                                        <table style="width:100%;border-collapse:collapse;font-size:10px;">
-                                            <tr style="background:#eff6ff;">
-                                                <th style="padding:3px 4px;text-align:left;font-size:8px;font-weight:800;color:#64748b;"></th>
-                                                <th style="padding:3px 4px;font-size:8px;font-weight:800;color:#2563eb;">Sph</th>
-                                                <th style="padding:3px 4px;font-size:8px;font-weight:800;color:#2563eb;">Cyl</th>
-                                                <th style="padding:3px 4px;font-size:8px;font-weight:800;color:#2563eb;">Axis</th>
-                                                <th style="padding:3px 4px;font-size:8px;font-weight:800;color:#2563eb;">VA</th>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding:3px 4px;font-size:8px;font-weight:800;color:#64748b;">Dist.</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.distant?.sph || '--'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.distant?.cyl || '--'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.distant?.axis || '--'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.distant?.va || '--'}</td>
-                                            </tr>
-                                            <tr style="border-top:1px solid #e2e8f0;">
-                                                <td style="padding:3px 4px;font-size:8px;font-weight:800;color:#64748b;">Near</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.near?.sph || '--'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.near?.cyl || '--'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.near?.axis || '--'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.near?.va || '--'}</td>
-                                            </tr>
-                                        </table>
-                                    </div>
-                                    <div>
-                                        <span style="font-size:8px;font-weight:800;color:#059669;display:block;margin-bottom:4px;">Left Eye (OS)</span>
-                                        <table style="width:100%;border-collapse:collapse;font-size:10px;">
-                                            <tr style="background:#ecfdf5;">
-                                                <th style="padding:3px 4px;text-align:left;font-size:8px;font-weight:800;color:#64748b;"></th>
-                                                <th style="padding:3px 4px;font-size:8px;font-weight:800;color:#059669;">Sph</th>
-                                                <th style="padding:3px 4px;font-size:8px;font-weight:800;color:#059669;">Cyl</th>
-                                                <th style="padding:3px 4px;font-size:8px;font-weight:800;color:#059669;">Axis</th>
-                                                <th style="padding:3px 4px;font-size:8px;font-weight:800;color:#059669;">VA</th>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding:3px 4px;font-size:8px;font-weight:800;color:#64748b;">Dist.</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.distant?.sph || '--'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.distant?.cyl || '--'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.distant?.axis || '--'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.distant?.va || '--'}</td>
-                                            </tr>
-                                            <tr style="border-top:1px solid #e2e8f0;">
-                                                <td style="padding:3px 4px;font-size:8px;font-weight:800;color:#64748b;">Near</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.near?.sph || '--'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.near?.cyl || '--'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.near?.axis || '--'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.near?.va || '--'}</td>
-                                            </tr>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:12px;">
-                                <div>
-                                    <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">Slit Lamp</span>
-                                    <div style="font-size:10px;font-weight:700;color:#334155;line-height:1.4;">
-                                        Conj: ${o.slitLamp?.conjunctiva || 'Normal'} | Cornea: ${o.slitLamp?.cornea || 'Clear'}<br/>
-                                        AC: ${o.slitLamp?.anteriorChamber || 'Normal'} | Lens: ${o.slitLamp?.lens || 'Clear'}
-                                    </div>
-                                </div>
-                                <div>
-                                    <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">Fundus</span>
-                                    <div style="font-size:10px;font-weight:700;color:#334155;line-height:1.4;">
-                                        Retina: ${o.fundus?.retina || 'Normal'}<br/>
-                                        Disc: ${o.fundus?.opticDisc || 'Normal'} | Macula: ${o.fundus?.macula || 'Normal'}
-                                    </div>
-                                </div>
-                            </div>
-
                             ${assessments.length > 0 ? `
-                            <div style="background:#fff;border:1.5px solid #bae6fd;border-radius:10px;padding:10px 14px;margin-top:10px;">
-                                <span style="font-size:8px;font-weight:900;color:#0369a1;text-transform:uppercase;display:block;margin-bottom:6px;">Clinical Assessment</span>
-                                ${assessments.map(a => `<div style="font-size:11px;font-weight:800;color:${a.includes('EMERGENCY') || a.includes('CRITICAL') || a.includes('Urgent') ? '#dc2626' : '#1e293b'};margin-bottom:2px;">&rarr; ${a}</div>`).join('')}
+                            <div style="margin-bottom: 10px;">
+                                ${assessments.map(a => `<div style="font-size:10px;font-weight:bold;color:${a.includes('EMERGENCY') || a.includes('CRITICAL') || a.includes('Urgent') ? '#000' : '#000'};margin-bottom:2px;">&#9888; ${a}</div>`).join('')}
                             </div>` : ''}
 
                             ${o.notes ? `
-                            <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #bae6fd;">
-                                <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;">Clinician Notes: </span>
-                                <span style="font-size:10px;font-weight:600;color:#475569;">${o.notes}</span>
+                            <div style="font-size:10px; margin-bottom: 10px;">
+                                <b>Notes:</b> ${o.notes}
                             </div>` : ''}
                         </div>`;
                         })() : ''}
