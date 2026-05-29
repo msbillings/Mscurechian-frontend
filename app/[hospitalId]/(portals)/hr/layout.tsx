@@ -137,7 +137,7 @@ export function HRLayout({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, user, queryClient]);
 
-  if (!isLoginPage && (!isMounted || isLoading || !isInitialized || isLicenseChecking)) {
+  if (!isLoginPage && (!isMounted || isLoading || !isInitialized)) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-6">

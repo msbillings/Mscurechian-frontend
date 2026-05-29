@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, FileText, Clock, CreditCard, X, Printer, Loader2, Beaker} from 'lucide-react';
+import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, FileText, Clock, CreditCard, X, Printer, Loader2, Beaker, Globe, Building2} from 'lucide-react';
 import Link from 'next/link';
 import { getDoctorPatientDetailsAction, getDoctorProfileAction, getAllAppointmentsAction, getDoctorInpatientsAction, getPatientHistoryAction } from '@/lib/integrations/actions/doctor.actions';
 import { doctorService } from '@/lib/integrations/services/doctor.service';
@@ -97,6 +97,10 @@ function PatientDetailsPage() {
     const [isLabModalOpen, setIsLabModalOpen] = useState(false);
     const labPrintRef = React.useRef<HTMLDivElement>(null);
 
+    // Cross-hospital history toggle
+    const [crossHospitalScope, setCrossHospitalScope] = useState(false);
+    const [isRefetchingHistory, setIsRefetchingHistory] = useState(false);
+
     // ✅ Summary of Issued Medicines
     const currentMedications = React.useMemo(() => {
         const medsMap = new Map();
@@ -153,21 +157,36 @@ function PatientDetailsPage() {
         }
     }, [params.id]);
 
+    // Re-fetch history when cross-hospital toggle changes (skip initial mount)
+    const isInitialMount = React.useRef(true);
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
+        }
+        if (!params.id) return;
+        const refetchHistory = async () => {
+            setIsRefetchingHistory(true);
+            try {
+                const scope = crossHospitalScope ? 'all' : 'hospital';
+                const historyRes = await getPatientHistoryAction(params.id as string, scope);
+                if (historyRes.success && historyRes.data) {
+                    setPatientHistory(historyRes.data);
+                }
+            } catch (err) {
+                console.error('Failed to refetch history:', err);
+            } finally {
+                setIsRefetchingHistory(false);
+            }
+        };
+        refetchHistory();
+    }, [crossHospitalScope]);
+
     const loadPatientData = async (id: string) => {
         setIsLoading(true);
         try {
-            // Use Promise.allSettled so a single failing call doesn't break the entire page load
-            const [profileResult, appointmentsResult, inpatientsResult, historyResult] = await Promise.allSettled([
-                getDoctorPatientDetailsAction(id),
-                // Pass the patient user ID as a search hint; backend filters by it if it's a doctor role
-                // We'll do additional client-side filtering after we know the patient IDs
-                getAllAppointmentsAction({ limit: 100 }),
-                getDoctorInpatientsAction(),
-                getPatientHistoryAction(id)
-            ]);
-
-            // --- Handle Patient Profile ---
-            const profileRes = profileResult.status === 'fulfilled' ? profileResult.value : { success: false, error: 'Failed to load patient profile' };
+            // ── PHASE 1: Critical path — get patient profile ASAP ──
+            const profileRes = await getDoctorPatientDetailsAction(id);
 
             if (!profileRes.success || !profileRes.data) {
                 toast.error(profileRes.error || "Failed to load patient details");
@@ -176,8 +195,17 @@ function PatientDetailsPage() {
             }
 
             let patientData = profileRes.data;
+            setPatient(patientData); // Show patient profile immediately
+            setIsLoading(false);     // Unblock rendering NOW
 
-            // --- Handle Inpatients (non-critical, gracefully ignored on failure) ---
+            // ── PHASE 2: Non-critical data — load in background without blocking UI ──
+            const [appointmentsResult, inpatientsResult, historyResult] = await Promise.allSettled([
+                getAllAppointmentsAction({ limit: 100 }),
+                getDoctorInpatientsAction(),
+                getPatientHistoryAction(id)
+            ]);
+
+            // --- Handle Inpatients (enrich patient data with admission info) ---
             const inpatientsRes = inpatientsResult.status === 'fulfilled' ? inpatientsResult.value : { success: false, data: [] };
 
             if (inpatientsRes.success && inpatientsRes.data) {
@@ -191,21 +219,20 @@ function PatientDetailsPage() {
                 });
 
                 if (activeAdmission && patientData.admission) {
-                    // Merge bed info from inpatients API while preserving vitals from patient details API
                     patientData = {
                         ...patientData,
                         admission: {
                             ...patientData.admission,
                             bed: activeAdmission.bed || patientData.admission.bed,
-                            vitals: patientData.admission.vitals // Preserve vitals from patient details API
+                            vitals: patientData.admission.vitals
                         }
                     };
                 } else if (activeAdmission && !patientData.admission) {
                     patientData = { ...patientData, admission: activeAdmission };
                 }
+                // Update patient with enriched admission data
+                setPatient(patientData);
             }
-
-            setPatient(patientData);
 
             // --- Handle Pharmacy and Bill data ONLY for confirmed active IPD admissions ---
             // Check if the admission is a real active IPD record (not a stub from appointment data)
@@ -290,7 +317,6 @@ function PatientDetailsPage() {
         } catch (error) {
             console.error("Error loading patient data:", error);
             toast.error("An error occurred while loading patient data.");
-        } finally {
             setIsLoading(false);
         }
     };
@@ -355,7 +381,6 @@ function PatientDetailsPage() {
                 <html>
                     <head>
                         <title>Prescription Print</title>
-                        <script src="https://cdn.tailwindcss.com"></script>
                         <style>
                             @media print {
                                 @page { size: A4; margin: 0; }
@@ -368,12 +393,16 @@ function PatientDetailsPage() {
                         <script>
                             window.onload = () => {
                                 window.print();
-                                // window.close();
                             }
                         </script>
                     </body>
                 </html>
             `);
+            // Clone style/link sheets from main window for instant, offline-capable rendering
+            const styles = document.querySelectorAll('link[rel="stylesheet"], style');
+            styles.forEach(style => {
+                printWindow.document.head.appendChild(style.cloneNode(true));
+            });
             printWindow.document.close();
         }
     };
@@ -387,7 +416,6 @@ function PatientDetailsPage() {
                 <html>
                     <head>
                         <title>Lab Report Print</title>
-                        <script src="https://cdn.tailwindcss.com"></script>
                         <style>
                             @media print {
                                 @page { size: A4; margin: 0; }
@@ -400,12 +428,16 @@ function PatientDetailsPage() {
                         <script>
                             window.onload = () => {
                                 window.print();
-                                // window.close();
                             }
                         </script>
                     </body>
                 </html>
             `);
+            // Clone style/link sheets from main window for instant, offline-capable rendering
+            const styles = document.querySelectorAll('link[rel="stylesheet"], style');
+            styles.forEach(style => {
+                printWindow.document.head.appendChild(style.cloneNode(true));
+            });
             printWindow.document.close();
         }
     };
@@ -817,7 +849,40 @@ function PatientDetailsPage() {
                                 <h3 className="text-lg md:text-xl lg:text-xl font-bold text-foreground uppercase tracking-tight ">Consultation Sequence</h3>
                                 <p className="text-[10px] font-black text-muted uppercase tracking-[0.25em] mt-1 opacity-60">Historical Medical Timeline</p>
                             </div>
-                            <FileText className="text-primary-theme/30" size={24} />
+                            <div className="flex items-center gap-3">
+                                {/* Cross-Hospital Toggle */}
+                                <div className="flex items-center gap-2.5 bg-secondary-theme px-3 py-2 rounded-xl border border-border-theme">
+                                    <Building2 size={13} className={`transition-colors ${!crossHospitalScope ? 'text-primary-theme' : 'text-muted/40'}`} />
+                                    <button
+                                        onClick={() => setCrossHospitalScope(!crossHospitalScope)}
+                                        className={`relative w-11 h-6 rounded-full transition-all duration-300 focus:outline-none ${
+                                            crossHospitalScope
+                                                ? 'bg-gradient-to-r from-indigo-500 to-purple-500 shadow-lg shadow-indigo-500/30'
+                                                : 'bg-slate-200 dark:bg-slate-700'
+                                        }`}
+                                        title={crossHospitalScope ? 'Showing all hospitals' : 'Showing current hospital only'}
+                                    >
+                                        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md flex items-center justify-center transition-all duration-300 ${
+                                            crossHospitalScope ? 'left-[22px]' : 'left-0.5'
+                                        }`}>
+                                            {isRefetchingHistory ? (
+                                                <Loader2 size={10} className="animate-spin text-indigo-500" />
+                                            ) : (
+                                                crossHospitalScope 
+                                                    ? <Globe size={10} className="text-indigo-500" />
+                                                    : <Building2 size={10} className="text-slate-400" />
+                                            )}
+                                        </span>
+                                    </button>
+                                    <Globe size={13} className={`transition-colors ${crossHospitalScope ? 'text-indigo-500' : 'text-muted/40'}`} />
+                                    <span className={`text-[8px] font-black uppercase tracking-widest whitespace-nowrap transition-colors ${
+                                        crossHospitalScope ? 'text-indigo-600 dark:text-indigo-400' : 'text-muted/60'
+                                    }`}>
+                                        {crossHospitalScope ? 'All Hospitals' : 'This Hospital'}
+                                    </span>
+                                </div>
+                                <FileText className="text-primary-theme/30 hidden sm:block" size={24} />
+                            </div>
                         </div>                        <div className="overflow-x-auto">
                             <table className="w-full border-separate border-spacing-y-2">
                                 <thead>

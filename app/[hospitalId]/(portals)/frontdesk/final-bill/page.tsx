@@ -116,22 +116,50 @@ export default function FinalBillPage() {
 
     const fetchPatientBillingData = async (pId: string) => {
         setLoadingReport(true);
+        
+        // Helper: race any promise against a timeout
+        const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> =>
+            Promise.race([
+                promise,
+                new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Request timed out')), ms)),
+            ]);
+
         try {
-            // Fetch IPD admission for details
-            const admissions = await helpdeskService.getPatientIPDAdmissions(pId);
-            const admissionList = Array.isArray(admissions) ? admissions : (admissions as any).admissions || [];
-            if (admissionList.length > 0) {
-                setAdmission(admissionList.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]);
+            // Run both API calls in parallel with a 10s timeout each
+            const [admissionsResult, reportsResult] = await Promise.allSettled([
+                withTimeout(helpdeskService.getPatientIPDAdmissions(pId), 10000),
+                withTimeout(
+                    helpdeskService.getIPDFinalBill(pId).catch((ipdErr: any) => {
+                        console.log("Failed to fetch dynamic IPD bill, falling back to saved reports.", ipdErr);
+                        return helpdeskService.getPatientTransactionReports(pId);
+                    }),
+                    10000
+                ),
+            ]);
+
+            // Process admissions
+            if (admissionsResult.status === 'fulfilled') {
+                const admissions = admissionsResult.value;
+                const admissionList = Array.isArray(admissions) ? admissions : (admissions as any).admissions || [];
+                if (admissionList.length > 0) {
+                    setAdmission(admissionList.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]);
+                }
+            } else {
+                console.warn("Admissions fetch failed/timed out:", admissionsResult.reason);
             }
 
-            // Fetch transaction reports
-            const reports = await helpdeskService.getPatientTransactionReports(pId);
-            if (reports && reports.length > 0) {
-                // Get the most recent one
-                setLatestReport(reports[0]);
-                toast.success("Latest bill loaded successfully.");
+            // Process reports
+            if (reportsResult.status === 'fulfilled') {
+                const reports = reportsResult.value;
+                if (reports && (reports as any[]).length > 0) {
+                    setLatestReport((reports as any[])[0]);
+                    toast.success("Latest bill loaded successfully.");
+                } else {
+                    toast.error("No bill data found for this patient.");
+                }
             } else {
-                toast.error("No saved transaction reports found for this patient.");
+                console.warn("Reports fetch failed/timed out:", reportsResult.reason);
+                toast.error("Failed to load billing data (request timed out).");
             }
         } catch (err) {
             console.error("Failed to fetch billing data", err);
@@ -185,35 +213,44 @@ export default function FinalBillPage() {
                     .bill-title { text-align: center; font-weight: bold; font-size: 14px; text-decoration: underline; margin: 10px 0; }
                     .invoice-no { text-align: center; font-weight: bold; font-size: 11px; margin-bottom: 10px; }
                     
-                    .patient-details-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-                    .patient-details-table td { padding: 4px; vertical-align: top; }
-                    .patient-details-table .lbl { font-weight: bold; width: 110px; }
+                    .patient-details-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; border: 1px solid #000; }
+                    .patient-details-table td { padding: 4px; vertical-align: top; font-size: 9px; }
+                    .patient-details-table .lbl { width: 110px; }
                     .patient-details-table .val { width: auto; }
                     
-                    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; border: 1px solid #000; }
-                    .items-table th { background: #f0f0f0; border: 1px solid #000; padding: 5px; text-align: left; font-size: 9px; }
-                    .items-table td { border-left: 1px solid #000; border-right: 1px solid #000; padding: 4px 5px; font-size: 9px; }
-                    .items-table .category-row td { background: #e0e0e0; font-weight: bold; text-align: center; border: 1px solid #000; }
-                    .items-table .subtotal-row td { background: #d0e0ff; font-weight: bold; text-align: right; border: 1px solid #000; color: #000; }
+                    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; border: 1px solid #000; border-top: none; }
+                    .items-table th { background: #fff; border: 1px solid #000; border-bottom: 2px solid #000; border-top: 2px solid #000; padding: 5px; text-align: left; font-size: 9px; font-weight: bold; }
+                    .items-table td { border-left: none; border-right: none; padding: 4px 5px; font-size: 9px; }
+                    .items-table .category-row td { background: #fff; font-weight: bold; text-align: left; color: #000080; padding-top: 8px; padding-bottom: 4px; text-transform: capitalize; }
+                    .items-table .subtotal-row td { background: #fff; font-weight: bold; text-align: right; color: #000; border-top: 1px solid #000; border-bottom: 1px solid #000; }
                     .items-table .total-amount-cell { text-align: right; }
                     .items-table .right-align { text-align: right; }
                     .items-table .center-align { text-align: center; }
 
-                    .summary-section { width: 100%; display: table; margin-top: 20px; }
-                    .amount-words { display: table-cell; width: 60%; vertical-align: bottom; font-weight: bold; font-size: 11px; }
-                    .totals-box { display: table-cell; width: 40%; }
-                    .totals-table { width: 100%; border-collapse: collapse; border: 1px solid #000; }
-                    .totals-table td { border: 1px solid #000; padding: 4px; font-size: 10px; }
-                    .totals-table .lbl { font-weight: bold; background: #f0f0f0; width: 60%; }
+                    .summary-section { width: 100%; display: table; margin-top: 10px; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 5px 0; }
+                    .amount-words { display: table-cell; width: 60%; vertical-align: top; font-weight: bold; font-size: 11px; }
+                    .amount-words .reason { font-weight: normal; margin-top: 5px; }
+                    .totals-box { display: table-cell; width: 40%; vertical-align: top; }
+                    .totals-table { width: 100%; border-collapse: collapse; }
+                    .totals-table td { padding: 2px; font-size: 10px; }
+                    .totals-table .lbl { font-weight: bold; text-align: right; width: 60%; }
                     .totals-table .val { text-align: right; font-weight: bold; }
 
-                    .receipts-title { font-weight: bold; margin: 15px 0 5px; font-size: 11px; text-decoration: underline; }
-                    .receipts-table { width: 100%; border-collapse: collapse; border: 1px solid #000; margin-bottom: 30px; }
-                    .receipts-table th, .receipts-table td { border: 1px solid #000; padding: 4px; font-size: 9px; text-align: center; }
-                    .receipts-table th { background: #f0f0f0; }
+                    .receipts-title { font-weight: bold; margin: 15px 0 5px; font-size: 11px; }
+                    .receipts-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+                    .receipts-table th, .receipts-table td { padding: 4px; font-size: 9px; text-align: left; }
+                    .receipts-table th { border-top: 1px solid #000; border-bottom: 1px solid #000; }
+                    .receipts-table .total-row td { border-top: 1px solid #000; border-bottom: 1px solid #000; font-weight: bold; }
+                    
+                    .receipts-table .right-align { text-align: right; }
 
-                    .footer-signatures { width: 100%; display: table; margin-top: 50px; text-align: center; font-weight: bold; font-size: 11px; }
+                    .footer-signatures { width: 100%; display: table; margin-top: 60px; font-size: 11px; }
                     .footer-signatures > div { display: table-cell; width: 50%; }
+                    .footer-signatures .left-sig { text-align: left; padding-left: 20%; }
+                    .footer-signatures .right-sig { text-align: right; padding-right: 10%; font-weight: bold; }
+                    .sig-line { border-top: 1px solid #000; width: 200px; margin-bottom: 5px; margin-left: -50px; }
+                    
+                    .printed-time { border-top: 1px solid #000; padding-top: 5px; margin-top: 40px; font-weight: bold; font-size: 9px; }
 
                     @media print { 
                         body { padding: 0; } 
@@ -228,56 +265,60 @@ export default function FinalBillPage() {
                     ${headerHtml}
                 </div>
                 
-                <div class="bill-title">IP Interim Bill - Detailed</div>
+                <div class="bill-title">IP Interim Bill-Detailed</div>
                 <div class="invoice-no">BILL OF SUPPLY / INVOICE NO : ${latestReport._id.slice(-8).toUpperCase()}</div>
 
                 <table class="patient-details-table">
                     <tr>
-                        <td class="lbl">CIN No</td><td class="val">: N/A</td>
-                        <td class="lbl">GST No</td><td class="val">: N/A</td>
+                        <td class="lbl">CIN No</td><td class="val">: </td>
+                        <td class="lbl">GST No</td><td class="val">: ${hospital?.gstNumber || ''}</td>
                     </tr>
                     <tr>
-                        <td class="lbl">Patient Name</td><td class="val">: <b>${pt.name}</b></td>
-                        <td class="lbl">IP No</td><td class="val">: ${adm?.admissionId || 'N/A'}</td>
+                        <td class="lbl">Patient Name</td><td class="val">: ${pt.name}</td>
+                        <td class="lbl">IP No</td><td class="val">: ${adm?.admissionId || ''}</td>
                     </tr>
                     <tr>
-                        <td class="lbl">Age / Sex</td><td class="val">: ${pt.age || '-'} / ${pt.gender || '-'}</td>
-                        <td class="lbl">UMR No</td><td class="val">: ${pt.mrn || 'N/A'}</td>
+                        <td class="lbl">Age/Sex</td><td class="val">: ${pt.age || ''} / ${pt.gender || ''}</td>
+                        <td class="lbl">UMR No</td><td class="val">: ${pt.mrn || ''}</td>
                     </tr>
                     <tr>
-                        <td class="lbl">S/W/D</td><td class="val">: N/A</td>
+                        <td class="lbl">S/W/D</td><td class="val">: </td>
                         <td class="lbl">Bill No</td><td class="val">: ${latestReport._id.slice(-6).toUpperCase()}</td>
                     </tr>
                     <tr>
-                        <td class="lbl">Doctor</td><td class="val">: ${adm?.attendingDoctor || 'N/A'}</td>
+                        <td class="lbl">Doctor</td><td class="val">: ${adm?.attendingDoctor || ''}</td>
                         <td class="lbl">Bill Dt</td><td class="val">: ${dateNow}</td>
                     </tr>
                     <tr>
-                        <td class="lbl">Admission Dt</td><td class="val">: ${adm ? new Date(adm.admissionDate).toLocaleString('en-IN') : 'N/A'}</td>
-                        <td class="lbl">Discharge Type</td><td class="val">: ${adm?.status === 'Discharged' ? 'Normal' : 'N/A'}</td>
+                        <td class="lbl">Admission Dt</td><td class="val">: ${adm ? new Date(adm.admissionDate).toLocaleString('en-IN') : ''}</td>
+                        <td class="lbl">Discharge Type</td><td class="val">: ${adm?.status === 'Discharged' ? 'Normal' : ''}</td>
                     </tr>
                     <tr>
-                        <td class="lbl">Organization</td><td class="val">: N/A</td>
-                        <td class="lbl">Discharge Dt&Tm</td><td class="val">: ${adm?.dischargeDate ? new Date(adm.dischargeDate).toLocaleString('en-IN') : '-'}</td>
+                        <td class="lbl">Organization</td><td class="val">: </td>
+                        <td class="lbl">Discharge Dt&Tm</td><td class="val">: ${adm?.dischargeDate ? new Date(adm.dischargeDate).toLocaleString('en-IN') : ''}</td>
                     </tr>
                     <tr>
                         <td class="lbl">Patient Type</td><td class="val">: IPD</td>
-                        <td class="lbl">Ward</td><td class="val">: ${adm?.wardName || 'N/A'}</td>
+                        <td class="lbl">Ward</td><td class="val">: ${adm?.wardName || ''}</td>
                     </tr>
                     <tr>
-                        <td class="lbl">Secondary Dr.</td><td class="val">: N/A</td>
-                        <td class="lbl">Bed No</td><td class="val">: ${adm?.bedNumber || 'N/A'}</td>
+                        <td class="lbl">Secondary Dr.</td><td class="val">: </td>
+                        <td class="lbl">Bed No</td><td class="val">: ${adm?.bedNumber || ''}</td>
                     </tr>
                     <tr>
-                        <td class="lbl">Address</td><td class="val">: ${pt.address || 'N/A'}</td>
-                        <td class="lbl">Phone No</td><td class="val">: ${pt.mobile || 'N/A'}</td>
+                        <td class="lbl">Address</td><td class="val">: ${pt.address || ''}</td>
+                        <td class="lbl">Phone No</td><td class="val">: ${pt.mobile || ''}</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">Referal By</td><td class="val">: </td>
+                        <td class="lbl"></td><td class="val"></td>
                     </tr>
                 </table>
 
                 <table class="items-table">
                     <thead>
                         <tr>
-                            <th style="width: 5%">S.No</th>
+                            <th style="width: 5%" class="center-align">S.No</th>
                             <th style="width: 10%">Code</th>
                             <th style="width: 45%">Service Name</th>
                             <th style="width: 15%" class="right-align">Rate</th>
@@ -287,21 +328,20 @@ export default function FinalBillPage() {
                     </thead>
                     <tbody>
         `;
-
-        let sno = 1;
         
         // Helper to render a category
         const renderCategory = (title: string, items: any[], nameKey: string, rateKey: string, qtyKey: string) => {
             if (!items || items.length === 0) return '';
             let catHtml = `<tr class="category-row"><td colspan="6">${title}</td></tr>`;
             let subtotal = 0;
+            let sno = 1; // S.No restarts for each category
             items.forEach(item => {
                 const amount = item[rateKey] * item[qtyKey];
                 subtotal += amount;
                 catHtml += `
                     <tr>
                         <td class="center-align">${sno++}</td>
-                        <td>-</td>
+                        <td>${item.code || '-'}</td>
                         <td>${item[nameKey]}</td>
                         <td class="right-align">${fmt(item[rateKey])}</td>
                         <td class="center-align">${item[qtyKey]}</td>
@@ -309,15 +349,16 @@ export default function FinalBillPage() {
                     </tr>
                 `;
             });
-            catHtml += `<tr class="subtotal-row"><td colspan="5">Sub Total:</td><td class="right-align">${fmt(subtotal)}</td></tr>`;
+            catHtml += `<tr class="subtotal-row"><td colspan="5">Sub Total :</td><td class="right-align">${fmt(subtotal)}</td></tr>`;
             return catHtml;
         };
 
-        html += renderCategory('CONSULTATION CHARGES', data.doctors, 'doctorName', 'rate', 'visits');
-        html += renderCategory('WARD CHARGES', data.admissions, 'chargeType', 'rate', 'days');
-        html += renderCategory('PHARMACY CHARGES', data.meds, 'medicineName', 'rate', 'quantity');
-        html += renderCategory('SERVICE CHARGES', data.services, 'serviceName', 'rate', 'quantity');
-        html += renderCategory('INVESTIGATION CHARGES', data.diags, 'testName', 'rate', 'quantity');
+        html += renderCategory('Consultation Charges', data.doctors, 'doctorName', 'rate', 'visits');
+        html += renderCategory('Investigation Charges', data.diags, 'testName', 'rate', 'quantity');
+        html += renderCategory('Ward Charges', data.admissions, 'chargeType', 'rate', 'days');
+        html += renderCategory('Radiology Charges', data.rads || [], 'testName', 'rate', 'quantity');
+        html += renderCategory('Service Charges', data.services, 'serviceName', 'rate', 'quantity');
+        html += renderCategory('Pharmacy Charges', data.meds, 'medicineName', 'rate', 'quantity');
 
         html += `
                     </tbody>
@@ -325,39 +366,53 @@ export default function FinalBillPage() {
 
                 <div class="summary-section">
                     <div class="amount-words">
-                        Rupees In: ${numberToWords(latestReport.totals.balance > 0 ? latestReport.totals.balance : latestReport.totals.grandTotal)}
-                        <br><br>
-                        Reason : ${latestReport.notes || '-'}
+                        Rupees In : ${numberToWords(latestReport.totals.balance > 0 ? latestReport.totals.balance : latestReport.totals.grandTotal)}
+                        <div class="reason">Reason : ${latestReport.notes || '-'}</div>
                     </div>
                     <div class="totals-box">
                         <table class="totals-table">
-                            <tr><td class="lbl">Grand Total</td><td class="val">${fmt(latestReport.totals.grandTotal)}</td></tr>
-                            <tr><td class="lbl">Net Amt</td><td class="val">${fmt(latestReport.totals.grandTotal)}</td></tr>
-                            <tr><td class="lbl">Paid Amt</td><td class="val">${fmt(latestReport.totals.totalPaid)}</td></tr>
-                            <tr><td class="lbl">Balance Amt</td><td class="val">${fmt(latestReport.totals.balance)}</td></tr>
+                            <tr><td class="lbl">Grand Total :</td><td class="val">${fmt(latestReport.totals.grandTotal)}</td></tr>
+                            <tr><td class="lbl">Net Amt :</td><td class="val">${fmt(latestReport.totals.grandTotal)}</td></tr>
+                            <tr><td class="lbl">Paid Amt :</td><td class="val">${fmt(latestReport.totals.totalPaid)}</td></tr>
+                            <tr><td class="lbl">Balance Amt :</td><td class="val">${fmt(latestReport.totals.balance)}</td></tr>
                         </table>
                     </div>
                 </div>
 
                 ${data.payments && data.payments.length > 0 ? `
-                    <div class="receipts-title">Receipt Details</div>
+                    <div class="receipts-title">Receipt Details :</div>
                     <table class="receipts-table">
-                        <tr><th>S.No</th><th>Record Date</th><th>Receipt No</th><th>Amount Payment</th><th>Type</th></tr>
+                        <tr><th>S.No</th><th>Record Date</th><th>Receipt No</th><th class="right-align">Amount Payment</th><th>Type</th></tr>
                         ${data.payments.map((p: any, i: number) => `
                             <tr>
                                 <td>${i + 1}</td>
                                 <td>${p.date}</td>
                                 <td>${p.receiptNo}</td>
-                                <td>${fmt(p.amount)}</td>
+                                <td class="right-align">${fmt(p.amount)}</td>
                                 <td>Advance</td>
                             </tr>
                         `).join('')}
+                        <tr class="total-row">
+                            <td colspan="3" class="right-align" style="padding-right: 20px;">Total :</td>
+                            <td class="right-align">${fmt(latestReport.totals.totalPaid)}</td>
+                            <td></td>
+                        </tr>
                     </table>
                 ` : ''}
 
                 <div class="footer-signatures">
-                    <div>Patient / Attendant Signatory</div>
-                    <div>Authorised Signatory</div>
+                    <div class="left-sig">
+                        <div class="sig-line"></div>
+                        <div style="font-weight: bold; margin-left: -15px;">Patient/Attendant Signatory</div>
+                    </div>
+                    <div class="right-sig">
+                        <div style="margin-bottom: 5px;">5531</div>
+                        <div>Authorised Signatory</div>
+                    </div>
+                </div>
+
+                <div class="printed-time">
+                    Printed Dt & Time : ${new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                 </div>
 
                 <script>

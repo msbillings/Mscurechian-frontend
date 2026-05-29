@@ -8,6 +8,7 @@ export interface ShopDetails {
     phone: string;
     email: string;
     logo?: string;
+    gstNumber?: string;
 }
 
 interface MainHeaderProps {
@@ -33,7 +34,8 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                         address: (prev.address === 'Hospital Address' || prev.address === 'Hospital Address details here' || !prev.address) ? (h.address || prev.address) : prev.address,
                         phone: (prev.phone === 'Phone Number' || prev.phone === '+91-XXXXXXXXXX' || !prev.phone || prev.phone === 'N/A') ? (h.phone || prev.phone) : prev.phone,
                         email: (prev.email === 'Email Address' || !prev.email || prev.email === 'N/A') ? (h.email || prev.email) : prev.email,
-                        logo: !prev.logo ? (h.logo || prev.logo) : prev.logo
+                        logo: !prev.logo ? (h.logo || prev.logo) : prev.logo,
+                        gstNumber: !prev.gstNumber ? (h.gstNumber || prev.gstNumber) : prev.gstNumber
                     }));
                 }
             } catch (error) {
@@ -183,6 +185,14 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                                     <Phone size={10} color="white" fill="white" />
                                 </div>
                                 <span style={{ color: '#16a34a', fontWeight: '800' }}>{details.phone}</span>
+                            </div>
+                        )}
+                        
+                        {details.gstNumber && details.gstNumber !== 'N/A' && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: (details.address || details.phone) ? '8px' : '0' }}>
+                                <span style={{ color: '#1e3a8a', fontWeight: '900', fontSize: 'clamp(9px, 1.4vw, 13px)' }}>
+                                    GST No: {details.gstNumber}
+                                </span>
                             </div>
                         )}
                     </div>

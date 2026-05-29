@@ -47,6 +47,7 @@ const PUBLIC_PATHS = [
   "/terms-of-service",
   "/delete-account",
   "/radiology/login",
+  "/display",
 ];
 
 const ROUTE_MAP: Record<string, string> = {
@@ -257,6 +258,7 @@ function isValidHospitalId(segment: string): boolean {
     "super-admin",
     "global",
     "radiology",
+    "display",
   ];
   if (reserved.includes(segment.toLowerCase())) return false;
 

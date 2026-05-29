@@ -134,15 +134,15 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
                         <div className="flex flex-wrap gap-1.5 mb-1.5">
                             {['6/6', '6/9', '6/12', '6/18', '6/24', '6/36', '6/60'].map(v => (
                                 <button key={v} type="button"
-                                    onClick={() => updateDeep('vision', eye, 'unaided', v)}
-                                    className="px-2 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all border bg-white text-slate-500 border-slate-200 hover:bg-slate-100"
+                                    onClick={() => updateDeep('vision', eye, 'unaided', o.vision?.[eye]?.unaided === v ? '' : v)}
+                                    className={`px-2 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all border ${o.vision?.[eye]?.unaided === v ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-100'}`}
                                 >{v}</button>
                             ))}
                         </div>
                         <div className="flex gap-2">
                             {['HM', 'PL+', 'NPL', 'CF'].map(v => (
                                 <button key={v} type="button"
-                                    onClick={() => updateDeep('vision', eye, 'unaided', v)}
+                                    onClick={() => updateDeep('vision', eye, 'unaided', o.vision?.[eye]?.unaided === v ? '' : v)}
                                     className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all border ${o.vision?.[eye]?.unaided === v ? 'bg-red-600 text-white border-red-600' : 'bg-white text-slate-400 border-slate-200 hover:bg-red-50 hover:text-red-400'}`}
                                 >{v}</button>
                             ))}
@@ -176,20 +176,64 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
 
     return (
         <div className="space-y-4">
-            {/* Standardized Light Header */}
-            <div className="bg-lime-50 border border-lime-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">
-                <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-lime-500/10 rounded-xl flex items-center justify-center">
-                        <Eye size={20} className="text-lime-600 animate-pulse" />
+
+            {/* ── PATIENT HISTORY ─────────────────────────────────────────── */}
+            {sectionCard(
+                <>
+                    {sectionHeader(<ClipboardList size={17} />, 'Patient History')}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-[10px] font-black uppercase tracking-widest mb-2 text-slate-400">
+                                Chief Complaints / Symptoms
+                            </label>
+                            <textarea
+                                value={o.chiefComplaints || ''}
+                                onChange={e => update('chiefComplaints', e.target.value)}
+                                rows={2}
+                                placeholder="E.g., Blurry vision in right eye for 3 days"
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black uppercase tracking-widest mb-2 text-slate-400">
+                                History of Presenting Illness (HOPI)
+                            </label>
+                            <textarea
+                                value={o.hopi || ''}
+                                onChange={e => update('hopi', e.target.value)}
+                                rows={2}
+                                placeholder="E.g., Started suddenly, non-progressive..."
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black uppercase tracking-widest mb-2 text-slate-400">
+                                Past History (Ocular & Systemic)
+                            </label>
+                            <textarea
+                                value={o.pastHistory || ''}
+                                onChange={e => update('pastHistory', e.target.value)}
+                                rows={2}
+                                placeholder="E.g., Diabetes, Hypertension, previous eye surgeries..."
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black uppercase tracking-widest mb-2 text-slate-400">
+                                Family History
+                            </label>
+                            <textarea
+                                value={o.familyHistory || ''}
+                                onChange={e => update('familyHistory', e.target.value)}
+                                rows={2}
+                                placeholder="E.g., Glaucoma, Cataract..."
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none outline-none"
+                            />
+                        </div>
                     </div>
-                    <div>
-                        <h2 className="text-[12px] font-black uppercase tracking-[0.15em] leading-none mb-1 text-lime-700">Ophthalmology Assessment</h2>
-                        <p className="text-[9px] font-bold text-lime-600/60 uppercase tracking-widest">Vision & Ocular Health Profile</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-3">
-                </div>
-            </div>
+                </>,
+                'border-slate-200 mb-4',
+            )}
 
             {/* ── A. VISUAL ACUITY ──────────────────────────────────────── */}
             {sectionCard(
@@ -223,36 +267,117 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
             {/* ── B. REFRACTION ─────────────────────────────────────────── */}
             {sectionCard(
                 <>
-                    {sectionHeader(<Target size={17} />, 'B. Refraction', 'SPH / CYL / Axis')}
+                    {sectionHeader(<Target size={17} />, 'B. Refraction')}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {(['od', 'os'] as const).map(eye => (
-                            <div key={eye} className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                                <span className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-3">
-                                    {eye === 'od' ? '🔵 OD (Right)' : '🟢 OS (Left)'}
-                                </span>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {(['sph', 'cyl', 'axis'] as const).map(field => (
-                                        <div key={field}>
-                                            <label className="block text-[8px] font-black uppercase text-slate-400 mb-1 text-center">
-                                                {field === 'sph' ? 'SPH' : field === 'cyl' ? 'CYL' : 'Axis (°)'}
-                                            </label>
-                                            <input
-                                                type="text"
-                                                placeholder={field === 'axis' ? '0–180' : field === 'sph' ? '+/-' : 'CYL'}
-                                                value={o.refraction?.[eye]?.[field] || ''}
-                                                onChange={e => updateDeep('refraction', eye, field, e.target.value)}
-                                                className={`w-full rounded-lg px-2 py-2 text-sm font-black text-center border outline-none focus:ring-2 focus:ring-blue-300 ${
-                                                    field === 'axis' && parseFloat(o.refraction?.[eye]?.axis) > 180
-                                                        ? 'border-red-400 bg-red-50 text-red-700'
-                                                        : 'bg-white border-slate-200 text-slate-800'
-                                                }`}
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-
+                        {/* Right Eye */}
+                        <div className="rounded-xl border border-blue-200 overflow-hidden">
+                            <div className="bg-blue-600 text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-center">
+                                Right Eye (OD)
                             </div>
-                        ))}
+                            <table className="w-full text-center">
+                                <thead>
+                                    <tr className="bg-blue-50 border-b border-blue-200">
+                                        <th className="text-[8px] font-black uppercase text-blue-700 py-2 px-1 w-[20%]"></th>
+                                        <th className="text-[8px] font-black uppercase text-blue-700 py-2 px-1">Sph.</th>
+                                        <th className="text-[8px] font-black uppercase text-blue-700 py-2 px-1">Cyl.</th>
+                                        <th className="text-[8px] font-black uppercase text-blue-700 py-2 px-1">Axis</th>
+                                        <th className="text-[8px] font-black uppercase text-blue-700 py-2 px-1">VA</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {(['distant', 'near'] as const).map(row => (
+                                        <tr key={row} className="border-b border-slate-100 last:border-0">
+                                            <td className="text-[8px] font-black uppercase text-slate-500 py-2 px-2 text-left">
+                                                {row === 'distant' ? 'Distant Vision' : 'Near Vision'}
+                                            </td>
+                                            {(['sph', 'cyl', 'axis', 'va'] as const).map(field => (
+                                                <td key={field} className="py-1.5 px-1">
+                                                    <input
+                                                        type="text"
+                                                        placeholder={field === 'axis' ? '0–180' : field === 'va' ? '6/6' : '+/-'}
+                                                        value={o.refraction?.od?.[row]?.[field] || ''}
+                                                        onChange={e => {
+                                                            setFormData((prev: any) => ({
+                                                                ...prev,
+                                                                ophthaData: {
+                                                                    ...prev.ophthaData,
+                                                                    refraction: {
+                                                                        ...prev.ophthaData?.refraction,
+                                                                        od: {
+                                                                            ...prev.ophthaData?.refraction?.od,
+                                                                            [row]: {
+                                                                                ...prev.ophthaData?.refraction?.od?.[row],
+                                                                                [field]: e.target.value,
+                                                                            },
+                                                                        },
+                                                                    },
+                                                                },
+                                                            }));
+                                                        }}
+                                                        className="w-full rounded-lg px-1 py-1.5 text-xs font-bold text-center border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-blue-300"
+                                                    />
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Left Eye */}
+                        <div className="rounded-xl border border-emerald-200 overflow-hidden">
+                            <div className="bg-emerald-600 text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-center">
+                                Left Eye (OS)
+                            </div>
+                            <table className="w-full text-center">
+                                <thead>
+                                    <tr className="bg-emerald-50 border-b border-emerald-200">
+                                        <th className="text-[8px] font-black uppercase text-emerald-700 py-2 px-1 w-[20%]"></th>
+                                        <th className="text-[8px] font-black uppercase text-emerald-700 py-2 px-1">Sph.</th>
+                                        <th className="text-[8px] font-black uppercase text-emerald-700 py-2 px-1">Cyl.</th>
+                                        <th className="text-[8px] font-black uppercase text-emerald-700 py-2 px-1">Axis</th>
+                                        <th className="text-[8px] font-black uppercase text-emerald-700 py-2 px-1">VA</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {(['distant', 'near'] as const).map(row => (
+                                        <tr key={row} className="border-b border-slate-100 last:border-0">
+                                            <td className="text-[8px] font-black uppercase text-slate-500 py-2 px-2 text-left">
+                                                {row === 'distant' ? 'Distant Vision' : 'Near Vision'}
+                                            </td>
+                                            {(['sph', 'cyl', 'axis', 'va'] as const).map(field => (
+                                                <td key={field} className="py-1.5 px-1">
+                                                    <input
+                                                        type="text"
+                                                        placeholder={field === 'axis' ? '0–180' : field === 'va' ? '6/6' : '+/-'}
+                                                        value={o.refraction?.os?.[row]?.[field] || ''}
+                                                        onChange={e => {
+                                                            setFormData((prev: any) => ({
+                                                                ...prev,
+                                                                ophthaData: {
+                                                                    ...prev.ophthaData,
+                                                                    refraction: {
+                                                                        ...prev.ophthaData?.refraction,
+                                                                        os: {
+                                                                            ...prev.ophthaData?.refraction?.os,
+                                                                            [row]: {
+                                                                                ...prev.ophthaData?.refraction?.os?.[row],
+                                                                                [field]: e.target.value,
+                                                                            },
+                                                                        },
+                                                                    },
+                                                                },
+                                                            }));
+                                                        }}
+                                                        className="w-full rounded-lg px-1 py-1.5 text-xs font-bold text-center border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-emerald-300"
+                                                    />
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </>,
                 'border-slate-200',
@@ -480,25 +605,6 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
                 'border-indigo-100',
             )}
 
-            {/* ── H. DIAGNOSIS ──────────────────────────────────────────── */}
-            {sectionCard(
-                <>
-                    {sectionHeader(<FlaskConical size={17} />, 'H. Ophthalmic Diagnosis', 'select one')}
-                    <div className="flex flex-wrap gap-2">
-                        {DIAGNOSES.map(dx => (
-                            <button key={dx} type="button"
-                                onClick={() => update('diagnosis', o.diagnosis === dx ? '' : dx)}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
-                                    o.diagnosis === dx
-                                        ? 'bg-blue-700 text-white border-blue-700 shadow-md'
-                                        : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700'
-                                }`}
-                            >{dx}</button>
-                        ))}
-                    </div>
-                </>,
-                'border-blue-100',
-            )}
 
             {/* ── Notes ─────────────────────────────────────────────────── */}
             {sectionCard(

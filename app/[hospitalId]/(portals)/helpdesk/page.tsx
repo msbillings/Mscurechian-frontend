@@ -211,7 +211,37 @@ function HelpdeskDashboard() {
     }, [appointments]);
 
     const activeAppointments = useMemo(() => {
-        return appointments.filter(a => !['completed', 'cancelled', 'no-show', 'rejected'].includes(a.status?.toLowerCase()));
+        const active = appointments.filter(a => !['completed', 'cancelled', 'no-show', 'rejected'].includes(a.status?.toLowerCase()));
+        
+        // Sort active queue by appointmentTime or createdAt ascending (FIFO)
+        return active.sort((a, b) => {
+            // First try sorting by appointment time if it exists and date is the same
+            const dateA = a.date ? new Date(a.date).toISOString().split('T')[0] : '';
+            const dateB = b.date ? new Date(b.date).toISOString().split('T')[0] : '';
+            
+            if (dateA === dateB && a.appointmentTime && b.appointmentTime) {
+                // Time comparison logic (converting 12h to 24h for comparison)
+                const parseTime = (timeStr: string) => {
+                    if (!timeStr) return 0;
+                    const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+                    if (!match) return 0;
+                    let [, h, m, ampm] = match;
+                    let hours = parseInt(h, 10);
+                    if (ampm && ampm.toUpperCase() === 'PM' && hours < 12) hours += 12;
+                    if (ampm && ampm.toUpperCase() === 'AM' && hours === 12) hours = 0;
+                    return hours * 60 + parseInt(m, 10);
+                };
+                
+                const timeA = parseTime(a.appointmentTime);
+                const timeB = parseTime(b.appointmentTime);
+                if (timeA !== timeB) return timeA - timeB;
+            }
+            
+            // Fallback to createdAt or date ascending
+            const tA = new Date(a.createdAt || a.date || 0).getTime();
+            const tB = new Date(b.createdAt || b.date || 0).getTime();
+            return tA - tB;
+        });
     }, [appointments]);
 
     const paginatedHistory = useMemo(() => {

@@ -99,13 +99,13 @@ function DischargeLayout({ children }: { children: React.ReactNode }) {
         };
     }, [checkAuth]);
 
-    if (isLoading || (!isLoginPage && isLicenseChecking)) {
+    if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center gap-6">
                     <div className="w-16 h-16 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
                     <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">
-                        {isLicenseChecking ? "Checking License..." : "Checking Credentials"}
+                        Checking Credentials
                     </p>
                 </div>
             </div>

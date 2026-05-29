@@ -617,6 +617,14 @@ export async function apiClient<T>(
                 isRefreshing = false;
               }
             })();
+          } else {
+            // Safety timeout: if it's still refreshing after 10s, something went wrong, force reset
+            setTimeout(() => {
+              if (isRefreshing) {
+                console.warn("[apiClient] 🚨 Safety timeout triggered, resetting isRefreshing state");
+                isRefreshing = false;
+              }
+            }, 10000);
           }
 
           return retryPromise;

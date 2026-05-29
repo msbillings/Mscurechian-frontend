@@ -137,7 +137,7 @@ const DoctorLayout = ({ children }: { children: React.ReactNode }) => {
         }
     }, [isAuthenticated, isInitialized, user?.role, router]);
 
-    if (!isMounted || isLoading || !isInitialized || isLicenseChecking) {
+    if (!isMounted || isLoading || !isInitialized) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-background">
                 <div className="flex flex-col items-center gap-6">

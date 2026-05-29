@@ -115,7 +115,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
         }
     }, [isAuthenticated, isInitialized, user?.role]);
 
-    if (!isMounted || isLoading || !isInitialized || isLicenseChecking) {
+    if (!isMounted || isLoading || !isInitialized) {
         return (
             <div key="helpdesk-init-loader" className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
                 <div key="helpdesk-init-loader-inner" className="flex flex-col items-center gap-6">

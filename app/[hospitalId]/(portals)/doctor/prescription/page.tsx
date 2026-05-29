@@ -30,7 +30,8 @@ import {
     Beaker,
     ShieldAlert,
     Scan,
-    PenTool
+    PenTool,
+    History
 } from 'lucide-react';
 import { CardiologyModule } from './create/modules/CardiologyModule';
 import { DermatologyModule, DermatologyData, INITIAL_DERMATOLOGY_DATA } from './create/modules/DermatologyModule';
@@ -781,6 +782,8 @@ const FrequencySelector = ({ value, onChange }: { value: Frequency, onChange: (v
     );
 };
 
+
+
 function CreatePrescriptionPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -790,6 +793,7 @@ function CreatePrescriptionPage() {
     const patientId = searchParams.get('patientId');
 
     const [mode, setMode] = useState<'AI' | 'SELF'>('SELF');
+
     const [formData, setFormData] = useState<PrescriptionForm>(INITIAL_FORM);
     const [selectedPatientId, setSelectedPatientId] = useState<string | null>(patientId);
     const [activeSpecialty, setActiveSpecialty] = useState<string>('General');
@@ -860,6 +864,8 @@ function CreatePrescriptionPage() {
         refetchOnWindowFocus: false,
     });
 
+
+
     // Pre-fill form when appointment data loads
     useEffect(() => {
         if (appointmentData) {
@@ -870,6 +876,11 @@ function CreatePrescriptionPage() {
             const mrn = apt.patient?.mrn || apt.mrn || '';
             const symptoms = Array.isArray(apt.symptoms) ? apt.symptoms.join(', ') : (apt.symptoms || '');
             const diagnosis = apt.reason || symptoms;
+
+            const pId = apt.patient?._id || apt.patient?.id || apt.patientDetails?._id || apt.patientDetails?.id;
+            if (pId) {
+                setSelectedPatientId(pId);
+            }
 
             // ✅ AUTOMATICALLY FETCH VITALS FROM FRONTDESK (Pulse, BP)
             const frontdeskVitals = apt.vitals || {};
@@ -2405,7 +2416,7 @@ function CreatePrescriptionPage() {
         `;
     };
 
-    const handlePrintDocument = (type: 'prescription' | 'billing') => {
+    const handlePrintDocument = async (type: 'prescription' | 'billing') => {
         if (!generatedHtml) return;
         const html = type === 'prescription' ? generatedHtml.prescription : generatedHtml.billing;
         const printWindow = window.open('', '_blank');
@@ -2414,6 +2425,25 @@ function CreatePrescriptionPage() {
             printWindow.document.close();
             printWindow.focus();
             setTimeout(() => { printWindow.print(); }, 500);
+
+            // Automatically complete the consultation and redirect to dashboard
+            if (appointmentId) {
+                try {
+                    await doctorService.endConsultation(appointmentId, {
+                        duration: 0,
+                        diagnosis: formData.diagnosis,
+                        clinicalNotes: formData.symptoms
+                    });
+                    toast.success("Consultation Completed Successfully!");
+                    
+                    // Delay redirect slightly to ensure print dialog triggers first
+                    setTimeout(() => {
+                        router.push(`/${hospitalId}/doctor`);
+                    }, 1500);
+                } catch (error) {
+                    console.error("Failed to complete consultation", error);
+                }
+            }
         } else {
             toast.error('Please allow popups to print documents');
         }
@@ -2472,6 +2502,22 @@ function CreatePrescriptionPage() {
                                 <Mic2 size={14} className={mode === 'AI' ? 'animate-pulse' : ''} /> Voice Prescription
                             </button>
                         </div>
+                        <button
+                            onClick={() => {
+                                if (selectedPatientId) {
+                                    window.open(`/${hospitalId}/doctor/patients/${selectedPatientId}`, '_blank');
+                                }
+                            }}
+                            disabled={!selectedPatientId}
+                            className={`px-4 py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all border cursor-pointer shrink-0 ${
+                                selectedPatientId
+                                    ? 'bg-teal-50 border-teal-200 text-teal-600 dark:bg-teal-950/20 dark:border-teal-900/30 hover:bg-teal-100 dark:hover:bg-teal-950/40'
+                                    : 'bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-800/50 dark:border-slate-700 cursor-not-allowed opacity-60'
+                            }`}
+                        >
+                            <History size={14} />
+                            Patient History
+                        </button>
                     </div>
                 </div>
             </header>
@@ -2629,42 +2675,69 @@ function CreatePrescriptionPage() {
                     </div>
 
                     {/* ── COMMON FIELDS: Symptoms & Diagnosis (always shown, above specialty modules) ── */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 mb-6 sm:mb-8">
-                        <div>
-                            <label className="text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 flex justify-between">
-                                Symptoms / Complaints
-                                {mode === 'AI' && <span className="text-indigo-500 flex items-center gap-1 font-black"><Sparkles size={10} /> AI Ready</span>}
-                            </label>
-                            <textarea
-                                name="symptoms"
-                                value={formData.symptoms}
-                                onChange={handleInputChange}
-                                rows={3}
-                                placeholder="e.g. Chest pain, palpitations..."
-                                className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
-                            />
-                            {mode === 'AI' && (
+                    {mode === 'AI' ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 mb-6 sm:mb-8">
+                            <div>
+                                <label className="text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 flex justify-between">
+                                    Voice Prescription / Symptoms
+                                    <span className="text-indigo-500 flex items-center gap-1 font-black"><Sparkles size={10} /> AI Ready</span>
+                                </label>
+                                <textarea
+                                    name="symptoms"
+                                    value={formData.symptoms}
+                                    onChange={handleInputChange}
+                                    rows={4}
+                                    placeholder="e.g. Chest pain, palpitations..."
+                                    className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
+                                />
                                 <button
                                     onClick={handleGeneratePrescription}
                                     className="mt-3 w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-lg sm:rounded-xl shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 active:scale-95 transition-all"
                                 >
                                     <Sparkles size={14} /> Auto-Generate Rx
                                 </button>
-                            )}
+                            </div>
+                            <div>
+                                <label className="block text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5">Diagnosis</label>
+                                <textarea
+                                    name="diagnosis"
+                                    value={formData.diagnosis}
+                                    onChange={handleInputChange}
+                                    rows={4}
+                                    placeholder="e.g. Viral Fever"
+                                    className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
+                                />
+                            </div>
                         </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 mb-6 sm:mb-8">
+                            <div>
+                                <label className="text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 flex justify-between">
+                                    Symptoms / Complaints
+                                </label>
+                                <textarea
+                                    name="symptoms"
+                                    value={formData.symptoms}
+                                    onChange={handleInputChange}
+                                    rows={3}
+                                    placeholder="e.g. Chest pain, palpitations..."
+                                    className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
+                                />
+                            </div>
 
-                        <div>
-                            <label className="block text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5">Diagnosis</label>
-                            <textarea
-                                name="diagnosis"
-                                value={formData.diagnosis}
-                                onChange={handleInputChange}
-                                rows={3}
-                                placeholder="e.g. Viral Fever"
-                                className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
-                            />
+                            <div>
+                                <label className="block text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5">Diagnosis</label>
+                                <textarea
+                                    name="diagnosis"
+                                    value={formData.diagnosis}
+                                    onChange={handleInputChange}
+                                    rows={3}
+                                    placeholder="e.g. Viral Fever"
+                                    className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
+                                />
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* DYNAMIC CLINICAL MODULES - STRICT MAPPING TO PREVENT CROSS-RENDERING */}
                     <div className="mb-6 sm:mb-8">

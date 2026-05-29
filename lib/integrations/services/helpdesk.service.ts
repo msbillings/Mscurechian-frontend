@@ -381,6 +381,13 @@ export const helpdeskService = {
     apiClient<any[]>(`/reports/transaction-reports/patient/${patientId}`),
 
   /**
+   * Get the dynamically generated IPD Final Bill (Interim Bill) for a patient
+   * @param patientId Patient ID
+   */
+  getIPDFinalBill: (patientId: string) =>
+    apiClient<any[]>(`/reports/transaction-reports/patient/${patientId}/ipd-final-bill`),
+
+  /**
    * Get all saved transaction reports for the hospital
    */
   getAllTransactionReports: () =>

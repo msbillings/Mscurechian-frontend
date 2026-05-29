@@ -193,7 +193,7 @@ function StaffLayout({ children }: { children: React.ReactNode }) {
         }
     };
 
-    if (!isMounted || isLoading || !isInitialized || isLicenseChecking) {
+    if (!isMounted || isLoading || !isInitialized) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center gap-6">

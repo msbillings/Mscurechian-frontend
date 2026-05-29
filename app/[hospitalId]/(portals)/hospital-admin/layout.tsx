@@ -83,6 +83,7 @@ const hospitalAdminMenu: MenuItem[] = [
       { label: "Room Master", path: "/hospital-admin/management/rooms" },
       { label: "Bed Inventory", path: "/hospital-admin/management/beds" },
       { label: "Vitals Thresholds", path: "/hospital-admin/management/vitals-thresholds" },
+      { label: "TV Displays", path: "/hospital-admin/displays" },
     ],
   },
   { icon: ClipboardCheck, label: "Discharge Audit", path: "/hospital-admin/discharge/history" },
@@ -326,7 +327,7 @@ const HospitalAdminLayout = ({ children }: { children: React.ReactNode }) => {
     };
   }, [isAuthenticated, userId, userRole, queryClient]);
 
-  if (!isMounted || !isInitialized || isLoading || isLicenseChecking) {
+  if (!isMounted || !isInitialized || isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-6">

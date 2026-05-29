@@ -103,7 +103,6 @@ export default function HRInpatientsPage() {
                         <html>
                             <head>
                                 <title>Patient Ledger Print</title>
-                                <script src="https://cdn.tailwindcss.com"></script>
                                 <style>
                                     @media print {
                                         @page { size: A4; margin: 0; }
@@ -115,20 +114,22 @@ export default function HRInpatientsPage() {
                                 ${content}
                                 <script>
                                     window.onload = () => {
-                                        // Slight delay for Tailwind to process classes
-                                        setTimeout(() => {
-                                            window.print();
-                                        }, 800);
+                                        window.print();
                                     }
                                 </script>
                             </body>
                         </html>
                     `);
+                    // Clone style/link sheets from main window for instant rendering
+                    const styles = document.querySelectorAll('link[rel="stylesheet"], style');
+                    styles.forEach(style => {
+                        printWindow.document.head.appendChild(style.cloneNode(true));
+                    });
                     printWindow.document.close();
                 }
                 setPrintingId(null);
                 toast.success("Ledger generated successfully");
-            }, 300);
+            }, 100);
 
         } catch (error) {
             console.error("Print ledger error", error);

@@ -68,6 +68,7 @@ const HospitalDetailsPage = () => {
         pincode: enrichedHospital.pincode || '',
         website: enrichedHospital.website || '',
         establishedYear: enrichedHospital.establishedYear || '',
+        gstNumber: enrichedHospital.gstNumber || '',
         rating: enrichedHospital.rating || '',
         operatingHours: enrichedHospital.operatingHours || '24/7',
         ambulanceAvailability: enrichedHospital.ambulanceAvailability || false,
@@ -277,6 +278,16 @@ const HospitalDetailsPage = () => {
                     onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
                     readOnly={!isEdit}
                     placeholder="Enter pincode"
+                    className={!isEdit ? "bg-transparent border-none p-0 font-bold text-slate-800" : ""}
+                  />
+                </div>
+                <div>
+                  <FormInput
+                    label="GST Number"
+                    value={formData.gstNumber}
+                    onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value })}
+                    readOnly={!isEdit}
+                    placeholder="Enter GST number"
                     className={!isEdit ? "bg-transparent border-none p-0 font-bold text-slate-800" : ""}
                   />
                 </div>
