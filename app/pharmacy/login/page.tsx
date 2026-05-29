@@ -67,6 +67,12 @@ function PharmacyLogin() {
             // ✅ Calls dedicated pharmacy-only endpoint — server enforces role server-side
             const response = await authService.loginPharmacy({ identifier, password });
 
+            if (!response) {
+                toast.error("Invalid credentials or server error.");
+                setLoading(false);
+                return;
+            }
+
             const { accessToken, user, sessionId } = response as any;
 
             if (accessToken) {
