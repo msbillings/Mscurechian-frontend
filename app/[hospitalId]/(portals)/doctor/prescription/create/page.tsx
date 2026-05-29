@@ -2320,7 +2320,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         </div>`;
                         })() : ''}
 
-                        ${(activeSpecialty.toUpperCase().includes('OPHTHAL') || activeSpecialty.toUpperCase().includes('EYE')) && formData.ophthaData && (formData.ophthaData.chiefComplaints || formData.ophthaData.hopi || formData.ophthaData.pastHistory || formData.ophthaData.familyHistory || formData.ophthaData.diagnosis || formData.ophthaData.notes || formData.ophthaData.vision?.od?.unaided || formData.ophthaData.iop?.od) ? (() => {
+                        ${(activeSpecialty.toUpperCase().includes('OPHTHAL') || activeSpecialty.toUpperCase().includes('EYE')) && formData.ophthaData ? (() => {
                             const o = formData.ophthaData;
                             const iopOD = parseFloat(o.iop?.od) || 0;
                             const iopOS = parseFloat(o.iop?.os) || 0;
@@ -2350,16 +2350,15 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                 ${o.diagnosis ? `<span style="font-size:11px;font-weight:900;color:#0369a1;background:#e0f2fe;padding:4px 12px;border-radius:6px;">${o.diagnosis}</span>` : ''}
                             </div>
                             
-                            ${(o.chiefComplaints || o.hopi || o.pastHistory || o.familyHistory) ? `
                             <div style="margin-bottom:15px;padding:12px;background:#fff;border-radius:12px;border:1px solid #bae6fd;">
                                 <span style="font-size:8px;color:#0369a1;font-weight:900;text-transform:uppercase;display:block;margin-bottom:8px;border-bottom:1px dashed #bae6fd;padding-bottom:4px;">Patient History</span>
                                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                                    ${o.chiefComplaints ? `<div><span style="font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;display:block;">Chief Complaints / Symptoms</span><span style="font-size:11px;font-weight:700;color:#0f172a;">${o.chiefComplaints}</span></div>` : ''}
-                                    ${o.hopi ? `<div><span style="font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;display:block;">HOPI</span><span style="font-size:11px;font-weight:700;color:#0f172a;">${o.hopi}</span></div>` : ''}
-                                    ${o.pastHistory ? `<div><span style="font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;display:block;">Past History</span><span style="font-size:11px;font-weight:700;color:#0f172a;">${o.pastHistory}</span></div>` : ''}
-                                    ${o.familyHistory ? `<div><span style="font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;display:block;">Family History</span><span style="font-size:11px;font-weight:700;color:#0f172a;">${o.familyHistory}</span></div>` : ''}
+                                    <div><span style="font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;display:block;">Chief Complaints / Symptoms</span><span style="font-size:11px;font-weight:700;color:#0f172a;">${o.chiefComplaints || '--'}</span></div>
+                                    <div><span style="font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;display:block;">HOPI</span><span style="font-size:11px;font-weight:700;color:#0f172a;">${o.hopi || '--'}</span></div>
+                                    <div><span style="font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;display:block;">Past History</span><span style="font-size:11px;font-weight:700;color:#0f172a;">${o.pastHistory || '--'}</span></div>
+                                    <div><span style="font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;display:block;">Family History</span><span style="font-size:11px;font-weight:700;color:#0f172a;">${o.familyHistory || '--'}</span></div>
                                 </div>
-                            </div>` : ''}
+                            </div>
                             
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:15px;">
                                 <div style="background:#fff;padding:12px;border-radius:12px;border:1px solid #bae6fd;">
@@ -2409,7 +2408,6 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                 </div>
                             </div>
 
-                            ${(o.refraction?.od?.distant?.sph || o.refraction?.os?.distant?.sph || o.refraction?.od?.near?.sph || o.refraction?.os?.near?.sph) ? `
                             <div style="margin-bottom:12px;padding:10px;background:#fff;border-radius:10px;border:1px solid #bae6fd;">
                                 <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:8px;">Refraction</span>
                                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
@@ -2425,17 +2423,17 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                             </tr>
                                             <tr>
                                                 <td style="padding:3px 4px;font-size:8px;font-weight:800;color:#64748b;">Dist.</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.distant?.sph || '-'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.distant?.cyl || '-'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.distant?.axis || '-'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.distant?.va || '-'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.distant?.sph || '--'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.distant?.cyl || '--'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.distant?.axis || '--'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.distant?.va || '--'}</td>
                                             </tr>
                                             <tr style="border-top:1px solid #e2e8f0;">
                                                 <td style="padding:3px 4px;font-size:8px;font-weight:800;color:#64748b;">Near</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.near?.sph || '-'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.near?.cyl || '-'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.near?.axis || '-'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.near?.va || '-'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.near?.sph || '--'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.near?.cyl || '--'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.near?.axis || '--'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.near?.va || '--'}</td>
                                             </tr>
                                         </table>
                                     </div>
@@ -2451,22 +2449,22 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                             </tr>
                                             <tr>
                                                 <td style="padding:3px 4px;font-size:8px;font-weight:800;color:#64748b;">Dist.</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.distant?.sph || '-'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.distant?.cyl || '-'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.distant?.axis || '-'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.distant?.va || '-'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.distant?.sph || '--'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.distant?.cyl || '--'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.distant?.axis || '--'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.distant?.va || '--'}</td>
                                             </tr>
                                             <tr style="border-top:1px solid #e2e8f0;">
                                                 <td style="padding:3px 4px;font-size:8px;font-weight:800;color:#64748b;">Near</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.near?.sph || '-'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.near?.cyl || '-'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.near?.axis || '-'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.near?.va || '-'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.near?.sph || '--'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.near?.cyl || '--'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.near?.axis || '--'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.near?.va || '--'}</td>
                                             </tr>
                                         </table>
                                     </div>
                                 </div>
-                            </div>` : ''}
+                            </div>
 
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:12px;">
                                 <div>
