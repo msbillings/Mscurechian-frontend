@@ -69,6 +69,13 @@ jobs:
           aws ecr get-login-password --region "${{ secrets.AWS_REGION }}" | docker login --username AWS --password-stdin "$REGISTRY"
         shell: bash
 
+      - name: Inject Production Environment Variables
+        run: |
+          echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}" > .env.production
+          echo "NEXT_PUBLIC_FRONTEND_URL=${{ secrets.NEXT_PUBLIC_FRONTEND_URL }}" >> .env.production
+          echo "NEXT_PUBLIC_SOCKET_URL=${{ secrets.NEXT_PUBLIC_SOCKET_URL }}" >> .env.production
+          echo "NEXT_PUBLIC_SUPPORT_DASHBOARD_URL=${{ secrets.NEXT_PUBLIC_SUPPORT_DASHBOARD_URL }}" >> .env.production
+
       - name: Build Docker image (manual)
         run: |
           set -e
@@ -134,7 +141,8 @@ jobs:
             
             docker rm -f $APP_NAME || true
             
-            touch frontend.env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" > frontend.env
+            echo "REDIS_URL=${{ secrets.REDIS_URL }}" >> frontend.env
             docker network create curechain-net || true
             
             docker run -d \
