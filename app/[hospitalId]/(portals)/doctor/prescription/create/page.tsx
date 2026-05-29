@@ -2320,8 +2320,25 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         </div>`;
                         })() : ''}
 
-                        ${(activeSpecialty.toUpperCase().includes('OPHTHAL') || activeSpecialty.toUpperCase().includes('EYE')) && formData.ophthaData ? (() => {
-                            const o = formData.ophthaData;
+                        ${(activeSpecialty.toUpperCase().includes('OPHTHAL') || activeSpecialty.toUpperCase().includes('EYE')) ? (() => {
+                            const o = formData.ophthaData || {
+                                chiefComplaints: '',
+                                hopi: '',
+                                pastHistory: '',
+                                familyHistory: '',
+                                vision: { od: { unaided: '', corrected: '' }, os: { unaided: '', corrected: '' } },
+                                refraction: {
+                                    od: { distant: { sph: '', cyl: '', axis: '', va: '' }, near: { sph: '', cyl: '', axis: '', va: '' } },
+                                    os: { distant: { sph: '', cyl: '', axis: '', va: '' }, near: { sph: '', cyl: '', axis: '', va: '' } }
+                                },
+                                iop: { od: '', os: '' },
+                                pupils: '',
+                                symptoms: [],
+                                slitLamp: { conjunctiva: '', cornea: '', anteriorChamber: '', lens: '' },
+                                fundus: { retina: '', opticDisc: '', macula: '' },
+                                diagnosis: '',
+                                notes: '',
+                            };
                             const iopOD = parseFloat(o.iop?.od) || 0;
                             const iopOS = parseFloat(o.iop?.os) || 0;
                             const maxIOP = Math.max(iopOD, iopOS);
