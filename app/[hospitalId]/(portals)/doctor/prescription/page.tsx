@@ -162,14 +162,24 @@ interface PrescriptionForm {
         notes?: string;
     };
     ophthaData?: {
+        chiefComplaints?: string;
+        hopi?: string;
+        pastHistory?: string;
+        familyHistory?: string;
         symptoms: string[];
         vision: {
             od: { unaided: string; corrected: string; };
             os: { unaided: string; corrected: string; };
         };
         refraction: {
-            od: { sph: string; cyl: string; axis: string; };
-            os: { sph: string; cyl: string; axis: string; };
+            od: {
+                distant?: { sph: string; cyl: string; axis: string; va: string; };
+                near?: { sph: string; cyl: string; axis: string; va: string; };
+            };
+            os: {
+                distant?: { sph: string; cyl: string; axis: string; va: string; };
+                near?: { sph: string; cyl: string; axis: string; va: string; };
+            };
         };
         iop:    { od: string; os: string; };
         pupils: string;
@@ -445,14 +455,24 @@ const INITIAL_FORM: PrescriptionForm = {
         duration: ''
     },
     ophthaData: {
+        chiefComplaints: '',
+        hopi: '',
+        pastHistory: '',
+        familyHistory: '',
         symptoms: [],
         vision: {
             od: { unaided: '', corrected: '' },
             os: { unaided: '', corrected: '' }
         },
         refraction: {
-            od: { sph: '', cyl: '', axis: '' },
-            os: { sph: '', cyl: '', axis: '' }
+            od: {
+                distant: { sph: '', cyl: '', axis: '', va: '' },
+                near: { sph: '', cyl: '', axis: '', va: '' }
+            },
+            os: {
+                distant: { sph: '', cyl: '', axis: '', va: '' },
+                near: { sph: '', cyl: '', axis: '', va: '' }
+            }
         },
         iop:    { od: '', os: '' },
         pupils: 'PERRLA',

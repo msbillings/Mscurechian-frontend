@@ -13,6 +13,7 @@ export interface Hospital {
   area?: string;
   pincode: string;
   state?: string;
+  gstNumber?: string;
   location?: {
     lat: number | string;
     lng: number | string;
@@ -375,6 +376,7 @@ export interface CreateHospitalRequest {
   area?: string;
   pincode: string;
   state?: string;
+  gstNumber?: string;
   location?: { lat: string | number; lng: string | number };
   lat?: number; // legacy
   lng?: number; // legacy

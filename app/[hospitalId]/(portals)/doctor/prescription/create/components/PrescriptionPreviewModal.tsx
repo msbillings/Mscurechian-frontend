@@ -805,12 +805,18 @@ return (
                                                 </div>
                                             </div>
 
-                                            {(o.refraction?.od?.sph || o.refraction?.os?.sph) && (
+                                            {(o.refraction?.od?.distant?.sph || o.refraction?.os?.distant?.sph || o.refraction?.od?.near?.sph || o.refraction?.os?.near?.sph) && (
                                                 <div className="mb-4 p-3 bg-white rounded-xl border border-sky-100 shadow-sm overflow-x-auto">
                                                     <span className="text-[8px] font-black text-sky-700 uppercase block mb-2">Refraction Grid</span>
-                                                    <div className="flex sm:grid sm:grid-cols-2 gap-4 text-[11px] font-bold min-w-[300px]">
-                                                        <div className="text-slate-700 whitespace-nowrap">OD: SPH {o.refraction.od.sph || '0'} / CYL {o.refraction.od.cyl || '0'} / Axis {o.refraction.od.axis || '0'}°</div>
-                                                        <div className="text-slate-700 whitespace-nowrap">OS: SPH {o.refraction.os.sph || '0'} / CYL {o.refraction.os.cyl || '0'} / Axis {o.refraction.os.axis || '0'}°</div>
+                                                    <div className="flex flex-col gap-2 text-[11px] font-bold min-w-[300px]">
+                                                        <div className="text-slate-700 whitespace-nowrap">OD Distant: SPH {o.refraction.od?.distant?.sph || '0'} / CYL {o.refraction.od?.distant?.cyl || '0'} / Axis {o.refraction.od?.distant?.axis || '0'}°</div>
+                                                        <div className="text-slate-700 whitespace-nowrap">OS Distant: SPH {o.refraction.os?.distant?.sph || '0'} / CYL {o.refraction.os?.distant?.cyl || '0'} / Axis {o.refraction.os?.distant?.axis || '0'}°</div>
+                                                        {(o.refraction.od?.near?.sph || o.refraction.os?.near?.sph) && (
+                                                            <>
+                                                                <div className="text-slate-700 whitespace-nowrap mt-1 border-t border-slate-100 pt-1">OD Near: SPH {o.refraction.od.near.sph || '0'} / CYL {o.refraction.od.near.cyl || '0'} / Axis {o.refraction.od.near.axis || '0'}°</div>
+                                                                <div className="text-slate-700 whitespace-nowrap">OS Near: SPH {o.refraction.os.near?.sph || '0'} / CYL {o.refraction.os.near?.cyl || '0'} / Axis {o.refraction.os.near?.axis || '0'}°</div>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </div>
                                             )}

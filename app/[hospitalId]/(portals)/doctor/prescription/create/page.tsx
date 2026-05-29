@@ -214,17 +214,27 @@ interface PrescriptionForm {
         notes?: string;
     };
     ophthaData?: {
+        chiefComplaints?: string;
+        hopi?: string;
+        pastHistory?: string;
+        familyHistory?: string;
+        symptoms: string[];
         vision: {
             od: { unaided: string; corrected: string; };
             os: { unaided: string; corrected: string; };
         };
         refraction: {
-            od: { sph: string; cyl: string; axis: string; };
-            os: { sph: string; cyl: string; axis: string; };
+            od: {
+                distant?: { sph: string; cyl: string; axis: string; va: string; };
+                near?: { sph: string; cyl: string; axis: string; va: string; };
+            };
+            os: {
+                distant?: { sph: string; cyl: string; axis: string; va: string; };
+                near?: { sph: string; cyl: string; axis: string; va: string; };
+            };
         };
-        iop:     { od: string; os: string; };
+        iop:    { od: string; os: string; };
         pupils:  'PERRLA' | 'Sluggish' | 'Fixed' | '';
-        symptoms: string[];
         slitLamp: {
             conjunctiva:     'Normal' | 'Congested' | 'Pale' | '';
             cornea:          'Clear'  | 'Ulcer'     | 'Opacity' | '';
@@ -594,8 +604,21 @@ const INITIAL_FORM: PrescriptionForm = {
         notes: '',
     },
     ophthaData: {
+        chiefComplaints: '',
+        hopi: '',
+        pastHistory: '',
+        familyHistory: '',
         vision:     { od: { unaided: '', corrected: '' }, os: { unaided: '', corrected: '' } },
-        refraction: { od: { sph: '', cyl: '', axis: '' }, os: { sph: '', cyl: '', axis: '' } },
+        refraction: {
+            od: {
+                distant: { sph: '', cyl: '', axis: '', va: '' },
+                near: { sph: '', cyl: '', axis: '', va: '' }
+            },
+            os: {
+                distant: { sph: '', cyl: '', axis: '', va: '' },
+                near: { sph: '', cyl: '', axis: '', va: '' }
+            }
+        },
         iop:        { od: '', os: '' },
         pupils:     '',
         symptoms:   [],
@@ -2386,7 +2409,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                 </div>
                             </div>
 
-                            ${(o.refraction?.od?.distant?.sph || o.refraction?.os?.distant?.sph || o.refraction?.od?.near?.sph || o.refraction?.os?.near?.sph || o.refraction?.od?.sph) ? `
+                            ${(o.refraction?.od?.distant?.sph || o.refraction?.os?.distant?.sph || o.refraction?.od?.near?.sph || o.refraction?.os?.near?.sph) ? `
                             <div style="margin-bottom:12px;padding:10px;background:#fff;border-radius:10px;border:1px solid #bae6fd;">
                                 <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:8px;">Refraction</span>
                                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
@@ -2402,9 +2425,9 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                             </tr>
                                             <tr>
                                                 <td style="padding:3px 4px;font-size:8px;font-weight:800;color:#64748b;">Dist.</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.distant?.sph || o.refraction?.od?.sph || '-'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.distant?.cyl || o.refraction?.od?.cyl || '-'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.distant?.axis || o.refraction?.od?.axis || '-'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.distant?.sph || '-'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.distant?.cyl || '-'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.distant?.axis || '-'}</td>
                                                 <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.od?.distant?.va || '-'}</td>
                                             </tr>
                                             <tr style="border-top:1px solid #e2e8f0;">
@@ -2428,9 +2451,9 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                             </tr>
                                             <tr>
                                                 <td style="padding:3px 4px;font-size:8px;font-weight:800;color:#64748b;">Dist.</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.distant?.sph || o.refraction?.os?.sph || '-'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.distant?.cyl || o.refraction?.os?.cyl || '-'}</td>
-                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.distant?.axis || o.refraction?.os?.axis || '-'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.distant?.sph || '-'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.distant?.cyl || '-'}</td>
+                                                <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.distant?.axis || '-'}</td>
                                                 <td style="padding:3px 4px;font-weight:700;text-align:center;">${o.refraction?.os?.distant?.va || '-'}</td>
                                             </tr>
                                             <tr style="border-top:1px solid #e2e8f0;">
