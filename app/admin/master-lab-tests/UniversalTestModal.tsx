@@ -86,7 +86,7 @@ export default function UniversalTestModal({ isOpen, onClose, onSave, initialDat
       ...prev,
       parameters: [
         ...(prev.parameters || []),
-        { name: "", inputType: "numeric", displayOrder: (prev.parameters?.length || 0) } as UniversalTestParameter
+        { name: "", inputType: "number", displayOrder: (prev.parameters?.length || 0) } as UniversalTestParameter
       ]
     }));
   };
@@ -229,7 +229,7 @@ export default function UniversalTestModal({ isOpen, onClose, onSave, initialDat
                         </div>
                         <div>
                           <select
-                            value={param.inputType || "numeric"}
+                            value={param.inputType || "number"}
                             onChange={e => updateParameter(index, "inputType", e.target.value)}
                             className="w-full px-3 py-1.5 bg-background border border-border-theme rounded-lg text-sm"
                           >
