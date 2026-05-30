@@ -28,6 +28,7 @@ if (!apiUrl && typeof window !== "undefined") {
     "[Config] NEXT_PUBLIC_API_URL is not set! API calls will fail. " +
       "Set this env var and rebuild the app.",
   );
+  throw new Error("CRITICAL: NEXT_PUBLIC_API_URL is missing during build. You MUST set this environment variable.");
 }
 
 // ─── WS_URL Derivation ────────────────────────────────────────────────────────

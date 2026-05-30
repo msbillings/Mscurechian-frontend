@@ -331,6 +331,10 @@ export async function apiClient<T>(
   }
 
   const url = `${API_CONFIG.BASE_URL}${path}`;
+  if (!url.startsWith("http")) {
+    console.error(`[apiClient] ❌ CRITICAL: Attempted to fetch a relative URL (${url}). NEXT_PUBLIC_API_URL is likely missing.`);
+    throw new Error(`CRITICAL: API Client attempted to request a relative URL (${url}). Check NEXT_PUBLIC_API_URL.`);
+  }
   const method = options?.method || "GET";
   const cacheKey = `${method}:${url}`;
 
