@@ -303,7 +303,7 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
                 <div style={styles.brandSection}>
                     <div style={styles.brandHeader}>
                         {shopDetails.logo ? (
-                            <img src={shopDetails.logo} alt="Logo" style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
+                            <img src={shopDetails.logo} alt="Logo" style={{ width: '50px', height: '50px', objectFit: 'contain', borderRadius: '8px' }} />
                         ) : (
                             <div style={styles.logoPlaceholder}>+</div>
                         )}
@@ -314,13 +314,12 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
                     </div>
                     <div style={styles.shopDetails}>
                         <span>📍 {shopDetails.address || 'Address not listed'}</span>
-                        <div style={{ display: 'flex', gap: '15px', marginTop: '5px' }}>
-                            <span>📋 Drug License No: {shopDetails.dlNo || 'KA-123456'}</span>
-                            <span>✅ FSSAI: {shopDetails.fssai || '12345678901234'}</span>
-                        </div>
-                        <div style={{ display: 'flex', gap: '15px' }}>
-                            <span>✉️ Email: {shopDetails.email || 'info@pharmastaff.com'}</span>
+                        {shopDetails.gstin && shopDetails.gstin !== '-' && (
+                            <span style={{ marginTop: '5px' }}>🏷️ GSTIN: {shopDetails.gstin}</span>
+                        )}
+                        <div style={{ display: 'flex', gap: '15px', marginTop: '3px' }}>
                             <span>📞 Support: {shopDetails.phone || '-'}</span>
+                            <span>✉️ Email: {shopDetails.email || 'info@pharmastaff.com'}</span>
                         </div>
                     </div>
                 </div>

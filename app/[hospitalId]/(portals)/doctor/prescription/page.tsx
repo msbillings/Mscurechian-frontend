@@ -75,6 +75,7 @@ interface Medicine {
     availableUnits?: number;
     pricePerUnit?: number;
     error?: string;
+    eye?: 'BE' | 'RE' | 'LE';
 }
 
 interface PrescriptionForm {
@@ -1363,7 +1364,7 @@ function CreatePrescriptionPage() {
                 medicines: formData.medicines.map((m: Medicine) => ({
                     drug: (m as any).productId,
                     name: m.name,
-                    dosage: m.dosage,
+                    dosage: m.eye ? `${m.dosage} (${m.eye})` : m.dosage,
                     frequency: m.freq,
                     duration: m.duration,
                     quantity: m.quantity,
@@ -2250,7 +2251,7 @@ function CreatePrescriptionPage() {
                             ${formData.medicines.map((med: Medicine) => `
                             <tr>
                                 <td>
-                                    <div class="med-name">${med.name}</div>
+                                    <div class="med-name">${med.name} ${med.eye ? `<span style="font-size: 8px; color: #fff; background: #0ea5e9; padding: 2px 4px; border-radius: 4px; margin-left: 4px;">${med.eye}</span>` : ''}</div>
                                     <div class="med-meta">${med.form || ''}</div>
                                 </td>
                                 <td class="med-meta">${med.dosage}</td>
@@ -2411,7 +2412,7 @@ function CreatePrescriptionPage() {
                             <tbody>
                                 ${formData.medicines.map((med: Medicine) => `
                                     <tr>
-                                        <td><strong>${med.name}</strong><br/><span style="font-size: 10px; color: #64748b;">${med.form || ''}</span></td>
+                                        <td><strong>${med.name}</strong> ${med.eye ? `<span style="font-size: 8px; color: #fff; background: #0ea5e9; padding: 2px 4px; border-radius: 4px; margin-left: 4px;">${med.eye}</span>` : ''}<br/><span style="font-size: 10px; color: #64748b;">${med.form || ''}</span></td>
                                         <td>${med.dosage}</td>
                                         <td>${med.quantity}</td>
                                         <td>${med.duration}</td>
@@ -2643,7 +2644,9 @@ function CreatePrescriptionPage() {
                     <div className="flex items-center justify-between mb-4 sm:mb-6 pb-2 border-b border-border-theme">
                         <div className="flex items-center gap-2">
                             <Stethoscope size={16} className="text-teal-600" />
-                            <h2 className="text-[10px] sm:text-xs font-bold text-foreground uppercase tracking-widest">Clinical Assessment</h2>
+                            <h2 className="text-[10px] sm:text-xs font-bold text-foreground uppercase tracking-widest">
+                                {activeSpecialty.toUpperCase() === 'GENERAL' ? 'Clinical Assessment' : `${activeSpecialty} Assessment`}
+                            </h2>
                         </div>
                         {/* Specialty Switcher */}
                         <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl gap-1 overflow-x-auto no-scrollbar max-w-[70%]">
@@ -2694,68 +2697,41 @@ function CreatePrescriptionPage() {
                         </div>
                     </div>
 
-                    {/* ── COMMON FIELDS: Symptoms & Diagnosis (always shown, above specialty modules) ── */}
+                    {/* ── COMMON FIELDS: Symptoms (always shown, above specialty modules) ── */}
                     {mode === 'AI' ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 mb-6 sm:mb-8">
-                            <div>
-                                <label className="text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 flex justify-between">
-                                    Voice Prescription / Symptoms
-                                    <span className="text-indigo-500 flex items-center gap-1 font-black"><Sparkles size={10} /> AI Ready</span>
-                                </label>
-                                <textarea
-                                    name="symptoms"
-                                    value={formData.symptoms}
-                                    onChange={handleInputChange}
-                                    rows={4}
-                                    placeholder="e.g. Chest pain, palpitations..."
-                                    className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
-                                />
-                                <button
-                                    onClick={handleGeneratePrescription}
-                                    className="mt-3 w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-lg sm:rounded-xl shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 active:scale-95 transition-all"
-                                >
-                                    <Sparkles size={14} /> Auto-Generate Rx
-                                </button>
-                            </div>
-                            <div>
-                                <label className="block text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5">Diagnosis</label>
-                                <textarea
-                                    name="diagnosis"
-                                    value={formData.diagnosis}
-                                    onChange={handleInputChange}
-                                    rows={4}
-                                    placeholder="e.g. Viral Fever"
-                                    className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
-                                />
-                            </div>
+                        <div className="mb-6 sm:mb-8">
+                            <label className="text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 flex justify-between">
+                                Voice Prescription / Symptoms
+                                <span className="text-indigo-500 flex items-center gap-1 font-black"><Sparkles size={10} /> AI Ready</span>
+                            </label>
+                            <textarea
+                                name="symptoms"
+                                value={formData.symptoms}
+                                onChange={handleInputChange}
+                                rows={4}
+                                placeholder="e.g. Chest pain, palpitations..."
+                                className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
+                            />
+                            <button
+                                onClick={handleGeneratePrescription}
+                                className="mt-3 w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-lg sm:rounded-xl shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 active:scale-95 transition-all"
+                            >
+                                <Sparkles size={14} /> Auto-Generate Rx
+                            </button>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 mb-6 sm:mb-8">
-                            <div>
-                                <label className="text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 flex justify-between">
-                                    Symptoms / Complaints
-                                </label>
-                                <textarea
-                                    name="symptoms"
-                                    value={formData.symptoms}
-                                    onChange={handleInputChange}
-                                    rows={3}
-                                    placeholder="e.g. Chest pain, palpitations..."
-                                    className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5">Diagnosis</label>
-                                <textarea
-                                    name="diagnosis"
-                                    value={formData.diagnosis}
-                                    onChange={handleInputChange}
-                                    rows={3}
-                                    placeholder="e.g. Viral Fever"
-                                    className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
-                                />
-                            </div>
+                        <div className="mb-6 sm:mb-8">
+                            <label className="text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 flex justify-between">
+                                Symptoms / Complaints
+                            </label>
+                            <textarea
+                                name="symptoms"
+                                value={formData.symptoms}
+                                onChange={handleInputChange}
+                                rows={3}
+                                placeholder="e.g. Chest pain, palpitations..."
+                                className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
+                            />
                         </div>
                     )}
 
@@ -2787,6 +2763,19 @@ function CreatePrescriptionPage() {
                             return null;
                         })()}
                     </div>
+
+                    {/* ── COMMON FIELD: Diagnosis (shown below specialty modules) ── */}
+                    <div className="mb-6 sm:mb-8 mt-4">
+                        <label className="block text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5">Diagnosis</label>
+                        <textarea
+                            name="diagnosis"
+                            value={formData.diagnosis}
+                            onChange={handleInputChange}
+                            rows={3}
+                            placeholder="e.g. Viral Fever"
+                            className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
+                        />
+                    </div>
                 </div>
 
                 {/* Medicines Section */}
@@ -2811,9 +2800,12 @@ function CreatePrescriptionPage() {
                             <div className="col-span-3">Medicine</div>
                             <div className="col-span-1">Form</div>
                             <div className="col-span-1">Dosage</div>
-                            <div className="col-span-4 text-center">Frequency</div>
+                            <div className="col-span-3 text-center">Frequency</div>
                             <div className="col-span-1">Days</div>
-                            <div className="col-span-2">Qty</div>
+                            <div className="col-span-1">Qty</div>
+                            {(activeSpecialty.toUpperCase().includes('EYE') || activeSpecialty.toUpperCase().includes('OPHTHA')) && (
+                                <div className="col-span-2 text-center">Eye</div>
+                            )}
                         </div>
 
                         {formData.medicines.map((med, idx) => (
@@ -2954,6 +2946,28 @@ function CreatePrescriptionPage() {
                                                 </div>
                                             )}
                                         </div>
+
+                                        {(activeSpecialty.toUpperCase().includes('EYE') || activeSpecialty.toUpperCase().includes('OPHTHA')) && (
+                                            <div className="col-span-2 lg:col-span-2 order-6 lg:order-6 space-y-1 mt-2 lg:mt-0">
+                                                <div className="lg:hidden text-[9px] font-bold text-slate-400 uppercase px-1">Eye</div>
+                                                {med.form && ['drop', 'oint', 'gel', 'sol'].some(t => med.form?.toLowerCase().includes(t)) ? (
+                                                    <select
+                                                        value={med.eye || ''}
+                                                        onChange={(e) => updateMedicine(idx, 'eye', e.target.value)}
+                                                        className="w-full px-1 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:outline-none focus:border-teal-500 text-center"
+                                                    >
+                                                        <option value="">- Eye -</option>
+                                                        <option value="BE">BE (Both)</option>
+                                                        <option value="RE">RE (Right)</option>
+                                                        <option value="LE">LE (Left)</option>
+                                                    </select>
+                                                ) : (
+                                                    <div className="w-full px-1 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold text-slate-300 text-center cursor-not-allowed">
+                                                        -
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

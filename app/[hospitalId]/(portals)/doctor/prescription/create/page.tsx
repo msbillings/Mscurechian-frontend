@@ -83,6 +83,7 @@ interface Medicine {
     // Pediatrics specific
     mgPerKg?: string;
     calculatedDose?: string;
+    eye?: 'BE' | 'RE' | 'LE';
 }
 
 
@@ -2925,7 +2926,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                 ${formData.medicines.map(med => `
                                 <tr style="border-bottom: 1px solid #f1f5f9;">
                                     <td style="padding: 14px 10px;">
-                                        <div style="font-weight: 800; color: #0f172a; font-size: 13px;">${med.name}</div>
+                                        <div style="font-weight: 800; color: #0f172a; font-size: 13px;">${med.name} ${med.eye ? `<span style="font-size: 10px; color: #fff; background: #0ea5e9; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">${med.eye}</span>` : ''}</div>
                                         <div style="font-size: 10px; color: #64748b; font-weight: 500;">${med.form}</div>
                                     </td>
                                     <td style="padding: 14px 10px; font-weight: 700; color: #334155; font-size: 12px;">${med.dosage}</td>
@@ -3095,7 +3096,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                 ${formData.medicines.map(med => `
                                 <tr>
                                     <td>
-                                        <div class="med-name">${med.name}</div>
+                                        <div class="med-name">${med.name} ${med.eye ? `<span style="font-size: 8px; color: #fff; background: #0ea5e9; padding: 2px 4px; border-radius: 4px; margin-left: 4px;">${med.eye}</span>` : ''}</div>
                                         <div style="font-size: 10px; color: #64748b;">${med.form}</div>
                                     </td>
                                     <td style="font-weight: 700;">${med.quantity}</td>
@@ -3229,7 +3230,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                 medicines: formData.medicines.map((m: Medicine) => ({
                     drug: (m as any).productId,
                     name: m.name,
-                    dosage: m.dosage,
+                    dosage: m.eye ? `${m.dosage} (${m.eye})` : m.dosage,
                     frequency: m.freq,
                     duration: m.duration?.trim() || 'As directed',
                     quantity: m.quantity,
@@ -3484,7 +3485,9 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                 <Stethoscope size={20} />
                             </div>
                             <div>
-                                <h2 className="text-xs font-black text-slate-800 uppercase tracking-widest">Clinical Assessment</h2>
+                                <h2 className="text-xs font-black text-slate-800 uppercase tracking-widest">
+                                    {activeSpecialty.toUpperCase() === 'GENERAL' ? 'Clinical Assessment' : `${activeSpecialty} Assessment`}
+                                </h2>
                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Specialty-specific analysis</p>
                             </div>
                         </div>
@@ -3546,32 +3549,19 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         </div>
                     )}
 
-                    {/* ── COMMON FIELDS: Symptoms & Diagnosis (always shown, above specialty modules) ── */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                        <div>
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex justify-between">
-                                Symptoms / Complaints
-                            </label>
-                            <textarea
-                                name="symptoms"
-                                value={formData.symptoms}
-                                onChange={handleInputChange}
-                                rows={3}
-                                placeholder="e.g. Fever, Cough, Headache..."
-                                className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Diagnosis</label>
-                            <textarea
-                                name="diagnosis"
-                                value={formData.diagnosis}
-                                onChange={handleInputChange}
-                                rows={3}
-                                placeholder="e.g. Viral Fever"
-                                className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
-                            />
-                        </div>
+                    {/* ── COMMON FIELDS: Symptoms (always shown, above specialty modules) ── */}
+                    <div className="mb-8">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex justify-between">
+                            Symptoms / Complaints
+                        </label>
+                        <textarea
+                            name="symptoms"
+                            value={formData.symptoms}
+                            onChange={handleInputChange}
+                            rows={3}
+                            placeholder="e.g. Fever, Cough, Headache..."
+                            className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
+                        />
                     </div>
 
                     {/* DYNAMIC CLINICAL MODULES - STREAMLINED RENDERING */}
@@ -3617,6 +3607,19 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         })()}
                     </div>
 
+                    {/* ── COMMON FIELD: Diagnosis (always shown, below specialty modules) ── */}
+                    <div className="mb-8">
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Diagnosis</label>
+                        <textarea
+                            name="diagnosis"
+                            value={formData.diagnosis}
+                            onChange={handleInputChange}
+                            rows={3}
+                            placeholder="e.g. Viral Fever"
+                            className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
+                        />
+                    </div>
+
                 </div>
 
                 {/* Medicines Section */}
@@ -3648,6 +3651,9 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                     <div className="col-span-1 text-center">mg/kg</div>
                                     <div className="col-span-2 text-center">Calc. Dose</div>
                                 </>
+                            )}
+                            {(activeSpecialty.toUpperCase().includes('EYE') || activeSpecialty.toUpperCase().includes('OPHTHA')) && (
+                                <div className="col-span-2 text-center">Eye</div>
                             )}
                         </div>
 
@@ -3815,12 +3821,35 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                             </>
                                         )}
 
-                                        <div className="col-span-1 lg:col-span-1 order-8 lg:order-8 flex items-center justify-center pt-1 lg:pt-0">
+                                        {(activeSpecialty.toUpperCase().includes('EYE') || activeSpecialty.toUpperCase().includes('OPHTHA')) && (
+                                            <div className="col-span-2 lg:col-span-2 order-8 lg:order-8 space-y-1">
+                                                <div className="lg:hidden text-[9px] font-bold text-slate-400 uppercase px-1">Eye</div>
+                                                {med.form && ['drop', 'oint', 'gel', 'sol'].some(t => med.form?.toLowerCase().includes(t)) ? (
+                                                    <select
+                                                        value={med.eye || ''}
+                                                        onChange={(e) => updateMedicine(idx, 'eye', e.target.value)}
+                                                        className="w-full px-1 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:outline-none focus:border-teal-500 text-center"
+                                                    >
+                                                        <option value="">- Eye -</option>
+                                                        <option value="BE">BE (Both)</option>
+                                                        <option value="RE">RE (Right)</option>
+                                                        <option value="LE">LE (Left)</option>
+                                                    </select>
+                                                ) : (
+                                                    <div className="w-full px-1 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold text-slate-300 text-center cursor-not-allowed">
+                                                        -
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <div className="col-span-1 lg:col-span-1 order-9 lg:order-9 flex items-center justify-center pt-1 lg:pt-0">
                                             <button onClick={() => removeMedicine(idx)} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg shrink-0 transition-colors">
                                                 <Trash2 size={16} />
                                             </button>
                                         </div>
                                     </div>
+
                                 </div>
                                 {med.availableUnits !== undefined && (
                                     <div className="pt-1 flex justify-end items-center px-4 mt-1 border-t border-slate-50">

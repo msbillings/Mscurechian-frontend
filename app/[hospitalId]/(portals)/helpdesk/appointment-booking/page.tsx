@@ -103,6 +103,17 @@ export default function AppointmentBooking() {
         clinicalNotes: ''
     });
     const [ipdFee, setIpdFee] = useState('500');
+    const [customClinicalFee, setCustomClinicalFee] = useState('0');
+
+    useEffect(() => {
+        if (selectedDoctor) {
+            const fee = selectedDoctor.consultationFee ?? (selectedDoctor as any).hospitals?.[0]?.consultationFee ?? 0;
+            setCustomClinicalFee(fee.toString());
+        } else {
+            setCustomClinicalFee('0');
+        }
+    }, [selectedDoctor]);
+
     const [roomSearch, setRoomSearch] = useState("");
     const [showRoomSelect, setShowRoomSelect] = useState(false);
     const [unitTypes, setUnitTypes] = useState<string[]>([]);
@@ -509,7 +520,7 @@ export default function AppointmentBooking() {
 
         let hasMixedPaymentError = false;
         if (paymentMethod === 'mixed') {
-            const baseAmount = registrationType === 'IPD' ? parseFloat(ipdFee || '0') : (selectedDoctor?.consultationFee || 0);
+            const baseAmount = registrationType === 'IPD' ? parseFloat(ipdFee || '0') : parseFloat(customClinicalFee || '0');
             const discountValue = parseFloat(discountAmount || '0');
             const calculatedDiscount = discountType === 'percentage' ? (baseAmount * discountValue / 100) : discountValue;
             const finalAmount = Math.max(0, baseAmount - calculatedDiscount);
@@ -532,7 +543,7 @@ export default function AppointmentBooking() {
         if (!selectedDoctor) { toast.error("Select a physician"); return; }
         if (!isBookingValid()) {
             if (paymentMethod === 'mixed') {
-                const baseAmount = registrationType === 'IPD' ? parseFloat(ipdFee || '0') : (selectedDoctor?.consultationFee || 0);
+                const baseAmount = registrationType === 'IPD' ? parseFloat(ipdFee || '0') : parseFloat(customClinicalFee || '0');
                 const discountValue = parseFloat(discountAmount || '0');
                 const calculatedDiscount = discountType === 'percentage' ? (baseAmount * discountValue / 100) : discountValue;
                 const finalAmount = Math.max(0, baseAmount - calculatedDiscount);
@@ -638,7 +649,7 @@ export default function AppointmentBooking() {
                 }
             };
 
-            const baseAmount = registrationType === 'IPD' ? parseFloat(ipdFee || '0') : (selectedDoctor?.consultationFee || 0);
+            const baseAmount = registrationType === 'IPD' ? parseFloat(ipdFee || '0') : parseFloat(customClinicalFee || '0');
             const discountValue = parseFloat(discountAmount || '0');
             const discount = discountType === 'percentage' ? (baseAmount * discountValue / 100) : discountValue;
             const finalAmount = Math.max(0, baseAmount - discount);
@@ -1426,10 +1437,15 @@ export default function AppointmentBooking() {
                                                     />
                                                 </div>
                                             ) : (
-                                                <div className="space-y-1">
-                                                    <h4 className="text-2xl font-black text-white">
-                                                        ₹{selectedDoctor ? (selectedDoctor.consultationFee ?? (selectedDoctor as any).hospitals?.[0]?.consultationFee ?? '0') : '0'}.00
-                                                    </h4>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-2xl font-black text-white">₹</span>
+                                                    <input
+                                                        type="number"
+                                                        value={customClinicalFee}
+                                                        onChange={(e) => setCustomClinicalFee(e.target.value)}
+                                                        className="w-24 bg-white/10 border-b border-white/20 text-2xl font-black text-white outline-none focus:border-teal-400 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                        placeholder="0"
+                                                    />
                                                 </div>
                                             )}
                                         </div>
@@ -1471,7 +1487,7 @@ export default function AppointmentBooking() {
                                             <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Final Amount</p>
                                             <h4 className="text-2xl font-black text-teal-400">
                                                 ₹{(() => {
-                                                    const baseAmount = registrationType === 'IPD' ? parseFloat(ipdFee || '0') : (selectedDoctor?.consultationFee || 0);
+                                                    const baseAmount = registrationType === 'IPD' ? parseFloat(ipdFee || '0') : parseFloat(customClinicalFee || '0');
                                                     const discountValue = parseFloat(discountAmount || '0');
                                                     const calculatedDiscount = discountType === 'percentage' ? (baseAmount * discountValue / 100) : discountValue;
                                                     return Math.max(0, baseAmount - calculatedDiscount).toFixed(2);

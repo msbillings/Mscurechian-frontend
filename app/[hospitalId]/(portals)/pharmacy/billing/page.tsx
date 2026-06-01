@@ -411,8 +411,8 @@ const BillingPage = () => {
         phone: (user as any)?.mobile || (user as any)?.phone || '-',
         email: (user as any)?.email || '-',
         gstin: (user as any)?.gstin || '-',
-        dlNo: (user as any)?.licenseNo,
-        logo: (user as any)?.image || (user as any)?.logo
+        dlNo: (user as any)?.licenseNo || '',
+        logo: (user as any)?.image || (user as any)?.logo || (user as any)?.avatar || (user as any)?.profilePic
     };
 
     const handlePreview = () => {

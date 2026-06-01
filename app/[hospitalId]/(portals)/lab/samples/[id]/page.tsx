@@ -594,15 +594,28 @@ export default function LabResultEntryPage() {
                                         )}
 
                                         <div className="relative">
-                                            <input
-                                                type={param.fieldType === 'number' ? 'number' : 'text'}
-                                                value={formValues[idx]?.[param.label] || ''}
-                                                onChange={(e) => handleInputChange(idx, param.label, e.target.value)}
-                                                placeholder={param.example || `Enter ${param.label}`}
-                                                required={param.isRequired}
-                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-medium text-gray-900 dark:text-white"
-                                            />
-                                            {param.unit && (
+                                            {param.fieldType === 'boolean' ? (
+                                                <select
+                                                    value={formValues[idx]?.[param.label] || ''}
+                                                    onChange={(e) => handleInputChange(idx, param.label, e.target.value)}
+                                                    required={param.isRequired}
+                                                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-medium text-gray-900 dark:text-white cursor-pointer"
+                                                >
+                                                    <option value="">Select result...</option>
+                                                    <option value="Negative">Negative</option>
+                                                    <option value="Positive">Positive</option>
+                                                </select>
+                                            ) : (
+                                                <input
+                                                    type={param.fieldType === 'number' ? 'number' : 'text'}
+                                                    value={formValues[idx]?.[param.label] || ''}
+                                                    onChange={(e) => handleInputChange(idx, param.label, e.target.value)}
+                                                    placeholder={param.example || `Enter ${param.label}`}
+                                                    required={param.isRequired}
+                                                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-medium text-gray-900 dark:text-white"
+                                                />
+                                            )}
+                                            {param.unit && param.fieldType !== 'boolean' && (
                                                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
                                                     {param.unit}
                                                 </span>
@@ -621,12 +634,12 @@ export default function LabResultEntryPage() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
                                 </div>
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Result Fields Configured</h3>
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Subtests Configured</h3>
                                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                                    This test doesn't have any result entry fields configured.
+                                    This test doesn't have any subtests configured.
                                 </p>
                                 <p className="text-xs text-gray-400 dark:text-gray-500">
-                                    Please edit the test in Test Master and add result fields using the "Result Fields" section.
+                                    Please edit the test in Test Master and add subtests using the "Subtests" section.
                                 </p>
                             </div>
                         )}

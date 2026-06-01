@@ -1,78 +1,91 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
-import { LabBillingService } from '@/lib/integrations/services/labBilling.service';
-import { BillResponse } from '@/lib/integrations/types/labBilling';
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-    Download,
     Search,
-    Calendar,
-    Filter,
     CreditCard,
+    TrendingUp,
+    IndianRupee,
+    ArrowUpRight,
+    RefreshCw,
+    FileSpreadsheet,
     ChevronLeft,
     ChevronRight,
-    Activity,
     FlaskConical
-} from 'lucide-react';
+} from "lucide-react";
+import { LabBillingService } from '@/lib/integrations/services/labBilling.service';
+import { BillResponse } from '@/lib/integrations/types/labBilling';
 import { toast } from 'react-hot-toast';
 
 function HospitalAdminLabTransactionsPage() {
     const [bills, setBills] = useState<BillResponse[]>([]);
     const [loading, setLoading] = useState(true);
-    const [exporting, setExporting] = useState(false);
-    const [page, setPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
+    const [isExporting, setIsExporting] = useState(false);
+    const [selectedBill, setSelectedBill] = useState<BillResponse | null>(null);
+    const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-    const fetchBills = async (pageNum: number) => {
+    const fetchBills = useCallback(async (page = 1) => {
         setLoading(true);
         try {
-            const res = await LabBillingService.getBills(pageNum, 10, false, startDate, endDate);
-            setBills(res.bills);
-            setTotalPages(res.totalPages);
-            setPage(res.currentPage);
+            const res = await LabBillingService.getBills(page, 10, false, startDate, endDate);
+            setBills(res.bills || []);
+            setTotalPages(res.totalPages || 1);
+            setCurrentPage(res.currentPage || 1);
         } catch (error) {
-            console.error("Audit fetch failed", error);
-            toast.error("Failed to synchronize transaction logs");
+            console.error('Failed to fetch bills:', error);
+            toast.error('Failed to load transaction audit logs');
         } finally {
             setLoading(false);
         }
-    };
-
-    useEffect(() => {
-        fetchBills(1);
     }, [startDate, endDate]);
 
     useEffect(() => {
-        fetchBills(page);
-    }, [page]);
+        fetchBills(currentPage);
+    }, [fetchBills, currentPage]);
+
+    const filteredBills = useMemo(() => {
+        if (!searchTerm.trim()) return bills;
+        const lowSearch = searchTerm.toLowerCase();
+        return bills.filter(bill =>
+            bill.invoiceId?.toLowerCase().includes(lowSearch) ||
+            bill.patientDetails?.name?.toLowerCase().includes(lowSearch) ||
+            bill.patientDetails?.mobile?.toLowerCase().includes(lowSearch) ||
+            bill.paymentMode?.toLowerCase().includes(lowSearch)
+        );
+    }, [bills, searchTerm]);
+
+    const totalGlobalRevenue = useMemo(() => {
+        return filteredBills.reduce((sum, bill) => sum + (bill.finalAmount || 0), 0);
+    }, [filteredBills]);
 
     const handleExport = async () => {
-        setExporting(true);
+        if (filteredBills.length === 0) {
+            toast.error('No transaction records to export');
+            return;
+        }
+
+        setIsExporting(true);
         try {
             const res = await LabBillingService.getBills(1, 2000, true, startDate, endDate);
-            const allBills = res.bills;
+            const allBills = res.bills || [];
 
-            if (allBills.length === 0) {
-                toast.error("No transaction records found for export");
-                return;
-            }
-
+            const ExcelJS = (await import('exceljs')).default;
             const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet('Revenue Report');
+            const worksheet = workbook.addWorksheet('Lab Audit');
 
-            // 1. Report Titles
+            // --- 1. Report Titles ---
             const titleRow = worksheet.addRow(['LABORATORY TRANSACTION SUMMARY REPORT']);
-            titleRow.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF1F4E78' } };
+            titleRow.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF1F4E78' } }; 
             titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
             worksheet.mergeCells('A1:J1');
             titleRow.height = 30;
 
-            const orgRow = worksheet.addRow(['Medilab Diagnostic Center']);
+            const orgRow = worksheet.addRow(['Laboratory Transaction Registry']);
             orgRow.font = { name: 'Calibri', size: 12, bold: true };
             orgRow.alignment = { horizontal: 'center', vertical: 'middle' };
             worksheet.mergeCells('A2:J2');
@@ -82,34 +95,18 @@ function HospitalAdminLabTransactionsPage() {
             periodRow.font = { name: 'Calibri', size: 11, italic: true };
             periodRow.alignment = { horizontal: 'center', vertical: 'middle' };
             worksheet.mergeCells('A3:J3');
-
-            // Spacer
             worksheet.addRow([]);
 
-            // 2. Define Columns & Headers
-            const headers = [
-                'S.No',
-                'Date',
-                'Invoice ID',
-                'Patient Name',
-                'Mobile',
-                'Payment Mode',
-                'Total Amount',
-                'Status'
-            ];
+            // --- 2. Define Columns & Headers ---
+            const headers = ['S.No', 'Date', 'Invoice ID', 'Patient Name', 'Mobile', 'Payment Mode', 'Total Amount', 'Status'];
             const headerRow = worksheet.addRow(headers);
 
-            // Styling Header Row
             headerRow.eachCell((cell) => {
-                cell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: 'FF1F2937' } // Dark Gray/Black Background
-                };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F2937' } };
                 cell.font = { name: 'Calibri', bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
                 cell.alignment = { horizontal: 'center', vertical: 'middle' };
                 cell.border = {
-                    top: { style: 'thin', color: { argb: 'FF0070C0' } }, // Blue Border
+                    top: { style: 'thin', color: { argb: 'FF0070C0' } },
                     left: { style: 'thin', color: { argb: 'FF0070C0' } },
                     bottom: { style: 'thin', color: { argb: 'FF0070C0' } },
                     right: { style: 'thin', color: { argb: 'FF0070C0' } }
@@ -127,10 +124,8 @@ function HospitalAdminLabTransactionsPage() {
                 { key: 'status', width: 15 },
             ];
 
-            // 3. Populate Data
+            // --- 3. Populate Data ---
             let grandTotal = 0;
-
-            // Payment Mode Totals
             let cashTotal = 0;
             let cardTotal = 0;
             let upiTotal = 0;
@@ -139,38 +134,35 @@ function HospitalAdminLabTransactionsPage() {
             allBills.forEach((bill, index) => {
                 const dateObj = new Date(bill.createdAt);
                 const total = bill.finalAmount || 0;
-
                 grandTotal += total;
 
-                if (bill.paymentMode === 'Cash') cashTotal += total;
-                else if (bill.paymentMode === 'Card') cardTotal += total;
-                else if (bill.paymentMode === 'UPI') upiTotal += total;
+                const pMode = bill.paymentMode || 'Cash';
+                if (pMode.toLowerCase() === 'cash') cashTotal += total;
+                else if (pMode.toLowerCase() === 'card') cardTotal += total;
+                else if (pMode.toLowerCase() === 'upi') upiTotal += total;
                 else mixedTotal += total;
 
                 const row = worksheet.addRow({
                     sno: index + 1,
                     date: dateObj.toLocaleDateString('en-GB'),
                     invoiceId: bill.invoiceId,
-                    patient: bill.patientDetails.name,
-                    mobile: bill.patientDetails.mobile || '-',
-                    mode: bill.paymentMode,
+                    patient: (bill.patientDetails?.name || 'ANONYMOUS').toUpperCase(),
+                    mobile: bill.patientDetails?.mobile || '-',
+                    mode: pMode.toUpperCase(),
                     total: total,
-                    status: bill.status || 'Pending',
+                    status: (bill.status || 'Pending').toUpperCase(),
                 });
 
-                // Styling Data Rows
                 row.eachCell((cell, colIdx) => {
                     cell.alignment = { vertical: 'middle', horizontal: 'center' };
                     cell.border = {
-                        top: { style: 'thin', color: { argb: 'FF0070C0' } }, // Blue Border
+                        top: { style: 'thin', color: { argb: 'FF0070C0' } },
                         left: { style: 'thin', color: { argb: 'FF0070C0' } },
                         bottom: { style: 'thin', color: { argb: 'FF0070C0' } },
                         right: { style: 'thin', color: { argb: 'FF0070C0' } }
                     };
                     cell.font = { name: 'Calibri', size: 10 };
-
-                    // Numeric Formatting
-                    if (colIdx === 7) { // Total Amount
+                    if (colIdx === 7) {
                         cell.numFmt = '₹#,##0.00';
                         cell.alignment = { horizontal: 'right' };
                         cell.font = { bold: true };
@@ -178,18 +170,13 @@ function HospitalAdminLabTransactionsPage() {
                 });
             });
 
-            // Spacer
             worksheet.addRow([]);
 
             // --- 4. Footer Totals ---
-            const footerRow = worksheet.addRow([
-                '', '', '', '', '', 'TOTALS:', grandTotal, ''
-            ]);
-
-            // Style Header-like footer
+            const footerRow = worksheet.addRow(['', '', '', '', '', 'TOTALS:', grandTotal, '']);
             footerRow.eachCell((cell, colIdx) => {
                 if (colIdx >= 6 && colIdx <= 7) {
-                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } }; // Light Blue
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
                     cell.font = { bold: true };
                     cell.border = {
                         top: { style: 'thin', color: { argb: 'FF0070C0' } },
@@ -204,10 +191,7 @@ function HospitalAdminLabTransactionsPage() {
                 }
             });
 
-            // Spacer
             worksheet.addRow([]);
-
-            // --- 5. Payment Breakdown ---
             const breakdownHeader = worksheet.addRow(['', '', '', '', '', 'PAYMENT MODE BREAKDOWN']);
             breakdownHeader.getCell(6).font = { bold: true, underline: true };
 
@@ -225,203 +209,330 @@ function HospitalAdminLabTransactionsPage() {
             addBreakdownRow('Total Mixed :', mixedTotal);
 
             const buffer = await workbook.xlsx.writeBuffer();
-            saveAs(new Blob([buffer]), `Lab_Transactions_${new Date().toISOString().split('T')[0]}.xlsx`);
-            toast.success("Transaction report generated successfully");
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Lab_Transactions_${new Date().toISOString().split('T')[0]}.xlsx`;
+            link.click();
+            window.URL.revokeObjectURL(url);
+            
+            toast.success('Professional Transaction Audit exported successfully');
         } catch (error) {
-            console.error("Export failure", error);
-            toast.error("Manifest extraction failed");
+            console.error('Export Error:', error);
+            toast.error('Financial Export Failed');
         } finally {
-            setExporting(false);
+            setIsExporting(false);
         }
     };
 
-    const filteredBills = useMemo(() => {
-        if (!searchTerm.trim()) return bills;
-        const lowSearch = searchTerm.toLowerCase();
-        return bills.filter(bill =>
-            bill.invoiceId.toLowerCase().includes(lowSearch) ||
-            bill.patientDetails.name.toLowerCase().includes(lowSearch) ||
-            bill.patientDetails.mobile?.toLowerCase().includes(lowSearch) ||
-            bill.paymentMode.toLowerCase().includes(lowSearch)
-        );
-    }, [bills, searchTerm]);
-
     return (
-        <div className="p-2 sm:p-3 md:p-4 space-y-6">
-            {/* Header Tier */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+        <div className="space-y-4 bg-slate-50/50 min-h-screen p-2 sm:p-3 md:p-4">
+            {/* Simple Header */}
+            <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white uppercase">Transactions</h1>
-                    <p className="text-gray-500 dark:text-gray-400 font-bold mt-2 uppercase tracking-[0.2em] text-[10px] ml-1 flex items-center gap-2">
-                        <Activity className="w-3 h-3 text-blue-500" />
-                        Track payments and billing records
-                    </p>
+                    <h1 className="text-lg md:text-xl font-bold text-slate-900 tracking-tight">Lab Transactions</h1>
+                    <p className="text-sm text-slate-500 font-medium mt-1 italic tracking-tight">Track laboratory billing and payments</p>
                 </div>
-
-                <button
-                    onClick={handleExport}
-                    disabled={exporting || loading}
-                    className="flex items-center gap-3 px-4 md:px-8 py-4 bg-primary-theme dark:bg-white text-white dark:text-black rounded-[1rem] text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 disabled:opacity-50"
-                >
-                    <Download className="w-4 h-4" />
-                    {exporting ? 'Extracting...' : 'Export Data'}
-                </button>
-            </div>
-
-            {/* Strategic Filters Hub */}
-            <div className="bg-white dark:bg-gray-800 p-3 md:p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-wrap gap-4 items-end relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16"></div>
-
-                {/* Search Bar */}
-                <div className="flex-[2] min-w-[280px]">
-                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Search</label>
-                    <div className="relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Search Invoice, Patient, or Mobile..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-gray-50 dark:bg-gray-900 border border-transparent focus:border-blue-500/30 rounded-xl pl-12 pr-4 py-2.5 text-xs font-bold dark:text-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
-                        />
+                <div className="flex items-center gap-2">
+                    <div className="px-5 py-2 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest leading-none">
+                        System Verified
                     </div>
                 </div>
+            </div>
 
-                <div className="flex-1 min-w-[160px]">
-                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">From Date</label>
-                    <div className="relative">
-                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            {/* Simple Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
+                {[
+                    { label: "Page Revenue", value: `₹${Math.round(totalGlobalRevenue).toLocaleString()}`, icon: IndianRupee, color: "text-blue-600", bg: "bg-blue-50" },
+                    { label: "Total Transactions", value: filteredBills.length, icon: TrendingUp, color: "text-indigo-600", bg: "bg-indigo-50" },
+                    { label: "Average Bill Value", value: `₹${filteredBills.length > 0 ? (totalGlobalRevenue / (filteredBills.length || 1)).toFixed(0) : 0}`, icon: CreditCard, color: "text-emerald-600", bg: "bg-emerald-50" }
+                ].map((stat, i) => (
+                    <div key={i} className={`bg-white p-3 md:p-4 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md ${i === 0 ? 'col-span-2 md:col-span-1' : ''}`}>
+                        <div className={`p-2.5 md:p-3 rounded-xl ${stat.bg} ${stat.color} w-fit mb-3 md:mb-4`}>
+                            <stat.icon size={18} className="md:w-[20px] md:h-[20px]" strokeWidth={3} />
+                        </div>
+                        <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase mb-1">{stat.label}</p>
+                        <h3 className="text-sm md:text-xl font-black text-slate-900 leading-none break-all md:break-normal">{stat.value}</h3>
+                    </div>
+                ))}
+            </div>
+
+            {/* Simple Controller */}
+            <div className="bg-white p-2 md:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
+                <div className="relative flex-1 w-full">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                    <input
+                        type="text"
+                        placeholder="Search by invoice ID, patient name, or mobile..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                    />
+                </div>
+                <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto mt-3 md:mt-0">
+                    <div className="flex items-center gap-2">
                         <input
                             type="date"
                             value={startDate}
                             onChange={(e) => setStartDate(e.target.value)}
-                            className="w-full bg-gray-50 dark:bg-gray-900 border border-transparent focus:border-blue-500/30 rounded-xl pl-10 pr-4 py-2.5 text-xs font-bold dark:text-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+                            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-500/10"
                         />
-                    </div>
-                </div>
-
-                <div className="flex-1 min-w-[160px]">
-                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">To Date</label>
-                    <div className="relative">
-                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                        <span className="text-slate-300 font-bold">-</span>
                         <input
                             type="date"
                             value={endDate}
-                            min={startDate}
                             onChange={(e) => setEndDate(e.target.value)}
-                            className="w-full bg-gray-50 dark:bg-gray-900 border border-transparent focus:border-blue-500/30 rounded-xl pl-10 pr-4 py-2.5 text-xs font-bold dark:text-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+                            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-500/10"
                         />
                     </div>
-                </div>
 
-                <button
-                    onClick={() => { setStartDate(''); setEndDate(''); setSearchTerm(''); }}
-                    className="px-4 py-2.5 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-rose-500 transition-colors"
-                >
-                    Reset
-                </button>
+                    <button
+                        onClick={() => fetchBills(1)}
+                        className="p-2.5 bg-white text-slate-400 border border-slate-200 rounded-xl hover:text-slate-900 transition-all font-black"
+                    >
+                        <RefreshCw size={18} strokeWidth={3} className={loading ? 'animate-spin' : ''} />
+                    </button>
+
+                    <button
+                        onClick={handleExport}
+                        disabled={isExporting}
+                        className="flex items-center gap-2 px-3 md:px-6 py-2.5 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase hover:bg-primary-theme/80 transition-all disabled:opacity-50 shadow-sm"
+                    >
+                        {isExporting ? <RefreshCw size={14} strokeWidth={3} className="animate-spin" /> : <FileSpreadsheet size={14} strokeWidth={3} />}
+                        {isExporting ? 'Exporting...' : 'Export Data'}
+                    </button>
+
+                    {/* Pagination Controls */}
+                    {bills.length > 0 && (
+                        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-slate-900 disabled:opacity-20 transition-all"
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
+                            <div className="px-3 py-1.5 text-xs font-black text-slate-900 bg-white rounded-md min-w-[40px] text-center">
+                                {currentPage}
+                            </div>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-slate-900 disabled:opacity-20 transition-all"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
 
-            {/* Audit manifestation Terminal */}
-            <div className="bg-white dark:bg-gray-800 rounded-[0.5rem] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden relative">
+            {/* Clean Transactions Registry */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
-                    <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full text-left border-collapse">
+                    <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full text-left">
                         <thead>
-                            <tr className="bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
-                                <th className="px-2 md:px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Invoice ID</th>
-                                <th className="px-2 md:px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Date</th>
-                                <th className="px-2 md:px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Patient Name</th>
-                                <th className="px-2 md:px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Amount</th>
-                                <th className="px-2 md:px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
-                                <th className="px-2 md:px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Payment Method</th>
+                            <tr className="border-b border-slate-50 bg-slate-50/30">
+                                <th className="px-2 md:px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Patient Name</th>
+                                <th className="px-2 md:px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Invoice ID</th>
+                                <th className="px-2 md:px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tests / Details</th>
+                                <th className="px-2 md:px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Doctor</th>
+                                <th className="px-2 md:px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Payment Method</th>
+                                <th className="px-2 md:px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</th>
+                                <th className="px-2 md:px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date & Time</th>
+                                <th className="px-2 md:px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
-                            {loading ? (
-                                [...Array(5)].map((_, i) => (
-                                    <tr key={i} className="opacity-50">
-                                        <td colSpan={6} className="px-2 md:px-8 py-6"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded-full w-full"></div></td>
-                                    </tr>
-                                ))
-                            ) : filteredBills.length === 0 ? (
+                        <tbody className="divide-y divide-slate-50">
+                            {loading && bills.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-2 md:px-8 py-20 text-center">
-                                        <div className="flex flex-col items-center gap-4 opacity-50">
-                                            <FlaskConical className="w-12 h-12 text-gray-300" />
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">No results found for your search criteria</p>
+                                    <td colSpan={8} className="p-20 text-center">
+                                        <div className="flex flex-col items-center justify-center">
+                                            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                            <p className="mt-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Loading Transactions...</p>
                                         </div>
                                     </td>
                                 </tr>
+                            ) : filteredBills.length === 0 ? (
+                                <tr>
+                                    <td colSpan={8} className="p-20 text-center">
+                                        <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                                            <CreditCard className="text-slate-200 w-8 h-8" />
+                                        </div>
+                                        <h3 className="text-sm md:text-lg font-black text-slate-900">No Transactions Found</h3>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 max-w-[240px] mx-auto">
+                                            No records match your current filters.
+                                        </p>
+                                    </td>
+                                </tr>
                             ) : (
-                                filteredBills.map((bill) => (
-                                    <tr key={bill._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/50 group">
-                                        <td className="px-2 md:px-8 py-6">
-                                            <span className="text-[11px] font-black italic bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-xl uppercase">#{bill.invoiceId}</span>
-                                        </td>
-                                        <td className="px-2 md:px-8 py-6">
-                                            <p className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-tighter">
-                                                {new Date(bill.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                            </p>
-                                        </td>
-                                        <td className="px-2 md:px-8 py-6">
-                                            <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tighter underline underline-offset-4 decoration-gray-100 dark:decoration-gray-800">{bill.patientDetails.name}</p>
-                                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">{bill.patientDetails.mobile}</p>
-                                        </td>
-                                        <td className="px-2 md:px-8 py-6">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xs font-black text-gray-900 dark:text-white">₹{bill.finalAmount.toLocaleString()}</span>
-                                                {bill.paidAmount < bill.finalAmount && <span className="text-[8px] font-black text-rose-500 bg-rose-50 dark:bg-rose-500/10 px-2 py-0.5 rounded-full uppercase">Arrears: ₹{(bill.finalAmount - bill.paidAmount).toLocaleString()}</span>}
-                                            </div>
-                                        </td>
-                                        <td className="px-2 md:px-8 py-6">
-                                            <span className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest ${bill.status === 'Paid' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600'}`}>
-                                                {bill.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-2 md:px-8 py-6">
-                                            <div className="flex items-center gap-2">
-                                                <CreditCard className="w-3 h-3 text-gray-300" />
-                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{bill.paymentMode}</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
+                                filteredBills.map((bill) => {
+                                    const itemsText = bill.tests && bill.tests.length > 0 
+                                        ? bill.tests.map((i: any) => i.testName || i.name || 'Test').join(', ') 
+                                        : 'Lab Tests';
+                                    
+                                    return (
+                                        <tr key={bill._id || bill.invoiceId} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="px-2 md:px-6 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 font-black text-[10px] uppercase">
+                                                        {bill.patientDetails?.name ? bill.patientDetails.name.charAt(0) : 'U'}
+                                                    </div>
+                                                    <span className="font-thin text-slate-900 text-xs">{(bill.patientDetails?.name || 'Anonymous').toUpperCase()}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-2 md:px-8 py-4">
+                                                <div className="flex flex-col">
+                                                    <span className="inline-flex items-center w-fit px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border bg-slate-50 text-slate-600 border-slate-200">
+                                                        #{bill.invoiceId}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-2 md:px-8 py-4 max-w-[200px] truncate">
+                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest truncate" title={itemsText}>{itemsText}</span>
+                                            </td>
+                                            <td className="px-2 md:px-8 py-4">
+                                                <div className="space-y-1">
+                                                    {bill.prescribingDoctor ? (
+                                                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                                                            {bill.prescribingDoctor}
+                                                        </p>
+                                                    ) : (
+                                                        <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">N/A</p>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-2 md:px-8 py-4">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                                    {bill.paymentMode?.toLowerCase() === 'cash' ? <IndianRupee size={12} strokeWidth={3} /> : <CreditCard size={12} strokeWidth={3} />}
+                                                    {bill.paymentMode || 'CASH'}
+                                                </span>
+                                            </td>
+                                            <td className="px-2 md:px-8 py-4">
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-sm font-thin text-slate-900">
+                                                        ₹{Math.round(bill.finalAmount || 0).toLocaleString()}
+                                                    </span>
+                                                    {(bill.finalAmount || 0) > (bill.paidAmount || 0) && (
+                                                        <span className="text-[8px] font-black text-rose-600 uppercase">
+                                                            Due: ₹{Math.round((bill.finalAmount || 0) - (bill.paidAmount || 0)).toLocaleString()}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-2 md:px-8 py-4">
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-thin text-slate-900 leading-none">
+                                                        {new Date(bill.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                                    </span>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase mt-1">
+                                                        {new Date(bill.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-2 md:px-8 py-4 text-center">
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedBill(bill);
+                                                        setShowDetailsModal(true);
+                                                    }}
+                                                    className="p-2 hover:bg-slate-900 hover:text-white rounded-lg text-slate-300 transition-all"
+                                                >
+                                                    <ArrowUpRight size={16} strokeWidth={3} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table></div>
                 </div>
+            </div>
 
-                {/* Tactical Pagination Terminal */}
-                <div className="p-3 md:p-8 bg-gray-50/50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                    <button
-                        disabled={page <= 1}
-                        onClick={() => setPage(p => p - 1)}
-                        className="flex items-center gap-2 px-3 md:px-6 py-3 text-[10px] font-black text-gray-400 hover:text-blue-500 uppercase tracking-widest disabled:opacity-20"
-                    >
-                        <ChevronLeft className="w-4 h-4" />
-                        Previous
-                    </button>
-                    <div className="flex flex-col items-center">
-                        <span className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-[0.3em]">Unit {page} of {totalPages}</span>
-                        <div className="flex gap-1 mt-2">
-                            {[...Array(Math.min(totalPages, 5))].map((_, i) => (
-                                <div key={i} className={`w-4 h-1 rounded-full ${i + 1 === page ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
-                            ))}
+            {/* Payment Details Modal */}
+            {showDetailsModal && selectedBill && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 md:p-4" onClick={() => setShowDetailsModal(false)}>
+                    <div className="bg-white rounded-2xl p-3 md:p-6 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-xl font-black text-slate-900">Lab Bill Details</h3>
+                            <button
+                                onClick={() => setShowDetailsModal(false)}
+                                className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-900 transition-all"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Patient Name</span>
+                                <span className="text-sm font-black text-slate-900">{selectedBill.patientDetails?.name || 'Anonymous'}</span>
+                            </div>
+
+                            <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaction Type</span>
+                                <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border bg-amber-50 text-amber-600 border-amber-100">
+                                    LABORATORY
+                                </span>
+                            </div>
+
+                            <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Amount</span>
+                                <span className="text-sm md:text-lg font-black text-slate-900">₹{Math.round(selectedBill.finalAmount || 0).toLocaleString()}</span>
+                            </div>
+
+                            <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount Paid</span>
+                                <span className="text-sm md:text-lg font-black text-emerald-600">₹{Math.round(selectedBill.paidAmount || 0).toLocaleString()}</span>
+                            </div>
+
+                            <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Payment Method</span>
+                                <span className="text-sm font-black text-slate-900 uppercase">{selectedBill.paymentMode || 'CASH'}</span>
+                            </div>
+
+                            <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaction Date</span>
+                                <span className="text-sm font-black text-slate-900">
+                                    {new Date(selectedBill.createdAt).toLocaleDateString('en-GB', {
+                                        day: '2-digit', month: 'short', year: 'numeric'
+                                    })}
+                                </span>
+                            </div>
+
+                            <div className="flex justify-between items-center py-3">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</span>
+                                {(() => {
+                                    const isPaid = selectedBill.status === 'Paid' || (selectedBill.finalAmount === selectedBill.paidAmount && selectedBill.finalAmount > 0);
+                                    const displayStatus = isPaid ? 'Paid' : (selectedBill.status || 'Pending');
+                                    const statusClasses = isPaid
+                                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                        : 'bg-amber-50 text-amber-600 border-amber-100';
+
+                                    return (
+                                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${statusClasses}`}>
+                                            {displayStatus}
+                                        </span>
+                                    );
+                                })()}
+                            </div>
+                        </div>
+                        
+                        <div className="flex gap-2 mt-6">
+                            <button
+                                onClick={() => setShowDetailsModal(false)}
+                                className="w-full py-3 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all"
+                            >
+                                Close
+                            </button>
                         </div>
                     </div>
-                    <button
-                        disabled={page >= totalPages}
-                        onClick={() => setPage(p => p + 1)}
-                        className="flex items-center gap-2 px-3 md:px-6 py-3 text-[10px] font-black text-gray-400 hover:text-blue-500 uppercase tracking-widest disabled:opacity-20"
-                    >
-                        Next
-                        <ChevronRight className="w-4 h-4" />
-                    </button>
                 </div>
-            </div>
+            )}
         </div>
     );
 }
 
-// ✅ OPTIMIZED: Memoized component
 export default React.memo(HospitalAdminLabTransactionsPage);

@@ -6,6 +6,7 @@ import {
     Pill,
     FlaskConical,
     ChevronDown,
+    Activity
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { useTenantLink } from "@/hooks/useTenantLink";
@@ -52,6 +53,13 @@ const TransactionDropdown: React.FC<TransactionDropdownProps> = ({ startTransiti
             icon: FlaskConical,
             color: "text-amber-500",
             bg: "bg-amber-50"
+        },
+        {
+            label: "Radiology Transaction",
+            path: "/hospital-admin/radiology/transactions",
+            icon: Activity,
+            color: "text-blue-500",
+            bg: "bg-blue-50"
         }
     ];
 

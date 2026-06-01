@@ -65,9 +65,17 @@ function HospitalAdminManageTestPage() {
             label: string;
             unit?: string;
             normalRange?: string;
+            normalRanges?: {
+                male?: { min?: string | number; max?: string | number; text?: string };
+                female?: { min?: string | number; max?: string | number; text?: string };
+                child?: { min?: string | number; max?: string | number; text?: string };
+                newborn?: { min?: string | number; max?: string | number; text?: string };
+                infant?: { min?: string | number; max?: string | number; text?: string };
+                geriatric?: { min?: string | number; max?: string | number; text?: string };
+            };
             remarks?: string;
             example?: string;
-            fieldType?: 'text' | 'number';
+            fieldType?: 'text' | 'number' | 'boolean';
             isRequired?: boolean;
             displayOrder?: number;
         }>
@@ -281,9 +289,7 @@ function HospitalAdminManageTestPage() {
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* ── Main Form ── */}
-                <div className="lg:col-span-8 space-y-6">
+            <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-6">
 
                     {/* Basic Information */}
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm">
@@ -409,14 +415,17 @@ function HospitalAdminManageTestPage() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Unit</label>
-                                <select
-                                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none cursor-pointer"
-                                    value={formData.unit}
+                                <input
+                                    type="text"
+                                    list="unit-options"
+                                    placeholder="Select or type unit..."
+                                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                                    value={formData.unit || ''}
                                     onChange={e => setFormData({ ...formData, unit: e.target.value })}
-                                >
-                                    <option value="">Select unit...</option>
-                                    {metaOptions.units?.map((u: string) => <option key={u} value={u}>{u}</option>)}
-                                </select>
+                                />
+                                <datalist id="unit-options">
+                                    {metaOptions.units?.map((u: string) => <option key={u} value={u} />)}
+                                </datalist>
                             </div>
                         </div>
 
@@ -476,62 +485,55 @@ function HospitalAdminManageTestPage() {
                             ))}
                         </div>
                     </div>
-                </div>
-
-                {/* ── Sidebar ── */}
-                <div className="lg:col-span-4 space-y-6">
-                    {/* Price */}
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                            Price (₹) <span className="text-rose-500">*</span>
-                        </label>
-                        <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-gray-400">₹</span>
-                            <input
-                                type="number"
-                                required
-                                className="w-full pl-10 pr-4 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-2xl font-bold text-gray-900 dark:text-white"
-                                placeholder="0"
-                                value={formData.price}
-                                onChange={e => setFormData({ ...formData, price: e.target.value })}
-                            />
-                        </div>
-                        <p className="text-xs text-gray-500 mt-2">Base price for this test</p>
-                    </div>
-
-                    {/* Result Parameters */}
-                    <div className="max-h-[600px] overflow-y-auto">
-                        <ResultParametersManager
-                            parameters={formData.resultParameters}
-                            onChange={(params) => setFormData({ ...formData, resultParameters: params })}
+                {/* Price */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                        Price (₹) <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-gray-400">₹</span>
+                        <input
+                            type="number"
+                            required
+                            className="w-full pl-10 pr-4 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-2xl font-bold text-gray-900 dark:text-white"
+                            placeholder="0"
+                            value={formData.price}
+                            onChange={e => setFormData({ ...formData, price: e.target.value })}
                         />
                     </div>
+                    <p className="text-xs text-gray-500 mt-2">Base price for this test</p>
+                </div>
 
-                    {/* Actions */}
-                    <div className="space-y-3 sticky bottom-0 bg-gradient-to-t from-white dark:from-gray-900 pt-4">
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium shadow-sm transition-all disabled:opacity-70 flex items-center justify-center gap-2"
-                        >
-                            {loading ? (
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : (
-                                <>
-                                    <Save size={18} />
-                                    {isEditMode ? 'Save Changes' : 'Create Test'}
-                                </>
-                            )}
-                        </button>
-                        <button
-                            type="button"
-                            disabled={isNavigating}
-                            onClick={() => startNavigation(() => router.back())}
-                            className={`w-full py-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 font-medium text-sm transition-colors ${isNavigating ? 'opacity-50' : ''}`}
-                        >
-                            Cancel
-                        </button>
-                    </div>
+                {/* Subtests */}
+                <ResultParametersManager
+                    parameters={formData.resultParameters}
+                    onChange={(params) => setFormData({ ...formData, resultParameters: params })}
+                />
+
+                {/* Actions */}
+                <div className="flex gap-4 items-center justify-end bg-white dark:bg-gray-800 p-6 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm">
+                    <button
+                        type="button"
+                        disabled={isNavigating}
+                        onClick={() => startNavigation(() => router.back())}
+                        className={`px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-gray-700 dark:hover:bg-gray-650 text-gray-700 dark:text-gray-300 rounded-xl font-semibold text-sm transition-colors ${isNavigating ? 'opacity-50' : ''}`}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-sm shadow-sm transition-all disabled:opacity-70 flex items-center justify-center gap-2"
+                    >
+                        {loading ? (
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                            <>
+                                <Save size={18} />
+                                {isEditMode ? 'Save Changes' : 'Create Test'}
+                            </>
+                        )}
+                    </button>
                 </div>
             </form>
 

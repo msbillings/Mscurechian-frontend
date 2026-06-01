@@ -51,9 +51,9 @@ const TransactionsPage = () => {
         phone: (user as any)?.mobile || (user as any)?.phone || '-',
         email: (user as any)?.email || '-',
         gstin: (user as any)?.gstin || '-',
-        dlNo: (user as any)?.licenseNo || (user as any)?.dlNo || 'KA-123456',
-        fssai: (user as any)?.fssai || '12345678901234',
-        logo: (user as any)?.image || (user as any)?.logo
+        dlNo: (user as any)?.licenseNo || (user as any)?.dlNo || '',
+        fssai: (user as any)?.fssai || '',
+        logo: (user as any)?.image || (user as any)?.logo || (user as any)?.avatar || (user as any)?.profilePic
     };
 
     const handlePrint = useReactToPrint({

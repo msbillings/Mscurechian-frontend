@@ -186,8 +186,10 @@ const expireCookie = (name: string) => {
 // Strip sensitive fields before writing user to localStorage.
 // Keeps only what the UI needs — never writes certs, GSTIN, etc. to JS storage.
 const scrubUserForStorage = (user: any): any => {
+  if (!user) return user;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { documents, gstin, licenseNo, qualificationDetails, password, refreshTokens, ...safe } = user;
+  const { documents, qualificationDetails, password, refreshTokens, ...safe } = user;
+  // Keep gstin, licenseNo, and image — they're business identifiers needed for invoice rendering
   if (safe.image?.startsWith?.('data:'))      safe.image      = undefined;
   if (safe.avatar?.startsWith?.('data:'))     safe.avatar     = undefined;
   if (safe.profilePic?.startsWith?.('data:')) safe.profilePic = undefined;

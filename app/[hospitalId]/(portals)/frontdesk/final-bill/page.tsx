@@ -183,21 +183,36 @@ export default function FinalBillPage() {
 
         const h = hospital || { name: 'Hospital Name', address: 'Hospital Address', contact: 'Contact Info' };
         const data = latestReport.reportData;
-        const pt = selectedPatient;
-        const adm = admission;
+        const pt = latestReport.patientInfo || selectedPatient;
+        const adm = latestReport.admissionInfo || admission;
+        const hInfo = latestReport.hospitalInfo || {};
         const dateNow = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
         const headerHtml = renderToStaticMarkup(
             <MainHeader
                 initialDetails={{
-                    name: h.name || "Hospital Name",
-                    address: h.address || "",
-                    phone: h.phone || h.mobile || "",
-                    email: h.email || "",
-                    logo: h.logo
+                    name: hInfo.name || h.name || "Hospital Name",
+                    address: hInfo.address || h.address || "",
+                    phone: hInfo.phone || (h as any).phone || (h as any).mobile || "",
+                    email: hInfo.email || h.email || "",
+                    logo: hInfo.logo || (h as any).logo
                 }}
             />
         );
+
+        // Patient type display
+        const patientType = adm?.admissionType || 'IPD-Cash';
+        const patientTypeDisplay = patientType.toUpperCase().includes('INSURANCE') ? 'IPD-Insurance' : 'IPD-Cash';
+
+        // Discharge date formatting
+        const dischargeDt = adm?.dischargeDate ? new Date(adm.dischargeDate).toLocaleString('en-IN', {
+            day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true
+        }) : '';
+
+        // Admission date formatting
+        const admissionDt = adm?.admissionDate ? new Date(adm.admissionDate).toLocaleString('en-IN', {
+            day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true
+        }) : '';
 
         let html = `
             <!DOCTYPE html>
@@ -207,56 +222,61 @@ export default function FinalBillPage() {
                 <style>
                     * { box-sizing: border-box; }
                     body { font-family: Arial, sans-serif; padding: 20px; color: #000; font-size: 10px; line-height: 1.3; background: #fff; margin: 0; }
-                    .header-custom { text-align: center; margin-bottom: 10px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+                    .header-custom { text-align: center; margin-bottom: 5px; border-bottom: 1px solid #000; padding-bottom: 5px; }
                     .header-custom h1 { margin: 0; font-size: 18px; text-transform: uppercase; }
                     .header-custom p { margin: 2px 0; font-size: 10px; }
-                    .bill-title { text-align: center; font-weight: bold; font-size: 14px; text-decoration: underline; margin: 10px 0; }
-                    .invoice-no { text-align: center; font-weight: bold; font-size: 11px; margin-bottom: 10px; }
+                    .bill-title { text-align: center; font-weight: bold; font-size: 12px; margin: 0; padding: 4px 0; border: 1px solid #000; border-bottom: none; }
+                    .invoice-no { text-align: center; font-weight: bold; font-size: 11px; margin: 0 0 10px 0; padding: 4px 0; border: 1px solid #000; }
                     
-                    .patient-details-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; border: 1px solid #000; }
-                    .patient-details-table td { padding: 4px; vertical-align: top; font-size: 9px; }
-                    .patient-details-table .lbl { width: 110px; }
+                    .patient-details-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; border: 1px solid #000; }
+                    .patient-details-table td { padding: 3px 5px; vertical-align: top; font-size: 9px; }
+                    .patient-details-table .lbl { width: 105px; font-weight: bold; }
                     .patient-details-table .val { width: auto; }
                     
-                    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; border: 1px solid #000; border-top: none; }
-                    .items-table th { background: #fff; border: 1px solid #000; border-bottom: 2px solid #000; border-top: 2px solid #000; padding: 5px; text-align: left; font-size: 9px; font-weight: bold; }
-                    .items-table td { border-left: none; border-right: none; padding: 4px 5px; font-size: 9px; }
-                    .items-table .category-row td { background: #fff; font-weight: bold; text-align: left; color: #000080; padding-top: 8px; padding-bottom: 4px; text-transform: capitalize; }
+                    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; border: 1px solid #000; border-top: none; }
+                    .items-table th { background: #fff; border: 1px solid #000; border-bottom: 2px solid #000; border-top: 2px solid #000; padding: 4px 5px; text-align: left; font-size: 9px; font-weight: bold; }
+                    .items-table td { border-left: none; border-right: none; padding: 3px 5px; font-size: 9px; }
+                    .items-table .category-row td { background: #fff; font-weight: bold; text-align: left; color: #000080; padding-top: 8px; padding-bottom: 4px; text-transform: uppercase; font-size: 10px; }
                     .items-table .subtotal-row td { background: #fff; font-weight: bold; text-align: right; color: #000; border-top: 1px solid #000; border-bottom: 1px solid #000; }
+                    .items-table .subtotal-amount { color: #000080; }
                     .items-table .total-amount-cell { text-align: right; }
                     .items-table .right-align { text-align: right; }
                     .items-table .center-align { text-align: center; }
 
-                    .summary-section { width: 100%; display: table; margin-top: 10px; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 5px 0; }
-                    .amount-words { display: table-cell; width: 60%; vertical-align: top; font-weight: bold; font-size: 11px; }
+                    .summary-section { width: 100%; display: table; margin-top: 5px; border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 5px 0; }
+                    .amount-words { display: table-cell; width: 60%; vertical-align: top; font-weight: bold; font-size: 10px; padding: 5px; }
                     .amount-words .reason { font-weight: normal; margin-top: 5px; }
                     .totals-box { display: table-cell; width: 40%; vertical-align: top; }
                     .totals-table { width: 100%; border-collapse: collapse; }
-                    .totals-table td { padding: 2px; font-size: 10px; }
+                    .totals-table td { padding: 3px; font-size: 10px; }
                     .totals-table .lbl { font-weight: bold; text-align: right; width: 60%; }
                     .totals-table .val { text-align: right; font-weight: bold; }
+                    .totals-table .grand-row td { border-top: 1px solid #000; font-size: 11px; }
+                    .totals-table .balance-row td { border-top: 1px solid #000; border-bottom: 2px solid #000; font-size: 11px; color: #c00; }
 
-                    .receipts-title { font-weight: bold; margin: 15px 0 5px; font-size: 11px; }
-                    .receipts-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+                    .receipts-title { font-weight: bold; margin: 10px 0 5px; font-size: 11px; border-bottom: 1px solid #000; padding-bottom: 3px; background: #e8e8ff; }
+                    .receipts-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
                     .receipts-table th, .receipts-table td { padding: 4px; font-size: 9px; text-align: left; }
-                    .receipts-table th { border-top: 1px solid #000; border-bottom: 1px solid #000; }
+                    .receipts-table th { border-top: 1px solid #000; border-bottom: 1px solid #000; font-weight: bold; }
                     .receipts-table .total-row td { border-top: 1px solid #000; border-bottom: 1px solid #000; font-weight: bold; }
-                    
                     .receipts-table .right-align { text-align: right; }
 
-                    .footer-signatures { width: 100%; display: table; margin-top: 60px; font-size: 11px; }
+                    .footer-signatures { width: 100%; display: table; margin-top: 50px; font-size: 11px; }
                     .footer-signatures > div { display: table-cell; width: 50%; }
-                    .footer-signatures .left-sig { text-align: left; padding-left: 20%; }
+                    .footer-signatures .left-sig { text-align: left; padding-left: 10%; font-weight: bold; }
                     .footer-signatures .right-sig { text-align: right; padding-right: 10%; font-weight: bold; }
-                    .sig-line { border-top: 1px solid #000; width: 200px; margin-bottom: 5px; margin-left: -50px; }
+                    .sig-line { border-top: 1px solid #000; width: 200px; margin-bottom: 5px; display: inline-block; }
                     
-                    .printed-time { border-top: 1px solid #000; padding-top: 5px; margin-top: 40px; font-weight: bold; font-size: 9px; }
+                    .printed-time { border-top: 1px solid #000; padding-top: 5px; margin-top: 20px; font-weight: bold; font-size: 9px; }
+
+                    .page-header { display: none; }
 
                     @media print { 
                         body { padding: 0; } 
                         @page { margin: 10mm; }
                         .items-table { page-break-inside: auto; }
                         .items-table tr { page-break-inside: avoid; page-break-after: auto; }
+                        .page-header { display: block; position: running(pageHeader); font-size: 9px; font-weight: bold; padding: 5px 0; border-bottom: 1px solid #000; margin-bottom: 5px; }
                     }
                 </style>
             </head>
@@ -266,39 +286,39 @@ export default function FinalBillPage() {
                 </div>
                 
                 <div class="bill-title">IP Interim Bill-Detailed</div>
-                <div class="invoice-no">BILL OF SUPPLY / INVOICE NO : ${latestReport._id.slice(-8).toUpperCase()}</div>
+                <div class="invoice-no">BILL OF SUPPLY / INVOICE NO : ${latestReport._id?.toString().slice(-8).toUpperCase() || 'N/A'}</div>
 
                 <table class="patient-details-table">
                     <tr>
                         <td class="lbl">CIN No</td><td class="val">: </td>
-                        <td class="lbl">GST No</td><td class="val">: ${hospital?.gstNumber || ''}</td>
+                        <td class="lbl">GST No</td><td class="val">: ${hInfo.gstNumber || hospital?.gstNumber || ''}</td>
                     </tr>
                     <tr>
-                        <td class="lbl">Patient Name</td><td class="val">: ${pt.name}</td>
+                        <td class="lbl">Patient Name</td><td class="val">: ${pt.name || ''}</td>
                         <td class="lbl">IP No</td><td class="val">: ${adm?.admissionId || ''}</td>
                     </tr>
                     <tr>
-                        <td class="lbl">Age/Sex</td><td class="val">: ${pt.age || ''} / ${pt.gender || ''}</td>
+                        <td class="lbl">Age/Sex</td><td class="val">: ${pt.age || ''} / ${(pt.gender || '').charAt(0).toUpperCase() + (pt.gender || '').slice(1)}</td>
                         <td class="lbl">UMR No</td><td class="val">: ${pt.mrn || ''}</td>
                     </tr>
                     <tr>
-                        <td class="lbl">S/W/D</td><td class="val">: </td>
-                        <td class="lbl">Bill No</td><td class="val">: ${latestReport._id.slice(-6).toUpperCase()}</td>
+                        <td class="lbl">S/W/D</td><td class="val">: ${pt.guardianName ? pt.guardianName + (pt.guardianRelation ? ' (' + pt.guardianRelation + ')' : '') : ''}</td>
+                        <td class="lbl">Bill No</td><td class="val">: ${latestReport._id?.toString().slice(-6).toUpperCase() || ''}</td>
                     </tr>
                     <tr>
-                        <td class="lbl">Doctor</td><td class="val">: ${adm?.attendingDoctor || ''}</td>
+                        <td class="lbl">Doctor</td><td class="val">: ${adm?.doctorName || ''}</td>
                         <td class="lbl">Bill Dt</td><td class="val">: ${dateNow}</td>
                     </tr>
                     <tr>
-                        <td class="lbl">Admission Dt</td><td class="val">: ${adm ? new Date(adm.admissionDate).toLocaleString('en-IN') : ''}</td>
-                        <td class="lbl">Discharge Type</td><td class="val">: ${adm?.status === 'Discharged' ? 'Normal' : ''}</td>
+                        <td class="lbl">Admission Dt</td><td class="val">: ${admissionDt}</td>
+                        <td class="lbl">Discharge Type</td><td class="val">: ${adm?.dischargeType || ''}</td>
                     </tr>
                     <tr>
                         <td class="lbl">Organization</td><td class="val">: </td>
-                        <td class="lbl">Discharge Dt&Tm</td><td class="val">: ${adm?.dischargeDate ? new Date(adm.dischargeDate).toLocaleString('en-IN') : ''}</td>
+                        <td class="lbl">Discharge Dt&Tm</td><td class="val">: ${dischargeDt}</td>
                     </tr>
                     <tr>
-                        <td class="lbl">Patient Type</td><td class="val">: IPD</td>
+                        <td class="lbl">Patient Type</td><td class="val">: <b>${patientTypeDisplay}</b></td>
                         <td class="lbl">Ward</td><td class="val">: ${adm?.wardName || ''}</td>
                     </tr>
                     <tr>
@@ -310,7 +330,7 @@ export default function FinalBillPage() {
                         <td class="lbl">Phone No</td><td class="val">: ${pt.mobile || ''}</td>
                     </tr>
                     <tr>
-                        <td class="lbl">Referal By</td><td class="val">: </td>
+                        <td class="lbl">Referal By</td><td class="val">: ${pt.doctorReference || ''}</td>
                         <td class="lbl"></td><td class="val"></td>
                     </tr>
                 </table>
@@ -329,30 +349,31 @@ export default function FinalBillPage() {
                     <tbody>
         `;
         
-        // Helper to render a category
+        // Helper to render a category section
         const renderCategory = (title: string, items: any[], nameKey: string, rateKey: string, qtyKey: string) => {
             if (!items || items.length === 0) return '';
             let catHtml = `<tr class="category-row"><td colspan="6">${title}</td></tr>`;
             let subtotal = 0;
-            let sno = 1; // S.No restarts for each category
+            let sno = 1;
             items.forEach(item => {
-                const amount = item[rateKey] * item[qtyKey];
+                const amount = (item.amount !== undefined && item.amount !== null) ? item.amount : (item[rateKey] * item[qtyKey]);
                 subtotal += amount;
                 catHtml += `
                     <tr>
                         <td class="center-align">${sno++}</td>
                         <td>${item.code || '-'}</td>
-                        <td>${item[nameKey]}</td>
+                        <td>${item[nameKey] || '-'}</td>
                         <td class="right-align">${fmt(item[rateKey])}</td>
-                        <td class="center-align">${item[qtyKey]}</td>
+                        <td class="center-align">${parseFloat(item[qtyKey]).toFixed(2)}</td>
                         <td class="right-align">${fmt(amount)}</td>
                     </tr>
                 `;
             });
-            catHtml += `<tr class="subtotal-row"><td colspan="5">Sub Total :</td><td class="right-align">${fmt(subtotal)}</td></tr>`;
+            catHtml += `<tr class="subtotal-row"><td colspan="5">Sub Total :</td><td class="right-align subtotal-amount">${fmt(subtotal)}</td></tr>`;
             return catHtml;
         };
 
+        // Render exactly matching image order: Consultation -> Investigation -> Ward -> Radiology -> Service -> Pharmacy
         html += renderCategory('Consultation Charges', data.doctors, 'doctorName', 'rate', 'visits');
         html += renderCategory('Investigation Charges', data.diags, 'testName', 'rate', 'quantity');
         html += renderCategory('Ward Charges', data.admissions, 'chargeType', 'rate', 'days');
@@ -366,55 +387,75 @@ export default function FinalBillPage() {
 
                 <div class="summary-section">
                     <div class="amount-words">
-                        Rupees In : ${numberToWords(latestReport.totals.balance > 0 ? latestReport.totals.balance : latestReport.totals.grandTotal)}
-                        <div class="reason">Reason : ${latestReport.notes || '-'}</div>
+                        Rupees In : ${numberToWords(latestReport.totals.grandTotal)}
+                        <div class="reason">Reason : ${latestReport.notes || adm?.reason || '-'}</div>
                     </div>
                     <div class="totals-box">
                         <table class="totals-table">
-                            <tr><td class="lbl">Grand Total :</td><td class="val">${fmt(latestReport.totals.grandTotal)}</td></tr>
-                            <tr><td class="lbl">Net Amt :</td><td class="val">${fmt(latestReport.totals.grandTotal)}</td></tr>
+                            <tr class="grand-row"><td class="lbl">Grand Total :</td><td class="val">${fmt(latestReport.totals.grandTotal)}</td></tr>
+                            <tr><td class="lbl">Net Amt :</td><td class="val">${fmt(latestReport.totals.netAmount || latestReport.totals.grandTotal)}</td></tr>
                             <tr><td class="lbl">Paid Amt :</td><td class="val">${fmt(latestReport.totals.totalPaid)}</td></tr>
-                            <tr><td class="lbl">Balance Amt :</td><td class="val">${fmt(latestReport.totals.balance)}</td></tr>
+                            <tr class="balance-row"><td class="lbl">Balance Amt :</td><td class="val">${fmt(latestReport.totals.balance)}</td></tr>
                         </table>
                     </div>
                 </div>
+        `;
 
-                ${data.payments && data.payments.length > 0 ? `
-                    <div class="receipts-title">Receipt Details :</div>
-                    <table class="receipts-table">
-                        <tr><th>S.No</th><th>Record Date</th><th>Receipt No</th><th class="right-align">Amount Payment</th><th>Type</th></tr>
-                        ${data.payments.map((p: any, i: number) => `
-                            <tr>
-                                <td>${i + 1}</td>
-                                <td>${p.date}</td>
-                                <td>${p.receiptNo}</td>
-                                <td class="right-align">${fmt(p.amount)}</td>
-                                <td>Advance</td>
-                            </tr>
-                        `).join('')}
+        if (latestReport.receipts && latestReport.receipts.length > 0) {
+            html += `
+                <div class="receipts-title">Receipt Details :</div>
+                <table class="receipts-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%">S.No</th>
+                            <th style="width: 15%">Record Date</th>
+                            <th style="width: 20%">Receipt No</th>
+                            <th style="width: 40%">Amount Payment</th>
+                            <th style="width: 20%">Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            let rSno = 1;
+            latestReport.receipts.forEach((r: any) => {
+                const rDate = new Date(r.date || r.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                const rMode = r.paymentMode || 'Cash';
+                html += `
+                    <tr>
+                        <td>${rSno++}</td>
+                        <td>${rDate}</td>
+                        <td>${r.receiptNumber || '-'}</td>
+                        <td>${fmt(r.amount)} ${rMode}</td>
+                        <td>${r.type || 'Advance'}</td>
+                    </tr>
+                `;
+            });
+            html += `
                         <tr class="total-row">
-                            <td colspan="3" class="right-align" style="padding-right: 20px;">Total :</td>
-                            <td class="right-align">${fmt(latestReport.totals.totalPaid)}</td>
+                            <td colspan="3" class="right-align">Total :</td>
+                            <td>${fmt(latestReport.totals.totalPaid)}</td>
                             <td></td>
                         </tr>
-                    </table>
-                ` : ''}
+                    </tbody>
+                </table>
+            `;
+        }
 
+        html += `
                 <div class="footer-signatures">
                     <div class="left-sig">
-                        <div class="sig-line"></div>
-                        <div style="font-weight: bold; margin-left: -15px;">Patient/Attendant Signatory</div>
+                        <div class="sig-line"></div><br/>
+                        Patient/Attendant Signatory
                     </div>
                     <div class="right-sig">
-                        <div style="margin-bottom: 5px;">5531</div>
-                        <div>Authorised Signatory</div>
+                        <br/>
+                        Authorised Signatory
                     </div>
                 </div>
-
+                
                 <div class="printed-time">
                     Printed Dt & Time : ${new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                 </div>
-
                 <script>
                     window.onload = function() { 
                         setTimeout(() => {

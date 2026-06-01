@@ -50,6 +50,7 @@ async function handler(
       method: req.method,
       headers: forwardHeaders,
       body: body ? Buffer.from(body) : undefined,
+      cache: "no-store", // Prevents Next.js from caching GET requests aggressively
       // @ts-expect-error — Node.js fetch supports this
       duplex: "half",
     });
@@ -61,7 +62,8 @@ async function handler(
       if (
         lower === "content-encoding" ||
         lower === "transfer-encoding" ||
-        lower === "connection"
+        lower === "connection" ||
+        lower === "set-cookie"
       ) {
         return;
       }
@@ -71,11 +73,20 @@ async function handler(
     // Phase 4: Direct Streaming
     // Bypass the server-side memory buffer. Stream the response directly to the browser.
     // This dramatically improves Time-To-First-Byte (TTFB) and reduces Next.js memory usage.
-    return new NextResponse(backendRes.body, {
+    const response = new NextResponse(backendRes.body, {
       status: backendRes.status,
       statusText: backendRes.statusText,
       headers: resHeaders,
     });
+
+    if (backendRes.headers.has("set-cookie")) {
+      const cookies = backendRes.headers.getSetCookie();
+      cookies.forEach((cookie) => {
+        response.headers.append("set-cookie", cookie);
+      });
+    }
+
+    return response;
   } catch (err: any) {
     console.error(
       `[Proxy] Failed to reach backend at ${targetUrl}:`,

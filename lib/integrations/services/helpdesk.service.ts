@@ -385,7 +385,7 @@ export const helpdeskService = {
    * @param patientId Patient ID
    */
   getIPDFinalBill: (patientId: string) =>
-    apiClient<any[]>(`/reports/transaction-reports/patient/${patientId}/ipd-final-bill`),
+    apiClient<any[]>(`/reports/transaction-reports/patient/${patientId}/ipd-final-bill`, { skipCache: true }),
 
   /**
    * Get all saved transaction reports for the hospital
