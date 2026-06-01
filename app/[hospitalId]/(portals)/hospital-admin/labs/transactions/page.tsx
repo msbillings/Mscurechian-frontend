@@ -368,8 +368,8 @@ function HospitalAdminLabTransactionsPage() {
                                 </tr>
                             ) : (
                                 filteredBills.map((bill) => {
-                                    const itemsText = bill.tests && bill.tests.length > 0 
-                                        ? bill.tests.map((i: any) => i.testName || i.name || 'Test').join(', ') 
+                                    const itemsText = bill.items && bill.items.length > 0 
+                                        ? bill.items.map((i: any) => i.testName || i.name || 'Test').join(', ') 
                                         : 'Lab Tests';
                                     
                                     return (
@@ -394,9 +394,9 @@ function HospitalAdminLabTransactionsPage() {
                                             </td>
                                             <td className="px-2 md:px-8 py-4">
                                                 <div className="space-y-1">
-                                                    {bill.prescribingDoctor ? (
+                                                    {bill.patientDetails?.refDoctor ? (
                                                         <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
-                                                            {bill.prescribingDoctor}
+                                                            {bill.patientDetails.refDoctor}
                                                         </p>
                                                     ) : (
                                                         <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">N/A</p>
