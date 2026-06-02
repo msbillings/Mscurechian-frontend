@@ -25,7 +25,7 @@ interface FieldError {
 }
 
 // Spell-check eligible text fields (types imported from @/lib/integrations)
-const SPELL_FIELDS: (keyof typeof INITIAL_FORM)[] = ["name", "address", "allergies", "medicalHistory"];
+const SPELL_FIELDS: (keyof typeof INITIAL_FORM)[] = ["allergies", "medicalHistory"];
 
 const INITIAL_FORM = {
     honorific: 'Mr',
@@ -258,19 +258,29 @@ export default function PatientRegistration() {
             const birthDate = new Date(formData.dob);
             if (isNaN(birthDate.getTime())) return;
             const today = new Date();
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const monthDiff = today.getMonth() - birthDate.getMonth();
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
-            
-            if (age >= 0 && age.toString() !== formData.age) {
-                const newAgeValue = age.toString();
+
+            let calculatedAge: number;
+            if (formData.ageUnit === 'Days') {
+                const diffMs = today.getTime() - birthDate.getTime();
+                calculatedAge = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+            } else if (formData.ageUnit === 'Months') {
+                calculatedAge = (today.getFullYear() - birthDate.getFullYear()) * 12 + (today.getMonth() - birthDate.getMonth());
+                if (today.getDate() < birthDate.getDate()) calculatedAge--;
+            } else {
+                calculatedAge = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) calculatedAge--;
+            }
+
+            if (calculatedAge >= 0 && calculatedAge.toString() !== formData.age) {
+                const newAgeValue = calculatedAge.toString();
                 setFormData(prev => ({ ...prev, age: newAgeValue }));
                 if (touched.age) {
                     setErrors(prev => ({ ...prev, age: validateField('age', newAgeValue) }));
                 }
             }
         }
-    }, [formData.dob, touched.age, validateField, formData.age]);
+    }, [formData.dob, formData.ageUnit, touched.age, validateField, formData.age]);
 
     useEffect(() => {
         if (formData.honorific === 'Mr' || formData.honorific === 'Master') setFormData(prev => ({ ...prev, gender: 'male' }));
@@ -580,18 +590,13 @@ export default function PatientRegistration() {
                                 </div>
                                 <div className="md:col-span-5">
                                     <FormInput label="Full Name" required error={touched.name ? errors.name : ''} component={
-                                        <SpellCheckedInput
+                                        <input
                                             name="name"
                                             value={formData.name}
                                             onChange={handleChange}
                                             onBlur={() => handleBlur('name')}
                                             placeholder="Name"
-                                            hasError={!!(errors.name && touched.name)}
-                                            spellMatches={spellErrors['name'] || []}
-                                            isChecking={checking['name']}
-                                            onMatchClick={handleMatchClick}
-                                            onFixAll={applyAllSuggestions}
-
+                                            className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${errors.name && touched.name ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold transition-all`}
                                         />
                                     } />
                                 </div>
@@ -643,20 +648,21 @@ export default function PatientRegistration() {
                                     <h2 className="text-xs font-bold text-slate-900 uppercase tracking-widest">Address Details</h2>
                                 </div>
                                 <FormInput label="Residential Address" required error={touched.address ? errors.address : ''} component={
-                                    <SpellCheckedTextarea
-                                        name="address"
-                                        value={formData.address}
-                                        onChange={handleChange}
-                                        onBlur={() => handleBlur('address')}
-                                        placeholder="Full address"
-                                        maxLength={300}
-                                        hasError={!!(errors.address && touched.address)}
-                                        spellMatches={spellErrors['address'] || []}
-                                        isChecking={checking['address']}
-                                        onMatchClick={handleMatchClick}
-                                        onFixAll={applyAllSuggestions}
-                                    />
-
+                                    <div className="relative group">
+                                        <textarea
+                                            name="address"
+                                            value={formData.address}
+                                            onChange={handleChange}
+                                            onBlur={() => handleBlur('address')}
+                                            rows={2}
+                                            placeholder="Full address"
+                                            maxLength={300}
+                                            className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${errors.address && touched.address ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold resize-none transition-all`}
+                                        />
+                                        <div className="absolute bottom-2 right-3 text-[9px] font-bold text-slate-400 pointer-events-none uppercase">
+                                            {formData.address.length}/300
+                                        </div>
+                                    </div>
                                 } />
                             </div>
                             <div className="md:col-span-4 space-y-4">
