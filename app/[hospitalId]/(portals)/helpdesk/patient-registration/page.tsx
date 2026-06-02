@@ -31,6 +31,7 @@ const INITIAL_FORM = {
     honorific: 'Mr',
     name: '',
     age: '',
+    ageUnit: 'Years',
     dob: '',
     gender: 'male',
     address: '',
@@ -274,6 +275,12 @@ export default function PatientRegistration() {
     useEffect(() => {
         if (formData.honorific === 'Mr' || formData.honorific === 'Master') setFormData(prev => ({ ...prev, gender: 'male' }));
         else if (formData.honorific === 'Mrs' || formData.honorific === 'Ms') setFormData(prev => ({ ...prev, gender: 'female' }));
+        
+        if (formData.honorific === 'Baby of') {
+            setFormData(prev => ({ ...prev, ageUnit: 'Months' }));
+        } else {
+            setFormData(prev => ({ ...prev, ageUnit: 'Years' }));
+        }
     }, [formData.honorific]);
 
 
@@ -295,23 +302,30 @@ export default function PatientRegistration() {
             processedValue = value.slice(0, 100);
         }
 
-        if (name === 'age') {
-            const ageNum = parseInt(processedValue);
-            if (!isNaN(ageNum) && ageNum >= 0 && ageNum <= 125) {
-                const birthYear = new Date().getFullYear() - ageNum;
-                const newDob = `${birthYear}-01-01`;
-                setFormData(prev => ({ ...prev, age: processedValue, dob: newDob }));
+        if (name === 'age' || name === 'ageUnit') {
+            const currentAgeUnit = name === 'ageUnit' ? processedValue : formData.ageUnit;
+            const currentAgeVal = name === 'age' ? processedValue : formData.age;
+            const ageNum = parseInt(currentAgeVal);
+            
+            if (!isNaN(ageNum) && ageNum >= 0 && ageNum <= 150) {
+                const date = new Date();
+                if (currentAgeUnit === 'Years') date.setFullYear(date.getFullYear() - ageNum);
+                else if (currentAgeUnit === 'Months') date.setMonth(date.getMonth() - ageNum);
+                else if (currentAgeUnit === 'Days') date.setDate(date.getDate() - ageNum);
+                
+                const newDob = date.toISOString().split('T')[0];
+                setFormData(prev => ({ ...prev, [name]: processedValue, dob: newDob }));
                 
                 // Logic: updating age directly updates DOB, so sync both errors immediately
                 setErrors(prev => {
                     const updated = { ...prev };
-                    if (touched.age || name === 'age') updated.age = validateField('age', processedValue);
+                    if (touched.age || name === 'age') updated.age = validateField('age', currentAgeVal);
                     if (touched.dob) updated.dob = validateField('dob', newDob);
                     return updated;
                 });
             } else {
-                setFormData(prev => ({ ...prev, age: processedValue }));
-                if (touched.age) {
+                setFormData(prev => ({ ...prev, [name]: processedValue }));
+                if (touched.age && name === 'age') {
                     setErrors(prev => ({ ...prev, age: validateField('age', processedValue) }));
                 }
             }
@@ -593,7 +607,15 @@ export default function PatientRegistration() {
                                 </div>
                                 <div className="md:col-span-2">
                                     <FormInput label="Age" required={!formData.dob} error={touched.age ? errors.age : ''} component={
-                                        <input name="age" type="number" value={formData.age} onChange={handleChange} onBlur={() => handleBlur('age')} placeholder="Age" className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${errors.age && touched.age ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold transition-all`} />
+                                        <div className="flex gap-2">
+                                            <input name="age" type="number" value={formData.age} onChange={handleChange} onBlur={() => handleBlur('age')} placeholder="Age" className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${errors.age && touched.age ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold transition-all`} />
+                                            {formData.honorific === 'Baby of' && (
+                                                <select name="ageUnit" value={formData.ageUnit || 'Months'} onChange={handleChange} className="px-2 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-teal-500 outline-none text-[10px] font-bold transition-all w-[70px] shrink-0">
+                                                    <option value="Months">Mos</option>
+                                                    <option value="Days">Days</option>
+                                                </select>
+                                            )}
+                                        </div>
                                     } />
                                 </div>
                                 <div className="md:col-span-3">

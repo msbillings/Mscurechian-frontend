@@ -1662,7 +1662,11 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             ${formData.symptoms ? `
                             <div style="flex: 1;">
                                 <span class="info-label" style="color: #64748b; font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">Chief Complaints / Symptoms</span>
-                                <div style="font-size: 12px; font-weight: 700; color: #334155;">${formData.symptoms}</div>
+                                <div style="font-size: 12px; font-weight: 700; color: #334155; margin-left: -5px;">
+                                    <ul style="margin: 0; padding-left: 20px; list-style-type: disc;">
+                                        ${formData.symptoms.split(/[\n,]+/).map(s => s.trim()).filter(Boolean).map(s => '<li style="margin-bottom: 3px;">' + s + '</li>').join('')}
+                                    </ul>
+                                </div>
                             </div>
                             ` : ''}
                             ${formData.diagnosis ? `
@@ -2966,7 +2970,11 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         <div class="follow-up-box">
                             <div>
                                 <span class="follow-up-label">Follow-up Instructions:</span>
-                                <div style="font-weight: 700; color: #92400e; margin-top: 4px;">${formData.followUp || 'Follow Standard Protocol'}</div>
+                                <div style="font-weight: 700; color: #92400e; margin-top: 4px; margin-left: -5px;">
+                                    <ul style="margin: 0; padding-left: 20px; list-style-type: disc;">
+                                        ${(formData.followUp || 'Follow Standard Protocol').split(/[\n,]+/).map(s => s.trim()).filter(Boolean).map(s => '<li style="margin-bottom: 3px;">' + s + '</li>').join('')}
+                                    </ul>
+                                </div>
                             </div>
                             ${formData.followUpDate ? `
                             <div style="text-align: right;">

@@ -1626,7 +1626,11 @@ function CreatePrescriptionPage() {
                         ${formData.symptoms ? `
                         <div style="flex: 1;">
                             <span class="info-label" style="color: #64748b; font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">Chief Complaints / Symptoms</span>
-                            <div style="font-size: 11px; font-weight: 700; color: #334155;">${formData.symptoms}</div>
+                            <div style="font-size: 11px; font-weight: 700; color: #334155; margin-left: -5px;">
+                                <ul style="margin: 0; padding-left: 20px; list-style-type: disc;">
+                                    ${formData.symptoms.split(/[\n,]+/).map(s => s.trim()).filter(Boolean).map(s => '<li style="margin-bottom: 3px;">' + s + '</li>').join('')}
+                                </ul>
+                            </div>
                         </div>
                         ` : ''}
                         ${formData.diagnosis ? `
@@ -2285,7 +2289,12 @@ function CreatePrescriptionPage() {
 
                     ${formData.followUp || formData.followUpDate ? `
                     <div class="follow-up">
-                        <div><strong>Doctor's Advice:</strong> ${formData.followUp || 'N/A'}</div>
+                        <div>
+                            <div style="margin-bottom: 4px;"><strong>Doctor's Advice:</strong></div>
+                            <ul style="margin: 0; padding-left: 20px; list-style-type: disc; color: #334155;">
+                                ${(formData.followUp || 'N/A').split(/[\n,]+/).map(s => s.trim()).filter(Boolean).map(s => '<li style="margin-bottom: 3px;">' + s + '</li>').join('')}
+                            </ul>
+                        </div>
                         ${formData.followUpDate ? `<div><strong>Next Review:</strong> <span class="follow-up-date">${new Date(formData.followUpDate).toLocaleDateString()}</span></div>` : ''}
                     </div>
                     ` : ''}
