@@ -11,6 +11,7 @@ import { getDoctorCalendarStatsAction } from '@/lib/integrations/actions/calenda
 import AvailabilityManager from '@/components/doctor/AvailabilityManager';
 
 import ProfileHeader from '@/components/doctor/ProfileHeader';
+import PrinterSettingsCard from '@/components/printers/PrinterSettingsCard';
 
 export default async function DoctorProfilePage({ params }: { params: Promise<{ hospitalId: string }> }) {
     const { hospitalId } = await params;
@@ -160,6 +161,7 @@ export default async function DoctorProfilePage({ params }: { params: Promise<{ 
                     </div>
 
                     <AvailabilityManager initialAvailability={profile?.availability} />
+                    <PrinterSettingsCard />
                 </div>
 
                 {/* Right Column: Main Content */}

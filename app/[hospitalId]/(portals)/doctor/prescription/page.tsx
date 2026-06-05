@@ -1296,7 +1296,8 @@ function CreatePrescriptionPage() {
         if (!appointmentId && !selectedPatientId) return toast.error("Appointment ID or Patient ID is required");
         if (!formData.patientName) return toast.error("Patient Name is required");
         if (!formData.diagnosis) return toast.error("Diagnosis is required");
-        if (formData.medicines.length === 0) return toast.error("At least one medicine is required");
+        const isOphtha = activeSpecialty.toUpperCase().includes('OPHTHA') || activeSpecialty.toUpperCase().includes('EYE');
+        if (!isOphtha && formData.medicines.length === 0) return toast.error("At least one medicine is required");
 
         const hasErrors = formData.medicines.some(m => m.error);
         if (hasErrors) return toast.error("Please resolve stock errors before sending to pharmacy");
@@ -1317,7 +1318,8 @@ function CreatePrescriptionPage() {
         if (!appointmentId && !selectedPatientId) return toast.error("Appointment ID or Patient ID is required for prescription");
         if (!formData.patientName) return toast.error("Patient Name is required");
         if (!formData.diagnosis) return toast.error("Diagnosis is required");
-        if (formData.medicines.length === 0) return toast.error("At least one medicine is required");
+        const isOphtha = activeSpecialty.toUpperCase().includes('OPHTHA') || activeSpecialty.toUpperCase().includes('EYE');
+        if (!isOphtha && formData.medicines.length === 0) return toast.error("At least one medicine is required");
 
         const hasErrors = formData.medicines.some(m => m.error);
         if (hasErrors) return toast.error("Please resolve stock errors before submitting");
@@ -1800,6 +1802,99 @@ function CreatePrescriptionPage() {
                     })()}
 
                     ${(() => {
+                        const isOphtha = activeSpecialty.toUpperCase().includes('OPHTHA') || activeSpecialty.toUpperCase().includes('EYE');
+                        const o = formData.ophthaData;
+                        if (!isOphtha || !o) return '';
+
+                        const hasRefraction = o.refraction?.od?.distant?.sph || o.refraction?.os?.distant?.sph || o.refraction?.od?.near?.sph || o.refraction?.os?.near?.sph;
+                        
+                        return `
+                    <div style="margin-bottom:22px;padding:14px 16px;border:2px solid #bae6fd;border-radius:12px;background:#f0f9ff;">
+                        <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#0369a1;display:block;margin-bottom:10px;letter-spacing:1px;border-bottom:1px solid #bae6fd;padding-bottom:6px;">
+                            ◆ Ophthalmology Assessment
+                        </span>
+                        
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:15px;">
+                            <div>
+                                <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">Visual Acuity (Unaided)</span>
+                                <div style="display:flex;gap:15px;">
+                                    <div><span style="font-size:9px;color:#0ea5e9;font-weight:800;">OD (Right):</span> <span style="font-size:11px;font-weight:700;">${o.vision?.od?.unaided || '—'}</span></div>
+                                    <div><span style="font-size:9px;color:#10b981;font-weight:800;">OS (Left):</span> <span style="font-size:11px;font-weight:700;">${o.vision?.os?.unaided || '—'}</span></div>
+                                </div>
+                            </div>
+                            <div>
+                                <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">Intraocular Pressure (IOP)</span>
+                                <div style="display:flex;gap:15px;">
+                                    <div><span style="font-size:9px;color:#0ea5e9;font-weight:800;">OD:</span> <span style="font-size:11px;font-weight:700;">${o.iop?.od ? o.iop.od + ' mmHg' : '—'}</span></div>
+                                    <div><span style="font-size:9px;color:#10b981;font-weight:800;">OS:</span> <span style="font-size:11px;font-weight:700;">${o.iop?.os ? o.iop.os + ' mmHg' : '—'}</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${hasRefraction ? `
+                        <div style="margin-bottom:15px;">
+                            <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:5px;">Optical Prescription (Refraction)</span>
+                            <table style="width:100%;border-collapse:collapse;font-size:10px;text-align:center;background:#fff;border-radius:6px;overflow:hidden;border:1px solid #e0f2fe;">
+                                <thead>
+                                    <tr style="background:#e0f2fe;color:#0369a1;">
+                                        <th style="padding:6px;border:1px solid #bae6fd;text-align:left;">Eye</th>
+                                        <th style="padding:6px;border:1px solid #bae6fd;">SPH</th>
+                                        <th style="padding:6px;border:1px solid #bae6fd;">CYL</th>
+                                        <th style="padding:6px;border:1px solid #bae6fd;">AXIS</th>
+                                        <th style="padding:6px;border:1px solid #bae6fd;">VA</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Distant Vision OD -->
+                                    ${o.refraction?.od?.distant?.sph || o.refraction?.od?.distant?.cyl ? `
+                                    <tr>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;font-weight:800;color:#0ea5e9;text-align:left;">OD Distant</td>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;">${o.refraction.od.distant.sph}</td>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;">${o.refraction.od.distant.cyl}</td>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;">${o.refraction.od.distant.axis}</td>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;font-weight:700;">${o.refraction.od.distant.va}</td>
+                                    </tr>` : ''}
+                                    <!-- Near Vision OD -->
+                                    ${o.refraction?.od?.near?.sph || o.refraction?.od?.near?.cyl ? `
+                                    <tr>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;font-weight:800;color:#0ea5e9;text-align:left;">OD Near (Add)</td>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;">${o.refraction.od.near.sph}</td>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;">${o.refraction.od.near.cyl}</td>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;">${o.refraction.od.near.axis}</td>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;font-weight:700;">${o.refraction.od.near.va}</td>
+                                    </tr>` : ''}
+                                    <!-- Distant Vision OS -->
+                                    ${o.refraction?.os?.distant?.sph || o.refraction?.os?.distant?.cyl ? `
+                                    <tr>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;font-weight:800;color:#10b981;text-align:left;">OS Distant</td>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;">${o.refraction.os.distant.sph}</td>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;">${o.refraction.os.distant.cyl}</td>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;">${o.refraction.os.distant.axis}</td>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;font-weight:700;">${o.refraction.os.distant.va}</td>
+                                    </tr>` : ''}
+                                    <!-- Near Vision OS -->
+                                    ${o.refraction?.os?.near?.sph || o.refraction?.os?.near?.cyl ? `
+                                    <tr>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;font-weight:800;color:#10b981;text-align:left;">OS Near (Add)</td>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;">${o.refraction.os.near.sph}</td>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;">${o.refraction.os.near.cyl}</td>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;">${o.refraction.os.near.axis}</td>
+                                        <td style="padding:6px;border:1px solid #e0f2fe;font-weight:700;">${o.refraction.os.near.va}</td>
+                                    </tr>` : ''}
+                                </tbody>
+                            </table>
+                        </div>
+                        ` : ''}
+
+                        ${o.diagnosis ? `
+                        <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #bae6fd;">
+                            <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;">Assessment:</span>
+                            <span style="font-size:11px;font-weight:800;color:#0369a1;margin-left:6px;">${o.diagnosis}</span>
+                        </div>` : ''}
+                    </div>`;
+                    })()}
+
+                    ${(() => {
                         const isGastro = activeSpecialty.toUpperCase().includes('GASTRO');
                         const g = formData.gastroData;
                         if (!isGastro || !g?.symptoms?.length) return '';
@@ -2239,7 +2334,7 @@ function CreatePrescriptionPage() {
                     </div>`;
                     })()}
 
-
+                    ${formData.medicines.length > 0 ? `
                     <div class="section-label">Prescribed Medications</div>
                     <table>
                         <thead>
@@ -2266,6 +2361,7 @@ function CreatePrescriptionPage() {
                             `).join('')}
                         </tbody>
                     </table>
+                    ` : ''}
 
                     <div class="advice-grid">
                         ${formData.dietAdvice.filter((i: string) => i.trim()).length > 0 ? `

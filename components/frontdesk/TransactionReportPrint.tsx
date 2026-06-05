@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 import Image from 'next/image';
+import { usePrintStore } from '@/stores/printStore';
+import PrintSettingsToggle from '@/components/printers/PrintSettingsToggle';
 
 interface DoctorCharge    { id: string; doctorName: string; specialization: string; rate: number; visits: number; }
 interface AdmissionCharge { id: string; chargeType: string; description: string; rate: number; days: number; }
@@ -52,6 +54,7 @@ const AmtRow = ({ label, value, bold }: { label: string; value: string; bold?: b
 export default function TransactionReportPrint({ data }: { data: PrintData }) {
     const [hospital, setHospital] = useState<any>(null);
     const { doctors, admissions, meds, services, diags, payments } = data;
+    const { printWithHeader } = usePrintStore();
 
     useEffect(() => {
         hospitalAdminService.getHospital().then(setHospital).catch(() => {});
@@ -71,8 +74,10 @@ export default function TransactionReportPrint({ data }: { data: PrintData }) {
     const tdR: React.CSSProperties = { ...td, textAlign: 'right', fontWeight: 600 };
 
     return (
-        <div style={{ fontFamily: 'Arial, sans-serif', color: '#111', padding: '15mm', width: '210mm', minHeight: '297mm', boxSizing: 'border-box', background: '#fff' }}>
+        <div style={{ fontFamily: 'Arial, sans-serif', color: '#111', padding: '15mm', width: '210mm', minHeight: '297mm', boxSizing: 'border-box', background: '#fff', position: 'relative' }}>
+            <PrintSettingsToggle />
             {/* ── Hospital Header ── */}
+            {printWithHeader ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 20, borderBottom: '3px solid #1e3a8a', paddingBottom: 15, marginBottom: 20 }}>
                 {hospital?.logo && (
                     <img src={hospital.logo} alt="logo" style={{ width: 64, height: 64, objectFit: 'contain', flexShrink: 0 }} />
@@ -92,6 +97,16 @@ export default function TransactionReportPrint({ data }: { data: PrintData }) {
                     </div>
                 </div>
             </div>
+            ) : (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', paddingBottom: 15, marginBottom: 20 }}>
+                    <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: 18, fontWeight: 900, color: '#1e3a8a', letterSpacing: 1.5 }}>TRANSACTION REPORT</div>
+                        <div style={{ fontSize: 12, color: '#555', marginTop: 6, fontWeight: 600 }}>
+                            Date: {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ── 1. Doctor Charges ── */}
             {doctors.length > 0 && (
@@ -263,6 +278,8 @@ export default function TransactionReportPrint({ data }: { data: PrintData }) {
             </div>
 
             {/* ── Footer ── */}
+            {printWithHeader ? (
+            <>
             <div style={{ borderTop: '2px solid #1e3a8a', paddingTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                 <div style={{ fontSize: 10, color: '#555', lineHeight: 1.7 }}>
                     <div style={{ fontWeight: 700, color: '#1e3a8a', marginBottom: 2 }}>TERMS & CONDITIONS</div>
@@ -281,6 +298,10 @@ export default function TransactionReportPrint({ data }: { data: PrintData }) {
             <div style={{ marginTop: 12, background: '#1e3a8a', color: '#fff', padding: '6px 14px', borderRadius: 4, textAlign: 'center', fontSize: 10 }}>
                 {hospital?.address || ''} {hospital?.phone ? `| ☎ ${hospital.phone}` : ''} {hospital?.email ? `| ✉ ${hospital.email}` : ''}
             </div>
+            </>
+            ) : (
+                <div style={{ height: '80px', width: '100%' }}></div>
+            )}
         </div>
     );
 }

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import ImageCropper from '@/components/ui/ImageCropper';
 import { dischargeService } from '@/lib/integrations/services/discharge.service';
+import PrinterSettingsCard from '@/components/printers/PrinterSettingsCard';
 
 /**
  * DischargeProfile Component
@@ -399,6 +400,8 @@ const DischargeProfile = () => {
                         <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight truncate w-full">{formData.name || 'Discharge Personnel'}</h3>
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Profile Visual</p>
                     </div>
+
+                    <PrinterSettingsCard />
                 </div>
 
                 {/* Data Configuration Section */}

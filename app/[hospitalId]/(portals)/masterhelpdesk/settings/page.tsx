@@ -14,6 +14,7 @@ import { helpdeskService } from '@/lib/integrations/services/helpdesk.service';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 import { useQueryClient } from '@tanstack/react-query';
 import ImageCropper from '@/components/ui/ImageCropper';
+import PrinterSettingsCard from '@/components/printers/PrinterSettingsCard';
 
 const DocumentViewerModal = ({ isOpen, onClose, url, title }: any) => {
     if (!isOpen) return null;
@@ -829,6 +830,8 @@ export default function MasterHelpdeskProfileSettings() {
                                     </div>
                                 </div>
                             </div>
+                            
+                            <PrinterSettingsCard />
                         </div>
                     ) || <></>}
 

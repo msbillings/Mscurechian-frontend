@@ -1,3 +1,36 @@
+export const computeAgeFromDob = (dob: any, fallbackAge: any, fallbackUnit: any) => {
+    if (dob) {
+        const birthDate = new Date(dob);
+        if (!isNaN(birthDate.getTime())) {
+            const today = new Date();
+            let ageYears = today.getFullYear() - birthDate.getFullYear();
+            let ageMonths = today.getMonth() - birthDate.getMonth();
+            let ageDays = today.getDate() - birthDate.getDate();
+
+            if (ageDays < 0) {
+                ageMonths--;
+                ageDays += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+            }
+            if (ageMonths < 0) {
+                ageYears--;
+                ageMonths += 12;
+            }
+
+            if (ageYears > 0) return `${ageYears} Y`;
+            if (ageMonths > 0) return `${ageMonths} Mos`;
+            if (ageDays > 0) return `${ageDays} Days`;
+            return "0 Days";
+        }
+    }
+    if (fallbackAge !== undefined && fallbackAge !== null && fallbackAge !== "-" && fallbackAge !== "") {
+        const unit = fallbackUnit ? (fallbackUnit === 'Months' ? 'Mos' : fallbackUnit === 'Days' ? 'Days' : 'Y') : 'Y';
+        // if fallbackAge already has Y/Mos/Days, just return it
+        if (String(fallbackAge).match(/(Y|Mos|Days|Month|Day|Yr|Yrs)$/i)) return fallbackAge;
+        return `${fallbackAge} ${unit}`;
+    }
+    return "N/A";
+};
+
 export const formatTime12Hr = (time: any): string => {
   if (!time) return "N/A";
   if (
@@ -317,6 +350,11 @@ export const generatePayslipHtml = (data: any) => {
           letter-spacing: 1px;
         }
       </style>
+      ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
+      <style>
+        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer { visibility: hidden !important; }
+      </style>
+      ` : ''}
     </head>
     <body onload="window.print(); setTimeout(() => window.close(), 1000);">
       <div class="container">
@@ -994,6 +1032,11 @@ export const generateClinicalReceiptHtml = (data: any) => {
           }
         }
       </style>
+      ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
+      <style>
+        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer { visibility: hidden !important; }
+      </style>
+      ` : ''}
     </head>
     <body onload="window.print();">
       <script>
@@ -1092,7 +1135,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
                             </div>
                             <div>
                                 <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Age / Gender</div>
-                                <div style="font-size: 10px; font-weight: 700; color: #1e293b;">${patient.age} / ${patient.gender}</div>
+                                <div style="font-size: 10px; font-weight: 700; color: #1e293b;">${computeAgeFromDob(patient.dob, patient.age, patient.ageUnit)} / ${patient.gender}</div>
                             </div>
                             <div>
                                 <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Blood Group</div>
@@ -1484,8 +1527,7 @@ export const generatePrescriptionHtml = (data: any) => {
 
   const patientName =
     `${getHonorific(patient.gender, patient.age)} ${patient.name}`.trim();
-  const ageDisplay =
-    patient.age && patient.age !== "-" ? `${patient.age} Y` : "N/A";
+  const ageDisplay = computeAgeFromDob(patient.dob, patient.age, patient.ageUnit);
   const genderDisplay =
     patient.gender && patient.gender !== "-"
       ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1)
@@ -1631,7 +1673,12 @@ export const generatePrescriptionHtml = (data: any) => {
                         .no-print { display: none !important; }
                     }
                 </style>
-            </head>
+              ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
+      <style>
+        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer { visibility: hidden !important; }
+      </style>
+      ` : ''}
+    </head>
             <body onload="window.print();">
                 <script>
                     window.onafterprint = function() {
@@ -1800,8 +1847,7 @@ export const generateLabTokenHtml = (data: any) => {
 
   const patientName =
     `${getHonorific(patient.gender, patient.age)} ${patient.name}`.trim();
-  const ageDisplay =
-    patient.age && patient.age !== "-" ? `${patient.age} Y` : "N/A";
+  const ageDisplay = computeAgeFromDob(patient.dob, patient.age, patient.ageUnit);
   const genderDisplay =
     patient.gender && patient.gender !== "-"
       ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1)
@@ -1938,7 +1984,12 @@ export const generateLabTokenHtml = (data: any) => {
                 .container { border: none; }
               }
             </style>
-          </head>
+            ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
+      <style>
+        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer { visibility: hidden !important; }
+      </style>
+      ` : ''}
+    </head>
           <body onload="window.print();">
             <script>
                 window.onafterprint = function() {
@@ -2206,6 +2257,11 @@ export const generateLabReportHtml = (data: any) => {
           border: 1px solid #bbf7d0;
         }
       </style>
+      ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
+      <style>
+        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer { visibility: hidden !important; }
+      </style>
+      ` : ''}
     </head>
     <body onload="window.print();">
       <script>
@@ -2361,6 +2417,11 @@ export const generateQualityReportHtml = (data: any) => {
         .signatures { display: flex; justify-content: space-between; margin-top: 40px; }
         .sign-line { width: 150px; border-top: 1px solid #0f172a; padding-top: 5px; text-align: center; font-weight: 700; font-size: 10px; text-transform: uppercase; }
       </style>
+      ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
+      <style>
+        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer { visibility: hidden !important; }
+      </style>
+      ` : ''}
     </head>
     <script>
       window.onafterprint = () => {
@@ -2676,6 +2737,11 @@ export const generateBlankLetterheadHtml = (data: any) => {
           letter-spacing: 0.1em;
         }
       </style>
+      ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
+      <style>
+        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer { visibility: hidden !important; }
+      </style>
+      ` : ''}
     </head>
     <body onload="window.print()">
       <div class="no-print">

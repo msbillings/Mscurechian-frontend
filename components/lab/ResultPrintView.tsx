@@ -1,5 +1,7 @@
 import React, { forwardRef } from 'react';
 import { LabSample } from '@/lib/integrations/types/labSample';
+import { usePrintStore } from '@/stores/printStore';
+import PrintSettingsToggle from '@/components/printers/PrintSettingsToggle';
 
 interface ResultPrintViewProps {
     sample: LabSample;
@@ -35,9 +37,13 @@ const ResultPrintView = forwardRef<HTMLDivElement, ResultPrintViewProps>(({ samp
         return test.normalRange || '-';
     };
 
+    const { printWithHeader } = usePrintStore();
+
     return (
-        <div ref={ref} className="p-8 bg-white text-black font-sans max-w-4xl mx-auto border border-gray-300" id="printable-result">
+        <div ref={ref} className="p-8 bg-white text-black font-sans max-w-4xl mx-auto border border-gray-300 relative" id="printable-result">
+            <PrintSettingsToggle />
             {/* Header */}
+            {printWithHeader ? (
             <div className="flex items-center justify-between mb-6 border-b-2 border-gray-800 pb-4">
                 <div className="w-24 h-24 relative flex-shrink-0">
                     <div className="w-full h-full rounded-full border-4 border-blue-900 flex items-center justify-center text-blue-900 font-bold bg-blue-50 text-xs text-center p-1">
@@ -50,6 +56,9 @@ const ResultPrintView = forwardRef<HTMLDivElement, ResultPrintViewProps>(({ samp
                     <p className="text-sm text-gray-600">Email: example@medilab.com</p>
                 </div>
             </div>
+            ) : (
+                <div style={{ height: '120px', width: '100%' }}></div>
+            )}
 
             {/* Patient Info Grid */}
             <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm mb-6 border-b border-dashed border-gray-400 pb-4">
@@ -152,6 +161,7 @@ const ResultPrintView = forwardRef<HTMLDivElement, ResultPrintViewProps>(({ samp
             </table>
 
             {/* Footer */}
+            {printWithHeader ? (
             <div className="mt-12 pt-4 border-t border-gray-300 flex justify-between items-end text-xs text-center">
                 <div className="text-center">
                     <p className="font-bold mb-10">(Technician)</p>
@@ -165,6 +175,9 @@ const ResultPrintView = forwardRef<HTMLDivElement, ResultPrintViewProps>(({ samp
                     <p className="font-bold border-t border-black px-4 pt-1">Dr. Pathologist</p>
                 </div>
             </div>
+            ) : (
+                <div style={{ height: '80px', width: '100%' }}></div>
+            )}
 
             <style jsx global>{`
                 @media print {

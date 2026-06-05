@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { LabSettingsService, LabSettings } from '@/lib/integrations/services/labSettings.service';
 import { Phone, Mail } from 'lucide-react';
+import { usePrintStore } from '@/stores/printStore';
 
 const FooterPrint: React.FC = () => {
     const [settings, setSettings] = useState<LabSettings>({
@@ -25,6 +26,11 @@ const FooterPrint: React.FC = () => {
     }, []);
 
     const phones = settings.phone ? settings.phone.split(',').map(p => p.trim()) : [];
+    const { printWithHeader } = usePrintStore();
+
+    if (!printWithHeader) {
+        return <div style={{ height: '80px', width: '100%' }}></div>;
+    }
 
     return (
         <div style={{ width: '100%', fontFamily: 'Arial, sans-serif', marginTop: '10px', paddingBottom: '10px' }} className="lab-footer-container">

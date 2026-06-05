@@ -30,6 +30,7 @@ import {
 import { PharmacyProfileSkeleton } from '@/components/ui/skeletons';
 import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
 import ImageCropper from '@/components/ui/ImageCropper';
+import PrinterSettingsCard from '@/components/printers/PrinterSettingsCard';
 
 /**
  * PharmacyProfile Component
@@ -488,6 +489,8 @@ const PharmacyProfile = () => {
                             Official pharmacy branding and certificates ensure transparency in clinical manifests.
                         </p>
                     </div>
+
+                    <PrinterSettingsCard />
                 </div>
 
                 {/* Data Configuration Section */}

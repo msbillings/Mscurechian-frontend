@@ -1,4 +1,5 @@
 import React from 'react';
+import { usePrintStore } from '@/stores/printStore';
 
 interface MasterFooterProps {
     initialDetails: {
@@ -7,6 +8,12 @@ interface MasterFooterProps {
 }
 
 const MasterFooter: React.FC<MasterFooterProps> = ({ initialDetails }) => {
+    const { printWithHeader } = usePrintStore();
+
+    if (!printWithHeader) {
+        return <div style={{ height: '80px', width: '100%' }}></div>;
+    }
+
     return (
         <div style={{
             width: '100%',

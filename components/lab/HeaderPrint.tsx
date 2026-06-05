@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { LabSettingsService, LabSettings } from '@/lib/integrations/services/labSettings.service';
 import { Phone, Mail } from 'lucide-react';
+import { usePrintStore } from '@/stores/printStore';
+import PrintSettingsToggle from '@/components/printers/PrintSettingsToggle';
 
 const HeaderPrint: React.FC = () => {
     const [settings, setSettings] = useState<LabSettings>({
@@ -25,6 +27,7 @@ const HeaderPrint: React.FC = () => {
     }, []);
 
     const phones = settings.phone ? settings.phone.split(',').map(p => p.trim()) : [];
+    const { printWithHeader } = usePrintStore();
 
     const containerStyle: React.CSSProperties = {
         display: 'flex',
@@ -131,116 +134,123 @@ const HeaderPrint: React.FC = () => {
     };
 
     return (
-        <div style={containerStyle} className="lab-header-container">
-            <style>
-                {`
-                @media screen and (max-width: 640px) {
-                    .lab-header-container {
-                        margin-bottom: 10px !important;
-                    }
-                    .lab-header-top-section {
-                        flex-direction: column !important;
-                        align-items: center !important;
-                        gap: 8px !important;
-                        padding: 8px 0 !important;
-                        text-align: center !important;
-                    }
-                    .lab-header-logo-container {
-                        min-width: unset !important;
-                        max-width: 110px !important;
-                        margin-bottom: 2px !important;
-                    }
-                    .lab-header-logo {
-                        max-height: 55px !important;
-                        width: auto !important;
-                    }
-                    .lab-header-divider {
-                        display: none !important;
-                    }
-                    .lab-header-right-section {
-                        align-items: center !important;
-                        width: 100% !important;
-                        gap: 4px !important;
-                    }
-                    .lab-header-title {
-                        font-size: 18px !important;
-                        margin-bottom: 4px !important;
-                        line-height: 1.1 !important;
-                        white-space: normal !important;
-                        max-width: 90% !important;
-                    }
-                    .lab-header-email, 
-                    .lab-header-address, 
-                    .lab-header-phone-container {
-                        font-size: 10px !important;
-                        justify-content: center !important;
-                        text-align: center !important;
-                        line-height: 1.2 !important;
-                    }
-                    .lab-header-email svg, 
-                    .lab-header-phone-container svg {
-                        width: 10px !important;
-                        height: 10px !important;
-                    }
-                    .lab-header-contact-row {
-                        flex-direction: column !important;
-                        gap: 4px !important;
-                        align-items: center !important;
-                        width: 100% !important;
-                    }
-                    .lab-header-divider-small {
-                        display: none !important;
-                    }
-                    .lab-header-bottom-line {
-                        height: 2px !important;
-                    }
-                }
-                `}
-            </style>
-            {/* Top section with Logo and Contact Info */}
-            <div style={topSectionStyle} className="lab-header-top-section">
+        <div style={{ position: 'relative', width: '100%' }}>
+            <PrintSettingsToggle />
+            {printWithHeader ? (
+                <div style={containerStyle} className="lab-header-container">
+                    <style>
+                        {`
+                        @media screen and (max-width: 640px) {
+                            .lab-header-container {
+                                margin-bottom: 10px !important;
+                            }
+                            .lab-header-top-section {
+                                flex-direction: column !important;
+                                align-items: center !important;
+                                gap: 8px !important;
+                                padding: 8px 0 !important;
+                                text-align: center !important;
+                            }
+                            .lab-header-logo-container {
+                                min-width: unset !important;
+                                max-width: 110px !important;
+                                margin-bottom: 2px !important;
+                            }
+                            .lab-header-logo {
+                                max-height: 55px !important;
+                                width: auto !important;
+                            }
+                            .lab-header-divider {
+                                display: none !important;
+                            }
+                            .lab-header-right-section {
+                                align-items: center !important;
+                                width: 100% !important;
+                                gap: 4px !important;
+                            }
+                            .lab-header-title {
+                                font-size: 18px !important;
+                                margin-bottom: 4px !important;
+                                line-height: 1.1 !important;
+                                white-space: normal !important;
+                                max-width: 90% !important;
+                            }
+                            .lab-header-email, 
+                            .lab-header-address, 
+                            .lab-header-phone-container {
+                                font-size: 10px !important;
+                                justify-content: center !important;
+                                text-align: center !important;
+                                line-height: 1.2 !important;
+                            }
+                            .lab-header-email svg, 
+                            .lab-header-phone-container svg {
+                                width: 10px !important;
+                                height: 10px !important;
+                            }
+                            .lab-header-contact-row {
+                                flex-direction: column !important;
+                                gap: 4px !important;
+                                align-items: center !important;
+                                width: 100% !important;
+                            }
+                            .lab-header-divider-small {
+                                display: none !important;
+                            }
+                            .lab-header-bottom-line {
+                                height: 2px !important;
+                            }
+                        }
+                        `}
+                    </style>
+                    {/* Top section with Logo and Contact Info */}
+                    <div style={topSectionStyle} className="lab-header-top-section">
 
-                {/* Left Side: Logo */}
-                <div style={logoContainerStyle} className="lab-header-logo-container">
-                    {settings.logo ? (
-                        <img src={settings.logo} alt="Lab Logo" style={logoStyle} className="lab-header-logo" />
-                    ) : (
-                        <div className="lab-header-logo" style={{ ...logoStyle, width: '120px', height: '80px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontWeight: 'bold', borderRadius: '8px' }}>
-                            {settings.name || 'LOGO'}
+                        {/* Left Side: Logo */}
+                        <div style={logoContainerStyle} className="lab-header-logo-container">
+                            {settings.logo ? (
+                                <img src={settings.logo} alt="Lab Logo" style={logoStyle} className="lab-header-logo" />
+                            ) : (
+                                <div className="lab-header-logo" style={{ ...logoStyle, width: '120px', height: '80px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontWeight: 'bold', borderRadius: '8px' }}>
+                                    {settings.name || 'LOGO'}
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
 
-                <div style={dividerStyle} className="lab-header-divider" />
+                        <div style={dividerStyle} className="lab-header-divider" />
 
-                {/* Right Side: Contact Details */}
-                <div style={rightSectionStyle} className="lab-header-right-section">
-                    <h1 style={titleStyle} className="lab-header-title">{settings.name}</h1>
+                        {/* Right Side: Contact Details */}
+                        <div style={rightSectionStyle} className="lab-header-right-section">
+                            <h1 style={titleStyle} className="lab-header-title">{settings.name}</h1>
 
-                    <div style={emailStyle} className="lab-header-email">
-                        <Mail size={12} fill="#1e3a8a" color="#ffffff" strokeWidth={1} />
-                        <span>{settings.email || 'lifelinelabofflabs@gmail.com'}</span>
+                            <div style={emailStyle} className="lab-header-email">
+                                <Mail size={12} fill="#1e3a8a" color="#ffffff" strokeWidth={1} />
+                                <span>{settings.email || 'lifelinelabofflabs@gmail.com'}</span>
+                            </div>
+
+                            <div className="lab-header-contact-row" style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', flexWrap: 'wrap' }}>
+                                <p style={addressStyle} className="lab-header-address">
+                                    {settings.address ? settings.address.replace(/\n/g, ', ') : 'Shop No. B-97, Near Vyom Hospital, Okhla, New Delhi-110025'}
+                                </p>
+                                
+                                <div className="lab-header-divider-small" style={{ height: '12px', width: '1px', backgroundColor: '#cbd5e1' }} />
+
+                                <div className="lab-header-phone-container" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#15803d', fontSize: '13px', fontWeight: '700' }}>
+                                    <Phone size={12} fill="#15803d" strokeWidth={0} />
+                                    <span>
+                                        {phones.length > 0 ? phones.join(' | ') : '+91 85xxxxxx20'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="lab-header-contact-row" style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', flexWrap: 'wrap' }}>
-                        <p style={addressStyle} className="lab-header-address">
-                            {settings.address ? settings.address.replace(/\n/g, ', ') : 'Shop No. B-97, Near Vyom Hospital, Okhla, New Delhi-110025'}
-                        </p>
-                        
-                        <div className="lab-header-divider-small" style={{ height: '12px', width: '1px', backgroundColor: '#cbd5e1' }} />
-
-                        <div className="lab-header-phone-container" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#15803d', fontSize: '13px', fontWeight: '700' }}>
-                            <Phone size={12} fill="#15803d" strokeWidth={0} />
-                            <span>
-                                {phones.length > 0 ? phones.join(' | ') : '+91 85xxxxxx20'}
-                            </span>
-                        </div>
-                    </div>
+                    {/* Bottom Border Line */}
+                    <div style={bottomLineStyle} className="lab-header-bottom-line"></div>
                 </div>
-            </div>
-
-            {/* Bottom Border Line */}
-            <div style={bottomLineStyle} className="lab-header-bottom-line"></div>
+            ) : (
+                <div style={{ height: '120px', width: '100%' }}></div>
+            )}
         </div>
     );
 };

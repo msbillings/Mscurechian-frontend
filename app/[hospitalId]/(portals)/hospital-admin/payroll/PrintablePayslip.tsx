@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-
+import { usePrintStore } from '@/stores/printStore';
+import PrintSettingsToggle from '@/components/printers/PrintSettingsToggle';
 // ============================================================================
 // UTILITY: NUMBER TO WORDS (INDIAN FORMAT)
 // ============================================================================
@@ -60,6 +61,17 @@ export const PrintablePayslip = React.forwardRef<HTMLDivElement, PrintablePaysli
       `(From ${new Date(rx.startDate).toLocaleDateString('en-GB')} To ${new Date(rx.endDate).toLocaleDateString('en-GB')})` :
       '(From 01/06/2025 To 30/06/2025)';
 
+   return (
+      <div ref={ref} className="bg-white text-black font-sans p-[4mm] leading-none box-border flex flex-col mx-auto overflow-hidden relative" style={{ width: '210mm', height: '297mm', maxHeight: '297mm', fontSize: '10px' }}>
+         <PrintSettingsToggle />
+         <PayslipContent h={h} u={u} rx={rx} b={b} c={c} monthName={monthName} fullPeriod={fullPeriod} totalGross={totalGross} totalDeducts={totalDeducts} netSalary={netSalary} totalCTC={totalCTC} />
+      </div>
+   );
+});
+
+function PayslipContent({ h, u, rx, b, c, monthName, fullPeriod, totalGross, totalDeducts, netSalary, totalCTC }: any) {
+   const { printWithHeader } = usePrintStore();
+
    const InfoRow = ({ label, value }: { label: string, value: any }) => (
       <div className="flex text-[10px] leading-[0.9]">
          <span className="w-[120px] shrink-0 font-medium">{label}</span>
@@ -69,9 +81,9 @@ export const PrintablePayslip = React.forwardRef<HTMLDivElement, PrintablePaysli
    );
 
    return (
-      <div ref={ref} className="bg-white text-black font-sans p-[4mm] leading-none box-border flex flex-col" style={{ width: '210mm', height: '297mm', maxHeight: '297mm', fontSize: '10px' }}>
-
+      <>
          {/* 1. Header (Centered) */}
+         {printWithHeader ? (
          <div className="text-center mb-1 flex flex-col items-center">
             {/* Hospital Logo */}
             <div className="mb-0.5 flex flex-col items-center">
@@ -87,7 +99,9 @@ export const PrintablePayslip = React.forwardRef<HTMLDivElement, PrintablePaysli
             <div className="text-[13px] font-black uppercase mt-0.5">Pay Slip For the Month of {monthName}</div>
             <div className="text-[12px] font-bold">{fullPeriod}</div>
          </div>
-
+         ) : (
+            <div style={{ height: '120px', width: '100%' }}></div>
+         )}
          {/* 2. Employee Identity (Bordered Box) */}
          <div className="border border-black p-1 mb-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
@@ -250,6 +264,8 @@ export const PrintablePayslip = React.forwardRef<HTMLDivElement, PrintablePaysli
          </div>
 
          {/* 6. Footer Notes */}
+         {printWithHeader ? (
+         <>
          <div className="mt-0.5 space-y-[-2px] text-[7.2px] font-bold">
             <p>TDS Deducted Upto {monthName} : Rs. Nil</p>
             <p>This is Computer Generated Sheet, does not require Signature.</p>
@@ -261,9 +277,13 @@ export const PrintablePayslip = React.forwardRef<HTMLDivElement, PrintablePaysli
                <p className="text-[10px] font-black uppercase tracking-widest">Authorised Signatory</p>
             </div>
          </div>
+         </>
+         ) : (
+            <div style={{ height: '80px', width: '100%' }}></div>
+         )}
 
-      </div>
+      </>
    );
-});
+}
 
 PrintablePayslip.displayName = "PrintablePayslip";

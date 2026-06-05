@@ -36,7 +36,7 @@ import StaffTrainingHistoryClient from '@/components/staff/StaffTrainingHistoryC
 import { History } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
-
+import PrinterSettingsCard from '@/components/printers/PrinterSettingsCard';
 
 
 
@@ -518,6 +518,8 @@ export default function NurseProfilePage() {
                         </div>
                     </SectionCard>
                 </div>
+
+                <PrinterSettingsCard />
 
                 {/* 4. DOCUMENTS */}
                 <div className="bg-white rounded-2xl lg:rounded-[1.5rem] p-4 lg:p-6 border border-slate-200 shadow-sm relative">

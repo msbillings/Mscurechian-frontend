@@ -18,6 +18,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { userService } from "@/lib/integrations/services/user.service";
 import toast from "react-hot-toast";
 import { Card, Button } from "@/components/admin";
+import PrinterSettingsCard from '@/components/printers/PrinterSettingsCard';
 
 export default function HospitalAdminSettings() {
   const { user: authUser } = useAuthStore();
@@ -173,6 +174,8 @@ export default function HospitalAdminSettings() {
               Reset Security Key
             </Button>
           </Card>
+
+          <PrinterSettingsCard />
         </div>
 
         {/* Right Side: Form */}

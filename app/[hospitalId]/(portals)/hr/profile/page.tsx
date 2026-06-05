@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import ImageCropper from '@/components/ui/ImageCropper';
 import { updateUserPhotoAction } from '@/lib/integrations/actions/user.actions';
+import PrinterSettingsCard from '@/components/printers/PrinterSettingsCard';
 
 function HRProfile() {
     const router = useRouter();
@@ -426,6 +427,8 @@ function HRProfile() {
                                 </button>
                             </div>
                         </div>
+
+                        <PrinterSettingsCard />
 
                         {/* HR Support Quick Actions */}
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 overflow-hidden">

@@ -16,6 +16,7 @@ import StaffProfileHeader from '@/components/staff/StaffProfileHeader';
 import StaffTrainingHistoryClient from '@/components/staff/StaffTrainingHistoryClient';
 import { format } from 'date-fns';
 import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
+import PrinterSettingsCard from '@/components/printers/PrinterSettingsCard';
 
 // Removed inline DocViewerModal in favor of shared component
 
@@ -250,6 +251,7 @@ export default function StaffProfileClient() {
                             </div>
                         </div>
                     </div>
+                    <PrinterSettingsCard />
                 </div>
 
                 <div className="lg:col-span-8 space-y-1.5 sm:space-y-2">

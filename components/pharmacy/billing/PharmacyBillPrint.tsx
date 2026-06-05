@@ -3,6 +3,8 @@ import { PharmacyBill } from '@/lib/integrations/types/pharmacyBilling';
 import { formatFrequency } from '@/lib/frequencyUtils';
 import MainHeader from '@/components/printers/MainHeader';
 import MainFooter from '@/components/printers/MainFooter';
+import { usePrintStore } from '@/stores/printStore';
+import PrintSettingsToggle from '@/components/printers/PrintSettingsToggle';
 
 export interface ShopDetails {
     name: string;
@@ -264,9 +266,12 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
             marginTop: '40px',
         }
     };
+    
+    const { printWithHeader } = usePrintStore();
 
     return (
         <div style={styles.container} id="printable-pharmacy-invoice" className="bg-white">
+            <PrintSettingsToggle />
             {/* Robust CSS for print to guarantee visibility */}
             <style dangerouslySetInnerHTML={{
                 __html: `
@@ -300,29 +305,33 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
 
             {/* Header section */}
             <div style={styles.headerGrid}>
-                <div style={styles.brandSection}>
-                    <div style={styles.brandHeader}>
-                        {shopDetails.logo ? (
-                            <img src={shopDetails.logo} alt="Logo" style={{ width: '50px', height: '50px', objectFit: 'contain', borderRadius: '8px' }} />
-                        ) : (
-                            <div style={styles.logoPlaceholder}>+</div>
-                        )}
-                        <div>
-                            <h1 style={styles.shopName}>{shopDetails.name || 'PHARMA STAFF'}</h1>
-                            <p style={styles.tagline}>Your Trusted Pharmacy Partner</p>
+                {printWithHeader ? (
+                    <div style={styles.brandSection}>
+                        <div style={styles.brandHeader}>
+                            {shopDetails.logo ? (
+                                <img src={shopDetails.logo} alt="Logo" style={{ width: '50px', height: '50px', objectFit: 'contain', borderRadius: '8px' }} />
+                            ) : (
+                                <div style={styles.logoPlaceholder}>+</div>
+                            )}
+                            <div>
+                                <h1 style={styles.shopName}>{shopDetails.name || 'PHARMA STAFF'}</h1>
+                                <p style={styles.tagline}>Your Trusted Pharmacy Partner</p>
+                            </div>
+                        </div>
+                        <div style={styles.shopDetails}>
+                            <span>📍 {shopDetails.address || 'Address not listed'}</span>
+                            {shopDetails.gstin && shopDetails.gstin !== '-' && (
+                                <span style={{ marginTop: '5px' }}>🏷️ GSTIN: {shopDetails.gstin}</span>
+                            )}
+                            <div style={{ display: 'flex', gap: '15px', marginTop: '3px' }}>
+                                <span>📞 Support: {shopDetails.phone || '-'}</span>
+                                <span>✉️ Email: {shopDetails.email || 'info@pharmastaff.com'}</span>
+                            </div>
                         </div>
                     </div>
-                    <div style={styles.shopDetails}>
-                        <span>📍 {shopDetails.address || 'Address not listed'}</span>
-                        {shopDetails.gstin && shopDetails.gstin !== '-' && (
-                            <span style={{ marginTop: '5px' }}>🏷️ GSTIN: {shopDetails.gstin}</span>
-                        )}
-                        <div style={{ display: 'flex', gap: '15px', marginTop: '3px' }}>
-                            <span>📞 Support: {shopDetails.phone || '-'}</span>
-                            <span>✉️ Email: {shopDetails.email || 'info@pharmastaff.com'}</span>
-                        </div>
-                    </div>
-                </div>
+                ) : (
+                    <div style={{ height: '120px' }}></div>
+                )}
 
                 <div style={styles.taxInvoiceBox}>
                     <div style={styles.taxInvoiceHeader}>TAX INVOICE</div>
@@ -494,15 +503,19 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
             </div>
 
             {/* Footer */}
-            <div style={styles.footerNote}>
-                <div>
-                    <span style={{ fontSize: '8px', color: textMuted }}>Printed: {new Date().toLocaleString()}</span>
+            {printWithHeader ? (
+                <div style={styles.footerNote}>
+                    <div>
+                        <span style={{ fontSize: '8px', color: textMuted }}>Printed: {new Date().toLocaleString()}</span>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                        <span style={{ fontSize: '8px', fontWeight: 600 }}>Computer Generated Invoice</span>
+                    </div>
+                    <div />
                 </div>
-                <div style={{ textAlign: 'center' }}>
-                    <span style={{ fontSize: '8px', fontWeight: 600 }}>Computer Generated Invoice</span>
-                </div>
-                <div />
-            </div>
+            ) : (
+                <div style={{ height: '80px' }}></div>
+            )}
         </div>
     );
 };

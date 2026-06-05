@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getStaffProfileAction, updateStaffProfileAction } from '@/lib/integrations/actions/staff.actions';
+import PrinterSettingsCard from '@/components/printers/PrinterSettingsCard';
 
 // --- SHARED COMPONENTS ---
 const DocumentViewerModal = ({ isOpen, onClose, url, title }: any) => {
@@ -524,6 +525,8 @@ export default function EditFrontdeskProfilePage() {
                                     </div>
                                 </div>
                             </div>
+
+                            <PrinterSettingsCard />
                         </div>
                     )}
 

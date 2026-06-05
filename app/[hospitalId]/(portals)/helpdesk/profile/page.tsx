@@ -18,6 +18,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { getStaffProfileAction } from '@/lib/integrations/actions/staff.actions';
 import { HelpdeskDashboardSkeleton } from "@/components/ui/skeletons";
+import PrinterSettingsCard from '@/components/printers/PrinterSettingsCard';
 
 export default function HelpdeskProfilePage() {
     const router = useRouter();
@@ -138,6 +139,8 @@ export default function HelpdeskProfilePage() {
                             <SecureItem label="UAN" value={uanNumber} />
                         </div>
                     </div>
+                    
+                    <PrinterSettingsCard />
                 </div>
 
                 {/* RIGHT COLUMN: BANK */}

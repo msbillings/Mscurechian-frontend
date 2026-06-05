@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 import { Mail, Phone } from 'lucide-react';
+import { usePrintStore } from '@/stores/printStore';
 
 export interface ShopDetails {
     name: string;
@@ -50,6 +51,11 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails, instructions })
     ];
 
     const displayInstructions = instructions || defaultInstructions;
+    const { printWithHeader } = usePrintStore();
+
+    if (!printWithHeader) {
+        return <div style={{ height: '80px', width: '100%' }}></div>;
+    }
 
     return (
         <div style={{

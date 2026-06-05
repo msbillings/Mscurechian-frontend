@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 import { Save, Building2, Phone, Mail, Globe, MapPin, FileText, ImageIcon } from 'lucide-react';
 import ImageCropper from '@/components/ui/ImageCropper';
 import { useAuthStore } from '@/stores/authStore';
+import PrinterSettingsCard from '@/components/printers/PrinterSettingsCard';
 
 export default function LabSettingsPage() {
     const [settings, setSettings] = useState<LabSettings>({
@@ -312,6 +313,8 @@ export default function LabSettingsPage() {
                             </div>
                         </div>
                     </div>
+
+                    <PrinterSettingsCard />
 
                     {/* Submit Button */}
                     <div className="pt-8 border-t border-slate-100 dark:border-gray-700">

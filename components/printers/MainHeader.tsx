@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Phone, Mail } from 'lucide-react';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
+import { usePrintStore } from '@/stores/printStore';
+import PrintSettingsToggle from '@/components/printers/PrintSettingsToggle';
 
 export interface ShopDetails {
     name: string;
@@ -45,17 +47,22 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
         fetchHospital();
     }, []);
 
+    const { printWithHeader } = usePrintStore();
+
     return (
-        <div style={{
-            width: '100%',
-            backgroundColor: '#ffffff',
-            fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-            marginBottom: '12px',
-            printColorAdjust: 'exact',
-            WebkitPrintColorAdjust: 'exact',
-            padding: '0',
-            boxSizing: 'border-box'
-        }}>
+        <div style={{ position: 'relative', width: '100%' }}>
+            <PrintSettingsToggle />
+            {printWithHeader ? (
+                <div style={{
+                    width: '100%',
+                    backgroundColor: '#ffffff',
+                    fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+                    marginBottom: '12px',
+                    printColorAdjust: 'exact',
+                    WebkitPrintColorAdjust: 'exact',
+                    padding: '0',
+                    boxSizing: 'border-box'
+                }}>
             <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -207,6 +214,10 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                 marginTop: '10px',
                 borderRadius: '2px'
             }}></div>
+        </div>
+            ) : (
+                <div style={{ height: '120px', width: '100%' }}></div>
+            )}
         </div>
     );
 };
