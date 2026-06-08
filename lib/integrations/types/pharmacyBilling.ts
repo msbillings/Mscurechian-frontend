@@ -41,6 +41,9 @@ export interface PaymentSummary {
 export interface PharmacyBillPayload {
   patientName: string;
   customerPhone: string;
+  patientAddress?: string;
+  mrn?: string;
+  patientType?: string;
   doctorName?: string;
   items: BillItem[];
   paymentSummary: PaymentSummary;

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { LabSampleService } from '@/lib/integrations/services/labSample.service';
 import { LabSample } from '@/lib/integrations/types/labSample';
 import { toast } from 'react-hot-toast';
-import { Search, Clock, ChevronRight, FileText, Download, CheckCircle2, ChevronLeft } from 'lucide-react';
+import { Search, Clock, ChevronRight, FileText, Download, CheckCircle2, ChevronLeft, Edit3 } from 'lucide-react';
 
 type TabType = 'pending' | 'submitted';
 
@@ -406,18 +406,19 @@ export default function LabResultsEntryPage() {
                                                     <button
                                                         onClick={() => startNavigation(() => router.push(`/lab/samples/${sample._id}`))}
                                                         disabled={isNavigating}
-                                                        className={`p-2 hover:bg-slate-100 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400 rounded-lg transition-colors border border-transparent hover:border-slate-200 dark:hover:border-gray-600 ${isNavigating ? 'opacity-70' : ''}`}
-                                                        title="View Details"
+                                                        className={`px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-bold transition-all border border-indigo-100 dark:border-indigo-800 flex items-center gap-1.5 ${isNavigating ? 'opacity-70' : ''}`}
+                                                        title="Edit Report"
                                                     >
-                                                        <FileText size={18} />
+                                                        <Edit3 size={14} />
+                                                        Edit
                                                     </button>
                                                     <button
                                                         onClick={() => startNavigation(() => router.push(`/lab/samples/${sample._id}`))}
                                                         disabled={isNavigating}
-                                                        className={`p-2 hover:bg-slate-100 dark:hover:bg-gray-700 text-green-600 dark:text-green-400 rounded-lg transition-colors border border-transparent hover:border-slate-200 dark:hover:border-gray-600 ${isNavigating ? 'opacity-70' : ''}`}
+                                                        className={`p-2 hover:bg-slate-100 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400 rounded-lg transition-colors border border-transparent hover:border-slate-200 dark:hover:border-gray-600 ${isNavigating ? 'opacity-70' : ''}`}
                                                         title="View Report"
                                                     >
-                                                        <Download size={18} />
+                                                        <FileText size={18} />
                                                     </button>
                                                 </div>
                                             </td>

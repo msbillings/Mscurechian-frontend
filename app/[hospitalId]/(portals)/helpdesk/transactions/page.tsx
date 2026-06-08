@@ -13,6 +13,7 @@ import {
     FlaskConical,
     Banknote,
     BadgeIndianRupee,
+    Download,
 } from "lucide-react";
 import { helpdeskService } from "@/lib/integrations";
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
@@ -155,7 +156,8 @@ export default function TransactionsPage() {
                     'ipd': 'IPD Admission',
                     'ipd_advance': 'IPD Advance Payment',
                     'ipd_final_settlement': 'IPD Final Settlement',
-                    'discharge': 'Discharge Settlement'
+                    'discharge': 'Discharge Settlement',
+                    'package': 'Package Billed'
                 };
                 const rawType = tx.type || 'appointment_booking';
                 const serviceType = typeMapping[rawType.toLowerCase()] || rawType.toUpperCase();
@@ -227,6 +229,7 @@ export default function TransactionsPage() {
             'ipd_final_settlement': 'IPD Final Settlement',
             'discharge': 'Discharge Settlement',
             'lab_test': 'Lab Diagnostic',
+            'package': 'Package Billed',
         };
         const serviceType = typeMapping[rawType.toLowerCase()] || rawType.toUpperCase();
         const isIPD = rawType.toLowerCase().includes('ipd') || rawType.toLowerCase() === 'discharge';
@@ -328,6 +331,7 @@ export default function TransactionsPage() {
                 'ipd': 'IPD Admission', 'ipd_advance': 'IPD Advance',
                 'ipd_bill_payment': 'IPD Bill', 'ipd_final_settlement': 'IPD Settlement',
                 'discharge': 'Discharge', 'lab_test': 'Lab',
+                'package': 'Package',
             };
             const type = typeMapping[rawType.toLowerCase()] || rawType;
             const apptData = tx.referenceId || {};
@@ -400,6 +404,14 @@ export default function TransactionsPage() {
                             <span className="text-[9px] font-black text-teal-600 uppercase tracking-widest">Live</span>
                         </div>
                         <button
+                            onClick={() => handleExport("all")}
+                            disabled={exporting}
+                            className="p-2 sm:p-2.5 bg-white border border-slate-200 text-slate-400 rounded-lg sm:rounded-xl hover:text-green-600 hover:border-green-200 shadow-sm active:scale-95 transition-all"
+                            title="Export to Excel"
+                        >
+                            {exporting ? <RefreshCw size={16} className="sm:size-[18px] animate-spin" /> : <Download size={16} className="sm:size-[18px]" />}
+                        </button>
+                        <button
                             onClick={handlePrintAll}
                             className="p-2 sm:p-2.5 bg-white border border-slate-200 text-slate-400 rounded-lg sm:rounded-xl hover:text-indigo-600 hover:border-indigo-200 shadow-sm active:scale-95 transition-all"
                             title="Print current page"
@@ -464,6 +476,12 @@ export default function TransactionsPage() {
                         {/* ROW 3: CATEGORY TOGGLE (OPD / IPD) */}
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
                             <div className="flex bg-slate-100 p-1 rounded-lg sm:rounded-xl border border-slate-200 shadow-inner">
+                                <button
+                                    onClick={() => switchTab('all')}
+                                    className={`flex-1 sm:flex-none px-4 py-2 rounded-md sm:rounded-lg text-[9px] sm:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap ${typeFilter === 'all' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
+                                >
+                                    ALL<span className="hidden sm:inline"> Transactions</span>
+                                </button>
                                 <button
                                     onClick={() => switchTab('opd')}
                                     className={`flex-1 sm:flex-none px-4 py-2 rounded-md sm:rounded-lg text-[9px] sm:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap ${typeFilter === 'opd' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
@@ -589,6 +607,7 @@ export default function TransactionsPage() {
                                         'ipd_final_settlement': 'IPD Final Settlement',
                                         'discharge': 'Discharge Settlement',
                                         'lab_test': 'Lab Test',
+                                        'package': 'Package Billed',
                                     };
                                     const type = typeMapping[rawType.toLowerCase()] || rawType.toUpperCase();
 
@@ -610,6 +629,8 @@ export default function TransactionsPage() {
                                             appointmentData.labTest?.name || appointmentData.description ||
                                             'Lab Diagnostics';
                                         clinicalDetail = testNames;
+                                    } else if (rawType.toLowerCase() === 'package') {
+                                        clinicalDetail = appointmentData.name || 'Health Package';
                                     } else {
                                         clinicalDetail = appointmentData.reason || appointmentData.disease ||
                                             appointmentData.diagnosis ||

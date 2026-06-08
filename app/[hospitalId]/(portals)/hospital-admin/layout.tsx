@@ -84,6 +84,7 @@ const hospitalAdminMenu: MenuItem[] = [
       { label: "Bed Inventory", path: "/hospital-admin/management/beds" },
       { label: "Vitals Thresholds", path: "/hospital-admin/management/vitals-thresholds" },
       { label: "TV Displays", path: "/hospital-admin/displays" },
+      { label: "Packages", path: "/hospital-admin/management/packages" },
     ],
   },
   { icon: ClipboardCheck, label: "Discharge Audit", path: "/hospital-admin/discharge/history" },
@@ -104,9 +105,9 @@ const hospitalAdminMenu: MenuItem[] = [
     label: "Lab Unit",
     subItems: [
       { label: "Dashboard", path: "/hospital-admin/labs/dashboard" },
-
       { label: "Departments", path: "/hospital-admin/labs/departments" },
       { label: "Test Master", path: "/hospital-admin/labs/tests" },
+      { label: "Edited Results", path: "/hospital-admin/labs/edited-results" },
     ],
   },
   { icon: AlertTriangle, label: "Medical Incidents", path: "/hospital-admin/incidents" },

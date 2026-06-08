@@ -2799,4 +2799,159 @@ export const generateBlankLetterheadHtml = (data: any) => {
   `;
 };
 
+export const generateAddBillsReceiptHtml = (data: any) => {
+  const { hospital, patient, items, payment, preparedBy } = data;
 
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Hospital Bill - ${patient.name}</title>
+      <meta charset="UTF-8">
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        
+        @media print {
+          @page { size: A4; margin: 6mm 8mm; }
+          body { margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact; }
+          .no-print { display: none !important; }
+          thead { display: table-header-group; }
+          tfoot { display: table-footer-group; }
+          .print-header-spacer { height: 140px; }
+          .print-footer-spacer { height: 180px; }
+          .receipt-container { padding: 0 12mm; }
+        }
+        html, body { height: 100%; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; color: #1e293b; line-height: 1.3; font-size: 10px; background: white; }
+        
+        .header-wrapper, .footer-wrapper { width: 100%; position: fixed; left: 0; right: 0; background: white; z-index: 1000; }
+        .header-wrapper { top: 0; padding: 8mm 12mm 0; }
+        .footer-wrapper { bottom: 0; padding: 0 12mm 8mm; }
+        
+        .hospital-header { display: flex; align-items: center; gap: 20px; margin-bottom: 10px; border-bottom: 2px solid #1e293b; padding-bottom: 10px; }
+        .hospital-name { font-size: 24px; font-weight: 900; margin: 0; text-transform: uppercase; color: #1e293b; letter-spacing: -0.5px; }
+        .hospital-info { font-size: 10px; margin: 2px 0; color: #64748b; font-weight: 500; }
+        
+        .bill-title-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; padding: 4px 10px; background-color: #f8fafc; border-radius: 6px; }
+        .bill-title { font-size: 14px; font-weight: 800; text-transform: uppercase; color: #1e40af; }
+        
+        .section-header { font-size: 9px; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; border-bottom: 2px solid #e2e8f0; padding-bottom: 2px; color: #334155; }
+        .payment-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        .payment-table th, .payment-table td { padding: 6px 12px; border: 1px solid #f1f5f9; text-align: left; font-size: 11px; }
+        .payment-table th { background-color: #fef3c7; color: #92400e; font-weight: 800; text-transform: uppercase; font-size: 10px; }
+        .total-row td { font-weight: 900; font-size: 12px; background-color: #f8fafc; border-top: 2px solid #1e293b !important; }
+        
+        .footer { margin-top: 12px; padding-top: 8px; border-top: 2px solid #1e293b; font-size: 9.5px; color: #64748b; display: flex; justify-content: space-between; align-items: flex-end; }
+        .signatory-box { text-align: center; }
+        .sign-line { width: 180px; border-bottom: 1px solid #1e293b; margin-bottom: 8px; }
+        .authorized-text { font-weight: 800; text-transform: uppercase; font-size: 9px; color: #1e293b; }
+        
+        .no-print { display: block; margin: 20px auto; text-align: center; }
+        .return-btn { padding: 10px 24px; background-color: #0f172a; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-decoration: none; }
+      </style>
+    </head>
+    <body onload="window.print();">
+      <script>
+        window.onafterprint = function() { setTimeout(() => { window.close(); }, 500); };
+      </script>
+      <div class="no-print" style="background: white; padding: 10px; border-bottom: 2px solid #0f172a; text-align: center;">
+         <button onclick="window.close()" class="return-btn" style="text-transform: uppercase; letter-spacing: 0.1em; font-size: 14px;">&#8592; CLOSE RECEIPT</button>
+      </div>
+
+      <div class="header-wrapper">
+        <div class="hospital-header">
+          ${hospital?.logo ? `<img src="${hospital.logo}" alt="Logo" style="max-height: 85px; width: auto; object-fit: contain;" />` : ""}
+          <div style="flex: 1; text-align: left;">
+            <h1 class="hospital-name">${hospital?.name || "Hospital Name"}</h1>
+            <p class="hospital-info">${hospital?.address || ""}</p>
+            <p class="hospital-info">${hospital?.contact ? `Phone: ${hospital.contact}` : ""} ${hospital?.email ? ` | Email: ${hospital.email}` : ""}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-wrapper">
+        <div class="footer">
+          <div style="flex: 1;">
+            <p style="margin: 0; font-weight: 700;">PREPARED BY: ${preparedBy || "System Administrator"}</p>
+            <p style="margin: 4px 0 0 0;">This is a computer-generated document and does not require a physical signature.</p>
+            <p style="margin: 2px 0 0 0;">Print Date: ${new Date().toLocaleDateString("en-GB")} at ${new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}</p>
+          </div>
+          <div class="signatory-box">
+            <div class="sign-line"></div>
+            <div class="authorized-text">Authorized Signatory</div>
+            <div style="font-size: 8px; font-weight: 600; color: #64748b; margin-top: 2px;">${(hospital?.name || "Hospital Name").toUpperCase()}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="receipt-container">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead><tr><td><div class="print-header-spacer" style="height: 140px;"></div></td></tr></thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="bill-title-row">
+                  <div>
+                    <div class="bill-title">HOSPITAL BILLING RECEIPT</div>
+                    <div style="font-size: 10px; color: #64748b; font-weight: 600; margin-top: 2px;">Comprehensive Billing Statement</div>
+                  </div>
+                  <div style="text-align: right; font-size: 11px; font-weight: 600; color: #475569;">
+                    <div><strong>Date:</strong> ${new Date().toLocaleDateString("en-GB")}</div>
+                    <div><strong>Receipt No:</strong> ${payment.receiptNo || "N/A"}</div>
+                  </div>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 12px; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; right: 0; background: #1e293b; color: white; padding: 2px 8px; border-bottom-left-radius: 8px; font-size: 8px; font-weight: 900;">PATIENT IDENTITY</div>
+                    <div style="font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 8px;">${patient.name}</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                        <div>
+                            <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase;">MRN / Mobile</div>
+                            <div style="font-size: 10px; font-weight: 700; color: #1e293b;">${patient.mrn} / ${patient.mobile}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase;">Age / Gender</div>
+                            <div style="font-size: 10px; font-weight: 700; color: #1e293b;">${patient.age} / ${patient.gender}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase;">Blood Group</div>
+                            <div style="font-size: 10px; font-weight: 700; color: #e11d48;">${patient.bloodGroup || "N/A"}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-header">Billing Items</div>
+                <table class="payment-table">
+                  <thead>
+                    <tr>
+                      <th>Description</th>
+                      <th style="text-align: right;">Amount (Rupees)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${items.map((item: any) => `
+                      <tr>
+                        <td>${item.name || item.description}</td>
+                        <td style="text-align: right;">₹ ${Math.round(item.amount || 0).toLocaleString()}</td>
+                      </tr>
+                    `).join('')}
+                    <tr class="total-row">
+                      <td>TOTAL AMOUNT</td>
+                      <td style="text-align: right;">₹ ${Math.round(payment.amount).toLocaleString()}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div style="margin-top: 10px; font-size: 9.5px; font-weight: 700; display: flex; justify-content: space-between; padding: 8px; background-color: #f8fafc; border-radius: 6px;">
+                  <div>Payment Method: ${payment.method}</div>
+                  <div style="color: #059669; text-transform: uppercase;">Payment Status: PAID</div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot><tr><td><div class="print-footer-spacer" style="height: 180px;"></div></td></tr></tfoot>
+        </table>
+      </div>
+    </body>
+    </html>
+  `;
+};

@@ -173,6 +173,7 @@ export const labService = {
     page?: number;
     limit?: number;
     skipCache?: boolean;
+    isEdited?: boolean;
   }): Promise<{
     data: LabOrder[];
     currentPage: number;
@@ -184,6 +185,7 @@ export const labService = {
       query.append("status", params.status);
     if (params?.page) query.append("page", String(params.page));
     if (params?.limit) query.append("limit", String(params.limit || 20));
+    if (params?.isEdited) query.append("isEdited", "true");
     const qs = query.toString();
     const response: any = await apiClient(
       `${LAB_ENDPOINTS.SAMPLES.BASE}${qs ? `?${qs}` : ""}`,
@@ -257,7 +259,7 @@ export const labService = {
   /** POST /lab/orders/:id/pay */
   payOrder: async (
     id: string,
-    payload: { paymentMode: string; paymentDetails?: any },
+    payload: { paymentMode: string; paymentDetails?: any; paidAmount?: number; balance?: number },
   ): Promise<{ message: string; order: LabOrder }> => {
     return apiClient(`/lab/orders/${id}/pay`, {
       method: "POST",

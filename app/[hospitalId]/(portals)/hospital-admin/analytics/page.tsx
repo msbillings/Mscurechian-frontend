@@ -15,6 +15,7 @@ import { HOSPITAL_ADMIN_ENDPOINTS } from '@/lib/integrations/config/endpoints';
 import { Card } from '@/components/admin/Card';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { EnhancedDoctorPerformance } from '@/components/admin/analytics/EnhancedDoctorPerformance';
 
 const AnalyticsPage = () => {
     const [range, setRange] = useState('30d');
@@ -578,48 +579,13 @@ const AnalyticsPage = () => {
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                {/* Simple Doctor Table */}
-                <Card className="p-2 md:p-6 border-slate-200 shadow-sm">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-sm md:text-lg font-bold text-slate-900">Doctor Performance</h3>
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:ring-1 focus:ring-blue-500 outline-none"
-                            />
-                        </div>
-                    </div>
-                    <div className="overflow-x-auto max-h-[380px] overflow-y-auto pr-2 custom-scrollbar">
-                        <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full">
-                            <thead>
-                                <tr className="text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
-                                    <th className="pb-3">Doctor</th>
-                                    <th className="pb-3">Department</th>
-                                    <th className="pb-3 text-center">Patients</th>
-                                    <th className="pb-3 text-right">Revenue</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                                {filteredDoctors.length > 0 ? filteredDoctors.map((doc: any, i: number) => (
-                                    <tr key={i} className="text-sm hover:bg-slate-50 transition-colors">
-                                        <td className="py-4 font-bold text-slate-700">{doc.name}</td>
-                                        <td className="py-4 text-slate-500 text-xs">{doc.department}</td>
-                                        <td className="py-4 text-center font-medium">{doc.count}</td>
-                                        <td className="py-4 text-right font-bold text-slate-900">{formatCurrency(doc.revenue)}</td>
-                                    </tr>
-                                )) : (
-                                    <tr>
-                                        <td colSpan={4} className="py-12 text-center text-slate-400 text-xs italic">No clinical data found for this range</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table></div>
-                    </div>
-                </Card>
+                {/* Enhanced Doctor Table */}
+                <EnhancedDoctorPerformance 
+                    range={range} 
+                    startDate={startDate} 
+                    endDate={endDate} 
+                    formatCurrency={formatCurrency} 
+                />
 
                 {/* Right Column: Bed Status & Depts */}
                 <div className="space-y-6">

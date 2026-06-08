@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { Search, Plus, Trash2, Printer, User, ShoppingCart, CreditCard, Calculator, Eye, AlertCircle, Loader2 } from 'lucide-react';
 import { ProductService } from '@/lib/integrations/services/product.service';
 import { PharmacyBillingService } from '@/lib/integrations/services/pharmacyBilling.service';
@@ -11,9 +11,12 @@ import { toast } from 'react-hot-toast';
 import PharmacyBillPrint, { ShopDetails } from '@/components/pharmacy/billing/PharmacyBillPrint';
 import { useAuthStore } from '@/stores/authStore';
 import { useTenantLink } from '@/hooks/useTenantLink';
+import { patientService } from '@/lib/integrations/services/patient.service';
 
 const BillingPage = () => {
     const router = useRouter();
+    const params = useParams();
+    const hospitalId = params?.hospitalId as string;
     const { user } = useAuthStore();
     const { getPath } = useTenantLink();
 
@@ -21,6 +24,9 @@ const BillingPage = () => {
     const [patientName, setPatientName] = useState('');
     const [mobileNumber, setMobileNumber] = useState('');
     const [doctorName, setDoctorName] = useState('');
+    const [patientType, setPatientType] = useState<'IPD' | 'OPD' | ''>('');
+    const [patientMrn, setPatientMrn] = useState('');
+    const [patientAddress, setPatientAddress] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState<PharmacyProduct[]>([]);
     const [selectedProduct, setSelectedProduct] = useState<PharmacyProduct | null>(null);
@@ -53,6 +59,31 @@ const BillingPage = () => {
     const [recentPatients, setRecentPatients] = useState<{ name: string; phone: string }[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [isMobileTouched, setIsMobileTouched] = useState(false);
+
+    // Hospital Patient Search States
+    const [hospitalPatients, setHospitalPatients] = useState<Array<{ _id: string; name: string; mobile: string; email?: string; mrn?: string; patientType?: string; doctorName?: string; address?: string }>>([]);
+    const [searchingPatients, setSearchingPatients] = useState(false);
+    const patientSearchDebounce = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const handlePatientNameSearch = (value: string) => {
+        if (patientSearchDebounce.current) clearTimeout(patientSearchDebounce.current);
+        if (value.trim().length < 2) {
+            setHospitalPatients([]);
+            return;
+        }
+        patientSearchDebounce.current = setTimeout(async () => {
+            setSearchingPatients(true);
+            try {
+                const res = await patientService.searchPatients(value.trim(), hospitalId);
+                setHospitalPatients(res.patients || []);
+            } catch (err) {
+                console.error("Failed to search hospital patients", err);
+                setHospitalPatients([]);
+            } finally {
+                setSearchingPatients(false);
+            }
+        }, 350);
+    };
 
     // Fetch recent patients for autocomplete
     useEffect(() => {
@@ -369,6 +400,9 @@ const BillingPage = () => {
             const payload: any = {
                 patientName,
                 customerPhone: mobileNumber,
+                patientAddress: patientAddress || undefined,
+                mrn: patientMrn || undefined,
+                patientType: patientType || undefined,
                 doctorName: doctorName || 'Self / Walk-in',
                 items: cart,
                 mode: paymentMode.toUpperCase(),
@@ -425,6 +459,9 @@ const BillingPage = () => {
             items: cart,
             patientName,
             customerPhone: mobileNumber,
+            mrn: patientMrn || undefined,
+            patientType: patientType || undefined,
+            patientAddress: patientAddress || undefined,
             doctorName: doctorName || 'Self / Walk-in',
             paymentSummary: {
                 subtotal: Number(subtotal) || 0,
@@ -483,27 +520,88 @@ const BillingPage = () => {
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                             <div className="space-y-2 relative">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Patient Name</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1 flex justify-between items-center">
+                                    <span>Patient Name</span>
+                                    {searchingPatients && <Loader2 size={12} className="animate-spin text-teal-600" />}
+                                </label>
                                 <input
                                     className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl px-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500"
                                     value={patientName}
                                     onChange={e => {
                                         const val = e.target.value;
-                                        if (val === '' || /^[a-zA-Z\s]*$/.test(val)) setPatientName(val);
+                                        if (val === '' || /^[a-zA-Z\s]*$/.test(val)) {
+                                            setPatientName(val);
+                                            handlePatientNameSearch(val);
+                                        }
                                         setShowSuggestions(true);
                                     }}
-                                    onFocus={() => setShowSuggestions(true)}
+                                    onFocus={() => {
+                                        setShowSuggestions(true);
+                                        if (patientName) handlePatientNameSearch(patientName);
+                                    }}
                                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                                     placeholder="Enter name..."
+                                    autoComplete="off"
                                 />
-                                {showSuggestions && filteredPatients.length > 0 && (
-                                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden">
-                                        {filteredPatients.map((p, i) => (
-                                            <div key={`${p.phone}-${i}`} className="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b dark:border-gray-700 last:border-none" onClick={() => { setPatientName(p.name); setMobileNumber(p.phone); setShowSuggestions(false); }}>
-                                                <p className="font-bold text-xs uppercase tracking-tight">{p.name}</p>
-                                                <p className="text-xs font-medium text-gray-400 mt-0.5">{p.phone}</p>
-                                            </div>
-                                        ))}
+                                {showSuggestions && (hospitalPatients.length > 0 || filteredPatients.length > 0) && (
+                                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden max-h-60 overflow-y-auto">
+                                        {(() => {
+                                            // Deduplicate suggestions by mobile number
+                                            const combined: Array<{ name: string; phone: string; source: string; mrn?: string; patientType?: string; doctorName?: string; address?: string }> = [];
+                                            hospitalPatients.forEach(p => {
+                                                combined.push({ name: p.name, phone: p.mobile, source: 'Hospital', mrn: p.mrn, patientType: p.patientType, doctorName: p.doctorName, address: p.address });
+                                            });
+                                            filteredPatients.forEach(p => {
+                                                if (!combined.some(c => c.phone === p.phone)) {
+                                                    combined.push({ name: p.name, phone: p.phone, source: 'Recent' });
+                                                }
+                                            });
+
+                                            return combined.map((p, i) => (
+                                                <div
+                                                    key={`${p.phone}-${i}`}
+                                                    className="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b dark:border-gray-700 last:border-none flex justify-between items-center transition-colors"
+                                                    onClick={() => {
+                                                        setPatientName(p.name);
+                                                        setMobileNumber(p.phone);
+                                                        if (p.mrn && p.mrn !== 'N/A') setPatientMrn(p.mrn);
+                                                        else setPatientMrn('');
+                                                        if (p.doctorName) setDoctorName(p.doctorName);
+                                                        if (p.patientType) setPatientType(p.patientType as any);
+                                                        if (p.address) setPatientAddress(p.address);
+                                                        setShowSuggestions(false);
+                                                    }}
+                                                >
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="font-bold text-xs uppercase tracking-tight text-gray-900 dark:text-white">{p.name}</p>
+                                                            {p.mrn && p.mrn !== 'N/A' && (
+                                                                <span className="text-[9px] font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">
+                                                                    MRN: {p.mrn}
+                                                                </span>
+                                                            )}
+                                                            {p.patientType && (
+                                                                <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${
+                                                                    p.patientType === 'IPD'
+                                                                        ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400'
+                                                                        : 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400'
+                                                                }`}>
+                                                                    {p.patientType}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-xs font-semibold text-gray-400 mt-0.5">{p.phone}</p>
+                                                    </div>
+                                                    <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                                                        p.source === 'Hospital' 
+                                                            ? 'text-teal-600 bg-teal-50 dark:bg-teal-950/40 dark:text-teal-400' 
+                                                            : 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400'
+                                                    }`}>
+                                                        {p.source}
+                                                    </span>
+                                                </div>
+                                            ));
+                                        })()}
                                     </div>
                                 )}
                             </div>
@@ -518,12 +616,51 @@ const BillingPage = () => {
                                 />
                             </div>
                             <div className="space-y-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">MRN Number</label>
+                                <input
+                                    className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl px-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500"
+                                    value={patientMrn}
+                                    onChange={e => setPatientMrn(e.target.value)}
+                                    placeholder="e.g. MRN-12345"
+                                />
+                            </div>
+                            <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Doctor Name</label>
                                 <input
                                     className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl px-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500"
                                     value={doctorName}
                                     onChange={e => setDoctorName(e.target.value)}
                                     placeholder="Self / Walk-in"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Patient Type</label>
+                                <div className="flex gap-2">
+                                    {['IPD', 'OPD'].map(type => (
+                                        <button
+                                            key={type}
+                                            type="button"
+                                            onClick={() => setPatientType(type as any)}
+                                            className={`flex-1 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-wider border transition-all ${
+                                                patientType === type
+                                                    ? type === 'IPD'
+                                                        ? 'bg-rose-500 text-white border-rose-500'
+                                                        : 'bg-blue-500 text-white border-blue-500'
+                                                    : 'bg-gray-50 dark:bg-gray-700/50 text-gray-400 border-transparent hover:border-gray-200'
+                                            }`}
+                                        >
+                                            {type}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Address</label>
+                                <input
+                                    className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl px-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500"
+                                    value={patientAddress}
+                                    onChange={e => setPatientAddress(e.target.value)}
+                                    placeholder="Patient address..."
                                 />
                             </div>
                         </div>

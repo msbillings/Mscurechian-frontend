@@ -7,11 +7,13 @@ import {
     Search, User, FileText, Plus, Trash2, Loader2, ArrowLeft,
     CheckCircle2, AlertTriangle, Receipt, TestTube, Activity,
     Building2, IndianRupee, Clock, Stethoscope, X, ChevronDown,
-    Sparkles, Package, Heart, Microscope
+    Sparkles, Package, Heart, Microscope, Printer
 } from 'lucide-react';
 import { helpdeskService, ipdService } from '@/lib/integrations';
 import { apiClient } from '@/lib/integrations/api/apiClient';
 import toast from 'react-hot-toast';
+import { generateAddBillsReceiptHtml, computeAgeFromDob } from '@/lib/print-utils';
+import { useAuthStore } from '@/stores/authStore';
 import type { LabTest } from '@/lib/integrations/services/lab.service';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -23,9 +25,11 @@ interface BillItem {
     amount: number;
     labTestId?: string; // Reference to lab test catalog
     isNew?: boolean;    // If this is a newly created test
+    packageId?: string; // Reference to package if from a package
+    packageName?: string; // Package name for display
 }
 
-type BillMode = 'lab' | 'ipd_charge' | 'custom';
+type BillMode = 'lab' | 'ipd_charge' | 'custom' | 'package';
 
 // ─── Component ──────────────────────────────────────────────────────────────
 export default function AddBillsPage() {
@@ -49,6 +53,11 @@ export default function AddBillsPage() {
     const [labTestSearch, setLabTestSearch] = useState('');
     const [showLabTestDropdown, setShowLabTestDropdown] = useState(false);
     const labTestRef = useRef<HTMLDivElement>(null);
+
+    // ── Packages ──
+    const [packages, setPackages] = useState<any[]>([]);
+    const [loadingPackages, setLoadingPackages] = useState(false);
+    const [selectedPackageId, setSelectedPackageId] = useState('');
 
     // ── Bill Items ──
     const [billItems, setBillItems] = useState<BillItem[]>([]);
@@ -79,7 +88,19 @@ export default function AddBillsPage() {
                 setLoadingLabTests(false);
             }
         };
+        const fetchPackages = async () => {
+            try {
+                setLoadingPackages(true);
+                const res: any = await apiClient('/helpdesk/packages?activeOnly=true');
+                setPackages(res.data || []);
+            } catch (e) {
+                console.error('Failed to fetch packages', e);
+            } finally {
+                setLoadingPackages(false);
+            }
+        };
         fetchLabTests();
+        fetchPackages();
     }, []);
 
     // ── Patient Search ──
@@ -319,6 +340,35 @@ export default function AddBillsPage() {
                 }
             }
 
+            // 4. Create Package Transactions (grouped by packageId)
+            const packageItems = billItems.filter(i => i.packageId);
+            if (packageItems.length > 0) {
+                // Group items by packageId
+                const packageGroups = packageItems.reduce((acc, item) => {
+                    if (!acc[item.packageId!]) acc[item.packageId!] = [];
+                    acc[item.packageId!].push(item);
+                    return acc;
+                }, {} as Record<string, BillItem[]>);
+
+                for (const [packageId, items] of Object.entries(packageGroups)) {
+                    try {
+                        await apiClient('/helpdesk/packages/bill', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                patientId: selectedPatient._id,
+                                packageId,
+                                paymentMethod,
+                                items: items.map(i => ({ name: i.name, category: i.category, amount: i.amount })),
+                            }),
+                        });
+                        results.push(`Package "${items[0]?.packageName}" billed`);
+                    } catch (e: any) {
+                        console.error(`Failed to submit package bill:`, e);
+                        toast.error(`Failed to bill package: ${items[0]?.packageName || 'Unknown'}`);
+                    }
+                }
+            }
+
             if (results.length > 0) {
                 toast.success(`Bill created: ${results.join(', ')}`, { duration: 5000 });
                 setBillItems([]);
@@ -329,6 +379,45 @@ export default function AddBillsPage() {
             toast.error('Bill submission failed: ' + (e.message || 'Unknown error'));
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handlePrint = () => {
+        if (!selectedPatient || billItems.length === 0) return;
+        
+        try {
+            const hospital = useAuthStore.getState().user?.hospital;
+            
+            const htmlContent = generateAddBillsReceiptHtml({
+                hospital,
+                patient: {
+                    name: selectedPatient.name,
+                    mrn: selectedPatient.mrn,
+                    mobile: selectedPatient.user?.mobile || selectedPatient.profile?.contactNumber || selectedPatient.mobile || 'N/A',
+                    age: computeAgeFromDob(selectedPatient.dob, selectedPatient.age, selectedPatient.ageUnit),
+                    gender: selectedPatient.gender || selectedPatient.profile?.gender || 'N/A',
+                    bloodGroup: selectedPatient.bloodGroup || selectedPatient.profile?.bloodGroup || '',
+                },
+                items: billItems,
+                payment: {
+                    amount: totalAmount,
+                    method: paymentMethod,
+                    receiptNo: 'EST-' + Math.floor(Math.random() * 1000000)
+                },
+                preparedBy: useAuthStore.getState().user?.name || "System Administrator"
+            });
+
+            const printWindow = window.open('', '_blank');
+            if (printWindow) {
+                printWindow.document.open();
+                printWindow.document.write(htmlContent);
+                printWindow.document.close();
+            } else {
+                toast.error("Please allow popups to print receipts");
+            }
+        } catch (error: any) {
+            console.error("Print Error:", error);
+            toast.error("Failed to generate receipt: " + error.message);
         }
     };
 
@@ -938,6 +1027,38 @@ export default function AddBillsPage() {
                     font-size: 0.65rem;
                     font-weight: 800;
                     padding: 0 5px;
+                }                /* ── Print Styles ── */
+                @media print {
+                    @page { margin: 0; size: auto; }
+                    body { background: white; padding: 0; margin: 0; }
+                    body * { visibility: hidden; }
+                    .bill-summary-card, .bill-summary-card * { visibility: visible; }
+                    .bill-summary-card {
+                        position: fixed;
+                        left: 0;
+                        top: 0;
+                        width: 100vw;
+                        height: 100vh;
+                        margin: 0;
+                        padding: 40px; /* give some print margin */
+                        border: none !important;
+                        box-shadow: none !important;
+                        z-index: 9999;
+                        background: white;
+                    }
+                    .main-grid { display: block; }
+                    .card { border: none !important; box-shadow: none !important; }
+                    .bill-item-remove, .submit-btn, button[onClick*="window.print()"], .payment-methods, .empty-state, .card-header-icon { 
+                        display: none !important; 
+                    }
+                    /* Optional: Show patient info in print */
+                    .card-header::after {
+                        content: 'Bill Estimate';
+                        font-size: 1.2rem;
+                        font-weight: 800;
+                        color: black;
+                        margin-left: auto;
+                    }
                 }
             `}</style>
 
@@ -1084,6 +1205,12 @@ export default function AddBillsPage() {
                                         onClick={() => setBillMode('custom')}
                                     >
                                         <Sparkles size={14} /> Custom
+                                    </button>
+                                    <button
+                                        className={`mode-tab ${billMode === 'package' ? 'active' : ''}`}
+                                        onClick={() => setBillMode('package')}
+                                    >
+                                        <Package size={14} /> Package
                                     </button>
                                 </div>
 
@@ -1302,6 +1429,112 @@ export default function AddBillsPage() {
                                         </button>
                                     </div>
                                 )}
+
+                                {/* Package Mode */}
+                                {billMode === 'package' && (
+                                    <div>
+                                        <div className="form-group">
+                                            <label className="form-label">Select a Package</label>
+                                            {loadingPackages ? (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 12 }}>
+                                                    <Loader2 size={16} className="animate-spin" style={{ color: '#14b8a6' }} />
+                                                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Loading packages...</span>
+                                                </div>
+                                            ) : packages.length === 0 ? (
+                                                <div style={{ padding: '20px', textAlign: 'center', background: '#f8fafc', borderRadius: 12, border: '1px dashed #e2e8f0' }}>
+                                                    <Package size={24} style={{ color: '#94a3b8', marginBottom: 8 }} />
+                                                    <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>No packages available</div>
+                                                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: 4 }}>Ask admin to create packages</div>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <select
+                                                        className="form-select"
+                                                        value={selectedPackageId}
+                                                        onChange={e => setSelectedPackageId(e.target.value)}
+                                                    >
+                                                        <option value="">-- Choose a package --</option>
+                                                        {packages.map((pkg: any) => (
+                                                            <option key={pkg._id} value={pkg._id}>
+                                                                {pkg.name} — ₹{pkg.totalPrice?.toLocaleString()}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+
+                                                    {/* Package Preview */}
+                                                    {selectedPackageId && (() => {
+                                                        const pkg = packages.find((p: any) => p._id === selectedPackageId);
+                                                        if (!pkg) return null;
+                                                        const bd = pkg.breakdown || {};
+                                                        const items = [
+                                                            { label: 'Doctor Fees', amount: bd.doctorFees || 0 },
+                                                            { label: 'Lab Charges', amount: bd.labCharges || 0 },
+                                                            { label: 'Pharmacy Charges', amount: bd.pharmacyCharges || 0 },
+                                                            { label: 'Radiology Charges', amount: bd.radiologyCharges || 0 },
+                                                            { label: 'Room/Bed Charges', amount: bd.roomCharges || 0 },
+                                                            { label: 'Other Charges', amount: bd.otherCharges || 0 },
+                                                        ].filter(i => i.amount > 0);
+
+                                                        return (
+                                                            <div style={{ marginTop: 14, padding: 16, background: 'linear-gradient(135deg, #eff6ff, #e0f2fe)', borderRadius: 14, border: '1px solid #93c5fd' }}>
+                                                                <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#1e3a5f', marginBottom: 4 }}>{pkg.name}</div>
+                                                                {pkg.description && <div style={{ fontSize: '0.72rem', color: '#475569', marginBottom: 12 }}>{pkg.description}</div>}
+                                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                                                                    {items.map(item => (
+                                                                        <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#334155', padding: '4px 0' }}>
+                                                                            <span>{item.label}</span>
+                                                                            <span style={{ fontWeight: 700 }}>₹{item.amount.toLocaleString()}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTop: '1px solid #93c5fd', fontWeight: 800, fontSize: '0.9rem', color: '#1e40af' }}>
+                                                                    <span>Total</span>
+                                                                    <span>₹{pkg.totalPrice?.toLocaleString()}</span>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </>
+                                            )}
+                                        </div>
+
+                                        {selectedPackageId && (
+                                            <button
+                                                className="add-btn"
+                                                style={{ marginTop: 14 }}
+                                                onClick={() => {
+                                                    const pkg = packages.find((p: any) => p._id === selectedPackageId);
+                                                    if (!pkg) return;
+                                                    const bd = pkg.breakdown || {};
+                                                    const breakdownItems = [
+                                                        { label: 'Doctor Fees', amount: bd.doctorFees, cat: 'Doctor Fees' },
+                                                        { label: 'Lab Charges', amount: bd.labCharges, cat: 'Lab' },
+                                                        { label: 'Pharmacy Charges', amount: bd.pharmacyCharges, cat: 'Pharmacy' },
+                                                        { label: 'Radiology Charges', amount: bd.radiologyCharges, cat: 'Radiology' },
+                                                        { label: 'Room/Bed Charges', amount: bd.roomCharges, cat: 'Room Charges' },
+                                                        { label: 'Other Charges', amount: bd.otherCharges, cat: 'Other' },
+                                                    ].filter(i => i.amount > 0);
+
+                                                    const newItems: BillItem[] = breakdownItems.map(item => ({
+                                                        id: `pkg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                                                        type: activeAdmission ? 'ipd_charge' : 'custom',
+                                                        name: `${pkg.name} — ${item.label}`,
+                                                        category: item.cat,
+                                                        amount: item.amount,
+                                                        packageId: pkg._id,
+                                                        packageName: pkg.name,
+                                                    }));
+
+                                                    setBillItems(prev => [...prev, ...newItems]);
+                                                    setSelectedPackageId('');
+                                                    toast.success(`Package "${pkg.name}" applied with ${newItems.length} items`);
+                                                }}
+                                            >
+                                                <Package size={16} /> Apply Package to Bill
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     )}
@@ -1331,40 +1564,101 @@ export default function AddBillsPage() {
                             ) : (
                                 <div>
                                     <AnimatePresence>
-                                        {billItems.map(item => (
-                                            <motion.div
-                                                key={item.id}
-                                                initial={{ opacity: 0, x: 20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: -20 }}
-                                                layout
-                                                className="bill-item-row"
-                                            >
-                                                <div className={`bill-item-icon ${item.type === 'lab' ? 'lab' : item.type === 'ipd_charge' ? 'ipd' : 'custom'}`}>
-                                                    {item.type === 'lab' ? <TestTube size={14} /> :
-                                                        item.type === 'ipd_charge' ? <Building2 size={14} /> :
-                                                            <Package size={14} />}
-                                                </div>
-                                                <div className="bill-item-info">
-                                                    <div className="bill-item-name">{item.name}</div>
-                                                    <div className="bill-item-cat">
-                                                        {item.category}
-                                                        {item.isNew && ' · NEW'}
-                                                    </div>
-                                                </div>
-                                                <div className="bill-item-amount">₹{item.amount.toLocaleString()}</div>
-                                                <button className="bill-item-remove" onClick={() => removeItem(item.id)}>
-                                                    <Trash2 size={13} />
-                                                </button>
-                                            </motion.div>
-                                        ))}
+                                        {(() => {
+                                            const groupedItems: any[] = [];
+                                            const packageMap: Record<string, any> = {};
+
+                                            billItems.forEach(item => {
+                                                if (item.packageId) {
+                                                    if (!packageMap[item.packageId]) {
+                                                        packageMap[item.packageId] = {
+                                                            id: `pkg-group-${item.packageId}`,
+                                                            isPackage: true,
+                                                            packageName: item.packageName,
+                                                            items: [],
+                                                            totalAmount: 0,
+                                                        };
+                                                        groupedItems.push(packageMap[item.packageId]);
+                                                    }
+                                                    packageMap[item.packageId].items.push(item);
+                                                    packageMap[item.packageId].totalAmount += item.amount;
+                                                } else {
+                                                    groupedItems.push(item);
+                                                }
+                                            });
+
+                                            return groupedItems.map(group => {
+                                                if (group.isPackage) {
+                                                    return (
+                                                        <motion.div key={group.id} className="bill-item-row" layout initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                                <div className="bill-item-icon" style={{ background: 'linear-gradient(135deg, #e0e7ff, #c7d2fe)', color: '#4f46e5' }}>
+                                                                    <Package size={14} />
+                                                                </div>
+                                                                <div className="bill-item-info">
+                                                                    <div className="bill-item-name">{group.packageName}</div>
+                                                                    <div className="bill-item-cat">Hospital Package</div>
+                                                                </div>
+                                                                <div className="bill-item-amount">₹{Math.round(group.totalAmount).toLocaleString()}</div>
+                                                                <button className="bill-item-remove" onClick={() => {
+                                                                    const idsToRemove = group.items.map((i: any) => i.id);
+                                                                    setBillItems(prev => prev.filter(i => !idsToRemove.includes(i.id)));
+                                                                }}>
+                                                                    <Trash2 size={13} />
+                                                                </button>
+                                                            </div>
+                                                            <div style={{ paddingLeft: 46, paddingTop: 10, marginTop: 10, borderTop: '1px dashed #e2e8f0', fontSize: '0.75rem', color: '#64748b' }}>
+                                                                {group.items.map((sub: any) => (
+                                                                    <div key={sub.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                                                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                                            <span style={{ width: 4, height: 4, background: '#cbd5e1', borderRadius: '50%' }}></span>
+                                                                            {sub.category}
+                                                                        </span>
+                                                                        <span>₹{sub.amount.toLocaleString()}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </motion.div>
+                                                    );
+                                                } else {
+                                                    const item = group;
+                                                    return (
+                                                        <motion.div
+                                                            key={item.id}
+                                                            initial={{ opacity: 0, x: 20 }}
+                                                            animate={{ opacity: 1, x: 0 }}
+                                                            exit={{ opacity: 0, x: -20 }}
+                                                            layout
+                                                            className="bill-item-row"
+                                                        >
+                                                            <div className={`bill-item-icon ${item.type === 'lab' ? 'lab' : item.type === 'ipd_charge' ? 'ipd' : 'custom'}`}>
+                                                                {item.type === 'lab' ? <TestTube size={14} /> :
+                                                                    item.type === 'ipd_charge' ? <Building2 size={14} /> :
+                                                                        <Package size={14} />}
+                                                            </div>
+                                                            <div className="bill-item-info">
+                                                                <div className="bill-item-name">{item.name}</div>
+                                                                <div className="bill-item-cat">
+                                                                    {item.category}
+                                                                    {item.isNew && ' · NEW'}
+                                                                </div>
+                                                            </div>
+                                                            <div className="bill-item-amount">₹{item.amount.toLocaleString()}</div>
+                                                            <button className="bill-item-remove" onClick={() => removeItem(item.id)}>
+                                                                <Trash2 size={13} />
+                                                            </button>
+                                                        </motion.div>
+                                                    );
+                                                }
+                                            });
+                                        })()}
                                     </AnimatePresence>
 
                                     {/* Total */}
                                     <div className="bill-total-section">
                                         <div className="bill-total-row">
                                             <div className="bill-total-label">Total Amount</div>
-                                            <div className="bill-total-value">₹{totalAmount.toLocaleString()}</div>
+                                            <div className="bill-total-value">₹{Math.round(totalAmount).toLocaleString()}</div>
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
                                             <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>{billItems.length} item(s)</span>
@@ -1391,24 +1685,45 @@ export default function AddBillsPage() {
                                         </div>
                                     </div>
 
-                                    {/* Submit */}
-                                    <button
-                                        className="submit-btn"
-                                        onClick={handleSubmitBill}
-                                        disabled={submitting || billItems.length === 0 || !selectedPatient}
-                                    >
-                                        {submitting ? (
-                                            <>
-                                                <Loader2 size={18} className="animate-spin" />
-                                                Processing...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <CheckCircle2 size={18} />
-                                                Submit Bill · ₹{totalAmount.toLocaleString()}
-                                            </>
-                                        )}
-                                    </button>
+                                    {/* Actions */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12, marginTop: 24 }}>
+                                        <button
+                                            className="submit-btn"
+                                            onClick={handleSubmitBill}
+                                            disabled={submitting || billItems.length === 0 || !selectedPatient}
+                                            style={{ margin: 0 }}
+                                        >
+                                            {submitting ? (
+                                                <>
+                                                    <Loader2 size={18} className="animate-spin" />
+                                                    Processing...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <CheckCircle2 size={18} />
+                                                    Submit Bill · ₹{Math.round(totalAmount).toLocaleString()}
+                                                </>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={handlePrint}
+                                            disabled={billItems.length === 0 || !selectedPatient}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 8,
+                                                padding: '0 20px', borderRadius: 14,
+                                                background: 'white', color: '#0f172a',
+                                                border: '2px solid #e2e8f0', fontWeight: 700, fontSize: '0.9rem',
+                                                cursor: (billItems.length === 0 || !selectedPatient) ? 'not-allowed' : 'pointer',
+                                                opacity: (billItems.length === 0 || !selectedPatient) ? 0.5 : 1,
+                                                transition: 'all 0.2s'
+                                            }}
+                                            onMouseEnter={e => { if (billItems.length > 0 && selectedPatient) (e.currentTarget.style.borderColor = '#cbd5e1') }}
+                                            onMouseLeave={e => { if (billItems.length > 0 && selectedPatient) (e.currentTarget.style.borderColor = '#e2e8f0') }}
+                                        >
+                                            <Printer size={18} />
+                                            Print
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>

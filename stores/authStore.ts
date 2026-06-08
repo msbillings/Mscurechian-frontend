@@ -122,6 +122,15 @@ interface User {
     degreeCertificate?: { url: string; publicId: string };
     registrationCertificate?: { url: string; publicId: string };
   };
+  geofence?: {
+    location?: { lat: number; lng: number };
+    settings?: {
+      enabled: boolean;
+      radiusMeters: number;
+      excludedPortals: string[];
+      restrictedPortals: string[];
+    };
+  };
 }
 
 interface AuthState {

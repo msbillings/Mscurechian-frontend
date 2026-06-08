@@ -368,8 +368,16 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
                     <h3 style={styles.patientName}>{billData.patientName}</h3>
                     <div style={styles.patientMeta}>
                         <span>📞 +91 {billData.customerPhone}</span>
-                        <span>📍 {shopDetails.address?.split(',').slice(-1)[0].trim() || 'Karnataka'}, India</span>
-                        <span style={{ marginTop: '8px', fontWeight: 800, color: textMain }}>Doctor: <span style={{ fontWeight: 500 }}>{(!billData.doctorName || billData.doctorName === '-') ? 'Self / Walk-in' : billData.doctorName}</span></span>
+                        {billData.patientAddress ? (
+                            <span>📍 {billData.patientAddress}</span>
+                        ) : (
+                            <span>📍 {shopDetails.address?.split(',').slice(-1)[0].trim() || 'Karnataka'}, India</span>
+                        )}
+                        <div style={{ display: 'flex', gap: '15px', marginTop: '2px' }}>
+                            {billData.mrn && billData.mrn !== 'N/A' && <span style={{ fontWeight: 600 }}>MRN: <span style={{ fontWeight: 800 }}>{billData.mrn}</span></span>}
+                            {billData.patientType && <span style={{ fontWeight: 600 }}>Type: <span style={{ fontWeight: 800 }}>{billData.patientType}</span></span>}
+                        </div>
+                        <span style={{ marginTop: '4px', fontWeight: 800, color: textMain }}>Doctor: <span style={{ fontWeight: 500 }}>{(!billData.doctorName || billData.doctorName === '-') ? 'Self / Walk-in' : billData.doctorName}</span></span>
                     </div>
                 </div>
             </div>

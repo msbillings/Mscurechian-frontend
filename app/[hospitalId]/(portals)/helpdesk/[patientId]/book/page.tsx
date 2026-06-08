@@ -32,6 +32,12 @@ function PatientBookingPage(props: PageProps) {
   }, [params.patientId, getPatient, router]);
 
 
+  useEffect(() => {
+    if (doctors.length > 0 && !selectedDoctor) {
+      setSelectedDoctor(doctors[0]._id);
+    }
+  }, [doctors, selectedDoctor]);
+
   const handleBooking = () => {
     if (!selectedSlot) {
       toast.error("Please select a time slot");
@@ -39,7 +45,11 @@ function PatientBookingPage(props: PageProps) {
     }
 
     const doctor = doctors.find(d => d._id === selectedDoctor);
-    if (!doctor || !patient) return;
+    if (!doctor) {
+      toast.error("Please select a doctor");
+      return;
+    }
+    if (!patient) return;
 
     // Check duplicate appointment
     const hasExisting = appointments.some(a => a.patientId === patient.id && a.status === 'Scheduled');

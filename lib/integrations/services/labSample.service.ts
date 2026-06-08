@@ -11,6 +11,11 @@ export const LabSampleService = {
         return response.data || [];
     },
 
+    getEditedSamples: async (skipCache: boolean = false): Promise<LabSample[]> => {
+        const response: any = await apiClient(`${LAB_ENDPOINTS.SAMPLES.BASE}?isEdited=true&limit=100`, { skipCache });
+        return response.data || [];
+    },
+
     // ✅ Lightweight count-only fetcher — always bypasses cache for accurate real-time counts
     getPendingCount: async (): Promise<number> => {
         const response: any = await apiClient(
@@ -56,7 +61,7 @@ export const LabSampleService = {
         });
     },
 
-    payOrder: async (id: string, payload: { paymentMode: string; paymentDetails?: any }): Promise<{ message: string; order: any }> => {
+    payOrder: async (id: string, payload: { paymentMode: string; paymentDetails?: any; paidAmount?: number; balance?: number }): Promise<{ message: string; order: any }> => {
         return apiClient<{ message: string; order: any }>(`/lab/orders/${id}/pay`, {
             method: 'POST',
             body: JSON.stringify(payload)

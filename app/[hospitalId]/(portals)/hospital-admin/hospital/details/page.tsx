@@ -16,7 +16,8 @@ import {
   Truck,
   Layers,
   RefreshCw,
-  Star
+  Star,
+  MapPin
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
@@ -74,6 +75,8 @@ const HospitalDetailsPage = () => {
         ambulanceAvailability: enrichedHospital.ambulanceAvailability || false,
         specialities: enrichedHospital.specialities?.join(', ') || '',
         services: enrichedHospital.services?.join(', ') || '',
+        geofenceSettings: enrichedHospital.geofenceSettings || { enabled: false, radiusMeters: 500, excludedPortals: ['hospital-admin'] },
+        location: enrichedHospital.location || { lat: 0, lng: 0 },
       });
     } catch (error) {
       toast.error("Failed to synchronizing institutional parameters");
@@ -370,6 +373,111 @@ const HospitalDetailsPage = () => {
                   placeholder="Comma separated list (e.g. Cardiology, Neurology)"
                   className={!isEdit ? "bg-transparent border-none p-0 font-medium text-slate-600" : "uppercase text-[11px]"}
                 />
+              </div>
+            </div>
+            {/* Section: Geofencing Configuration */}
+            <div className="p-2 md:p-4 md:p-8 border-t border-slate-100 bg-slate-50/50">
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 mb-8">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                  <MapPin size={16} className="text-indigo-600" />
+                </div>
+                Geofence Security
+              </h3>
+
+              <div className="space-y-6">
+                <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-200">
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-800">Enable Geofencing</h4>
+                    <p className="text-xs text-slate-500 mt-1">Restrict staff portal access to the hospital premises.</p>
+                  </div>
+                  {isEdit ? (
+                    <button
+                      onClick={() => setFormData({
+                        ...formData,
+                        geofenceSettings: {
+                          ...formData.geofenceSettings,
+                          enabled: !formData.geofenceSettings?.enabled
+                        }
+                      })}
+                      className={`relative w-10 h-5 rounded-full transition-all duration-300 ${formData.geofenceSettings?.enabled ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                    >
+                      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${formData.geofenceSettings?.enabled ? 'left-5.2' : 'left-0.5'}`} />
+                    </button>
+                  ) : (
+                    <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${formData.geofenceSettings?.enabled ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {formData.geofenceSettings?.enabled ? 'Active' : 'Inactive'}
+                    </span>
+                  )}
+                </div>
+
+                {formData.geofenceSettings?.enabled && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormInput
+                        label="Radius (Meters)"
+                        value={formData.geofenceSettings?.radiusMeters}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          geofenceSettings: {
+                            ...formData.geofenceSettings,
+                            radiusMeters: Number(e.target.value) || 0
+                          }
+                        })}
+                        readOnly={!isEdit}
+                        type="number"
+                        placeholder="e.g. 500"
+                        className={!isEdit ? "bg-transparent border-none p-0 font-bold text-slate-800" : ""}
+                      />
+                    </div>
+
+                    <div className="mt-8">
+                      <h4 className="text-sm font-bold text-slate-800 mb-4">Portal Restrictions</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        {[
+                          { id: 'helpdesk', label: 'Helpdesk' },
+                          { id: 'pharmacy', label: 'Pharmacy' },
+                          { id: 'lab', label: 'Laboratory' },
+                          { id: 'hr', label: 'Human Resources' },
+                          { id: 'staff', label: 'General Staff' },
+                          { id: 'nurse', label: 'Nurse Station' },
+                          { id: 'doctor', label: 'Doctor Terminal' }
+                        ].map((portal) => {
+                          const isRestricted = formData.geofenceSettings?.restrictedPortals?.includes(portal.id);
+                          return (
+                            <div key={portal.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200">
+                              <span className="text-sm font-semibold text-slate-700">{portal.label}</span>
+                              {isEdit ? (
+                                <button
+                                  onClick={() => {
+                                    const current = formData.geofenceSettings?.restrictedPortals || [];
+                                    const next = current.includes(portal.id) 
+                                      ? current.filter((id: string) => id !== portal.id)
+                                      : [...current, portal.id];
+                                    
+                                    setFormData({
+                                      ...formData,
+                                      geofenceSettings: {
+                                        ...formData.geofenceSettings,
+                                        restrictedPortals: next
+                                      }
+                                    });
+                                  }}
+                                  className={`relative w-9 h-5 rounded-full transition-all duration-300 ${isRestricted ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                                >
+                                  <div className={`absolute top-[2px] w-4 h-4 bg-white rounded-full transition-all shadow-sm ${isRestricted ? 'left-4' : 'left-0.5'}`} />
+                                </button>
+                              ) : (
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${isRestricted ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-400'}`}>
+                                  {isRestricted ? 'Restricted' : 'Open'}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </Card>

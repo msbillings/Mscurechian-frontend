@@ -40,6 +40,7 @@ function TransactionContent() {
     const typeMap: Record<string, string> = {
       'opd': 'appointment_booking,consultation',
       'ipd': ipdPaymentType === 'advance' ? 'ipd_advance,ipd_refund' : ipdPaymentType === 'discharge' ? 'ipd_final_settlement,ipd_bill_payment' : 'ipd_advance,ipd,ipd_refund,ipd_bill_payment,ipd_admission_fee',
+      'package': 'package',
     };
 
     return typeMap[filterValue] || filterValue;
@@ -398,6 +399,15 @@ function TransactionContent() {
             >
               IPD Payments
             </button>
+            <button
+              onClick={() => {
+                setTypeFilter('package');
+                setIpdPaymentType('all');
+              }}
+              className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${typeFilter === 'package' ? 'bg-white text-violet-600 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
+            >
+              Packages
+            </button>
           </div>
 
           {/* IPD Payment Type Filter - Side by Side UI */}
@@ -491,7 +501,8 @@ function TransactionContent() {
                   'ipd_refund': 'IPD',
                   'ipd_bill_payment': 'IPD',
                   'ipd_final_settlement': 'IPD',
-                  'discharge': 'Discharge'
+                  'discharge': 'Discharge',
+                  'package': 'Package',
                 };
                 const rawType = tx.type || 'appointment_booking';
                 const serviceType = typeMapping[rawType.toLowerCase()] || 'OPD';
@@ -574,8 +585,9 @@ function TransactionContent() {
                       <div className="flex flex-col">
                         <span className={`inline-flex items-center w-fit px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${serviceType === 'IPD' ? 'bg-rose-50 text-rose-600 border-rose-100' :
                           serviceType === 'OPD' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                            serviceType === 'Discharge' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                              'bg-slate-50 text-slate-600 border-slate-200'
+                            serviceType === 'Package' ? 'bg-violet-50 text-violet-600 border-violet-100' :
+                              serviceType === 'Discharge' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                'bg-slate-50 text-slate-600 border-slate-200'
                           }`}>
                           {serviceType}
                         </span>

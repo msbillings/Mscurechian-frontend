@@ -223,7 +223,7 @@ const TransactionsPage = () => {
             // Add Data Rows
             allBills.forEach((bill, index) => {
                 const mode = (bill.paymentSummary.paymentMode || 'CASH').toLowerCase();
-                const amount = bill.paymentSummary.paidAmount;
+                const amount = bill.paymentSummary.paidAmount || 0;
 
                 if (mode === 'cash') cashTotal += amount;
                 else if (mode === 'card') cardTotal += amount;
@@ -256,17 +256,20 @@ const TransactionsPage = () => {
                 const originalAmount = bill.paymentSummary.grandTotal + refundAmount;
                 const returnedItemsStr = returnedItemsText.length > 0 ? returnedItemsText.join(', ') : '-';
 
+                const formattedDate = new Date(bill.createdAt).toLocaleDateString();
+                const formattedTime = new Date(bill.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
                 const row = worksheet.addRow([
                     index + 1,
-                    new Date(bill.createdAt).toLocaleDateString(),
+                    `${formattedDate} ${formattedTime}`,
                     bill.invoiceId,
                     bill.patientName || 'Walk-in',
                     bill.customerPhone || '-',
                     bill.paymentSummary.paymentMode?.toUpperCase() || 'CASH',
                     originalAmount,
                     refundAmount > 0 ? -refundAmount : 0,
-                    bill.paymentSummary.paidAmount,
-                    bill.paymentSummary.balanceDue,
+                    bill.paymentSummary.paidAmount || 0,
+                    bill.paymentSummary.balanceDue || 0,
                     bill.paymentSummary.status,
                     returnedItemsStr
                 ]);
@@ -339,16 +342,24 @@ const TransactionsPage = () => {
             const cardRow = worksheet.addRow(['', '', '', '', '', 'Total Card :', cardTotal]);
             const upiRow = worksheet.addRow(['', '', '', '', '', 'Total UPI :', upiTotal]);
             const mixedRow = worksheet.addRow(['', '', '', '', '', 'Total Mixed :', mixedTotal]);
+            const dueRow = worksheet.addRow(['', '', '', '', '', 'Total Due :', totalBalanceAmount]);
 
-            [cashRow, cardRow, upiRow, mixedRow].forEach(row => {
+            [cashRow, cardRow, upiRow, mixedRow, dueRow].forEach((row, idx) => {
                 row.getCell(6).alignment = { horizontal: 'left' };
                 row.getCell(7).alignment = { horizontal: 'right' };
                 row.getCell(7).font = { bold: true };
                 row.getCell(7).numFmt = '₹#,##0.00';
-                row.getCell(7).border = {
-                    bottom: { style: 'thin' },
-                    right: { style: 'thin' }
-                };
+                
+                // Add top border to the 'Total Due' row to separate it
+                if (idx === 4) {
+                     row.getCell(6).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+                     row.getCell(7).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+                } else {
+                     row.getCell(7).border = {
+                         bottom: { style: 'thin' },
+                         right: { style: 'thin' }
+                     };
+                }
             });
 
             worksheet.addRow([]); // Spacer

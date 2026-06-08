@@ -13,7 +13,7 @@ import jsPDF from 'jspdf';
 import LabReportTemplate from '@/components/lab/LabReportTemplate';
 import { toast } from 'react-hot-toast';
 import { LabSettingsService } from '@/lib/integrations/services/labSettings.service';
-import { Download, ArrowLeft, Printer, FileText, Send } from 'lucide-react';
+import { Download, ArrowLeft, Printer, FileText, Send, Edit3 } from 'lucide-react';
 import { invalidateCachePattern } from '@/lib/integrations/api/apiClient';
 import { API_CONFIG } from '@/lib/integrations/config/api-config';
 
@@ -513,6 +513,12 @@ export default function LabResultEntryPage() {
                         </div>
 
                         <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3 w-full md:w-auto">
+                            <button
+                                onClick={() => setShowReport(false)}
+                                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-[10px] sm:text-xs md:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all shadow-sm active:scale-[0.98]"
+                            >
+                                <Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Edit Results
+                            </button>
                             <button
                                 onClick={handlePrint}
                                 className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-900 dark:bg-gray-700 text-white rounded-xl font-bold text-[10px] sm:text-xs md:text-sm flex items-center justify-center gap-1.5 sm:gap-2 hover:bg-gray-800 transition-all shadow-sm active:scale-95"

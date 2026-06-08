@@ -85,6 +85,7 @@ const MENU_ITEMS: MenuItem[] = [
       { label: "Transactions", path: "/hospital-admin/labs/transactions" },
       { label: "Departments", path: "/hospital-admin/labs/departments" },
       { label: "Test Master", path: "/hospital-admin/labs/tests" },
+      { label: "Edited Results", path: "/hospital-admin/labs/edited-results" },
     ],
   },
   { icon: AlertTriangle, label: "Medical Incidents", path: "/hospital-admin/incidents" },

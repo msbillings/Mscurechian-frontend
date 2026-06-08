@@ -133,7 +133,7 @@ function TransactionsPage() {
             // Define Columns
             const columns = [
                 { header: 'S.No', width: 8 },
-                { header: 'Date', width: 12 },
+                { header: 'Date & Time', width: 20 },
                 { header: 'Invoice ID', width: 15 },
                 { header: 'Patient Name', width: 25 },
                 { header: 'Mobile', width: 15 },
@@ -170,31 +170,38 @@ function TransactionsPage() {
             let mixedTotal = 0;
 
             // Add Data Rows
+            let dueTotal = 0;
+
             allBills.forEach((bill, index) => {
                 const mode = (bill.paymentMode || 'CASH').toLowerCase();
-                const amount = bill.paidAmount; // Tracking actually collected amount
+                const amount = bill.paidAmount || 0;
 
                 if (mode === 'cash') cashTotal += amount;
                 else if (mode === 'card') cardTotal += amount;
                 else if (mode === 'upi') upiTotal += amount;
                 else if (mode === 'mixed') mixedTotal += amount;
 
+                dueTotal += (bill.balance || 0);
+
+                const formattedDate = new Date(bill.createdAt).toLocaleDateString();
+                const formattedTime = new Date(bill.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
                 const row = worksheet.addRow([
                     index + 1,
-                    new Date(bill.createdAt).toLocaleDateString(),
+                    `${formattedDate} ${formattedTime}`,
                     bill.invoiceId,
                     bill.patientDetails.name,
                     bill.patientDetails.mobile,
                     bill.paymentMode?.toUpperCase() || 'CASH',
-                    bill.finalAmount,
-                    bill.paidAmount,
-                    bill.balance,
+                    bill.finalAmount || 0,
+                    bill.paidAmount || 0,
+                    bill.balance || 0,
                     bill.status
                 ]);
 
-                totalBillAmount += bill.finalAmount;
-                totalPaidAmount += bill.paidAmount;
-                totalBalanceAmount += bill.balance;
+                totalBillAmount += (bill.finalAmount || 0);
+                totalPaidAmount += (bill.paidAmount || 0);
+                totalBalanceAmount += (bill.balance || 0);
 
                 // Style data cells
                 row.eachCell((cell, colNumber) => {
@@ -258,8 +265,9 @@ function TransactionsPage() {
             const cardRow = worksheet.addRow(['', '', '', '', '', 'Total Card :', cardTotal]);
             const upiRow = worksheet.addRow(['', '', '', '', '', 'Total UPI :', upiTotal]);
             const mixedRow = worksheet.addRow(['', '', '', '', '', 'Total Mixed :', mixedTotal]);
+            const dueRow = worksheet.addRow(['', '', '', '', '', 'Total Due :', dueTotal]);
 
-            [cashRow, cardRow, upiRow, mixedRow].forEach(row => {
+            [cashRow, cardRow, upiRow, mixedRow, dueRow].forEach(row => {
                 row.getCell(6).alignment = { horizontal: 'left' };
                 row.getCell(7).alignment = { horizontal: 'right' };
                 row.getCell(7).font = { bold: true };
@@ -269,6 +277,10 @@ function TransactionsPage() {
                     right: { style: 'thin' }
                 };
             });
+
+            // Highlight Due row in red
+            dueRow.getCell(6).font = { bold: true, color: { argb: 'DC2626' } };
+            dueRow.getCell(7).font = { bold: true, color: { argb: 'DC2626' } };
 
             worksheet.addRow([]); // Spacer
             worksheet.addRow([]); // Spacer

@@ -205,6 +205,7 @@ function LabBillingPage() {
     const [paidAmount, setPaidAmount] = useState<number>(0);
     const [paymentMode, setPaymentMode] = useState<'Cash' | 'UPI' | 'Card' | 'Mixed'>('Cash');
     const [mixedPayments, setMixedPayments] = useState({ cash: 0, card: 0, upi: 0 });
+    const [billingStatus, setBillingStatus] = useState<'Paid' | 'Due'>('Paid');
 
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
@@ -242,9 +243,11 @@ function LabBillingPage() {
     const balance = Math.max(0, finalAmount - paidAmount);
 
     React.useEffect(() => {
-        setPaidAmount(finalAmount);
+        if (billingStatus === 'Paid') {
+            setPaidAmount(finalAmount);
+        }
         if (paymentMode === 'Mixed') setMixedPayments({ cash: finalAmount, card: 0, upi: 0 });
-    }, [finalAmount, paymentMode]);
+    }, [finalAmount, paymentMode, billingStatus]);
 
     const printRef = useRef<HTMLDivElement>(null);
     const handlePrint = useReactToPrint({
@@ -290,7 +293,9 @@ function LabBillingPage() {
                 });
                 await LabSampleService.payOrder(sampleId, {
                     paymentMode: paymentMode || 'Cash',
-                    paymentDetails: paymentMode === 'Mixed' ? mixedPayments : undefined
+                    paymentDetails: paymentMode === 'Mixed' ? mixedPayments : undefined,
+                    paidAmount: billingStatus === 'Paid' ? finalAmount : paidAmount,
+                    balance: billingStatus === 'Paid' ? 0 : Math.max(0, finalAmount - paidAmount)
                 });
 
                 setGeneratedBill({
@@ -314,8 +319,8 @@ function LabBillingPage() {
                     totalAmount,
                     discount,
                     finalAmount,
-                    paidAmount,
-                    balance,
+                    paidAmount: billingStatus === 'Paid' ? finalAmount : paidAmount,
+                    balance: billingStatus === 'Paid' ? 0 : Math.max(0, finalAmount - paidAmount),
                     paymentMode,
                     paymentDetails: paymentMode === 'Mixed' ? mixedPayments : undefined
                 };
@@ -568,6 +573,57 @@ function LabBillingPage() {
                                     <span className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">₹{finalAmount}</span>
                                 </div>
                             </div>
+
+                            {/* Billing Status */}
+                            <div className="space-y-2">
+                                <label className="text-xs font-medium text-gray-500">Billing Status</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {['Paid', 'Due'].map((st) => (
+                                        <button
+                                            key={st}
+                                            onClick={() => {
+                                                setBillingStatus(st as any);
+                                                if (st === 'Paid') setPaidAmount(finalAmount);
+                                                if (st === 'Due') setPaidAmount(0);
+                                            }}
+                                            className={`py-2 rounded-lg text-xs font-semibold transition-all border ${billingStatus === st
+                                                ? st === 'Paid'
+                                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200 dark:shadow-none'
+                                                    : 'bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-200 dark:shadow-none'
+                                                : 'bg-slate-50 dark:bg-gray-800 text-gray-500 border-gray-200 dark:border-gray-700 hover:bg-white'
+                                            }`}
+                                        >
+                                            {st}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Paid Amount - only editable when Due */}
+                            {billingStatus === 'Due' && (
+                                <div className="space-y-2">
+                                    <label className="text-xs font-medium text-gray-500">Paid Amount</label>
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        max={finalAmount}
+                                        value={paidAmount}
+                                        onChange={(e) => setPaidAmount(Math.min(Number(e.target.value) || 0, finalAmount))}
+                                        className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-semibold text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                                        placeholder="Enter paid amount"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Balance Due */}
+                            {billingStatus === 'Due' && balance > 0 && (
+                                <div className="bg-rose-50 dark:bg-rose-900/10 p-4 rounded-xl border border-rose-100 dark:border-rose-800/30">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wide">Balance Due</span>
+                                        <span className="text-xl font-bold text-rose-600 dark:text-rose-400">₹{balance}</span>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="space-y-2">
                                 <label className="text-xs font-medium text-gray-500">Payment Mode</label>

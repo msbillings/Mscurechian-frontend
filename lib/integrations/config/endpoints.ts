@@ -173,6 +173,8 @@ export const HOSPITAL_ADMIN_ENDPOINTS = {
   STATS: "/hospital/stats",
   HOSPITAL: "/hospital/hospital",
   METADATA: "/hospitals/metadata",
+  DOCTOR_PERFORMANCE: "/hospital/analytics/doctor-performance",
+  DOCTOR_PERFORMANCE_DETAILS: (id: string) => `/hospital/analytics/doctor-performance/${id}/details`,
   DOCTORS: "/hospital/users?role=doctor",
   CREATE_DOCTOR: "/hospital/create-doctor",
   DOCTOR_DETAIL: (id: string) => `/doctors/${id}`,
@@ -207,6 +209,9 @@ export const HOSPITAL_ADMIN_ENDPOINTS = {
   DISCHARGE_STAFF: "/hospital/users?role=DISCHARGE",
   AUTH_LOGS: "/hospital/auth-logs",
   AUTH_LOG_FILTERS: "/hospital/auth-log-filters",
+  PACKAGES: "/hospital/packages",
+  PACKAGE_STATUS: (id: string) => `/hospital/packages/${id}/status`,
+  PACKAGE_DETAIL: (id: string) => `/hospital/packages/${id}`,
 };
 
 export const HELPDESK_ENDPOINTS = {
@@ -222,6 +227,7 @@ export const HELPDESK_ENDPOINTS = {
   APPOINTMENT_STATUS: (id: string) => `/helpdesk/appointments/${id}/status`,
   TRANSACTIONS: "/helpdesk/transactions",
   IPD_ADMISSIONS: (id: string) => `/helpdesk/patients/${id}/ipd-admissions`,
+  PACKAGES: "/helpdesk/packages",
 };
 export const MASTER_HELPDESK_ENDPOINTS = {
   DASHBOARD: "/masterhelpdesk/dashboard",
