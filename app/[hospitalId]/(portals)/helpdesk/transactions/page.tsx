@@ -31,7 +31,7 @@ export default function TransactionsPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [page, setPage] = useState(1);
     const [showExportMenu, setShowExportMenu] = useState(false);
-    const [typeFilter, setTypeFilter] = useState("opd"); // Default to 'opd' as requested
+    const [typeFilter, setTypeFilter] = useState("all"); // Default to 'all' as requested
     const [ipdPaymentType, setIpdPaymentType] = useState<'all' | 'advance' | 'discharge'>('all');
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
