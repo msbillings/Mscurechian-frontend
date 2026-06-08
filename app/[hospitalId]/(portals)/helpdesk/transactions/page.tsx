@@ -54,7 +54,7 @@ export default function TransactionsPage() {
 
     // Map frontend filter values to backend transaction types
     const getBackendTypeFilter = (filterValue: string): string | undefined => {
-        if (filterValue === 'all') return undefined;
+        if (filterValue === 'all') return 'all';
 
         const typeMap: Record<string, string> = {
             'opd': 'appointment_booking,consultation',
