@@ -48,10 +48,10 @@ const HospitalDetailsPage = () => {
 
       const h = hRes.hospital;
       // Enrich hospital with live counts if missing or outdated
-      const enrichedHospital = {
+      const enrichedHospital: any = {
         ...h,
         totalBeds: beds.length || 0,
-        availableBeds: beds.filter(b => b.status === "Vacant").length || 0,
+        availableBeds: beds.filter((b: any) => b.status === "Vacant").length || 0,
         roomCount: meta.data.rooms?.length || h.roomCount || 0,
         departmentCount: meta.data.departments?.length || h.departmentCount || 0,
         // Use live staff count
