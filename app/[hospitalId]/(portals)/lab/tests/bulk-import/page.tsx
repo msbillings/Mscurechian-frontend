@@ -341,6 +341,7 @@ export default function BulkImportPage() {
             if ((res.updated ?? 0) > 0) parts.push(`Updated: ${res.updated}`);
             parts.push(`Skipped: ${res.skipped}`);
             if ((res.subTestsCreated ?? 0) > 0) parts.push(`Sub-tests: ${res.subTestsCreated}`);
+            if (res.debug) parts.push(`(Debug: forceUpdate=${res.debug.forceUpdate})`);
             toast.success(`Done! ${parts.join(', ')}`, { id: toastId });
         } catch (err: any) {
             toast.error(err.message || 'Import failed', { id: toastId });

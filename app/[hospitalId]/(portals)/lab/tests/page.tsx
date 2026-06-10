@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Edit2, Trash2, Search, FlaskConical, LayoutGrid, ListFilter, Database, ChevronLeft, ChevronRight, FileSpreadsheet } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, FlaskConical, LayoutGrid, ListFilter, Database, ChevronLeft, ChevronRight, FileSpreadsheet, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { LabTestService } from '@/lib/integrations/services/labTest.service';
 import { DepartmentService } from '@/lib/integrations/services/department.service';
 import { getTestsByCategory } from '@/lib/constants/labTestsConfig';
@@ -15,6 +16,7 @@ function TestListPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [isNavigating, startNavigation] = useTransition();
+    const [exporting, setExporting] = useState(false);
 
     // Filters & Pagination
     const [deptFilter, setDeptFilter] = useState('');
@@ -72,7 +74,132 @@ function TestListPage() {
         }
     };
 
+    const handleExport = async () => {
+        if (tests.length === 0) {
+            toast.error("No tests to export");
+            return;
+        }
 
+        setExporting(true);
+        const toastId = toast.loading("Preparing export...");
+        try {
+            // Fetch parameters for all tests in chunks to avoid overloading
+            const chunkSize = 10;
+            const testsWithParams = [];
+            
+            for (let i = 0; i < tests.length; i += chunkSize) {
+                const chunk = tests.slice(i, i + chunkSize);
+                const paramsPromises = chunk.map(test => 
+                    LabTestService.getTestParameters(test._id)
+                        .then(params => ({ test, params }))
+                        .catch(() => ({ test, params: [] }))
+                );
+                const results = await Promise.all(paramsPromises);
+                testsWithParams.push(...results);
+            }
+
+            const exportData: any[] = [];
+
+            testsWithParams.forEach(({ test, params }, globalIndex) => {
+                const rawTestCode = (test.testCode || '').toString().trim();
+                const generatedTestCode = rawTestCode || (test._id ? `T-${test._id.toString().slice(-6).toUpperCase()}` : `TEST-${globalIndex + 1}`);
+                const baseTestRow = {
+                    testCode: generatedTestCode,
+                    testName: test.testName || test.name || '',
+                    shortName: (test as any).shortName || '', 
+                    departmentName: typeof test.departmentId === 'object' ? (test.departmentId as any).name : 'General',
+                    category: (test as any).category || '',
+                    sampleType: test.sampleType || '',
+                    methodology: test.methodology || test.method || '',
+                    turnaroundTime: test.turnaroundTime || (test as any).temporalTATCycle || '',
+                    price: test.price || 0,
+                    fastingRequired: test.fastingRequired ? 'TRUE' : 'FALSE',
+                    isActive: test.isActive !== false ? 'TRUE' : 'FALSE',
+                };
+
+                const rawParams = (test as any).resultParameters || [];
+                let allParams = [...params];
+                rawParams.forEach((rp: any) => {
+                    if (!allParams.find(p => (p.label && p.label === rp.label) || (p.name && p.name === rp.label) || (p.name && p.name === rp.name))) {
+                        allParams.push(rp);
+                    }
+                });
+
+                if (!allParams || allParams.length === 0) {
+                    exportData.push({
+                        ...baseTestRow,
+                        subTestCode: '',
+                        subTestName: '',
+                        unit: test.unit || '',
+                        normalRange: '',
+                        criticalLow: '',
+                        criticalHigh: '',
+                        resultType: test.reportType === 'numeric' ? 'NUMBER' : 'TEXT',
+                        mandatory: 'TRUE',
+                        displayOrder: 1
+                    });
+                } else {
+                    allParams.forEach((p: any, index: number) => {
+                        const isFirst = index === 0;
+                        const normalRangeStr = p.normalRange || p.normalRanges?.male?.text || 
+                                              (p.normalRanges?.male?.min !== undefined && p.normalRanges?.male?.max !== undefined 
+                                                ? `${p.normalRanges.male.min}-${p.normalRanges.male.max}` 
+                                                : '');
+                        
+                        const subName = p.name || p.label || '';
+                        const resultType = p.resultType || (p.fieldType === 'text' ? 'TEXT' : 'NUMBER');
+                        const isReq = p.mandatory !== undefined ? p.mandatory : (p.isRequired !== undefined ? p.isRequired : true);
+
+                        exportData.push({
+                            ...(isFirst ? baseTestRow : {
+                                testCode: baseTestRow.testCode,
+                                testName: '',
+                                shortName: '',
+                                departmentName: '',
+                                category: '',
+                                sampleType: '',
+                                methodology: '',
+                                turnaroundTime: '',
+                                price: '',
+                                fastingRequired: '',
+                                isActive: ''
+                            }),
+                            subTestCode: p.subTestCode || (subName ? `${baseTestRow.testCode}-${index + 1}` : ''), 
+                            subTestName: subName,
+                            unit: p.unit || '',
+                            normalRange: normalRangeStr,
+                            criticalLow: p.criticalLow ?? '',
+                            criticalHigh: p.criticalHigh ?? '',
+                            resultType: resultType, 
+                            mandatory: isReq ? 'TRUE' : 'FALSE',
+                            displayOrder: p.displayOrder || index + 1
+                        });
+                    });
+                }
+            });
+
+            const headers = [
+                'testCode', 'testName', 'shortName', 'departmentName', 'category',
+                'sampleType', 'methodology', 'turnaroundTime', 'price',
+                'fastingRequired', 'isActive',
+                'subTestCode', 'subTestName', 'unit', 'normalRange',
+                'criticalLow', 'criticalHigh', 'resultType', 'mandatory', 'displayOrder'
+            ];
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(exportData, { header: headers });
+            ws['!cols'] = headers.map((h) => ({ wch: Math.max(h.length + 4, 16) }));
+            XLSX.utils.book_append_sheet(wb, ws, 'Lab_Tests_Export');
+            XLSX.writeFile(wb, 'lab_tests_export.xlsx');
+
+            toast.success("Export completed", { id: toastId });
+        } catch (error) {
+            console.error("Export failed:", error);
+            toast.error("Failed to export tests", { id: toastId });
+        } finally {
+            setExporting(false);
+        }
+    };
 
     // Derived Lists
     const uniqueDepartments = Array.from(new Set(tests.map(t =>
@@ -167,6 +294,14 @@ function TestListPage() {
                                 Clear
                             </button>
                         )}
+                        <button
+                            onClick={handleExport}
+                            disabled={exporting || isNavigating}
+                            className={`flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all uppercase tracking-wider ${(exporting || isNavigating) ? 'opacity-70' : ''}`}
+                        >
+                            <Download className="w-3.5 h-3.5" />
+                            {exporting ? 'Exporting...' : 'Export'}
+                        </button>
                         <button
                             onClick={() => startNavigation(() => router.push('/lab/tests/bulk-import'))}
                             disabled={isNavigating}
@@ -341,9 +476,9 @@ function TestListPage() {
                                 <Trash2 className="w-6 h-6 text-rose-500" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Delete All Tests?</h3>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Clear All Tests?</h3>
                                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                                    This will permanently remove <span className="text-rose-600 font-semibold">{tests.length}</span> tests. This action cannot be undone.
+                                    This will archive (deactivate) <span className="text-rose-600 font-semibold">{tests.length}</span> tests. They can be restored via bulk import.
                                 </p>
                             </div>
                             <div className="flex w-full gap-3 mt-2">
