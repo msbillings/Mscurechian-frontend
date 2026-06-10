@@ -120,7 +120,7 @@ function TestListPage() {
                 const rawParams = (test as any).resultParameters || [];
                 let allParams = [...params];
                 rawParams.forEach((rp: any) => {
-                    if (!allParams.find(p => (p.label && p.label === rp.label) || (p.name && p.name === rp.label) || (p.name && p.name === rp.name))) {
+                    if (!allParams.find((p: any) => (p.label && p.label === rp.label) || (p.name && p.name === rp.label) || (p.name && p.name === rp.name))) {
                         allParams.push(rp);
                     }
                 });
