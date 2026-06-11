@@ -119,7 +119,7 @@ export default function HREditStaffPage() {
       setFetching(true);
       const [data, typesData, roomsData] = await Promise.all([
         hospitalAdminService.getStaffById(id),
-        import('@/lib/integrations/services/ipd.service').then(m => m.ipdService.getUnitTypes().catch(() => [])),
+        import('@/lib/integrations/services/ipd.service').then(m => m.ipdService.getIPDDepartments().then(res => res.map((d: any) => d.name)).catch(() => [])),
         import('@/lib/integrations/services/ipd.service').then(m => m.ipdService.getRooms().catch(() => []))
       ]);
       const staff = data.staff;

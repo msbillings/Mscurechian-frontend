@@ -113,7 +113,7 @@ export default function HRCreateStaff() {
       try {
         const [sd, td] = await Promise.all([
           hospitalAdminService.getShifts(),
-          import('@/lib/integrations/services/ipd.service').then(m => m.ipdService.getUnitTypes().catch(() => []))
+          import('@/lib/integrations/services/ipd.service').then(m => m.ipdService.getIPDDepartments().then(res => res.map((d: any) => d.name)).catch(() => []))
         ]);
         setShifts(sd); setAvailableDepartments(td);
         if (sd.length > 0) setFormData(p => ({ ...p, shift: sd[0]._id, startTime: sd[0].startTime, endTime: sd[0].endTime }));
