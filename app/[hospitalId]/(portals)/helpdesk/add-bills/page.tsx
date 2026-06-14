@@ -253,91 +253,113 @@ export default function AddBillsPage() {
 
         setSubmitting(true);
         try {
-            const labItems = billItems.filter(i => i.type === 'lab');
+            // Treat custom items as lab items if OPD (to ensure they create a transaction)
+            const effectiveLabItems = [...billItems.filter(i => i.type === 'lab')];
             const ipdItems = billItems.filter(i => i.type === 'ipd_charge');
-            const customItems = billItems.filter(i => i.type === 'custom');
+            let customItems = billItems.filter(i => i.type === 'custom');
+
+            if (!activeAdmission && customItems.length > 0) {
+                // If OPD, convert custom charges to lab test logic so they are billed properly
+                customItems.forEach(item => {
+                    effectiveLabItems.push({
+                        ...item,
+                        type: 'lab',
+                        isNew: true, // Force creation in catalog
+                        category: item.category || 'OPD Custom Charge'
+                    });
+                });
+                customItems = []; // clear custom items since they are now lab items
+            }
 
             const results: string[] = [];
 
-            // 1. Create Lab Orders for lab tests
-            if (labItems.length > 0) {
-                const existingTestIds = labItems.filter(i => i.labTestId).map(i => i.labTestId!);
-                const newTests = labItems.filter(i => i.isNew);
+            // 1. Create Lab Orders for lab tests (and OPD custom charges)
+            if (effectiveLabItems.length > 0) {
+                const newTests = effectiveLabItems.filter(i => i.isNew);
 
                 // Create new tests in catalog first
                 for (const nt of newTests) {
                     try {
-                        const created: any = await apiClient('/helpdesk/lab-tests', {
+                        await apiClient('/helpdesk/lab-tests', {
                             method: 'POST',
                             body: JSON.stringify({
+                                testName: nt.name,
                                 name: nt.name,
                                 price: nt.amount,
-                                category: 'Custom',
+                                category: nt.category || 'Custom',
                                 isActive: true,
                             }),
                         });
-                        if (created.test?._id) {
-                            existingTestIds.push(created.test._id);
-                        }
                     } catch (e: any) {
-                        console.error(`Failed to create test ${nt.name}`, e);
-                        toast.error(`Could not create test: ${nt.name}`);
+                        console.error(`Failed to create test catalog entry ${nt.name}`, e);
                     }
                 }
 
-                if (existingTestIds.length > 0) {
-                    try {
-                        await apiClient('/helpdesk/lab-orders', {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                patientId: selectedPatient._id,
-                                tests: existingTestIds,
-                                notes: `Bill created from Front Desk on ${new Date().toLocaleDateString()}`,
-                            }),
-                        });
-                        results.push(`${existingTestIds.length} lab test(s) ordered`);
-                    } catch (e: any) {
-                        console.error('Failed to create lab order', e);
-                        toast.error('Failed to create lab order: ' + (e.message || 'Unknown error'));
-                    }
+                try {
+                    const totalLabAmount = effectiveLabItems.reduce((sum, i) => sum + i.amount, 0);
+                    await apiClient('/helpdesk/lab-orders', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            patientId: selectedPatient._id,
+                            patientDetails: {
+                                name: selectedPatient.name,
+                                mobile: selectedPatient.mobile || 'N/A',
+                                age: selectedPatient.age,
+                                ageUnit: selectedPatient.ageUnit || 'Years',
+                                gender: selectedPatient.gender || 'Unknown',
+                            },
+                            items: effectiveLabItems.map(i => ({ testName: i.name })),
+                            totalAmount: totalLabAmount,
+                            finalAmount: totalLabAmount,
+                            paymentMode: paymentMethod,
+                            paidAmount: totalLabAmount,
+                            balance: 0,
+                            admissionId: activeAdmission?._id,
+                            notes: `Bill created from Front Desk on ${new Date().toLocaleDateString()}`,
+                        }),
+                    });
+                    results.push(`${effectiveLabItems.length} lab/custom item(s) ordered`);
+                } catch (e: any) {
+                    console.error('Failed to create lab order', e);
+                    toast.error('Failed to process lab/custom items: ' + (e.message || 'Unknown error'));
                 }
             }
 
-            // 2. Create IPD Extra Charges
-            if (ipdItems.length > 0 && activeAdmission) {
-                for (const item of ipdItems) {
+            // 2 & 3. Create IPD Extra Charges and record the payment
+            const combinedIpdCharges = [...ipdItems, ...customItems];
+            if (combinedIpdCharges.length > 0 && activeAdmission) {
+                let ipdTotalAmount = 0;
+                for (const item of combinedIpdCharges) {
                     try {
                         await ipdService.addExtraCharge({
                             admissionId: activeAdmission._id,
-                            category: item.category,
+                            category: item.category || 'Other',
                             description: item.name,
                             amount: item.amount,
                         });
+                        ipdTotalAmount += item.amount;
                     } catch (e: any) {
-                        console.error(`Failed to add charge: ${item.name}`, e);
+                        console.error(`Failed to add IPD charge: ${item.name}`, e);
                         toast.error(`Failed: ${item.name}`);
                     }
                 }
-                results.push(`${ipdItems.length} IPD charge(s) added`);
-            }
 
-            // 3. Custom charges as IPD Extra Charges (if IPD) or Lab Orders (if OPD)
-            if (customItems.length > 0) {
-                if (activeAdmission) {
-                    for (const item of customItems) {
-                        try {
-                            await ipdService.addExtraCharge({
-                                admissionId: activeAdmission._id,
-                                category: item.category,
-                                description: item.name,
-                                amount: item.amount,
-                            });
-                        } catch (e: any) {
-                            console.error(`Failed to add custom charge: ${item.name}`, e);
-                        }
+                // Record the actual payment against the IPD bill
+                if (ipdTotalAmount > 0) {
+                    try {
+                        await ipdService.addAdvancePayment({
+                            admissionId: activeAdmission._id,
+                            amount: ipdTotalAmount,
+                            mode: paymentMethod,
+                            transactionType: "Advance",
+                            reference: `Frontdesk Bill - ${new Date().toLocaleDateString()}`,
+                        });
+                    } catch (e: any) {
+                        console.error("Failed to record IPD payment:", e);
+                        toast.error("Charges added but payment receipt failed");
                     }
-                    results.push(`${customItems.length} custom charge(s) added`);
                 }
+                results.push(`${combinedIpdCharges.length} IPD charge(s) billed & paid`);
             }
 
             // 4. Create Package Transactions (grouped by packageId)
@@ -384,10 +406,10 @@ export default function AddBillsPage() {
 
     const handlePrint = () => {
         if (!selectedPatient || billItems.length === 0) return;
-        
+
         try {
             const hospital = useAuthStore.getState().user?.hospital;
-            
+
             const htmlContent = generateAddBillsReceiptHtml({
                 hospital,
                 patient: {
