@@ -4,15 +4,16 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { pharmacyService } from '@/lib/integrations/services/pharmacy.service';
 import { format } from 'date-fns';
-import { Search, Printer, Calendar, Package, IndianRupee, Loader2 } from 'lucide-react';
+import { Search, Printer, Calendar, Package, IndianRupee, Loader2, ChevronDown, ChevronRight, User, Phone, Clock, FileText } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 
 const EODSalesReportPage = () => {
     const { user } = useAuthStore();
     const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     const [searchTerm, setSearchTerm] = useState('');
+    const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-    const { data: salesData, isLoading, isError } = useQuery({
+    const { data: salesData, isLoading } = useQuery({
         queryKey: pharmacyService.queryKeys.reports.eodSales(selectedDate),
         queryFn: () => pharmacyService.getEODItemWiseSales(selectedDate),
     });
@@ -25,13 +26,25 @@ const EODSalesReportPage = () => {
     const totalQty = filteredData.reduce((sum: number, item: any) => sum + item.totalQtySold, 0);
     const totalRevenue = filteredData.reduce((sum: number, item: any) => sum + item.totalRevenue, 0);
 
+    const toggleRow = (id: string) => {
+        setExpandedRows(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    };
+
     const handlePrint = () => {
         window.print();
     };
 
     return (
         <div className="space-y-6 text-gray-900 dark:text-white pb-20 pt-2 max-w-6xl mx-auto">
-            {/* Header / Print Layout hide */}
+            {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1 print:hidden">
                 <div>
                     <h1 className="text-xl md:text-2xl font-bold tracking-tight">EOD Sales Report</h1>
@@ -107,56 +120,137 @@ const EODSalesReportPage = () => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-gray-50 dark:bg-black/20 text-[10px] sm:text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 print:bg-transparent">
-                                <th className="px-6 py-4">Product Name</th>
-                                <th className="px-6 py-4">Composition (Generic)</th>
-                                <th className="px-6 py-4 text-right">Units Sold</th>
-                                <th className="px-6 py-4 text-right">Total Revenue</th>
-                                <th className="px-6 py-4 text-right">Closing Stock</th>
+                                <th className="px-4 py-4 w-8 print:hidden"></th>
+                                <th className="px-4 py-4">Product Name</th>
+                                <th className="px-4 py-4">Composition (Generic)</th>
+                                <th className="px-4 py-4 text-right">Units Sold</th>
+                                <th className="px-4 py-4 text-right">Total Revenue</th>
+                                <th className="px-4 py-4 text-right">Closing Stock</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-sm font-semibold">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center">
+                                    <td colSpan={6} className="px-6 py-12 text-center">
                                         <Loader2 className="w-8 h-8 animate-spin text-teal-600 mx-auto" />
                                         <p className="text-xs font-bold text-gray-500 uppercase mt-4">Generating Report...</p>
                                     </td>
                                 </tr>
                             ) : filteredData.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                                         <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                                         <p className="text-sm font-bold uppercase">No sales found</p>
                                     </td>
                                 </tr>
                             ) : (
-                                filteredData.map((item: any, idx: number) => (
-                                    <tr key={item._id || idx} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <p className="font-bold text-gray-900 dark:text-white uppercase">{item.productName}</p>
-                                        </td>
-                                        <td className="px-6 py-4 text-xs text-gray-500">{item.generic || '-'}</td>
-                                        <td className="px-6 py-4 text-right">
-                                            <span className="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md font-black">{item.totalQtySold}</span>
-                                        </td>
-                                        <td className="px-6 py-4 text-right text-teal-600 font-bold">
-                                            ₹{item.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <span className={`px-2.5 py-1 rounded-md font-black ${item.stockRemaining <= 0 ? 'bg-rose-50 text-rose-600' : 'bg-gray-100 text-gray-600'}`}>
-                                                {Number((item.stockRemaining || 0).toFixed(2))}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))
+                                filteredData.map((item: any, idx: number) => {
+                                    const rowId = item._id || String(idx);
+                                    const isExpanded = expandedRows.has(rowId);
+                                    const sales = item.sales || [];
+
+                                    return (
+                                        <React.Fragment key={rowId}>
+                                            {/* Product summary row */}
+                                            <tr 
+                                                className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
+                                                onClick={() => toggleRow(rowId)}
+                                            >
+                                                <td className="px-4 py-4 print:hidden">
+                                                    {sales.length > 0 && (
+                                                        isExpanded 
+                                                            ? <ChevronDown className="w-4 h-4 text-teal-500" /> 
+                                                            : <ChevronRight className="w-4 h-4 text-gray-400" />
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <p className="font-bold text-gray-900 dark:text-white uppercase">{item.productName}</p>
+                                                </td>
+                                                <td className="px-4 py-4 text-xs text-gray-500">{item.generic || '-'}</td>
+                                                <td className="px-4 py-4 text-right">
+                                                    <span className="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md font-black">{item.totalQtySold}</span>
+                                                </td>
+                                                <td className="px-4 py-4 text-right text-teal-600 font-bold">
+                                                    ₹{item.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </td>
+                                                <td className="px-4 py-4 text-right">
+                                                    <span className={`px-2.5 py-1 rounded-md font-black ${item.stockRemaining <= 0 ? 'bg-rose-50 text-rose-600' : 'bg-gray-100 text-gray-600'}`}>
+                                                        {Number((item.stockRemaining || 0).toFixed(2))}
+                                                    </span>
+                                                </td>
+                                            </tr>
+
+                                            {/* Expanded patient details */}
+                                            {isExpanded && sales.length > 0 && (
+                                                <tr className="print:table-row">
+                                                    <td colSpan={6} className="px-0 py-0">
+                                                        <div className="bg-gray-50/80 dark:bg-gray-900/30 border-y border-gray-100 dark:border-gray-700">
+                                                            <div className="px-6 py-3 flex items-center gap-2 border-b border-gray-100 dark:border-gray-800">
+                                                                <User className="w-3.5 h-3.5 text-teal-500" />
+                                                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Patient-wise Breakup</span>
+                                                            </div>
+                                                            <table className="w-full">
+                                                                <thead>
+                                                                    <tr className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                                                                        <th className="px-6 py-2.5 text-left">Patient</th>
+                                                                        <th className="px-4 py-2.5 text-left">Phone</th>
+                                                                        <th className="px-4 py-2.5 text-left">Invoice</th>
+                                                                        <th className="px-4 py-2.5 text-right">Qty</th>
+                                                                        <th className="px-4 py-2.5 text-right">Amount</th>
+                                                                        <th className="px-6 py-2.5 text-right">Time</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-gray-100/50 dark:divide-gray-800/50">
+                                                                    {sales.map((sale: any, sIdx: number) => (
+                                                                        <tr key={sIdx} className="text-xs hover:bg-white/60 dark:hover:bg-gray-800/40 transition-colors">
+                                                                            <td className="px-6 py-2.5">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <div className="w-6 h-6 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center shrink-0">
+                                                                                        <User className="w-3 h-3 text-teal-600" />
+                                                                                    </div>
+                                                                                    <span className="font-bold text-gray-800 dark:text-gray-200 uppercase">{sale.patientName || 'Walk-in'}</span>
+                                                                                </div>
+                                                                            </td>
+                                                                            <td className="px-4 py-2.5 text-gray-500">
+                                                                                <div className="flex items-center gap-1.5">
+                                                                                    <Phone className="w-3 h-3" />
+                                                                                    <span>{sale.customerPhone || '-'}</span>
+                                                                                </div>
+                                                                            </td>
+                                                                            <td className="px-4 py-2.5">
+                                                                                <div className="flex items-center gap-1.5 text-indigo-600">
+                                                                                    <FileText className="w-3 h-3" />
+                                                                                    <span className="font-bold">{sale.invoiceNo || '-'}</span>
+                                                                                </div>
+                                                                            </td>
+                                                                            <td className="px-4 py-2.5 text-right font-bold text-gray-700 dark:text-gray-300">{sale.qty}</td>
+                                                                            <td className="px-4 py-2.5 text-right font-bold text-teal-600">₹{Number(sale.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                                            <td className="px-6 py-2.5 text-right text-gray-500">
+                                                                                <div className="flex items-center gap-1.5 justify-end">
+                                                                                    <Clock className="w-3 h-3" />
+                                                                                    <span>{sale.time ? format(new Date(sale.time), 'hh:mm a') : '-'}</span>
+                                                                                </div>
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </React.Fragment>
+                                    );
+                                })
                             )}
                         </tbody>
                         {filteredData.length > 0 && (
                             <tfoot className="bg-gray-50 dark:bg-black/20 font-black border-t-2 border-gray-200 dark:border-gray-700 print:bg-transparent">
                                 <tr>
-                                    <td colSpan={2} className="px-6 py-4 text-right uppercase tracking-wider text-gray-500 text-xs">Grand Total</td>
-                                    <td className="px-6 py-4 text-right text-blue-700 text-base">{totalQty.toLocaleString()}</td>
-                                    <td className="px-6 py-4 text-right text-teal-600 text-base">₹{totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    <td className="print:hidden"></td>
+                                    <td colSpan={2} className="px-4 py-4 text-right uppercase tracking-wider text-gray-500 text-xs">Grand Total</td>
+                                    <td className="px-4 py-4 text-right text-blue-700 text-base">{totalQty.toLocaleString()}</td>
+                                    <td className="px-4 py-4 text-right text-teal-600 text-base">₹{totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                     <td></td>
                                 </tr>
                             </tfoot>

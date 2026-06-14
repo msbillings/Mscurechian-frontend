@@ -12,6 +12,7 @@ import PharmacyBillPrint, { ShopDetails } from '@/components/pharmacy/billing/Ph
 import { useAuthStore } from '@/stores/authStore';
 import { useTenantLink } from '@/hooks/useTenantLink';
 import { patientService } from '@/lib/integrations/services/patient.service';
+import { pharmacyService } from '@/lib/integrations/services/pharmacy.service';
 
 const BillingPage = () => {
     const router = useRouter();
@@ -320,7 +321,7 @@ const BillingPage = () => {
             try {
                 setIsFetchingSubstitutes(true);
                 const alts = await pharmacyService.getGenericSubstitutes(product._id);
-                setSubstitutes(alts);
+                setSubstitutes(alts as any);
             } catch (err) {
                 console.error("Failed to fetch substitutes", err);
                 toast.error("Failed to load generic alternatives");
@@ -815,7 +816,7 @@ const BillingPage = () => {
                                                             </div>
                                                             <div className="text-right">
                                                                 <p className="font-bold text-xs text-teal-600">₹{sub.mrp}</p>
-                                                                <p className="text-[10px] font-bold text-teal-600 bg-teal-50 dark:bg-teal-900/30 px-2 py-0.5 rounded uppercase tracking-widest inline-block mt-1">{sub.stock} In Stock</p>
+                                                                <p className="text-[10px] font-bold text-teal-600 bg-teal-50 dark:bg-teal-900/30 px-2 py-0.5 rounded uppercase tracking-widest inline-block mt-1">{(sub as any).availableUnits || sub.currentStock} In Stock</p>
                                                             </div>
                                                         </div>
                                                     ))}
