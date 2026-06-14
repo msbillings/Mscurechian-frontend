@@ -33,6 +33,11 @@ const BillingPage = () => {
     const [quantity, setQuantity] = useState(1);
     const [price, setPrice] = useState(0);
     const [cart, setCart] = useState<BillItem[]>([]);
+    
+    // Substitutes State
+    const [substitutes, setSubstitutes] = useState<PharmacyProduct[]>([]);
+    const [isFetchingSubstitutes, setIsFetchingSubstitutes] = useState(false);
+    const [outOfStockProduct, setOutOfStockProduct] = useState<PharmacyProduct | null>(null);
 
     // Payment State
     const [paymentMode, setPaymentMode] = useState<'Cash' | 'UPI' | 'Card' | 'Mixed'>('Cash');
@@ -305,12 +310,33 @@ const BillingPage = () => {
         return () => clearTimeout(delayDebounceFn);
     }, [searchTerm, cart]);
 
-    const handleSelectProduct = (product: any) => {
+    const handleSelectProduct = async (product: any) => {
+        if ((product.availableUnits || 0) <= 0) {
+            setOutOfStockProduct(product);
+            setSearchTerm(product.brandName);
+            setSearchResults([]);
+            
+            // Fetch substitutes
+            try {
+                setIsFetchingSubstitutes(true);
+                const alts = await pharmacyService.getGenericSubstitutes(product._id);
+                setSubstitutes(alts);
+            } catch (err) {
+                console.error("Failed to fetch substitutes", err);
+                toast.error("Failed to load generic alternatives");
+            } finally {
+                setIsFetchingSubstitutes(false);
+            }
+            return;
+        }
+
         setSelectedProduct(product);
         setSearchTerm(product.brandName);
         const unitsPerPack = product.unitsPerPack || 1;
         setPrice(Math.round((product.mrp / unitsPerPack) * 100) / 100);
         setSearchResults([]);
+        setOutOfStockProduct(null);
+        setSubstitutes([]);
     };
 
 
@@ -363,6 +389,8 @@ const BillingPage = () => {
         setSearchTerm('');
         setQuantity(1);
         setPrice(0);
+        setOutOfStockProduct(null);
+        setSubstitutes([]);
     };
 
     const removeItem = (index: number) => {
@@ -718,9 +746,9 @@ const BillingPage = () => {
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block px-1">Search Medicine</label>
                                 <div className="relative">
                                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                    <input className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl pl-12 pr-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500" placeholder="Type medicine name..." value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setSelectedProduct(null); }} />
+                                    <input className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl pl-12 pr-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500" placeholder="Type medicine name..." value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setSelectedProduct(null); setOutOfStockProduct(null); setSubstitutes([]); }} />
                                 </div>
-                                {searchTerm.length >= 2 && searchResults.length === 0 && !selectedProduct && !isSearching && (
+                                {searchTerm.length >= 2 && searchResults.length === 0 && !selectedProduct && !outOfStockProduct && !isSearching && (
                                     <p className="text-xs font-black text-rose-500  tracking-widest mt-3 px-1.5 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-300">
                                         <AlertCircle size={12} className="shrink-0" />
                                         Medicine not indexed. Please select an alternate formulation.
@@ -742,6 +770,60 @@ const BillingPage = () => {
 
                                             </div>
                                         ))}
+                                    </div>
+                                )}
+                                {outOfStockProduct && (
+                                    <div className="mt-4 p-4 md:p-6 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-3">
+                                                <AlertCircle className="w-5 h-5 text-rose-500" />
+                                                <div>
+                                                    <h3 className="text-sm font-bold text-rose-900 dark:text-rose-100 uppercase tracking-tight">{outOfStockProduct.brandName} is Out of Stock</h3>
+                                                    <p className="text-xs font-semibold text-rose-600 dark:text-rose-400 mt-0.5 uppercase tracking-wider">{outOfStockProduct.genericName}</p>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => { setOutOfStockProduct(null); setSearchTerm(''); }}
+                                                className="text-xs font-bold text-gray-400 hover:text-gray-600 uppercase tracking-wider px-2 py-1"
+                                            >
+                                                Clear
+                                            </button>
+                                        </div>
+                                        
+                                        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-rose-100/50 dark:border-rose-900/10">
+                                            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Available Generic Substitutes</p>
+                                            
+                                            {isFetchingSubstitutes ? (
+                                                <div className="flex items-center gap-2 text-teal-600 py-2">
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    <span className="text-xs font-bold uppercase">Finding substitutes...</span>
+                                                </div>
+                                            ) : substitutes.length > 0 ? (
+                                                <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                                                    {substitutes.map(sub => (
+                                                        <div key={sub._id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-teal-50 dark:hover:bg-teal-900/20 cursor-pointer border border-transparent hover:border-teal-100 dark:hover:border-teal-800 transition-all active:scale-[0.98]" onClick={() => {
+                                                            setSelectedProduct(sub);
+                                                            setSearchTerm(sub.brandName);
+                                                            const unitsPerPack = (sub as any).unitsPerPack || 1;
+                                                            setPrice(Math.round((sub.mrp / unitsPerPack) * 100) / 100);
+                                                            setOutOfStockProduct(null);
+                                                            setSubstitutes([]);
+                                                        }}>
+                                                            <div>
+                                                                <p className="font-bold text-xs uppercase text-gray-900 dark:text-white">{sub.brandName}</p>
+                                                                <p className="text-[10px] font-semibold text-gray-500 mt-0.5 uppercase">{sub.strength} • {sub.form}</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="font-bold text-xs text-teal-600">₹{sub.mrp}</p>
+                                                                <p className="text-[10px] font-bold text-teal-600 bg-teal-50 dark:bg-teal-900/30 px-2 py-0.5 rounded uppercase tracking-widest inline-block mt-1">{sub.stock} In Stock</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <p className="text-xs font-semibold text-gray-400 uppercase py-2">No substitutes found in stock.</p>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                             </div>

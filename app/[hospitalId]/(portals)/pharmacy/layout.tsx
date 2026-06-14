@@ -149,6 +149,7 @@ const PharmacyLayout = ({ children }: { children: React.ReactNode }) => {
         { icon: Undo2, label: "General Return", path: "/pharmacy/general-return" },
         { icon: Package, label: "Products", path: "/pharmacy/products" },
         { icon: Users, label: "Suppliers", path: "/pharmacy/suppliers" },
+        { icon: Receipt, label: "EOD Sales Report", path: "/pharmacy/eod-sales" },
     ];
 
     const pharmacyUser = {

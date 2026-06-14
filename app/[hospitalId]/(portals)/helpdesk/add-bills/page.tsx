@@ -72,7 +72,8 @@ export default function AddBillsPage() {
 
     // ── Submission ──
     const [submitting, setSubmitting] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'upi'>('cash');
+    const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'upi' | 'mixed' | 'due'>('cash');
+    const [mixedDetails, setMixedDetails] = useState({ cash: 0, card: 0, upi: 0 });
 
     // ── Load Lab Tests ──
     useEffect(() => {
@@ -251,6 +252,14 @@ export default function AddBillsPage() {
         if (!selectedPatient) { toast.error('Select a patient first'); return; }
         if (billItems.length === 0) { toast.error('Add at least one item'); return; }
 
+        if (paymentMethod === 'mixed') {
+            const totalMixed = (mixedDetails.cash || 0) + (mixedDetails.card || 0) + (mixedDetails.upi || 0);
+            if (Math.abs(totalMixed - Math.round(totalAmount)) > 2) {
+                toast.error(`Mixed payments (₹${totalMixed}) do not match total (₹${Math.round(totalAmount)})`);
+                return;
+            }
+        }
+
         setSubmitting(true);
         try {
             // Treat custom items as lab items if OPD (to ensure they create a transaction)
@@ -297,6 +306,14 @@ export default function AddBillsPage() {
 
                 try {
                     const totalLabAmount = effectiveLabItems.reduce((sum, i) => sum + i.amount, 0);
+                    
+                    const labRatio = totalAmount > 0 ? totalLabAmount / totalAmount : 1;
+                    const labMixed = {
+                        cash: Math.round((mixedDetails.cash || 0) * labRatio),
+                        card: Math.round((mixedDetails.card || 0) * labRatio),
+                        upi: Math.round((mixedDetails.upi || 0) * labRatio)
+                    };
+
                     await apiClient('/helpdesk/lab-orders', {
                         method: 'POST',
                         body: JSON.stringify({
@@ -312,8 +329,9 @@ export default function AddBillsPage() {
                             totalAmount: totalLabAmount,
                             finalAmount: totalLabAmount,
                             paymentMode: paymentMethod,
-                            paidAmount: totalLabAmount,
-                            balance: 0,
+                            paidAmount: paymentMethod === 'due' ? 0 : totalLabAmount,
+                            balance: paymentMethod === 'due' ? totalLabAmount : 0,
+                            mixedDetails: paymentMethod === 'mixed' ? labMixed : undefined,
                             admissionId: activeAdmission?._id,
                             notes: `Bill created from Front Desk on ${new Date().toLocaleDateString()}`,
                         }),
@@ -345,21 +363,39 @@ export default function AddBillsPage() {
                 }
 
                 // Record the actual payment against the IPD bill
-                if (ipdTotalAmount > 0) {
+                if (ipdTotalAmount > 0 && paymentMethod !== 'due') {
                     try {
-                        await ipdService.addAdvancePayment({
-                            admissionId: activeAdmission._id,
-                            amount: ipdTotalAmount,
-                            mode: paymentMethod,
-                            transactionType: "Advance",
-                            reference: `Frontdesk Bill - ${new Date().toLocaleDateString()}`,
-                        });
+                        if (paymentMethod === 'mixed') {
+                            const ipdRatio = totalAmount > 0 ? ipdTotalAmount / totalAmount : 1;
+                            const ipdMixed = {
+                                cash: Math.round((mixedDetails.cash || 0) * ipdRatio),
+                                card: Math.round((mixedDetails.card || 0) * ipdRatio),
+                                upi: Math.round((mixedDetails.upi || 0) * ipdRatio)
+                            };
+                            if (ipdMixed.cash > 0) {
+                                await ipdService.addAdvancePayment({ admissionId: activeAdmission._id, amount: ipdMixed.cash, mode: 'cash', transactionType: 'Advance', reference: 'Frontdesk Bill - Cash' });
+                            }
+                            if (ipdMixed.card > 0) {
+                                await ipdService.addAdvancePayment({ admissionId: activeAdmission._id, amount: ipdMixed.card, mode: 'card', transactionType: 'Advance', reference: 'Frontdesk Bill - Card' });
+                            }
+                            if (ipdMixed.upi > 0) {
+                                await ipdService.addAdvancePayment({ admissionId: activeAdmission._id, amount: ipdMixed.upi, mode: 'upi', transactionType: 'Advance', reference: 'Frontdesk Bill - UPI' });
+                            }
+                        } else {
+                            await ipdService.addAdvancePayment({
+                                admissionId: activeAdmission._id,
+                                amount: ipdTotalAmount,
+                                mode: paymentMethod,
+                                transactionType: "Advance",
+                                reference: `Frontdesk Bill - ${new Date().toLocaleDateString()}`,
+                            });
+                        }
                     } catch (e: any) {
                         console.error("Failed to record IPD payment:", e);
                         toast.error("Charges added but payment receipt failed");
                     }
                 }
-                results.push(`${combinedIpdCharges.length} IPD charge(s) billed & paid`);
+                results.push(`${combinedIpdCharges.length} IPD charge(s) billed ${paymentMethod !== 'due' ? '& paid' : ''}`);
             }
 
             // 4. Create Package Transactions (grouped by packageId)
@@ -1694,17 +1730,42 @@ export default function AddBillsPage() {
                                     {/* Payment Method */}
                                     <div style={{ marginTop: 16 }}>
                                         <label className="form-label">Payment Method</label>
-                                        <div className="payment-methods">
-                                            {(['cash', 'card', 'upi'] as const).map(m => (
+                                        <div className="payment-methods" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                            {(['cash', 'card', 'upi', 'mixed', 'due'] as const).map(m => (
                                                 <button
                                                     key={m}
                                                     className={`payment-method-btn ${paymentMethod === m ? 'active' : ''}`}
                                                     onClick={() => setPaymentMethod(m)}
                                                 >
-                                                    {m === 'cash' ? '💵' : m === 'card' ? '💳' : '📱'} {m}
+                                                    {m === 'cash' ? '💵' : m === 'card' ? '💳' : m === 'upi' ? '📱' : m === 'mixed' ? '🔄' : '⏳'} {m}
                                                 </button>
                                             ))}
                                         </div>
+
+                                        {paymentMethod === 'mixed' && (
+                                            <div style={{ marginTop: 12, padding: 12, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                                                <div>
+                                                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 4 }}>Cash (₹)</label>
+                                                    <input type="number" min="0" value={mixedDetails.cash || ''} onChange={e => setMixedDetails(prev => ({...prev, cash: Number(e.target.value)}))} style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none' }} />
+                                                </div>
+                                                <div>
+                                                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 4 }}>Card (₹)</label>
+                                                    <input type="number" min="0" value={mixedDetails.card || ''} onChange={e => setMixedDetails(prev => ({...prev, card: Number(e.target.value)}))} style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none' }} />
+                                                </div>
+                                                <div>
+                                                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 4 }}>UPI (₹)</label>
+                                                    <input type="number" min="0" value={mixedDetails.upi || ''} onChange={e => setMixedDetails(prev => ({...prev, upi: Number(e.target.value)}))} style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none' }} />
+                                                </div>
+                                                <div style={{ gridColumn: '1 / -1', fontSize: '0.75rem', fontWeight: 700, color: (mixedDetails.cash + mixedDetails.card + mixedDetails.upi) === Math.round(totalAmount) ? '#10b981' : '#ef4444', textAlign: 'right', marginTop: 4 }}>
+                                                    Total: ₹{mixedDetails.cash + mixedDetails.card + mixedDetails.upi} / ₹{Math.round(totalAmount)}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {paymentMethod === 'due' && (
+                                            <div style={{ marginTop: 12, padding: 10, background: '#fff1f2', borderRadius: 12, border: '1px solid #fecdd3', color: '#e11d48', fontSize: '0.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                Amount will be added as pending due.
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Actions */}
@@ -1712,7 +1773,7 @@ export default function AddBillsPage() {
                                         <button
                                             className="submit-btn"
                                             onClick={handleSubmitBill}
-                                            disabled={submitting || billItems.length === 0 || !selectedPatient}
+                                            disabled={submitting || billItems.length === 0 || !selectedPatient || (paymentMethod === 'mixed' && (mixedDetails.cash + mixedDetails.card + mixedDetails.upi) !== Math.round(totalAmount))}
                                             style={{ margin: 0 }}
                                         >
                                             {submitting ? (

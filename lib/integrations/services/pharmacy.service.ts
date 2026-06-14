@@ -217,6 +217,16 @@ export const pharmacyService = {
     return response.data || response;
   },
 
+  /** GET /pharmacy/reports/eod-sales */
+  getEODItemWiseSales: async (date?: string): Promise<any> => {
+    let url = "/pharmacy/reports/eod-sales";
+    if (date) {
+      url += `?date=${date}`;
+    }
+    const response: any = await apiClient(url);
+    return response.data || response;
+  },
+
   /** GET /pharmacy/transactions */
   getTransactions: async (): Promise<any[]> => {
     const response: any = await apiClient("/pharmacy/transactions");
@@ -283,6 +293,12 @@ export const pharmacyService = {
       PHARMACY_ENDPOINTS.PRODUCTS.BY_ID(id),
     );
     return response.product || response;
+  },
+
+  /** GET /pharmacy/products/:id/substitutes */
+  getGenericSubstitutes: async (id: string): Promise<PharmacyProduct[]> => {
+    const response: any = await apiClient(`/pharmacy/products/${id}/substitutes`);
+    return response.data || [];
   },
 
   /** POST /pharmacy/products */
@@ -524,8 +540,11 @@ export const pharmacyService = {
       inventory: () => ["pharmacy", "reports", "inventory"] as const,
       analytics: (params?: any) =>
         ["pharmacy", "reports", "analytics", params] as const,
+      eodSales: (date?: string) =>
+        ["pharmacy", "reports", "eod-sales", date] as const,
     },
     transactions: () => ["pharmacy", "transactions"] as const,
+    substitutes: (productId: string) => ["pharmacy", "products", productId, "substitutes"] as const,
     auditLogs: () => ["pharmacy", "audit-logs"] as const,
     // IPD Reconciliation keys
     ipdIssuance: (admissionId: string) => ["pharmacy", "ipd-issuance", admissionId] as const,

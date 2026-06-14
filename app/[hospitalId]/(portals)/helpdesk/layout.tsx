@@ -46,9 +46,9 @@ const helpdeskMenu: any[] = [
 function DashboardLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
-    const { 
+    const {
         user, logout, isAuthenticated, checkAuth, isLoading, isInitialized,
-        licenseError, isLicenseChecking, setLicenseError, setIsLicenseChecking 
+        licenseError, isLicenseChecking, setLicenseError, setIsLicenseChecking
     } = useAuthStore();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -99,18 +99,18 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
                 window.location.href = '/auth/login';
                 return;
             } else if (user?.role !== 'helpdesk' && user?.role !== 'frontdesk') {
-                 const routeMap: Record<string, string> = {
-                     'staff': '/staff',
-                     'doctor': '/doctor',
-                     'hospital-admin': '/hospital-admin',
-                     'lab': '/lab/dashboard',
-                     'pharma-owner': '/pharmacy/dashboard',
-                     'super-admin': '/admin',
-                     'admin': '/admin',
-                     'patient': '/patient/dashboard'
-                 };
-                 const targetRoute = routeMap[user?.role || ''] || '/auth/login';
-                 window.location.href = targetRoute;
+                const routeMap: Record<string, string> = {
+                    'staff': '/staff',
+                    'doctor': '/doctor',
+                    'hospital-admin': '/hospital-admin',
+                    'lab': '/lab/dashboard',
+                    'pharma-owner': '/pharmacy/dashboard',
+                    'super-admin': '/admin',
+                    'admin': '/admin',
+                    'patient': '/patient/dashboard'
+                };
+                const targetRoute = routeMap[user?.role || ''] || '/auth/login';
+                window.location.href = targetRoute;
             }
         }
     }, [isAuthenticated, isInitialized, user?.role]);
@@ -131,7 +131,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 
     if (licenseError?.locked) {
         return (
-            <LicenseLock 
+            <LicenseLock
                 message={licenseError.message}
                 onRefresh={() => window.location.reload()}
                 onLogout={() => logout()}

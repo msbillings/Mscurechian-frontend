@@ -304,6 +304,7 @@ export const helpdeskService = {
     startDate?: string,
     endDate?: string,
     type?: string,
+    isEdited?: boolean,
   ) => {
     let query = `${HELPDESK_ENDPOINTS.TRANSACTIONS}?page=${page}&limit=${limit}`;
     if (range) query += `&range=${range}`;
@@ -311,7 +312,15 @@ export const helpdeskService = {
     if (startDate) query += `&startDate=${startDate}`;
     if (endDate) query += `&endDate=${endDate}`;
     if (type) query += `&type=${type}`;
+    if (isEdited) query += `&isEdited=true`;
     return apiClient<any>(query);
+  },
+
+  editTransaction: (id: string, payload: any) => {
+    return apiClient<any>(`${HELPDESK_ENDPOINTS.TRANSACTIONS}/${id}/edit`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
   },
 
   // ==================== Transits ====================

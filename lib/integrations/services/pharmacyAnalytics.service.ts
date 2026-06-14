@@ -1,4 +1,4 @@
-﻿import { apiClient } from "../api/apiClient";
+import { apiClient } from "../api/apiClient";
 import { PHARMACY_ENDPOINTS } from "../config/endpoints";
 
 export interface AnalyticsData {
@@ -226,5 +226,13 @@ export const PharmacyAnalyticsService = {
         hourlyPerformance: [],
       };
     }
+  },
+  getEODItemWiseSales: async (date?: string): Promise<any> => {
+    let url = "/pharmacy/reports/eod-sales";
+    if (date) {
+      url += `?date=${date}`;
+    }
+    const response = await apiClient<any>(url);
+    return response.data;
   },
 };

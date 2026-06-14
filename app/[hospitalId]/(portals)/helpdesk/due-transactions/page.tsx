@@ -25,7 +25,6 @@ import { useTransactions } from "@/lib/integrations/hooks";
 import { renderToStaticMarkup } from 'react-dom/server';
 import MainHeader from '@/components/printers/MainHeader';
 import MainFooter from '@/components/printers/MainFooter';
-import EditTransactionModal from './EditTransactionModal';
 
 export default function TransactionsPage() {
     const [exporting, setExporting] = useState(false);
@@ -37,12 +36,10 @@ export default function TransactionsPage() {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [hospital, setHospital] = useState<any>(null);
-    const [showEditedOnly, setShowEditedOnly] = useState(false);
-    const [editingTx, setEditingTx] = useState<any>(null);
 
     // Fetch hospital branding for receipts
     useEffect(() => {
-        hospitalAdminService.getHospital().then(res => setHospital(res?.hospital)).catch(() => {});
+        hospitalAdminService.getHospital().then(res => setHospital(res?.hospital)).catch(() => { });
     }, []);
 
     // Helper: switch tabs and clear date filters so each tab shows all records by default
@@ -75,8 +72,7 @@ export default function TransactionsPage() {
         false,
         startDate,
         endDate,
-        getBackendTypeFilter(typeFilter),
-        showEditedOnly
+        getBackendTypeFilter(typeFilter)
     );
 
     // 🔄 LIVE UPDATE: Auto-refresh every 30 seconds
@@ -256,8 +252,8 @@ export default function TransactionsPage() {
                 testsArray.forEach((t: any) => {
                     const tName = t.name || t.testName || t.investigationName || 'Unknown Test';
                     const tCost = t.cost || t.price || t.unitCost || t.amount || 0;
-                    if(tName) {
-                       labTestsHtml += `<div class="breakdown-row"><span>${tName}</span><span style="font-weight: 900;">₹${Math.round(tCost).toLocaleString('en-IN')}</span></div>`;
+                    if (tName) {
+                        labTestsHtml += `<div class="breakdown-row"><span>${tName}</span><span style="font-weight: 900;">₹${Math.round(tCost).toLocaleString('en-IN')}</span></div>`;
                     }
                 });
                 labTestsHtml += `</div>`;
@@ -345,9 +341,9 @@ export default function TransactionsPage() {
             const status = (rawStatus.toLowerCase() === 'paid' || rawStatus.toLowerCase() === 'completed') ? 'PAID' : 'PENDING';
             const isDischarge = rawType.toLowerCase() === 'discharge' || rawType.toLowerCase() === 'ipd_final_settlement' || rawType.toLowerCase() === 'ipd_bill_payment';
             const amountDisplay = isDischarge
-                ? `₹${Math.round(apptData.totalBillAmount || amount).toLocaleString('en-IN')} (Adv: ₹${Math.round(apptData.advanceAmount||0).toLocaleString('en-IN')}, Due: ₹${Math.round(apptData.dueAmount||0).toLocaleString('en-IN')})`
+                ? `₹${Math.round(apptData.totalBillAmount || amount).toLocaleString('en-IN')} (Adv: ₹${Math.round(apptData.advanceAmount || 0).toLocaleString('en-IN')}, Due: ₹${Math.round(apptData.dueAmount || 0).toLocaleString('en-IN')})`
                 : `₹${Math.round(amount).toLocaleString('en-IN')}`;
-            return `<tr><td>${formattedDate}</td><td>${patientName}</td><td>${type}</td><td style="font-weight:900;">${amountDisplay}</td><td>${(tx.paymentMethod || 'CASH').toUpperCase()}</td><td style="color:${status==='PAID'?'#16a34a':'#e11d48'};font-weight:900;">${status}</td></tr>`;
+            return `<tr><td>${formattedDate}</td><td>${patientName}</td><td>${type}</td><td style="font-weight:900;">${amountDisplay}</td><td>${(tx.paymentMethod || 'CASH').toUpperCase()}</td><td style="color:${status === 'PAID' ? '#16a34a' : '#e11d48'};font-weight:900;">${status}</td></tr>`;
         }).join('');
         const totalAmount = filteredTransactions.reduce((s: number, tx: any) => s + (tx.payment?.amount || tx.amount || 0), 0);
         const html = `<!DOCTYPE html><html><head><title>${tabLabel} - Transaction List</title><style>
@@ -537,20 +533,7 @@ export default function TransactionsPage() {
                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Active Pool</span>
                             <span className="text-xs font-bold text-teal-600 uppercase tracking-tight">{filteredTransactions.length} ENTRIES</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <label className="flex items-center gap-2 cursor-pointer text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors">
-                                <input 
-                                    type="checkbox" 
-                                    checked={showEditedOnly}
-                                    onChange={(e) => {
-                                        setShowEditedOnly(e.target.checked);
-                                        setPage(1);
-                                    }}
-                                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/20"
-                                />
-                                Show Edited Only
-                            </label>
-                        </div>
+
                         <div className="flex items-center gap-4">
                             {/* PAGINATION */}
                             {totalPages > 1 && (
@@ -802,36 +785,20 @@ export default function TransactionsPage() {
                                             </td>
                                             {/* PAYMENT MODE COLUMN */}
                                             <td className="px-6 py-4 text-center">
-                                                <div className="flex flex-col items-center gap-1">
-                                                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-slate-200 shadow-sm">
-                                                        <CreditCard size={12} className="text-slate-400" />
-                                                        {tx.paymentMethod || tx.paymentMode || 'CASH'}
-                                                    </div>
-                                                    {tx.isEdited && (
-                                                        <div className="text-[9px] font-bold text-amber-500 uppercase tracking-widest flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded border border-amber-100">
-                                                            <Activity size={10} /> Edited
-                                                        </div>
-                                                    )}
+                                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-slate-200 shadow-sm">
+                                                    <CreditCard size={12} className="text-slate-400" />
+                                                    {tx.paymentMethod || tx.paymentMode || 'CASH'}
                                                 </div>
                                             </td>
-                                            {/* ACTION COLUMN */}
+                                            {/* PRINT BUTTON COLUMN */}
                                             <td className="px-4 py-4 text-center">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <button
-                                                        onClick={() => setEditingTx(tx)}
-                                                        className="p-2 text-slate-300 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all border border-transparent hover:border-amber-100"
-                                                        title="Edit Transaction"
-                                                    >
-                                                        <Activity size={15} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handlePrintTransaction(tx)}
-                                                        className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all border border-transparent hover:border-indigo-100"
-                                                        title="Print Receipt"
-                                                    >
-                                                        <Printer size={15} />
-                                                    </button>
-                                                </div>
+                                                <button
+                                                    onClick={() => handlePrintTransaction(tx)}
+                                                    className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all border border-transparent hover:border-indigo-100"
+                                                    title="Print Receipt"
+                                                >
+                                                    <Printer size={15} />
+                                                </button>
                                             </td>
                                         </tr>
                                     );
@@ -846,13 +813,6 @@ export default function TransactionsPage() {
                     )}
                 </div>
             </div>
-
-            {editingTx && (
-                <EditTransactionModal 
-                    tx={editingTx} 
-                    onClose={() => setEditingTx(null)} 
-                />
-            )}
 
         </div >
     );

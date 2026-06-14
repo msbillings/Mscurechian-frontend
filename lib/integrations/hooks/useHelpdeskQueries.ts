@@ -46,11 +46,12 @@ export const helpdeskKeys = {
     startDate?: string,
     endDate?: string,
     type?: string,
+    isEdited?: boolean
   ) =>
     [
       ...BASE_KEY,
       "transactions",
-      { page, limit, range, startDate, endDate, type },
+      { page, limit, range, startDate, endDate, type, isEdited },
     ] as const,
   transits: (params?: any) => [...BASE_KEY, "transits", params] as const,
   availability: (doctorId: string, hospitalId: string, date: string) =>
@@ -306,6 +307,7 @@ export const useTransactions = (
   startDate?: string,
   endDate?: string,
   type?: string,
+  isEdited?: boolean,
 ) => {
   return useQuery({
     queryKey: helpdeskKeys.transactions(
@@ -315,6 +317,7 @@ export const useTransactions = (
       startDate,
       endDate,
       type,
+      isEdited
     ),
     queryFn: () =>
       helpdeskService.getTransactions(
@@ -325,9 +328,22 @@ export const useTransactions = (
         startDate,
         endDate,
         type,
+        isEdited
       ),
     ...HELPDESK_QUERY_DEFAULTS,
-    // âŒ NO POLLING
+    // â Œ NO POLLING
+  });
+};
+
+export const useEditTransaction = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: any }) =>
+      helpdeskService.editTransaction(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: helpdeskKeys.transactions() });
+    },
   });
 };
 
