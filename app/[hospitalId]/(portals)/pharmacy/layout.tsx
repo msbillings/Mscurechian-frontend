@@ -167,38 +167,42 @@ const PharmacyLayout = ({ children }: { children: React.ReactNode }) => {
                 userName={user?.name}
             />
 
-            <SharedSidebar
-                isOpen={isSidebarOpen}
-                onClose={() => setIsSidebarOpen(false)}
-                menuItems={pharmacyMenuItems}
-                branding={{ logo: Package, title: "CureChain", subtitle: "Pharmacy Portal" }}
-                currentPath={pathname}
-                onMenuItemClick={(path) => {
-                    startTransition(() => {
-                        router.push(getPath(path));
-                        setIsSidebarOpen(false);
-                    });
-                }}
-            />
+            <div className="print:hidden">
+                <SharedSidebar
+                    isOpen={isSidebarOpen}
+                    onClose={() => setIsSidebarOpen(false)}
+                    menuItems={pharmacyMenuItems}
+                    branding={{ logo: Package, title: "CureChain", subtitle: "Pharmacy Portal" }}
+                    currentPath={pathname}
+                    onMenuItemClick={(path) => {
+                        startTransition(() => {
+                            router.push(getPath(path));
+                            setIsSidebarOpen(false);
+                        });
+                    }}
+                />
+            </div>
 
             <div className="flex-1 flex flex-col min-h-screen min-w-0 relative">
-                <Navbar
-                    user={pharmacyUser}
-                    onMenuClick={() => setIsSidebarOpen(true)}
-                    isDarkMode={theme === 'dark'}
-                    onThemeToggle={toggleTheme}
-                    onLogout={() => setIsLogoutModalOpen(true)}
-                    className="sticky top-0 z-30 shrink-0"
-                    profileHref={getPath('/pharmacy/profile')}
-                    centerActions={
-                        <PharmacyQuickActions
-                            activeOrdersCount={activeOrdersCountData?.count || 0}
-                            startTransition={startTransition}
-                        />
-                    }
-                />
+                <div className="print:hidden">
+                    <Navbar
+                        user={pharmacyUser}
+                        onMenuClick={() => setIsSidebarOpen(true)}
+                        isDarkMode={theme === 'dark'}
+                        onThemeToggle={toggleTheme}
+                        onLogout={() => setIsLogoutModalOpen(true)}
+                        className="sticky top-0 z-30 shrink-0"
+                        profileHref={getPath('/pharmacy/profile')}
+                        centerActions={
+                            <PharmacyQuickActions
+                                activeOrdersCount={activeOrdersCountData?.count || 0}
+                                startTransition={startTransition}
+                            />
+                        }
+                    />
+                </div>
 
-                <main className="flex-1 p-2 md:p-6 overflow-y-auto relative">
+                <main className="flex-1 p-2 md:p-6 overflow-y-auto print:overflow-visible print:p-0 relative">
                     <ProgressBar isPending={isPending} color="teal" />
                     <div className="max-w-[1600px] mx-auto w-full">
                         <React.Fragment>
@@ -206,7 +210,9 @@ const PharmacyLayout = ({ children }: { children: React.ReactNode }) => {
                         </React.Fragment>
                     </div>
                 </main>
-                <PharmacySupportFloatingBox />
+                <div className="print:hidden">
+                    <PharmacySupportFloatingBox />
+                </div>
             </div>
         </div>
     );

@@ -141,10 +141,7 @@ svg, path, rect, circle, g,
 }
 
 @media print {
-  body * {
-    visibility: hidden;
-  }
-
+  /* Standard Print Utilities */
   .print\:hidden {
     display: none !important;
   }
@@ -155,21 +152,6 @@ svg, path, rect, circle, g,
 
   .print\:border-none {
     border: none !important;
-  }
-
-  /* Make the ticket and its children visible */
-  .bg-white,
-  .bg-white * {
-    visibility: visible;
-  }
-
-  .bg-white {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0;
   }
 }
 

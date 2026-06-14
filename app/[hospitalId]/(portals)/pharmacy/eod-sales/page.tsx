@@ -12,6 +12,7 @@ const EODSalesReportPage = () => {
     const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     const [searchTerm, setSearchTerm] = useState('');
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+    const [printWithPatientDetails, setPrintWithPatientDetails] = useState(true);
 
     const { data: salesData, isLoading } = useQuery({
         queryKey: pharmacyService.queryKeys.reports.eodSales(selectedDate),
@@ -43,7 +44,8 @@ const EODSalesReportPage = () => {
     };
 
     return (
-        <div className="space-y-6 text-gray-900 dark:text-white pb-20 pt-2 max-w-6xl mx-auto">
+        <>
+            <div className="space-y-6 text-gray-900 dark:text-white pb-20 pt-2 max-w-6xl mx-auto">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1 print:hidden">
                 <div>
@@ -61,9 +63,18 @@ const EODSalesReportPage = () => {
                             onChange={(e) => setSelectedDate(e.target.value)}
                         />
                     </div>
+                    <label className="flex items-center gap-2 cursor-pointer bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 py-2 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider hover:bg-gray-50 transition-colors">
+                        <input 
+                            type="checkbox" 
+                            checked={printWithPatientDetails} 
+                            onChange={(e) => setPrintWithPatientDetails(e.target.checked)}
+                            className="w-4 h-4 text-teal-600 rounded border-gray-300 focus:ring-teal-500 cursor-pointer"
+                        />
+                        Print Details
+                    </label>
                     <button 
                         onClick={handlePrint}
-                        className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-xl text-sm font-bold uppercase tracking-wider transition-colors"
+                        className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-xl text-sm font-bold uppercase tracking-wider transition-colors shadow-sm"
                     >
                         <Printer className="w-4 h-4" />
                         Print
@@ -101,7 +112,7 @@ const EODSalesReportPage = () => {
             </div>
 
             {/* Table Section */}
-            <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 overflow-hidden print:border-none print:shadow-none">
+            <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 overflow-hidden print:overflow-visible print:border-none print:shadow-none">
                 <div className="p-4 md:p-6 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
                     <h3 className="text-lg font-bold">Item Wise Sales</h3>
                     <div className="relative w-full sm:w-72">
@@ -116,7 +127,7 @@ const EODSalesReportPage = () => {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto custom-scrollbar">
+                <div className="overflow-x-auto print:overflow-visible custom-scrollbar">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-gray-50 dark:bg-black/20 text-[10px] sm:text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700 print:bg-transparent">
@@ -128,21 +139,24 @@ const EODSalesReportPage = () => {
                                 <th className="px-4 py-4 text-right">Closing Stock</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-sm font-semibold">
                             {isLoading ? (
-                                <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center">
-                                        <Loader2 className="w-8 h-8 animate-spin text-teal-600 mx-auto" />
-                                        <p className="text-xs font-bold text-gray-500 uppercase mt-4">Generating Report...</p>
-                                    </td>
-                                </tr>
+                                <tbody className="text-sm font-semibold">
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-12 text-center">
+                                            <Loader2 className="w-8 h-8 animate-spin text-teal-600 mx-auto" />
+                                            <p className="text-xs font-bold text-gray-500 uppercase mt-4">Generating Report...</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
                             ) : filteredData.length === 0 ? (
-                                <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                                        <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                                        <p className="text-sm font-bold uppercase">No sales found</p>
-                                    </td>
-                                </tr>
+                                <tbody className="text-sm font-semibold">
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                                            <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                            <p className="text-sm font-bold uppercase">No sales found</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
                             ) : (
                                 filteredData.map((item: any, idx: number) => {
                                     const rowId = item._id || String(idx);
@@ -150,7 +164,7 @@ const EODSalesReportPage = () => {
                                     const sales = item.sales || [];
 
                                     return (
-                                        <React.Fragment key={rowId}>
+                                        <tbody key={rowId} className="divide-y divide-gray-100 dark:divide-gray-800 text-sm font-semibold print:break-inside-avoid border-b border-gray-100 dark:border-gray-800 last:border-none">
                                             {/* Product summary row */}
                                             <tr 
                                                 className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
@@ -181,10 +195,10 @@ const EODSalesReportPage = () => {
                                             </tr>
 
                                             {/* Expanded patient details */}
-                                            {isExpanded && sales.length > 0 && (
-                                                <tr className="print:table-row">
+                                            {sales.length > 0 && (
+                                                <tr className={`${isExpanded ? 'table-row' : 'hidden'} ${printWithPatientDetails ? 'print:table-row' : 'print:hidden'}`}>
                                                     <td colSpan={6} className="px-0 py-0">
-                                                        <div className="bg-gray-50/80 dark:bg-gray-900/30 border-y border-gray-100 dark:border-gray-700">
+                                                        <div className="bg-gray-50/80 dark:bg-gray-900/30 border-y border-gray-100 dark:border-gray-700 print:bg-transparent print:border-none">
                                                             <div className="px-6 py-3 flex items-center gap-2 border-b border-gray-100 dark:border-gray-800">
                                                                 <User className="w-3.5 h-3.5 text-teal-500" />
                                                                 <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Patient-wise Breakup</span>
@@ -239,11 +253,10 @@ const EODSalesReportPage = () => {
                                                     </td>
                                                 </tr>
                                             )}
-                                        </React.Fragment>
+                                        </tbody>
                                     );
                                 })
                             )}
-                        </tbody>
                         {filteredData.length > 0 && (
                             <tfoot className="bg-gray-50 dark:bg-black/20 font-black border-t-2 border-gray-200 dark:border-gray-700 print:bg-transparent">
                                 <tr>
@@ -272,7 +285,8 @@ const EODSalesReportPage = () => {
                     </div>
                 </div>
             </div>
-        </div>
+            </div>
+        </>
     );
 };
 
