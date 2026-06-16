@@ -1,4 +1,4 @@
-﻿import { apiClient, clearApiCache } from "../api/apiClient";
+import { apiClient, clearApiCache } from "../api/apiClient";
 import { PharmacyProduct, PharmacyProductPayload } from "../types/product";
 import { PHARMACY_ENDPOINTS } from "../config/endpoints";
 
@@ -160,6 +160,18 @@ export const ProductService = {
   deleteProduct: async (id: string): Promise<{ message: string }> => {
     const res = await apiClient<{ message: string }>(
       PHARMACY_ENDPOINTS.PRODUCTS.BY_ID(id),
+      {
+        method: "DELETE",
+      },
+    );
+    clearApiCache(); // Clear cache to update dashboard stats
+    return res;
+  },
+
+  // Delete all products
+  deleteAllProducts: async (): Promise<{ message: string }> => {
+    const res = await apiClient<{ message: string }>(
+      PHARMACY_ENDPOINTS.PRODUCTS.BASE,
       {
         method: "DELETE",
       },

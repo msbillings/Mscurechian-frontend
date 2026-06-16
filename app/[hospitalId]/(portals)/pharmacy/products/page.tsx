@@ -8,7 +8,8 @@ import {
     Download,
     FileSpreadsheet,
     ChevronDown,
-    RefreshCcw
+    RefreshCcw,
+    Trash2
 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -119,6 +120,28 @@ const ProductsPage = () => {
                 } catch (error) {
                     console.error('Failed to delete product:', error);
                     toast.error('Deregistration failed');
+                } finally {
+                    setDeletingId(null);
+                    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                }
+            }
+        });
+    };
+
+    const handleDeleteAllProducts = async () => {
+        setConfirmModal({
+            isOpen: true,
+            title: "Delete All Products",
+            message: "CRITICAL WARNING: This will permanently delete ALL products and their associated stock/batches from your pharmacy. This action cannot be undone. Are you sure you want to proceed?",
+            onConfirm: async () => {
+                setDeletingId('all');
+                try {
+                    await ProductService.deleteAllProducts();
+                    toast.success('All products deleted successfully');
+                    fetchProducts(1);
+                } catch (error) {
+                    console.error('Failed to delete all products:', error);
+                    toast.error('Failed to delete all products');
                 } finally {
                     setDeletingId(null);
                     setConfirmModal(prev => ({ ...prev, isOpen: false }));
@@ -314,6 +337,14 @@ const ProductsPage = () => {
                     >
                         <FileSpreadsheet size={16} />
                         <span className="hidden sm:inline">Import</span>
+                    </button>
+
+                    <button
+                        onClick={handleDeleteAllProducts}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 rounded-lg text-xs font-semibold hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors shadow-sm ml-1"
+                    >
+                        <Trash2 size={16} />
+                        <span className="hidden sm:inline">Delete All</span>
                     </button>
 
                     {/* Pagination Box */}
