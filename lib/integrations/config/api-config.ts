@@ -2,20 +2,34 @@ let apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 if (typeof window !== "undefined") {
   const currentHost = window.location.hostname;
+  const currentPort = window.location.port;
+  
   // 🌐 DYNAMIC NETWORK ADAPTER:
-  // If the user is accessing the app via a network IP (e.g., from a mobile hotspot),
-  // we automatically rewrite the API_URL to match the current host.
-  // This avoids having to manually update .env files every time your IP changes.
-  if (currentHost !== "localhost" && currentHost !== "127.0.0.1" && apiUrl) {
+  // Automatically rewrite the API_URL to match the current host.
+  // If hitting the internal Next.js proxy (/api/proxy), we also sync the port.
+  if (apiUrl) {
     try {
       const url = new URL(apiUrl);
-      if (url.hostname !== currentHost) {
-        console.warn(`[Config] 📶 Network access detected (${currentHost}). Dynamically switching API from ${url.hostname} to ${currentHost}`);
-        url.hostname = currentHost;
-        apiUrl = url.toString();
+      if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+        let modified = false;
+        if (url.hostname !== currentHost) {
+          url.hostname = currentHost;
+          modified = true;
+        }
+        // If it's hitting the Next.js proxy, the port must match the frontend
+        if (url.pathname.startsWith('/api/proxy')) {
+          if (url.port !== currentPort) {
+            url.port = currentPort || "";
+            modified = true;
+          }
+        }
+        
+        if (modified) {
+          console.warn(`[Config] 📶 Dynamically switching API from ${url.host} to ${url.hostname}:${url.port}`);
+          apiUrl = url.toString();
+        }
       }
     } catch (e) {
-      // Fallback: if URL construction fails, do a simple regex replace if it's localhost
       if (apiUrl.includes("localhost")) {
         apiUrl = apiUrl.replace("localhost", currentHost);
       }

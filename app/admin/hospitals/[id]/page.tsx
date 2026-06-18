@@ -18,7 +18,11 @@ import {
     Headphones,
     Lock,
     Smartphone,
-    Search
+    Search,
+    CalendarDays,
+    Edit2,
+    X,
+    Briefcase
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -29,6 +33,19 @@ import {
 } from '@/components/admin';
 import Link from "next/link";
 
+const licenseKeyMap: Record<string, string> = {
+    doctors: 'doctor',
+    nurses: 'nurse',
+    hospitalAdmins: 'hospitalAdmin',
+    helpdesk: 'helpdesk',
+    pharma: 'pharmacy',
+    lab: 'lab',
+    staff: 'staff',
+    masterhelpdesk: 'masterhelpdesk',
+    hr: 'hr',
+    discharge: 'discharge'
+};
+
 const HospitalPersonnelPage = ({ params }: { params: Promise<{ id: string }> }) => {
     const router = useRouter();
     const resolvedParams = use(params);
@@ -36,6 +53,14 @@ const HospitalPersonnelPage = ({ params }: { params: Promise<{ id: string }> }) 
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('doctors');
     const [searchQuery, setSearchQuery] = useState('');
+    
+    const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
+    const [licenseFormData, setLicenseFormData] = useState({
+        enabled: false,
+        startDate: '',
+        endDate: ''
+    });
+    const [savingLicense, setSavingLicense] = useState(false);
 
     useEffect(() => {
         fetchPersonnel();
@@ -51,6 +76,45 @@ const HospitalPersonnelPage = ({ params }: { params: Promise<{ id: string }> }) 
             toast.error("Failed to load hospital directory.");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleOpenLicenseModal = () => {
+        const key = licenseKeyMap[activeTab];
+        if (!key) return;
+        const license = hospital?.portalLicenses?.[key] || {};
+        setLicenseFormData({
+            enabled: license.enabled || false,
+            startDate: license.startDate ? new Date(license.startDate).toISOString().split('T')[0] : '',
+            endDate: license.endDate ? new Date(license.endDate).toISOString().split('T')[0] : ''
+        });
+        setIsLicenseModalOpen(true);
+    };
+
+    const handleSaveLicense = async () => {
+        setSavingLicense(true);
+        try {
+            const key = licenseKeyMap[activeTab];
+            await adminService.updateHospitalStatusClient(
+                hospital._id, 
+                hospital.status, 
+                undefined, 
+                undefined, 
+                {
+                    [key]: {
+                        enabled: licenseFormData.enabled,
+                        startDate: licenseFormData.startDate ? new Date(licenseFormData.startDate).toISOString() : undefined,
+                        endDate: licenseFormData.endDate ? new Date(licenseFormData.endDate).toISOString() : undefined
+                    }
+                }
+            );
+            toast.success("License updated successfully");
+            setIsLicenseModalOpen(false);
+            fetchPersonnel();
+        } catch (error) {
+            toast.error("Failed to update license");
+        } finally {
+            setSavingLicense(false);
         }
     };
 
@@ -90,6 +154,8 @@ const HospitalPersonnelPage = ({ params }: { params: Promise<{ id: string }> }) 
         { id: 'emergency', label: 'Ambulance', icon: <Ambulance size={18} />, count: personnel.emergency?.length || 0 },
         { id: 'staff', label: 'Support Staff', icon: <ClipboardList size={18} />, count: personnel.staff?.length || 0 },
         { id: 'masterhelpdesk', label: 'Master Frontdesk', icon: <ShieldCheck size={18} />, count: personnel.masterhelpdesk?.length || 0 },
+        { id: 'hr', label: 'HR Management', icon: <Briefcase size={18} />, count: personnel.hr?.length || 0 },
+        { id: 'discharge', label: 'Discharge Portal', icon: <ShieldCheck size={18} />, count: personnel.discharge?.length || 0 },
     ];
 
     const currentPersonnel = (personnel[activeTab] || []).filter((person: any) =>
@@ -97,6 +163,9 @@ const HospitalPersonnelPage = ({ params }: { params: Promise<{ id: string }> }) 
         person.mobile?.includes(searchQuery) ||
         person.email?.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    const activeLicenseKey = licenseKeyMap[activeTab];
+    const currentLicense = activeLicenseKey ? hospital.portalLicenses?.[activeLicenseKey] : null;
 
     return (
         <div className="max-w-7xl mx-auto py-4 md:py-6 space-y-6 md:space-y-8">
@@ -164,6 +233,40 @@ const HospitalPersonnelPage = ({ params }: { params: Promise<{ id: string }> }) 
 
                 {/* Right Personnel Panel */}
                 <div className="flex-1 space-y-6 md:px-4 lg:px-0">
+                    {/* License Information Card */}
+                    {activeLicenseKey && (
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+                                    <ShieldCheck size={24} />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h3 className="font-bold text-gray-900 text-sm md:text-base">Portal License</h3>
+                                        <Badge className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${currentLicense?.enabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                            {currentLicense?.enabled ? 'Active' : 'Inactive'}
+                                        </Badge>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-xs md:text-sm text-gray-600 font-medium">
+                                        <div className="flex items-center gap-1.5">
+                                            <CalendarDays size={14} className="text-gray-400" />
+                                            <span>Valid From: {currentLicense?.startDate ? new Date(currentLicense.startDate).toLocaleDateString() : 'N/A'}</span>
+                                        </div>
+                                        <span className="text-gray-300">|</span>
+                                        <div className="flex items-center gap-1.5">
+                                            <CalendarDays size={14} className="text-gray-400" />
+                                            <span>Expires On: {currentLicense?.endDate ? new Date(currentLicense.endDate).toLocaleDateString() : 'N/A'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <Button onClick={handleOpenLicenseModal} variant="outline" className="shrink-0 bg-white hover:bg-gray-50 flex items-center gap-2 text-sm w-full md:w-auto">
+                                <Edit2 size={16} />
+                                Edit License
+                            </Button>
+                        </div>
+                    )}
+
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                             List of {tabs.find(t => t.id === activeTab)?.label}
@@ -230,6 +333,92 @@ const HospitalPersonnelPage = ({ params }: { params: Promise<{ id: string }> }) 
                     )}
                 </div>
             </div>
+
+            {/* License Edit Modal */}
+            {isLicenseModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden border border-gray-100">
+                        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+                            <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                                <ShieldCheck size={18} className="text-blue-600" />
+                                Edit Portal License
+                            </h3>
+                            <button 
+                                onClick={() => setIsLicenseModalOpen(false)}
+                                className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        
+                        <div className="p-5 space-y-5">
+                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                <div>
+                                    <p className="text-sm font-semibold text-gray-900">Enable Portal</p>
+                                    <p className="text-xs text-gray-500">Allow users to access this portal</p>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        className="sr-only peer"
+                                        checked={licenseFormData.enabled}
+                                        onChange={(e) => setLicenseFormData({...licenseFormData, enabled: e.target.checked})}
+                                    />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Start Date</label>
+                                    <div className="relative">
+                                        <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                        <input 
+                                            type="date"
+                                            value={licenseFormData.startDate}
+                                            onChange={(e) => setLicenseFormData({...licenseFormData, startDate: e.target.value})}
+                                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">End Date (Expiration)</label>
+                                    <div className="relative">
+                                        <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                        <input 
+                                            type="date"
+                                            value={licenseFormData.endDate}
+                                            onChange={(e) => setLicenseFormData({...licenseFormData, endDate: e.target.value})}
+                                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-5 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+                            <Button 
+                                onClick={() => setIsLicenseModalOpen(false)}
+                                variant="outline"
+                                className="bg-white hover:bg-gray-100"
+                            >
+                                Cancel
+                            </Button>
+                            <Button 
+                                onClick={handleSaveLicense}
+                                disabled={savingLicense}
+                                className="bg-blue-600 hover:bg-blue-700 text-white min-w-[100px]"
+                            >
+                                {savingLicense ? (
+                                    <span className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
+                                ) : (
+                                    "Save Changes"
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
