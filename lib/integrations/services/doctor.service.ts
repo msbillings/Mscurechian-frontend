@@ -277,4 +277,10 @@ export const doctorService = {
       method: "PUT",
       body: data instanceof FormData ? data : JSON.stringify(data),
     }),
+
+  updateOnlineStatus: (isOnline: boolean) =>
+    apiClient<any>(DOCTOR_ENDPOINTS.STATUS, {
+      method: "PATCH",
+      body: JSON.stringify({ isOnline }),
+    }),
 };

@@ -115,6 +115,7 @@ export interface HelpdeskDoctor {
     mobile?: string;
     status?: string;
   };
+  isOnline?: boolean;
 }
 
 // Patient Registration

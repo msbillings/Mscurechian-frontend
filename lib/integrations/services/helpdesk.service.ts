@@ -305,6 +305,7 @@ export const helpdeskService = {
     endDate?: string,
     type?: string,
     isEdited?: boolean,
+    search?: string,
   ) => {
     let query = `${HELPDESK_ENDPOINTS.TRANSACTIONS}?page=${page}&limit=${limit}`;
     if (range) query += `&range=${range}`;
@@ -313,6 +314,7 @@ export const helpdeskService = {
     if (endDate) query += `&endDate=${endDate}`;
     if (type) query += `&type=${type}`;
     if (isEdited) query += `&isEdited=true`;
+    if (search && search.trim() !== "") query += `&search=${encodeURIComponent(search.trim())}`;
     return apiClient<any>(query);
   },
 

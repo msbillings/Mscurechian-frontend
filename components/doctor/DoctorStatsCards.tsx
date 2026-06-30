@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Calendar, FileText, IndianRupee, TrendingUp } from 'lucide-react';
+import { UserCheck, Calendar, HeartPulse, Clock } from 'lucide-react';
 
 interface DoctorStatsCardsProps {
     stats: {
@@ -20,7 +20,7 @@ function DoctorStatsCards({ stats, visitTypeFilter, onTypeChange }: DoctorStatsC
         {
             label: 'Total Patients',
             value: stats.totalPatients,
-            icon: Users,
+            icon: UserCheck,
             color: 'bg-blue-500',
             lightColor: 'bg-blue-50 dark:bg-blue-900/20',
             textColor: 'text-blue-600 dark:text-blue-400'
@@ -28,7 +28,7 @@ function DoctorStatsCards({ stats, visitTypeFilter, onTypeChange }: DoctorStatsC
         {
             label: 'Active Inpatients',
             value: stats.activeInpatients,
-            icon: TrendingUp,
+            icon: HeartPulse,
             color: 'bg-rose-500',
             lightColor: 'bg-rose-50 dark:bg-rose-900/20',
             textColor: 'text-rose-600 dark:text-rose-400',
@@ -38,7 +38,7 @@ function DoctorStatsCards({ stats, visitTypeFilter, onTypeChange }: DoctorStatsC
             label: 'Current Queue',
             dateRange: stats.dynamicLabel && stats.dynamicLabel !== "Today's" ? stats.dynamicLabel : 'Today',
             value: stats.totalPendingQueue ?? stats.appointmentsToday,
-            icon: TrendingUp,
+            icon: Clock,
             color: 'bg-indigo-500',
             lightColor: 'bg-indigo-50 dark:bg-indigo-900/20',
             textColor: 'text-indigo-600 dark:text-indigo-400',

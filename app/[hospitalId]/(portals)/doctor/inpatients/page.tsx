@@ -22,12 +22,19 @@ import {
     Pill,
     Pencil,
     Check,
-    ClipboardList
+    ClipboardList,
+    AlertTriangle,
+    FileText,
+    ShieldAlert,
+    HeartPulse,
+    Stethoscope,
+    CheckCircle2
 } from 'lucide-react';
 import { useTenantLink } from '@/hooks/useTenantLink';
 import AddClinicalChargeModal from '@/components/ipd/AddClinicalChargeModal';
 import { IPDBillingModal } from '@/components/helpdesk/IPDBillingModal';
 import TransferRequestModal from '@/components/ipd/TransferRequestModal';
+import InpatientRoundingModal from '@/components/doctor/InpatientRoundingModal';
 import { getDoctorInpatientsAction } from '@/lib/integrations/actions/doctor.actions';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
@@ -40,8 +47,26 @@ import { useDoctorInpatients } from '@/lib/integrations/hooks';
 import { useAuthStore } from '@/stores/authStore';
 import { useQueryClient } from '@tanstack/react-query';
 
+const calculateNEWS = (vitals: any) => {
+    if (!vitals) return { score: 0, label: 'NEWS: 0 (Stable)', color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800' };
+    let score = 0;
+    if (vitals.status === 'Critical' || (vitals.spO2 && Number(vitals.spO2) < 90)) score += 5;
+    else if (vitals.status === 'Warning' || (vitals.spO2 && Number(vitals.spO2) < 94)) score += 3;
+    if (vitals.heartRate && (Number(vitals.heartRate) > 120 || Number(vitals.heartRate) < 45)) score += 2;
+    if (vitals.temp && (Number(vitals.temp) > 38.5 || Number(vitals.temp) < 35.5)) score += 2;
+    
+    if (score >= 5 || vitals.status === 'Critical') {
+        return { score: score || 6, label: `NEWS: ${score || 6} (High Risk)`, color: 'bg-rose-500 text-white border-rose-600 animate-pulse font-black shadow-sm' };
+    }
+    if (score >= 3 || vitals.status === 'Warning') {
+        return { score: score || 3, label: `NEWS: ${score || 3} (Moderate)`, color: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800 font-extrabold' };
+    }
+    return { score: score || 1, label: `NEWS: ${score || 1} (Low Risk)`, color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800 font-bold' };
+};
+
 export default function DoctorInpatientsPage() {
     const { getPath } = useTenantLink();
+    const router = useRouter();
     const { user } = useAuthStore();
     const queryClient = useQueryClient();
     const { data: admissions = [], isLoading: loading } = useDoctorInpatients(user?.id, user?.role);
@@ -68,6 +93,9 @@ export default function DoctorInpatientsPage() {
     const [selectedAdmissionForCharge, setSelectedAdmissionForCharge] = useState<string | null>(null);
     const [selectedAdmissionForLedger, setSelectedAdmissionForLedger] = useState<string | null>(null);
     const [selectedAdmissionForTransfer, setSelectedAdmissionForTransfer] = useState<{ id: string; name: string } | null>(null);
+    const [selectedAdmissionForRounding, setSelectedAdmissionForRounding] = useState<any>(null);
+    const [roundingFilter, setRoundingFilter] = useState<'all' | 'pending' | 'rounded'>('all');
+    const [roundTick, setRoundTick] = useState(0);
     const [viewType, setViewType] = useState<'list' | 'card'>('list');
     const [filters, setFilters] = useState({ type: '', room: '' });
 
@@ -112,6 +140,8 @@ export default function DoctorInpatientsPage() {
             .filter(Boolean)
     )).sort();
 
+    const todayStr = new Date().toISOString().split('T')[0];
+
     const filteredAdmissions = admissions.filter(adm => {
         const matchesSearch = adm.patient?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             adm.admissionId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -127,13 +157,20 @@ export default function DoctorInpatientsPage() {
         if (filterType && bedType !== filterType) return false;
         if (filterRoom && bedRoom !== filterRoom) return false;
 
+        if (roundingFilter !== 'all') {
+            const admId = adm._id || adm.id;
+            const isRounded = localStorage.getItem(`ipd_rounded_${admId}_${todayStr}`) === 'true';
+            if (roundingFilter === 'rounded' && !isRounded) return false;
+            if (roundingFilter === 'pending' && isRounded) return false;
+        }
+
         return true;
     });
 
     // Reset page on search
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm]);
+    }, [searchTerm, roundingFilter]);
 
     const totalPages = Math.ceil(filteredAdmissions.length / itemsPerPage);
     const paginatedAdmissions = filteredAdmissions.slice(
@@ -142,10 +179,17 @@ export default function DoctorInpatientsPage() {
     );
 
     // ✅ Summary Stats Calculation
+    const roundedTodayCount = admissions.filter(a => {
+        const admId = a._id || a.id;
+        return localStorage.getItem(`ipd_rounded_${admId}_${todayStr}`) === 'true';
+    }).length;
+
     const stats = {
         total: admissions.length,
         critical: admissions.filter(a => a.vitals?.status === 'Critical' || a.vitals?.condition === 'Critical').length,
-        abnormal: admissions.filter(a => a.vitals?.status === 'Warning' || (['Fair', 'Serious'].includes(a.vitals?.condition) && a.vitals?.status !== 'Critical')).length
+        abnormal: admissions.filter(a => a.vitals?.status === 'Warning' || (['Fair', 'Serious'].includes(a.vitals?.condition) && a.vitals?.status !== 'Critical')).length,
+        rounded: roundedTodayCount,
+        pendingRounds: admissions.length - roundedTodayCount
     };
 
     const getMonitoringStatus = (nextDue: string | Date | undefined) => {
@@ -270,7 +314,8 @@ export default function DoctorInpatientsPage() {
             </div>
 
             {/* ✅ ENHANCED STATS BAR: Moved below header for better spatial distribution */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+            {/* ✅ ENHANCED STATS BAR: 4 Columns with Morning Ward Rounding Census */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
                 <SummaryCard
                     label="Active Assigned"
                     value={stats.total}
@@ -278,6 +323,30 @@ export default function DoctorInpatientsPage() {
                     color="blue"
                     icon={<Users className="w-3.5 h-3.5 sm:w-5 sm:h-5" />}
                 />
+                <div 
+                    onClick={() => setRoundingFilter(roundingFilter === 'pending' ? 'all' : 'pending')}
+                    className={`p-3 sm:p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
+                        roundingFilter === 'pending'
+                            ? 'bg-emerald-500 text-white border-emerald-600 shadow-lg scale-[1.02]'
+                            : 'bg-white dark:bg-[#111] border-gray-200 dark:border-gray-800 hover:border-emerald-500/50 shadow-sm'
+                    }`}
+                >
+                    <div>
+                        <span className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider block ${roundingFilter === 'pending' ? 'text-emerald-100' : 'text-gray-400'}`}>
+                            Morning Ward Rounds
+                        </span>
+                        <div className="flex items-baseline gap-1.5 mt-1">
+                            <span className="text-xl sm:text-2xl font-black">{stats.rounded}</span>
+                            <span className={`text-xs font-bold ${roundingFilter === 'pending' ? 'text-emerald-200' : 'text-gray-400'}`}>/ {stats.total} Done</span>
+                        </div>
+                        <span className={`text-[8px] sm:text-[9px] font-bold uppercase mt-1 block ${roundingFilter === 'pending' ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                            {stats.pendingRounds} Pending Rounds →
+                        </span>
+                    </div>
+                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center ${roundingFilter === 'pending' ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'}`}>
+                        <Stethoscope className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2.5} />
+                    </div>
+                </div>
                 <SummaryCard
                     label="Critical Care"
                     value={stats.critical}
@@ -292,6 +361,33 @@ export default function DoctorInpatientsPage() {
                     color="amber"
                     icon={<Heart className="w-3.5 h-3.5 sm:w-5 sm:h-5" />}
                 />
+            </div>
+
+            {/* ✅ CLINICAL ROUNDING TABS BAR */}
+            <div className="flex items-center justify-between bg-white dark:bg-[#111] p-2 rounded-xl border border-gray-200 dark:border-gray-800 shadow-xs flex-wrap gap-2">
+                <div className="flex items-center gap-1.5">
+                    {[
+                        { id: 'all', label: `All Patients (${stats.total})` },
+                        { id: 'pending', label: `Pending Rounds (${stats.pendingRounds})`, alert: stats.pendingRounds > 0 },
+                        { id: 'rounded', label: `Rounded Today (${stats.rounded})` }
+                    ].map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setRoundingFilter(tab.id as any)}
+                            className={`px-3.5 py-1.5 rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                                roundingFilter === tab.id
+                                    ? 'bg-emerald-600 text-white shadow-sm'
+                                    : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
+                            }`}
+                        >
+                            <span>{tab.label}</span>
+                            {tab.alert && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />}
+                        </button>
+                    ))}
+                </div>
+                <span className="text-[10px] font-bold text-gray-400 px-2 italic hidden sm:block">
+                    💡 Tip: Click any row or &quot;Round Chart&quot; to write daily SOAP notes & check vitals.
+                </span>
             </div>
 
             {/* Content Section */}
@@ -322,24 +418,45 @@ export default function DoctorInpatientsPage() {
                                         const isCritical = adm.vitals?.status === 'Critical' || (adm.vitals?.spO2 && Number(adm.vitals.spO2) < 90);
                                         const isAbnormal = isCritical || adm.vitals?.status === 'Warning' || (adm.vitals?.spO2 && Number(adm.vitals.spO2) < 94);
                                         const monitor = getMonitoringStatus(adm.vitals?.nextVitalsDue);
+                                        const news = calculateNEWS(adm.vitals);
 
                                         return (
-                                            <tr key={adm._id} className="hover:bg-gray-50/80 dark:hover:bg-gray-900/20 transition-all group">
+                                            <tr 
+                                                key={adm._id} 
+                                                onClick={() => setSelectedAdmissionForRounding(adm)}
+                                                className="hover:bg-emerald-50/30 dark:hover:bg-emerald-950/20 transition-all group cursor-pointer"
+                                            >
                                                 <td className="px-4 py-3 whitespace-nowrap">
-                                                    <Link href={getPath(`/doctor/patients/${adm.patient?._id || adm.patient?.id}`)} prefetch={true} className="flex items-center gap-4 group/item cursor-pointer">
-                                                        <div className="relative">
-                                                            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-700 dark:text-emerald-400 font-black text-sm border border-emerald-200/50 dark:border-emerald-800/50">
-                                                                {adm.patient?.name?.[0] || 'P'}
+                                                    <div className="flex flex-col gap-1">
+                                                        <Link onClick={(e) => e.stopPropagation()} href={getPath(`/doctor/patients/${adm.patient?._id || adm.patient?.id}`)} prefetch={true} className="flex items-center gap-3 group/item cursor-pointer">
+                                                            <div className="relative shrink-0">
+                                                                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-700 dark:text-emerald-400 font-black text-sm border border-emerald-200/50 dark:border-emerald-800/50">
+                                                                    {adm.patient?.name?.[0] || 'P'}
+                                                                </div>
+                                                                {isAbnormal && (
+                                                                    <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white dark:border-[#111] ${isCritical ? 'bg-rose-600 animate-ping' : 'bg-amber-500 animate-pulse'}`} />
+                                                                )}
                                                             </div>
-                                                            {isAbnormal && (
-                                                                <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white dark:border-[#111] ${isCritical ? 'bg-rose-600 animate-ping' : 'bg-amber-500 animate-pulse'}`} />
+                                                            <div>
+                                                                <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight group-hover/item:text-emerald-600 transition-colors">{adm.patient?.name}</p>
+                                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">MRN: {adm.patient?.mrn || 'N/A'}</p>
+                                                            </div>
+                                                        </Link>
+                                                        <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                                                            {adm.patient?.allergies?.length > 0 ? (
+                                                                <span className="px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-[7px] font-black uppercase">
+                                                                    ⚠️ Allergy: {adm.patient.allergies[0]}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 text-[7px] font-bold uppercase">
+                                                                    🛡️ No Allergies
+                                                                </span>
                                                             )}
+                                                            <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200 dark:border-blue-800 text-[7px] font-black uppercase">
+                                                                📋 Code: Full
+                                                            </span>
                                                         </div>
-                                                        <div>
-                                                            <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight">{adm.patient?.name}</p>
-                                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">MRN: {adm.patient?.mrn || 'N/A'}</p>
-                                                        </div>
-                                                    </Link>
+                                                    </div>
                                                 </td>
                                                 <td className="px-4 py-3 whitespace-nowrap">
                                                     <div className="flex flex-col">
@@ -348,12 +465,17 @@ export default function DoctorInpatientsPage() {
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-3 whitespace-nowrap text-center">
-                                                    <span className={`text-[10px] uppercase font-black tracking-widest ${monitor.color}`}>
-                                                        {monitor.label}
-                                                    </span>
+                                                    <div className="flex flex-col items-center gap-1">
+                                                        <span className={`px-2 py-0.5 rounded-full border text-[8px] uppercase font-black tracking-widest ${news.color}`}>
+                                                            {news.label}
+                                                        </span>
+                                                        <span className={`text-[9px] uppercase font-black tracking-widest ${monitor.color}`}>
+                                                            {monitor.label}
+                                                        </span>
+                                                    </div>
                                                 </td>
-                                                <td className="px-4 py-3">
-                                                    <div className="w-[180px]">
+                                                <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                                                    <div className="w-[220px]">
                                                         <InpatientReason admission={adm} onSaved={() => fetchAdmissions()} />
                                                     </div>
                                                 </td>
@@ -368,10 +490,11 @@ export default function DoctorInpatientsPage() {
                                                         <span className="text-[9px] font-bold text-gray-500 italic">{calculateStayDuration(adm.createdAt)}</span>
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-3 whitespace-nowrap text-right">
+                                                <td className="px-4 py-3 whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
                                                     <div className="flex items-center justify-end">
                                                         <ActionButtons
                                                             adm={adm}
+                                                            onOpenRounding={() => setSelectedAdmissionForRounding(adm)}
                                                             onTransfer={() => setSelectedAdmissionForTransfer({ id: adm._id, name: adm.patient?.name })}
                                                             onCharge={() => setSelectedAdmissionForCharge(adm._id)}
                                                             onLedger={() => setSelectedAdmissionForLedger(adm._id)}
@@ -401,6 +524,7 @@ export default function DoctorInpatientsPage() {
                             <InpatientCard
                                 key={adm._id}
                                 adm={adm}
+                                onOpenRounding={() => setSelectedAdmissionForRounding(adm)}
                                 onTransfer={() => setSelectedAdmissionForTransfer({ id: adm._id, name: adm.patient?.name })}
                                 onCharge={() => setSelectedAdmissionForCharge(adm._id)}
                                 onLedger={() => setSelectedAdmissionForLedger(adm._id)}
@@ -419,6 +543,27 @@ export default function DoctorInpatientsPage() {
 
 
             {/* Modals */}
+            <InpatientRoundingModal
+                isOpen={!!selectedAdmissionForRounding}
+                onClose={() => setSelectedAdmissionForRounding(null)}
+                admission={selectedAdmissionForRounding}
+                onDischargeRequest={async (id) => {
+                    const res = await ipdService.requestDischarge(id);
+                    if (res) {
+                        toast.success("Discharge requested");
+                        fetchAdmissions();
+                    }
+                }}
+                onTransferRequest={(id) => {
+                    setSelectedAdmissionForRounding(null);
+                    const adm = admissions.find(a => (a._id || a.id) === id);
+                    setSelectedAdmissionForTransfer({ id, name: adm?.patient?.name || '' });
+                }}
+                onOpenPrescription={(adm) => {
+                    router.push(getPath(`/doctor/prescription/create?patientId=${adm.patient?._id || adm.patient?.id}&admissionId=${adm.admissionId}`));
+                }}
+                onRoundStatusChange={() => setRoundTick(prev => prev + 1)}
+            />
             <AddClinicalChargeModal
                 isOpen={!!selectedAdmissionForCharge}
                 onClose={() => setSelectedAdmissionForCharge(null)}
@@ -441,167 +586,320 @@ export default function DoctorInpatientsPage() {
     );
 }
 
-function ActionButtons({ adm, onTransfer, onCharge, onLedger, fetchAdmissions, variant = 'full' }: any) {
+function ActionButtons({ adm, onOpenRounding, onTransfer, onCharge, onLedger, fetchAdmissions, variant = 'full' }: any) {
     const isCompact = variant === 'compact';
     const { getPath } = useTenantLink();
     const router = useRouter();
+    const [menuOpen, setMenuOpen] = useState(false);
 
-    if (adm.dischargeRequested) {
+    if (isCompact) {
         return (
-            <div className={`flex items-center gap-1.5 bg-emerald-100/50 dark:bg-emerald-900/20 px-3 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800/50 shadow-sm animate-pulse ${!isCompact && 'w-full justify-center'}`}>
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">Discharge Pending</span>
+            <div className="flex items-center justify-end gap-1.5 whitespace-nowrap relative">
+                {/* Primary: Round Chart */}
                 <button
-                    onClick={async (e) => {
-                        e.stopPropagation();
-                        if (confirm("Revoke discharge?")) {
-                            await ipdService.cancelDischargeRequest(adm._id);
-                            fetchAdmissions();
-                        }
-                    }}
-                    className="p-1 rounded-full hover:bg-rose-100 text-rose-500 transition-colors"
+                    onClick={(e) => { e.stopPropagation(); if (onOpenRounding) onOpenRounding(); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] uppercase tracking-wider shadow-sm transition-all active:scale-95 shrink-0"
+                    title="Open Daily SOAP & Rounding Chart"
                 >
-                    <X size={12} />
+                    <Stethoscope size={13} strokeWidth={2.5} />
+                    <span>Round</span>
                 </button>
+
+                {/* Pending Status Badge (inline, replaces menu items) */}
+                {adm.dischargeRequested && (
+                    <div className="flex items-center gap-1 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 px-2 py-1 rounded-lg font-black text-[9px] uppercase tracking-wider shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>DC Pending</span>
+                        <button
+                            onClick={async (e) => {
+                                e.stopPropagation();
+                                if (confirm("Revoke discharge request?")) {
+                                    await ipdService.cancelDischargeRequest(adm._id);
+                                    fetchAdmissions();
+                                }
+                            }}
+                            className="p-0.5 rounded hover:bg-rose-600 hover:text-white transition-colors"
+                            title="Revoke"
+                        >
+                            <X size={11} strokeWidth={3} />
+                        </button>
+                    </div>
+                )}
+                {adm.transferRequested && (
+                    <div className="flex items-center gap-1 bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 px-2 py-1 rounded-lg font-black text-[9px] uppercase tracking-wider shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                        <span>Transfer Pending</span>
+                        <button
+                            onClick={async (e) => {
+                                e.stopPropagation();
+                                if (confirm("Revoke transfer request?")) {
+                                    await ipdService.cancelTransferRequest(adm._id);
+                                    fetchAdmissions();
+                                }
+                            }}
+                            className="p-0.5 rounded hover:bg-rose-600 hover:text-white transition-colors"
+                            title="Revoke"
+                        >
+                            <X size={11} strokeWidth={3} />
+                        </button>
+                    </div>
+                )}
+
+                {/* ⋮ More Actions Dropdown */}
+                <div className="relative">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
+                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all border border-gray-200 dark:border-gray-700"
+                        title="More Actions"
+                    >
+                        <ClipboardList size={14} strokeWidth={2.5} />
+                    </button>
+                    {menuOpen && (
+                        <>
+                            <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }} />
+                            <div className="absolute right-0 top-full mt-1 z-50 w-48 bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl py-1 text-xs">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setMenuOpen(false); router.push(getPath(`/doctor/prescription/create?patientId=${adm.patient?._id || adm.patient?.id}&admissionId=${adm.admissionId}`)); }}
+                                    className="w-full flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-gray-700 dark:text-gray-200 font-bold transition-colors"
+                                >
+                                    <Pill size={14} className="text-emerald-600" strokeWidth={2} />
+                                    <span>Write Orders / Rx</span>
+                                </button>
+                                <div className="h-px bg-gray-100 dark:bg-gray-800 mx-2" />
+                                {!adm.dischargeRequested && (
+                                    <button
+                                        onClick={async (e) => {
+                                            e.stopPropagation(); setMenuOpen(false);
+                                            const res = await ipdService.requestDischarge(adm._id);
+                                            if (res) { toast.success("Discharge requested"); fetchAdmissions(); }
+                                        }}
+                                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-gray-700 dark:text-gray-200 font-bold transition-colors"
+                                    >
+                                        <LogOut size={14} className="text-rose-500" strokeWidth={2} />
+                                        <span>Request Discharge</span>
+                                    </button>
+                                )}
+                                {!adm.transferRequested && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onTransfer(); }}
+                                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-gray-700 dark:text-gray-200 font-bold transition-colors"
+                                    >
+                                        <ArrowRightLeft size={14} className="text-amber-500" strokeWidth={2} />
+                                        <span>Request Transfer</span>
+                                    </button>
+                                )}
+                                <div className="h-px bg-gray-100 dark:bg-gray-800 mx-2" />
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onCharge(); }}
+                                    className="w-full flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-sky-50 dark:hover:bg-sky-950/30 text-gray-700 dark:text-gray-200 font-bold transition-colors"
+                                >
+                                    <Receipt size={14} className="text-sky-600" strokeWidth={2} />
+                                    <span>Add Charge</span>
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onLedger(); }}
+                                    className="w-full flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-violet-50 dark:hover:bg-violet-950/30 text-gray-700 dark:text-gray-200 font-bold transition-colors"
+                                >
+                                    <History size={14} className="text-violet-600" strokeWidth={2} />
+                                    <span>View Ledger</span>
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
         );
     }
-    if (adm.transferRequested) {
-        return (
-            <div className={`flex items-center gap-1.5 bg-amber-100/50 dark:bg-amber-900/20 px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/50 shadow-sm animate-pulse ${!isCompact && 'w-full justify-center'}`}>
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                <span className="text-[9px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">Transfer Pending</span>
-                <button
-                    onClick={async (e) => {
-                        e.stopPropagation();
-                        if (confirm("Revoke transfer?")) {
-                            await ipdService.cancelTransferRequest(adm._id);
-                            fetchAdmissions();
-                        }
-                    }}
-                    className="p-1 rounded-full hover:bg-rose-100 text-rose-500 transition-colors"
-                >
-                    <X size={12} />
-                </button>
-            </div>
-        );
-    }
 
-    const btnClass = "flex items-center justify-center gap-2 px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-wider transition-all active:scale-95 shadow-sm border border-transparent";
+    // Full Card View Variant
+    const btnClass = "flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-extrabold text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-xs border";
 
     return (
-        <div className={isCompact ? "flex items-center gap-2" : "grid grid-cols-2 gap-2 w-full"}>
+        <div className="grid grid-cols-2 gap-2 w-full">
+            <button
+                onClick={(e) => { e.stopPropagation(); if (onOpenRounding) onOpenRounding(); }}
+                className={`${btnClass} bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 shadow-sm col-span-2`}
+                title="Open Daily SOAP Progress Notes & Rounding Chart"
+            >
+                <Stethoscope size={15} strokeWidth={2.5} />
+                <span>Open Daily Rounding Chart</span>
+            </button>
+
             <button
                 onClick={(e) => { e.stopPropagation(); router.push(getPath(`/doctor/prescription/create?patientId=${adm.patient?._id || adm.patient?.id}&admissionId=${adm.admissionId}`)); }}
-                className={`${btnClass} bg-pink-50 text-pink-700 hover:bg-pink-100 hover:border-pink-200 dark:bg-pink-900/10 dark:text-pink-400 dark:hover:bg-pink-900/20`}
-                title="Add Prescription"
+                className={`${btnClass} bg-teal-700 hover:bg-teal-800 text-white border-teal-800 shadow-xs col-span-2`}
+                title="CPOE: Orders & Prescriptions"
             >
-                <Pill size={13} strokeWidth={3} />
-                {!isCompact && <span>Prescribe</span>}
+                <Pill size={14} strokeWidth={2.5} />
+                <span>Write Prescriptions & Orders</span>
             </button>
 
-            <button
-                onClick={(e) => { e.stopPropagation(); onTransfer(); }}
-                className={`${btnClass} bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-200 dark:bg-amber-900/10 dark:text-amber-400 dark:hover:bg-amber-900/20`}
-                title="Transfer Patient"
-            >
-                <ArrowRightLeft size={13} strokeWidth={3} />
-                {!isCompact && <span>Transfer</span>}
-            </button>
+            {adm.dischargeRequested ? (
+                <div className="flex items-center justify-between bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 px-3 py-2 rounded-xl font-black text-[10px] uppercase tracking-wider">
+                    <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping" />
+                        <span>Discharge Pending</span>
+                    </div>
+                    <button
+                        onClick={async (e) => {
+                            e.stopPropagation();
+                            if (confirm("Revoke discharge request?")) {
+                                await ipdService.cancelDischargeRequest(adm._id);
+                                fetchAdmissions();
+                            }
+                        }}
+                        className="p-1 rounded bg-emerald-200 hover:bg-rose-600 hover:text-white text-emerald-800 transition-colors"
+                        title="Revoke Discharge Request"
+                    >
+                        <X size={12} strokeWidth={3} />
+                    </button>
+                </div>
+            ) : (
+                <button
+                    onClick={async (e) => {
+                        e.stopPropagation();
+                        const res = await ipdService.requestDischarge(adm._id);
+                        if (res) {
+                            toast.success("Discharge requested");
+                            fetchAdmissions();
+                        }
+                    }}
+                    className={`${btnClass} bg-slate-100 text-slate-800 border-slate-300 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700`}
+                    title="Initiate Clinical Discharge Summary"
+                >
+                    <LogOut size={13} strokeWidth={2.5} />
+                    <span>Discharge</span>
+                </button>
+            )}
 
-            <button
-                onClick={async (e) => {
-                    e.stopPropagation();
-                    const res = await ipdService.requestDischarge(adm._id);
-                    if (res) {
-                        toast.success("Discharge requested");
-                        fetchAdmissions();
-                    }
-                }}
-                className={`${btnClass} bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-200 dark:bg-emerald-900/10 dark:text-emerald-400 dark:hover:bg-emerald-900/20`}
-                title="Request Discharge"
-            >
-                <LogOut size={13} strokeWidth={3} />
-                {!isCompact && <span>Discharge</span>}
-            </button>
+            {adm.transferRequested ? (
+                <div className="flex items-center justify-between bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 px-3 py-2 rounded-xl font-black text-[10px] uppercase tracking-wider">
+                    <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-amber-600 animate-ping" />
+                        <span>Transfer Pending</span>
+                    </div>
+                    <button
+                        onClick={async (e) => {
+                            e.stopPropagation();
+                            if (confirm("Revoke transfer request?")) {
+                                await ipdService.cancelTransferRequest(adm._id);
+                                fetchAdmissions();
+                            }
+                        }}
+                        className="p-1 rounded bg-amber-200 hover:bg-rose-600 hover:text-white text-amber-800 transition-colors"
+                        title="Revoke Transfer Request"
+                    >
+                        <X size={12} strokeWidth={3} />
+                    </button>
+                </div>
+            ) : (
+                <button
+                    onClick={(e) => { e.stopPropagation(); onTransfer(); }}
+                    className={`${btnClass} bg-amber-50 text-amber-800 border-amber-300/80 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800`}
+                    title="Initiate Floor Step-down / Transfer"
+                >
+                    <ArrowRightLeft size={13} strokeWidth={2.5} />
+                    <span>Transfer</span>
+                </button>
+            )}
 
             <button
                 onClick={(e) => { e.stopPropagation(); onCharge(); }}
-                className={`${btnClass} bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-200 dark:bg-sky-900/10 dark:text-sky-400 dark:hover:bg-sky-900/20`}
-                title="Add Charge"
+                className={`${btnClass} bg-sky-50 text-sky-800 border-sky-300/80 hover:bg-sky-100 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800`}
+                title="Add Bedside Procedure / Charge"
             >
-                <Receipt size={13} strokeWidth={3} />
-                {!isCompact && <span>Charge</span>}
+                <Receipt size={13} strokeWidth={2.5} />
+                <span>Charge</span>
             </button>
 
             <button
                 onClick={(e) => { e.stopPropagation(); onLedger(); }}
-                className={`${btnClass} bg-violet-50 text-violet-700 hover:bg-violet-100 hover:border-violet-200 dark:bg-violet-900/10 dark:text-violet-400 dark:hover:bg-violet-900/20`}
-                title="View Ledger"
+                className={`${btnClass} bg-violet-50 text-violet-800 border-violet-300/80 hover:bg-violet-100 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800`}
+                title="View Inpatient Financial & Clinical Ledger"
             >
-                <History size={13} strokeWidth={3} />
-                {!isCompact && <span>Ledger</span>}
+                <History size={13} strokeWidth={2.5} />
+                <span>Ledger</span>
             </button>
         </div>
     );
 }
 
-function InpatientCard({ adm, onTransfer, onCharge, onLedger, fetchAdmissions, getMonitoringStatus }: any) {
+function InpatientCard({ adm, onOpenRounding, onTransfer, onCharge, onLedger, fetchAdmissions, getMonitoringStatus }: any) {
     const { getPath } = useTenantLink();
     const isCritical = adm.vitals?.status === 'Critical' || (adm.vitals?.spO2 && Number(adm.vitals.spO2) < 90);
     const monitor = getMonitoringStatus(adm.vitals?.nextVitalsDue);
+    const news = calculateNEWS(adm.vitals);
 
     return (
-        <div className="bg-white dark:bg-[#111] rounded-[1.2rem] border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:shadow-2xl hover:scale-[1.01] transition-all group overflow-hidden relative">
-            {/* Status Indicator Badge */}
-            <div className={`absolute top-0 right-0 px-4 py-1 rounded-bl-xl text-[9px] font-black uppercase tracking-[0.2em] shadow-sm ${isCritical ? 'bg-rose-600 text-white animate-pulse' : 'bg-emerald-500 text-white'}`}>
-                {adm.vitals?.condition || 'Stable'}
+        <div className="bg-white dark:bg-[#111] rounded-2xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:shadow-xl transition-all group flex flex-col justify-between relative overflow-hidden">
+            {/* Acuity Bar Indicator */}
+            <div className={`absolute top-0 left-0 right-0 h-1 ${isCritical ? 'bg-rose-600 animate-pulse' : news.score >= 3 ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+
+            <div>
+                <div className="flex items-start justify-between gap-2 mb-3 pt-1">
+                    <Link href={getPath(`/doctor/patients/${adm.patient?._id || adm.patient?.id}`)} prefetch={true} className="flex items-center gap-3 shrink-0 group/link">
+                        <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 font-black text-xl border border-slate-200 dark:border-slate-700 group-hover/link:scale-105 transition-transform">
+                            {adm.patient?.name?.[0] || 'P'}
+                        </div>
+                        <div>
+                            <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight group-hover/link:text-emerald-600 transition-colors">{adm.patient?.name}</h3>
+                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">MRN: {adm.patient?.mrn || 'N/A'}</p>
+                            <div className="flex items-center gap-1.5 mt-1">
+                                <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-200/50 uppercase">
+                                    {adm.bed?.bedId || 'BED'}
+                                </span>
+                                <span className="text-[8px] font-bold text-gray-400 uppercase">{adm.bed?.type || 'WARD'}</span>
+                            </div>
+                        </div>
+                    </Link>
+                    <div className="flex flex-col items-end gap-1">
+                        <span className={`px-2 py-0.5 rounded-full border text-[8px] uppercase font-black tracking-widest ${news.color}`}>
+                            {news.label}
+                        </span>
+                        <span className="text-[8px] font-bold text-gray-400 uppercase">Stay: {calculateStayDuration(adm.createdAt)}</span>
+                    </div>
+                </div>
+
+                {/* Patient Clinical Safety Pills */}
+                <div className="flex items-center gap-1 mb-3 flex-wrap">
+                    {adm.patient?.allergies?.length > 0 ? (
+                        <span className="px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-[7px] font-black uppercase tracking-tight">
+                            ⚠️ Allergy: {adm.patient.allergies[0]}
+                        </span>
+                    ) : (
+                        <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 text-[7px] font-bold uppercase tracking-tight">
+                            🛡️ No Known Allergies
+                        </span>
+                    )}
+                    <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200 dark:border-blue-800 text-[7px] font-black uppercase tracking-tight">
+                        📋 Code: Full
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400 border border-purple-200 dark:border-purple-800 text-[7px] font-black uppercase tracking-tight">
+                        🍽️ Diet: Standard
+                    </span>
+                </div>
+
+                <div className="mb-3">
+                    <InpatientReason admission={adm} onSaved={() => fetchAdmissions()} />
+                </div>
             </div>
 
-            <div className="flex items-start gap-4 mb-4">
-                <Link href={getPath(`/doctor/patients/${adm.patient?._id || adm.patient?.id}`)} prefetch={true} className="relative block shrink-0">
-                    <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 flex items-center justify-center text-emerald-700 dark:text-emerald-400 font-extrabold text-2xl border border-emerald-100/50 dark:border-emerald-800/50">
-                        {adm.patient?.name?.[0]}
-                    </div>
-                </Link>
-                <div className="flex-1 min-w-0 pt-1">
-                    <h3 className="text-[13px] font-black text-gray-900 dark:text-white uppercase tracking-tight">{adm.patient?.name}</h3>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">MRN: {adm.patient?.mrn || 'N/A'}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded uppercase">{adm.bed?.bedId}</span>
-                        <span className="text-[8px] font-bold text-gray-400 uppercase">{adm.bed?.type}</span>
-                    </div>
+            <div className="pt-3 border-t border-gray-100 dark:border-gray-800/80 mt-auto">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Clinical Surveillance</span>
+                    <span className={`text-[9px] uppercase font-black tracking-widest ${monitor.color}`}>
+                        {monitor.label}
+                    </span>
                 </div>
-            </div>
-
-            <InpatientReason admission={adm} onSaved={() => fetchAdmissions()} />
-
-            <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50/50 dark:bg-gray-900/30 rounded-2xl mb-5">
-                <div className="flex flex-col">
-                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Monitoring</span>
-                    <span className={`text-[10px] font-black uppercase tracking-tight ${monitor.color}`}>{monitor.label}</span>
-                </div>
-                <div className="flex flex-col text-right border-l border-gray-100 dark:border-gray-800 pl-3">
-                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Stay Duration</span>
-                    <span className="text-[10px] font-black text-gray-700 dark:text-gray-300 uppercase">{calculateStayDuration(adm.createdAt)}</span>
-                </div>
-            </div>
-
-            <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                    <div className="flex flex-col">
-                        <span className="text-[8px] font-black text-gray-400 uppercase">Admission ID</span>
-                        <span className="text-[9px] font-bold text-gray-600 dark:text-gray-400">#{adm.admissionId}</span>
-                    </div>
-                    <ActionButtons
-                        adm={adm}
-                        onTransfer={onTransfer}
-                        onCharge={onCharge}
-                        onLedger={onLedger}
-                        fetchAdmissions={fetchAdmissions}
-                        variant="full"
-                    />
-                </div>
+                <ActionButtons
+                    adm={adm}
+                    onOpenRounding={onOpenRounding}
+                    onTransfer={onTransfer}
+                    onCharge={onCharge}
+                    onLedger={onLedger}
+                    fetchAdmissions={fetchAdmissions}
+                    variant="full"
+                />
             </div>
         </div>
     );
@@ -638,7 +936,7 @@ function SummaryCard({ label, value, sub, color, icon }: any) {
 
 function InpatientReason({ admission, onSaved }: { admission: any, onSaved: () => void }) {
     const [isEditing, setIsEditing] = useState(false);
-    const [reason, setReason] = useState(admission?.reason || '');
+    const [reason, setReason] = useState(admission?.reasonForAdmission || admission?.reason || '');
     const [saving, setSaving] = useState(false);
 
     const handleSave = async (e: React.MouseEvent) => {
@@ -647,64 +945,69 @@ function InpatientReason({ admission, onSaved }: { admission: any, onSaved: () =
         setSaving(true);
         try {
             await ipdService.updateAdmissionDetails(admission._id, { reason });
-            toast.success("Reason updated");
+            toast.success("Principal diagnosis updated");
             setIsEditing(false);
             onSaved();
         } catch (error) {
-            toast.error("Failed to update");
+            toast.error("Failed to update diagnosis");
             console.error(error);
         } finally {
             setSaving(false);
         }
     };
 
+    const displayText = admission?.reasonForAdmission || admission?.reason || 'No Principal Diagnosis Recorded';
+
     return (
-        <div className="bg-amber-50/50 dark:bg-amber-900/10 rounded-lg p-1.5 border border-amber-100 dark:border-amber-900/30">
-            <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-500">
-                    <ClipboardList size={10} />
-                    <span className="text-[8px] font-black uppercase tracking-widest">Reason for Admission</span>
+        <div className="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-2.5 border border-slate-200/80 dark:border-slate-800 group/diag transition-colors">
+            <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                    <Stethoscope size={12} className="text-emerald-600" />
+                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Principal Diagnosis / Problem</span>
                 </div>
                 {!isEditing && (
                     <button
                         onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
-                        className="p-1 text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded-md transition-colors"
+                        className="opacity-60 group-hover/diag:opacity-100 p-1 text-slate-600 dark:text-slate-400 hover:bg-slate-200/80 dark:hover:bg-slate-800 rounded transition-all"
+                        title="Edit Diagnosis"
                     >
-                        <Pencil size={10} />
+                        <Pencil size={11} />
                     </button>
                 )}
             </div>
 
             {isEditing ? (
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2 mt-1.5">
                     <textarea
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
                         autoFocus
                         onClick={(e) => e.stopPropagation()}
-                        className="w-full bg-white dark:bg-[#111] border border-amber-200 dark:border-amber-800 rounded-lg p-2 text-[10px] font-bold outline-none focus:border-amber-400 min-h-[10px] resize-none"
-                        placeholder="Enter clinical reason..."
+                        className="w-full bg-white dark:bg-[#111] border border-emerald-500/80 rounded-lg p-2 text-xs font-bold text-gray-900 dark:text-white outline-none min-h-[40px] resize-none shadow-inner"
+                        placeholder="Enter primary ICD-10 diagnosis or clinical reason..."
                     />
                     <div className="flex flex-col gap-1 shrink-0">
                         <button
                             onClick={handleSave}
                             disabled={saving}
-                            className="p-1.5 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded-md transition-colors disabled:opacity-50"
+                            className="p-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-md transition-colors disabled:opacity-50"
+                            title="Save Diagnosis"
                         >
                             {saving ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />}
                         </button>
                         <button
                             onClick={(e) => { e.stopPropagation(); setIsEditing(false); setReason(admission?.reasonForAdmission || admission?.reason || ''); }}
                             disabled={saving}
-                            className="p-1.5 bg-rose-100 text-rose-700 hover:bg-rose-200 rounded-md transition-colors disabled:opacity-50"
+                            className="p-1.5 bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/40 dark:text-rose-400 rounded-md transition-colors disabled:opacity-50"
+                            title="Cancel"
                         >
                             <X size={12} />
                         </button>
                     </div>
                 </div>
             ) : (
-                <p className="text-[10px] font-bold text-gray-700 dark:text-gray-300 leading-relaxed break-words overflow-hidden" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }} title={admission?.reason}>
-                    {admission?.reason || 'No specific reason provided.'}
+                <p className="text-xs font-extrabold text-gray-800 dark:text-gray-200 leading-snug break-words" title={displayText}>
+                    {displayText}
                 </p>
             )}
         </div>

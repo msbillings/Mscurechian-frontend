@@ -166,6 +166,46 @@ export default function AddBillsPage() {
             setActiveAdmission(active || null);
             if (active) {
                 toast.success(`Active IPD Admission found: ${active.admissionId}`, { icon: '🏥' });
+                try {
+                    const prescs = await ipdService.getPrescriptions(active._id || active.id);
+                    const autoItems: BillItem[] = [];
+                    if (Array.isArray(prescs)) {
+                        prescs.forEach((p: any) => {
+                            if (Array.isArray(p.suggestedTests)) {
+                                p.suggestedTests.forEach((testName: string) => {
+                                    if (testName && typeof testName === 'string') {
+                                        autoItems.push({
+                                            id: `auto-test-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                                            type: 'lab',
+                                            name: testName.trim(),
+                                            category: 'Doctor Prescribed Test',
+                                            amount: 500,
+                                        });
+                                    }
+                                });
+                            }
+                            if (Array.isArray(p.medicines)) {
+                                p.medicines.forEach((med: any) => {
+                                    if (med && med.name) {
+                                        autoItems.push({
+                                            id: `auto-med-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                                            type: 'ipd_charge',
+                                            name: `${med.name} (${med.dosage || ''})`.trim(),
+                                            category: 'Consumables',
+                                            amount: 150,
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+                    if (autoItems.length > 0) {
+                        setBillItems(prev => [...prev, ...autoItems]);
+                        toast.success(`Auto-populated ${autoItems.length} doctor prescribed tests & charges!`, { icon: '✨' });
+                    }
+                } catch (err) {
+                    console.error('Error fetching prescriptions for auto-fill:', err);
+                }
             }
         } catch (e) {
             setActiveAdmission(null);
@@ -485,6 +525,76 @@ export default function AddBillsPage() {
         'Equipment Charges', 'Doctor Visit', 'Physiotherapy', 'Emergency Services',
         'Ambulance', 'Blood Bank', 'Other'
     ];
+
+    const adminPresets: Record<string, { desc: string; amount: number }[]> = {
+        'Room Charges': [
+            { desc: 'General Ward Room Rent (1 Day)', amount: 1500 },
+            { desc: 'Semi-Private Room Rent (1 Day)', amount: 2500 },
+            { desc: 'Private Deluxe Room Rent (1 Day)', amount: 4500 },
+            { desc: 'ICU / ITU Bed Rent (1 Day)', amount: 8000 },
+            { desc: 'NICU Incubator Bed Rent (1 Day)', amount: 6000 },
+        ],
+        'Nursing Charges': [
+            { desc: 'General Ward Nursing Care (Per Day)', amount: 500 },
+            { desc: 'ICU Intensive Nursing Care (Per Day)', amount: 1500 },
+            { desc: 'Special 1-on-1 Nurse Assistance (12 Hrs)', amount: 2000 },
+            { desc: 'Routine Injection & Dressing Fee', amount: 300 },
+        ],
+        'Consumables': [
+            { desc: 'IV Fluids & Cannulation Kit', amount: 450 },
+            { desc: 'Surgical Gloves & PPE Kit', amount: 350 },
+            { desc: 'Nebulization Mask & Tubing Kit', amount: 250 },
+            { desc: 'Catheterization Kit Complete', amount: 650 },
+            { desc: 'Daily Hygiene & Bedding Kit', amount: 300 },
+        ],
+        'Procedure Charges': [
+            { desc: 'Minor Wound Suturing / Dressing', amount: 1200 },
+            { desc: 'Major Surgical Dressing Change', amount: 2500 },
+            { desc: 'Central Line / CVC Insertion', amount: 4500 },
+            { desc: 'Endo / Tracheostomy Care', amount: 3000 },
+            { desc: 'Plaster / Cast Application', amount: 1800 },
+        ],
+        'Equipment Charges': [
+            { desc: 'Oxygen Cylinder Support (Per Day)', amount: 1200 },
+            { desc: 'Multi-Para Vital Monitor (Per Day)', amount: 1000 },
+            { desc: 'Ventilator Life Support (Per Day)', amount: 5000 },
+            { desc: 'Syringe / Infusion Pump Usage', amount: 800 },
+            { desc: 'BiPAP / CPAP Machine Usage', amount: 2500 },
+        ],
+        'Doctor Visit': [
+            { desc: 'Resident Doctor Daily Ward Round', amount: 600 },
+            { desc: 'Senior Consultant Daily Round', amount: 1500 },
+            { desc: 'Specialist / Surgeon Emergency Consultation', amount: 2500 },
+            { desc: 'Night / On-Call Doctor Emergency Visit', amount: 1800 },
+        ],
+        'Physiotherapy': [
+            { desc: 'Chest Physiotherapy Session', amount: 700 },
+            { desc: 'Limb & Mobility Rehab Session', amount: 900 },
+            { desc: 'Post-Op Neuro / Gait Rehab', amount: 1200 },
+        ],
+        'Emergency Services': [
+            { desc: 'Emergency ER Triage & Resuscitation', amount: 3500 },
+            { desc: 'Emergency Defibrillation / CPR', amount: 5000 },
+            { desc: 'Emergency Stomach Wash / Gastric Lavage', amount: 2500 },
+        ],
+        'Ambulance': [
+            { desc: 'Basic Life Support (BLS) Ambulance Transit', amount: 2000 },
+            { desc: 'Advanced Life Support (ALS / ICU) Ambulance', amount: 4500 },
+            { desc: 'Inter-Hospital Patient Transfer', amount: 3500 },
+        ],
+        'Blood Bank': [
+            { desc: 'Packed Red Blood Cells (PRBC) - 1 Unit', amount: 3500 },
+            { desc: 'Fresh Frozen Plasma (FFP) - 1 Unit', amount: 1800 },
+            { desc: 'Single Donor Platelets (SDP) - 1 Unit', amount: 11000 },
+            { desc: 'Random Donor Platelets (RDP) - 1 Unit', amount: 2000 },
+        ],
+        'Other': [
+            { desc: 'Hospital Admission & Registration Fee', amount: 500 },
+            { desc: 'Inpatient Diet & Nutrition (Per Day)', amount: 600 },
+            { desc: 'Bio-Medical Waste Disposal Charge', amount: 200 },
+            { desc: 'Medical Certificate / Documentation Fee', amount: 300 },
+        ]
+    };
 
     return (
         <div className="add-bills-page">
@@ -1206,10 +1316,18 @@ export default function AddBillsPage() {
                                             </div>
                                         )}
                                         {activeAdmission && (
-                                            <div style={{ marginTop: 6 }}>
+                                            <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                                                 <span className="ipd-badge">
-                                                    <Building2 size={10} /> IPD Admitted · {activeAdmission.admissionId}
+                                                    <Building2 size={12} /> IPD Admitted · {activeAdmission.admissionId || activeAdmission.id}
                                                 </span>
+                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: '#e0e7ff', color: '#3730a3', borderRadius: 8, fontSize: '0.68rem', fontWeight: 700 }}>
+                                                    Ward: {activeAdmission.wardName || activeAdmission.department || 'General Ward'} · Bed: {activeAdmission.bedNumber || activeAdmission.bed?.bedNumber || activeAdmission.bed?.number || 'Assigned'}
+                                                </span>
+                                                {(activeAdmission.doctorName || activeAdmission.attendingDoctor?.name) && (
+                                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: '#d1fae5', color: '#065f46', borderRadius: 8, fontSize: '0.68rem', fontWeight: 700 }}>
+                                                        <Stethoscope size={12} /> Dr. {activeAdmission.doctorName || activeAdmission.attendingDoctor?.name}
+                                                    </span>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -1402,6 +1520,41 @@ export default function AddBillsPage() {
                                                     <option key={cat} value={cat}>{cat}</option>
                                                 ))}
                                             </select>
+                                        </div>
+                                        {/* Admin Standard Preset Charges */}
+                                        <div style={{ marginBottom: 16 }}>
+                                            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#0284c7', fontSize: '0.72rem' }}>
+                                                <Sparkles size={14} /> Admin Standard Rates ({newChargeCategory})
+                                            </label>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                                                {(adminPresets[newChargeCategory] || []).map((preset, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setNewChargeDescription(preset.desc);
+                                                            setNewChargeAmount(preset.amount.toString());
+                                                        }}
+                                                        style={{
+                                                            padding: '6px 12px',
+                                                            background: newChargeDescription === preset.desc ? '#0284c7' : '#f0f9ff',
+                                                            color: newChargeDescription === preset.desc ? 'white' : '#0369a1',
+                                                            border: '1px solid #bae6fd',
+                                                            borderRadius: 20,
+                                                            fontSize: '0.72rem',
+                                                            fontWeight: 700,
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: 6
+                                                        }}
+                                                    >
+                                                        <span>{preset.desc}</span>
+                                                        <span style={{ background: newChargeDescription === preset.desc ? 'rgba(255,255,255,0.2)' : '#e0f2fe', padding: '2px 6px', borderRadius: 10, fontSize: '0.65rem' }}>₹{preset.amount}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                         <div className="form-group">
                                             <label className="form-label">Description</label>

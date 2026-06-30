@@ -763,7 +763,10 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
             <div className="pt-4 border-t border-gray-100">
               <button
                 onClick={() => {
-                  if (appointmentId) {
+                  const returnUrl = searchParams.get('returnUrl');
+                  if (returnUrl) {
+                    router.push(returnUrl);
+                  } else if (appointmentId) {
                     router.push(getPath(`/doctor/appointment/${appointmentId}`));
                   } else if (patientId) {
                     router.push(getPath(`/doctor/patients/${patientId}`));

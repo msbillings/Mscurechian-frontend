@@ -22,6 +22,7 @@ import Link from "next/link";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { useTransactions } from "@/lib/integrations/hooks";
+import { useDebounce } from "@/hooks/useDebounce";
 import { renderToStaticMarkup } from 'react-dom/server';
 import MainHeader from '@/components/printers/MainHeader';
 import MainFooter from '@/components/printers/MainFooter';
@@ -29,6 +30,7 @@ import MainFooter from '@/components/printers/MainFooter';
 export default function TransactionsPage() {
     const [exporting, setExporting] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
+    const debouncedSearch = useDebounce(searchTerm, 300);
     const [page, setPage] = useState(1);
     const [showExportMenu, setShowExportMenu] = useState(false);
     const [typeFilter, setTypeFilter] = useState("all"); // Default to 'all' as requested
@@ -72,7 +74,9 @@ export default function TransactionsPage() {
         false,
         startDate,
         endDate,
-        getBackendTypeFilter(typeFilter)
+        getBackendTypeFilter(typeFilter),
+        false,
+        debouncedSearch
     );
 
     // 🔄 LIVE UPDATE: Auto-refresh every 30 seconds
@@ -197,10 +201,8 @@ export default function TransactionsPage() {
     // Realistically with server pagination, search should also be server-side
     // Filter transactions based on search term (frontend filtering for better UX)
     const filteredTransactions = transactions.filter((tx: any) => {
-        const name = tx.patient?.name || tx.patientName || "Unknown";
-        const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
         const isCancelled = tx.status?.toLowerCase() === 'cancelled' || tx.referenceId?.status?.toLowerCase() === 'cancelled';
-        return matchesSearch && !isCancelled;
+        return !isCancelled;
     });
 
     // Calculate stats based on filtered transactions

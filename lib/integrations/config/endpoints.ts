@@ -290,6 +290,7 @@ export const DOCTOR_ENDPOINTS = {
   ANNOUNCEMENTS: "/announcements/hospital",
   ANALYTICS: "/doctors/analytics",
   INCOME_STATS: "/doctors/income-stats",
+  STATUS: "/doctors/status",
   PATIENT_HISTORY: (id: string) => `/doctors/patient/${id}/history`,
 };
 

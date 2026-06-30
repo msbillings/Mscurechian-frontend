@@ -17,6 +17,8 @@ interface LabNotification {
     createdAt: string;
     isRead: boolean;
     type: 'new_order' | 'update';
+    priority?: string;
+    clinicalAnnotations?: string;
 }
 
 const LabNotificationPanel = () => {
@@ -42,7 +44,9 @@ const LabNotificationPanel = () => {
                         price: order.tests.reduce((acc, test) => acc + (test.price || 0), 0),
                         createdAt: order.createdAt || new Date().toISOString(),
                         isRead: false, // Show as unread on load so count appears
-                        type: 'new_order'
+                        type: 'new_order',
+                        priority: order.priority || 'routine',
+                        clinicalAnnotations: order.clinicalAnnotations || ''
                     }));
                     setNotifications(initialNotifs);
                 }
@@ -72,7 +76,9 @@ const LabNotificationPanel = () => {
                                 price: fullOrder.tests.reduce((acc, test) => acc + (test.price || 0), 0),
                                 createdAt: fullOrder.createdAt || new Date().toISOString(),
                                 isRead: false,
-                                type: 'new_order'
+                                type: 'new_order',
+                                priority: fullOrder.priority || data.priority || 'routine',
+                                clinicalAnnotations: fullOrder.clinicalAnnotations || data.clinicalAnnotations || ''
                             };
 
                             setNotifications(prev => {
@@ -88,7 +94,9 @@ const LabNotificationPanel = () => {
 
                             // Audio notification
                             try {
-                                const audio = new Audio('/assets/nurse.mp3');
+                                const isUrgent = ['urgent', 'stat', 'emergency'].includes((newNotif.priority || '').toLowerCase());
+                                const audioFile = isUrgent ? '/assets/emergency.mp3' : '/assets/nurse.mp3';
+                                const audio = new Audio(audioFile);
                                 audio.play().catch(e => console.warn('Audio play failed:', e));
                             } catch (e) {}
                         } catch (err) {
@@ -223,6 +231,20 @@ const LabNotificationPanel = () => {
                                                         <span className="truncate">Dr. {notif.doctorName}</span>
                                                     </div>
                                                 </div>
+
+                                                {notif.priority && notif.priority !== 'routine' && (
+                                                    <div className="mt-1.5 flex items-center gap-1.5">
+                                                        <span className="bg-red-500 text-white font-black text-[9px] px-2 py-0.5 rounded shadow-sm uppercase animate-pulse">
+                                                            🚨 {notif.priority}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {notif.clinicalAnnotations && (
+                                                    <div className="text-[10px] bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200 p-1.5 rounded mt-1.5 font-semibold border border-amber-200 dark:border-amber-800 line-clamp-2">
+                                                        📝 <span className="font-bold">Annotation:</span> {notif.clinicalAnnotations}
+                                                    </div>
+                                                )}
 
                                                 <div className="flex items-center gap-2 mt-3 text-[9px] font-bold text-gray-400 uppercase tracking-widest">
                                                     <Clock size={10} />

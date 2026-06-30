@@ -22,6 +22,7 @@ import Link from "next/link";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { useTransactions } from "@/lib/integrations/hooks";
+import { useDebounce } from "@/hooks/useDebounce";
 import { renderToStaticMarkup } from 'react-dom/server';
 import MainHeader from '@/components/printers/MainHeader';
 import MainFooter from '@/components/printers/MainFooter';
@@ -30,6 +31,7 @@ import EditTransactionModal from './EditTransactionModal';
 export default function TransactionsPage() {
     const [exporting, setExporting] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
+    const debouncedSearch = useDebounce(searchTerm, 300);
     const [page, setPage] = useState(1);
     const [showExportMenu, setShowExportMenu] = useState(false);
     const [typeFilter, setTypeFilter] = useState("all"); // Default to 'all' as requested
@@ -76,7 +78,8 @@ export default function TransactionsPage() {
         startDate,
         endDate,
         getBackendTypeFilter(typeFilter),
-        showEditedOnly
+        showEditedOnly,
+        debouncedSearch
     );
 
     // 🔄 LIVE UPDATE: Auto-refresh every 30 seconds
@@ -197,14 +200,9 @@ export default function TransactionsPage() {
         }
     };
 
-    // Re-fetch on search if needed or filter client-side for immediate feedback
-    // Realistically with server pagination, search should also be server-side
-    // Filter transactions based on search term (frontend filtering for better UX)
     const filteredTransactions = transactions.filter((tx: any) => {
-        const name = tx.patient?.name || tx.patientName || "Unknown";
-        const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
         const isCancelled = tx.status?.toLowerCase() === 'cancelled' || tx.referenceId?.status?.toLowerCase() === 'cancelled';
-        return matchesSearch && !isCancelled;
+        return !isCancelled;
     });
 
     // Calculate stats based on filtered transactions
@@ -429,8 +427,8 @@ export default function TransactionsPage() {
                 </div>
 
                 {/* SEARCH & FILTER BAR */}
-                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-t border-slate-100 pt-3 px-2">
-                    <div className="flex flex-col lg:grid lg:grid-cols-2 xl:flex xl:flex-row items-stretch xl:items-center gap-3 w-full">
+                <div className="flex flex-col lg:flex-row lg:flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-3 px-2">
+                    <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto flex-1">
 
                         {/* ROW 1: SEARCH & REFRESH (On Small Screens) */}
                         <div className="flex items-center gap-2 w-full xl:w-80">
@@ -532,7 +530,7 @@ export default function TransactionsPage() {
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between md:justify-end gap-4 w-full xl:w-auto">
+                    <div className="flex flex-wrap items-center justify-between md:justify-end gap-3 w-full lg:w-auto shrink-0">
                         <div className="flex flex-col border-l border-slate-100 pl-4 md:hidden">
                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Active Pool</span>
                             <span className="text-xs font-bold text-teal-600 uppercase tracking-tight">{filteredTransactions.length} ENTRIES</span>
@@ -587,17 +585,17 @@ export default function TransactionsPage() {
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[500px]">
                 <div className="overflow-x-auto">
                     {filteredTransactions.length > 0 ? (
-                        <table className="w-full min-w-[1000px] sm:min-w-0 text-left">
+                        <table className="w-full min-w-[800px] table-auto text-left">
                             <thead>
-                                <tr className="bg-slate-50 border-b border-slate-200 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest">
-                                    <th className="px-4 sm:px-6 py-4 sm:py-6 text-left">Reference Node</th>
-                                    <th className="px-6 py-6 text-center">Service Type</th>
-                                    <th className="px-6 py-6 text-left font-bold">Reason / Test</th>
-                                    <th className="px-6 py-6 text-left font-bold">Doctor / Condition</th>
-                                    <th className="px-6 py-6 text-center">Amount (INR)</th>
-                                    <th className="px-6 py-6 text-center">Status</th>
-                                    <th className="px-6 py-6 text-center">Mode</th>
-                                    <th className="px-6 py-6 text-center">Print</th>
+                                <tr className="bg-slate-50 border-b border-slate-200 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
+                                    <th className="px-3 sm:px-4 py-3 sm:py-4 text-left">Reference Node</th>
+                                    <th className="px-3 sm:px-4 py-3 sm:py-4 text-center">Service Type</th>
+                                    <th className="px-3 sm:px-4 py-3 sm:py-4 text-left font-bold">Reason / Test</th>
+                                    <th className="px-3 sm:px-4 py-3 sm:py-4 text-left font-bold">Doctor / Condition</th>
+                                    <th className="px-3 sm:px-4 py-3 sm:py-4 text-center">Amount (INR)</th>
+                                    <th className="px-3 sm:px-4 py-3 sm:py-4 text-center">Status</th>
+                                    <th className="px-3 sm:px-4 py-3 sm:py-4 text-center">Mode</th>
+                                    <th className="min-w-[100px] px-3 sm:px-4 py-3 sm:py-4 text-center">Print</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -689,7 +687,7 @@ export default function TransactionsPage() {
 
                                     return (
                                         <tr key={tx._id || index} className="group hover:bg-slate-50 transition-colors">
-                                            <td className="px-6 py-4">
+                                            <td className="px-3 sm:px-4 py-3 sm:py-4">
                                                 <div className="flex items-center gap-4">
                                                     <div className={`w-11 h-11 rounded-xl transition-all flex items-center justify-center font-bold text-lg shadow-sm border shrink-0 ${tx.patientMRN && tx.patientMRN !== 'Resolving...'
                                                         ? 'bg-slate-900 text-white'
@@ -712,7 +710,7 @@ export default function TransactionsPage() {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-3 sm:px-4 py-3 sm:py-4">
                                                 <div className={`inline-flex px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${(tx.registrationType === 'IPD' || type.includes('IPD'))
                                                     ? 'bg-rose-50 text-rose-600 border-rose-100'
                                                     : isLabTest
@@ -722,10 +720,10 @@ export default function TransactionsPage() {
                                                     {(tx.registrationType === 'IPD' || type.includes('IPD')) ? 'IPD' : isLabTest ? 'LAB' : 'OPD'}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-3 sm:px-4 py-3 sm:py-4">
                                                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{clinicalDetail}</p>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-3 sm:px-4 py-3 sm:py-4">
                                                 <div className="space-y-1">
                                                     {resolvedDoctorName ? (
                                                         <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest">
@@ -750,7 +748,7 @@ export default function TransactionsPage() {
                                                 </div>
                                             </td>
                                             {/* AMOUNT COLUMN - Always show for all types */}
-                                            <td className="px-6 py-4 text-center">
+                                            <td className="px-3 sm:px-4 py-3 sm:py-4 text-center">
                                                 {isDischargeTransaction ? (
                                                     <div className="flex flex-col items-center gap-1.5">
                                                         <p className="text-sm font-black text-slate-900">
@@ -791,7 +789,7 @@ export default function TransactionsPage() {
                                                 )}
                                             </td>
                                             {/* STATUS COLUMN */}
-                                            <td className="px-6 py-4 text-center">
+                                            <td className="px-3 sm:px-4 py-3 sm:py-4 text-center">
                                                 <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${status.toLowerCase() === 'paid' || status.toLowerCase() === 'completed'
                                                     ? 'bg-teal-50 text-teal-600 border border-teal-100'
                                                     : 'bg-rose-50 text-rose-600 border border-rose-100'
@@ -801,7 +799,7 @@ export default function TransactionsPage() {
                                                 </div>
                                             </td>
                                             {/* PAYMENT MODE COLUMN */}
-                                            <td className="px-6 py-4 text-center">
+                                            <td className="px-3 sm:px-4 py-3 sm:py-4 text-center">
                                                 <div className="flex flex-col items-center gap-1">
                                                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-slate-200 shadow-sm">
                                                         <CreditCard size={12} className="text-slate-400" />
@@ -815,7 +813,7 @@ export default function TransactionsPage() {
                                                 </div>
                                             </td>
                                             {/* ACTION COLUMN */}
-                                            <td className="px-4 py-4 text-center">
+                                            <td className="min-w-[100px] px-3 sm:px-4 py-3 sm:py-4 text-center">
                                                 <div className="flex items-center justify-center gap-2">
                                                     <button
                                                         onClick={() => setEditingTx(tx)}

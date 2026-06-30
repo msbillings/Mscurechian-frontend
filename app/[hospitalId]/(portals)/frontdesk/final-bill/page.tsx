@@ -387,13 +387,15 @@ export default function FinalBillPage() {
 
                 <div class="summary-section">
                     <div class="amount-words">
-                        Rupees In : ${numberToWords(latestReport.totals.grandTotal)}
+                        Rupees In : ${numberToWords(latestReport.totals.netAmount || latestReport.totals.grandTotal)}
                         <div class="reason">Reason : ${latestReport.notes || adm?.reason || '-'}</div>
                     </div>
                     <div class="totals-box">
                         <table class="totals-table">
-                            <tr class="grand-row"><td class="lbl">Grand Total :</td><td class="val">${fmt(latestReport.totals.grandTotal)}</td></tr>
-                            <tr><td class="lbl">Net Amt :</td><td class="val">${fmt(latestReport.totals.netAmount || latestReport.totals.grandTotal)}</td></tr>
+                            <tr class="grand-row"><td class="lbl">Total Charges :</td><td class="val">${fmt(latestReport.totals.grandTotal)}</td></tr>
+                            ${latestReport.totals.returnCredits ? `<tr><td class="lbl" style="color: #c00;">(-) Returns :</td><td class="val" style="color: #c00;">${fmt(latestReport.totals.returnCredits)}</td></tr>` : ''}
+                            ${latestReport.totals.discount ? `<tr><td class="lbl" style="color: #0f766e;">(-) Discount :</td><td class="val" style="color: #0f766e;">${fmt(latestReport.totals.discount)}</td></tr>` : ''}
+                            <tr><td class="lbl">Net Bill Amt :</td><td class="val">${fmt(latestReport.totals.netAmount || latestReport.totals.grandTotal)}</td></tr>
                             <tr><td class="lbl">Paid Amt :</td><td class="val">${fmt(latestReport.totals.totalPaid)}</td></tr>
                             <tr class="balance-row"><td class="lbl">Balance Amt :</td><td class="val">${fmt(latestReport.totals.balance)}</td></tr>
                         </table>
@@ -473,7 +475,7 @@ export default function FinalBillPage() {
     };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="max-w-full mx-auto space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Header */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white p-6 rounded-[2.5rem] border border-slate-200/60 shadow-sm shadow-indigo-500/5">
                 <div className="flex items-start gap-5">
@@ -572,12 +574,12 @@ export default function FinalBillPage() {
                                     <thead>
                                         <tr className="bg-slate-50 border-b border-slate-200 text-[10px] lg:text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
                                             <th className="w-16 px-4 py-3 sm:py-4 text-center">#</th>
-                                            <th className="px-4 sm:px-6 py-3 sm:py-4 text-left w-64 lg:w-80">MRN Number</th>
+                                            <th className="px-4 sm:px-6 py-3 sm:py-4 text-left w-44">MRN Number</th>
                                             <th className="px-4 sm:px-6 py-3 sm:py-4 text-left min-w-[200px]">Patient Name</th>
                                             <th className="px-4 sm:px-6 py-3 sm:py-4 text-center w-24">Age</th>
                                             <th className="px-4 sm:px-6 py-3 sm:py-4 text-center w-24">Gender</th>
                                             <th className="px-4 sm:px-6 py-3 sm:py-4 text-left w-auto">Phone Number</th>
-                                            <th className="w-[120px] px-4 py-3 sm:py-4 text-center">Actions</th>
+                                            <th className="min-w-[120px] px-4 py-3 sm:py-4 text-center">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
@@ -593,7 +595,7 @@ export default function FinalBillPage() {
                                                         </span>
                                                     </td>
                                                     <td className="px-4 sm:px-6 py-4">
-                                                        <span className="text-[12px] lg:text-[14px] font-extra-bold text-slate-700 uppercase tracking-widest bg-slate-100/50 px-2.5 py-1 rounded-md border border-slate-100 block truncate">
+                                                        <span className="text-[12px] lg:text-[13px] font-extrabold text-slate-700 uppercase tracking-wider bg-slate-100/80 px-2.5 py-1 rounded-md border border-slate-200/60 inline-block">
                                                             {patient.profile?.mrn || patient.mrn}
                                                         </span>
                                                     </td>

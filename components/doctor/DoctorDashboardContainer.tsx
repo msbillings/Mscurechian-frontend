@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { User, Calendar, Users, TrendingUp, Bell, ArrowRight, Activity, Clock, FileText, LayoutDashboard, ClipboardList, Briefcase, PlusCircle } from 'lucide-react';
+import { User, Calendar, Users, TrendingUp, Bell, ArrowRight, Activity, Clock, FileText, LayoutDashboard, ClipboardList, Briefcase, PlusCircle, UserCheck, HeartPulse, CalendarClock, LifeBuoy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import QuickNotesInput from './QuickNotesInput';
 import DoctorNotesList from './DoctorNotesList';
@@ -87,25 +87,25 @@ function DoctorDashboardContainer({
     const shortcuts = React.useMemo(() => [
         {
             href: "/doctor/patients",
-            icon: <Users className="text-blue-500" />,
+            icon: <UserCheck className="text-blue-500" />,
             label: "All Patients",
             sub: "History & Records"
         },
         {
             href: "/doctor/inpatients",
-            icon: <Activity className="text-emerald-500" />,
+            icon: <HeartPulse className="text-emerald-500" />,
             label: "Inpatients",
             sub: "Ward Surveillance"
         },
         {
             href: "/doctor/leaves",
-            icon: <Briefcase className="text-amber-500" />,
+            icon: <CalendarClock className="text-amber-500" />,
             label: "My Leaves",
             sub: "Schedule Planning"
         },
         {
             href: "/doctor/support",
-            icon: <PlusCircle className="text-rose-500" />,
+            icon: <LifeBuoy className="text-rose-500" />,
             label: "Helpdesk",
             sub: "Support & Queries"
         }

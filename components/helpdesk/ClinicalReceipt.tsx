@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { X, Printer } from "lucide-react";
-import { generateClinicalReceiptHtml } from "@/lib/print-utils";
+import { generateClinicalReceiptHtml, generateOPDRegistrationSlipHtml } from "@/lib/print-utils";
 import { renderToStaticMarkup } from "react-dom/server";
 import MainHeader from "../printers/MainHeader";
 import MainFooter from "../printers/MainFooter";
@@ -83,6 +83,13 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
   const [hospital, setHospital] = React.useState(propHospital);
   const [dataLoaded, setDataLoaded] = React.useState(false);
 
+  const isOPDOrReg = !((patient.dischargeType && patient.dischargeType.toUpperCase() !== 'NONE') ||
+    (appointment.type && (appointment.type.toUpperCase().includes('DISCHARGE') || appointment.type.toUpperCase().includes('SETTLEMENT'))) ||
+    (appointment.specialization && appointment.specialization.toUpperCase().includes('DISCHARGE')) ||
+    (appointment.specialization?.toUpperCase().includes('IPD') || appointment.type?.toUpperCase().includes('IPD') || appointment.stayDuration));
+
+  const [receiptFormat, setReceiptFormat] = React.useState<'opd_slip' | 'detailed_bill'>(isOPDOrReg ? 'opd_slip' : 'detailed_bill');
+
   useEffect(() => {
     const fetchAdminDetails = async () => {
       try {
@@ -148,25 +155,27 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
           }} />
         );
 
-        const rawHtml = generateClinicalReceiptHtml({
-          hospital,
-          patient: mappedPatient,
-          appointment: {
-            ...appointment,
-            notes: patient.symptoms || appointment.notes // Preserve existing notes if symptoms not explicitly provided
-          },
-          payment,
-          registrationType: ((patient.dischargeType && patient.dischargeType.toUpperCase() !== 'NONE') ||
-            (appointment.type && (appointment.type.toUpperCase().includes('DISCHARGE') || appointment.type.toUpperCase().includes('SETTLEMENT'))) ||
-            (appointment.specialization && appointment.specialization.toUpperCase().includes('DISCHARGE')))
-            ? 'DISCHARGE'
-            : (appointment.specialization?.toUpperCase().includes('IPD') || appointment.type?.toUpperCase().includes('IPD') || appointment.stayDuration)
-              ? 'IPD'
-              : 'OPD',
-          headerHtml,
-          footerHtml,
-          returnUrl: '#'
-        });
+        const rawHtml = receiptFormat === 'opd_slip'
+          ? generateOPDRegistrationSlipHtml({
+              hospital,
+              patient: mappedPatient,
+              appointment,
+              payment
+            })
+          : generateClinicalReceiptHtml({
+              forceDetailed: true,
+              hospital,
+              patient: mappedPatient,
+              appointment: {
+                ...appointment,
+                notes: patient.symptoms || appointment.notes
+              },
+              payment,
+              registrationType: isOPDOrReg ? 'OPD' : (appointment.specialization?.toUpperCase().includes('DISCHARGE') || appointment.type?.toUpperCase().includes('DISCHARGE')) ? 'DISCHARGE' : 'IPD',
+              headerHtml,
+              footerHtml,
+              returnUrl: '#'
+            });
 
         // 2. Sanitize for iframe preview - thorough removal of navigation and print triggers
         const sanitizedHtml = rawHtml
@@ -221,7 +230,7 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
         doc.close();
       }
     }
-  }, [hospital, patient, appointment, payment]);
+  }, [hospital, patient, appointment, payment, dataLoaded, receiptFormat]);
 
   const [isConfirming, setIsConfirming] = React.useState(false);
 
@@ -253,9 +262,23 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
 
         {/* Header Actions */}
         <div className="flex justify-between items-center p-2.5 sm:p-4 border-b border-slate-100 bg-white z-10 shrink-0">
-          <div className="flex items-center gap-2">
-            <Printer size={18} className="text-teal-600" />
+          <div className="flex items-center gap-2 flex-wrap">
+            <Printer size={18} className="text-teal-600 shrink-0" />
             <span className="hidden sm:inline text-sm font-bold text-slate-500 uppercase tracking-widest">Print Manager</span>
+            <div className="ml-2 sm:ml-4 flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
+              <button
+                onClick={() => setReceiptFormat('opd_slip')}
+                className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${receiptFormat === 'opd_slip' ? 'bg-white text-teal-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                📜 OPD Slip
+              </button>
+              <button
+                onClick={() => setReceiptFormat('detailed_bill')}
+                className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${receiptFormat === 'detailed_bill' ? 'bg-white text-teal-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                📑 Detailed Bill
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <button

@@ -127,20 +127,31 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
                 />
             )}
 
-            {/* Sidebar */}
-            <aside
+            {/* Sidebar Layout Container */}
+            <div
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
                 className={`
-                    fixed md:sticky left-0 top-0 h-screen flex flex-col z-40
+                    fixed md:sticky left-0 top-0 h-screen z-50 shrink-0
                     transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]
-                    border-r border-slate-200 bg-white shadow-xl lg:shadow-none
                     ${isOpen
                         ? "translate-x-0 w-72"                            // mobile drawer
                         : "-translate-x-full md:translate-x-0 md:w-16 lg:w-[260px]" // default
                     }
                 `}
             >
+                <aside
+                    className={`
+                        absolute left-0 top-0 h-full flex flex-col bg-white border-r border-slate-200
+                        transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]
+                        ${isOpen
+                            ? "w-72 shadow-2xl"
+                            : isHovered
+                                ? "w-[260px] shadow-2xl lg:shadow-none"
+                                : "w-full shadow-xl lg:shadow-none"
+                        }
+                    `}
+                >
                 {/* Brand */}
                 <div className="h-16 flex items-center px-4 border-b border-slate-100 justify-between overflow-hidden shrink-0 gap-4">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -210,13 +221,12 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
                                     `}
                                 >
                                     <div className="flex items-center gap-3 min-w-0 py-0.5">
-                                        <IconComponent
-                                            size={18}
-                                            className={`transition-colors duration-200 shrink-0 ${isActive
-                                                ? "text-primary-theme"
-                                                : "text-slate-400 group-hover/btn:text-primary-theme"
-                                                }`}
-                                        />
+                                        <div className={`p-1.5 rounded-lg transition-all duration-200 shrink-0 flex items-center justify-center ${isActive
+                                            ? "bg-primary-theme text-white shadow-md shadow-primary-theme/20 scale-105"
+                                            : "bg-slate-100 text-slate-500 group-hover/btn:bg-primary-theme-50 group-hover/btn:text-primary-theme group-hover/btn:scale-105"
+                                            }`}>
+                                            <IconComponent size={16} strokeWidth={2.2} />
+                                        </div>
                                         <span
                                             className={`
                                                 uppercase tracking-widest whitespace-nowrap transition-all duration-300 overflow-hidden shrink-0
@@ -289,6 +299,7 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
 
 
             </aside>
+            </div>
 
             <style jsx global>{`
                 .custom-scrollbar::-webkit-scrollbar {

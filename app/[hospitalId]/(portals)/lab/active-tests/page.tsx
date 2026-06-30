@@ -151,9 +151,16 @@ function ActiveTestsPage() {
                                 <div className="flex-1 min-w-0 w-full">
                                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4 mb-3">
                                         <div>
-                                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                                                {sample.patientDetails.name}
-                                            </h3>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                                    {sample.patientDetails.name}
+                                                </h3>
+                                                {sample.priority && sample.priority !== 'routine' && (
+                                                    <span className="bg-red-500 text-white font-black text-[10px] px-2 py-0.5 rounded shadow uppercase animate-pulse">
+                                                        🚨 {sample.priority}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                                                 <span className="flex items-center gap-1.5">
                                                     <User className="w-3.5 h-3.5" />
@@ -186,6 +193,12 @@ function ActiveTestsPage() {
                                             ))}
                                         </div>
                                     </div>
+
+                                    {sample.clinicalAnnotations && (
+                                        <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-900 dark:text-amber-200 font-medium">
+                                            📝 <span className="font-bold">Clinical Annotation:</span> {sample.clinicalAnnotations}
+                                        </div>
+                                    )}
 
                                     <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                                         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">

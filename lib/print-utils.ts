@@ -352,7 +352,7 @@ export const generatePayslipHtml = (data: any) => {
       </style>
       ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
       <style>
-        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer { visibility: hidden !important; }
+        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer, .header, .header-container, .divider-thick, .footer-note, .page-header, .footer-push { visibility: hidden !important; }
       </style>
       ` : ''}
     </head>
@@ -729,9 +729,260 @@ export const generatePayslipHtml = (data: any) => {
   `;
 };
 
+export const generateOPDRegistrationSlipHtml = (data: any) => {
+  const { hospital = {}, patient = {}, appointment = {}, payment = {} } = data;
+  const ageDisplay = computeAgeFromDob(patient.dob, patient.age, patient.ageUnit) || patient.age || "N/A";
+  const doctorTitle = appointment.doctorName?.toLowerCase().startsWith("dr") ? appointment.doctorName : `Dr. ${appointment.doctorName || "Assigned Consultant"}`;
+  
+  const rawToken = appointment.tokenNo || appointment.tokenNumber || appointment.token || appointment.queueNumber || appointment.dailyTokenNumber || (appointment.queuePosition !== undefined ? appointment.queuePosition : undefined) || (() => {
+    const refStr = String(appointment.appointmentId || patient.mrn || "10");
+    const digits = refStr.replace(/\D/g, "");
+    const num = parseInt(digits.slice(-3) || "10", 10);
+    return (num % 30) + 1;
+  })();
+  const tokenNoDisplay = !isNaN(Number(rawToken)) ? String(rawToken).padStart(2, '0') : rawToken;
+  
+  const isIPD = data.registrationType === 'IPD' || (appointment.type && appointment.type.toUpperCase().includes('IPD'));
+  const slipTitle = isIPD ? "IPD Admission Slip" : "OPD Registration Slip";
+  const idLabel = isIPD ? "IPD.No." : "OP.No.";
+  const tokenLabel = isIPD ? "Admission Token" : "Today's Token No";
+  const visitTypeDisplay = appointment.type || (isIPD ? "IPD Admission" : "Registration");
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${slipTitle} - ${patient.name || "Patient"}</title>
+      <meta charset="UTF-8">
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        
+        @page {
+          size: A4;
+          margin: 10mm 15mm;
+        }
+        body {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+          color: #000;
+          line-height: 1.4;
+          margin: 0;
+          padding: 15px;
+          background: white;
+          font-size: 13px;
+        }
+        .header-container {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          padding-bottom: 12px;
+        }
+        .hospital-branding {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+        }
+        .hospital-logo {
+          max-height: 70px;
+          width: auto;
+          object-fit: contain;
+        }
+        .hospital-title {
+          font-size: 24px;
+          font-weight: 900;
+          text-transform: uppercase;
+          color: #8b0000;
+          margin: 0;
+          letter-spacing: -0.5px;
+          line-height: 1.1;
+        }
+        .hospital-subtitle {
+          font-size: 14px;
+          font-weight: 800;
+          color: #1e293b;
+          margin: 2px 0 0 0;
+          text-transform: uppercase;
+        }
+        .doctor-info {
+          text-align: right;
+          max-width: 320px;
+        }
+        .doctor-name {
+          font-size: 16px;
+          font-weight: 900;
+          color: #8b0000;
+          margin: 0;
+          text-transform: uppercase;
+        }
+        .doctor-deg {
+          font-size: 12px;
+          font-weight: 700;
+          color: #333;
+          margin: 2px 0;
+        }
+        .doctor-spec {
+          font-size: 12px;
+          font-weight: 600;
+          color: #555;
+          margin: 1px 0;
+        }
+        .divider-thick {
+          border-top: 2px solid #1e293b;
+          margin: 10px 0 15px 0;
+        }
+        .patient-grid {
+          display: grid;
+          grid-template-columns: 1.1fr 0.9fr;
+          row-gap: 10px;
+          column-gap: 20px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #000;
+        }
+        .grid-row {
+          display: flex;
+          align-items: baseline;
+        }
+        .label {
+          width: 105px;
+          font-weight: 700;
+          color: #333;
+          flex-shrink: 0;
+        }
+        .colon {
+          margin-right: 12px;
+          font-weight: 700;
+        }
+        .value {
+          font-weight: 700;
+          color: #000;
+          flex: 1;
+        }
+        .divider-thin {
+          border-top: 1.5px solid #1e293b;
+          margin: 15px 0 25px 0;
+        }
+        .clinical-workspace {
+          min-height: 650px;
+          position: relative;
+        }
+        .footer-note {
+          position: fixed;
+          bottom: 10mm;
+          left: 15mm;
+          right: 15mm;
+          font-size: 10px;
+          color: #666;
+          border-top: 1px solid #ddd;
+          padding-top: 8px;
+          display: flex;
+          justify-content: space-between;
+        }
+        @media print {
+          body { padding: 0; }
+          .footer-note { position: fixed; bottom: 0; }
+        }
+      </style>
+      ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
+      <style>
+        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer, .header, .header-container, .divider-thick, .footer-note, .page-header, .footer-push { visibility: hidden !important; }
+      </style>
+      ` : ''}
+    </head>
+    <body onload="window.print();">
+      <div class="header-container">
+        <div class="hospital-branding">
+          ${hospital.logo ? `<img src="${hospital.logo}" alt="Logo" class="hospital-logo" />` : ""}
+          <div>
+            <h1 class="hospital-title" style="color: #8b0000;">${hospital.name || "SUPER SPECIALITY HOSPITAL"}</h1>
+            ${hospital.address ? `<p class="hospital-subtitle" style="font-size: 11px; color: #555; font-weight: 600;">${hospital.address}</p>` : ""}
+            ${hospital.contact ? `<p style="font-size: 11px; color: #555; margin: 2px 0 0 0; font-weight: 600;">Tel: ${hospital.contact}</p>` : ""}
+          </div>
+        </div>
+        <div class="doctor-info">
+          <h2 class="doctor-name" style="color: #8b0000;">${doctorTitle}</h2>
+          ${appointment.degree ? `<p class="doctor-deg">${appointment.degree}</p>` : ""}
+          ${appointment.specialization ? `<p class="doctor-spec">${appointment.specialization}</p>` : ""}
+        </div>
+      </div>
+
+      <div class="divider-thick"></div>
+
+      <div class="patient-grid">
+        <div class="grid-row">
+          <span class="label">Name</span><span class="colon">:</span>
+          <span class="value">${patient.name || "N/A"}</span>
+        </div>
+        <div class="grid-row">
+          <span class="label" style="width: 110px;">Age/Gender</span><span class="colon">:</span>
+          <span class="value">${ageDisplay} / ${patient.gender || "Male"}</span>
+        </div>
+
+        <div class="grid-row">
+          <span class="label">MR No.</span><span class="colon">:</span>
+          <span class="value">${patient.mrn || "N/A"}</span>
+        </div>
+        <div class="grid-row">
+          <span class="label" style="width: 110px;">Patient Type</span><span class="colon">:</span>
+          <span class="value">${patient.patientType || "Self"}</span>
+        </div>
+
+        <div class="grid-row">
+          <span class="label">Address</span><span class="colon">:</span>
+          <span class="value">${patient.address || "N/A"}</span>
+        </div>
+        <div class="grid-row">
+          <span class="label" style="width: 110px;">Mobile No.</span><span class="colon">:</span>
+          <span class="value">${patient.mobile || "N/A"}</span>
+        </div>
+
+        <div class="grid-row">
+          <span class="label">Visit Type</span><span class="colon">:</span>
+          <span class="value">${visitTypeDisplay}</span>
+        </div>
+        <div class="grid-row">
+          <span class="label" style="width: 110px;">Visit Date</span><span class="colon">:</span>
+          <span class="value">${appointment.date || new Date().toLocaleDateString("en-GB")} &nbsp; ${appointment.time || ""}</span>
+        </div>
+
+        <div class="grid-row">
+          <span class="label">${idLabel}</span><span class="colon">:</span>
+          <span class="value">${appointment.appointmentId || payment.receiptNumber || "N/A"}</span>
+        </div>
+        <div class="grid-row">
+          <span class="label" style="width: 125px;">${tokenLabel}</span><span class="colon">:</span>
+          <span class="value" style="font-size: 16px; font-weight: 900; color: #0f766e; background: #f0fdf4; padding: 2px 8px; border-radius: 4px; border: 1px solid #ccfbf1;"># ${tokenNoDisplay}</span>
+        </div>
+      </div>
+
+      <div class="divider-thin"></div>
+
+      <div class="clinical-workspace">
+        <!-- Open space for doctor prescription notes -->
+      </div>
+
+      <div class="footer-note">
+        <span>Prepared By: Frontdesk / Registration</span>
+        <span>Paid Amount: ₹ ${Math.round(payment.amount || 0).toLocaleString('en-IN')} (${payment.method?.toUpperCase() || 'CASH'})</span>
+        <span>Computer Generated Slip</span>
+      </div>
+    </body>
+    </html>
+  `;
+};
+
 export const generateClinicalReceiptHtml = (data: any) => {
-  const { hospital, patient, appointment, payment, headerHtml, footerHtml } =
-    data;
+  const { hospital = {}, patient = {}, appointment = {}, payment = {}, headerHtml, footerHtml } = data || {};
+
+  const isDischargeOrDetailed = data.forceDetailed === true ||
+    data.registrationType === 'DISCHARGE' ||
+    (patient.dischargeType && patient.dischargeType.toUpperCase() !== 'NONE') ||
+    (appointment.type && (appointment.type.toUpperCase().includes('DISCHARGE') || appointment.type.toUpperCase().includes('SETTLEMENT'))) ||
+    (appointment.specialization && appointment.specialization.toUpperCase().includes('DISCHARGE')) ||
+    appointment.stayDuration;
+
+  if (!isDischargeOrDetailed) {
+    return generateOPDRegistrationSlipHtml(data);
+  }
 
   return `
     <!DOCTYPE html>
@@ -1034,7 +1285,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
       </style>
       ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
       <style>
-        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer { visibility: hidden !important; }
+        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer, .header, .header-container, .divider-thick, .footer-note, .page-header, .footer-push { visibility: hidden !important; }
       </style>
       ` : ''}
     </head>
@@ -1675,7 +1926,7 @@ export const generatePrescriptionHtml = (data: any) => {
                 </style>
               ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
       <style>
-        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer { visibility: hidden !important; }
+        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer, .header, .header-container, .divider-thick, .footer-note, .page-header, .footer-push { visibility: hidden !important; }
       </style>
       ` : ''}
     </head>
@@ -1986,7 +2237,7 @@ export const generateLabTokenHtml = (data: any) => {
             </style>
             ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
       <style>
-        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer { visibility: hidden !important; }
+        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer, .header, .header-container, .divider-thick, .footer-note, .page-header, .footer-push { visibility: hidden !important; }
       </style>
       ` : ''}
     </head>
@@ -2103,6 +2354,8 @@ export const generateLabReportHtml = (data: any) => {
   const status = labSample?.status || 'Completed';
 
   const getDisplayRange = (test: any) => {
+    if (test.range) return test.range;
+    if (test.referenceRange) return test.referenceRange;
     if (!test.normalRanges) return test.normalRange || '-';
     const gender = (patient?.gender || '').toLowerCase();
     const age = patient?.age || 0;
@@ -2116,32 +2369,79 @@ export const generateLabReportHtml = (data: any) => {
     return test.normalRange || '-';
   };
 
+  const formatQualitativeRange = (range: string, result: string, name?: string) => {
+    const resLower = String(result || '').trim().toLowerCase();
+    const rangeLower = String(range || '').trim().toLowerCase();
+    const nameLower = String(name || '').trim().toLowerCase();
+    
+    if (rangeLower === '0 - 0' || rangeLower === '0-0' || rangeLower === 'n/a' || rangeLower === '0' || rangeLower === '-' || rangeLower.includes('reactive, non reactive') || rangeLower.includes('reactive / non reactive')) {
+      if (resLower.includes('reactive')) return 'Non-Reactive';
+      if (resLower.includes('negative') || resLower.includes('positive') || nameLower.includes('hcv') || nameLower.includes('hiv') || nameLower.includes('hbsag') || nameLower.includes('dengue') || nameLower.includes('tpha')) return 'Negative';
+      if (rangeLower.includes('reactive')) return 'Non-Reactive';
+    }
+    return range;
+  };
+
+  const formatQualitativeUnit = (unit: string, result: string) => {
+    const uLower = String(unit || '').trim().toLowerCase();
+    const resLower = String(result || '').trim().toLowerCase();
+    if (uLower === 'n/a' || uLower === 'none' || uLower === '0' || uLower === '-' || resLower.includes('negative') || resLower.includes('positive') || resLower.includes('reactive')) {
+      return '';
+    }
+    return unit === '-' ? '' : unit;
+  };
+
   const testsHtml = tests.map((test: any, idx: number) => {
-    const isAbnormal = test.isAbnormal;
+    const isAbnormal = test.isAbnormal || String(test.resultValue || '').includes('(L)') || String(test.resultValue || '').includes('(H)');
     const resultValue = test.resultValue || '-';
-    const unit = test.unit || '-';
-    const range = getDisplayRange(test);
-    const subTestsHtml = (test.subTests || []).map((sub: any, si: number) => `
-      <tr>
-        <td style="padding: 8px 10px 8px 30px; border-bottom: 1px solid #f1f5f9; font-size: 12px; color: #64748b; font-style: italic;">${sub.name || '-'}</td>
-        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px; font-weight: 600;">${sub.result || '-'}</td>
-        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px; color: #64748b;">${sub.unit || '-'}</td>
-        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 11px; color: #94a3b8;">${sub.range || '-'}</td>
-        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 11px;"></td>
-      </tr>`).join('');
+    const rawUnit = test.unit || '-';
+    const rawRange = getDisplayRange(test);
+    const range = formatQualitativeRange(rawRange, resultValue, test.testName);
+    const unit = formatQualitativeUnit(rawUnit, resultValue);
+    const hasSubTests = test.subTests && test.subTests.length > 0;
+    const isMajorPanel = (t: any) => t && t.subTests && t.subTests.length >= 6;
+    const isDeptSwitch = idx > 0 && test.departmentName && test.departmentName !== tests[idx - 1]?.departmentName;
+    const shouldBreakPage = idx > 0 && (isMajorPanel(test) || isMajorPanel(tests[idx - 1]) || isDeptSwitch);
+    const breakStyle = shouldBreakPage ? 'page-break-before: always; break-before: page;' : '';
+
+    const subTestsHtml = (test.subTests || []).map((sub: any) => {
+      const subAbnormal = sub.isAbnormal || String(sub.result || '').includes('(L)') || String(sub.result || '').includes('(H)') || isAbnormal;
+      const rawSubRange = getDisplayRange(sub);
+      const inheritedRange = (rawSubRange && rawSubRange !== '-') ? rawSubRange : rawRange;
+      const subRange = formatQualitativeRange(inheritedRange, sub.result || '-', sub.name || test.testName);
+      const inheritedUnit = (sub.unit && sub.unit !== '-') ? sub.unit : rawUnit;
+      const subUnit = formatQualitativeUnit(inheritedUnit, sub.result || '-');
+      return `
+      <tr style="background: #ffffff; page-break-inside: avoid; break-inside: avoid;">
+        <td style="padding: 5px 8px 5px 20px; border-bottom: none; font-size: 12px; color: #334155; text-transform: uppercase;">${sub.name || '-'}</td>
+        <td style="padding: 5px 8px; border-bottom: none; font-size: 12px; font-weight: ${subAbnormal ? '900' : '600'}; color: ${subAbnormal ? '#dc2626' : '#1e293b'};">
+          ${sub.result || '-'}
+          ${subAbnormal ? '<span style="font-size:10px; background:#fee2e2; color:#dc2626; padding: 1px 5px; border-radius:4px; margin-left:6px; font-weight:900;">▲ HIGH/LOW</span>' : ''}
+        </td>
+        <td style="padding: 5px 8px; border-bottom: none; font-size: 12px; color: #475569;">${subRange}</td>
+        <td style="padding: 5px 8px; border-bottom: none; font-size: 12px; color: #64748b;">${subUnit}</td>
+      </tr>`;
+    }).join('');
+
+    if (hasSubTests) {
+      return `
+        <tr style="background: #f8fafc; page-break-inside: avoid; break-inside: avoid; ${breakStyle}">
+          <td colspan="4" style="padding: 8px 8px; border-top: ${idx > 0 && !shouldBreakPage ? '2px solid #cbd5e1' : 'none'}; border-bottom: none; font-weight: 800; font-size: 13px; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">${test.testName || '-'}</td>
+        </tr>
+        ${subTestsHtml}
+      `;
+    }
 
     return `
-      <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#fafafa'};">
-        <td style="padding: 12px 10px; border-bottom: 1.5px solid #e2e8f0; font-weight: 700; font-size: 12px; color: #1e293b;">${test.testName || '-'}</td>
-        <td style="padding: 12px 10px; border-bottom: 1.5px solid #e2e8f0; font-weight: 800; font-size: 13px; color: ${isAbnormal ? '#dc2626' : '#1e293b'};">
+      <tr style="background: #ffffff; page-break-inside: avoid; break-inside: avoid; ${breakStyle}">
+        <td style="padding: 6px 8px; border-top: ${idx > 0 && !shouldBreakPage ? '1px solid #e2e8f0' : 'none'}; border-bottom: none; font-weight: 700; font-size: 12px; color: #1e293b; text-transform: uppercase;">${test.testName || '-'}</td>
+        <td style="padding: 6px 8px; border-top: ${idx > 0 && !shouldBreakPage ? '1px solid #e2e8f0' : 'none'}; border-bottom: none; font-weight: ${isAbnormal ? '900' : '700'}; font-size: 12px; color: ${isAbnormal ? '#dc2626' : '#1e293b'};">
           ${resultValue}
-          ${isAbnormal ? '<span style="font-size:10px; background:#fee2e2; color:#dc2626; padding: 2px 6px; border-radius:4px; margin-left:6px; font-weight:800;">▲ HIGH</span>' : ''}
+          ${isAbnormal ? '<span style="font-size:10px; background:#fee2e2; color:#dc2626; padding: 1px 5px; border-radius:4px; margin-left:6px; font-weight:900;">▲ HIGH/LOW</span>' : ''}
         </td>
-        <td style="padding: 12px 10px; border-bottom: 1.5px solid #e2e8f0; font-size: 12px; color: #64748b;">${unit}</td>
-        <td style="padding: 12px 10px; border-bottom: 1.5px solid #e2e8f0; font-size: 11px; color: #94a3b8;">${range}</td>
-        <td style="padding: 12px 10px; border-bottom: 1.5px solid #e2e8f0; font-size: 11px; color: ${isAbnormal ? '#dc2626' : '#16a34a'}; font-weight: 700;">${test.status || (isAbnormal ? 'Abnormal' : 'Normal')}</td>
+        <td style="padding: 6px 8px; border-top: ${idx > 0 && !shouldBreakPage ? '1px solid #e2e8f0' : 'none'}; border-bottom: none; font-size: 12px; color: #475569;">${range}</td>
+        <td style="padding: 6px 8px; border-top: ${idx > 0 && !shouldBreakPage ? '1px solid #e2e8f0' : 'none'}; border-bottom: none; font-size: 12px; color: #64748b;">${unit}</td>
       </tr>
-      ${subTestsHtml}
     `;
   }).join('');
 
@@ -2259,7 +2559,7 @@ export const generateLabReportHtml = (data: any) => {
       </style>
       ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
       <style>
-        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer { visibility: hidden !important; }
+        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer, .header, .header-container, .divider-thick, .footer-note, .page-header, .footer-push { visibility: hidden !important; }
       </style>
       ` : ''}
     </head>
@@ -2303,17 +2603,16 @@ export const generateLabReportHtml = (data: any) => {
         <table>
           <thead>
             <tr>
-              <th style="width:30%;">Test Name</th>
-              <th style="width:18%;">Result</th>
-              <th style="width:12%;">Units</th>
-              <th style="width:22%;">Normal Range</th>
-              <th style="width:18%;">Interpretation</th>
+              <th style="width:40%;">Parameter</th>
+              <th style="width:20%;">Result</th>
+              <th style="width:25%;">Reference Range</th>
+              <th style="width:15%;">Units</th>
             </tr>
           </thead>
           <tbody>
             ${tests.length > 0 ? testsHtml : `
               <tr>
-                <td colspan="5" style="text-align:center; padding: 30px; color:#94a3b8; font-style:italic;">
+                <td colspan="4" style="text-align:center; padding: 30px; color:#94a3b8; font-style:italic;">
                   No test results available yet
                 </td>
               </tr>
@@ -2419,7 +2718,7 @@ export const generateQualityReportHtml = (data: any) => {
       </style>
       ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
       <style>
-        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer { visibility: hidden !important; }
+        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer, .header, .header-container, .divider-thick, .footer-note, .page-header, .footer-push { visibility: hidden !important; }
       </style>
       ` : ''}
     </head>
@@ -2739,7 +3038,7 @@ export const generateBlankLetterheadHtml = (data: any) => {
       </style>
       ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
       <style>
-        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer { visibility: hidden !important; }
+        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer, .header, .header-container, .divider-thick, .footer-note, .page-header, .footer-push { visibility: hidden !important; }
       </style>
       ` : ''}
     </head>
@@ -2849,6 +3148,11 @@ export const generateAddBillsReceiptHtml = (data: any) => {
         .no-print { display: block; margin: 20px auto; text-align: center; }
         .return-btn { padding: 10px 24px; background-color: #0f172a; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-decoration: none; }
       </style>
+      ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
+      <style>
+        .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer, .header, .header-container, .divider-thick, .footer-note, .page-header, .footer-push { visibility: hidden !important; }
+      </style>
+      ` : ''}
     </head>
     <body onload="window.print();">
       <script>

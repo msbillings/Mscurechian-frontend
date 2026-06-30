@@ -36,7 +36,7 @@ function useDebounce<T>(value: T, delay: number): T {
 
 function TransitsPage() {
     const [hospitalDetails, setHospitalDetails] = useState<any>(null);
-    const [filter, setFilter] = useState<'all' | 'prescription' | 'lab'>('all');
+    const [filter, setFilter] = useState<'all' | 'prescription' | 'lab' | 'lab-report'>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearch = useDebounce(searchTerm, 500);
     const [page, setPage] = useState(1);
@@ -242,7 +242,7 @@ function TransitsPage() {
                 </div>
 
                 <div className="flex items-center gap-1 sm:gap-1.5 border-t border-slate-100 pt-3 px-2 overflow-x-auto no-scrollbar">
-                    {(['all', 'prescription', 'lab'] as const).map((f) => (
+                    {(['all', 'prescription', 'lab', 'lab-report'] as const).map((f) => (
                         <button
                             key={f}
                             onClick={() => setFilter(f)}
@@ -257,11 +257,15 @@ function TransitsPage() {
                                 </div>
                             ) : f === 'prescription' ? (
                                 <div className="flex items-center gap-1.5 sm:gap-2">
-                                    <FileText size={12} className="sm:size-[14px]" /> Prescr<span className="hidden sm:inline">iptions</span>
+                                    <FileText size={12} className="sm:size-[14px]" /> Prescriptions
+                                </div>
+                            ) : f === 'lab' ? (
+                                <div className="flex items-center gap-1.5 sm:gap-2">
+                                    <Beaker size={12} className="sm:size-[14px]" /> Lab<span className="hidden sm:inline"> Tokens</span>
                                 </div>
                             ) : (
                                 <div className="flex items-center gap-1.5 sm:gap-2">
-                                    <Beaker size={12} className="sm:size-[14px]" /> Lab<span className="hidden sm:inline"> Tokens</span>
+                                    <Activity size={12} className="sm:size-[14px]" /> Lab<span className="hidden sm:inline"> Reports</span>
                                 </div>
                             )}
                         </button>
@@ -325,7 +329,7 @@ function TransitsPage() {
                                                         <Beaker size={11} /> Lab Token
                                                     </span>
                                                 )}
-                                                {(filter === 'all' || filter === 'lab') && (t as any).labSample && (
+                                                {(filter === 'all' || filter === 'lab-report') && (t as any).labSample && (
                                                     <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold uppercase tracking-wide">
                                                         <Activity size={11} /> Lab Report
                                                     </span>
@@ -362,7 +366,7 @@ function TransitsPage() {
                                                         <Printer size={14} />
                                                     </button>
                                                 )}
-                                                {(filter === 'all' || filter === 'lab') && (t as any).labSample && (
+                                                {(filter === 'all' || filter === 'lab-report') && (t as any).labSample && (
                                                     <button
                                                         onClick={() => handlePrint(t, 'lab-report')}
                                                         className="inline-flex items-center gap-1 px-2 py-1.5 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-all text-[10px] font-bold uppercase tracking-wide"

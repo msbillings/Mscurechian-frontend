@@ -37,7 +37,7 @@ interface QueueProps {
 }
 
 function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTypeFilter, setVisitTypeFilter }: QueueProps) {
-  const router = useRouter();
+   const router = useRouter();
   const [showQueue, setShowQueue] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +58,29 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
     today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
     return today.toISOString().split('T')[0];
   });
+
+  const fetchDoctorProfile = async () => {
+    try {
+      const profile = await doctorService.getProfile();
+      if (profile && typeof profile.isOnline === 'boolean') {
+        setShowQueue(profile.isOnline);
+      }
+    } catch (err) {
+      console.error('Failed to fetch doctor profile status:', err);
+    }
+  };
+
+  const handleToggleQueue = async () => {
+    const nextState = !showQueue;
+    setShowQueue(nextState);
+    try {
+      await doctorService.updateOnlineStatus(nextState);
+      toast.success(`Queue is now ${nextState ? 'ON (Online)' : 'OFF (Offline)'}`);
+    } catch (err: any) {
+      setShowQueue(!nextState);
+      toast.error(err.message || 'Failed to update queue status');
+    }
+  };
 
   const confirmDelete = async () => {
     if (!appointmentToDelete) return;
@@ -101,6 +124,7 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
   // Initial fetch
   useEffect(() => {
     fetchAppointments();
+    fetchDoctorProfile();
   }, []);
 
   // Auto-refresh every 30 seconds
@@ -282,7 +306,7 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
           {/* Moved Toggle here on Mobile - stacked on right of title */}
           <div className="flex lg:hidden items-center gap-2 bg-secondary-theme px-3 py-1.5 rounded-xl border border-border-theme">
             <button
-              onClick={() => setShowQueue(!showQueue)}
+              onClick={handleToggleQueue}
               className={`relative w-8 h-4 sm:w-10 sm:h-5 rounded-full cursor-pointer transition-colors ${showQueue ? 'bg-primary-theme' : 'bg-gray-300'}`}
             >
               <div className={`absolute top-0.5 left-0.5 w-3 h-3 sm:w-4 sm:h-4 bg-white rounded-full transition-transform ${showQueue ? 'translate-x-4 sm:translate-x-5' : 'translate-x-0'}`} />
@@ -386,7 +410,7 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
           <div className="hidden lg:flex items-center gap-3 bg-secondary-theme dark:bg-secondary-theme px-4 py-2 rounded-xl border border-border-theme dark:border-border-theme">
             <span className="text-xs font-bold text-muted dark:text-muted uppercase">Queue</span>
             <button
-              onClick={() => setShowQueue(!showQueue)}
+              onClick={handleToggleQueue}
               className={`relative w-12 h-6 rounded-full cursor-pointer ${showQueue ? 'bg-primary-theme' : 'bg-gray-300 dark:bg-gray-600'}`}
             >
               <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full cursor-pointer ${showQueue ? 'translate-x-6' : 'translate-x-0'}`} />

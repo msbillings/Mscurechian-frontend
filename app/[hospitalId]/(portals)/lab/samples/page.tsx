@@ -333,7 +333,14 @@ export default function SampleCollectionPage() {
                                                     {sample.patientDetails.name.charAt(0)}
                                                 </div>
                                                 <div>
-                                                    <div className="font-medium text-gray-900 dark:text-white">{sample.patientDetails.name}</div>
+                                                    <div className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                                        {sample.patientDetails.name}
+                                                        {sample.priority && sample.priority !== 'routine' && (
+                                                            <span className="bg-red-500 text-white font-black text-[9px] px-1.5 py-0.5 rounded uppercase animate-pulse">
+                                                                🚨 {sample.priority}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     <div className="text-xs text-gray-500">
                                                         {sample.patientDetails.age}Y • {sample.patientDetails.gender}
                                                         {sample.patientDetails.bedInfo && (
@@ -355,6 +362,11 @@ export default function SampleCollectionPage() {
                                                 <div className="max-w-[200px] truncate text-gray-600 dark:text-gray-300" title={sample.tests.map(t => t.testName).join(', ')}>
                                                     {sample.tests.map(t => t.testName).join(', ')}
                                                 </div>
+                                                {sample.clinicalAnnotations && (
+                                                    <div className="text-[10px] bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200 p-1 rounded mt-1 font-semibold border border-amber-200 dark:border-amber-800 line-clamp-1" title={sample.clinicalAnnotations}>
+                                                        📝 {sample.clinicalAnnotations}
+                                                    </div>
+                                                )}
                                                 {sample.tests.length > 2 && (
                                                     <>
                                                         <div className="text-xs text-blue-600 dark:text-blue-400 mt-1 cursor-help">
@@ -454,11 +466,16 @@ export default function SampleCollectionPage() {
                                                     {sample.patientDetails.name.charAt(0)}
                                                 </div>
                                                 <div>
-                                                    <div className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                                    <div className="font-medium text-gray-900 dark:text-white flex items-center gap-2 flex-wrap">
                                                         {sample.patientDetails.name}
                                                         {sample.isWalkIn && (
                                                             <span className="px-1 py-0.5 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 text-[8px] font-bold rounded uppercase tracking-wider">
                                                                 Walk-In
+                                                            </span>
+                                                        )}
+                                                        {sample.priority && sample.priority !== 'routine' && (
+                                                            <span className="bg-red-500 text-white font-black text-[9px] px-1.5 py-0.5 rounded uppercase animate-pulse">
+                                                                🚨 {sample.priority}
                                                             </span>
                                                         )}
                                                     </div>
@@ -490,6 +507,11 @@ export default function SampleCollectionPage() {
                                                 <div className="max-w-[200px] truncate text-gray-600 dark:text-gray-300" title={sample.tests.map(t => t.testName).join(', ')}>
                                                     {sample.tests.map(t => t.testName).join(', ')}
                                                 </div>
+                                                {sample.clinicalAnnotations && (
+                                                    <div className="text-[10px] bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200 p-1 rounded mt-1 font-semibold border border-amber-200 dark:border-amber-800 line-clamp-1" title={sample.clinicalAnnotations}>
+                                                        📝 {sample.clinicalAnnotations}
+                                                    </div>
+                                                )}
                                                 {sample.tests.length > 2 && (
                                                     <>
                                                         <div className="text-xs text-blue-600 dark:text-blue-400 mt-1 cursor-help">

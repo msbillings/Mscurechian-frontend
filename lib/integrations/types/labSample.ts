@@ -34,6 +34,8 @@ export interface LabSample {
     isWalkIn?: boolean;
     billId: string;
     sampleId: string;
+    priority?: string;
+    clinicalAnnotations?: string;
     patientDetails: {
         name: string;
         age: number;

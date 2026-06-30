@@ -6,18 +6,18 @@ import Link from "next/link";
 import { useAuthStore } from '@/stores/authStore';
 import LicenseLock from "@/components/License/LicenseLock";
 import {
-    LayoutDashboard,
-    Users,
+    Stethoscope,
+    UserCheck,
     Bell,
     Activity,
-    Clock,
-    AlertTriangle,
-    ClipboardCheck,
-    TestTube,
-    Pause,
+    CalendarClock,
+    ShieldAlert,
+    ShieldCheck,
+    FlaskConical,
+    History,
     FileText,
-    Calendar,
-    ShieldCheck
+    TrendingUp,
+    HeartPulse
 } from "lucide-react";
 import { doctorService } from '@/lib/integrations/services/doctor.service';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -41,15 +41,15 @@ import { useRealtime } from '@/hooks/useRealtime';
 import SharedSidebar from "@/components/navbar/SharedSidebar";
 
 const doctorMenuLinks = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/doctor" },
-    { icon: Activity, label: "Analytics", path: "/doctor/analytics" },
-    { icon: Users, label: "Patients", path: "/doctor/patients" },
-    { icon: Pause, label: "Paused Appointments", path: "/doctor/paused-appointments" },
-    { icon: TestTube, label: "Lab Results", path: "/doctor/lab-results" },
-    { icon: Activity, label: "Hourly Monitoring", path: "/doctor/patient-hourly-record" },
-    { icon: Clock, label: "Leave Requests", path: "/doctor/leaves" },
-    { icon: AlertTriangle, label: "Medical Incident", path: "/doctor/incidents" },
-    { icon: ClipboardCheck, label: "SOP & Policies", path: "/doctor/sop" },
+    { icon: Stethoscope, label: "Dashboard", path: "/doctor" },
+    { icon: TrendingUp, label: "Analytics", path: "/doctor/analytics" },
+    { icon: UserCheck, label: "Patients", path: "/doctor/patients" },
+    { icon: History, label: "Paused Appointments", path: "/doctor/paused-appointments" },
+    { icon: FlaskConical, label: "Lab Results", path: "/doctor/lab-results" },
+    { icon: HeartPulse, label: "Hourly Monitoring", path: "/doctor/patient-hourly-record" },
+    { icon: CalendarClock, label: "Leave Requests", path: "/doctor/leaves" },
+    { icon: ShieldAlert, label: "Medical Incident", path: "/doctor/incidents" },
+    { icon: ShieldCheck, label: "SOP & Policies", path: "/doctor/sop" },
     { icon: Bell, label: "Announcements", path: "/doctor/announcements" },
 ];
 

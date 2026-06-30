@@ -20,6 +20,7 @@ import {
     PenTool,
     AlertTriangle,
     Receipt,
+    FileText,
     Check,
     Phone,
     X,
@@ -506,6 +507,54 @@ export default function AppointmentBooking() {
 
     useEffect(() => { fetchSlots(); }, [fetchSlots]);
 
+    useEffect(() => {
+        let mounted = true;
+        let unsubscribe: (() => void) | null = null;
+
+        const setupSocket = async () => {
+            if (profile?.id) {
+                const { subscribeToSocket, unsubscribeFromSocket, joinSocketRoom } = await import('@/lib/integrations/api/socket');
+                
+                await joinSocketRoom({
+                    role: 'helpdesk',
+                    userId: profile.id,
+                    hospitalId: profile.hospital?._id
+                });
+
+                const handleStatusChange = (data: any) => {
+                    console.log('🔔 Doctor status change received in booking page:', data);
+                    const { doctorId, isOnline } = data;
+                    if (mounted) {
+                        setDoctors(prev =>
+                            prev.map(doc =>
+                                doc._id === doctorId ? { ...doc, isOnline } : doc
+                            )
+                        );
+                        // If the currently selected doctor was toggled offline today, deselect them
+                        setSelectedDoctor(prev => {
+                            if (prev?._id === doctorId && isOnline === false) {
+                                return null;
+                            }
+                            return prev;
+                        });
+                    }
+                };
+
+                await subscribeToSocket('doctor:status_changed', handleStatusChange);
+                unsubscribe = () => {
+                    unsubscribeFromSocket('doctor:status_changed', handleStatusChange);
+                };
+            }
+        };
+
+        setupSocket();
+
+        return () => {
+            mounted = false;
+            if (unsubscribe) unsubscribe();
+        };
+    }, [profile]);
+
 
 
     const isBookingValid = () => {
@@ -538,7 +587,7 @@ export default function AppointmentBooking() {
         return !hasVitalErrors && !hasNotesLimit && !hasAdmissionErrors && !hasMixedPaymentError;
     };
 
-    const handleBooking = async () => {
+    const handleBooking = async (isDetailedReceipt: boolean = false) => {
         if (!selectedPatient) { toast.error("Select a patient object"); return; }
         if (!selectedDoctor) { toast.error("Select a physician"); return; }
         if (!isBookingValid()) {
@@ -727,7 +776,32 @@ export default function AppointmentBooking() {
                 }
             }
 
-            // 3. Prepare Branding Data (Using pre-fetched branding to ensure zero-latency printing)
+            // 3. Calculate exact daily token index across the hospital for selected date
+            const dateStr = new Date(selectedDate).toISOString().split('T')[0];
+            const allAptsRes = await helpdeskService.getAppointments(1, 200, undefined, dateStr, dateStr).catch(() => ({ data: [] }));
+            const allApts = Array.isArray(allAptsRes) ? allAptsRes : (allAptsRes?.data || allAptsRes?.appointments || []);
+            const activeToday = allApts.filter((a: any) => !['completed', 'cancelled', 'no-show', 'rejected'].includes(a.status?.toLowerCase()));
+            const parseTime = (timeStr?: string) => {
+                if (!timeStr) return 0;
+                const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+                if (!match) return 0;
+                let [, h, m, ampm] = match;
+                let hours = parseInt(h, 10);
+                if (ampm && ampm.toUpperCase() === 'PM' && hours < 12) hours += 12;
+                if (ampm && ampm.toUpperCase() === 'AM' && hours === 12) hours = 0;
+                return hours * 60 + parseInt(m, 10);
+            };
+            activeToday.sort((a: any, b: any) => {
+                const timeA = parseTime(a.appointmentTime);
+                const timeB = parseTime(b.appointmentTime);
+                if (timeA !== timeB) return timeA - timeB;
+                return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+            });
+            const aptId = appointment._id || appointment.id || appointment.appointmentId;
+            let exactTokenNo = activeToday.findIndex((a: any) => (a._id === aptId || a.id === aptId || a.appointmentId === aptId)) + 1;
+            if (exactTokenNo <= 0) exactTokenNo = activeToday.length > 0 ? activeToday.length : 1;
+
+            // Prepare Branding Data (Using pre-fetched branding to ensure zero-latency printing)
             const latestHospital: any = hospitalBranding || profile?.hospital;
             
             // Render Header/Footer immediately using cached data to avoid blocking
@@ -810,7 +884,8 @@ export default function AppointmentBooking() {
                     bookedAt: new Date().toISOString(),
                     type: appointmentType.toUpperCase(),
                     notes: notes,
-                    appointmentId: appointment.appointmentId || appointment._id || appointment.id || 'PENDING'
+                    appointmentId: appointment.appointmentId || appointment._id || appointment.id || 'PENDING',
+                    tokenNo: appointment.tokenNo || appointment.tokenNumber || exactTokenNo
                 },
                 payment: {
                     amount: finalAmount,
@@ -827,7 +902,8 @@ export default function AppointmentBooking() {
                 showVitals: showVitals,
                 headerHtml: headerHtml,
                 footerHtml: footerHtml,
-                returnUrl: '/helpdesk'
+                returnUrl: '/helpdesk',
+                forceDetailed: isDetailedReceipt
             };
 
             // Write the receipt into the SAME window we opened above (no second popup)
@@ -1198,34 +1274,61 @@ export default function AppointmentBooking() {
                             <div className="space-y-3">
                                 <FormLabel label="Select Physician" />
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    {filteredDoctors.map(doc => (
-                                        <button
-                                            key={doc._id}
-                                            onClick={() => setSelectedDoctor(doc)}
-                                            className={`p-3.5 rounded-[16px] border-2 text-left flex items-center gap-3 transition-all ${selectedDoctor?._id === doc._id
-                                                ? 'border-teal-500 bg-teal-50/50 shadow-lg shadow-teal-500/5'
-                                                : 'border-slate-50 hover:border-slate-100 bg-white'
-                                                }`}
-                                        >
-                                            <div className={`w-11 h-11 rounded-lg flex items-center justify-center font-black text-xl ${selectedDoctor?._id === doc._id ? 'bg-teal-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400'
-                                                }`}>
-                                                {(doc.user?.name || doc.name)?.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="text-[10px] font-black truncate text-slate-900 uppercase tracking-tight">{doc.user?.name || doc.name}</h4>
-                                                <div className="flex items-center gap-2 mt-0.5">
-                                                    <p className={`text-[8px] font-bold uppercase tracking-[0.1em] ${selectedDoctor?._id === doc._id ? 'text-teal-600' : 'text-slate-400'}`}>
-                                                        {doc.specialties?.[0] || 'Medical Officer'}
-                                                    </p>
-                                                    <span className="w-0.5 h-0.5 rounded-full bg-slate-300" />
-                                                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
-                                                        ₹{doc.consultationFee ?? (doc as any).hospitals?.[0]?.consultationFee ?? '0'}
-                                                    </p>
+                                    {filteredDoctors.map(doc => {
+                                        const today = new Date();
+                                        today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+                                        const todayStr = today.toISOString().split('T')[0];
+                                        const isToday = selectedDate === todayStr;
+                                        const isOfflineToday = isToday && doc.isOnline === false;
+
+                                        return (
+                                            <button
+                                                key={doc._id}
+                                                disabled={isOfflineToday}
+                                                onClick={() => setSelectedDoctor(doc)}
+                                                className={`p-3.5 rounded-[16px] border-2 text-left flex items-center gap-3 transition-all ${
+                                                    isOfflineToday
+                                                        ? 'border-slate-100 bg-slate-50/50 opacity-60 cursor-not-allowed'
+                                                        : selectedDoctor?._id === doc._id
+                                                        ? 'border-teal-500 bg-teal-50/50 shadow-lg shadow-teal-500/5'
+                                                        : 'border-slate-50 hover:border-slate-100 bg-white'
+                                                    }`}
+                                            >
+                                                <div className={`w-11 h-11 rounded-lg flex items-center justify-center font-black text-xl ${
+                                                    isOfflineToday
+                                                        ? 'bg-slate-200 text-slate-400'
+                                                        : selectedDoctor?._id === doc._id 
+                                                        ? 'bg-teal-600 text-white shadow-lg' 
+                                                        : 'bg-slate-100 text-slate-400'
+                                                    }`}>
+                                                    {(doc.user?.name || doc.name)?.charAt(0).toUpperCase()}
                                                 </div>
-                                            </div>
-                                            {selectedDoctor?._id === doc._id && <CheckCircle2 size={16} className="text-teal-600 shrink-0" />}
-                                        </button>
-                                    ))}
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="text-[10px] font-black truncate text-slate-900 uppercase tracking-tight">{doc.user?.name || doc.name}</h4>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                        <p className={`text-[8px] font-bold uppercase tracking-[0.1em] ${
+                                                            isOfflineToday
+                                                                ? 'text-slate-400'
+                                                                : selectedDoctor?._id === doc._id 
+                                                                ? 'text-teal-600' 
+                                                                : 'text-slate-400'
+                                                            }`}>
+                                                            {doc.specialties?.[0] || 'Medical Officer'}
+                                                        </p>
+                                                        <span className="w-0.5 h-0.5 rounded-full bg-slate-300" />
+                                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
+                                                            ₹{doc.consultationFee ?? (doc as any).hospitals?.[0]?.consultationFee ?? '0'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                {isOfflineToday ? (
+                                                    <span className="px-1.5 py-0.5 text-[8px] font-black uppercase bg-red-100 text-red-700 rounded-md tracking-wider">Offline</span>
+                                                ) : selectedDoctor?._id === doc._id ? (
+                                                    <CheckCircle2 size={16} className="text-teal-600 shrink-0" />
+                                                ) : null}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -1525,21 +1628,23 @@ export default function AppointmentBooking() {
                                             </div>
                                         )}
 
-                                        <button
-                                            onClick={handleBooking}
-                                            disabled={submitting || !isBookingValid()}
-                                            className="w-full py-4 bg-teal-500 text-slate-900 rounded-[20px] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-teal-400 transition-all shadow-2xl shadow-teal-500/20 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 overflow-hidden group relative"
-                                        >
-                                            {submitting ? (
-                                                <Loader2 size={18} className="animate-spin" />
-                                            ) : (
-                                                <>
-                                                    <Receipt size={16} />
-                                                    Finish & Print
-                                                    <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                                                </>
-                                            )}
-                                        </button>
+                                        <div className="w-full">
+                                            <button
+                                                onClick={() => handleBooking(false)}
+                                                disabled={submitting || !isBookingValid()}
+                                                title="Print Clinical Prescription Slip & Finalize"
+                                                className="w-full py-4 bg-teal-500 text-slate-900 rounded-[20px] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-teal-400 transition-all shadow-xl shadow-teal-500/20 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
+                                            >
+                                                {submitting ? (
+                                                    <Loader2 size={16} className="animate-spin" />
+                                                ) : (
+                                                    <>
+                                                        <FileText size={18} className="shrink-0" />
+                                                        <span className="truncate">Print Slip & Final</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
                                         <p className="text-center text-[8px] font-bold text-white/20 uppercase tracking-[0.3em]">Node: {profile?.hospital?.name?.slice(0, 8).toUpperCase() || 'SYSTEM'}</p>
                                     </div>
                                 </div>

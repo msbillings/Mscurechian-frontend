@@ -31,7 +31,13 @@ import {
     ShieldAlert,
     Scan,
     PenTool,
-    History
+    History,
+    Building,
+    FileText,
+    ChevronRight,
+    Clock,
+    Pause,
+    CheckCircle
 } from 'lucide-react';
 import { CardiologyModule } from './create/modules/CardiologyModule';
 import { DermatologyModule, DermatologyData, INITIAL_DERMATOLOGY_DATA } from './create/modules/DermatologyModule';
@@ -847,6 +853,31 @@ function CreatePrescriptionPage() {
     const [showSuccess, setShowSuccess] = useState(false);
     const [generatedHtml, setGeneratedHtml] = useState<{ prescription: string, billing: string } | null>(null);
 
+    // Medical History State
+    const [showFullHistory, setShowFullHistory] = useState(false);
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+    const [patientHistoryData, setPatientHistoryData] = useState<{ visits: any[]; prescriptions: any[]; reports: any[] }>({ visits: [], prescriptions: [], reports: [] });
+    const [historyTab, setHistoryTab] = useState<'visits' | 'prescriptions' | 'reports'>('visits');
+
+    useEffect(() => {
+        if (showHistoryModal && selectedPatientId) {
+            setLoadingHistory(true);
+            doctorService.getPatientHistory(selectedPatientId, showFullHistory ? 'all' : 'hospital')
+                .then((data: any) => {
+                    setPatientHistoryData({
+                        visits: data?.history || [],
+                        prescriptions: data?.prescriptions || [],
+                        reports: data?.reports || []
+                    });
+                })
+                .catch((err: any) => {
+                    toast.error(err?.message || "Failed to load patient history");
+                })
+                .finally(() => setLoadingHistory(false));
+        }
+    }, [showHistoryModal, showFullHistory, selectedPatientId]);
+
     // ✅ REACT QUERY: Start Consultation & Fetch Details
     const { data: appointmentResponse, isLoading: appointmentLoading } = useQuery({
         queryKey: ['appointment-details', appointmentId],
@@ -858,6 +889,61 @@ function CreatePrescriptionPage() {
         refetchOnWindowFocus: false,
     });
     const appointmentData = appointmentResponse?.appointment;
+
+    // Consultation Timer & Controls
+    const [elapsedTime, setElapsedTime] = useState(0);
+    const [isEndingSession, setIsEndingSession] = useState(false);
+
+    const formatTime = (seconds: number) => {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        if (hours > 0) {
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    useEffect(() => {
+        if (!appointmentData?.consultationStartTime || appointmentData.status !== 'in-progress' || appointmentData.isPaused) return;
+        const start = new Date(appointmentData.consultationStartTime).getTime();
+        const pausedDurationMs = (appointmentData.pausedDuration || 0) * 1000;
+        const timer = setInterval(() => {
+            const totalElapsed = Date.now() - start;
+            const activeElapsed = Math.max(0, totalElapsed - pausedDurationMs);
+            setElapsedTime(Math.floor(activeElapsed / 1000));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [appointmentData?.consultationStartTime, appointmentData?.pausedDuration, appointmentData?.status, appointmentData?.isPaused]);
+
+    const handlePauseConsultation = async () => {
+        if (!appointmentId) return;
+        try {
+            await doctorService.pauseConsultation(appointmentId);
+            toast.success('Consultation paused');
+            router.push(`/${hospitalId}/doctor/paused-appointments`);
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to pause consultation');
+        }
+    };
+
+    const handleEndConsultation = async () => {
+        if (!appointmentId || isEndingSession) return;
+        try {
+            setIsEndingSession(true);
+            await doctorService.endConsultation(appointmentId, {
+                duration: elapsedTime,
+                diagnosis: formData.diagnosis,
+                clinicalNotes: formData.symptoms
+            });
+            toast.success('Consultation completed successfully!');
+            router.push(`/${hospitalId}/doctor`);
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to end consultation');
+        } finally {
+            setIsEndingSession(false);
+        }
+    };
 
     // ✅ REACT QUERY: Fetch Patient Details (if no appointmentId)
     const { data: patientData, isLoading: patientLoading } = useQuery({
@@ -2584,66 +2670,157 @@ function CreatePrescriptionPage() {
     }
 
     return (
-        <div className="bg-slate-50/50">
-            {/* Header */}
-            <header className="bg-white border-b border-border-theme py-4 mb-6 sticky top-0 z-50">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
-                        <button onClick={() => router.back()} className="p-2 hover:bg-secondary-theme rounded-full text-muted hover:text-foreground transition-colors shrink-0">
-                            <ArrowLeft size={18} className="sm:size-[20px]" />
-                        </button>
-                        <div className="min-w-0">
-                            <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white">Prescription Desk</h1>
-                            <p className="text-[10px] sm:text-xs text-muted font-bold uppercase tracking-widest mt-0.5">Patient: {formData.patientName || 'New Case'}</p>
-                        </div>
-                    </div>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                        {/* Lab Token Quick Action */}
+        <div className="bg-slate-50/50 min-h-screen">
+            {/* Unified Ultra-Premium Prescription & Consultation Header */}
+            <header className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-border-theme px-4 sm:px-6 py-3.5 mb-6 sticky top-0 z-50 shadow-sm transition-all">
+                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3.5">
+                    {/* Left: Unified Title & Patient Identity */}
+                    <div className="flex items-center gap-3 min-w-0">
                         <button
                             onClick={() => {
                                 if (appointmentId) {
-                                    router.push(`/${hospitalId}/doctor/lab-token/create?appointmentId=${appointmentId}`);
+                                    router.push(`/${hospitalId}/doctor/appointment/${appointmentId}`);
                                 } else {
-                                    toast.error("No active appointment found. Please start a consultation first.");
+                                    router.back();
                                 }
                             }}
-                            disabled={isSendingLab}
-                            className="flex-1 sm:flex-none px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                            className="p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl text-slate-700 dark:text-slate-200 transition-all shrink-0 shadow-sm flex items-center justify-center cursor-pointer"
+                            title={appointmentId ? "Back to Consultation Overview" : "Go Back"}
                         >
-                            {isSendingLab ? <Loader2 size={14} className="animate-spin" /> : <Beaker size={14} />}
-                            Lab Token
+                            <ArrowLeft size={18} />
                         </button>
 
-                        <div className="bg-secondary-theme p-1.5 rounded-2xl flex items-center w-full sm:w-auto gap-1">
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <h1 className="text-base sm:text-lg font-black text-gray-900 dark:text-white tracking-tight">
+                                    Prescription Desk
+                                </h1>
+                                {appointmentId && (
+                                    <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                        In Consultation
+                                    </span>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap mt-0.5 text-xs">
+                                <span className="font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wide">
+                                    Patient: {formData.patientName || appointmentData?.patient?.name || 'New Case'}
+                                </span>
+                                {(appointmentData?.patient?.mrn || appointmentData?.mrn) && (
+                                    <>
+                                        <span className="text-slate-300 dark:text-slate-600 font-bold">•</span>
+                                        <span className="font-bold text-slate-500 dark:text-slate-400 uppercase font-mono text-[11px]">
+                                            MRN: {appointmentData?.patient?.mrn || appointmentData?.mrn}
+                                        </span>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right: Integrated Action Bars */}
+                    <div className="flex items-center gap-2.5 flex-wrap xl:justify-end">
+                        {/* Clinical Tools Group */}
+                        <div className="flex items-center gap-1.5 bg-slate-100/80 dark:bg-gray-800/80 p-1 rounded-2xl border border-slate-200/80 dark:border-gray-700/80 flex-wrap">
+                            {/* Lab Token */}
+                            <button
+                                onClick={() => {
+                                    if (appointmentId) {
+                                        const currentUrl = `/${hospitalId}/doctor/prescription?appointmentId=${appointmentId}`;
+                                        router.push(`/${hospitalId}/doctor/lab-token/create?appointmentId=${appointmentId}&returnUrl=${encodeURIComponent(currentUrl)}`);
+                                    } else {
+                                        toast.error("No active appointment found. Please start a consultation first.");
+                                    }
+                                }}
+                                disabled={isSendingLab}
+                                className="px-3 py-1.5 bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 rounded-xl text-[11px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow-sm border border-blue-100 dark:border-blue-900/40 transition-all cursor-pointer shrink-0"
+                            >
+                                {isSendingLab ? <Loader2 size={13} className="animate-spin" /> : <Beaker size={13} />}
+                                Lab Token
+                            </button>
+
+                            {/* Medical History */}
+                            <button
+                                onClick={() => setShowHistoryModal(true)}
+                                disabled={!selectedPatientId}
+                                className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 transition-all shrink-0 ${
+                                    selectedPatientId
+                                        ? 'bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 cursor-pointer shadow-sm'
+                                        : 'bg-transparent text-slate-400 cursor-not-allowed opacity-50'
+                                }`}
+                            >
+                                <History size={13} />
+                                <span className="hidden sm:inline">Medical</span> History
+                            </button>
+
+                            {/* Scope Toggle */}
+                            {selectedPatientId && (
+                                <div className="flex items-center gap-2 px-2.5 py-1 border-l border-slate-200 dark:border-gray-700 shrink-0" title={showFullHistory ? "All Network Records" : "Current Facility Only"}>
+                                    <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-tight hidden sm:inline">
+                                        {showFullHistory ? "All Network" : "Facility Only"}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowFullHistory(!showFullHistory);
+                                            if (!showHistoryModal) setShowHistoryModal(true);
+                                        }}
+                                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                            showFullHistory ? 'bg-amber-500 shadow-sm' : 'bg-slate-300 dark:bg-slate-700'
+                                        }`}
+                                    >
+                                        <span
+                                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                                showFullHistory ? 'translate-x-4' : 'translate-x-0'
+                                            }`}
+                                        />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Prescription Entry Mode Toggle */}
+                        <div className="bg-slate-100/80 dark:bg-gray-800/80 p-1 rounded-2xl flex items-center shrink-0 border border-slate-200/80 dark:border-gray-700/80">
                             <button
                                 onClick={() => setMode('SELF')}
-                                className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${mode === 'SELF' ? 'bg-card shadow-sm text-primary-theme' : 'text-muted hover:bg-card/50'}`}
+                                className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer ${mode === 'SELF' ? 'bg-white dark:bg-gray-900 shadow-sm text-primary-theme' : 'text-muted hover:bg-white/50'}`}
                             >
-                                <PenTool size={14} /> Manual
+                                <PenTool size={13} /> Manual
                             </button>
                             <button
                                 onClick={() => setMode('AI')}
-                                className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${mode === 'AI' ? 'bg-indigo-500 shadow-sm text-white' : 'text-muted hover:bg-card/50'}`}
+                                className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer ${mode === 'AI' ? 'bg-indigo-600 shadow-sm text-white' : 'text-muted hover:bg-white/50'}`}
                             >
-                                <Mic2 size={14} className={mode === 'AI' ? 'animate-pulse' : ''} /> Voice Prescription
+                                <Mic2 size={13} className={mode === 'AI' ? 'animate-pulse' : ''} /> Voice
                             </button>
                         </div>
-                        <button
-                            onClick={() => {
-                                if (selectedPatientId) {
-                                    window.open(`/${hospitalId}/doctor/patients/${selectedPatientId}`, '_blank');
-                                }
-                            }}
-                            disabled={!selectedPatientId}
-                            className={`px-4 py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all border cursor-pointer shrink-0 ${
-                                selectedPatientId
-                                    ? 'bg-teal-50 border-teal-200 text-teal-600 dark:bg-teal-950/20 dark:border-teal-900/30 hover:bg-teal-100 dark:hover:bg-teal-950/40'
-                                    : 'bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-800/50 dark:border-slate-700 cursor-not-allowed opacity-60'
-                            }`}
-                        >
-                            <History size={14} />
-                            Patient History
-                        </button>
+
+                        {/* Session Timer & End Controls Group */}
+                        {appointmentId && (
+                            <div className="flex items-center gap-1.5 bg-slate-900 dark:bg-black text-white p-1 rounded-2xl border border-slate-800 shadow-md shrink-0">
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-800/90 font-mono text-xs font-black text-teal-400 tabular-nums border border-slate-700/50">
+                                    <Clock size={12} className="animate-pulse text-teal-400" />
+                                    <span>{formatTime(elapsedTime)}</span>
+                                </div>
+                                <button
+                                    onClick={handlePauseConsultation}
+                                    className="px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase tracking-wider text-amber-400 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                                    title="Pause Consultation"
+                                >
+                                    <Pause size={12} />
+                                    <span className="hidden sm:inline">Pause</span>
+                                </button>
+                                <button
+                                    onClick={handleEndConsultation}
+                                    disabled={isEndingSession}
+                                    className="px-3.5 py-1 rounded-xl text-[11px] font-black uppercase tracking-wider bg-teal-500 hover:bg-teal-600 text-white shadow-sm shadow-teal-500/30 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                                    title="Complete Session"
+                                >
+                                    {isEndingSession ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+                                    <span>Complete Session</span>
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </header>
@@ -3310,6 +3487,156 @@ function CreatePrescriptionPage() {
                                 className="flex-1 py-3 bg-amber-500 text-white rounded-xl font-bold uppercase text-xs tracking-wider shadow-lg shadow-amber-500/20 hover:bg-amber-600 active:scale-95 transition-all"
                             >
                                 Yes, Proceed
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Medical History Drawer Modal */}
+            {showHistoryModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-900/60 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-gray-900 h-full w-full max-w-2xl shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 border-l border-border-theme">
+                        {/* Drawer Header */}
+                        <div className="p-6 border-b border-border-theme flex items-center justify-between bg-gray-50 dark:bg-gray-800/50">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-400 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+                                    <History size={20} className="text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-black uppercase tracking-wider text-gray-900 dark:text-white">Medical History</h3>
+                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Past visits, prescriptions & lab reports</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowHistoryModal(false)}
+                                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors text-muted-foreground"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Full History Toggle Pill Inside Modal */}
+                        <div className="p-4 border-b border-border-theme bg-amber-50/50 dark:bg-amber-950/10">
+                            <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 rounded-2xl border border-amber-200 dark:border-amber-900/40 shadow-sm">
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${showFullHistory ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-400'}`}>
+                                        <Building size={20} />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-xs font-black uppercase tracking-tight text-foreground">View Full Patient History</h4>
+                                        <p className="text-[9px] font-bold text-muted-foreground uppercase mt-0.5">
+                                            {showFullHistory ? 'Accessing complete medical records across network' : 'Showing records from current facility only'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setShowFullHistory(!showFullHistory)}
+                                    className={`w-12 h-6 rounded-full transition-all relative p-1 ${showFullHistory ? 'bg-amber-500 shadow-sm shadow-amber-500/30' : 'bg-gray-200 dark:bg-gray-800'}`}
+                                >
+                                    <div className={`w-4 h-4 bg-white rounded-full shadow transition-all transform ${showFullHistory ? 'translate-x-6' : 'translate-x-0'}`} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="flex border-b border-border-theme px-6 bg-white dark:bg-gray-900">
+                            <button
+                                onClick={() => setHistoryTab('visits')}
+                                className={`py-3.5 px-4 font-bold text-xs uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 ${historyTab === 'visits' ? 'border-amber-500 text-amber-600' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                            >
+                                <Stethoscope size={14} /> Visits ({patientHistoryData.visits.length})
+                            </button>
+                            <button
+                                onClick={() => setHistoryTab('prescriptions')}
+                                className={`py-3.5 px-4 font-bold text-xs uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 ${historyTab === 'prescriptions' ? 'border-amber-500 text-amber-600' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                            >
+                                <FileText size={14} /> Prescriptions ({patientHistoryData.prescriptions.length})
+                            </button>
+                            <button
+                                onClick={() => setHistoryTab('reports')}
+                                className={`py-3.5 px-4 font-bold text-xs uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 ${historyTab === 'reports' ? 'border-amber-500 text-amber-600' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                            >
+                                <FlaskConical size={14} /> Lab Reports ({patientHistoryData.reports.length})
+                            </button>
+                        </div>
+
+                        {/* Drawer Content */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                            {loadingHistory ? (
+                                <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                                    <Loader2 size={32} className="animate-spin text-amber-500 mb-3" />
+                                    <span className="text-xs font-bold uppercase tracking-wider">Fetching medical records...</span>
+                                </div>
+                            ) : (
+                                <>
+                                    {historyTab === 'visits' && (
+                                        patientHistoryData.visits.length === 0 ? (
+                                            <div className="text-center py-16 text-muted-foreground text-xs font-bold uppercase tracking-widest">No previous visits found</div>
+                                        ) : (
+                                            patientHistoryData.visits.map((visit: any, idx: number) => (
+                                                <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-border-theme space-y-2">
+                                                    <div className="flex justify-between items-start">
+                                                        <span className="text-xs font-black text-foreground">{visit.diagnosis || 'General Consultation'}</span>
+                                                        <span className="text-[10px] font-bold text-muted-foreground">{new Date(visit.consultationStartTime || visit.createdAt).toLocaleDateString()}</span>
+                                                    </div>
+                                                    {visit.clinicalNotes && <p className="text-xs text-muted-foreground line-clamp-2">{visit.clinicalNotes}</p>}
+                                                    {visit.doctor?.name && <div className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mt-2">Dr. {visit.doctor.name}</div>}
+                                                </div>
+                                            ))
+                                        )
+                                    )}
+                                    {historyTab === 'prescriptions' && (
+                                        patientHistoryData.prescriptions.length === 0 ? (
+                                            <div className="text-center py-16 text-muted-foreground text-xs font-bold uppercase tracking-widest">No prescriptions found</div>
+                                        ) : (
+                                            patientHistoryData.prescriptions.map((rx: any, idx: number) => (
+                                                <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-border-theme space-y-2">
+                                                    <div className="flex justify-between items-start">
+                                                        <span className="text-xs font-black text-foreground">{rx.diagnosis || 'Prescription'}</span>
+                                                        <span className="text-[10px] font-bold text-muted-foreground">{new Date(rx.createdAt).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                                        {(rx.medicines || []).map((m: any, mIdx: number) => (
+                                                            <span key={mIdx} className="px-2 py-1 bg-white dark:bg-gray-900 border border-border-theme rounded-lg text-[10px] font-bold text-foreground">
+                                                                {m.name} ({m.dosage})
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )
+                                    )}
+                                    {historyTab === 'reports' && (
+                                        patientHistoryData.reports.length === 0 ? (
+                                            <div className="text-center py-16 text-muted-foreground text-xs font-bold uppercase tracking-widest">No lab reports found</div>
+                                        ) : (
+                                            patientHistoryData.reports.map((rep: any, idx: number) => (
+                                                <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-border-theme space-y-2">
+                                                    <div className="flex justify-between items-start">
+                                                        <span className="text-xs font-black text-foreground">{rep.testName || 'Lab Investigation'}</span>
+                                                        <span className="text-[10px] font-bold text-muted-foreground">{new Date(rep.createdAt).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <div className="text-[10px] font-bold text-teal-600 uppercase tracking-wider">Status: {rep.status || 'Reported'}</div>
+                                                </div>
+                                            ))
+                                        )
+                                    )}
+                                </>
+                            )}
+                        </div>
+
+                        {/* Drawer Footer */}
+                        <div className="p-4 border-t border-border-theme bg-gray-50 dark:bg-gray-800/50 flex justify-end">
+                            <button
+                                onClick={() => {
+                                    if (selectedPatientId) {
+                                        window.open(`/${hospitalId}/doctor/patients/${selectedPatientId}`, '_blank');
+                                    }
+                                }}
+                                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-md transition-all"
+                            >
+                                Open Full Profile Page
                             </button>
                         </div>
                     </div>

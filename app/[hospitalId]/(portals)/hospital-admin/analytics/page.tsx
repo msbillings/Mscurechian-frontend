@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar,
-    AreaChart, Area
+    AreaChart, Area, Cell
 } from 'recharts';
 import {
     Pill, FlaskConical, Building2, Users,
@@ -23,6 +23,7 @@ const AnalyticsPage = () => {
     const [endDate, setEndDate] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+    const [selectedCard, setSelectedCard] = useState<number>(0);
     const [isExporting, setIsExporting] = useState(false);
 
     // Fetch Current Data
@@ -346,10 +347,10 @@ const AnalyticsPage = () => {
     };
 
     const stats = [
-        { label: 'OPD Revenue', value: summary.appointments?.totalRevenue || 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-        { label: 'IPD Revenue', value: summary.ipd?.totalRevenue || 0, icon: Building2, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-        { label: 'Pharmacy', value: summary.pharmacy?.totalRevenue || 0, icon: Pill, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-        { label: 'Laboratory', value: summary.lab?.totalRevenue || 0, icon: FlaskConical, color: 'text-amber-600', bg: 'bg-amber-50' },
+        { label: 'OPD Revenue', key: 'appointments', value: summary.appointments?.totalRevenue || 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-500 ring-blue-500', stroke: '#3b82f6' },
+        { label: 'IPD Revenue', key: 'ipd', value: summary.ipd?.totalRevenue || 0, icon: Building2, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-500 ring-indigo-500', stroke: '#8b5cf6' },
+        { label: 'Pharmacy', key: 'pharmacy', value: summary.pharmacy?.totalRevenue || 0, icon: Pill, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-500 ring-emerald-500', stroke: '#10b981' },
+        { label: 'Laboratory', key: 'lab', value: summary.lab?.totalRevenue || 0, icon: FlaskConical, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-500 ring-amber-500', stroke: '#f59e0b' },
     ];
 
     const filteredDoctors = doctors.filter((doc: any) =>
@@ -463,10 +464,11 @@ const AnalyticsPage = () => {
                         <div
                             key={i}
                             className="relative"
+                            onClick={() => setSelectedCard(i)}
                             onMouseEnter={() => setHoveredCard(i)}
                             onMouseLeave={() => setHoveredCard(null)}
                         >
-                            <Card className="p-2 md:p-6 border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer h-full min-w-0">
+                            <Card className={`p-2 md:p-6 shadow-sm hover:shadow-md transition-all cursor-pointer h-full min-w-0 ${selectedCard === i ? `ring-2 ring-offset-2 ${s.border} bg-slate-50` : 'border border-slate-200'}`}>
                                 <div className="flex flex-col sm:flex-row items-center sm:items-center gap-2 md:gap-4">
                                     <div className={`p-2 md:p-3 rounded-xl ${s.bg} shrink-0`}>
                                         <s.icon className={`w-5 h-5 md:w-6 md:h-6 ${s.color}`} />
@@ -518,14 +520,19 @@ const AnalyticsPage = () => {
             {/* Simple Revenue Trend */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 <Card className="p-2 md:p-6 border-slate-200 shadow-sm">
-                    <h3 className="text-sm md:text-lg font-bold text-slate-900 mb-6">Revenue Trend</h3>
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-sm md:text-lg font-bold text-slate-900">Revenue Trend ({stats[selectedCard].label})</h3>
+                        <span className="text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider bg-slate-100 text-slate-600">
+                            ● Active View
+                        </span>
+                    </div>
                     <div className="h-[300px] min-h-[300px] w-full relative">
                         <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                             <AreaChart data={trends}>
                                 <defs>
-                                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1} />
-                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                    <linearGradient id="colorSelected" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor={stats[selectedCard].stroke} stopOpacity={0.35} />
+                                        <stop offset="95%" stopColor={stats[selectedCard].stroke} stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -543,10 +550,10 @@ const AnalyticsPage = () => {
                                     tickFormatter={(v) => `₹${v >= 1000 ? v / 1000 + 'k' : v}`}
                                 />
                                 <Tooltip
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
-                                    formatter={(v: any) => [formatCurrency(v), 'Monthly Revenue']}
+                                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px rgba(0,0,0,0.08)', background: '#ffffff' }}
+                                    formatter={(v: any) => [formatCurrency(v), stats[selectedCard].label]}
                                 />
-                                <Area type="monotone" dataKey="total" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorTotal)" />
+                                <Area type="monotone" dataKey={stats[selectedCard].key} stroke={stats[selectedCard].stroke} strokeWidth={3} fillOpacity={1} fill="url(#colorSelected)" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
@@ -554,24 +561,36 @@ const AnalyticsPage = () => {
 
                 {/* Simple Unit Comparison */}
                 <Card className="p-2 md:p-6 border-slate-200 shadow-sm">
-                    <h3 className="text-sm md:text-lg font-bold text-slate-900 mb-6">Unit Performance</h3>
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-sm md:text-lg font-bold text-slate-900">Unit Performance</h3>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Revenue Comparison</span>
+                    </div>
                     <div className="h-[300px] min-h-[300px] w-full relative">
                         <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                             <BarChart data={[
-                                { name: 'OPD', value: summary.appointments?.totalRevenue || 0 },
-                                { name: 'IPD', value: summary.ipd?.totalRevenue || 0 },
-                                { name: 'PHM', value: summary.pharmacy?.totalRevenue || 0 },
-                                { name: 'LAB', value: summary.lab?.totalRevenue || 0 },
+                                { name: 'OPD', value: summary.appointments?.totalRevenue || 0, color: '#3b82f6' },
+                                { name: 'IPD', value: summary.ipd?.totalRevenue || 0, color: '#8b5cf6' },
+                                { name: 'PHM', value: summary.pharmacy?.totalRevenue || 0, color: '#10b981' },
+                                { name: 'LAB', value: summary.lab?.totalRevenue || 0, color: '#f59e0b' },
                             ]}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }} />
                                 <YAxis hide />
                                 <Tooltip
                                     cursor={{ fill: '#f8fafc' }}
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+                                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px rgba(0,0,0,0.08)', background: '#ffffff' }}
                                     formatter={(v: any) => formatCurrency(v)}
                                 />
-                                <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={30} />
+                                <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={36}>
+                                    {[
+                                        { name: 'OPD', color: '#3b82f6' },
+                                        { name: 'IPD', color: '#8b5cf6' },
+                                        { name: 'PHM', color: '#10b981' },
+                                        { name: 'LAB', color: '#f59e0b' },
+                                    ].map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} opacity={selectedCard === index ? 1 : 0.35} />
+                                    ))}
+                                </Bar>
                             </BarChart>
                         </ResponsiveContainer>
                     </div>

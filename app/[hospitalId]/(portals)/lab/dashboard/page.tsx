@@ -276,13 +276,23 @@ function LabDashboard() {
                           </div>
                         </td>
                         <td className="px-4 md:px-6 py-3 md:py-4">
-                          <div className="font-semibold text-xs md:text-sm text-gray-900 dark:text-white">
+                          <div className="font-semibold text-xs md:text-sm text-gray-900 dark:text-white flex items-center gap-2">
                             {test.patientDetails.name}
+                            {test.priority && test.priority !== 'routine' && (
+                              <span className="bg-red-500 text-white font-black text-[8px] px-1.5 py-0.5 rounded uppercase animate-pulse">
+                                🚨 {test.priority}
+                              </span>
+                            )}
                           </div>
                           <div className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-wide mt-0.5 md:mt-1">
                             {test.patientDetails.age}Y •{" "}
                             {test.patientDetails.gender}
                           </div>
+                          {test.clinicalAnnotations && (
+                            <div className="text-[9px] bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200 p-1 rounded mt-1 font-semibold border border-amber-200 dark:border-amber-800 line-clamp-1">
+                              📝 {test.clinicalAnnotations}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 md:px-6 py-3 md:py-4">
                           <div className="flex flex-wrap gap-1 md:gap-1.5">

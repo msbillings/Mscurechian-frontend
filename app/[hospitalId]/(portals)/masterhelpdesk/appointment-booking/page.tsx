@@ -30,14 +30,15 @@ import {
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { helpdeskService, masterHelpdeskService } from "@/lib/integrations";
+import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
 import masterDoctorLeaveService from "@/lib/integrations/masterDoctorLeaveService";
 import type { HelpdeskDoctor, HelpdeskProfile } from "@/lib/integrations/types";
 import toast from "react-hot-toast";
 import { renderToStaticMarkup } from 'react-dom/server';
 import MainHeader from '@/components/printers/MainHeader';
 import MainFooter from '@/components/printers/MainFooter';
-import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 import { generateClinicalReceiptHtml } from "@/lib/print-utils";
+import { getSocket, joinSocketRoom } from "@/lib/integrations/api/socket";
 
 export default function MasterAppointmentBooking() {
     const router = useRouter();
@@ -251,6 +252,48 @@ export default function MasterAppointmentBooking() {
         };
         init();
     }, [patientIdFromQuery]);
+
+    useEffect(() => {
+        let mounted = true;
+        let socketInstance: any = null;
+        (async () => {
+            try {
+                socketInstance = await getSocket();
+                if (!socketInstance || !mounted) return;
+                if (hospitalId) {
+                    joinSocketRoom({ role: "hospital", userId: hospitalId as string });
+                }
+                const onStatusChanged = (data: { doctorId: string; isOnline: boolean }) => {
+                    setDoctors(prev => prev.map(doc => {
+                        if (doc._id === data.doctorId || (doc as any).user?._id === data.doctorId) {
+                            return { ...doc, isOnline: data.isOnline };
+                        }
+                        return doc;
+                    }));
+                    setSelectedDoctor(prev => {
+                        if (prev && (prev._id === data.doctorId || (prev as any).user?._id === data.doctorId)) {
+                            if (!data.isOnline) {
+                                toast.error(`Doctor ${prev.name || (prev as any).user?.name || ''} has gone OFFLINE.`);
+                                return null;
+                            }
+                            return { ...prev, isOnline: data.isOnline };
+                        }
+                        return prev;
+                    });
+                };
+                socketInstance.on("doctor:status_changed", onStatusChanged);
+                (socketInstance as any)._docStatusCleanup = () => {
+                    socketInstance.off("doctor:status_changed", onStatusChanged);
+                };
+            } catch (e) {}
+        })();
+        return () => {
+            mounted = false;
+            if (socketInstance && (socketInstance as any)._docStatusCleanup) {
+                (socketInstance as any)._docStatusCleanup();
+            }
+        };
+    }, [hospitalId]);
 
     useEffect(() => {
         if (selectedPatient?.vitals) {
@@ -864,16 +907,34 @@ export default function MasterAppointmentBooking() {
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {filteredDoctors.map(doc => (
-                                    <button key={doc._id} onClick={() => setSelectedDoctor(doc)} className={`p-3.5 rounded-[16px] border-2 text-left flex items-center gap-3 transition-all ${selectedDoctor?._id === doc._id ? 'border-teal-500 bg-teal-50/50 shadow-lg' : 'border-slate-50 bg-white hover:border-slate-100'}`}>
-                                        <div className={`w-11 h-11 rounded-lg flex items-center justify-center font-black text-xl ${selectedDoctor?._id === doc._id ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-400'}`}>{doc.name?.charAt(0)}</div>
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className="text-[10px] font-black truncate text-slate-900 uppercase">{doc.name || doc.user?.name}</h4>
-                                            <p className="text-[8px] font-bold uppercase tracking-[0.1em] text-slate-400">{doc.specialty || doc.specialties?.[0] || 'Clinician'}</p>
-                                            <p className="text-[8px] font-black text-teal-600 uppercase">₹{doc.consultationFee || 0}.00</p>
-                                        </div>
-                                    </button>
-                                ))}
+                                {filteredDoctors.map(doc => {
+                                    const isOffline = doc.isOnline === false;
+                                    const isSelected = selectedDoctor?._id === doc._id;
+                                    return (
+                                        <button 
+                                            key={doc._id} 
+                                            disabled={isOffline}
+                                            onClick={() => {
+                                                if (isOffline) {
+                                                    toast.error("This doctor is currently offline and disabled for booking.");
+                                                    return;
+                                                }
+                                                setSelectedDoctor(doc);
+                                            }} 
+                                            className={`p-3.5 rounded-[16px] border-2 text-left flex items-center gap-3 transition-all relative overflow-hidden ${isOffline ? 'border-rose-200 bg-rose-50/50 opacity-60 cursor-not-allowed' : isSelected ? 'border-teal-500 bg-teal-50/50 shadow-lg' : 'border-slate-50 bg-white hover:border-slate-100'}`}
+                                        >
+                                            <div className={`w-11 h-11 rounded-lg flex items-center justify-center font-black text-xl shrink-0 ${isOffline ? 'bg-rose-100 text-rose-500' : isSelected ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-400'}`}>{doc.name?.charAt(0)}</div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between gap-1">
+                                                    <h4 className={`text-[10px] font-black truncate uppercase ${isOffline ? 'text-rose-800 line-through' : 'text-slate-900'}`}>{doc.name || doc.user?.name}</h4>
+                                                    {isOffline && <span className="px-1.5 py-0.5 rounded bg-rose-600 text-white text-[7px] font-black uppercase tracking-wider shrink-0">OFFLINE</span>}
+                                                </div>
+                                                <p className="text-[8px] font-bold uppercase tracking-[0.1em] text-slate-400">{doc.specialty || doc.specialties?.[0] || 'Clinician'}</p>
+                                                <p className={`text-[8px] font-black uppercase ${isOffline ? 'text-rose-500' : 'text-teal-600'}`}>₹{doc.consultationFee || 0}.00</p>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
                             </div>
 
                             {selectedDoctor && isDoctorOnLeave && (

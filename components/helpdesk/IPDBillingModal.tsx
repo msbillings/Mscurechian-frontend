@@ -14,11 +14,15 @@ import {
     History,
     Wallet,
     Info,
-    Bed as BedIcon
+    Bed as BedIcon,
+    Printer,
+    ChevronDown
 } from 'lucide-react';
 import { ipdService } from '@/lib/integrations/services/ipd.service';
 import { toast } from 'react-hot-toast';
 import { format } from 'date-fns';
+import { printIPDLedger } from '@/lib/utils/print-ipd-ledger';
+import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 
 interface IPDBillingModalProps {
     isOpen: boolean;
@@ -31,6 +35,8 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
     const [summary, setSummary] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'summary' | 'charges' | 'advances'>('summary');
+    const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+    const [hospitalDetails, setHospitalDetails] = useState<any>(null);
 
     // Form States
     const [showChargeForm, setShowChargeForm] = useState(false);
@@ -49,6 +55,12 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
             setAdvanceData(prev => ({ ...prev, amount: Math.round(summary.financials.balance) }));
         }
     }, [showAdvanceForm, summary]);
+
+    useEffect(() => {
+        hospitalAdminService.getHospital().then((res) => {
+            if (res?.hospital) setHospitalDetails(res.hospital);
+        }).catch(() => {});
+    }, []);
 
     useEffect(() => {
         if (isOpen && admissionId) {
@@ -183,10 +195,17 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                     </div>
                     <div className="flex items-center gap-2">
                         {summary?.isBillLocked && (
-                            <div className="flex items-center gap-1.5 px-2 py-1 bg-rose-500/20 text-rose-300 rounded-md text-[7px] font-black uppercase tracking-widest border border-rose-500/30">
+                            <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/20 text-emerald-300 rounded-md text-[7px] font-black uppercase tracking-widest border border-emerald-500/30">
                                 <Lock size={10} /> Bill Locked
                             </div>
                         )}
+                        <button
+                            onClick={() => summary && printIPDLedger(summary, hospitalDetails)}
+                            title="Print Statement"
+                            className="w-7 h-7 bg-white/10 text-teal-400 rounded-lg flex items-center justify-center hover:bg-teal-500/20 hover:text-teal-300 transition-all"
+                        >
+                            <Printer size={14} />
+                        </button>
                         <button onClick={onClose} className="w-7 h-7 bg-white/10 text-white rounded-lg flex items-center justify-center hover:bg-white/20 transition-all">
                             <X size={14} />
                         </button>
@@ -253,18 +272,50 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                         const finalBill = Math.max(0, afterDiscount - totalAdvance);
                                         const overpaid = Math.max(0, totalAdvance - afterDiscount);
 
-                                        // Row helper
-                                        const Row = ({ label, sub, amount, color = 'text-slate-800', bg = '' }: {
-                                            label: string; sub?: string; amount: string; color?: string; bg?: string;
-                                        }) => (
-                                            <div className={`flex justify-between items-center px-3 py-2 rounded-lg ${bg}`}>
+                                        // Row helper — now with expandable accordion
+                                        const Row = ({ label, sub, amount, color = 'text-slate-800', bg = '', rowKey, subItems }: {
+                                            label: string; sub?: string; amount: string; color?: string; bg?: string; rowKey?: string; subItems?: any[];
+                                        }) => {
+                                            const isExpandable = rowKey && subItems && subItems.length > 0;
+                                            const isExpanded = rowKey ? expandedRows[rowKey] : false;
+                                            return (
                                                 <div>
-                                                    <span className={`text-[8px] font-bold uppercase ${color}`}>{label}</span>
-                                                    {sub && <span className="ml-2 text-[6px] font-black text-slate-400 uppercase tracking-widest">{sub}</span>}
+                                                    <div
+                                                        className={`flex justify-between items-center px-3 py-2 rounded-lg ${bg} ${isExpandable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+                                                        onClick={() => {
+                                                            if (isExpandable && rowKey) {
+                                                                setExpandedRows(prev => ({ ...prev, [rowKey]: !prev[rowKey] }));
+                                                            }
+                                                        }}
+                                                    >
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div>
+                                                                <span className={`text-[8px] font-bold uppercase ${color}`}>{label}</span>
+                                                                {sub && <span className="ml-2 text-[6px] font-black text-slate-400 uppercase tracking-widest">{sub}</span>}
+                                                            </div>
+                                                            {isExpandable && (
+                                                                <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                                                            )}
+                                                        </div>
+                                                        <span className={`text-[9px] font-black ${color}`}>{amount}</span>
+                                                    </div>
+                                                    {isExpandable && isExpanded && (
+                                                        <div className="ml-4 mr-2 mt-1 mb-2 border-l-2 border-slate-200 pl-3 space-y-1 animate-in slide-in-from-top-1 duration-200">
+                                                            {subItems!.map((item: any, idx: number) => (
+                                                                <div key={idx} className="flex justify-between items-center py-1 text-[7px]">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="font-bold text-slate-500 uppercase">{item.description || item.bedId || item.type || 'Item'}</span>
+                                                                        {item.date && <span className="text-slate-400">{format(new Date(item.date), 'dd MMM')}</span>}
+                                                                        {item.category && <span className="px-1 py-0.5 bg-slate-100 text-slate-400 rounded text-[5px] font-black uppercase">{item.category}</span>}
+                                                                    </div>
+                                                                    <span className={`font-black ${item.status === 'Reversed' ? 'text-slate-300 line-through' : 'text-slate-600'}`}>₹ {(item.amount || item.charge || 0).toLocaleString()}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <span className={`text-[9px] font-black ${color}`}>{amount}</span>
-                                            </div>
-                                        );
+                                            );
+                                        };
 
                                         const Divider = ({ label }: { label: string }) => (
                                             <div className="border-t border-dashed border-slate-200 pt-3 mt-1 mb-2">
@@ -293,13 +344,15 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
 
                                                 <div className="p-4 space-y-1">
 
-                                                    {/* ── CHARGES ── */}
+                                                    {/* ── CHARGES (with accordion drilldown) ── */}
                                                     <Row
                                                         label="Bed Charges"
                                                         sub={`${summary?.bedCharges?.items?.length || 0} bed(s) @ daily rate`}
                                                         amount={`₹ ${bedTotal.toLocaleString()}`}
                                                         bg="bg-blue-50/50"
                                                         color="text-blue-800"
+                                                        rowKey="bed"
+                                                        subItems={summary?.bedCharges?.items?.map((b: any) => ({ description: `${b.bedId} • ${b.type}`, charge: b.charge, date: null, category: `${Math.ceil(b.days || 1)} day(s) @ ₹${b.rate}` }))}
                                                     />
 
                                                     <Row
@@ -308,6 +361,8 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                         amount={`₹ ${pharmaTotal.toLocaleString()}`}
                                                         bg="bg-violet-50/50"
                                                         color="text-violet-800"
+                                                        rowKey="pharmacy"
+                                                        subItems={(summary?.extraCharges?.items || []).filter((i: any) => i.category === 'Pharmacy')}
                                                     />
 
                                                     <Row
@@ -316,6 +371,8 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                         amount={`₹ ${labTotal.toLocaleString()}`}
                                                         bg="bg-cyan-50/50"
                                                         color="text-cyan-800"
+                                                        rowKey="lab"
+                                                        subItems={(summary?.extraCharges?.items || []).filter((i: any) => i.category === 'Lab')}
                                                     />
                                                     {otherExtra > 0 && (
                                                         <Row
@@ -324,6 +381,8 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                             amount={`₹ ${otherExtra.toLocaleString()}`}
                                                             bg="bg-orange-50/50"
                                                             color="text-orange-800"
+                                                            rowKey="other"
+                                                            subItems={(summary?.extraCharges?.items || []).filter((i: any) => i.category !== 'Pharmacy' && i.category !== 'Lab')}
                                                         />
                                                     )}
 
@@ -375,15 +434,15 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                         color="text-teal-700"
                                                     />
 
-                                                    {/* ── FINAL BILL ── */}
+                                                    {/* ── FINAL BILL (professional dark card for due, emerald for settled/overpaid) ── */}
                                                     <div className={`rounded-xl p-4 mt-3 flex justify-between items-center border-2 ${overpaid > 0
                                                             ? 'bg-emerald-50 border-emerald-300'
                                                             : finalBill === 0
                                                                 ? 'bg-emerald-50 border-emerald-200'
-                                                                : 'bg-rose-50 border-rose-300'
+                                                                : 'bg-slate-900 border-slate-800'
                                                         }`}>
                                                         <div>
-                                                            <p className={`text-[9px] font-black uppercase tracking-widest ${overpaid > 0 || finalBill === 0 ? 'text-emerald-600' : 'text-rose-600'
+                                                            <p className={`text-[9px] font-black uppercase tracking-widest ${overpaid > 0 || finalBill === 0 ? 'text-emerald-600' : 'text-slate-400'
                                                                 }`}>
                                                                 {overpaid > 0 ? 'Overpaid — Refund Due' : finalBill === 0 ? '✓ Fully Settled' : 'Final Patient Bill'}
                                                             </p>
@@ -391,7 +450,7 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                                 <p className="text-[7px] font-bold text-emerald-500 mt-0.5">Return ₹ {overpaid.toLocaleString()} to patient</p>
                                                             )}
                                                         </div>
-                                                        <p className={`text-3xl font-black tracking-tight ${overpaid > 0 || finalBill === 0 ? 'text-emerald-600' : 'text-rose-600'
+                                                        <p className={`text-3xl font-black tracking-tight ${overpaid > 0 || finalBill === 0 ? 'text-emerald-600' : 'text-teal-400'
                                                             }`}>
                                                             ₹ {(overpaid > 0 ? overpaid : finalBill).toLocaleString()}
                                                         </p>
@@ -401,32 +460,54 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                         );
                                     })()}
 
-                                    {/* Actions */}
+                                    {/* Actions — context-aware: show modification buttons only when unlocked */}
                                     <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-100">
-                                        {!summary?.isBillLocked && summary?.status !== 'Discharge Initiated' && (
-                                            <button
-                                                onClick={() => { setShowChargeForm(true); setActiveTab('charges'); }}
-                                                className="px-4 py-3 bg-slate-900 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center gap-1.5 shadow-lg h-fit"
-                                            >
-                                                <Plus size={14} /> Add Charge
-                                            </button>
-                                        )}
-                                        {!hidePaymentActions && (
+                                        {summary?.isBillLocked ? (
+                                            /* ── Locked State: Show Print & Unlock Request ── */
                                             <>
                                                 <button
-                                                    onClick={() => setShowDiscountForm(true)}
-                                                    className="px-4 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-1.5 shadow-sm h-fit"
+                                                    onClick={() => summary && printIPDLedger(summary, hospitalDetails)}
+                                                    className="px-5 py-3 bg-teal-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all flex items-center gap-2 shadow-lg shadow-teal-200 h-fit"
                                                 >
-                                                    <Tag size={14} /> Apply Discount
+                                                    <Printer size={14} /> Print Final Bill
                                                 </button>
-                                                <div className="flex-1 min-w-[100px]" />
+                                                <div className="flex-1 min-w-[50px]" />
                                                 <button
-                                                    onClick={handleLockBill}
-                                                    disabled={submitting}
-                                                    className="px-4 py-3 bg-rose-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all flex items-center gap-1.5 shadow-xl shadow-rose-200 h-fit ml-auto"
+                                                    onClick={() => window.confirm('Bill unlock requires Hospital Admin approval.\n\nPlease contact your Hospital Administrator to unlock this bill from the Admin Panel → IPD Management.')}
+                                                    className="px-4 py-3 bg-white border border-slate-200 text-slate-400 rounded-xl text-[7px] font-black uppercase tracking-widest hover:bg-slate-50 hover:text-slate-600 transition-all flex items-center gap-1.5 h-fit"
                                                 >
-                                                    <Lock size={14} /> Finalize & Lock
+                                                    <Lock size={12} /> Request Admin Unlock
                                                 </button>
+                                            </>
+                                        ) : (
+                                            /* ── Unlocked State: Show modification buttons ── */
+                                            <>
+                                                {summary?.status !== 'Discharge Initiated' && (
+                                                    <button
+                                                        onClick={() => { setShowChargeForm(true); setActiveTab('charges'); }}
+                                                        className="px-4 py-3 bg-slate-900 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center gap-1.5 shadow-lg h-fit"
+                                                    >
+                                                        <Plus size={14} /> Add Charge
+                                                    </button>
+                                                )}
+                                                {!hidePaymentActions && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => setShowDiscountForm(true)}
+                                                            className="px-4 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-1.5 shadow-sm h-fit"
+                                                        >
+                                                            <Tag size={14} /> Apply Discount
+                                                        </button>
+                                                        <div className="flex-1 min-w-[100px]" />
+                                                        <button
+                                                            onClick={handleLockBill}
+                                                            disabled={submitting}
+                                                            className="px-4 py-3 bg-slate-900 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center gap-1.5 shadow-xl shadow-slate-200 h-fit ml-auto"
+                                                        >
+                                                            <Lock size={14} /> Finalize & Lock
+                                                        </button>
+                                                    </>
+                                                )}
                                             </>
                                         )}
                                     </div>
@@ -692,11 +773,13 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
 
                 {/* Footer Section (Locked status if applicable) */}
                 {summary?.isBillLocked && (
-                    <div className="p-6 bg-rose-50 border-t border-rose-100 flex items-center gap-4">
-                        <Lock size={20} className="text-rose-600" />
+                    <div className="p-4 bg-slate-900 border-t border-slate-800 flex items-center gap-3">
+                        <div className="w-8 h-8 bg-teal-500/20 rounded-lg flex items-center justify-center shrink-0">
+                            <Lock size={14} className="text-teal-400" />
+                        </div>
                         <div>
-                            <p className="text-[10px] font-black text-rose-800 uppercase tracking-widest">Finalized Statement</p>
-                            <p className="text-[8px] font-bold text-rose-600 uppercase mt-0.5">This bill has been locked for settlement. No further modifications are permitted.</p>
+                            <p className="text-[9px] font-black text-white uppercase tracking-widest">Finalized Statement</p>
+                            <p className="text-[7px] font-bold text-slate-400 uppercase mt-0.5">This bill has been locked for settlement. No further modifications are permitted.</p>
                         </div>
                     </div>
                 )}

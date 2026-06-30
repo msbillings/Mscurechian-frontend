@@ -65,7 +65,7 @@ const MasterHelpdeskQuickActions: React.FC<MasterHelpdeskQuickActionsProps> = ({
                                 `}
                             >
                                 <Icon size={18} className={`shrink-0 transition-transform ${isSelected ? 'scale-110' : ''}`} />
-                                
+
                                 <span className="text-[10px] font-black uppercase tracking-widest hidden xl:block">
                                     {action.label}
                                 </span>
@@ -98,7 +98,7 @@ const MasterHelpdeskQuickActions: React.FC<MasterHelpdeskQuickActionsProps> = ({
                                 <ArrowRight size={14} />
                             </div>
                         </button>
-                        
+
                         {/* Little Arrow Indicator */}
                         <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-t border-l border-slate-200 rotate-45" />
                     </motion.div>

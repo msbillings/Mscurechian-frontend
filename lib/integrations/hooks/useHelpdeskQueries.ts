@@ -46,12 +46,13 @@ export const helpdeskKeys = {
     startDate?: string,
     endDate?: string,
     type?: string,
-    isEdited?: boolean
+    isEdited?: boolean,
+    search?: string
   ) =>
     [
       ...BASE_KEY,
       "transactions",
-      { page, limit, range, startDate, endDate, type, isEdited },
+      { page, limit, range, startDate, endDate, type, isEdited, search },
     ] as const,
   transits: (params?: any) => [...BASE_KEY, "transits", params] as const,
   availability: (doctorId: string, hospitalId: string, date: string) =>
@@ -308,6 +309,7 @@ export const useTransactions = (
   endDate?: string,
   type?: string,
   isEdited?: boolean,
+  search?: string,
 ) => {
   return useQuery({
     queryKey: helpdeskKeys.transactions(
@@ -317,7 +319,8 @@ export const useTransactions = (
       startDate,
       endDate,
       type,
-      isEdited
+      isEdited,
+      search
     ),
     queryFn: () =>
       helpdeskService.getTransactions(
@@ -328,7 +331,8 @@ export const useTransactions = (
         startDate,
         endDate,
         type,
-        isEdited
+        isEdited,
+        search
       ),
     ...HELPDESK_QUERY_DEFAULTS,
     // â Œ NO POLLING
