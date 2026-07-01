@@ -26,7 +26,7 @@ const BedsManagement = () => {
     const [showImportModal, setShowImportModal] = useState(false);
 
     // New Bed State
-    const [newBed, setNewBed] = useState({ bedId: "", type: "", floor: "", room: "", department: "", ward: "", pricePerDay: 0 });
+    const [newBed, setNewBed] = useState({ bedId: "", type: "", floor: "", room: "", department: "", ward: "", pricePerDay: 0, pricePerHalfDay: 0, pricePerHour: 0 });
     const [editingBed, setEditingBed] = useState<any>(null);
     const [showEditModal, setShowEditModal] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -101,14 +101,19 @@ const BedsManagement = () => {
         if (!/^[A-Z0-9-]+$/.test(newBed.bedId.toUpperCase())) return toast.error("Bed ID should be alphanumeric (e.g., ICU-101)");
         if (!newBed.room) return toast.error("Please select a room");
         if (!newBed.floor) return toast.error("Floor is required");
-        if (newBed.pricePerDay < 0) return toast.error("Price cannot be negative");
+        if (newBed.pricePerDay < 0 || newBed.pricePerHalfDay < 0 || newBed.pricePerHour < 0) return toast.error("Prices cannot be negative");
 
         try {
             setSubmitting(true);
-            await ipdService.createBed({ ...newBed, type: newBed.type.toUpperCase() });
+            await ipdService.createBed({
+                ...newBed,
+                type: newBed.type.toUpperCase(),
+                pricePerHalfDay: newBed.pricePerHalfDay || Math.round((newBed.pricePerDay || 0) / 2),
+                pricePerHour: newBed.pricePerHour || Math.round((newBed.pricePerDay || 0) / 24)
+            });
             toast.success("Bed registered successfully");
             setShowAddModal(false);
-            setNewBed({ bedId: "", type: "", floor: "", room: "", department: "", ward: "", pricePerDay: 0 });
+            setNewBed({ bedId: "", type: "", floor: "", room: "", department: "", ward: "", pricePerDay: 0, pricePerHalfDay: 0, pricePerHour: 0 });
             fetchInitialData();
         } catch (error: any) {
             toast.error(error.message || "Failed to register bed");
@@ -143,7 +148,7 @@ const BedsManagement = () => {
         if (!/^[A-Z0-9-]+$/.test(editingBed.bedId.toUpperCase())) return toast.error("Bed ID should be alphanumeric");
         if (!editingBed.room) return toast.error("Please select a room");
         if (!editingBed.floor) return toast.error("Floor is required");
-        if (editingBed.pricePerDay < 0) return toast.error("Price cannot be negative");
+        if (editingBed.pricePerDay < 0 || editingBed.pricePerHalfDay < 0 || editingBed.pricePerHour < 0) return toast.error("Prices cannot be negative");
 
         try {
             setSubmitting(true);
@@ -154,7 +159,9 @@ const BedsManagement = () => {
                 room: editingBed.room,
                 department: editingBed.department,
                 ward: editingBed.ward,
-                pricePerDay: editingBed.pricePerDay
+                pricePerDay: editingBed.pricePerDay,
+                pricePerHalfDay: editingBed.pricePerHalfDay || Math.round((editingBed.pricePerDay || 0) / 2),
+                pricePerHour: editingBed.pricePerHour || Math.round((editingBed.pricePerDay || 0) / 24)
             });
             toast.success("Bed updated successfully");
             setShowEditModal(false);
@@ -381,10 +388,20 @@ const BedsManagement = () => {
                                     </div>
                                     <div className="flex items-center justify-between border-t border-slate-50 pt-1.5 mt-1.5">
                                         <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{bed.department || "GEN"}</span>
-                                        <div className="flex items-center gap-1">
-                                            {bed.pricePerDay > 0 && (
-                                                <span className="text-[9px] font-black text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded-md border border-teal-100">
-                                                    ₹{bed.pricePerDay}
+                                        <div className="flex flex-wrap items-center gap-1 justify-end">
+                                            {bed.pricePerHour !== undefined && (
+                                                <span className="text-[7px] font-black text-slate-600 bg-slate-100 px-1 py-0.5 rounded border border-slate-200">
+                                                    ₹{bed.pricePerHour}/hr
+                                                </span>
+                                            )}
+                                            {bed.pricePerHalfDay !== undefined && (
+                                                <span className="text-[7px] font-black text-teal-600 bg-teal-50/80 px-1 py-0.5 rounded border border-teal-100">
+                                                    ₹{bed.pricePerHalfDay}/12h
+                                                </span>
+                                            )}
+                                            {(bed.pricePerDay || 0) > 0 && (
+                                                <span className="text-[8px] font-black text-teal-700 bg-teal-100/60 px-1.5 py-0.5 rounded border border-teal-200">
+                                                    ₹{bed.pricePerDay}/day
                                                 </span>
                                             )}
                                         </div>
@@ -504,15 +521,37 @@ const BedsManagement = () => {
                                         />
                                     </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-teal-600 uppercase tracking-widest ml-1">Price per Day (₹)</label>
-                                    <input
-                                        type="number"
-                                        value={newBed.pricePerDay}
-                                        onChange={(e) => setNewBed(prev => ({ ...prev, pricePerDay: Number(e.target.value) }))}
-                                        className="w-full px-3 md:px-6 py-2.5 md:py-4 bg-teal-50 border border-teal-100 rounded-2xl text-[10px] md:text-xs font-black focus:border-teal-500 outline-none transition-all"
-                                        placeholder="0.00"
-                                    />
+                                <div className="grid grid-cols-3 gap-2">
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest ml-1">Hourly (₹)</label>
+                                        <input
+                                            type="number"
+                                            value={newBed.pricePerHour}
+                                            onChange={(e) => setNewBed(prev => ({ ...prev, pricePerHour: Number(e.target.value) }))}
+                                            className="w-full px-3 py-2.5 bg-teal-50 border border-teal-100 rounded-xl text-xs font-black focus:border-teal-500 outline-none transition-all"
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest ml-1">1/2 Day (₹)</label>
+                                        <input
+                                            type="number"
+                                            value={newBed.pricePerHalfDay}
+                                            onChange={(e) => setNewBed(prev => ({ ...prev, pricePerHalfDay: Number(e.target.value) }))}
+                                            className="w-full px-3 py-2.5 bg-teal-50 border border-teal-100 rounded-xl text-xs font-black focus:border-teal-500 outline-none transition-all"
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest ml-1">Full Day (₹)</label>
+                                        <input
+                                            type="number"
+                                            value={newBed.pricePerDay}
+                                            onChange={(e) => setNewBed(prev => ({ ...prev, pricePerDay: Number(e.target.value) }))}
+                                            className="w-full px-3 py-2.5 bg-teal-50 border border-teal-100 rounded-xl text-xs font-black focus:border-teal-500 outline-none transition-all"
+                                            placeholder="0.00"
+                                        />
+                                    </div>
                                 </div>
                                 <button
                                     disabled={submitting}
@@ -610,14 +649,34 @@ const BedsManagement = () => {
                                         />
                                     </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-teal-600 uppercase tracking-widest ml-1">Price per Day (₹)</label>
-                                    <input
-                                        type="number"
-                                        value={editingBed.pricePerDay}
-                                        onChange={(e) => setEditingBed((prev: any) => ({ ...prev, pricePerDay: Number(e.target.value) }))}
-                                        className="w-full px-3 md:px-6 py-2.5 md:py-4 bg-teal-50 border border-teal-100 rounded-2xl text-[10px] md:text-xs font-black focus:border-teal-500 outline-none transition-all"
-                                    />
+                                <div className="grid grid-cols-3 gap-2">
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest ml-1">Hourly (₹)</label>
+                                        <input
+                                            type="number"
+                                            value={editingBed.pricePerHour || Math.round((editingBed.pricePerDay || 0) / 24)}
+                                            onChange={(e) => setEditingBed((prev: any) => ({ ...prev, pricePerHour: Number(e.target.value) }))}
+                                            className="w-full px-3 py-2.5 bg-teal-50 border border-teal-100 rounded-xl text-xs font-black focus:border-teal-500 outline-none transition-all"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest ml-1">1/2 Day (₹)</label>
+                                        <input
+                                            type="number"
+                                            value={editingBed.pricePerHalfDay || Math.round((editingBed.pricePerDay || 0) / 2)}
+                                            onChange={(e) => setEditingBed((prev: any) => ({ ...prev, pricePerHalfDay: Number(e.target.value) }))}
+                                            className="w-full px-3 py-2.5 bg-teal-50 border border-teal-100 rounded-xl text-xs font-black focus:border-teal-500 outline-none transition-all"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest ml-1">Full Day (₹)</label>
+                                        <input
+                                            type="number"
+                                            value={editingBed.pricePerDay}
+                                            onChange={(e) => setEditingBed((prev: any) => ({ ...prev, pricePerDay: Number(e.target.value) }))}
+                                            className="w-full px-3 py-2.5 bg-teal-50 border border-teal-100 rounded-xl text-xs font-black focus:border-teal-500 outline-none transition-all"
+                                        />
+                                    </div>
                                 </div>
                                 <button
                                     disabled={submitting}

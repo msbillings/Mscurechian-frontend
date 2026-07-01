@@ -585,7 +585,7 @@ function PatientDetailsPage() {
                                                                 {item.endDate ? ` - ${new Date(item.endDate).toLocaleDateString([], { day: '2-digit', month: 'short' })}` : ' (Current)'}
                                                             </div>
                                                             <div className="text-[7px] font-bold text-muted uppercase tracking-widest mt-0.5 opacity-40 ">
-                                                                Rate: ₹{item.pricePerDay}/Day
+                                                                Rate: ₹{item.pricePerDay}/Day {item.pricePerHalfDay ? `• ₹${item.pricePerHalfDay}/12h` : ''} {item.pricePerHour ? `• ₹${item.pricePerHour}/hr` : ''}
                                                             </div>
                                                         </td>
                                                     </tr>

@@ -1,4 +1,4 @@
-﻿export interface Bed {
+export interface Bed {
     _id: string;
     bedId: string;
     type: string;
@@ -8,6 +8,8 @@
     ward?: string;
     status: 'Vacant' | 'Occupied' | 'Cleaning' | 'Blocked';
     pricePerDay?: number;
+    pricePerHalfDay?: number;
+    pricePerHour?: number;
     currentOccupancy?: {
         patientName: string;
         admissionId: string;

@@ -930,7 +930,7 @@ export default function IPDCenter() {
                                                                                 <div className="font-black text-teal-600 uppercase tracking-tighter">
                                                                                     {item.endDate ? calculateStayDuration(item.startDate, item.endDate) : `Since ${new Date(item.startDate).toLocaleDateString()}`}
                                                                                 </div>
-                                                                                <div className="text-[7px] font-bold text-slate-400 uppercase">Rate: ₹{item.pricePerDay}</div>
+                                                                                <div className="text-[7px] font-bold text-slate-400 uppercase">Rate: ₹{item.pricePerDay}/day {item.pricePerHalfDay ? `• ₹${item.pricePerHalfDay}/12h` : ''} {item.pricePerHour ? `• ₹${item.pricePerHour}/hr` : ''}</div>
                                                                             </td>
                                                                         </tr>
                                                                     );
