@@ -59,7 +59,9 @@ export default function TransactionsPage() {
 
     // Map frontend filter values to backend transaction types
     const getBackendTypeFilter = (filterValue: string): string | undefined => {
-        if (filterValue === 'all') return 'all';
+        if (filterValue === 'all') {
+            return 'appointment_booking,consultation,ipd_advance,ipd,ipd_refund,ipd_admission_fee,ipd_bill_payment,ipd_final_settlement,discharge,lab_test';
+        }
 
         const typeMap: Record<string, string> = {
             'opd': 'appointment_booking,consultation',
@@ -116,10 +118,22 @@ export default function TransactionsPage() {
             setExporting(true);
             setShowExportMenu(false);
 
-            // Fetch ALL transactions for the selected range (nopage=true)
-            const data = await helpdeskService.getTransactions(1, 1000, range === "all" ? undefined : range, true);
+            // Fetch ALL transactions for the selected range, passing date range and type filters from UI
+            const data = await helpdeskService.getTransactions(
+                1,
+                1000,
+                range === "all" ? undefined : range,
+                true,
+                startDate || undefined,
+                endDate || undefined,
+                getBackendTypeFilter(typeFilter)
+            );
             let exportData = Array.isArray(data) ? data : (data.data || []);
-            exportData = exportData.filter((tx: any) => tx.status?.toLowerCase() !== 'cancelled' && tx.referenceId?.status?.toLowerCase() !== 'cancelled');
+            exportData = exportData.filter((tx: any) => {
+                const isCancelled = tx.status?.toLowerCase() === 'cancelled' || tx.referenceId?.status?.toLowerCase() === 'cancelled';
+                const isPharmacy = tx.type?.toLowerCase().includes('pharma') || tx.type?.toLowerCase().includes('pharmacy');
+                return !isCancelled && !isPharmacy;
+            });
 
             if (exportData.length === 0) {
                 toast.error("No data found for the selected period");
@@ -129,34 +143,60 @@ export default function TransactionsPage() {
             const workbook = new ExcelJS.Workbook();
             const worksheet = workbook.addWorksheet("Transactions");
 
-            // Define Headers
+            // Define Columns
             worksheet.columns = [
-                { header: "DATE", key: "date", width: 20 },
-                { header: "PATIENT NAME", key: "patient", width: 25 },
-                { header: "MOBILE", key: "mobile", width: 15 },
-                { header: "SERVICE TYPE", key: "type", width: 20 },
-                { header: "AMOUNT (INR)", key: "amount", width: 15 },
-                { header: "PAYMENT MODE", key: "mode", width: 15 },
-                { header: "STATUS", key: "status", width: 15 }
+                { header: "DATE", key: "date" },
+                { header: "PATIENT NAME", key: "patient" },
+                { header: "MOBILE", key: "mobile" },
+                { header: "SERVICE TYPE", key: "type" },
+                { header: "AMOUNT (INR)", key: "amount" },
+                { header: "PAYMENT MODE", key: "mode" },
+                { header: "STATUS", key: "status" }
             ];
 
-            // Style Headers
-            worksheet.getRow(1).font = { bold: true, color: { argb: "FFFFFF" } };
-            worksheet.getRow(1).fill = {
-                type: "pattern",
-                pattern: "solid",
-                fgColor: { argb: "0F172A" }
-            };
+            // 1. BRANDING HEADER
+            worksheet.mergeCells("A1:G1");
+            const titleCell = worksheet.getCell("A1");
+            titleCell.value = `${(hospital?.name || "CureChain").toUpperCase()} REVENUE LEDGER`;
+            titleCell.font = { bold: true, size: 16, color: { argb: "FFFFFF" } };
+            titleCell.alignment = { vertical: "middle", horizontal: "center" };
+            titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "0F172A" } } as ExcelJS.Fill;
+            worksheet.getRow(1).height = 40;
 
-            // Add Data
-            exportData.forEach((tx: any) => {
-                // Safe date handling
+            // 2. REPORT METADATA
+            worksheet.mergeCells("A2:G2");
+            const metaCell = worksheet.getCell("A2");
+            const finalStart = startDate ? new Date(startDate).toLocaleDateString('en-GB') : "INCEPTION";
+            const finalEnd = endDate ? new Date(endDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB');
+            const periodText = `PERIOD: ${finalStart} TO ${finalEnd}`;
+            const typeText = `SCOPE: ${typeFilter.toUpperCase()} CHANNEL`;
+            const generatedText = `GENERATED ON: ${new Date().toLocaleString()}`;
+            metaCell.value = `${periodText}  |  ${typeText}  |  ${generatedText}`;
+            metaCell.font = { bold: true, size: 10, color: { argb: "475569" } };
+            metaCell.alignment = { vertical: "middle", horizontal: "center" };
+            metaCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "F8FAFC" } } as ExcelJS.Fill;
+            worksheet.getRow(2).height = 25;
+
+            // Spacer
+            worksheet.getRow(3).height = 10;
+
+            // 3. TABLE HEADERS (Row 4)
+            const headerRow = worksheet.getRow(4);
+            headerRow.values = ["DATE", "PATIENT NAME", "MOBILE", "SERVICE TYPE", "AMOUNT (INR)", "PAYMENT MODE", "STATUS"];
+            headerRow.eachCell((cell) => {
+                cell.font = { bold: true, color: { argb: "FFFFFF" }, size: 11 };
+                cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "334155" } } as ExcelJS.Fill;
+                cell.alignment = { vertical: "middle", horizontal: "center" };
+            });
+            headerRow.height = 30;
+
+            // 4. ADD DATA & APPLY ALTERNATING COLORS
+            exportData.forEach((tx: any, index: number) => {
                 const txDate = tx.date || tx.createdAt || tx.transactionTime;
                 const formattedDate = txDate
                     ? new Date(txDate).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
                     : 'N/A';
 
-                // Map transaction type
                 const typeMapping: Record<string, string> = {
                     'appointment_booking': 'OPD Consultation',
                     'opd': 'OPD Consultation',
@@ -169,7 +209,7 @@ export default function TransactionsPage() {
                 const rawType = tx.type || 'appointment_booking';
                 const serviceType = typeMapping[rawType.toLowerCase()] || rawType.toUpperCase();
 
-                worksheet.addRow({
+                const row = worksheet.addRow({
                     date: formattedDate,
                     patient: (tx.patientName || 'Unknown').toUpperCase(),
                     mobile: tx.patientMobile || tx.mobile || "N/A",
@@ -178,13 +218,100 @@ export default function TransactionsPage() {
                     mode: (tx.paymentMethod || tx.paymentMode || "CASH").toUpperCase(),
                     status: tx.status.toUpperCase()
                 });
+
+                row.eachCell((cell, colNumber) => {
+                    cell.font = { size: 10, color: { argb: "1E293B" } };
+                    cell.alignment = { vertical: "middle", horizontal: "left" };
+                    if (index % 2 === 0) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+                    } else {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+                    }
+                    if (colNumber === 7) {
+                        cell.alignment = { vertical: "middle", horizontal: "center" };
+                    }
+                });
             });
 
-            // Summary Row
-            const totalAmount = exportData.reduce((sum: number, tx: any) => sum + (tx.amount || 0), 0);
+            // 5. CALCULATE STATS & BREAKDOWNS
+            const stats = exportData.reduce((acc: any, tx: any) => {
+                const amount = tx.amount || 0;
+                const rawMethod = (tx.paymentMethod || tx.paymentMode || 'CASH').toUpperCase();
+                
+                if (rawMethod === "CASH") acc.cashRevenue += amount;
+                else if (["UPI", "GPAY", "PHONEPE"].includes(rawMethod)) acc.upiRevenue += amount;
+                else if (["CARD", "VISA", "MASTERCARD"].includes(rawMethod)) acc.cardRevenue += amount;
+                else acc.otherRevenue += amount;
+                
+                acc.totalRevenue += amount;
+
+                const rawType = (tx.type || 'appointment_booking').toLowerCase();
+                if (rawType.includes('opd') || rawType.includes('appointment')) acc.opdCount++;
+                else if (rawType.includes('ipd') || rawType.includes('discharge')) acc.ipdCount++;
+                else if (rawType.includes('lab')) acc.labCount++;
+                else acc.otherCount++;
+
+                return acc;
+            }, { totalRevenue: 0, cashRevenue: 0, upiRevenue: 0, cardRevenue: 0, otherRevenue: 0, opdCount: 0, ipdCount: 0, labCount: 0, otherCount: 0 });
+
+            // 6. SUMMARY DASHBOARD
             worksheet.addRow({});
-            const summaryRow = worksheet.addRow({ mode: "TOTAL REVENUE", amount: totalAmount });
-            summaryRow.font = { bold: true };
+            const lastRowNum = worksheet.lastRow?.number || 0;
+            const summaryStartRow = lastRowNum + 1;
+            worksheet.mergeCells(`A${summaryStartRow}:G${summaryStartRow}`);
+            const summaryTitle = worksheet.getCell(`A${summaryStartRow}`);
+            summaryTitle.value = "FINANCIAL & OPERATIONAL SUMMARY";
+            summaryTitle.font = { bold: true, size: 12, color: { argb: "FFFFFF" } };
+            summaryTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "334155" } } as ExcelJS.Fill;
+            summaryTitle.alignment = { horizontal: "center" };
+
+            const summaryRows = [
+                ["GROSS TOTAL REVENUE", stats.totalRevenue, "", "OPD CONSULTATIONS", stats.opdCount, "CASES", ""],
+                ["CASH REVENUE", stats.cashRevenue, "", "IPD ADMISSIONS/BILLS", stats.ipdCount, "CASES", ""],
+                ["UPI REVENUE", stats.upiRevenue, "", "LAB DIAGNOSTICS", stats.labCount, "CASES", ""],
+                ["CARD REVENUE", stats.cardRevenue, "", "OTHER SERVICES", stats.otherCount, "CASES", ""],
+                ["OTHER REVENUE", stats.otherRevenue, "", "", "", "", ""]
+            ];
+
+            summaryRows.forEach((rowData) => {
+                const row = worksheet.addRow(rowData);
+                
+                // Left side styling (Financial)
+                const finLabelCell = row.getCell(1);
+                const finValCell = row.getCell(2);
+                if (finLabelCell.value) {
+                    finLabelCell.font = { bold: true, size: 10, color: { argb: "475569" } };
+                    finValCell.font = { bold: true, size: 11, color: { argb: "0F172A" } };
+                    finValCell.numFmt = '"₹"#,##0.00';
+                    
+                    if (finLabelCell.value.toString().includes("GROSS")) {
+                        finLabelCell.font = { bold: true, size: 11, color: { argb: "0F172A" } };
+                        finLabelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } } as ExcelJS.Fill;
+                        finValCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } } as ExcelJS.Fill;
+                    }
+                }
+                
+                // Right side styling (Operational)
+                const opLabelCell = row.getCell(4);
+                const opValCell = row.getCell(5);
+                if (opLabelCell.value) {
+                    opLabelCell.font = { bold: true, size: 10, color: { argb: "475569" } };
+                    opValCell.font = { bold: true, size: 11, color: { argb: "0F172A" } };
+                }
+            });
+
+            // 7. DYNAMIC COLUMN WIDTHS
+            worksheet.columns.forEach((column: any) => {
+                let maxLen = 0;
+                column.eachCell({ includeEmpty: true }, (cell: any) => {
+                    if (cell.row < 4) return; // Skip title and metadata rows
+                    const value = cell.value ? cell.value.toString() : '';
+                    if (value.length > maxLen) {
+                        maxLen = value.length;
+                    }
+                });
+                column.width = maxLen < 12 ? 12 : maxLen + 3;
+            });
 
             // Generate File
             const buffer = await workbook.xlsx.writeBuffer();
@@ -200,9 +327,315 @@ export default function TransactionsPage() {
         }
     };
 
+    const handleExportCategorized = async (range: "daily" | "weekly" | "monthly" | "all") => {
+        try {
+            setExporting(true);
+            setShowExportMenu(false);
+
+            // Fetch ALL transactions for the selected range, passing date range and type filters from UI
+            const data = await helpdeskService.getTransactions(
+                1,
+                1000,
+                range === "all" ? undefined : range,
+                true,
+                startDate || undefined,
+                endDate || undefined,
+                getBackendTypeFilter(typeFilter)
+            );
+            let exportData = Array.isArray(data) ? data : (data.data || []);
+            exportData = exportData.filter((tx: any) => {
+                const isCancelled = tx.status?.toLowerCase() === 'cancelled' || tx.referenceId?.status?.toLowerCase() === 'cancelled';
+                const isPharmacy = tx.type?.toLowerCase().includes('pharma') || tx.type?.toLowerCase().includes('pharmacy');
+                return !isCancelled && !isPharmacy;
+            });
+
+            if (exportData.length === 0) {
+                toast.error("No data found for the selected period");
+                return;
+            }
+
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet("Categorized Transactions");
+
+            // Define Columns
+            worksheet.columns = [
+                { header: "DATE", key: "date" },
+                { header: "PATIENT NAME", key: "patient" },
+                { header: "MOBILE", key: "mobile" },
+                { header: "SERVICE TYPE", key: "type" },
+                { header: "AMOUNT (INR)", key: "amount" },
+                { header: "PAYMENT MODE", key: "mode" },
+                { header: "STATUS", key: "status" }
+            ];
+
+            // 1. BRANDING HEADER
+            worksheet.mergeCells("A1:G1");
+            const titleCell = worksheet.getCell("A1");
+            titleCell.value = `${(hospital?.name || "CureChain").toUpperCase()} CATEGORIZED REVENUE LEDGER`;
+            titleCell.font = { bold: true, size: 16, color: { argb: "FFFFFF" } };
+            titleCell.alignment = { vertical: "middle", horizontal: "center" };
+            titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "0F172A" } } as ExcelJS.Fill;
+            worksheet.getRow(1).height = 40;
+
+            // 2. REPORT METADATA
+            worksheet.mergeCells("A2:G2");
+            const metaCell = worksheet.getCell("A2");
+            const finalStart = startDate ? new Date(startDate).toLocaleDateString('en-GB') : "INCEPTION";
+            const finalEnd = endDate ? new Date(endDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB');
+            const periodText = `PERIOD: ${finalStart} TO ${finalEnd}`;
+            const typeText = `SCOPE: CATEGORIZED CHANNELS`;
+            const generatedText = `GENERATED ON: ${new Date().toLocaleString()}`;
+            metaCell.value = `${periodText}  |  ${typeText}  |  ${generatedText}`;
+            metaCell.font = { bold: true, size: 10, color: { argb: "475569" } };
+            metaCell.alignment = { vertical: "middle", horizontal: "center" };
+            metaCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "F8FAFC" } } as ExcelJS.Fill;
+            worksheet.getRow(2).height = 25;
+
+            // Spacer
+            worksheet.addRow({});
+            worksheet.getRow(3).height = 10;
+
+            // Split Data into Categories
+            const opdData: any[] = [];
+            const ipdData: any[] = [];
+            const labData: any[] = [];
+            const pharmaData: any[] = [];
+
+            const typeMapping: Record<string, string> = {
+                'appointment_booking': 'OPD Consultation',
+                'opd': 'OPD Consultation',
+                'ipd': 'IPD Admission',
+                'ipd_advance': 'IPD Advance Payment',
+                'ipd_bill_payment': 'IPD Due Amount',
+                'ipd_final_settlement': 'IPD Final Settlement',
+                'discharge': 'Discharge Settlement',
+                'lab_test': 'Lab Test',
+                'package': 'Package Billed',
+            };
+
+            exportData.forEach((tx: any) => {
+                const rawType = (tx.type || 'appointment_booking').toLowerCase();
+                if (rawType.includes('opd') || rawType.includes('appointment')) {
+                    opdData.push(tx);
+                } else if (rawType.includes('ipd') || rawType.includes('discharge') || rawType.includes('admission') || rawType.includes('package') || rawType.includes('bill_payment')) {
+                    ipdData.push(tx);
+                } else if (rawType.includes('lab')) {
+                    labData.push(tx);
+                } else {
+                    pharmaData.push(tx);
+                }
+            });
+
+            const getGroupStats = (group: any[]) => {
+                let total = 0;
+                let cash = 0;
+                let upi = 0;
+                let card = 0;
+                let other = 0;
+                group.forEach(tx => {
+                    const amount = tx.amount || 0;
+                    total += amount;
+                    const mode = (tx.paymentMethod || tx.paymentMode || "CASH").toUpperCase();
+                    if (mode === "CASH") cash += amount;
+                    else if (["UPI", "GPAY", "PHONEPE"].includes(mode)) upi += amount;
+                    else if (["CARD", "VISA", "MASTERCARD"].includes(mode)) card += amount;
+                    else other += amount;
+                });
+                return { total, cash, upi, card, other };
+            };
+
+            const addCategoryBlock = (title: string, data: any[], grandStats?: any) => {
+                if (data.length === 0) return;
+
+                // Category Title Row
+                const blockTitleRow = worksheet.addRow([`${title} PAYMENTS`]);
+                worksheet.mergeCells(`A${blockTitleRow.number}:G${blockTitleRow.number}`);
+                const blockTitleCell = blockTitleRow.getCell(1);
+                blockTitleCell.font = { bold: true, size: 12, color: { argb: "FFFFFF" } };
+                blockTitleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "334155" } } as ExcelJS.Fill;
+                blockTitleCell.alignment = { horizontal: "center", vertical: "middle" };
+                blockTitleRow.height = 28;
+
+                // Headers Row
+                const headerRow = worksheet.addRow(["DATE", "PATIENT NAME", "MOBILE", "SERVICE TYPE", "AMOUNT (INR)", "PAYMENT MODE", "STATUS"]);
+                headerRow.eachCell((cell) => {
+                    cell.font = { bold: true, color: { argb: "FFFFFF" }, size: 10 };
+                    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "475569" } } as ExcelJS.Fill;
+                    cell.alignment = { vertical: "middle", horizontal: "center" };
+                });
+                headerRow.height = 24;
+
+                // Data Rows
+                data.forEach((tx: any, index: number) => {
+                    const txDate = tx.date || tx.createdAt || tx.transactionTime;
+                    const formattedDate = txDate
+                        ? new Date(txDate).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                        : 'N/A';
+
+                    const rawType = tx.type || 'appointment_booking';
+                    const serviceType = typeMapping[rawType.toLowerCase()] || rawType.toUpperCase();
+                    const amount = tx.amount || 0;
+                    const rawStatus = tx.payment?.status || tx.status || "completed";
+                    const appointmentPaid = tx.referenceId?.paymentStatus === 'paid' || tx.referenceId?.payment?.paymentStatus === 'paid';
+                    const status = (rawStatus.toLowerCase() === 'paid' || rawStatus.toLowerCase() === 'completed' || appointmentPaid) ? 'PAID' : 'PENDING';
+
+                    const row = worksheet.addRow({
+                        date: formattedDate,
+                        patient: (tx.patientName || tx.patient?.name || tx.referenceId?.patientName || 'Unknown').toUpperCase(),
+                        mobile: tx.patientMobile || tx.mobile || "N/A",
+                        type: serviceType,
+                        amount: amount,
+                        mode: (tx.paymentMethod || tx.paymentMode || "CASH").toUpperCase(),
+                        status: status
+                    });
+
+                    row.eachCell((cell, colNumber) => {
+                        cell.font = { size: 9, color: { argb: "1E293B" } };
+                        cell.alignment = { vertical: "middle", horizontal: "left" };
+                        if (index % 2 === 0) {
+                            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+                        } else {
+                            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+                        }
+                        if (colNumber === 7) {
+                            cell.alignment = { vertical: "middle", horizontal: "center" };
+                        }
+                    });
+                });
+
+                // Spacing Row
+                worksheet.addRow({});
+
+                // Stats Dashboard
+                const stats = getGroupStats(data);
+                const statsRows = [
+                    [
+                        grandStats ? "GRAND TOTAL REVENUE" : "",
+                        grandStats ? grandStats.total : "",
+                        "",
+                        "TOTAL CATEGORY REVENUE",
+                        stats.total,
+                        "",
+                        ""
+                    ],
+                    [
+                        grandStats ? "GRAND TOTAL CASH" : "",
+                        grandStats ? grandStats.cash : "",
+                        "",
+                        "CASH PAYMENTS",
+                        stats.cash,
+                        "",
+                        ""
+                    ],
+                    [
+                        grandStats ? "GRAND TOTAL UPI" : "",
+                        grandStats ? grandStats.upi : "",
+                        "",
+                        "UPI PAYMENTS",
+                        stats.upi,
+                        "",
+                        ""
+                    ],
+                    [
+                        grandStats ? "GRAND TOTAL CARD" : "",
+                        grandStats ? grandStats.card : "",
+                        "",
+                        "CARD PAYMENTS",
+                        stats.card,
+                        "",
+                        ""
+                    ],
+                    [
+                        grandStats ? "GRAND TOTAL OTHER" : "",
+                        grandStats ? grandStats.other : "",
+                        "",
+                        "OTHER PAYMENTS",
+                        stats.other,
+                        "",
+                        ""
+                    ]
+                ];
+
+                statsRows.forEach((rowData) => {
+                    const row = worksheet.addRow(rowData);
+                    
+                    // Left side styling (Grand Totals)
+                    const grandLabelCell = row.getCell(1);
+                    const grandValCell = row.getCell(2);
+                    if (grandLabelCell.value) {
+                        grandLabelCell.font = { bold: true, size: 9, color: { argb: "0F172A" } };
+                        grandValCell.font = { bold: true, size: 10, color: { argb: "0F172A" } };
+                        grandValCell.numFmt = '"₹"#,##0.00';
+                        if (grandLabelCell.value.toString().includes("REVENUE")) {
+                            grandLabelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E2E8F0' } } as ExcelJS.Fill;
+                            grandValCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E2E8F0' } } as ExcelJS.Fill;
+                        }
+                    }
+
+                    // Right side styling (Category Stats)
+                    const labelCell = row.getCell(4);
+                    const valCell = row.getCell(5);
+                    if (labelCell.value) {
+                        labelCell.font = { bold: true, size: 9, color: { argb: "475569" } };
+                        valCell.font = { bold: true, size: 10, color: { argb: "0F172A" } };
+                        valCell.numFmt = '"₹"#,##0.00';
+                        if (labelCell.value.toString().includes("TOTAL")) {
+                            labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } } as ExcelJS.Fill;
+                            valCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } } as ExcelJS.Fill;
+                        }
+                    }
+                });
+
+                // Two rows gap
+                worksheet.addRow({});
+                worksheet.addRow({});
+            };
+
+            const grandStats = getGroupStats(exportData);
+            const activeCategories: { title: string; data: any[] }[] = [
+                { title: "OPD Consultation", data: opdData },
+                { title: "IPD Admission", data: ipdData },
+                { title: "Lab Test", data: labData },
+                { title: "Pharmacy & Other", data: pharmaData }
+            ].filter(cat => cat.data.length > 0);
+
+            activeCategories.forEach((cat, index) => {
+                const isLast = index === activeCategories.length - 1;
+                addCategoryBlock(cat.title, cat.data, isLast ? grandStats : undefined);
+            });
+
+            // Dynamic Column Widths
+            worksheet.columns.forEach((column: any) => {
+                let maxLen = 0;
+                column.eachCell({ includeEmpty: true }, (cell: any) => {
+                    if (cell.row < 4) return; // Skip title and metadata
+                    const val = cell.value ? cell.value.toString() : '';
+                    if (val.includes("PAYMENTS") || val.includes("REVENUE") || val.includes("SUMMARY")) return;
+                    if (val.length > maxLen) {
+                        maxLen = val.length;
+                    }
+                });
+                column.width = maxLen < 12 ? 12 : maxLen + 3;
+            });
+
+            // Generate File
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            saveAs(blob, `CureChain_Revenue_Categorized_${range.toUpperCase()}_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+            toast.success(`Categorized manifest exported successfully`);
+        } catch (error) {
+            console.error("Export Error:", error);
+            toast.error("Export Failed");
+        } finally {
+            setExporting(false);
+        }
+    };
+
     const filteredTransactions = transactions.filter((tx: any) => {
         const isCancelled = tx.status?.toLowerCase() === 'cancelled' || tx.referenceId?.status?.toLowerCase() === 'cancelled';
-        return !isCancelled;
+        const isPharmacy = tx.type?.toLowerCase().includes('pharma') || tx.type?.toLowerCase().includes('pharmacy');
+        return !isCancelled && !isPharmacy;
     });
 
     // Calculate stats based on filtered transactions
@@ -409,9 +842,18 @@ export default function TransactionsPage() {
                             onClick={() => handleExport("all")}
                             disabled={exporting}
                             className="p-2 sm:p-2.5 bg-white border border-slate-200 text-slate-400 rounded-lg sm:rounded-xl hover:text-green-600 hover:border-green-200 shadow-sm active:scale-95 transition-all"
-                            title="Export to Excel"
+                            title="Export All to Excel"
                         >
                             {exporting ? <RefreshCw size={16} className="sm:size-[18px] animate-spin" /> : <Download size={16} className="sm:size-[18px]" />}
+                        </button>
+                        <button
+                            onClick={() => handleExportCategorized("all")}
+                            disabled={exporting}
+                            className="p-2 sm:p-2.5 bg-white border border-slate-200 text-slate-400 rounded-lg sm:rounded-xl hover:text-blue-600 hover:border-blue-200 shadow-sm active:scale-95 transition-all flex items-center gap-1.5"
+                            title="Categorized Export by Service"
+                        >
+                            {exporting ? <RefreshCw size={16} className="sm:size-[18px] animate-spin" /> : <Download size={16} className="sm:size-[18px]" />}
+                            <span className="text-[10px] font-black uppercase tracking-wider hidden md:inline">Categorized</span>
                         </button>
                         <button
                             onClick={handlePrintAll}

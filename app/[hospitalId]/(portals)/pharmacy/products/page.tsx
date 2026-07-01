@@ -262,6 +262,68 @@ const ProductsPage = () => {
                 });
             });
 
+            // Calculate inventory stats
+            const totalProductsCount = allProducts.length;
+            let totalCurrentStock = 0;
+            let outOfStockCount = 0;
+            let totalInventoryValue = 0;
+
+            allProducts.forEach(product => {
+                const stock = product.currentStock || 0;
+                totalCurrentStock += stock;
+                if (stock <= 0) {
+                    outOfStockCount++;
+                }
+                totalInventoryValue += (product.mrp || 0) * stock;
+            });
+
+            // 5. SUMMARY DASHBOARD
+            worksheet.addRow({}); // Blank spacer
+            const lastRowNum = worksheet.lastRow?.number || 0;
+            const summaryStartRow = lastRowNum + 1;
+            worksheet.mergeCells(`A${summaryStartRow}:G${summaryStartRow}`);
+            const summaryTitle = worksheet.getCell(`A${summaryStartRow}`);
+            summaryTitle.value = "INVENTORY SUMMARY";
+            summaryTitle.font = { bold: true, size: 12, color: { argb: "FFFFFF" } };
+            summaryTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "1E293B" } };
+            summaryTitle.alignment = { horizontal: "center" };
+
+            const summaryRows = [
+                ["", "", "", "TOTAL SKU COUNT", totalProductsCount, "", ""],
+                ["", "", "", "TOTAL CURRENT STOCK", totalCurrentStock, "UNITS", ""],
+                ["", "", "", "OUT OF STOCK PRODUCTS", outOfStockCount, "ITEMS", ""],
+                ["", "", "", "TOTAL ESTIMATED VALUE (MRP)", totalInventoryValue, "", ""]
+            ];
+
+            summaryRows.forEach((rowData) => {
+                const row = worksheet.addRow(rowData);
+                const labelCell = row.getCell(4);
+                const valCell = row.getCell(5);
+                const unitCell = row.getCell(6);
+                if (labelCell.value) {
+                    labelCell.font = { bold: true, size: 10, color: { argb: "475569" } };
+                    valCell.font = { bold: true, size: 11, color: { argb: "0F172A" } };
+                    if (labelCell.value.toString().includes("VALUE")) {
+                        valCell.numFmt = '"₹"#,##0.00';
+                    }
+                }
+            });
+
+            // Auto Column Widths
+            if (worksheet.columns) {
+                worksheet.columns.forEach((column: any) => {
+                    let maxLen = 0;
+                    column.eachCell({ includeEmpty: true }, (cell: any) => {
+                        if (cell.row < 4) return; // Skip title and metadata rows
+                        const value = cell.value ? cell.value.toString() : '';
+                        if (value.length > maxLen) {
+                            maxLen = value.length;
+                        }
+                    });
+                    column.width = maxLen < 12 ? 12 : maxLen + 3;
+                });
+            }
+
             const buffer = await workbook.xlsx.writeBuffer();
             const data = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             saveAs(data, `Pharmacy_Catalog_Complete_${new Date().toISOString().split('T')[0]}.xlsx`);

@@ -85,6 +85,7 @@ const hospitalAdminMenu: MenuItem[] = [
       { label: "Vitals Thresholds", path: "/hospital-admin/management/vitals-thresholds" },
       { label: "TV Displays", path: "/hospital-admin/displays" },
       { label: "Packages", path: "/hospital-admin/management/packages" },
+      { label: "Charges", path: "/hospital-admin/management/charges" },
     ],
   },
   { icon: ClipboardCheck, label: "Discharge Audit", path: "/hospital-admin/discharge/history" },

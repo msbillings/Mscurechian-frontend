@@ -212,6 +212,9 @@ export const HOSPITAL_ADMIN_ENDPOINTS = {
   PACKAGES: "/hospital/packages",
   PACKAGE_STATUS: (id: string) => `/hospital/packages/${id}/status`,
   PACKAGE_DETAIL: (id: string) => `/hospital/packages/${id}`,
+  CHARGES: "/hospital/charges",
+  RESET_CHARGES: "/hospital/charges/reset",
+  CHARGE_DETAIL: (id: string) => `/hospital/charges/${id}`,
 };
 
 export const HELPDESK_ENDPOINTS = {

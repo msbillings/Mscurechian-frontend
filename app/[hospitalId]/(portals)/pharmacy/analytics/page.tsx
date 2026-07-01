@@ -238,7 +238,17 @@ const PharmacyAnalytics = () => {
             worksheet.addRow([]);
             worksheet.addRow(['', '', '', '', '', '', '', '', 'Prepared By: Pharma Analytics']);
 
-            worksheet.columns.forEach((col, i) => { if (columns[i]) col.width = columns[i].width; });
+            // Auto Column Widths
+            if (worksheet.columns) {
+                worksheet.columns.forEach((column: any) => {
+                    let maxLen = 0;
+                    column.eachCell({ includeEmpty: true }, (cell: any) => {
+                        const value = cell.value ? cell.value.toString() : '';
+                        if (value.length > maxLen) maxLen = value.length;
+                    });
+                    column.width = maxLen < 12 ? 12 : maxLen + 3;
+                });
+            }
 
             const buffer = await workbook.xlsx.writeBuffer();
             saveAs(new Blob([buffer]), `Pharma_Analytics_Report_${finalStart}_${finalEnd}.xlsx`);

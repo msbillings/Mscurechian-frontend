@@ -879,4 +879,30 @@ export const hospitalAdminService = {
     apiClient<any>(`/ipd/hourly-monitoring/${admissionId}`),
 
   getActiveAdmissions: () => apiClient<any[]>("/ipd/admissions/active"),
+
+  // Charges Management
+  getCharges: () =>
+    apiClient<{ success: boolean; data: any[] }>(HOSPITAL_ADMIN_ENDPOINTS.CHARGES),
+
+  createCharge: (data: { category: string; description: string; amount: number; isActive?: boolean }) =>
+    apiClient<{ success: boolean; data: any }>(HOSPITAL_ADMIN_ENDPOINTS.CHARGES, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateCharge: (id: string, data: Partial<{ category: string; description: string; amount: number; isActive: boolean }>) =>
+    apiClient<{ success: boolean; data: any }>(HOSPITAL_ADMIN_ENDPOINTS.CHARGE_DETAIL(id), {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  deleteCharge: (id: string) =>
+    apiClient<{ success: boolean; message: string }>(HOSPITAL_ADMIN_ENDPOINTS.CHARGE_DETAIL(id), {
+      method: "DELETE",
+    }),
+
+  resetCharges: () =>
+    apiClient<{ success: boolean; message: string; data: any[] }>(HOSPITAL_ADMIN_ENDPOINTS.RESET_CHARGES, {
+      method: "POST",
+    }),
 };

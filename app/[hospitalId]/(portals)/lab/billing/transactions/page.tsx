@@ -289,10 +289,17 @@ function TransactionsPage() {
             const prepRow = worksheet.addRow(['', '', '', '', '', '', '', '', 'Prepared By:Lab Staff']);
             prepRow.getCell(9).font = { bold: true, italic: true };
 
-            // Set Column Widths
-            worksheet.columns.forEach((col, i) => {
-                col.width = columns[i].width;
-            });
+            // Auto Column Widths
+            if (worksheet.columns) {
+                worksheet.columns.forEach((column: any) => {
+                    let maxLen = 0;
+                    column.eachCell({ includeEmpty: true }, (cell: any) => {
+                        const value = cell.value ? cell.value.toString() : '';
+                        if (value.length > maxLen) maxLen = value.length;
+                    });
+                    column.width = maxLen < 12 ? 12 : maxLen + 3;
+                });
+            }
 
             const buffer = await workbook.xlsx.writeBuffer();
             saveAs(new Blob([buffer]), `Lab_Transactions_Report_${new Date().toISOString().split('T')[0]}.xlsx`);

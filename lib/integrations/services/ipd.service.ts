@@ -507,11 +507,20 @@ export const ipdService = {
     reference?: string;
     transactionType: "Advance" | "Refund" | "Settlement";
     date?: string | Date;
-  }) =>
-    apiClient<any>(IPD_ENDPOINTS.BILLING.ADVANCE, {
+  }) => {
+    const lowerMode = (data.mode || "").toLowerCase();
+    let mappedMode = data.mode;
+    if (lowerMode === "cash") mappedMode = "Cash";
+    else if (lowerMode === "card") mappedMode = "Card";
+    else if (lowerMode === "upi") mappedMode = "UPI";
+    else if (lowerMode === "insurance" || lowerMode === "insure") mappedMode = "Insurance";
+    else if (lowerMode === "bank" || lowerMode === "bank transfer" || lowerMode === "bank_transfer") mappedMode = "Bank Transfer";
+
+    return apiClient<any>(IPD_ENDPOINTS.BILLING.ADVANCE, {
       method: "POST",
-      body: JSON.stringify(data),
-    }),
+      body: JSON.stringify({ ...data, mode: mappedMode }),
+    });
+  },
 
   applyDiscount: (data: {
     admissionId: string;
