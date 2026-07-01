@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import SupportBadgeToggle from '@/components/common/SupportBadgeToggle';
 import { ArrowLeft, } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getStaffProfileAction, updateStaffProfileAction } from '@/lib/integrations/actions/staff.actions';
@@ -168,12 +169,15 @@ export default function EditAdminProfilePage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div className="space-y-2">
-                    {['personal', 'professional', 'financial'].map(tab => (
-                        <button key={tab} onClick={() => setActiveTab(tab)} className={`w-full text-left px-5 py-4 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-gray-400 hover:bg-gray-50'}`}>
-                            {tab}
-                        </button>
-                    ))}
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        {['personal', 'professional', 'financial'].map(tab => (
+                            <button key={tab} onClick={() => setActiveTab(tab)} className={`w-full text-left px-5 py-4 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-gray-400 hover:bg-gray-50'}`}>
+                                {tab}
+                            </button>
+                        ))}
+                    </div>
+                    <SupportBadgeToggle />
                 </div>
 
                 <div className="md:col-span-3 bg-white rounded-[2rem] p-2 md:p-4 md:p-8 border border-gray-100 shadow-sm space-y-8">

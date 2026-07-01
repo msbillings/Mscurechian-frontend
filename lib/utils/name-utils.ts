@@ -24,3 +24,17 @@ export const sanitizePatientName = (name: string | null | undefined, fallback: s
 
   return name;
 };
+
+/**
+ * Formats doctor names to ensure they start with exactly one "Dr. " prefix.
+ */
+export const formatDoctorName = (name: string | null | undefined): string => {
+  if (!name) return "Doctor";
+  
+  let cleaned = name.trim();
+  while (/^(dr|dr\.|dr\s+|dr\.\s+)/i.test(cleaned)) {
+    cleaned = cleaned.replace(/^(dr|dr\.|dr\s+|dr\.\s+)/i, "").trim();
+  }
+  
+  return cleaned ? `Dr. ${cleaned}` : "Doctor";
+};

@@ -2,12 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import SupportBadgeToggle from '@/components/common/SupportBadgeToggle';
 import {
     User, Mail, Phone, Briefcase, Award,Building, Landmark, Wallet,
     Save, ArrowLeft, Plus, X,
     Calendar, FileText
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useQueryClient } from '@tanstack/react-query';
+import { clearApiCache } from '@/lib/integrations/api';
 import { getStaffProfileAction, updateStaffProfileAction } from '@/lib/integrations/actions/staff.actions';
 import PrinterSettingsCard from '@/components/printers/PrinterSettingsCard';
 
@@ -47,6 +50,7 @@ export default function EditFrontdeskProfilePage() {
     const router = useRouter();
     const params = useParams();
     const hospitalId = params?.hospitalId as string;
+    const queryClient = useQueryClient();
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('personal');
@@ -379,6 +383,9 @@ export default function EditFrontdeskProfilePage() {
             const res = await updateStaffProfileAction(formDataToSubmit);
             if (res.success) {
                 toast.success('Frontdesk Profile updated successfully');
+                clearApiCache();
+                queryClient.invalidateQueries({ queryKey: ['helpdesk-profile-page', 'my'] });
+                queryClient.invalidateQueries({ queryKey: ['staff-profile', 'my'] });
                 router.push(`/${hospitalId}/helpdesk/profile`);
             } else {
                 toast.error(res.error || 'Failed to update profile');
@@ -456,6 +463,9 @@ export default function EditFrontdeskProfilePage() {
                                 <Plus size={16} />
                             </div>
                         </div>
+                        <div className="mt-4">
+                            <SupportBadgeToggle />
+                        </div>
                     </div>
 
                     {/* Desktop Sidebar Navigation */}
@@ -473,6 +483,9 @@ export default function EditFrontdeskProfilePage() {
                                 {tab.label}
                             </button>
                         ))}
+                    </div>
+                    <div className="hidden lg:block mt-6">
+                        <SupportBadgeToggle />
                     </div>
                 </div>
 

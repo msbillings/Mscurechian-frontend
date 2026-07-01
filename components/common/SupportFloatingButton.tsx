@@ -10,6 +10,29 @@ interface SupportFloatingButtonProps {
 }
 
 const SupportFloatingButton: React.FC<SupportFloatingButtonProps> = ({ onClick, label = "HELP & SUPPORT" }) => {
+    const [showBadge, setShowBadge] = React.useState(true);
+
+    React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem("showSupportBadge");
+            setShowBadge(stored !== "false");
+
+            const handleStorageChange = () => {
+                const current = localStorage.getItem("showSupportBadge");
+                setShowBadge(current !== "false");
+            };
+            window.addEventListener("storage", handleStorageChange);
+            window.addEventListener("support-badge-toggle", handleStorageChange);
+
+            return () => {
+                window.removeEventListener("storage", handleStorageChange);
+                window.removeEventListener("support-badge-toggle", handleStorageChange);
+            };
+        }
+    }, []);
+
+    if (!showBadge) return null;
+
     return (
         <motion.div 
             drag

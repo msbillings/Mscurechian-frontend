@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { generateBlankLetterheadHtml } from "@/lib/print-utils";
 import Link from "next/link";
+import CurechainPagination from "@/components/common/CurechainPagination";
 import { toast } from "react-hot-toast";
 import {
     useHelpdeskDashboard,
@@ -261,7 +262,16 @@ function HelpdeskDashboard() {
             };
         });
 
-        let sourceAppointments = appointmentsData?.appointments || dashboardData?.appointments || [];
+        let sourceAppointments: any[] = [];
+        if (Array.isArray(appointmentsData)) {
+            sourceAppointments = appointmentsData;
+        } else if (appointmentsData?.appointments && Array.isArray(appointmentsData.appointments)) {
+            sourceAppointments = appointmentsData.appointments;
+        } else if (appointmentsData?.data && Array.isArray(appointmentsData.data)) {
+            sourceAppointments = appointmentsData.data;
+        } else if (dashboardData?.appointments) {
+            sourceAppointments = dashboardData.appointments;
+        }
 
         // Filter by Date Range (redundant if using appointmentsData, but kept for fallback)
         if (startDateFilter || endDateFilter) {
@@ -275,27 +285,49 @@ function HelpdeskDashboard() {
             });
         }
 
+        // Filter by Visit Type (OPD/IPD/ALL)
+        if (visitTypeFilter !== 'all') {
+            sourceAppointments = sourceAppointments.filter((apt: any) => {
+                const type = apt.type?.toLowerCase() || 'opd';
+                if (visitTypeFilter === 'opd') {
+                    return type === 'opd' || type === 'consultation';
+                }
+                return type === visitTypeFilter.toLowerCase();
+            });
+        }
+
         sourceAppointments.forEach((apt: any) => {
             const status = apt.status?.toLowerCase();
             if (['booked', 'pending', 'confirmed', 'in-progress'].includes(status)) {
                 const docName = apt.doctorName;
-                const docId = apt.doctorId || apt.doctor?._id;
+                const docId = apt.doctorId || (typeof apt.doctor === 'object' ? apt.doctor?._id : apt.doctor);
 
                 if (docName && docName.toLowerCase() !== 'unknown doctor' && docName.toLowerCase() !== 'unknown physician') {
                     let matched = false;
 
                     // Try matching by ID first (most accurate)
                     if (docId) {
-                        const entryById = Object.entries(counts).find(([_, data]) => data.id === docId);
+                        const entryById = Object.entries(counts).find(([_, data]) => String(data.id) === String(docId));
                         if (entryById) {
                             entryById[1].count++;
                             matched = true;
                         }
                     }
 
-                    // Fallback to name match
-                    if (!matched && counts[docName]) {
-                        counts[docName].count++;
+                    // Fallback to name match (case-insensitive, space-insensitive, and prefix-agnostic)
+                    if (!matched) {
+                        const normalizeName = (n: string) => {
+                            let cleaned = n.trim().toLowerCase();
+                            while (/^(dr|dr\.|dr\s+|dr\.\s+)/i.test(cleaned)) {
+                                cleaned = cleaned.replace(/^(dr|dr\.|dr\s+|dr\.\s+)/i, "").trim();
+                            }
+                            return cleaned.replace(/\s+/g, "");
+                        };
+                        const normDocName = normalizeName(docName);
+                        const entryByName = Object.entries(counts).find(([name, _]) => normalizeName(name) === normDocName);
+                        if (entryByName) {
+                            entryByName[1].count++;
+                        }
                     }
                 }
             }
@@ -304,7 +336,7 @@ function HelpdeskDashboard() {
         return Object.entries(counts)
             .map(([name, data]) => ({ name, ...data }))
             .sort((a, b) => b.count - a.count);
-    }, [allDoctors, dashboardData, appointmentsData, startDateFilter, endDateFilter]);
+    }, [allDoctors, dashboardData, appointmentsData, startDateFilter, endDateFilter, visitTypeFilter]);
 
     // ✅ Search/Sort & Calculate Wait Times
     const waitTimes = useMemo(() => {
@@ -780,6 +812,16 @@ function HelpdeskDashboard() {
                                     </div>
                                 </div>
                             </div>
+                            {activeTab === 'history' && (
+                                <div className="shrink-0 flex items-center">
+                                    <CurechainPagination
+                                        currentPage={historyPage}
+                                        totalItems={historyAppointments.length}
+                                        itemsPerPage={itemsPerPage}
+                                        onPageChange={setHistoryPage}
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         {/* LIST CONTENT */}
@@ -966,28 +1008,6 @@ function HelpdeskDashboard() {
                                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em]">Facility: {stats.hospitalName || "Hospital Main"}</p>
                             </div>
 
-                            {/* Pagination for History Tab */}
-                            {activeTab === 'history' && historyAppointments.length > itemsPerPage && (
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        disabled={historyPage === 1}
-                                        onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
-                                        className="p-1 px-2 border border-slate-200 rounded text-xs font-bold text-slate-500 hover:bg-white transition-colors disabled:opacity-30"
-                                    >
-                                        Prev
-                                    </button>
-                                    <span className="text-[10px] font-black text-slate-400">
-                                        {historyPage} / {Math.ceil(historyAppointments.length / itemsPerPage)}
-                                    </span>
-                                    <button
-                                        disabled={historyPage >= Math.ceil(historyAppointments.length / itemsPerPage)}
-                                        onClick={() => setHistoryPage(p => p + 1)}
-                                        className="p-1 px-2 border border-slate-200 rounded text-xs font-bold text-slate-500 hover:bg-white transition-colors disabled:opacity-30"
-                                    >
-                                        Next
-                                    </button>
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>

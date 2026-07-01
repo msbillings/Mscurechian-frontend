@@ -66,7 +66,7 @@ export const useStaffDashboard = () => {
 export const useStaffProfile = () => {
     return useQuery({
         queryKey: staffKeys.profile(),
-        queryFn: staffService.getProfile,
+        queryFn: () => staffService.getProfile(),
         staleTime: 1 * 60 * 1000, // 1 minute
         gcTime: 5 * 60 * 1000,
         refetchOnWindowFocus: true,

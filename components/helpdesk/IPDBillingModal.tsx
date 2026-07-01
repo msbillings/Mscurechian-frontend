@@ -66,10 +66,30 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
         if (isOpen && admissionId) {
             fetchSummary();
             // ── Auto-refresh every 5s so lab/pharma charges appear without manual reload ──
-            const interval = setInterval(() => {
-                ipdService.getBillSummary(admissionId)
-                    .then(data => setSummary(data))
-                    .catch(() => { });
+            const interval = setInterval(async () => {
+                try {
+                    const [data, admissionDetails] = await Promise.all([
+                        ipdService.getBillSummary(admissionId),
+                        ipdService.getAdmissionDetails(admissionId).catch(() => null)
+                    ]);
+                    if (data && admissionDetails) {
+                        data.primaryDoctor = admissionDetails.primaryDoctor || data.primaryDoctor;
+                        data.doctor = admissionDetails.doctor || data.doctor;
+                        data.suggestedDoctorName = admissionDetails.suggestedDoctorName || data.suggestedDoctorName;
+                        
+                        const patientObj = admissionDetails.patient || {};
+                        const profileObj = admissionDetails.patientProfile || {};
+                        data.mrn = data.mrn || patientObj.mrn || profileObj.mrn || admissionDetails.mrn || "";
+                        data.patientAge = data.patientAge || patientObj.age || profileObj.age || "";
+                        data.patientGender = data.patientGender || patientObj.gender || profileObj.gender || "";
+                        data.patientAddress = data.patientAddress || patientObj.address || profileObj.address || "";
+                        data.patientContact = data.patientContact || patientObj.phone || patientObj.mobile || profileObj.phone || profileObj.mobile || "";
+                        data.admissionDate = data.admissionDate || admissionDetails.admissionDate || "";
+                    }
+                    if (data) {
+                        setSummary(data);
+                    }
+                } catch (e) { }
             }, 5000);
             return () => clearInterval(interval);
         }
@@ -78,7 +98,24 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
     const fetchSummary = async () => {
         try {
             setLoading(true);
-            const data = await ipdService.getBillSummary(admissionId);
+            const [data, admissionDetails] = await Promise.all([
+                ipdService.getBillSummary(admissionId),
+                ipdService.getAdmissionDetails(admissionId).catch(() => null)
+            ]);
+            if (data && admissionDetails) {
+                data.primaryDoctor = admissionDetails.primaryDoctor || data.primaryDoctor;
+                data.doctor = admissionDetails.doctor || data.doctor;
+                data.suggestedDoctorName = admissionDetails.suggestedDoctorName || data.suggestedDoctorName;
+                
+                const patientObj = admissionDetails.patient || {};
+                const profileObj = admissionDetails.patientProfile || {};
+                data.mrn = data.mrn || patientObj.mrn || profileObj.mrn || admissionDetails.mrn || "";
+                data.patientAge = data.patientAge || patientObj.age || profileObj.age || "";
+                data.patientGender = data.patientGender || patientObj.gender || profileObj.gender || "";
+                data.patientAddress = data.patientAddress || patientObj.address || profileObj.address || "";
+                data.patientContact = data.patientContact || patientObj.phone || patientObj.mobile || profileObj.phone || profileObj.mobile || "";
+                data.admissionDate = data.admissionDate || admissionDetails.admissionDate || "";
+            }
             setSummary(data);
         } catch (error: any) {
             toast.error("Failed to load bill summary");
@@ -87,7 +124,6 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
             setLoading(false);
         }
     };
-
 
     const handleAddCharge = async (e: React.FormEvent) => {
         e.preventDefault();
