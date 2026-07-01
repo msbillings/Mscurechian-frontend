@@ -6,6 +6,7 @@ import MainHeader from "../printers/MainHeader";
 import MainFooter from "../printers/MainFooter";
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
 import { sanitizePatientName } from "@/lib/utils/name-utils";
+import { usePrintStore } from "@/stores/printStore";
 
 interface ReceiptProps {
   hospital: {
@@ -82,6 +83,7 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [hospital, setHospital] = React.useState(propHospital);
   const [dataLoaded, setDataLoaded] = React.useState(false);
+  const { printWithHeader, setPrintWithHeader } = usePrintStore();
 
   const isOPDOrReg = !((patient.dischargeType && patient.dischargeType.toUpperCase() !== 'NONE') ||
     (appointment.type && (appointment.type.toUpperCase().includes('DISCHARGE') || appointment.type.toUpperCase().includes('SETTLEMENT'))) ||
@@ -89,6 +91,16 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
     (appointment.specialization?.toUpperCase().includes('IPD') || appointment.type?.toUpperCase().includes('IPD') || appointment.stayDuration));
 
   const [receiptFormat, setReceiptFormat] = React.useState<'opd_slip' | 'detailed_bill'>(isOPDOrReg ? 'opd_slip' : 'detailed_bill');
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'TOGGLE_HEADER_FOOTER') {
+        setPrintWithHeader(event.data.checked);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [setPrintWithHeader]);
 
   useEffect(() => {
     const fetchAdminDetails = async () => {
@@ -128,10 +140,11 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
             temp: patient.vitals.temp || patient.vitals.temperature,
             bloodPressure: patient.vitals.bp || patient.vitals.bloodPressure,
             bp: patient.vitals.bp || patient.vitals.bloodPressure,
+            sugar: patient.vitals.sugar || patient.vitals.glucose,
+            glucose: patient.vitals.glucose || patient.vitals.sugar,
+            pulse: patient.vitals.pulse,
             spO2: patient.vitals.spo2 || patient.vitals.spO2,
             spo2: patient.vitals.spo2 || patient.vitals.spO2,
-            glucose: patient.vitals.sugar || patient.vitals.glucose,
-            sugar: patient.vitals.sugar || patient.vitals.glucose
           } : undefined
         };
 
@@ -139,10 +152,10 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
         const headerHtml = renderToStaticMarkup(
           <MainHeader initialDetails={{
             name: hospital.name,
+            logo: hospital.logo,
             address: hospital.address || "",
             phone: hospital.contact || "",
             email: hospital.email || "",
-            logo: hospital.logo
           }} />
         );
 
@@ -225,12 +238,28 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
           </style>
         </head>`);
 
+        const docWithScript = docWithStyles + `
+          <script>
+            (() => {
+              const cb = document.querySelector('input[type="checkbox"]');
+              if (cb) {
+                cb.checked = ${printWithHeader};
+              }
+              document.addEventListener('change', (e) => {
+                if (e.target && e.target.type === 'checkbox') {
+                  window.parent.postMessage({ type: 'TOGGLE_HEADER_FOOTER', checked: e.target.checked }, '*');
+                }
+              });
+            })();
+          </script>
+        `;
+
         doc.open();
-        doc.write(docWithStyles);
+        doc.write(docWithScript);
         doc.close();
       }
     }
-  }, [hospital, patient, appointment, payment, dataLoaded, receiptFormat]);
+  }, [hospital, patient, appointment, payment, dataLoaded, receiptFormat, printWithHeader]);
 
   const [isConfirming, setIsConfirming] = React.useState(false);
 

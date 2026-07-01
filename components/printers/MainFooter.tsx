@@ -130,7 +130,7 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails, instructions })
                 marginTop: '10px'
             }}>
                 {/* Left: Instructions */}
-                <div style={{ flex: '1.2' }}>
+                <div style={{ flex: '1' }}>
                     <ul style={{
                         margin: 0,
                         padding: 0,
@@ -147,7 +147,7 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails, instructions })
                 </div>
 
                 {/* Right: Address */}
-                <div style={{ flex: '1', textAlign: 'right' }}>
+                <div style={{ flex: '3', textAlign: 'left' }}>
                     <p style={{
                         margin: 0,
                         fontSize: '10px',
@@ -155,8 +155,7 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails, instructions })
                         color: '#0f172a',
                         textTransform: 'uppercase',
                         lineHeight: '1.4',
-                        maxWidth: '300px',
-                        marginLeft: 'auto'
+                        maxWidth: 'none'
                     }}>
                         {details.address}
                     </p>

@@ -28,6 +28,7 @@ import {
 import ImageCropper from '@/components/ui/ImageCropper';
 import { updateUserPhotoAction } from '@/lib/integrations/actions/user.actions';
 import PrinterSettingsCard from '@/components/printers/PrinterSettingsCard';
+import SupportBadgeToggle from "@/components/common/SupportBadgeToggle";
 
 function HRProfile() {
     const router = useRouter();
@@ -429,6 +430,7 @@ function HRProfile() {
                         </div>
 
                         <PrinterSettingsCard />
+                        <SupportBadgeToggle />
 
                         {/* HR Support Quick Actions */}
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 overflow-hidden">

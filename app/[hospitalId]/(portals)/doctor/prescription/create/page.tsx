@@ -2997,7 +2997,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                 <div class="sig-line">Authorized Digital Signature</div>
                             </div>
                         </div>
-                        <div style="margin-top: 20px;">
+                        <div class="print-footer" style="margin-top: auto;">
                             ${footerHtml}
                         </div>
                     </div>

@@ -1,3 +1,5 @@
+import { usePrintStore } from '@/stores/printStore';
+
 export const computeAgeFromDob = (dob: any, fallbackAge: any, fallbackUnit: any) => {
     if (dob) {
         const birthDate = new Date(dob);
@@ -1003,6 +1005,12 @@ export const generateClinicalReceiptHtml = (data: any) => {
             padding: 0 !important;
             -webkit-print-color-adjust: exact;
           }
+          .print-header-spacer {
+            margin-bottom: 0 !important;
+          }
+          .print-footer-spacer {
+            margin-top: 0 !important;
+          }
         }
         html, body {
           height: 100%;
@@ -1036,8 +1044,20 @@ export const generateClinicalReceiptHtml = (data: any) => {
           width: 100%;
         }
 
-        .print-header-spacer { height: 140px; }
-        .print-footer-spacer { height: 180px; }
+        .print-header-spacer {
+          height: 160px;
+        }
+        .print-footer-spacer {
+          height: 180px;
+        }
+        @media screen {
+          .print-header-spacer {
+            margin-bottom: -160px;
+          }
+          .print-footer-spacer {
+            margin-top: -180px;
+          }
+        }
         
         ${
           headerHtml
@@ -1072,16 +1092,17 @@ export const generateClinicalReceiptHtml = (data: any) => {
         `
         }
         .bill-title-row {
-          display: flex;
-          justify-content: space-between;
+          display: grid;
+          grid-template-columns: 1.3fr 0.7fr;
+          gap: 15px;
           align-items: flex-end;
           margin-bottom: 8px;
-          padding: 4px 10px;
+          padding: 6px 10px;
           background-color: #f8fafc;
           border-radius: 6px;
         }
         .bill-title {
-          font-size: 14px;
+          font-size: 11px;
           font-weight: 800;
           text-transform: uppercase;
           color: #1e40af;
@@ -1098,6 +1119,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
           font-size: 11px;
           font-weight: 600;
           color: #475569;
+          word-break: break-all;
         }
         .section {
           margin-bottom: 5px;
@@ -1252,9 +1274,9 @@ export const generateClinicalReceiptHtml = (data: any) => {
           .header-wrapper {
             position: fixed;
             top: 0;
-            left: 0;
-            right: 0;
-            padding: 8mm 12mm 0;
+            left: 8mm;
+            right: 12mm;
+            padding: 6mm 0 0;
             background: white;
             z-index: 1000;
           }
@@ -1262,9 +1284,9 @@ export const generateClinicalReceiptHtml = (data: any) => {
           .footer-wrapper {
             position: fixed;
             bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 0 12mm 8mm;
+            left: 8mm;
+            right: 12mm;
+            padding: 0 0 8mm;
             background: white;
             z-index: 1000;
           }
@@ -1279,13 +1301,14 @@ export const generateClinicalReceiptHtml = (data: any) => {
           }
           
           .receipt-container {
-             padding: 0 12mm;
+             padding: 0 12mm 0 8mm;
           }
         }
       </style>
-      ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
+      ${!usePrintStore.getState().printWithHeader ? `
       <style>
         .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer, .header, .header-container, .divider-thick, .footer-note, .page-header, .footer-push { visibility: hidden !important; }
+        .print-settings-toggle-wrapper { visibility: visible !important; }
       </style>
       ` : ''}
     </head>
@@ -1320,27 +1343,9 @@ export const generateClinicalReceiptHtml = (data: any) => {
         }
       </div>
 
-      <div class="footer-wrapper">
-        ${
-          footerHtml ||
-          `
-        <div class="footer">
-          <div style="flex: 1;">
-            <p style="margin: 0; font-weight: 700;">PREPARED BY: ${patient.preparedBy || "System Administrator"}</p>
-            <p style="margin: 4px 0 0 0;">This is a computer-generated document and does not require a physical signature.</p>
-            <p style="margin: 2px 0 0 0;">Print Date: ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} at ${formatTime12Hr(new Date())}</p>
-          </div>
-          <div class="signatory-box">
-            <div class="sign-line"></div>
-            <div class="authorized-text">Authorized Signatory</div>
-            <div style="font-size: 8px; font-weight: 600; color: #64748b; margin-top: 2px;">${hospital.name.toUpperCase()}</div>
-          </div>
-        </div>
-        `
-        }
-      </div>
 
       <div class="receipt-container">
+
         <table class="print-table">
           <thead>
             <tr>
@@ -1749,6 +1754,25 @@ export const generateClinicalReceiptHtml = (data: any) => {
           </tfoot>
         </table>
       </div>
+      <div class="footer-wrapper">
+        ${
+          footerHtml ||
+          `
+        <div class="footer">
+          <div style="flex: 1;">
+            <p style="margin: 0; font-weight: 700;">PREPARED BY: ${patient.preparedBy || "System Administrator"}</p>
+            <p style="margin: 4px 0 0 0;">This is a computer-generated document and does not require a physical signature.</p>
+            <p style="margin: 2px 0 0 0;">Print Date: ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} at ${formatTime12Hr(new Date())}</p>
+          </div>
+          <div class="signatory-box">
+            <div class="sign-line"></div>
+            <div class="authorized-text">Authorized Signatory</div>
+            <div style="font-size: 8px; font-weight: 600; color: #64748b; margin-top: 2px;">${hospital.name.toUpperCase()}</div>
+          </div>
+        </div>
+        `
+        }
+      </div>
     </body>
     </html>
   `;
@@ -1817,6 +1841,7 @@ export const generatePrescriptionHtml = (data: any) => {
 
                     .container {
                         width: 210mm;
+                        min-height: 296mm;
                         margin: 0 auto;
                         padding: 15mm 20mm;
                         box-sizing: border-box;
@@ -1824,6 +1849,10 @@ export const generatePrescriptionHtml = (data: any) => {
                         display: flex;
                         flex-direction: column;
                         border: 1px solid #e5e7eb;
+                    }
+
+                    .footer-push {
+                        margin-top: auto;
                     }
 
                     /* Header */
@@ -1924,9 +1953,10 @@ export const generatePrescriptionHtml = (data: any) => {
                         .no-print { display: none !important; }
                     }
                 </style>
-              ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
+              ${!usePrintStore.getState().printWithHeader ? `
       <style>
         .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer, .header, .header-container, .divider-thick, .footer-note, .page-header, .footer-push { visibility: hidden !important; }
+        .print-settings-toggle-wrapper { visibility: visible !important; }
       </style>
       ` : ''}
     </head>
@@ -2056,6 +2086,7 @@ export const generatePrescriptionHtml = (data: any) => {
                         : ""
                     }
 
+                    <div class="footer-push">
                     ${
                       footerHtml ||
                       `
@@ -2071,6 +2102,7 @@ export const generatePrescriptionHtml = (data: any) => {
                     </div>
                     `
                     }
+                    </div>
                 </div>
             </body>
             </html>
@@ -2132,6 +2164,7 @@ export const generateLabTokenHtml = (data: any) => {
               }
               .container {
                 width: 210mm;
+                min-height: 296mm;
                 margin: 0 auto;
                 padding: 15mm 20mm;
                 box-sizing: border-box;
@@ -2235,9 +2268,10 @@ export const generateLabTokenHtml = (data: any) => {
                 .container { border: none; }
               }
             </style>
-            ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
+            ${!usePrintStore.getState().printWithHeader ? `
       <style>
         .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer, .header, .header-container, .divider-thick, .footer-note, .page-header, .footer-push { visibility: hidden !important; }
+        .print-settings-toggle-wrapper { visibility: visible !important; }
       </style>
       ` : ''}
     </head>
@@ -2468,9 +2502,15 @@ export const generateLabReportHtml = (data: any) => {
         }
         .container {
           width: 210mm;
+          min-height: 296mm;
           margin: 0 auto;
           padding: 12mm 16mm;
           box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+        }
+        .footer-push {
+          margin-top: auto;
         }
         .return-btn {
           padding: 10px 24px;
@@ -2557,9 +2597,10 @@ export const generateLabReportHtml = (data: any) => {
           border: 1px solid #bbf7d0;
         }
       </style>
-      ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
+      ${!usePrintStore.getState().printWithHeader ? `
       <style>
         .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer, .header, .header-container, .divider-thick, .footer-note, .page-header, .footer-push { visibility: hidden !important; }
+        .print-settings-toggle-wrapper { visibility: visible !important; }
       </style>
       ` : ''}
     </head>
@@ -2621,10 +2662,12 @@ export const generateLabReportHtml = (data: any) => {
         </table>
 
 
+        <div class="footer-push">
         ${footerHtml || `
         <div style="border-top: 1px solid #e5e7eb; margin-top: 20px; padding-top: 8px; text-align:center; font-size:9px; color:#9ca3af;">
           <p style="margin:0;">Generated by MsCureChain • ${new Date().toLocaleDateString('en-GB')} at ${formatTime12Hr(new Date())}</p>
         </div>`}
+        </div>
       </div>
     </body>
     </html>
@@ -2716,9 +2759,10 @@ export const generateQualityReportHtml = (data: any) => {
         .signatures { display: flex; justify-content: space-between; margin-top: 40px; }
         .sign-line { width: 150px; border-top: 1px solid #0f172a; padding-top: 5px; text-align: center; font-weight: 700; font-size: 10px; text-transform: uppercase; }
       </style>
-      ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
+      ${!usePrintStore.getState().printWithHeader ? `
       <style>
         .header-wrapper, .footer-wrapper, .hospital-header, .footer, .signatory-box, .signatory, .print-header, .print-footer, .header, .header-container, .divider-thick, .footer-note, .page-header, .footer-push { visibility: hidden !important; }
+        .print-settings-toggle-wrapper { visibility: visible !important; }
       </style>
       ` : ''}
     </head>

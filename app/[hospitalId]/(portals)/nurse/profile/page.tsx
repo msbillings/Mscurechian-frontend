@@ -33,6 +33,7 @@ import { ipdService } from '@/lib/integrations/services/ipd.service';
 import type { StaffProfile } from '@/lib/integrations/types';
 import toast from 'react-hot-toast';
 import StaffTrainingHistoryClient from '@/components/staff/StaffTrainingHistoryClient';
+import SupportBadgeToggle from '@/components/common/SupportBadgeToggle';
 import { History } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
@@ -104,7 +105,7 @@ export default function NurseProfilePage() {
         try {
             setUploadingPic(true);
             setCropper({ isOpen: false, image: '' });
-            
+
             const { user, setUser } = useAuthStore.getState();
 
             // Optimistic Update
@@ -115,11 +116,11 @@ export default function NurseProfilePage() {
                 });
             }
             if (setUser && user) {
-                setUser({ 
-                    ...user, 
+                setUser({
+                    ...user,
                     image: croppedDataUrl,
                     avatar: croppedDataUrl,
-                    profilePic: croppedDataUrl 
+                    profilePic: croppedDataUrl
                 } as any);
             }
 
@@ -148,11 +149,11 @@ export default function NurseProfilePage() {
                 });
             }
             if (setUser && user) {
-                setUser({ 
-                    ...user, 
+                setUser({
+                    ...user,
                     image: finalUrl,
                     avatar: finalUrl,
-                    profilePic: finalUrl 
+                    profilePic: finalUrl
                 } as any);
             }
 
@@ -168,7 +169,7 @@ export default function NurseProfilePage() {
 
     const { data: profileRes, isLoading: loadingProfile } = useQuery({
         queryKey: ['staff-profile', 'my'],
-        queryFn: staffService.getProfile,
+        queryFn: () => staffService.getProfile(),
         refetchInterval: 5000
     });
 
@@ -422,9 +423,9 @@ export default function NurseProfilePage() {
                                 {((profile.user as any).image || (profile.user as any).avatar) ? (
                                     <img
                                         src={
-                                          ((profile.user as any).image || (profile.user as any).avatar).includes('t=')
-                                            ? ((profile.user as any).image || (profile.user as any).avatar)
-                                            : `${((profile.user as any).image || (profile.user as any).avatar)}${((profile.user as any).image || (profile.user as any).avatar).includes('?') ? '&' : '?'}t=${Date.now()}`
+                                            ((profile.user as any).image || (profile.user as any).avatar).includes('t=')
+                                                ? ((profile.user as any).image || (profile.user as any).avatar)
+                                                : `${((profile.user as any).image || (profile.user as any).avatar)}${((profile.user as any).image || (profile.user as any).avatar).includes('?') ? '&' : '?'}t=${Date.now()}`
                                         }
                                         alt="Profile"
                                         className="w-full h-full object-cover"
@@ -460,6 +461,8 @@ export default function NurseProfilePage() {
                         <InfoItem icon={<Building size={14} className="sm:size-[16px]" />} label="Emp ID" value={profile.employeeId} />
                     </div>
                 </div>
+
+                <SupportBadgeToggle />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4 xl:gap-6">
 

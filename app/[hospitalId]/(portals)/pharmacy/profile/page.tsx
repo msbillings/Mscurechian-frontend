@@ -31,6 +31,7 @@ import { PharmacyProfileSkeleton } from '@/components/ui/skeletons';
 import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
 import ImageCropper from '@/components/ui/ImageCropper';
 import PrinterSettingsCard from '@/components/printers/PrinterSettingsCard';
+import SupportBadgeToggle from '@/components/common/SupportBadgeToggle';
 
 /**
  * PharmacyProfile Component
@@ -491,6 +492,7 @@ const PharmacyProfile = () => {
                     </div>
 
                     <PrinterSettingsCard />
+                    <SupportBadgeToggle />
                 </div>
 
                 {/* Data Configuration Section */}

@@ -300,14 +300,16 @@ export const PrescriptionDocument: React.FC<PrescriptionDocumentProps> = ({
             </div>
 
             {/* --- MainFooter --- */}
-            <MainFooter
-                initialDetails={{
-                    name: hospital.name,
-                    address: hospital.address || "",
-                    phone: hospital.phone || hospital.contact || "",
-                    email: hospital.email || "",
-                }}
-            />
+            <div className="footer-push mt-auto">
+                <MainFooter
+                    initialDetails={{
+                        name: hospital.name,
+                        address: hospital.address || "",
+                        phone: hospital.phone || hospital.contact || "",
+                        email: hospital.email || "",
+                    }}
+                />
+            </div>
 
         </div>
     );

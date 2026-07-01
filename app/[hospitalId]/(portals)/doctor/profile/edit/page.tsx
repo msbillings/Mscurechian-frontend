@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import SupportBadgeToggle from '@/components/common/SupportBadgeToggle';
 import {
     User, Mail, Phone, Briefcase, Award,
     Building, Landmark, Wallet, Globe,
@@ -339,8 +340,8 @@ export default function EditDoctorProfilePage() {
                 }
 
                 // Add timestamp to bypass browser cache (ONLY if NOT a data URI)
-                const newPic = (rawPic && rawPic.startsWith('data:')) 
-                    ? rawPic 
+                const newPic = (rawPic && rawPic.startsWith('data:'))
+                    ? rawPic
                     : `${rawPic}${rawPic.includes('?') ? '&' : '?'}t=${Date.now()}`;
 
                 setFormData((prev: any) => ({ ...prev, profilePic: newPic }));
@@ -440,8 +441,8 @@ export default function EditDoctorProfilePage() {
                 // ✅ SYNC AUTH STORE: Update global user state immediately
                 if (res.data && res.data.user) {
                     const rawPic = res.data.user.image || res.data.user.avatar || res.data.user.profilePic;
-                    const finalPic = (rawPic && rawPic.startsWith('data:')) 
-                        ? rawPic 
+                    const finalPic = (rawPic && rawPic.startsWith('data:'))
+                        ? rawPic
                         : (rawPic ? (rawPic.includes('?') ? `${rawPic}&t=${Date.now()}` : `${rawPic}?t=${Date.now()}`) : '');
 
                     setUser({
@@ -547,577 +548,583 @@ export default function EditDoctorProfilePage() {
                         </select>
                         <ChevronDown size={18} className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
                     </div>
-
-                    {/* Desktop Tab List */}
-                    <div className="hidden lg:block space-y-2">
-                        {tabs.map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === tab.id
-                                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
-                                    : 'bg-white dark:bg-[#111] text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900'
-                                    }`}
-                            >
-                                {tab.icon}
-                                {tab.label}
-                            </button>
-                        ))}
+                    <div className="mt-4">
+                        <SupportBadgeToggle />
                     </div>
                 </div>
 
-                {/* Main Form Content */}
-                <div className="flex-1 bg-white dark:bg-[#111] rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 p-4 sm:p-8 shadow-sm">
-                    {activeTab === 'personal' && (
-                        <div className="space-y-8 animate-in fade-in duration-300">
-                            <div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Account Information</h3>
+                {/* Desktop Tab List */}
+                <div className="hidden lg:block space-y-2">
+                    {tabs.map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === tab.id
+                                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+                                : 'bg-white dark:bg-[#111] text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900'
+                                }`}
+                        >
+                            {tab.icon}
+                            {tab.label}
+                        </button>
+                    ))}
+                    <div className="pt-4">
+                        <SupportBadgeToggle />
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Form Content */}
+            <div className="flex-1 bg-white dark:bg-[#111] rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 p-4 sm:p-8 shadow-sm">
+                {activeTab === 'personal' && (
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Account Information</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Full Name <span className="text-rose-500">*</span></label>
+                                    <div className="relative">
+                                        <input type="text" name="name" value={formData.name} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.name ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all`} />
+                                        <User className="absolute right-4 top-3.5 text-gray-300" size={16} />
+                                    </div>
+                                    {errors.name && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.name}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Email Address <span className="text-rose-500">*</span></label>
+                                    <div className="relative">
+                                        <input type="email" name="email" value={formData.email} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.email ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all`} />
+                                        <Mail className="absolute right-4 top-3.5 text-gray-300" size={16} />
+                                    </div>
+                                    {errors.email && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.email}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Mobile Number</label>
+                                    <div className="relative">
+                                        <input type="text" name="mobile" value={formData.mobile} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.mobile ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all`} />
+                                        <Phone className="absolute right-4 top-3.5 text-gray-300" size={16} />
+                                    </div>
+                                    {errors.mobile && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.mobile}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Gender</label>
+                                    <select name="gender" value={formData.gender} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
+                                        <option value="">Select Gender</option>
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Date of Birth</label>
+                                    <div className="relative">
+                                        <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.dateOfBirth ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all`} />
+                                        <Calendar className="absolute right-4 top-3.5 text-gray-300" size={16} />
+                                    </div>
+                                    {errors.dateOfBirth && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.dateOfBirth}</p>}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-8 pt-8 border-t border-gray-100 dark:border-gray-800">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Profile Photo</h3>
+                            <div className="flex flex-col md:flex-row items-center gap-6">
+                                <div className="w-24 h-24 rounded-full bg-gray-100 dark:bg-gray-800 border-4 border-white dark:border-gray-900 shadow-xl overflow-hidden flex items-center justify-center shrink-0">
+                                    {formData.profilePic ? (
+                                        <img
+                                            src={(() => {
+                                                const raw = (typeof formData.profilePic === 'string' ? formData.profilePic : formData.profilePic?.url) || '';
+                                                if (!raw) return '';
+                                                if (raw.startsWith('data:') || raw.includes('t=')) return raw;
+                                                return `${raw}${raw.includes('?') ? '&' : '?'}t=${Date.now()}`;
+                                            })()}
+                                            alt="Profile"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <User size={40} className="text-gray-400" />
+                                    )}
+                                </div>
+                                <div className="flex-1 w-full flex flex-col items-start gap-2">
+                                    <label className={`flex items-center justify-center gap-2 w-full md:w-auto max-w-[280px] px-6 py-3 ${isPhotoUploading ? 'bg-indigo-100 cursor-not-allowed opacity-70' : 'bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 cursor-pointer'} text-indigo-600 dark:text-indigo-400 font-bold rounded-xl border border-indigo-100 dark:border-indigo-800/30 transition-colors`}>
+                                        {isPhotoUploading ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                                                <span>Processing...</span>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <Upload size={18} />
+                                                <span>Upload New Photo</span>
+                                                <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" disabled={isPhotoUploading} />
+                                            </>
+                                        )}
+                                    </label>
+                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">Only PDF and any type of image only. Max 5MB</p>
+                                    {uploadErrors.profilePic && (
+                                        <p className="text-[10px] text-rose-500 font-bold uppercase tracking-tighter mt-1 animate-bounce">{uploadErrors.profilePic}</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'professional' && (
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Medical Qualifications</h3>
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Professional Bio</label>
+                                    <textarea name="bio" value={formData.bio} onChange={handleChange} rows={4} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all resize-none" placeholder="Experience, philosophy of care, and expertise..." />
+                                </div>
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Full Name <span className="text-rose-500">*</span></label>
+                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Experience Start Date</label>
                                         <div className="relative">
-                                            <input type="text" name="name" value={formData.name} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.name ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all`} />
-                                            <User className="absolute right-4 top-3.5 text-gray-300" size={16} />
-                                        </div>
-                                        {errors.name && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.name}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Email Address <span className="text-rose-500">*</span></label>
-                                        <div className="relative">
-                                            <input type="email" name="email" value={formData.email} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.email ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all`} />
-                                            <Mail className="absolute right-4 top-3.5 text-gray-300" size={16} />
-                                        </div>
-                                        {errors.email && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.email}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Mobile Number</label>
-                                        <div className="relative">
-                                            <input type="text" name="mobile" value={formData.mobile} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.mobile ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all`} />
-                                            <Phone className="absolute right-4 top-3.5 text-gray-300" size={16} />
-                                        </div>
-                                        {errors.mobile && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.mobile}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Gender</label>
-                                        <select name="gender" value={formData.gender} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
-                                            <option value="">Select Gender</option>
-                                            <option value="male">Male</option>
-                                            <option value="female">Female</option>
-                                            <option value="other">Other</option>
-                                        </select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Date of Birth</label>
-                                        <div className="relative">
-                                            <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.dateOfBirth ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all`} />
+                                            <input type="date" name="experienceStart" value={formData.experienceStart} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
                                             <Calendar className="absolute right-4 top-3.5 text-gray-300" size={16} />
                                         </div>
-                                        {errors.dateOfBirth && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.dateOfBirth}</p>}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="mt-8 pt-8 border-t border-gray-100 dark:border-gray-800">
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Profile Photo</h3>
-                                <div className="flex flex-col md:flex-row items-center gap-6">
-                                    <div className="w-24 h-24 rounded-full bg-gray-100 dark:bg-gray-800 border-4 border-white dark:border-gray-900 shadow-xl overflow-hidden flex items-center justify-center shrink-0">
-                                        {formData.profilePic ? (
-                                            <img
-                                                src={(() => {
-                                                    const raw = (typeof formData.profilePic === 'string' ? formData.profilePic : formData.profilePic?.url) || '';
-                                                    if (!raw) return '';
-                                                    if (raw.startsWith('data:') || raw.includes('t=')) return raw;
-                                                    return `${raw}${raw.includes('?') ? '&' : '?'}t=${Date.now()}`;
-                                                })()}
-                                                alt="Profile"
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            <User size={40} className="text-gray-400" />
-                                        )}
-                                    </div>
-                                    <div className="flex-1 w-full flex flex-col items-start gap-2">
-                                        <label className={`flex items-center justify-center gap-2 w-full md:w-auto max-w-[280px] px-6 py-3 ${isPhotoUploading ? 'bg-indigo-100 cursor-not-allowed opacity-70' : 'bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 cursor-pointer'} text-indigo-600 dark:text-indigo-400 font-bold rounded-xl border border-indigo-100 dark:border-indigo-800/30 transition-colors`}>
-                                            {isPhotoUploading ? (
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                                                    <span>Processing...</span>
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <Upload size={18} />
-                                                    <span>Upload New Photo</span>
-                                                    <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" disabled={isPhotoUploading} />
-                                                </>
-                                            )}
-                                        </label>
-                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">Only PDF and any type of image only. Max 5MB</p>
-                                        {uploadErrors.profilePic && (
-                                            <p className="text-[10px] text-rose-500 font-bold uppercase tracking-tighter mt-1 animate-bounce">{uploadErrors.profilePic}</p>
-                                        )}
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    )}
 
-                    {activeTab === 'professional' && (
-                        <div className="space-y-8 animate-in fade-in duration-300">
+                        <div className="space-y-6 pt-6 border-t border-gray-50 dark:border-gray-800">
+                            <TagInput
+                                label="Medical Specialties"
+                                placeholder="Search and select specialties (e.g. Cardiology)..."
+                                options={COMMON_SPECIALTIES}
+                                selectedItems={formData.specialties}
+                                onAdd={(val) => setFormData((prev: any) => ({ ...prev, specialties: [...prev.specialties, val] }))}
+                                onRemove={(val) => setFormData((prev: any) => ({ ...prev, specialties: prev.specialties.filter((i: string) => i !== val) }))}
+                                accentColor="emerald"
+                            />
+
+                            <TagInput
+                                label="Medical Qualifications"
+                                placeholder="Search and select qualifications (e.g. MBBS, MD)..."
+                                options={COMMON_QUALIFICATIONS}
+                                selectedItems={formData.qualifications}
+                                onAdd={(val) => setFormData((prev: any) => ({ ...prev, qualifications: [...prev.qualifications, val] }))}
+                                onRemove={(val) => setFormData((prev: any) => ({ ...prev, qualifications: prev.qualifications.filter((i: string) => i !== val) }))}
+                                accentColor="indigo"
+                                icon={<Award size={20} className="mb-2 opacity-20" />}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-gray-50 dark:border-gray-800">
+                            <TagInput
+                                label="Languages Spoken"
+                                placeholder="Search and select languages..."
+                                options={COMMON_LANGUAGES}
+                                selectedItems={formData.languages}
+                                onAdd={(val) => setFormData((prev: any) => ({ ...prev, languages: [...prev.languages, val] }))}
+                                onRemove={(val) => setFormData((prev: any) => ({ ...prev, languages: prev.languages.filter((i: string) => i !== val) }))}
+                                accentColor="blue"
+                                icon={<Globe size={20} className="mb-2 opacity-20" />}
+                            />
+
                             <div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Medical Qualifications</h3>
-                                <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Professional Bio</label>
-                                        <textarea name="bio" value={formData.bio} onChange={handleChange} rows={4} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all resize-none" placeholder="Experience, philosophy of care, and expertise..." />
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Experience Start Date</label>
-                                            <div className="relative">
-                                                <input type="date" name="experienceStart" value={formData.experienceStart} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
-                                                <Calendar className="absolute right-4 top-3.5 text-gray-300" size={16} />
-                                            </div>
-                                        </div>
-                                    </div>
+                                <label className="text-xs font-black uppercase text-gray-400 tracking-wider mb-3 block">Awards & Recognition</label>
+                                <div className="flex gap-2 mb-3">
+                                    <input type="text" value={tempAward} onChange={(e) => setTempAward(e.target.value)} placeholder="Best Doctor Award..." className="flex-1 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                    <button onClick={() => { if (tempAward.trim()) { setFormData((prev: any) => ({ ...prev, awards: [...prev.awards, tempAward] })); setTempAward(""); } }} className="bg-amber-100 text-amber-700 px-4 rounded-xl font-bold hover:bg-amber-200"><Plus size={18} /></button>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {formData.awards.map((a: string) => (
+                                        <span key={a} className="px-3 py-1.5 bg-amber-50 dark:bg-amber-900/10 text-amber-600 rounded-lg text-xs font-bold border border-amber-100 flex items-center gap-2">
+                                            <Award size={12} /> {a} <button onClick={() => setFormData((prev: any) => ({ ...prev, awards: prev.awards.filter((i: string) => i !== a) }))}><X size={12} /></button>
+                                        </span>
+                                    ))}
                                 </div>
                             </div>
+                        </div>
 
-                            <div className="space-y-6 pt-6 border-t border-gray-50 dark:border-gray-800">
-                                <TagInput
-                                    label="Medical Specialties"
-                                    placeholder="Search and select specialties (e.g. Cardiology)..."
-                                    options={COMMON_SPECIALTIES}
-                                    selectedItems={formData.specialties}
-                                    onAdd={(val) => setFormData((prev: any) => ({ ...prev, specialties: [...prev.specialties, val] }))}
-                                    onRemove={(val) => setFormData((prev: any) => ({ ...prev, specialties: prev.specialties.filter((i: string) => i !== val) }))}
-                                    accentColor="emerald"
-                                />
-
-                                <TagInput
-                                    label="Medical Qualifications"
-                                    placeholder="Search and select qualifications (e.g. MBBS, MD)..."
-                                    options={COMMON_QUALIFICATIONS}
-                                    selectedItems={formData.qualifications}
-                                    onAdd={(val) => setFormData((prev: any) => ({ ...prev, qualifications: [...prev.qualifications, val] }))}
-                                    onRemove={(val) => setFormData((prev: any) => ({ ...prev, qualifications: prev.qualifications.filter((i: string) => i !== val) }))}
-                                    accentColor="indigo"
-                                    icon={<Award size={20} className="mb-2 opacity-20" />}
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-gray-50 dark:border-gray-800">
-                                <TagInput
-                                    label="Languages Spoken"
-                                    placeholder="Search and select languages..."
-                                    options={COMMON_LANGUAGES}
-                                    selectedItems={formData.languages}
-                                    onAdd={(val) => setFormData((prev: any) => ({ ...prev, languages: [...prev.languages, val] }))}
-                                    onRemove={(val) => setFormData((prev: any) => ({ ...prev, languages: prev.languages.filter((i: string) => i !== val) }))}
-                                    accentColor="blue"
-                                    icon={<Globe size={20} className="mb-2 opacity-20" />}
-                                />
-
-                                <div>
-                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider mb-3 block">Awards & Recognition</label>
-                                    <div className="flex gap-2 mb-3">
-                                        <input type="text" value={tempAward} onChange={(e) => setTempAward(e.target.value)} placeholder="Best Doctor Award..." className="flex-1 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
-                                        <button onClick={() => { if(tempAward.trim()) { setFormData((prev: any) => ({ ...prev, awards: [...prev.awards, tempAward] })); setTempAward(""); } }} className="bg-amber-100 text-amber-700 px-4 rounded-xl font-bold hover:bg-amber-200"><Plus size={18} /></button>
+                        <div className="pt-6 border-t border-gray-50 dark:border-gray-800">
+                            <h4 className="text-xs font-black uppercase text-gray-400 tracking-wider mb-4 block">Proof of Qualification</h4>
+                            <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-500">
+                                        <Award size={20} />
                                     </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {formData.awards.map((a: string) => (
-                                            <span key={a} className="px-3 py-1.5 bg-amber-50 dark:bg-amber-900/10 text-amber-600 rounded-lg text-xs font-bold border border-amber-100 flex items-center gap-2">
-                                                <Award size={12} /> {a} <button onClick={() => setFormData((prev: any) => ({ ...prev, awards: prev.awards.filter((i: string) => i !== a) }))}><X size={12} /></button>
+                                    <div>
+                                        <h4 className="font-bold text-sm text-gray-900 dark:text-white">Degree Certificate</h4>
+                                        <p className="text-[10px] text-gray-500">Upload your highest degree certificate (PDF/Image)</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
+                                    {formData.degreeCertificate && (
+                                        <div className="flex items-center gap-1.5 sm:gap-2">
+                                            <button type="button" onClick={() => setDocViewer({ url: formData.degreeCertificate, label: 'Degree Certificate' })} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] sm:text-[11px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
+                                                <CheckCircle2 size={12} /> View
+                                            </button>
+                                            <button onClick={() => handleDeleteDocument('degreeCertificate')} className="p-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors">
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    )}
+                                    <div className="flex flex-col items-end gap-1">
+                                        <label className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all">
+                                            <Upload size={14} />
+                                            {files['degreeCertificate'] ? 'Change File' : 'Upload'}
+                                            <input type="file" name="degreeCertificate" onChange={handleFileChange} className="hidden" accept="*" />
+                                        </label>
+                                        {files['degreeCertificate'] && (
+                                            <span className="text-[10px] text-gray-500 font-medium max-w-[100px] sm:max-w-[150px] truncate">
+                                                {files['degreeCertificate'].name}
                                             </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="pt-6 border-t border-gray-50 dark:border-gray-800">
-                                <h4 className="text-xs font-black uppercase text-gray-400 tracking-wider mb-4 block">Proof of Qualification</h4>
-                                <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-500">
-                                            <Award size={20} />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-sm text-gray-900 dark:text-white">Degree Certificate</h4>
-                                            <p className="text-[10px] text-gray-500">Upload your highest degree certificate (PDF/Image)</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
-                                        {formData.degreeCertificate && (
-                                            <div className="flex items-center gap-1.5 sm:gap-2">
-                                                <button type="button" onClick={() => setDocViewer({ url: formData.degreeCertificate, label: 'Degree Certificate' })} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] sm:text-[11px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
-                                                    <CheckCircle2 size={12} /> View
-                                                </button>
-                                                <button onClick={() => handleDeleteDocument('degreeCertificate')} className="p-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors">
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
                                         )}
-                                        <div className="flex flex-col items-end gap-1">
-                                            <label className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all">
-                                                <Upload size={14} />
-                                                {files['degreeCertificate'] ? 'Change File' : 'Upload'}
-                                                <input type="file" name="degreeCertificate" onChange={handleFileChange} className="hidden" accept="*" />
-                                            </label>
-                                            {files['degreeCertificate'] && (
-                                                <span className="text-[10px] text-gray-500 font-medium max-w-[100px] sm:max-w-[150px] truncate">
-                                                    {files['degreeCertificate'].name}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-2">Only PDF and any type of image only. Max 5MB</p>
-                                {uploadErrors.degreeCertificate && (
-                                    <p className="text-[10px] text-rose-500 font-bold uppercase tracking-tighter mt-1 animate-bounce">{uploadErrors.degreeCertificate}</p>
-                                )}
-
-                                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-500">
-                                            <Award size={20} />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-sm text-gray-900 dark:text-white">Doctorate Certificate</h4>
-                                            <p className="text-[10px] text-gray-500">Upload your Doctorate/PhD certificate (PDF/Image)</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
-                                        {formData.doctorateCertificate && (
-                                            <div className="flex items-center gap-1.5 sm:gap-2">
-                                                <button type="button" onClick={() => setDocViewer({ url: formData.doctorateCertificate, label: 'Doctorate Certificate' })} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] sm:text-[11px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
-                                                    <CheckCircle2 size={12} /> View
-                                                </button>
-                                                <button onClick={() => handleDeleteDocument('doctorateCertificate')} className="p-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors">
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        )}
-                                        <div className="flex flex-col items-end gap-1">
-                                            <label className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all">
-                                                <Upload size={14} />
-                                                {files['doctorateCertificate'] ? 'Change File' : 'Upload'}
-                                                <input type="file" name="doctorateCertificate" onChange={handleFileChange} className="hidden" accept="*" />
-                                            </label>
-                                            {files['doctorateCertificate'] && (
-                                                <span className="text-[10px] text-gray-500 font-medium max-w-[100px] sm:max-w-[150px] truncate">
-                                                    {files['doctorateCertificate'].name}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-2">Only PDF and any type of image only. Max 5MB</p>
-                                {uploadErrors.doctorateCertificate && (
-                                    <p className="text-[10px] text-rose-500 font-bold uppercase tracking-tighter mt-1 animate-bounce">{uploadErrors.doctorateCertificate}</p>
-                                )}
-
-                                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-500">
-                                            <Award size={20} />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-sm text-gray-900 dark:text-white">Internship Completion</h4>
-                                            <p className="text-[10px] text-gray-500">Upload your Internship Completion certificate (PDF/Image)</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
-                                        {formData.internshipCertificate && (
-                                            <div className="flex items-center gap-1.5 sm:gap-2">
-                                                <button type="button" onClick={() => setDocViewer({ url: formData.internshipCertificate, label: 'Internship Completion' })} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] sm:text-[11px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
-                                                    <CheckCircle2 size={12} /> View
-                                                </button>
-                                                <button onClick={() => handleDeleteDocument('internshipCertificate')} className="p-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors">
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        )}
-                                        <div className="flex flex-col items-end gap-1">
-                                            <label className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all">
-                                                <Upload size={14} />
-                                                {files['internshipCertificate'] ? 'Change File' : 'Upload'}
-                                                <input type="file" name="internshipCertificate" onChange={handleFileChange} className="hidden" accept="*" />
-                                            </label>
-                                            {files['internshipCertificate'] && (
-                                                <span className="text-[10px] text-gray-500 font-medium max-w-[100px] sm:max-w-[150px] truncate">
-                                                    {files['internshipCertificate'].name}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-2">Only PDF and any type of image only. Max 5MB</p>
-                                {uploadErrors.internshipCertificate && (
-                                    <p className="text-[10px] text-rose-500 font-bold uppercase tracking-tighter mt-1 animate-bounce">{uploadErrors.internshipCertificate}</p>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'documents' && (
-                        <div className="space-y-8 animate-in fade-in duration-300">
-                            <div className="bg-white dark:bg-[#111] p-8 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-3">
-                                    <FileText className="text-indigo-500" size={24} /> Previously Submitted Documents
-                                </h3>
-                                <p className="text-sm text-gray-500 mb-8">Review all the documents and certificates you have previously submitted. To replace any of these, upload a new file in the Professional or Practice tabs.</p>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {/* Degree Certificate */}
-                                    <div className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center gap-4 transition-all hover:border-indigo-200">
-                                        <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center text-indigo-500">
-                                            <Award size={32} />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-sm text-gray-900 dark:text-white">Degree Certificate</h4>
-                                            {formData.degreeCertificate ? (
-                                                <button type="button" onClick={() => setDocViewer({ url: formData.degreeCertificate, label: 'Degree Certificate' })} className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
-                                                    <CheckCircle2 size={16} /> View Document
-                                                </button>
-                                            ) : (
-                                                <p className="mt-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Not Submitted</p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Doctorate Certificate */}
-                                    <div className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center gap-4 transition-all hover:border-indigo-200">
-                                        <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center text-indigo-500">
-                                            <Award size={32} />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-sm text-gray-900 dark:text-white">Doctorate Certificate</h4>
-                                            {formData.doctorateCertificate ? (
-                                                <button type="button" onClick={() => setDocViewer({ url: formData.doctorateCertificate, label: 'Doctorate Certificate' })} className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
-                                                    <CheckCircle2 size={16} /> View Document
-                                                </button>
-                                            ) : (
-                                                <p className="mt-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Not Submitted</p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Internship Completion */}
-                                    <div className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center gap-4 transition-all hover:border-indigo-200">
-                                        <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center text-indigo-500">
-                                            <Award size={32} />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-sm text-gray-900 dark:text-white">Internship Completion</h4>
-                                            {formData.internshipCertificate ? (
-                                                <button type="button" onClick={() => setDocViewer({ url: formData.internshipCertificate, label: 'Internship Completion' })} className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
-                                                    <CheckCircle2 size={16} /> View Document
-                                                </button>
-                                            ) : (
-                                                <p className="mt-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Not Submitted</p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Registration Certificate */}
-                                    <div className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center gap-4 transition-all hover:border-emerald-200">
-                                        <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center text-emerald-500">
-                                            <ShieldCheck size={32} />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-sm text-gray-900 dark:text-white">Registration Certificate</h4>
-                                            {formData.registrationCertificate ? (
-                                                <button type="button" onClick={() => setDocViewer({ url: formData.registrationCertificate, label: 'Registration Certificate' })} className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
-                                                    <CheckCircle2 size={16} /> View Document
-                                                </button>
-                                            ) : (
-                                                <p className="mt-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Not Submitted</p>
-                                            )}
-                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-2">Only PDF and any type of image only. Max 5MB</p>
+                            {uploadErrors.degreeCertificate && (
+                                <p className="text-[10px] text-rose-500 font-bold uppercase tracking-tighter mt-1 animate-bounce">{uploadErrors.degreeCertificate}</p>
+                            )}
 
-                    {activeTab === 'practice' && (
-                        <div className="space-y-8 animate-in fade-in duration-300">
-                            <div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 underline decoration-emerald-500 decoration-4 underline-offset-8">Medical Registration</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Registration Number</label>
-                                        <input type="text" name="medicalRegistrationNumber" value={formData.medicalRegistrationNumber} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-500">
+                                        <Award size={20} />
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Medical Council</label>
-                                        <input type="text" name="registrationCouncil" value={formData.registrationCouncil} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Registration Year</label>
-                                        <input type="text" name="registrationYear" value={formData.registrationYear} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Expiry Date</label>
-                                        <input type="date" name="registrationExpiryDate" value={formData.registrationExpiryDate} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                    <div>
+                                        <h4 className="font-bold text-sm text-gray-900 dark:text-white">Doctorate Certificate</h4>
+                                        <p className="text-[10px] text-gray-500">Upload your Doctorate/PhD certificate (PDF/Image)</p>
                                     </div>
                                 </div>
-                                <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center text-emerald-500">
-                                            <ShieldCheck size={20} />
+                                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
+                                    {formData.doctorateCertificate && (
+                                        <div className="flex items-center gap-1.5 sm:gap-2">
+                                            <button type="button" onClick={() => setDocViewer({ url: formData.doctorateCertificate, label: 'Doctorate Certificate' })} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] sm:text-[11px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
+                                                <CheckCircle2 size={12} /> View
+                                            </button>
+                                            <button onClick={() => handleDeleteDocument('doctorateCertificate')} className="p-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors">
+                                                <Trash2 size={14} />
+                                            </button>
                                         </div>
-                                        <div>
-                                            <h4 className="font-bold text-sm text-gray-900 dark:text-white">Registration Certificate</h4>
-                                            <p className="text-[10px] text-gray-500">Upload your Medical Council Registration (PDF/Image)</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
-                                        {formData.registrationCertificate && (
-                                            <div className="flex items-center gap-1.5 sm:gap-2">
-                                                <button type="button" onClick={() => setDocViewer({ url: formData.registrationCertificate, label: 'Registration Certificate' })} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] sm:text-[11px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
-                                                    <CheckCircle2 size={12} /> View
-                                                </button>
-                                                <button onClick={() => handleDeleteDocument('registrationCertificate')} className="p-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors">
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        )}
-                                        <div className="flex flex-col items-end gap-1">
-                                            <label className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all">
-                                                <Upload size={14} />
-                                                {files['registrationCertificate'] ? 'Change File' : 'Upload'}
-                                                <input type="file" name="registrationCertificate" onChange={handleFileChange} className="hidden" accept="*" />
-                                            </label>
-                                            {files['registrationCertificate'] && (
-                                                <span className="text-[10px] text-gray-500 font-medium max-w-[100px] sm:max-w-[150px] truncate">
-                                                    {files['registrationCertificate'].name}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-2">Only PDF and any type of image only. Max 5MB</p>
-                                {uploadErrors.registrationCertificate && (
-                                    <p className="text-[10px] text-rose-500 font-bold uppercase tracking-tighter mt-1 animate-bounce">{uploadErrors.registrationCertificate}</p>
-                                )}
-                            </div>
-
-                            <div className="pt-8 border-t border-gray-50 dark:border-gray-800">
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Hospital Assignment</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Employee ID</label>
-                                        <input type="text" name="employeeId" value={formData.employeeId} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="pt-8 border-t border-gray-50 dark:border-gray-800">
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Scheduling Defaults</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Consultation Fee (₹)</label>
-                                        <div className="relative">
-                                            <input type="number" name="consultationFee" value={formData.consultationFee} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
-                                            <IndianRupee className="absolute right-4 top-3.5 text-gray-300" size={16} />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Duration (mins)</label>
-                                        <div className="relative">
-                                            <input type="number" name="consultationDuration" value={formData.consultationDuration} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
-                                            <Clock className="absolute right-4 top-3.5 text-gray-300" size={16} />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Max Appt/Day</label>
-                                        <div className="relative">
-                                            <input type="number" name="maxAppointmentsPerDay" value={formData.maxAppointmentsPerDay} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
-                                            <Plus className="absolute right-4 top-3.5 text-gray-300" size={16} />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'bank' && (
-                        <div className="space-y-8 animate-in fade-in duration-300">
-                            <div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                                    <Wallet className="text-emerald-500" /> Settlement Bank Details
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Account Holder Name</label>
-                                        <input type="text" name="bankDetails.accountName" value={formData.bankDetails.accountName} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.accountName'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
-                                        {errors['bankDetails.accountName'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.accountName']}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Bank Name</label>
-                                        <input type="text" name="bankDetails.bankName" value={formData.bankDetails.bankName} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.bankName'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
-                                        {errors['bankDetails.bankName'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.bankName']}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Account Number</label>
-                                        <input type="text" name="bankDetails.accountNumber" value={formData.bankDetails.accountNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.accountNumber'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
-                                        {errors['bankDetails.accountNumber'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.accountNumber']}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">IFSC Code</label>
-                                        <input type="text" name="bankDetails.ifscCode" value={formData.bankDetails.ifscCode} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.ifscCode'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none uppercase`} />
-                                        {errors['bankDetails.ifscCode'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.ifscCode']}</p>}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="pt-8 border-t border-gray-50 dark:border-gray-800">
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Payroll & Tax Identifiers</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider flex justify-between">
-                                            Base Salary (Per Month)
-                                            <span className="text-gray-400 lowercase">(view only)</span>
+                                    )}
+                                    <div className="flex flex-col items-end gap-1">
+                                        <label className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all">
+                                            <Upload size={14} />
+                                            {files['doctorateCertificate'] ? 'Change File' : 'Upload'}
+                                            <input type="file" name="doctorateCertificate" onChange={handleFileChange} className="hidden" accept="*" />
                                         </label>
-                                        <div className="relative">
-                                            <input type="number" name="baseSalary" value={formData.baseSalary} readOnly className="w-full bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3 text-sm outline-none cursor-not-allowed text-gray-500" />
-                                            <IndianRupee className="absolute right-4 top-3.5 text-gray-400" size={16} />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">PAN Card Number</label>
-                                        <input type="text" name="panNumber" value={formData.panNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.panNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none uppercase`} />
-                                        {errors.panNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.panNumber}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Aadhar Number</label>
-                                        <input type="text" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.aadharNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
-                                        {errors.aadharNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.aadharNumber}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">ESI Number</label>
-                                        <input type="text" name="esiNumber" value={formData.esiNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.esiNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
-                                        {errors.esiNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.esiNumber}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">PF Number</label>
-                                        <input type="text" name="pfNumber" value={formData.pfNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.pfNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
-                                        {errors.pfNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.pfNumber}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-gray-400 tracking-wider">UAN Number</label>
-                                        <input type="text" name="uanNumber" value={formData.uanNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.uanNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
-                                        {errors.uanNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.uanNumber}</p>}
+                                        {files['doctorateCertificate'] && (
+                                            <span className="text-[10px] text-gray-500 font-medium max-w-[100px] sm:max-w-[150px] truncate">
+                                                {files['doctorateCertificate'].name}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
-                                <p className="mt-6 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 text-xs text-gray-500 leading-relaxed">
-                                    <strong>Note:</strong> These details are essential for generating accurate monthly payslips. Please ensure the information matches your official documents. The hospital administration uses this data for financial compliance.
-                                </p>
+                            </div>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-2">Only PDF and any type of image only. Max 5MB</p>
+                            {uploadErrors.doctorateCertificate && (
+                                <p className="text-[10px] text-rose-500 font-bold uppercase tracking-tighter mt-1 animate-bounce">{uploadErrors.doctorateCertificate}</p>
+                            )}
+
+                            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-500">
+                                        <Award size={20} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-sm text-gray-900 dark:text-white">Internship Completion</h4>
+                                        <p className="text-[10px] text-gray-500">Upload your Internship Completion certificate (PDF/Image)</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
+                                    {formData.internshipCertificate && (
+                                        <div className="flex items-center gap-1.5 sm:gap-2">
+                                            <button type="button" onClick={() => setDocViewer({ url: formData.internshipCertificate, label: 'Internship Completion' })} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] sm:text-[11px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
+                                                <CheckCircle2 size={12} /> View
+                                            </button>
+                                            <button onClick={() => handleDeleteDocument('internshipCertificate')} className="p-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors">
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    )}
+                                    <div className="flex flex-col items-end gap-1">
+                                        <label className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all">
+                                            <Upload size={14} />
+                                            {files['internshipCertificate'] ? 'Change File' : 'Upload'}
+                                            <input type="file" name="internshipCertificate" onChange={handleFileChange} className="hidden" accept="*" />
+                                        </label>
+                                        {files['internshipCertificate'] && (
+                                            <span className="text-[10px] text-gray-500 font-medium max-w-[100px] sm:max-w-[150px] truncate">
+                                                {files['internshipCertificate'].name}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-2">Only PDF and any type of image only. Max 5MB</p>
+                            {uploadErrors.internshipCertificate && (
+                                <p className="text-[10px] text-rose-500 font-bold uppercase tracking-tighter mt-1 animate-bounce">{uploadErrors.internshipCertificate}</p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'documents' && (
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                        <div className="bg-white dark:bg-[#111] p-8 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-3">
+                                <FileText className="text-indigo-500" size={24} /> Previously Submitted Documents
+                            </h3>
+                            <p className="text-sm text-gray-500 mb-8">Review all the documents and certificates you have previously submitted. To replace any of these, upload a new file in the Professional or Practice tabs.</p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Degree Certificate */}
+                                <div className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center gap-4 transition-all hover:border-indigo-200">
+                                    <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center text-indigo-500">
+                                        <Award size={32} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-sm text-gray-900 dark:text-white">Degree Certificate</h4>
+                                        {formData.degreeCertificate ? (
+                                            <button type="button" onClick={() => setDocViewer({ url: formData.degreeCertificate, label: 'Degree Certificate' })} className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
+                                                <CheckCircle2 size={16} /> View Document
+                                            </button>
+                                        ) : (
+                                            <p className="mt-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Not Submitted</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Doctorate Certificate */}
+                                <div className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center gap-4 transition-all hover:border-indigo-200">
+                                    <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center text-indigo-500">
+                                        <Award size={32} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-sm text-gray-900 dark:text-white">Doctorate Certificate</h4>
+                                        {formData.doctorateCertificate ? (
+                                            <button type="button" onClick={() => setDocViewer({ url: formData.doctorateCertificate, label: 'Doctorate Certificate' })} className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
+                                                <CheckCircle2 size={16} /> View Document
+                                            </button>
+                                        ) : (
+                                            <p className="mt-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Not Submitted</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Internship Completion */}
+                                <div className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center gap-4 transition-all hover:border-indigo-200">
+                                    <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center text-indigo-500">
+                                        <Award size={32} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-sm text-gray-900 dark:text-white">Internship Completion</h4>
+                                        {formData.internshipCertificate ? (
+                                            <button type="button" onClick={() => setDocViewer({ url: formData.internshipCertificate, label: 'Internship Completion' })} className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
+                                                <CheckCircle2 size={16} /> View Document
+                                            </button>
+                                        ) : (
+                                            <p className="mt-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Not Submitted</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Registration Certificate */}
+                                <div className="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center gap-4 transition-all hover:border-emerald-200">
+                                    <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center text-emerald-500">
+                                        <ShieldCheck size={32} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-sm text-gray-900 dark:text-white">Registration Certificate</h4>
+                                        {formData.registrationCertificate ? (
+                                            <button type="button" onClick={() => setDocViewer({ url: formData.registrationCertificate, label: 'Registration Certificate' })} className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 transition-colors">
+                                                <CheckCircle2 size={16} /> View Document
+                                            </button>
+                                        ) : (
+                                            <p className="mt-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Not Submitted</p>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
+
+                {activeTab === 'practice' && (
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 underline decoration-emerald-500 decoration-4 underline-offset-8">Medical Registration</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Registration Number</label>
+                                    <input type="text" name="medicalRegistrationNumber" value={formData.medicalRegistrationNumber} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Medical Council</label>
+                                    <input type="text" name="registrationCouncil" value={formData.registrationCouncil} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Registration Year</label>
+                                    <input type="text" name="registrationYear" value={formData.registrationYear} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Expiry Date</label>
+                                    <input type="date" name="registrationExpiryDate" value={formData.registrationExpiryDate} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                </div>
+                            </div>
+                            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center text-emerald-500">
+                                        <ShieldCheck size={20} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-sm text-gray-900 dark:text-white">Registration Certificate</h4>
+                                        <p className="text-[10px] text-gray-500">Upload your Medical Council Registration (PDF/Image)</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
+                                    {formData.registrationCertificate && (
+                                        <div className="flex items-center gap-1.5 sm:gap-2">
+                                            <button type="button" onClick={() => setDocViewer({ url: formData.registrationCertificate, label: 'Registration Certificate' })} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 text-[10px] sm:text-[11px] font-bold rounded-lg border border-green-100 dark:border-green-800/30">
+                                                <CheckCircle2 size={12} /> View
+                                            </button>
+                                            <button onClick={() => handleDeleteDocument('registrationCertificate')} className="p-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors">
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    )}
+                                    <div className="flex flex-col items-end gap-1">
+                                        <label className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all">
+                                            <Upload size={14} />
+                                            {files['registrationCertificate'] ? 'Change File' : 'Upload'}
+                                            <input type="file" name="registrationCertificate" onChange={handleFileChange} className="hidden" accept="*" />
+                                        </label>
+                                        {files['registrationCertificate'] && (
+                                            <span className="text-[10px] text-gray-500 font-medium max-w-[100px] sm:max-w-[150px] truncate">
+                                                {files['registrationCertificate'].name}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-2">Only PDF and any type of image only. Max 5MB</p>
+                            {uploadErrors.registrationCertificate && (
+                                <p className="text-[10px] text-rose-500 font-bold uppercase tracking-tighter mt-1 animate-bounce">{uploadErrors.registrationCertificate}</p>
+                            )}
+                        </div>
+
+                        <div className="pt-8 border-t border-gray-50 dark:border-gray-800">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Hospital Assignment</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Employee ID</label>
+                                    <input type="text" name="employeeId" value={formData.employeeId} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-8 border-t border-gray-50 dark:border-gray-800">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Scheduling Defaults</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Consultation Fee (₹)</label>
+                                    <div className="relative">
+                                        <input type="number" name="consultationFee" value={formData.consultationFee} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        <IndianRupee className="absolute right-4 top-3.5 text-gray-300" size={16} />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Duration (mins)</label>
+                                    <div className="relative">
+                                        <input type="number" name="consultationDuration" value={formData.consultationDuration} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        <Clock className="absolute right-4 top-3.5 text-gray-300" size={16} />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Max Appt/Day</label>
+                                    <div className="relative">
+                                        <input type="number" name="maxAppointmentsPerDay" value={formData.maxAppointmentsPerDay} onChange={handleChange} className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                        <Plus className="absolute right-4 top-3.5 text-gray-300" size={16} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'bank' && (
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                                <Wallet className="text-emerald-500" /> Settlement Bank Details
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Account Holder Name</label>
+                                    <input type="text" name="bankDetails.accountName" value={formData.bankDetails.accountName} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.accountName'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
+                                    {errors['bankDetails.accountName'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.accountName']}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Bank Name</label>
+                                    <input type="text" name="bankDetails.bankName" value={formData.bankDetails.bankName} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.bankName'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
+                                    {errors['bankDetails.bankName'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.bankName']}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Account Number</label>
+                                    <input type="text" name="bankDetails.accountNumber" value={formData.bankDetails.accountNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.accountNumber'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
+                                    {errors['bankDetails.accountNumber'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.accountNumber']}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">IFSC Code</label>
+                                    <input type="text" name="bankDetails.ifscCode" value={formData.bankDetails.ifscCode} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors['bankDetails.ifscCode'] ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none uppercase`} />
+                                    {errors['bankDetails.ifscCode'] && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors['bankDetails.ifscCode']}</p>}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-8 border-t border-gray-50 dark:border-gray-800">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Payroll & Tax Identifiers</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider flex justify-between">
+                                        Base Salary (Per Month)
+                                        <span className="text-gray-400 lowercase">(view only)</span>
+                                    </label>
+                                    <div className="relative">
+                                        <input type="number" name="baseSalary" value={formData.baseSalary} readOnly className="w-full bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3 text-sm outline-none cursor-not-allowed text-gray-500" />
+                                        <IndianRupee className="absolute right-4 top-3.5 text-gray-400" size={16} />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">PAN Card Number</label>
+                                    <input type="text" name="panNumber" value={formData.panNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.panNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none uppercase`} />
+                                    {errors.panNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.panNumber}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">Aadhar Number</label>
+                                    <input type="text" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.aadharNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
+                                    {errors.aadharNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.aadharNumber}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">ESI Number</label>
+                                    <input type="text" name="esiNumber" value={formData.esiNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.esiNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
+                                    {errors.esiNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.esiNumber}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">PF Number</label>
+                                    <input type="text" name="pfNumber" value={formData.pfNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.pfNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
+                                    {errors.pfNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.pfNumber}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-gray-400 tracking-wider">UAN Number</label>
+                                    <input type="text" name="uanNumber" value={formData.uanNumber} onChange={handleChange} className={`w-full bg-gray-50 dark:bg-gray-900/50 border ${errors.uanNumber ? 'border-rose-500' : 'border-gray-100 dark:border-gray-800'} rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none`} />
+                                    {errors.uanNumber && <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-tight">{errors.uanNumber}</p>}
+                                </div>
+                            </div>
+                            <p className="mt-6 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 text-xs text-gray-500 leading-relaxed">
+                                <strong>Note:</strong> These details are essential for generating accurate monthly payslips. Please ensure the information matches your official documents. The hospital administration uses this data for financial compliance.
+                            </p>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* DOCUMENT VIEWER MODAL */}

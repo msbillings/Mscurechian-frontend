@@ -127,25 +127,37 @@ export const printIPDLedger = (summary: any, hospitalDetails?: any) => {
     const balanceDue = Math.max(0, netBill - totalDeposits);
 
     // Static / Map Fields
-    const cinNo = hospitalDetails?.cinNo || "U85110TG2009PTC063748";
-    const gstNo = hospitalDetails?.gstNumber || "37AAQCS4714G2Z1";
+    const cinNo = hospitalDetails?.cinNo || "";
+    const gstNo = hospitalDetails?.gstNumber || "";
     const ipNo = admissionId;
-    const ageSex = `${summary?.patientAge || '25Y(s)'} / ${summary?.patientGender || 'Male'}`;
-    const umrNo = summary?.mrn || "K-MR26000811";
-    const billNo = "K-PRB" + Math.floor(Math.random() * 9000000 + 1000000);
+    const ageSex = (summary?.patientAge || summary?.age) && (summary?.patientGender || summary?.gender)
+        ? `${summary.patientAge || summary.age} / ${summary.patientGender || summary.gender}`
+        : "";
+    const umrNo = summary?.mrn || "";
+    const billNo = summary?.billNumber || "";
     const billDt = format(new Date(), 'dd-MMM-yyyy');
-    const doctor = summary?.primaryDoctor?.name || 'Dr. ISRAEL RAMANATHAN';
-    const admissionDt = summary?.admissionDate ? format(new Date(summary.admissionDate), 'dd-MMM-yyyy HH:mm') : 'N/A';
+    const doctor = 
+        (typeof summary?.primaryDoctor === 'string' ? summary.primaryDoctor : '') ||
+        summary?.primaryDoctor?.user?.name || 
+        summary?.primaryDoctor?.name || 
+        summary?.primaryDoctorName || 
+        summary?.doctorName || 
+        summary?.doctor?.user?.name || 
+        summary?.doctor?.name || 
+        (typeof summary?.doctor === 'string' ? summary.doctor : '') ||
+        summary?.suggestedDoctorName || 
+        summary?.consultants?.[0] || 
+        '';
+    const admissionDt = summary?.admissionDate ? format(new Date(summary.admissionDate), 'dd-MMM-yyyy HH:mm') : '';
     const dischargeType = summary?.status === 'Discharged' ? 'Regular' : '';
     const org = summary?.organization || '';
     const dischargeDtTm = summary?.status === 'Discharged' ? format(new Date(summary.updatedAt || new Date()), 'dd-MMM-yyyy HH:mm') : '';
     const patientType = 'Cash';
-    const ward = bedItems.length > 0 ? bedItems[bedItems.length - 1].type : 'GENERAL WARD';
-    const bedNo = bedItems.length > 0 ? bedItems[bedItems.length - 1].bedId : 'ISOLATION GW1';
+    const ward = bedItems.length > 0 ? bedItems[bedItems.length - 1].type : '';
+    const bedNo = bedItems.length > 0 ? bedItems[bedItems.length - 1].bedId : '';
     const secondaryDr = doctor;
-    const address = summary?.patientAddress || "BADVEL KOTHA CHERRUV";
-    const phoneNo = summary?.patientContact || "9346897470";
-    const referalBy = "DR.V.GOPALA KRISHNAIAH (BADVEL)";
+    const address = summary?.patientAddress || summary?.address || "";
+    const phoneNo = summary?.patientContact || summary?.phone || "";
 
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
@@ -170,39 +182,172 @@ export const printIPDLedger = (summary: any, hospitalDetails?: any) => {
             
             .bill-title { text-align: center; font-size: 12px; font-weight: bold; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 3px 0; margin-bottom: 2px; }
 
-            /* Patient Info Table - STRICT borders */
-            .patient-info-table { width: 100%; border-collapse: collapse; font-size: 10px; border: 1px solid #000; }
-            .patient-info-table td { padding: 2px 4px; vertical-align: top; }
-            .lbl { width: 80px; }
-            .cln { width: 10px; text-align: center; }
-            .val { font-weight: bold; }
+            /* Patient Info Container - Clean Grid Layout */
+            .patient-info-container {
+                display: flex;
+                width: 100%;
+                border: 1px solid #000;
+                margin-top: 5px;
+                margin-bottom: 5px;
+                background: #fff;
+            }
+            .info-group {
+                flex: 1;
+                padding: 6px 10px;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .info-group:first-child {
+                border-right: 1px solid #000;
+            }
+            .info-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                font-size: 10px;
+                line-height: 1.4;
+            }
+            .info-label {
+                color: #475569;
+                font-weight: bold;
+                text-transform: uppercase;
+                font-size: 8.5px;
+                letter-spacing: 0.3px;
+                width: 40%;
+                text-align: left;
+            }
+            .info-value {
+                color: #0f172a;
+                font-weight: bold;
+                text-align: right;
+                width: 60%;
+                word-wrap: break-word;
+            }
 
-            /* Main Table */
-            table.main-table { width: 100%; border-collapse: collapse; margin-top: 5px; border-bottom: 1px solid #000; font-size: 10px; }
-            table.main-table thead { display: table-header-group; }
-            table.main-table th { border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 4px 2px; font-weight: bold; text-align: left; }
+            /* Main Services Table */
+            table.main-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 10px;
+                border: 1px solid #000;
+                font-size: 10px;
+                table-layout: fixed;
+            }
+            table.main-table th {
+                border-bottom: 1px solid #000;
+                padding: 5px 6px;
+                font-weight: bold;
+                background-color: #f8fafc;
+                text-align: left;
+            }
+            table.main-table td {
+                padding: 4px 6px;
+                vertical-align: middle;
+            }
+            table.main-table tr:not(:last-child) td {
+                border-bottom: 1px solid #e2e8f0;
+            }
             table.main-table th.right, table.main-table td.right { text-align: right; }
-            table.main-table td { padding: 2px; }
 
-            .cat-header { color: #0000cd; font-weight: bold; text-transform: uppercase; padding-top: 6px; font-size: 10px; }
-            .cat-subtotal { border-top: 1px dashed #ccc; font-weight: bold; color: #0000cd; }
-            .cat-subtotal td { padding: 3px 2px; }
-            .cat-subtotal td.right { color: #0000cd; }
+            .cat-header {
+                color: #0000cd;
+                font-weight: bold;
+                text-transform: uppercase;
+                padding: 6px 6px 4px 6px;
+                font-size: 9.5px;
+                background-color: #f1f5f9;
+                border-bottom: 1px solid #cbd5e1;
+            }
+            .cat-subtotal {
+                font-weight: bold;
+                color: #0000cd;
+                background-color: #f8fafc;
+            }
+            .cat-subtotal td {
+                padding: 4px 6px;
+                border-top: 1px solid #000;
+                border-bottom: 1px solid #000;
+            }
 
-            /* Footer Table Layout */
-            .footer-table { width: 100%; border-collapse: collapse; margin-top: 0; border: 1px solid #000; border-top: none; }
-            .footer-table td { padding: 4px; vertical-align: top; }
-            
-            .totals-table { width: 100%; border-collapse: collapse; font-size: 10px; font-weight: bold; text-align: right; }
-            .totals-table td { padding: 2px; }
-            
-            .receipt-table { width: 100%; border-collapse: collapse; font-size: 9px; margin-top: 5px; }
-            .receipt-table th { border-top: 1px solid #000; border-bottom: 1px solid #000; text-align: left; padding: 2px; font-weight: bold; }
-            .receipt-table td { padding: 2px; }
-            
-            .sign-table { width: 100%; margin-top: 40px; font-weight: bold; font-size: 10px; text-align: center; border-collapse: collapse; }
-            
-            .print-time { font-size: 9px; font-weight: bold; margin-top: 15px; }
+            /* Financial Summary Card (Totals & Deposits) */
+            .financial-summary-container {
+                display: flex;
+                width: 100%;
+                border: 1px solid #000;
+                margin-top: 10px;
+                background: #fff;
+            }
+            .summary-left {
+                width: 65%;
+                padding: 8px 12px;
+                border-right: 1px solid #000;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .summary-right {
+                width: 35%;
+                padding: 8px 12px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+
+            /* Inner Deposits Ledger */
+            table.receipt-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 9px;
+                margin-top: 4px;
+                border: 1px solid #cbd5e1;
+            }
+            table.receipt-table th {
+                background-color: #f8fafc;
+                border-bottom: 1px solid #cbd5e1;
+                text-align: left;
+                padding: 3px 6px;
+                font-weight: bold;
+            }
+            table.receipt-table td {
+                padding: 3px 6px;
+                border-bottom: 1px solid #f1f5f9;
+            }
+            table.receipt-table tr.receipt-total td {
+                font-weight: bold;
+                border-top: 1px solid #cbd5e1;
+                border-bottom: none;
+                background-color: #f8fafc;
+            }
+
+            /* Totals Grid Alignment */
+            .totals-grid {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .totals-row {
+                display: flex;
+                justify-content: space-between;
+                font-size: 9.5px;
+                font-weight: bold;
+            }
+            .totals-row.balance-due {
+                color: #b91c1c;
+                font-size: 10.5px;
+                border-top: 1px solid #000;
+                padding-top: 4px;
+                margin-top: 2px;
+            }
+            .totals-label {
+                color: #475569;
+            }
+            .totals-value {
+                color: #0f172a;
+            }
+
+            .sign-table { width: 100%; margin-top: 30px; font-weight: bold; font-size: 10px; text-align: center; border-collapse: collapse; }
+            .print-time { font-size: 9px; font-weight: bold; margin-top: 10px; }
             
             @media print {
                 body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -219,11 +364,10 @@ export const printIPDLedger = (summary: any, hospitalDetails?: any) => {
                     ${hospitalDetails?.logo ? `<img src="${hospitalDetails.logo}" class="header-logo" />` : ''}
                 </td>
                 <td style="width: 60%; text-align: center;">
-                    <h1>${hospitalDetails?.name || 'SRI SRI HOLISTIC HOSPITALS'}</h1>
-                    <p>(A unit of sree ramachandra healthservices pvt Ltd)</p>
-                    <p>${hospitalDetails?.address || '#3/223,228 and 229, Christian Line Rd, beside NTR statue,'}</p>
-                    <p>Kadapa, Andhra Pradesh - 516001.</p>
-                    <p>Phone ,FAX: ${hospitalDetails?.phone || '08562-244455'}</p>
+                    <h1>${hospitalDetails?.name || ''}</h1>
+                    ${hospitalDetails?.address ? `<p>${hospitalDetails.address}</p>` : ''}
+                    ${hospitalDetails?.phone || hospitalDetails?.contact ? `<p>Phone: ${hospitalDetails.phone || hospitalDetails.contact}</p>` : ''}
+                    ${hospitalDetails?.email ? `<p>Email: ${hospitalDetails.email}</p>` : ''}
                 </td>
                 <td style="width: 20%;"></td>
             </tr>
@@ -231,51 +375,85 @@ export const printIPDLedger = (summary: any, hospitalDetails?: any) => {
         
         <div class="bill-title">${summary?.isBillLocked ? 'IP Final Bill-Detailed' : 'IP Interim Bill-Detailed'}</div>
 
-        <table class="patient-info-table">
-            <tr>
-                <td class="lbl">CIN No</td><td class="cln">:</td><td class="val">${cinNo}</td>
-                <td class="lbl">GST No</td><td class="cln">:</td><td class="val">${gstNo}</td>
-            </tr>
-            <tr>
-                <td class="lbl">Patient Name</td><td class="cln">:</td><td class="val">${patientName}</td>
-                <td class="lbl">IP No</td><td class="cln">:</td><td class="val">${ipNo}</td>
-            </tr>
-            <tr>
-                <td class="lbl">Age/Sex</td><td class="cln">:</td><td class="val">${ageSex}</td>
-                <td class="lbl">UMR No</td><td class="cln">:</td><td class="val">${umrNo}</td>
-            </tr>
-            <tr>
-                <td class="lbl">S/W/D</td><td class="cln">:</td><td class="val"></td>
-                <td class="lbl">Bill No</td><td class="cln">:</td><td class="val">${billNo}</td>
-            </tr>
-            <tr>
-                <td class="lbl">Doctor</td><td class="cln">:</td><td class="val">${doctor}</td>
-                <td class="lbl">Bill Dt</td><td class="cln">:</td><td class="val">${billDt}</td>
-            </tr>
-            <tr>
-                <td class="lbl">Admission Dt</td><td class="cln">:</td><td class="val">${admissionDt}</td>
-                <td class="lbl">Discharge Type</td><td class="cln">:</td><td class="val">${dischargeType}</td>
-            </tr>
-            <tr>
-                <td class="lbl">Organization</td><td class="cln">:</td><td class="val">${org}</td>
-                <td class="lbl">Discharge Dt&Tm</td><td class="cln">:</td><td class="val">${dischargeDtTm}</td>
-            </tr>
-            <tr>
-                <td class="lbl">Patient Type</td><td class="cln">:</td><td class="val">${patientType}</td>
-                <td class="lbl">Ward</td><td class="cln">:</td><td class="val">${ward}</td>
-            </tr>
-            <tr>
-                <td class="lbl">Secondary Dr.</td><td class="cln">:</td><td class="val">${secondaryDr}</td>
-                <td class="lbl">Bed No</td><td class="cln">:</td><td class="val">${bedNo}</td>
-            </tr>
-            <tr>
-                <td class="lbl">Address</td><td class="cln">:</td><td class="val">${address}</td>
-                <td class="lbl">Phone No</td><td class="cln">:</td><td class="val">${phoneNo}</td>
-            </tr>
-            <tr>
-                <td class="lbl">Referal By</td><td class="cln">:</td><td class="val" colspan="4">${referalBy}</td>
-            </tr>
-        </table>
+        <div class="patient-info-container">
+            <div class="info-group">
+                <div class="info-item">
+                    <span class="info-label">Patient Name:</span>
+                    <span class="info-value">${patientName}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Age/Sex:</span>
+                    <span class="info-value">${ageSex || 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Doctor:</span>
+                    <span class="info-value">${doctor || 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Admission Dt:</span>
+                    <span class="info-value">${admissionDt || 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Ward / Bed:</span>
+                    <span class="info-value">${ward || 'N/A'}${bedNo ? ` / ${bedNo}` : ''}</span>
+                </div>
+                ${address ? `
+                <div class="info-item">
+                    <span class="info-label">Address:</span>
+                    <span class="info-value">${address}</span>
+                </div>
+                ` : ''}
+            </div>
+            
+            <div class="info-group">
+                <div class="info-item">
+                    <span class="info-label">IP No:</span>
+                    <span class="info-value">${ipNo}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">UMR No:</span>
+                    <span class="info-value">${umrNo || 'N/A'}</span>
+                </div>
+                ${billNo ? `
+                <div class="info-item">
+                    <span class="info-label">Bill No:</span>
+                    <span class="info-value">${billNo}</span>
+                </div>
+                ` : ''}
+                <div class="info-item">
+                    <span class="info-label">Bill Date:</span>
+                    <span class="info-value">${billDt}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Patient Type:</span>
+                    <span class="info-value">${patientType}</span>
+                </div>
+                ${phoneNo ? `
+                <div class="info-item">
+                    <span class="info-label">Phone No:</span>
+                    <span class="info-value">${phoneNo}</span>
+                </div>
+                ` : ''}
+                ${gstNo ? `
+                <div class="info-item">
+                    <span class="info-label">GST No:</span>
+                    <span class="info-value">${gstNo}</span>
+                </div>
+                ` : ''}
+                ${org ? `
+                <div class="info-item">
+                    <span class="info-label">Organization:</span>
+                    <span class="info-value">${org}</span>
+                </div>
+                ` : ''}
+                ${dischargeDtTm || dischargeType ? `
+                <div class="info-item">
+                    <span class="info-label">Discharge Dt:</span>
+                    <span class="info-value">${dischargeDtTm} (${dischargeType})</span>
+                </div>
+                ` : ''}
+            </div>
+        </div>
 
         <table class="main-table">
             <thead>
@@ -312,67 +490,70 @@ export const printIPDLedger = (summary: any, hospitalDetails?: any) => {
             </tbody>
         </table>
         
-        <table class="footer-table">
-            <tr>
-                <td style="width: 65%;">
-                    <div style="font-weight: bold;">Rupees In : ${numberToWords(Math.max(0, netBill))} Rupees Only</div>
-                    <div style="margin-top: 10px;">Reason :</div>
-                    
-                    ${advanceItems.length > 0 ? `
-                    <div style="margin-top: 5px;">
-                        <span style="font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 1px;">Receipt Details :</span>
-                        <table class="receipt-table">
-                            <thead>
+        <div class="financial-summary-container">
+            <div class="summary-left">
+                <div style="font-weight: bold; font-size: 10px; color: #0f172a;">Rupees In Words: <span style="font-weight: 800; color: #1e293b;">${numberToWords(Math.max(0, netBill))} Rupees Only</span></div>
+                
+                ${advanceItems.length > 0 ? `
+                <div style="margin-top: 2px;">
+                    <div style="font-weight: bold; font-size: 9px; color: #475569; text-transform: uppercase; letter-spacing: 0.3px;">Receipt Details:</div>
+                    <table class="receipt-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 8%;">S.No</th>
+                                <th style="width: 25%;">Record Date</th>
+                                <th style="width: 27%;">Receipt No</th>
+                                <th class="right" style="width: 25%;">Amount Paid</th>
+                                <th style="width: 15%;">Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${advanceItems.map((adv: any, i: number) => `
                                 <tr>
-                                    <th>S.No</th>
-                                    <th>Record Date</th>
-                                    <th>Receipt No</th>
-                                    <th class="right">Amount Payment</th>
-                                    <th>Type</th>
+                                    <td>${i + 1}</td>
+                                    <td>${format(new Date(adv.date), 'dd-MMM-yyyy')}</td>
+                                    <td>${adv.reference || 'REC' + Math.floor(Math.random() * 900000 + 100000)}</td>
+                                    <td class="right">${Number(adv.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${adv.mode})</td>
+                                    <td>${adv.transactionType}</td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                ${advanceItems.map((adv: any, i: number) => `
-                                    <tr>
-                                        <td>${i + 1}</td>
-                                        <td>${format(new Date(adv.date), 'dd-MMM-yyyy')}</td>
-                                        <td>${adv.reference || 'REC' + Math.floor(Math.random() * 900000 + 100000)}</td>
-                                        <td class="right">${Number(adv.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })} ${adv.mode}</td>
-                                        <td>${adv.transactionType}</td>
-                                    </tr>
-                                `).join('')}
-                                <tr>
-                                    <td colspan="3" class="right" style="font-weight: bold; border-top: 1px solid #000; border-bottom: 1px solid #000;">Total :</td>
-                                    <td class="right" style="font-weight: bold; border-top: 1px solid #000; border-bottom: 1px solid #000;">${Number(totalDeposits).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                                    <td style="border-top: 1px solid #000; border-bottom: 1px solid #000;"></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                            `).join('')}
+                            <tr class="receipt-total">
+                                <td colspan="3" class="right">Total Deposits:</td>
+                                <td class="right">${Number(totalDeposits).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                ` : ''}
+            </div>
+            <div class="summary-right">
+                <div class="totals-grid">
+                    <div class="totals-row">
+                        <span class="totals-label">Grand Total:</span>
+                        <span class="totals-value">${Number(totalCharges).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    ${discount > 0 ? `
+                    <div class="totals-row">
+                        <span class="totals-label">Discount:</span>
+                        <span class="totals-value">-${Number(discount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                     </div>
                     ` : ''}
-                </td>
-                <td style="width: 35%;">
-                    <table class="totals-table">
-                        <tr>
-                            <td>Grand Total :</td>
-                            <td>${Number(totalCharges).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                        </tr>
-                        <tr>
-                            <td>Net Amt :</td>
-                            <td>${Number(netBill).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                        </tr>
-                        <tr>
-                            <td>Paid Amt :</td>
-                            <td>${Number(totalDeposits).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                        </tr>
-                        <tr>
-                            <td>Balance Amt :</td>
-                            <td>${Number(balanceDue).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
+                    <div class="totals-row">
+                        <span class="totals-label">Net Amount:</span>
+                        <span class="totals-value">${Number(netBill).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div class="totals-row">
+                        <span class="totals-label">Paid Amount:</span>
+                        <span class="totals-value">${Number(totalDeposits).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div class="totals-row balance-due">
+                        <span class="totals-label">Balance Due:</span>
+                        <span class="totals-value">${Number(balanceDue).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <table class="sign-table">
             <tr>
@@ -383,7 +564,7 @@ export const printIPDLedger = (summary: any, hospitalDetails?: any) => {
                 <td style="width: 33%; text-align: right;">
                     <div style="width: 200px; margin: 0 auto;">
                         <div style="font-size: 10px; min-height: 12px; margin-bottom: 2px;">
-                            ${summary?.primaryDoctor?.name ? (summary?.primaryDoctor?.name?.includes('Dr') ? summary.primaryDoctor.name : `Dr. ${summary.primaryDoctor.name}`) : '&nbsp;'}
+                            ${doctor ? (doctor.includes('Dr') ? doctor : `Dr. ${doctor}`) : '&nbsp;'}
                         </div>
                         <div style="border-top: 1px solid #000; padding-top: 5px;">Authorised Signatory</div>
                     </div>

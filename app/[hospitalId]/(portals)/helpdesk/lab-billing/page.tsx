@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import { clearApiCache } from '@/lib/integrations/api/apiClient';
 import { getSocket } from '@/lib/integrations/api/socket';
 import { useTenantLink } from '@/hooks/useTenantLink';
+import CurechainPagination from '@/components/common/CurechainPagination';
 
 type TabType = 'pending' | 'ready' | 'completed';
 
@@ -242,7 +243,7 @@ export default function HelpdeskLabBillingPage() {
             </div>
 
             {/* Tab navigation matching theme */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">View List:</span>
                     <div className="inline-flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 shadow-inner border border-slate-200/50 dark:border-slate-700/50">
@@ -275,8 +276,13 @@ export default function HelpdeskLabBillingPage() {
                         </button>
                     </div>
                 </div>
-                <div className="text-xs font-medium text-slate-400 dark:text-slate-500">
-                    Showing {paginatedSamples.length} of {displaySamples.length} records
+                <div className="flex items-center">
+                    <CurechainPagination
+                        currentPage={currentPage}
+                        totalItems={displaySamples.length}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setCurrentPage}
+                    />
                 </div>
             </div>
 
@@ -412,36 +418,6 @@ export default function HelpdeskLabBillingPage() {
                             </tbody>
                         </table>
                     </div>
-
-                    {/* Unified Pagination */}
-                    {totalPages > 1 && (
-                        <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30">
-                            <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">
-                                Showing <span className="font-bold text-slate-800 dark:text-white">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-slate-800 dark:text-white">{Math.min(currentPage * itemsPerPage, displaySamples.length)}</span> of <span className="font-bold text-slate-800 dark:text-white">{displaySamples.length}</span> samples
-                            </p>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
-                                    className="p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                                    title="Previous page"
-                                >
-                                    <ChevronLeft className="w-4 h-4" />
-                                </button>
-                                <span className="text-xs md:text-sm font-semibold text-slate-600 dark:text-slate-400">
-                                    Page {currentPage} of {totalPages}
-                                </span>
-                                <button
-                                    onClick={() => setCurrentPage(p => (p < totalPages ? p + 1 : p))}
-                                    disabled={currentPage === totalPages}
-                                    className="p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                                    title="Next page"
-                                >
-                                    <ChevronRight className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
             )}
         </div>

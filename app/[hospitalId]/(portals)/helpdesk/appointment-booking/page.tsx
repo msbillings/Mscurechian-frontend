@@ -37,6 +37,7 @@ import MainHeader from '@/components/printers/MainHeader';
 import MainFooter from '@/components/printers/MainFooter';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 import { generateClinicalReceiptHtml } from "@/lib/print-utils";
+import { formatDoctorName } from "@/lib/utils/name-utils";
 
 export default function AppointmentBooking() {
     const router = useRouter();
@@ -1211,7 +1212,7 @@ export default function AppointmentBooking() {
                                     <p className="text-[10px] text-amber-700 mt-0.5 leading-relaxed">
                                         <span className="font-bold">{existingAptWarning.patientName}</span> already has a{' '}
                                         <span className="font-bold uppercase">{existingAptWarning.aptStatus}</span> appointment
-                                        with <span className="font-bold">Dr. {existingAptWarning.doctorName}</span> at this hospital today.
+                                        with <span className="font-bold">{formatDoctorName(existingAptWarning.doctorName)}</span> at this hospital today.
                                         Do you want to book another appointment?
                                     </p>
                                     <div className="flex items-center gap-2 mt-3">

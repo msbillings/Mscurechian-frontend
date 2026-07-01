@@ -27,7 +27,7 @@ export const spellCheckService = {
    * @param language - BCP-47 language tag, defaults to "en-US"
    * @returns       Array of `SpellMatch` objects (empty if no issues found)
    */
-  check: async (text: string, language = "en-IN"): Promise<SpellMatch[]> => {
+  check: async (text: string, language = "en-US"): Promise<SpellMatch[]> => {
     if (!text || text.trim().length < 3) return [];
 
     try {

@@ -1628,7 +1628,7 @@ function CreatePrescriptionPage() {
 
                     .container {
                         width: 210mm;
-                        height: 296mm;
+                        min-height: 296mm;
                         margin: 0 auto;
                         padding: 10mm 15mm 10mm 25mm;
                         position: relative;
@@ -1636,6 +1636,10 @@ function CreatePrescriptionPage() {
                         display: flex;
                         flex-direction: column;
                         overflow: hidden;
+                    }
+
+                    .print-footer {
+                        margin-top: auto;
                     }
 
                     /* Prescription Specific */
@@ -2487,7 +2491,10 @@ function CreatePrescriptionPage() {
                         <div class="sig-line">Authorized Medical Officer</div>
                     </div>
 
-                    ${footerHtml}
+                    <div class="print-footer">
+                        ${footerHtml}
+                    </div>
+
                 </div>
             </body>
             </html>

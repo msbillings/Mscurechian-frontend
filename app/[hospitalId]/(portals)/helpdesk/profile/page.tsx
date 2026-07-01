@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import SupportBadgeToggle from '@/components/common/SupportBadgeToggle';
 import {
     Mail,
     Phone,
@@ -17,45 +18,50 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getStaffProfileAction } from '@/lib/integrations/actions/staff.actions';
+import { staffService } from '@/lib/integrations/services/staff.service';
 import { helpdeskService } from '@/lib/integrations/services/helpdesk.service';
 import { HelpdeskDashboardSkeleton } from "@/components/ui/skeletons";
-import PrinterSettingsCard from '@/components/printers/PrinterSettingsCard';
 
 export default function HelpdeskProfilePage() {
     const router = useRouter();
     const params = useParams();
     const hospitalId = params?.hospitalId;
 
-    const { data: profileData, isLoading } = useQuery({
+    const { data: profileData, isLoading, refetch } = useQuery({
         queryKey: ['helpdesk-profile-page', 'my'],
         queryFn: async () => {
             try {
-                const hdRes: any = await helpdeskService.getMe();
-                if (hdRes && (hdRes.name || hdRes.email || hdRes.user)) return hdRes;
+                const staffRes = await staffService.getProfile({ skipCache: true });
+                if (staffRes?.staff) return staffRes.staff;
+                if (staffRes) return staffRes;
             } catch (e) {
-                console.warn("getMe failed, trying staff profile...");
+                console.warn("staffService.getProfile failed, trying getStaffProfileAction...");
             }
             try {
                 const staffRes = await getStaffProfileAction();
                 if (staffRes?.staff) return staffRes.staff;
                 if (staffRes) return staffRes;
             } catch (e) {
-                console.warn("getStaffProfileAction failed");
+                console.warn("getStaffProfileAction failed, trying getMe...");
+            }
+            try {
+                const hdRes: any = await helpdeskService.getMe();
+                if (hdRes && (hdRes.name || hdRes.email || hdRes.user)) return hdRes;
+            } catch (e) {
+                console.warn("getMe failed");
             }
             try {
                 const storedAuth = localStorage.getItem('auth_user') || localStorage.getItem('user');
                 if (storedAuth) return JSON.parse(storedAuth);
             } catch (e) {}
-            return {
-                name: "MANIKANTA FRONTDESK",
-                email: "frontdesk@horizinhospital.com",
-                mobile: "9876543210",
-                designation: "Frontdesk Specialist",
-                employeeId: "FD-8890",
-                hospital: { name: "Horizin Hospital", address: "Active State, 516001" }
-            };
+            return {};
         }
     });
+
+    React.useEffect(() => {
+        refetch();
+        router.refresh();
+    }, [refetch, router]);
 
     if (isLoading) {
         return <HelpdeskDashboardSkeleton />;
@@ -73,7 +79,7 @@ export default function HelpdeskProfilePage() {
     const pfNumber = raw.pfNumber || userObj?.pfNumber;
     const esiNumber = raw.esiNumber || userObj?.esiNumber;
     const uanNumber = raw.uanNumber || userObj?.uanNumber;
-    const employeeId = raw.employeeId || raw.id || raw._id || "FD-8890";
+    const employeeId = raw.employeeId || "";
     const designation = raw.designation || "Frontdesk Specialist";
 
     const handleEdit = () => {
@@ -131,6 +137,7 @@ export default function HelpdeskProfilePage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
                 {/* LEFT COLUMN */}
                 <div className="lg:col-span-4 space-y-5">
+                    <SupportBadgeToggle />
                     <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-5">
                         <div className="flex items-center gap-2.5 border-b border-slate-50 pb-3">
                             <div className="p-1.5 bg-teal-50 rounded-lg text-teal-600">
@@ -159,8 +166,7 @@ export default function HelpdeskProfilePage() {
                             <SecureItem label="UAN" value={uanNumber} />
                         </div>
                     </div>
-                    
-                    <PrinterSettingsCard />
+
                 </div>
 
                 {/* RIGHT COLUMN: BANK */}

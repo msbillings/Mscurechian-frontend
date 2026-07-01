@@ -57,17 +57,20 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
                sub.includes("emergency");
     }, [branding.subtitle]);
 
-    const { data: dynamicHospitalName, isLoading: isBrandingLoading } = useQuery({
+    const { data: dynamicBranding, isLoading: isBrandingLoading } = useQuery({
         queryKey: ["sidebar-hospital-branding", hospitalId],
         queryFn: async () => {
             if (!hospitalId || isExcluded) return null;
             try {
                 // Correct path for apiClient is /auth/... NOT /api/auth/...
                 // The BASE_URL already contains the /api prefix
-                const data = await apiClient<{ valid: boolean; hospitalName?: string }>(
+                const data = await apiClient<{ valid: boolean; hospitalName?: string; hospitalLogo?: string }>(
                     `/auth/verify-hospital/${hospitalId}`
                 );
-                return data?.hospitalName || null;
+                return {
+                    name: data?.hospitalName || null,
+                    logo: data?.hospitalLogo || null
+                };
             } catch (err) {
                 console.error("[Sidebar] Failed to fetch hospital branding:", err);
                 return null;
@@ -87,8 +90,8 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
         
         // If we found a name, use it. 
         // If NO name found but we HAVE a hospitalId, still DO NOT show "CureChain" as requested.
-        return dynamicHospitalName || "HOSPITAL PORTAL";
-    }, [hospitalId, isExcluded, dynamicHospitalName, isBrandingLoading, branding.title]);
+        return dynamicBranding?.name || "HOSPITAL PORTAL";
+    }, [hospitalId, isExcluded, dynamicBranding, isBrandingLoading, branding.title]);
 
     const toggleMenu = (label: string) => {
         setExpandedMenus((prev) => ({
@@ -155,8 +158,12 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
                 {/* Brand */}
                 <div className="h-16 flex items-center px-4 border-b border-slate-100 justify-between overflow-hidden shrink-0 gap-4">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="w-9 h-9 shrink-0 bg-primary-theme rounded-xl flex items-center justify-center shadow-lg shadow-primary-theme-200 transition-transform duration-300 hover:scale-105 active:scale-95">
-                            <BrandingIcon className="text-white" size={19} />
+                        <div className="w-9 h-9 shrink-0 bg-primary-theme rounded-xl flex items-center justify-center shadow-lg shadow-primary-theme-200 transition-transform duration-300 hover:scale-105 active:scale-95 overflow-hidden">
+                            {dynamicBranding?.logo ? (
+                                <img src={dynamicBranding.logo} alt="Logo" className="w-full h-full object-cover" />
+                            ) : (
+                                <BrandingIcon className="text-white" size={19} />
+                            )}
                         </div>
                         <div
                             className={`

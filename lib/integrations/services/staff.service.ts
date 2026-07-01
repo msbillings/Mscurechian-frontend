@@ -17,8 +17,8 @@ export const staffService = {
   getDashboard: () =>
     apiClient<StaffDashboard>(STAFF_ENDPOINTS.DASHBOARD),
 
-  getProfile: () =>
-    apiClient<{ staff: StaffProfile }>(STAFF_ENDPOINTS.PROFILE),
+  getProfile: (options?: { skipCache?: boolean }) =>
+    apiClient<{ staff: StaffProfile }>(STAFF_ENDPOINTS.PROFILE, options),
 
   // Attendance Management
   getAttendance: (params?: { startDate?: string; endDate?: string }) => {

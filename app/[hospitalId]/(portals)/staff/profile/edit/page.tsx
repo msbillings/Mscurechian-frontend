@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import SupportBadgeToggle from '@/components/common/SupportBadgeToggle';
 import {
     User, Mail, Phone, Briefcase, Award,
     Building, Landmark, Wallet,
@@ -638,6 +639,9 @@ export default function EditStaffProfilePage() {
                         </select>
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-0" size={14} />
                     </div>
+                    <div className="mt-4">
+                        <SupportBadgeToggle />
+                    </div>
                 </div>
 
                 {/* Sidebar Navigation - Desktop Only  */}
@@ -655,6 +659,9 @@ export default function EditStaffProfilePage() {
                             <span>{tab.label}</span>
                         </button>
                     ))}
+                    <div className="mt-6">
+                        <SupportBadgeToggle />
+                    </div>
                 </div>
 
                 {/* Main Form Content */}

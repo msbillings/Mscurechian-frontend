@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import SupportBadgeToggle from '@/components/common/SupportBadgeToggle';
 import {
     User, Mail, Phone, Briefcase, Award,
     CreditCard, Building, Landmark, Wallet,
@@ -669,6 +670,9 @@ export default function MasterHelpdeskProfileSettings() {
                                 <Plus size={16} />
                             </div>
                         </div>
+                        <div className="mt-4">
+                            <SupportBadgeToggle />
+                        </div>
                     </div>
 
                     {/* Desktop Sidebar Navigation */}
@@ -686,6 +690,9 @@ export default function MasterHelpdeskProfileSettings() {
                                 {tab.label}
                             </button>
                         ))}
+                        <div className="mt-6">
+                            <SupportBadgeToggle />
+                        </div>
                     </div>
                 </div>
 
