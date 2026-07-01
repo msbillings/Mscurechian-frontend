@@ -113,8 +113,16 @@ export default function TransactionsPage() {
             setExporting(true);
             setShowExportMenu(false);
 
-            // Fetch ALL transactions for the selected range (nopage=true)
-            const data = await helpdeskService.getTransactions(1, 1000, range === "all" ? undefined : range, true);
+            // Fetch ALL transactions for the selected range, passing date range and type filters from UI
+            const data = await helpdeskService.getTransactions(
+                1,
+                1000,
+                range === "all" ? undefined : range,
+                true,
+                startDate || undefined,
+                endDate || undefined,
+                getBackendTypeFilter(typeFilter)
+            );
             let exportData = Array.isArray(data) ? data : (data.data || []);
             exportData = exportData.filter((tx: any) => tx.status?.toLowerCase() !== 'cancelled' && tx.referenceId?.status?.toLowerCase() !== 'cancelled');
 
@@ -126,39 +134,65 @@ export default function TransactionsPage() {
             const workbook = new ExcelJS.Workbook();
             const worksheet = workbook.addWorksheet("Transactions");
 
-            // Define Headers
+            // Define Columns
             worksheet.columns = [
-                { header: "DATE", key: "date", width: 20 },
-                { header: "PATIENT NAME", key: "patient", width: 25 },
-                { header: "MOBILE", key: "mobile", width: 15 },
-                { header: "SERVICE TYPE", key: "type", width: 20 },
-                { header: "AMOUNT (INR)", key: "amount", width: 15 },
-                { header: "PAYMENT MODE", key: "mode", width: 15 },
-                { header: "STATUS", key: "status", width: 15 }
+                { header: "DATE", key: "date" },
+                { header: "PATIENT NAME", key: "patient" },
+                { header: "MOBILE", key: "mobile" },
+                { header: "SERVICE TYPE", key: "type" },
+                { header: "AMOUNT (INR)", key: "amount" },
+                { header: "PAYMENT MODE", key: "mode" },
+                { header: "STATUS", key: "status" }
             ];
 
-            // Style Headers
-            worksheet.getRow(1).font = { bold: true, color: { argb: "FFFFFF" } };
-            worksheet.getRow(1).fill = {
-                type: "pattern",
-                pattern: "solid",
-                fgColor: { argb: "0F172A" }
-            };
+            // 1. BRANDING HEADER
+            worksheet.mergeCells("A1:G1");
+            const titleCell = worksheet.getCell("A1");
+            titleCell.value = `${(hospital?.name || "CureChain").toUpperCase()} DUE REVENUE LEDGER`;
+            titleCell.font = { bold: true, size: 16, color: { argb: "FFFFFF" } };
+            titleCell.alignment = { vertical: "middle", horizontal: "center" };
+            titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "0F172A" } } as ExcelJS.Fill;
+            worksheet.getRow(1).height = 40;
 
-            // Add Data
-            exportData.forEach((tx: any) => {
-                // Safe date handling
+            // 2. REPORT METADATA
+            worksheet.mergeCells("A2:G2");
+            const metaCell = worksheet.getCell("A2");
+            const finalStart = startDate ? new Date(startDate).toLocaleDateString('en-GB') : "INCEPTION";
+            const finalEnd = endDate ? new Date(endDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB');
+            const periodText = `PERIOD: ${finalStart} TO ${finalEnd}`;
+            const typeText = `SCOPE: ${typeFilter.toUpperCase()} CHANNEL`;
+            const generatedText = `GENERATED ON: ${new Date().toLocaleString()}`;
+            metaCell.value = `${periodText}  |  ${typeText}  |  ${generatedText}`;
+            metaCell.font = { bold: true, size: 10, color: { argb: "475569" } };
+            metaCell.alignment = { vertical: "middle", horizontal: "center" };
+            metaCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "F8FAFC" } } as ExcelJS.Fill;
+            worksheet.getRow(2).height = 25;
+
+            // Spacer
+            worksheet.getRow(3).height = 10;
+
+            // 3. TABLE HEADERS (Row 4)
+            const headerRow = worksheet.getRow(4);
+            headerRow.values = ["DATE", "PATIENT NAME", "MOBILE", "SERVICE TYPE", "AMOUNT (INR)", "PAYMENT MODE", "STATUS"];
+            headerRow.eachCell((cell) => {
+                cell.font = { bold: true, color: { argb: "FFFFFF" }, size: 11 };
+                cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "334155" } } as ExcelJS.Fill;
+                cell.alignment = { vertical: "middle", horizontal: "center" };
+            });
+            headerRow.height = 30;
+
+            // 4. ADD DATA & APPLY ALTERNATING COLORS
+            exportData.forEach((tx: any, index: number) => {
                 const txDate = tx.date || tx.createdAt || tx.transactionTime;
                 const formattedDate = txDate
                     ? new Date(txDate).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
                     : 'N/A';
 
-                // Map transaction type
                 const typeMapping: Record<string, string> = {
                     'appointment_booking': 'OPD Consultation',
                     'opd': 'OPD Consultation',
                     'ipd': 'IPD Admission',
-                    'ipd_advance': 'IPD Advance Payment',
+                    'ipd_advance': 'OPD Consultation',
                     'ipd_final_settlement': 'IPD Final Settlement',
                     'discharge': 'Discharge Settlement',
                     'package': 'Package Billed'
@@ -166,7 +200,7 @@ export default function TransactionsPage() {
                 const rawType = tx.type || 'appointment_booking';
                 const serviceType = typeMapping[rawType.toLowerCase()] || rawType.toUpperCase();
 
-                worksheet.addRow({
+                const row = worksheet.addRow({
                     date: formattedDate,
                     patient: (tx.patientName || 'Unknown').toUpperCase(),
                     mobile: tx.patientMobile || tx.mobile || "N/A",
@@ -175,13 +209,100 @@ export default function TransactionsPage() {
                     mode: (tx.paymentMethod || tx.paymentMode || "CASH").toUpperCase(),
                     status: tx.status.toUpperCase()
                 });
+
+                row.eachCell((cell, colNumber) => {
+                    cell.font = { size: 10, color: { argb: "1E293B" } };
+                    cell.alignment = { vertical: "middle", horizontal: "left" };
+                    if (index % 2 === 0) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+                    } else {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+                    }
+                    if (colNumber === 7) {
+                        cell.alignment = { vertical: "middle", horizontal: "center" };
+                    }
+                });
             });
 
-            // Summary Row
-            const totalAmount = exportData.reduce((sum: number, tx: any) => sum + (tx.amount || 0), 0);
+            // 5. CALCULATE STATS & BREAKDOWNS
+            const stats = exportData.reduce((acc: any, tx: any) => {
+                const amount = tx.amount || 0;
+                const rawMethod = (tx.paymentMethod || tx.paymentMode || 'CASH').toUpperCase();
+                
+                if (rawMethod === "CASH") acc.cashRevenue += amount;
+                else if (["UPI", "GPAY", "PHONEPE"].includes(rawMethod)) acc.upiRevenue += amount;
+                else if (["CARD", "VISA", "MASTERCARD"].includes(rawMethod)) acc.cardRevenue += amount;
+                else acc.otherRevenue += amount;
+                
+                acc.totalRevenue += amount;
+
+                const rawType = (tx.type || 'appointment_booking').toLowerCase();
+                if (rawType.includes('opd') || rawType.includes('appointment')) acc.opdCount++;
+                else if (rawType.includes('ipd') || rawType.includes('discharge')) acc.ipdCount++;
+                else if (rawType.includes('lab')) acc.labCount++;
+                else acc.otherCount++;
+
+                return acc;
+            }, { totalRevenue: 0, cashRevenue: 0, upiRevenue: 0, cardRevenue: 0, otherRevenue: 0, opdCount: 0, ipdCount: 0, labCount: 0, otherCount: 0 });
+
+            // 6. SUMMARY DASHBOARD
             worksheet.addRow({});
-            const summaryRow = worksheet.addRow({ mode: "TOTAL REVENUE", amount: totalAmount });
-            summaryRow.font = { bold: true };
+            const lastRowNum = worksheet.lastRow?.number || 0;
+            const summaryStartRow = lastRowNum + 1;
+            worksheet.mergeCells(`A${summaryStartRow}:G${summaryStartRow}`);
+            const summaryTitle = worksheet.getCell(`A${summaryStartRow}`);
+            summaryTitle.value = "FINANCIAL & OPERATIONAL SUMMARY";
+            summaryTitle.font = { bold: true, size: 12, color: { argb: "FFFFFF" } };
+            summaryTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "334155" } } as ExcelJS.Fill;
+            summaryTitle.alignment = { horizontal: "center" };
+
+            const summaryRows = [
+                ["GROSS TOTAL REVENUE", stats.totalRevenue, "", "OPD CONSULTATIONS", stats.opdCount, "CASES", ""],
+                ["CASH REVENUE", stats.cashRevenue, "", "IPD ADMISSIONS/BILLS", stats.ipdCount, "CASES", ""],
+                ["UPI REVENUE", stats.upiRevenue, "", "LAB DIAGNOSTICS", stats.labCount, "CASES", ""],
+                ["CARD REVENUE", stats.cardRevenue, "", "OTHER SERVICES", stats.otherCount, "CASES", ""],
+                ["OTHER REVENUE", stats.otherRevenue, "", "", "", "", ""]
+            ];
+
+            summaryRows.forEach((rowData) => {
+                const row = worksheet.addRow(rowData);
+                
+                // Left side styling (Financial)
+                const finLabelCell = row.getCell(1);
+                const finValCell = row.getCell(2);
+                if (finLabelCell.value) {
+                    finLabelCell.font = { bold: true, size: 10, color: { argb: "475569" } };
+                    finValCell.font = { bold: true, size: 11, color: { argb: "0F172A" } };
+                    finValCell.numFmt = '"₹"#,##0.00';
+                    
+                    if (finLabelCell.value.toString().includes("GROSS")) {
+                        finLabelCell.font = { bold: true, size: 11, color: { argb: "0F172A" } };
+                        finLabelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } } as ExcelJS.Fill;
+                        finValCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } } as ExcelJS.Fill;
+                    }
+                }
+                
+                // Right side styling (Operational)
+                const opLabelCell = row.getCell(4);
+                const opValCell = row.getCell(5);
+                if (opLabelCell.value) {
+                    opLabelCell.font = { bold: true, size: 10, color: { argb: "475569" } };
+                    opValCell.font = { bold: true, size: 11, color: { argb: "0F172A" } };
+                }
+            });
+
+            // 7. DYNAMIC COLUMN WIDTHS
+            worksheet.columns.forEach((column: any) => {
+                let maxLen = 0;
+                column.eachCell({ includeEmpty: true }, (cell: any) => {
+                    if (cell.row < 4) return; // Skip title and metadata rows
+                    const value = cell.value ? cell.value.toString() : '';
+                    if (value.length > maxLen) {
+                        maxLen = value.length;
+                    }
+                });
+                column.width = maxLen < 12 ? 12 : maxLen + 3;
+            });
 
             // Generate File
             const buffer = await workbook.xlsx.writeBuffer();

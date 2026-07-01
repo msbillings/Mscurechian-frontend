@@ -674,11 +674,11 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                         onChange={(e) => setAdvanceData(prev => ({ ...prev, mode: e.target.value }))}
                                                         className="w-full px-3 py-2.5 bg-white border border-slate-100 rounded-lg text-[9px] font-bold outline-none focus:ring-2 focus:ring-teal-500/20"
                                                     >
-                                                        <option>Cash</option>
-                                                        <option>Card</option>
-                                                        <option>UPI</option>
-                                                        <option>Bank</option>
-                                                        <option>Insure</option>
+                                                        <option value="Cash">Cash</option>
+                                                        <option value="Card">Card</option>
+                                                        <option value="UPI">UPI</option>
+                                                        <option value="Bank Transfer">Bank Transfer</option>
+                                                        <option value="Insurance">Insurance</option>
                                                     </select>
                                                 </div>
                                                 <div className="space-y-1.5 md:col-span-3">

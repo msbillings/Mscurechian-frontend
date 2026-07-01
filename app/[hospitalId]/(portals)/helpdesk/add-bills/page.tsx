@@ -59,6 +59,10 @@ export default function AddBillsPage() {
     const [loadingPackages, setLoadingPackages] = useState(false);
     const [selectedPackageId, setSelectedPackageId] = useState('');
 
+    // ── Custom IPD Charges ──
+    const [customCharges, setCustomCharges] = useState<any[]>([]);
+    const [loadingCustomCharges, setLoadingCustomCharges] = useState(false);
+
     // ── Bill Items ──
     const [billItems, setBillItems] = useState<BillItem[]>([]);
     const [billMode, setBillMode] = useState<BillMode>('lab');
@@ -100,8 +104,22 @@ export default function AddBillsPage() {
                 setLoadingPackages(false);
             }
         };
+        const fetchCustomCharges = async () => {
+            try {
+                setLoadingCustomCharges(true);
+                const res: any = await apiClient('/hospital/charges');
+                if (res.success && res.data) {
+                    setCustomCharges(res.data);
+                }
+            } catch (e) {
+                console.error('Failed to fetch custom charges', e);
+            } finally {
+                setLoadingCustomCharges(false);
+            }
+        };
         fetchLabTests();
         fetchPackages();
+        fetchCustomCharges();
     }, []);
 
     // ── Patient Search ──
@@ -520,7 +538,7 @@ export default function AddBillsPage() {
     };
 
     // ── IPD Charge Categories ──
-    const ipdCategories = [
+    const staticIpdCategories = [
         'Room Charges', 'Nursing Charges', 'Consumables', 'Procedure Charges',
         'Equipment Charges', 'Doctor Visit', 'Physiotherapy', 'Emergency Services',
         'Ambulance', 'Blood Bank', 'Other'
@@ -595,6 +613,26 @@ export default function AddBillsPage() {
             { desc: 'Medical Certificate / Documentation Fee', amount: 300 },
         ]
     };
+
+    // Group custom charges from server
+    const customPresets: Record<string, { desc: string; amount: number }[]> = {};
+    if (customCharges && customCharges.length > 0) {
+        customCharges.filter(c => c.isActive).forEach(c => {
+            if (!customPresets[c.category]) {
+                customPresets[c.category] = [];
+            }
+            customPresets[c.category].push({
+                desc: c.description,
+                amount: c.amount
+            });
+        });
+    }
+
+    const activePresets = Object.keys(customPresets).length > 0 ? customPresets : adminPresets;
+    const ipdCategories = Array.from(new Set([
+        ...staticIpdCategories,
+        ...customCharges.map(c => c.category)
+    ]));
 
     return (
         <div className="add-bills-page">
@@ -1371,14 +1409,20 @@ export default function AddBillsPage() {
                                     {activeAdmission && (
                                         <button
                                             className={`mode-tab ${billMode === 'ipd_charge' ? 'active' : ''}`}
-                                            onClick={() => setBillMode('ipd_charge')}
+                                            onClick={() => {
+                                                setBillMode('ipd_charge');
+                                                setNewChargeCategory('Room Charges');
+                                            }}
                                         >
                                             <Building2 size={14} /> IPD Charges
                                         </button>
                                     )}
                                     <button
                                         className={`mode-tab ${billMode === 'custom' ? 'active' : ''}`}
-                                        onClick={() => setBillMode('custom')}
+                                        onClick={() => {
+                                            setBillMode('custom');
+                                            setNewChargeCategory('Miscellaneous');
+                                        }}
                                     >
                                         <Sparkles size={14} /> Custom
                                     </button>
@@ -1527,7 +1571,11 @@ export default function AddBillsPage() {
                                                 <Sparkles size={14} /> Admin Standard Rates ({newChargeCategory})
                                             </label>
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
-                                                {(adminPresets[newChargeCategory] || []).map((preset, idx) => (
+                                                {loadingCustomCharges ? (
+                                                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Loading custom rates...</div>
+                                                ) : (activePresets[newChargeCategory] || []).length === 0 ? (
+                                                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>No rates defined. Customize them in Admin portal.</div>
+                                                ) : (activePresets[newChargeCategory] || []).map((preset, idx) => (
                                                     <button
                                                         key={idx}
                                                         type="button"
@@ -1554,6 +1602,12 @@ export default function AddBillsPage() {
                                                         <span style={{ background: newChargeDescription === preset.desc ? 'rgba(255,255,255,0.2)' : '#e0f2fe', padding: '2px 6px', borderRadius: 10, fontSize: '0.65rem' }}>₹{preset.amount}</span>
                                                     </button>
                                                 ))}
+                                                {/* fallback message if using default hardcoded presets */}
+                                                {(!customCharges || customCharges.length === 0) && !loadingCustomCharges && (
+                                                    <div style={{ width: '100%', fontSize: '0.65rem', color: '#94a3b8', fontStyle: 'italic', marginTop: 4 }}>
+                                                        * Showing default system presets. Hospital admin can customize these prices in setup.
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="form-group">
