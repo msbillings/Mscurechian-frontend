@@ -166,7 +166,16 @@ const AddProductPage = () => {
 
         setLoading(true);
         try {
-            await ProductService.addProduct(formData);
+            const cleanedData: PharmacyProductPayload = {
+                ...formData,
+                mrp: Number(formData.mrp) || 0,
+                unitCost: Number(formData.unitCost) || 0,
+                gst: Number(formData.gst) || 0,
+                currentStock: Number(formData.currentStock) || 0,
+                minStockLevel: Number(formData.minStockLevel) || 10,
+                unitsPerPack: Number(formData.unitsPerPack) || 1,
+            };
+            await ProductService.addProduct(cleanedData);
             toast.success('Medicine registered successfully');
             router.push(getPath('/pharmacy/products'));
         } catch (error: any) {

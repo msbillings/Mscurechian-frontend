@@ -32,6 +32,9 @@ export const formatDoctorName = (name: string | null | undefined): string => {
   if (!name) return "Doctor";
   
   let cleaned = name.trim();
+  // Clean up any double dots/multiple spaces anywhere in the name first
+  cleaned = cleaned.replace(/\s*\.+\s*/g, " ").replace(/\s+/g, " ").trim();
+  
   while (/^(dr|dr\.|dr\s+|dr\.\s+)/i.test(cleaned)) {
     cleaned = cleaned.replace(/^(dr|dr\.|dr\s+|dr\.\s+)/i, "").trim();
   }

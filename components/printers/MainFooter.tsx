@@ -129,8 +129,8 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails, instructions })
                 gap: '40px',
                 marginTop: '10px'
             }}>
-                {/* Left: Instructions */}
-                <div style={{ flex: '1' }}>
+                {/* Left: Instructions - Grow dynamically to take remaining space */}
+                <div style={{ flex: '1 1 auto', minWidth: '0' }}>
                     <ul style={{
                         margin: 0,
                         padding: 0,
@@ -141,13 +141,13 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails, instructions })
                         lineHeight: '1.5'
                     }}>
                         {displayInstructions.map((inst, index) => (
-                            <li key={index} style={{ marginBottom: '2px' }}>• {inst}</li>
+                            <li key={index} style={{ marginBottom: '2px', wordBreak: 'break-word' }}>• {inst}</li>
                         ))}
                     </ul>
                 </div>
 
-                {/* Right: Address */}
-                <div style={{ flex: '3', textAlign: 'left' }}>
+                {/* Right: Address - Fixed width to allow instructions to take up remaining space */}
+                <div style={{ flex: '0 0 250px', textAlign: 'left', minWidth: '0' }}>
                     <p style={{
                         margin: 0,
                         fontSize: '10px',
@@ -155,7 +155,8 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails, instructions })
                         color: '#0f172a',
                         textTransform: 'uppercase',
                         lineHeight: '1.4',
-                        maxWidth: 'none'
+                        maxWidth: 'none',
+                        wordBreak: 'break-word'
                     }}>
                         {details.address}
                     </p>

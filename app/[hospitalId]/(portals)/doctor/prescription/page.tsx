@@ -1613,7 +1613,8 @@ function CreatePrescriptionPage() {
                     
                     @media print {
                         @page { size: A4; margin: 0; }
-                        body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+                        body { print-color-adjust: exact; -webkit-print-color-adjust: exact; margin: 0; padding: 0; }
+                        .container { min-height: 280mm !important; height: auto !important; }
                     }
 
                     body { 
@@ -2537,6 +2538,12 @@ function CreatePrescriptionPage() {
                     <style>
                         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
                         
+                        @media print {
+                            @page { size: A4; margin: 0; }
+                            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
+                            .container { min-height: 280mm !important; height: auto !important; }
+                        }
+
                         body { font-family: 'Inter', sans-serif; padding: 0; margin: 0; background: white; color: #1e293b; }
                         .container { 
                             width: 210mm; 

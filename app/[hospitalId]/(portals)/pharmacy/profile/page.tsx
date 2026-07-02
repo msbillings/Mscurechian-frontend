@@ -25,7 +25,8 @@ import {
     Award,
     CloudUpload,
     Eye,
-    ShieldCheck
+    ShieldCheck,
+    ScrollText
 } from 'lucide-react';
 import { PharmacyProfileSkeleton } from '@/components/ui/skeletons';
 import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
@@ -62,7 +63,8 @@ const PharmacyProfile = () => {
         documents: {
             degreeCertificate: { url: '', publicId: '' },
             registrationCertificate: { url: '', publicId: '' }
-        }
+        },
+        pharmacyTerms: [] as string[]
     });
 
     // File Name State for UI Feedback
@@ -120,7 +122,8 @@ const PharmacyProfile = () => {
                         url: user.documents?.registrationCertificate?.url || '',
                         publicId: user.documents?.registrationCertificate?.publicId || ''
                     }
-                }
+                },
+                pharmacyTerms: user.pharmacyTerms || []
             });
             setLogo(user.image || null);
             setIsLoading(false);
@@ -162,6 +165,22 @@ const PharmacyProfile = () => {
     const removeQualification = (index: number) => {
         const updatedQuals = (formData.qualificationDetails.qualifications || []).filter((_: any, i: number) => i !== index);
         handleFieldChange('qualificationDetails.qualifications', updatedQuals);
+    };
+
+    const handleTermChange = (index: number, value: string) => {
+        const updatedTerms = [...(formData.pharmacyTerms || [])];
+        updatedTerms[index] = value;
+        handleFieldChange('pharmacyTerms', updatedTerms);
+    };
+
+    const addTerm = () => {
+        const updatedTerms = [...(formData.pharmacyTerms || []), ''];
+        handleFieldChange('pharmacyTerms', updatedTerms);
+    };
+
+    const removeTerm = (index: number) => {
+        const updatedTerms = (formData.pharmacyTerms || []).filter((_: any, i: number) => i !== index);
+        handleFieldChange('pharmacyTerms', updatedTerms);
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
@@ -279,9 +298,11 @@ const PharmacyProfile = () => {
 
         setIsSaving(true);
         try {
-            // Clean up empty qualifications before saving
+            // Clean up empty qualifications and terms before saving
             const cleanedQualifications = (formData.qualificationDetails.qualifications || [])
                 .filter(q => q.trim() !== '');
+            const cleanedTerms = (formData.pharmacyTerms || [])
+                .filter(t => t.trim() !== '');
 
             const updatedData = {
                 ...formData,
@@ -289,6 +310,7 @@ const PharmacyProfile = () => {
                     ...formData.qualificationDetails,
                     qualifications: cleanedQualifications
                 },
+                pharmacyTerms: cleanedTerms,
                 image: logo
             };
 
@@ -739,6 +761,62 @@ const PharmacyProfile = () => {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+
+                    {/* Terms & Conditions Configuration Section */}
+                    <div className="bg-white dark:bg-gray-800 rounded-4xl p-8 border border-gray-100 dark:border-gray-700 shadow-sm">
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-3">
+                                <div className="p-3 bg-teal-50 text-teal-600 rounded-2xl dark:bg-teal-900/30">
+                                    <ScrollText size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-thin uppercase text-gray-900 dark:text-white">Print Receipt Terms & Conditions</h3>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Define terms that appear dynamically on print receipts</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={addTerm}
+                                disabled={!isEditing}
+                                className="flex items-center gap-2 px-4 py-2 bg-teal-50 text-teal-600 dark:bg-teal-900/30 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-teal-100 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <Plus size={14} /> Add Term
+                            </button>
+                        </div>
+
+                        {/* Terms List */}
+                        <div className="space-y-4">
+                            {formData.pharmacyTerms?.map((term: string, index: number) => (
+                                <div key={`term-${index}`} className="flex items-center gap-3 animate-in fade-in slide-in-from-left-4 duration-300">
+                                    <div className="flex-1 relative group">
+                                        <ScrollText className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-teal-500 transition-colors" />
+                                        <input
+                                            type="text"
+                                            value={term}
+                                            onChange={(e) => handleTermChange(index, e.target.value)}
+                                            disabled={!isEditing}
+                                            placeholder="e.g. All medicines sold will not be taken back."
+                                            className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-2xl pl-12 pr-5 py-4 text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500 dark:text-white transition-all shadow-inner disabled:opacity-50 disabled:cursor-not-allowed"
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeTerm(index)}
+                                        disabled={!isEditing}
+                                        className="p-3 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-2xl transition-all active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <X size={18} />
+                                    </button>
+                                </div>
+                            ))}
+                            {(formData.pharmacyTerms || []).length === 0 && (
+                                <div className="py-8 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-3xl text-center">
+                                    <ScrollText className="w-8 h-8 text-gray-200 dark:text-gray-700 mx-auto mb-3" />
+                                    <p className="text-xs text-gray-400 italic font-bold uppercase tracking-widest">No custom terms configured. Default receipt terms will be applied.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

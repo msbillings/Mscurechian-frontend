@@ -27,6 +27,7 @@ interface ReceiptProps {
     emergencyContact?: string;
     bloodGroup?: string;
     dateOfBirth?: string;
+    dob?: string;
     allergies?: string;
     medicalHistory?: string;
     symptoms?: string;
@@ -133,7 +134,7 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
         const mappedPatient = {
           ...patient,
           name: sanitizePatientName(patient.name),
-          dob: patient.dateOfBirth, // crucial mapping
+          dob: patient.dateOfBirth || patient.dob, // crucial mapping
           vitals: patient.vitals ? {
             ...patient.vitals,
             temperature: patient.vitals.temperature || patient.vitals.temp,
@@ -173,7 +174,9 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
               hospital,
               patient: mappedPatient,
               appointment,
-              payment
+              payment,
+              headerHtml,
+              footerHtml
             })
           : generateClinicalReceiptHtml({
               forceDetailed: true,
@@ -210,7 +213,7 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
             /* Hide navigational junk */
             ::-webkit-scrollbar { display: none !important; }
             * { -ms-overflow-style: none !important; scrollbar-width: none !important; }
-            .no-print, .return-btn { display: none !important; visibility: hidden !important; height: 0 !important; padding: 0 !important; }
+            .no-print, .return-btn, .print-settings-toggle-wrapper { display: none !important; visibility: hidden !important; height: 0 !important; padding: 0 !important; }
             
             .receipt-container { 
               min-height: auto !important; 
@@ -219,6 +222,15 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
               box-sizing: border-box !important;
               display: block !important;
               background: #fff !important;
+            }
+            
+            .print-header-spacer {
+              margin-bottom: 0 !important;
+              height: 10px !important;
+            }
+            .print-footer-spacer {
+              margin-top: 0 !important;
+              height: 10px !important;
             }
             
             table { width: 100% !important; table-layout: auto !important; border-collapse: collapse !important; }
@@ -234,6 +246,8 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
               .section { page-break-inside: auto !important; }
               .section-header { -webkit-print-color-adjust: exact; }
               tr { page-break-inside: avoid !important; }
+              .print-header-spacer { margin-bottom: 0 !important; height: 160px !important; }
+              .print-footer-spacer { margin-top: 0 !important; height: 180px !important; }
             }
           </style>
         </head>`);
@@ -308,6 +322,15 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
                 📑 Detailed Bill
               </button>
             </div>
+            <label className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 cursor-pointer text-[10px] font-bold uppercase tracking-wider text-slate-600 transition-all select-none">
+              <input
+                type="checkbox"
+                checked={printWithHeader}
+                onChange={(e) => setPrintWithHeader(e.target.checked)}
+                className="cursor-pointer w-3.5 h-3.5 accent-teal-600"
+              />
+              <span>Header & Footer</span>
+            </label>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <button

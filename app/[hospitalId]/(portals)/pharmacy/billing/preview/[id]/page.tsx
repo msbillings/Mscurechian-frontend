@@ -10,6 +10,8 @@ import { Loader2, ArrowLeft, Printer, CheckCircle } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import { toast } from 'react-hot-toast';
 import { useTenantLink } from '@/hooks/useTenantLink';
+import { usePrintStore } from '@/stores/printStore';
+
 const InvoicePreviewPage = () => {
     const params = useParams();
     const router = useRouter();
@@ -19,6 +21,7 @@ const InvoicePreviewPage = () => {
     const [bill, setBill] = useState<PharmacyBill | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const componentRef = useRef<HTMLDivElement>(null);
+    const { printWithHeader, setPrintWithHeader } = usePrintStore();
 
     const invoiceId = params?.id as string;
 
@@ -29,7 +32,8 @@ const InvoicePreviewPage = () => {
         email: (user as any)?.email || '-',
         gstin: (user as any)?.gstin || '-',
         dlNo: (user as any)?.licenseNo || '',
-        logo: (user as any)?.image || (user as any)?.logo || (user as any)?.avatar || (user as any)?.profilePic
+        logo: (user as any)?.image || (user as any)?.logo || (user as any)?.avatar || (user as any)?.profilePic,
+        pharmacyTerms: user?.pharmacyTerms || []
     };
 
     const handlePrint = useReactToPrint({
@@ -122,6 +126,16 @@ const InvoicePreviewPage = () => {
                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-4 md:mb-6">Manage Document</p>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 md:gap-4">
+                            <label className="flex items-center gap-2 px-3 py-3.5 bg-slate-50 hover:bg-slate-100 dark:bg-gray-700/50 dark:hover:bg-gray-700 rounded-xl border border-slate-200 dark:border-gray-600 cursor-pointer text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-gray-300 transition-all select-none">
+                                <input
+                                    type="checkbox"
+                                    checked={printWithHeader}
+                                    onChange={(e) => setPrintWithHeader(e.target.checked)}
+                                    className="cursor-pointer w-4 h-4 accent-teal-600"
+                                />
+                                <span>Header & Footer</span>
+                            </label>
+
                             <button
                                 onClick={() => handlePrint()}
                                 className="w-full flex items-center justify-between p-3.5 md:p-4 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 group transition-all active:scale-[0.98] shadow-md shadow-teal-500/10"

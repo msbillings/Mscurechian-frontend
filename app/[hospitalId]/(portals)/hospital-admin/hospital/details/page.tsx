@@ -77,6 +77,9 @@ const HospitalDetailsPage = () => {
         services: enrichedHospital.services?.join(', ') || '',
         geofenceSettings: enrichedHospital.geofenceSettings || { enabled: false, radiusMeters: 500, excludedPortals: ['hospital-admin'] },
         location: enrichedHospital.location || { lat: 0, lng: 0 },
+        opdFollowUpDays: enrichedHospital.opdFollowUpDays ?? 7,
+        ipdFollowUpDays: enrichedHospital.ipdFollowUpDays ?? 7,
+        enableFollowUpExpiry: enrichedHospital.enableFollowUpExpiry ?? true,
       });
     } catch (error) {
       toast.error("Failed to synchronizing institutional parameters");
@@ -375,113 +378,86 @@ const HospitalDetailsPage = () => {
                 />
               </div>
             </div>
-            {/* Section: Geofencing Configuration */}
-            <div className="p-2 md:p-4 md:p-8 border-t border-slate-100 bg-slate-50/50">
+
+            {/* Section: Follow-up policy settings */}
+            <div className="p-2 md:p-4 md:p-8 border-t border-slate-100 bg-slate-50/20">
               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 mb-8">
-                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
-                  <MapPin size={16} className="text-indigo-600" />
+                <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center">
+                  <Activity size={16} className="text-teal-600" />
                 </div>
-                Geofence Security
+                Follow-up Consultation Policy Settings
               </h3>
 
               <div className="space-y-6">
                 <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-200">
                   <div>
-                    <h4 className="text-sm font-bold text-slate-800">Enable Geofencing</h4>
-                    <p className="text-xs text-slate-500 mt-1">Restrict staff portal access to the hospital premises.</p>
+                    <h4 className="text-sm font-bold text-slate-800">Enable Token Expiry Validation</h4>
+                    <p className="text-xs text-slate-500 mt-1">If disabled, patients return appointments are processed without date boundary checks.</p>
                   </div>
                   {isEdit ? (
                     <button
                       onClick={() => setFormData({
                         ...formData,
-                        geofenceSettings: {
-                          ...formData.geofenceSettings,
-                          enabled: !formData.geofenceSettings?.enabled
-                        }
+                        enableFollowUpExpiry: !formData.enableFollowUpExpiry
                       })}
-                      className={`relative w-10 h-5 rounded-full transition-all duration-300 ${formData.geofenceSettings?.enabled ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                      className={`relative w-10 h-5 rounded-full transition-all duration-300 ${formData.enableFollowUpExpiry ? 'bg-teal-600' : 'bg-slate-300'}`}
                     >
-                      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${formData.geofenceSettings?.enabled ? 'left-5.2' : 'left-0.5'}`} />
+                      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${formData.enableFollowUpExpiry ? 'left-5.2' : 'left-0.5'}`} />
                     </button>
                   ) : (
-                    <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${formData.geofenceSettings?.enabled ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
-                      {formData.geofenceSettings?.enabled ? 'Active' : 'Inactive'}
+                    <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${formData.enableFollowUpExpiry ? 'bg-teal-100 text-teal-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {formData.enableFollowUpExpiry ? 'Expiry Enabled' : 'Expiry Disabled'}
                     </span>
                   )}
                 </div>
 
-                {formData.geofenceSettings?.enabled && (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <FormInput
-                        label="Radius (Meters)"
-                        value={formData.geofenceSettings?.radiusMeters}
-                        onChange={(e) => setFormData({
-                          ...formData,
-                          geofenceSettings: {
-                            ...formData.geofenceSettings,
-                            radiusMeters: Number(e.target.value) || 0
-                          }
-                        })}
-                        readOnly={!isEdit}
-                        type="number"
-                        placeholder="e.g. 500"
-                        className={!isEdit ? "bg-transparent border-none p-0 font-bold text-slate-800" : ""}
-                      />
-                    </div>
-
-                    <div className="mt-8">
-                      <h4 className="text-sm font-bold text-slate-800 mb-4">Portal Restrictions</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                        {[
-                          { id: 'helpdesk', label: 'Helpdesk' },
-                          { id: 'pharmacy', label: 'Pharmacy' },
-                          { id: 'lab', label: 'Laboratory' },
-                          { id: 'hr', label: 'Human Resources' },
-                          { id: 'staff', label: 'General Staff' },
-                          { id: 'nurse', label: 'Nurse Station' },
-                          { id: 'doctor', label: 'Doctor Terminal' }
-                        ].map((portal) => {
-                          const isRestricted = formData.geofenceSettings?.restrictedPortals?.includes(portal.id);
-                          return (
-                            <div key={portal.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200">
-                              <span className="text-sm font-semibold text-slate-700">{portal.label}</span>
-                              {isEdit ? (
-                                <button
-                                  onClick={() => {
-                                    const current = formData.geofenceSettings?.restrictedPortals || [];
-                                    const next = current.includes(portal.id) 
-                                      ? current.filter((id: string) => id !== portal.id)
-                                      : [...current, portal.id];
-                                    
-                                    setFormData({
-                                      ...formData,
-                                      geofenceSettings: {
-                                        ...formData.geofenceSettings,
-                                        restrictedPortals: next
-                                      }
-                                    });
-                                  }}
-                                  className={`relative w-9 h-5 rounded-full transition-all duration-300 ${isRestricted ? 'bg-indigo-600' : 'bg-slate-300'}`}
-                                >
-                                  <div className={`absolute top-[2px] w-4 h-4 bg-white rounded-full transition-all shadow-sm ${isRestricted ? 'left-4' : 'left-0.5'}`} />
-                                </button>
-                              ) : (
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${isRestricted ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-400'}`}>
-                                  {isRestricted ? 'Restricted' : 'Open'}
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </>
-                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormInput
+                    label="OPD Follow-up Window (Days)"
+                    value={formData.opdFollowUpDays || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        setFormData({ ...formData, opdFollowUpDays: '' as any });
+                      } else {
+                        const parsed = Number(val);
+                        if (parsed > 0) {
+                          setFormData({ ...formData, opdFollowUpDays: parsed });
+                        }
+                      }
+                    }}
+                    onWheel={(e) => e.preventDefault()}
+                    readOnly={!isEdit}
+                    type="number"
+                    min="1"
+                    placeholder="e.g. 7"
+                    className={!isEdit ? "bg-transparent border-none p-0 font-bold text-slate-800" : ""}
+                  />
+                  <FormInput
+                    label="IPD Follow-up Window (Days)"
+                    value={formData.ipdFollowUpDays || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        setFormData({ ...formData, ipdFollowUpDays: '' as any });
+                      } else {
+                        const parsed = Number(val);
+                        if (parsed > 0) {
+                          setFormData({ ...formData, ipdFollowUpDays: parsed });
+                        }
+                      }
+                    }}
+                    onWheel={(e) => e.preventDefault()}
+                    readOnly={!isEdit}
+                    type="number"
+                    min="1"
+                    placeholder="e.g. 7"
+                    className={!isEdit ? "bg-transparent border-none p-0 font-bold text-slate-800" : ""}
+                  />
+                </div>
               </div>
             </div>
           </Card>
-
         </div>
 
         {/* Right Column: Asset Metrics */}
@@ -602,6 +578,114 @@ const HospitalDetailsPage = () => {
                 placeholder="Comma separated list (e.g. 24/7 Pharmacy, Lab, Radiology)"
                 className={!isEdit ? "bg-transparent border-none p-0 font-bold text-slate-900 text-sm leading-relaxed" : "uppercase text-[11px]"}
               />
+            </div>
+          </div>
+
+          {/* Standalone Card: Geofence Security */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden group">
+            <div className="relative z-10">
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 mb-6">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                  <MapPin size={16} className="text-indigo-600" />
+                </div>
+                Geofence Security
+              </h3>
+
+              <div className="space-y-6">
+                <div className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl border border-slate-200">
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-800">Enable Geofencing</h4>
+                    <p className="text-[10px] text-slate-500 mt-1">Restrict portal access to hospital premises.</p>
+                  </div>
+                  {isEdit ? (
+                    <button
+                      onClick={() => setFormData({
+                        ...formData,
+                        geofenceSettings: {
+                          ...formData.geofenceSettings,
+                          enabled: !formData.geofenceSettings?.enabled
+                        }
+                      })}
+                      className={`relative w-10 h-5 rounded-full transition-all duration-300 ${formData.geofenceSettings?.enabled ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                    >
+                      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${formData.geofenceSettings?.enabled ? 'left-5.2' : 'left-0.5'}`} />
+                    </button>
+                  ) : (
+                    <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${formData.geofenceSettings?.enabled ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {formData.geofenceSettings?.enabled ? 'Active' : 'Disabled'}
+                    </span>
+                  )}
+                </div>
+
+                {formData.geofenceSettings?.enabled && (
+                  <>
+                    <div className="grid grid-cols-1 gap-6">
+                      <FormInput
+                        label="Premises Radius (Meters)"
+                        value={formData.geofenceSettings?.radiusMeters}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          geofenceSettings: {
+                            ...formData.geofenceSettings,
+                            radiusMeters: Number(e.target.value) || 0
+                          }
+                        })}
+                        readOnly={!isEdit}
+                        type="number"
+                        placeholder="e.g. 500"
+                        className={!isEdit ? "bg-transparent border-none p-0 font-bold text-slate-800" : ""}
+                      />
+                    </div>
+
+                    <div className="mt-6">
+                      <h4 className="text-xs font-bold text-slate-800 mb-3 uppercase tracking-wider">Portal Restrictions</h4>
+                      <div className="grid grid-cols-1 gap-2">
+                        {[
+                          { id: 'helpdesk', label: 'Helpdesk' },
+                          { id: 'pharmacy', label: 'Pharmacy' },
+                          { id: 'lab', label: 'Laboratory' },
+                          { id: 'hr', label: 'Human Resources' },
+                          { id: 'staff', label: 'General Staff' },
+                          { id: 'nurse', label: 'Nurse Station' },
+                          { id: 'doctor', label: 'Doctor Terminal' }
+                        ].map((portal) => {
+                          const isRestricted = formData.geofenceSettings?.restrictedPortals?.includes(portal.id);
+                          return (
+                            <div key={portal.id} className="flex items-center justify-between p-2 bg-slate-50/30 rounded-xl border border-slate-100">
+                              <span className="text-xs font-semibold text-slate-700">{portal.label}</span>
+                              {isEdit ? (
+                                <button
+                                  onClick={() => {
+                                    const current = formData.geofenceSettings?.restrictedPortals || [];
+                                    const next = current.includes(portal.id) 
+                                      ? current.filter((id: string) => id !== portal.id)
+                                      : [...current, portal.id];
+                                    
+                                    setFormData({
+                                      ...formData,
+                                      geofenceSettings: {
+                                        ...formData.geofenceSettings,
+                                        restrictedPortals: next
+                                      }
+                                    });
+                                  }}
+                                  className={`relative w-9 h-5 rounded-full transition-all duration-300 ${isRestricted ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                                >
+                                  <div className={`absolute top-[2px] w-4 h-4 bg-white rounded-full transition-all shadow-sm ${isRestricted ? 'left-4' : 'left-0.5'}`} />
+                                </button>
+                              ) : (
+                                <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${isRestricted ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-400'}`}>
+                                  {isRestricted ? 'Restricted' : 'Open'}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

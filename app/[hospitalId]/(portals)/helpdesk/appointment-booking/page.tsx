@@ -38,6 +38,7 @@ import MainFooter from '@/components/printers/MainFooter';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 import { generateClinicalReceiptHtml } from "@/lib/print-utils";
 import { formatDoctorName } from "@/lib/utils/name-utils";
+import ClinicalReceipt from "@/components/helpdesk/ClinicalReceipt";
 
 export default function AppointmentBooking() {
     const router = useRouter();
@@ -83,6 +84,19 @@ export default function AppointmentBooking() {
     const [mixedPayments, setMixedPayments] = useState({ cash: '', card: '', upi: '' });
     const [paymentStatus, setPaymentStatus] = useState<'paid' | 'unpaid'>('paid');
     const [sendToDoctor, setSendToDoctor] = useState(true);
+    const [followUpStatus, setFollowUpStatus] = useState<{
+        eligible: boolean;
+        remainingDays?: number;
+        message?: string;
+        enableExpiry?: boolean;
+        opdRange?: number;
+        visitCount?: number;
+        doctorVisitCount?: number;
+        visitCalculations?: string;
+        expiryDate?: string | Date;
+        lastAppointmentDate?: string | Date;
+        lastAppointmentDoctor?: string;
+    } | null>(null);
 
     // Duplicate-appointment confirmation state
     const [existingAptWarning, setExistingAptWarning] = useState<{
@@ -106,15 +120,22 @@ export default function AppointmentBooking() {
     });
     const [ipdFee, setIpdFee] = useState('500');
     const [customClinicalFee, setCustomClinicalFee] = useState('0');
+    const [showReceiptPreview, setShowReceiptPreview] = useState(false);
+    const [previewReceiptData, setPreviewReceiptData] = useState<any>(null);
+    const [isBooked, setIsBooked] = useState(false);
 
     useEffect(() => {
         if (selectedDoctor) {
-            const fee = selectedDoctor.consultationFee ?? (selectedDoctor as any).hospitals?.[0]?.consultationFee ?? 0;
-            setCustomClinicalFee(fee.toString());
+            if (appointmentType === 'follow-up') {
+                setCustomClinicalFee('0');
+            } else {
+                const fee = selectedDoctor.consultationFee ?? (selectedDoctor as any).hospitals?.[0]?.consultationFee ?? 0;
+                setCustomClinicalFee(fee.toString());
+            }
         } else {
             setCustomClinicalFee('0');
         }
-    }, [selectedDoctor]);
+    }, [selectedDoctor, appointmentType]);
 
     const [roomSearch, setRoomSearch] = useState("");
     const [showRoomSelect, setShowRoomSelect] = useState(false);
@@ -468,6 +489,42 @@ export default function AppointmentBooking() {
         }
     }, [selectedPatient, registrationType]);
 
+    // Check follow-up eligibility
+    useEffect(() => {
+        const checkFollowUp = async () => {
+            const pId = selectedPatient?._id || selectedPatient?.id;
+            if (!pId) {
+                setFollowUpStatus(null);
+                return;
+            }
+            try {
+                console.log(`[FOLLOWUP] Calling eligibility: pId=${pId} doctorId=${selectedDoctor?._id} type=${registrationType} date=${selectedDate}`);
+                const res = await helpdeskService.checkFollowUpEligibility(pId, selectedDoctor?._id || undefined, registrationType, selectedDate);
+                console.log(`[FOLLOWUP] Response:`, res);
+                setFollowUpStatus(res);
+                if (res?.eligible) {
+                    setAppointmentType("follow-up");
+                    setCustomClinicalFee("0");
+                    toast.success(
+                        res.enableExpiry 
+                            ? `Eligible for Free Follow-up! (Remaining: ${res.remainingDays} days)`
+                            : `Eligible for Free Follow-up! (Expiry check disabled)`,
+                        { id: "follow-up-eligibility" }
+                    );
+                } else {
+                    setAppointmentType("consultation");
+                    if (selectedDoctor) {
+                        const fee = selectedDoctor.consultationFee ?? (selectedDoctor as any).hospitals?.[0]?.consultationFee ?? 0;
+                        setCustomClinicalFee(fee.toString());
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to check follow up status:", e);
+            }
+        };
+        checkFollowUp();
+    }, [selectedPatient, selectedDoctor, registrationType, selectedDate]);
+
     // Patient Search Logic
     useEffect(() => {
         if (patientSearch.length < 3) { setSearchResults([]); return; }
@@ -614,57 +671,149 @@ export default function AppointmentBooking() {
             return;
         }
 
-        // ── Open ONE print window synchronously (MUST be before any await) ─────
-        // Browsers block popups opened after async calls. Opening here preserves
-        // the user-gesture trust context. We update the same window with the
-        // receipt HTML once the API calls complete.
-        let printWindow: Window | null = null;
-        try {
-            printWindow = window.open('about:blank', '_blank');
-            if (printWindow) {
-                printWindow.document.write(
-                    `<html><head><title>Processing Receipt...</title>
-                    <style>
-                        body { 
-                            display: flex; align-items: center; justify-content: center; 
-                            height: 100vh; margin: 0; font-family: 'Inter', sans-serif; 
-                            background: #f8fafc; color: #1e293b;
-                        }
-                        .container { text-align: center; max-width: 400px; padding: 40px; }
-                        .spinner {
-                            width: 50px; height: 50px; border: 4px solid #f1f5f9;
-                            border-top: 4px solid #14b8a6; border-radius: 50%;
-                            animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-                            margin: 0 auto 24px;
-                        }
-                        @keyframes spin { to { transform: rotate(360deg); } }
-                        h2 { font-size: 1.25rem; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.025em; }
-                        p { font-size: 0.875rem; color: #64748b; font-weight: 500; }
-                    </style></head>
-                    <body>
-                        <div class="container">
-                            <div class="spinner"></div>
-                            <h2>Finalizing Booking</h2>
-                            <p>Preparing your clinical receipt and synchronizing records...</p>
-                        </div>
-                    </body></html>`
-                );
-            }
-        } catch (_) { printWindow = null; }
+        const baseAmount = registrationType === 'IPD' ? parseFloat(ipdFee || '0') : parseFloat(customClinicalFee || '0');
+        const discountValue = parseFloat(discountAmount || '0');
+        const discount = discountType === 'percentage' ? (baseAmount * discountValue / 100) : discountValue;
+        const finalAmount = Math.max(0, baseAmount - discount);
 
+        // Calculate estimated token number for the selected date based on today's count
+        let estimatedToken = '01';
+        try {
+            const dateStr = new Date(selectedDate).toISOString().split('T')[0];
+            const allAptsRes = await helpdeskService.getAppointments(1, 200, undefined, dateStr, dateStr).catch(() => ({ data: [] }));
+            const allApts = Array.isArray(allAptsRes) ? allAptsRes : (allAptsRes?.data || allAptsRes?.appointments || []);
+            const activeToday = allApts.filter((a: any) => !['cancelled', 'no-show', 'rejected'].includes(a.status?.toLowerCase()));
+            estimatedToken = String(activeToday.length + 1).padStart(2, '0');
+        } catch (e) {
+            console.error("Failed to estimate token number:", e);
+        }
+
+        const latestHospital: any = hospitalBranding || profile?.hospital;
+
+        // Render Header/Footer using cached data
+        const headerHtml = renderToStaticMarkup(
+            <MainHeader
+                initialDetails={{
+                    name: latestHospital?.name || "Hospital Name",
+                    address: latestHospital?.address || "",
+                    phone: latestHospital?.phone || latestHospital?.mobile || "",
+                    email: latestHospital?.email || "",
+                    logo: latestHospital?.logo
+                }}
+            />
+        );
+
+        const footerHtml = renderToStaticMarkup(
+            <MainFooter
+                initialDetails={{
+                    name: latestHospital?.name || "Hospital Name",
+                    address: latestHospital?.address || "",
+                    phone: latestHospital?.phone || latestHospital?.mobile || "",
+                    email: latestHospital?.email || "",
+                }}
+            />
+        );
+
+        const receiptData = {
+            hospital: {
+                name: latestHospital?.name || "CureChain Medical Center",
+                address: latestHospital?.address || "Main Medical Node",
+                contact: latestHospital?.phone || latestHospital?.mobile || "System Support",
+                email: latestHospital?.email || "healthcare@curechain.io",
+                logo: latestHospital?.logo
+            },
+            patient: {
+                name: selectedPatient.name,
+                mrn: selectedPatient.mrn,
+                age: selectedPatient.age,
+                gender: selectedPatient.gender,
+                mobile: selectedPatient.mobile,
+                dob: selectedPatient.dob,
+                address: selectedPatient.address,
+                email: selectedPatient.email,
+                bloodGroup: selectedPatient.bloodGroup,
+                emergencyContact: selectedPatient.emergencyContact,
+                allergies: Array.isArray(selectedPatient.allergies)
+                    ? Array.from(new Set(selectedPatient.allergies)).join(', ')
+                    : Array.from(new Set((selectedPatient.allergies || '').split(',').map((s: string) => s.trim()).filter(Boolean))).join(', '),
+                medicalHistory: Array.from(new Set((selectedPatient.medicalHistory || '').split(',').map((s: string) => s.trim()).filter(Boolean))).join(', '),
+                vitals: showVitals ? {
+                    height: vitals.height,
+                    weight: vitals.weight,
+                    bp: vitals.bp,
+                    temperature: vitals.temperature,
+                    pulse: vitals.pulse,
+                    spo2: vitals.spo2,
+                    glucose: vitals.glucose
+                } : {
+                    height: '',
+                    weight: '',
+                    bp: '',
+                    temperature: '',
+                    pulse: '',
+                    spo2: '',
+                    glucose: ''
+                }
+            },
+            appointment: {
+                doctorName: selectedDoctor?.user?.name || selectedDoctor?.name || "",
+                specialization: selectedDoctor?.specialties?.[0] || 'General Physician',
+                qualification: selectedDoctor?.qualifications?.[0] || 'MBBS, DM',
+                date: new Date(selectedDate).toLocaleDateString('en-GB').replace(/\//g, '/'),
+                time: bookingMode === 'slot' ? (selectedSlot || "") : (() => {
+                    const [h, m] = selectedTime.split(':');
+                    const d = new Date();
+                    d.setHours(parseInt(h, 10));
+                    d.setMinutes(parseInt(m, 10));
+                    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                })(),
+                bookedAt: new Date().toISOString(),
+                type: appointmentType.toUpperCase(),
+                visitType: followUpStatus?.visitCalculations || "First Visit",
+                followUpStatus: followUpStatus || undefined,
+                notes: notes,
+                appointmentId: 'PENDING',
+                tokenNo: estimatedToken
+            },
+            payment: {
+                amount: finalAmount,
+                totalBillAmount: baseAmount,
+                discount: discount,
+                totalPaidAmount: paymentStatus === 'paid' ? finalAmount : 0,
+                advanceAmount: registrationType === 'IPD' ? finalAmount : 0,
+                method: paymentMethod.toUpperCase(),
+                status: (paymentStatus === 'unpaid' ? 'pending' : paymentStatus).toUpperCase(),
+                date: new Date().toISOString(),
+                receiptNumber: 'PENDING'
+            },
+            registrationType: registrationType,
+            showVitals: showVitals,
+            headerHtml: headerHtml,
+            footerHtml: footerHtml,
+            returnUrl: '/helpdesk',
+            forceDetailed: isDetailedReceipt
+        };
+
+        setPreviewReceiptData(receiptData);
+        setIsBooked(false);
+        setShowReceiptPreview(true);
+    };
+
+    const executeBooking = async () => {
         try {
             setSubmitting(true);
             const backendPaymentStatus = paymentStatus === 'unpaid' ? 'pending' : 'paid';
 
             const payload = {
-                patientId: selectedPatient?._id || selectedPatient?.id,
-                doctorId: selectedDoctor?._id,
+                patientId: selectedPatient?._id || selectedPatient?.id || "",
+                doctorId: selectedDoctor?._id || "",
                 date: selectedDate,
-                time: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
-                timeSlot: bookingMode === 'slot' ? selectedSlot : "General Queue",
-                startTime: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
-                endTime: bookingMode === 'slot' ? selectedSlot : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                time: bookingMode === 'slot' ? (selectedSlot || "") : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                timeSlot: bookingMode === 'slot' ? (selectedSlot || "") : "General Queue",
+                startTime: bookingMode === 'slot' ? (selectedSlot || "") : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                endTime: bookingMode === 'slot' ? (selectedSlot || "") : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
                 type: appointmentType,
+                visitType: followUpStatus?.visitCalculations || "First Visit",
                 notes: notes,
                 paymentMethod: paymentMethod,
                 paymentStatus: backendPaymentStatus,
@@ -673,7 +822,6 @@ export default function AppointmentBooking() {
                     gender: selectedPatient.gender,
                     duration: selectedDoctor?.consultationDuration ? `${selectedDoctor.consultationDuration} min` : "15 min"
                 },
-                // Pass extended details to ensure profile is updated/corrected
                 honorific: selectedPatient.honorific || selectedPatient.profile?.honorific,
                 address: selectedPatient.address || selectedPatient.profile?.address,
                 bloodGroup: (selectedPatient.bloodGroup && selectedPatient.bloodGroup !== 'N/A') ? selectedPatient.bloodGroup : undefined,
@@ -704,7 +852,7 @@ export default function AppointmentBooking() {
             const discount = discountType === 'percentage' ? (baseAmount * discountValue / 100) : discountValue;
             const finalAmount = Math.max(0, baseAmount - discount);
 
-            // 1. Create Appointment first (especially for IPD to generate the admissionId linkage)
+            // 1. Create Appointment first
             const response = await helpdeskService.createAppointment({
                 ...payload,
                 type: registrationType === 'IPD' ? 'IPD' : appointmentType,
@@ -731,13 +879,13 @@ export default function AppointmentBooking() {
                 const finalAdmissionType = (selectedBed?.type || admissionData.roomType || 'GENERAL').toUpperCase();
 
                 const ipdRes: any = await ipdService.initiateAdmission({
-                    patientId: selectedPatient?._id || selectedPatient?.id,
-                    doctorId: selectedDoctor?._id,
+                    patientId: selectedPatient?._id || selectedPatient?.id || "",
+                    doctorId: selectedDoctor?._id || "",
                     bedId: admissionData.bedId,
                     admissionType: finalAdmissionType,
                     diet: admissionData.diet,
                     clinicalNotes: admissionData.clinicalNotes,
-                    reason: notes, // Pass the primary symptoms/reason for visit
+                    reason: notes,
                     vitals: showVitals ? {
                         height: vitals.height,
                         weight: vitals.weight,
@@ -747,13 +895,7 @@ export default function AppointmentBooking() {
                         spO2: vitals.spo2,
                         glucose: vitals.glucose
                     } : {
-                        height: '',
-                        weight: '',
-                        bloodPressure: '',
-                        temperature: '',
-                        pulse: '',
-                        spO2: '',
-                        glucose: ''
+                        height: '', weight: '', bloodPressure: '', temperature: '', pulse: '', spO2: '', glucose: ''
                     },
                     amount: finalAmount,
                     discount: discount,
@@ -802,122 +944,26 @@ export default function AppointmentBooking() {
             let exactTokenNo = activeToday.findIndex((a: any) => (a._id === aptId || a.id === aptId || a.appointmentId === aptId)) + 1;
             if (exactTokenNo <= 0) exactTokenNo = activeToday.length > 0 ? activeToday.length : 1;
 
-            // Prepare Branding Data (Using pre-fetched branding to ensure zero-latency printing)
             const latestHospital: any = hospitalBranding || profile?.hospital;
-            
-            // Render Header/Footer immediately using cached data to avoid blocking
-            const headerHtml = renderToStaticMarkup(
-                <MainHeader
-                    initialDetails={{
-                        name: latestHospital?.name || "Hospital Name",
-                        address: latestHospital?.address || "",
-                        phone: latestHospital?.phone || latestHospital?.mobile || "",
-                        email: latestHospital?.email || "",
-                        logo: latestHospital?.logo
-                    }}
-                />
-            );
 
-            const footerHtml = renderToStaticMarkup(
-                <MainFooter
-                    initialDetails={{
-                        name: latestHospital?.name || "Hospital Name",
-                        address: latestHospital?.address || "",
-                        phone: latestHospital?.phone || latestHospital?.mobile || "",
-                        email: latestHospital?.email || "",
-                    }}
-                />
-            );
-
-            const receiptData = {
-                hospital: {
-                    name: latestHospital?.name || "CureChain Medical Center",
-                    address: latestHospital?.address || "Main Medical Node",
-                    contact: latestHospital?.phone || latestHospital?.mobile || "System Support",
-                    email: latestHospital?.email || "healthcare@curechain.io",
-                    logo: latestHospital?.logo
-                },
-                patient: {
-                    name: selectedPatient.name,
-                    mrn: selectedPatient.mrn,
-                    age: selectedPatient.age,
-                    gender: selectedPatient.gender,
-                    mobile: selectedPatient.mobile,
-                    dob: selectedPatient.dob,
-                    address: selectedPatient.address,
-                    email: selectedPatient.email,
-                    bloodGroup: selectedPatient.bloodGroup,
-                    emergencyContact: selectedPatient.emergencyContact,
-                    allergies: Array.isArray(selectedPatient.allergies)
-                        ? Array.from(new Set(selectedPatient.allergies)).join(', ')
-                        : Array.from(new Set((selectedPatient.allergies || '').split(',').map((s: string) => s.trim()).filter(Boolean))).join(', '),
-                    medicalHistory: Array.from(new Set((selectedPatient.medicalHistory || '').split(',').map((s: string) => s.trim()).filter(Boolean))).join(', '),
-                    vitals: showVitals ? {
-                        height: vitals.height,
-                        weight: vitals.weight,
-                        bp: vitals.bp,
-                        temperature: vitals.temperature,
-                        pulse: vitals.pulse,
-                        spo2: vitals.spo2,
-                        glucose: vitals.glucose
-                    } : {
-                        height: '',
-                        weight: '',
-                        bp: '',
-                        temperature: '',
-                        pulse: '',
-                        spo2: '',
-                        glucose: ''
-                    }
-                },
+            setPreviewReceiptData((prev: any) => ({
+                ...prev,
                 appointment: {
-                    doctorName: selectedDoctor.user?.name || selectedDoctor.name,
-                    specialization: selectedDoctor.specialties?.[0] || 'General Physician',
-                    qualification: selectedDoctor.qualifications?.[0] || 'MBBS, DM',
-                    date: new Date(selectedDate).toLocaleDateString(),
-                    time: bookingMode === 'slot' ? selectedSlot : (() => {
-                        const [h, m] = selectedTime.split(':');
-                        const d = new Date();
-                        d.setHours(parseInt(h, 10));
-                        d.setMinutes(parseInt(m, 10));
-                        return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-                    })(),
-                    bookedAt: new Date().toISOString(),
-                    type: appointmentType.toUpperCase(),
-                    notes: notes,
+                    ...prev.appointment,
                     appointmentId: appointment.appointmentId || appointment._id || appointment.id || 'PENDING',
                     tokenNo: appointment.tokenNo || appointment.tokenNumber || exactTokenNo
                 },
                 payment: {
-                    amount: finalAmount,
-                    totalBillAmount: baseAmount,
-                    discount: discount,
-                    totalPaidAmount: paymentStatus === 'paid' ? finalAmount : 0,
-                    advanceAmount: registrationType === 'IPD' ? finalAmount : 0,
-                    method: paymentMethod.toUpperCase(),
-                    status: (paymentStatus === 'unpaid' ? 'pending' : paymentStatus).toUpperCase(),
-                    date: new Date().toISOString(),
+                    ...prev.payment,
                     receiptNumber: appointment.payment?.receiptNumber || appointment.receiptNumber
-                },
-                registrationType: registrationType,
-                showVitals: showVitals,
-                headerHtml: headerHtml,
-                footerHtml: footerHtml,
-                returnUrl: '/helpdesk',
-                forceDetailed: isDetailedReceipt
-            };
-
-            // Write the receipt into the SAME window we opened above (no second popup)
-            if (printWindow) {
-                printWindow.document.open();
-                printWindow.document.write(generateClinicalReceiptHtml(receiptData));
-                printWindow.document.close();
-            }
+                }
+            }));
+            
+            setIsBooked(true);
             toast.success("Booking Indexed & Receipt Generated");
-            router.push('/helpdesk');
         } catch (error: any) {
-            if (printWindow) printWindow.close();
             toast.error(error.message || "Execution failure during booking");
+            throw error;
         } finally {
             setSubmitting(false);
         }
@@ -1231,6 +1277,34 @@ export default function AppointmentBooking() {
                                             Proceed Anyway
                                         </button>
                                     </div>
+                                </div>
+                            </div>
+                        )}
+                        {/* ── Follow-up Eligibility notice banner ─────────────────────────── */}
+                        {followUpStatus && (
+                            <div className={`flex items-start gap-4 p-4 border rounded-2xl animate-in slide-in-from-top-2 duration-300 ${
+                                followUpStatus.eligible 
+                                    ? "bg-teal-50 dark:bg-emerald-950/20 border-teal-200 dark:border-emerald-900/30" 
+                                    : "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/30"
+                            }`}>
+                                <div className={`flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${
+                                    followUpStatus.eligible 
+                                        ? "bg-teal-100 dark:bg-emerald-900/40 text-teal-600 dark:text-emerald-400" 
+                                        : "bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400"
+                                }`}>
+                                    {followUpStatus.eligible ? <CheckCircle2 size={18} /> : <Info size={18} />}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className={`text-[11px] font-black uppercase tracking-wide ${
+                                        followUpStatus.eligible ? "text-teal-900 dark:text-emerald-300" : "text-amber-900 dark:text-amber-300"
+                                    }`}>
+                                        {followUpStatus.eligible ? `${followUpStatus.visitCalculations || "Follow-up Visit"} (Free Follow-up)` : `${followUpStatus.visitCalculations || "New Consultation"}`}
+                                    </p>
+                                    <p className={`text-[10px] mt-0.5 leading-relaxed font-medium ${
+                                        followUpStatus.eligible ? "text-teal-700 dark:text-emerald-400/80" : "text-amber-700 dark:text-amber-400/80"
+                                    }`}>
+                                        {followUpStatus.message}
+                                    </p>
                                 </div>
                             </div>
                         )}
@@ -1842,6 +1916,21 @@ export default function AppointmentBooking() {
                         cursor: pointer;
                     }
                 `}</style>
+            {showReceiptPreview && previewReceiptData && (
+                <ClinicalReceipt
+                    hospital={previewReceiptData.hospital}
+                    patient={previewReceiptData.patient}
+                    appointment={previewReceiptData.appointment}
+                    payment={previewReceiptData.payment}
+                    onClose={() => {
+                        setShowReceiptPreview(false);
+                        if (isBooked) {
+                            router.push('/helpdesk');
+                        }
+                    }}
+                    onConfirm={executeBooking}
+                />
+            )}
             </div>
         </div>
     );

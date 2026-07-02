@@ -1584,6 +1584,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                     @media print {
                         @page { size: A4; margin: 0; }
                         body { print-color-adjust: exact; -webkit-print-color-adjust: exact; margin: 0; padding: 0; }
+                        .container { min-height: 280mm !important; height: auto !important; }
                     }
                     body { 
                         font-family: 'Inter', Arial, sans-serif; 

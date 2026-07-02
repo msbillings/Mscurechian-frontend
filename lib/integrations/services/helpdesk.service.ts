@@ -270,6 +270,14 @@ export const helpdeskService = {
     return apiClient<any>(query);
   },
 
+  checkFollowUpEligibility: (patientId: string, doctorId?: string, type?: string, date?: string) => {
+    let url = `/bookings/check-follow-up?patientId=${patientId}`;
+    if (doctorId) url += `&doctorId=${doctorId}`;
+    if (type) url += `&type=${type}`;
+    if (date) url += `&date=${date}`;
+    return apiClient<any>(url);
+  },
+
   /**
    * Get global master queue for the helpdesk (includes offline + online)
    * @returns List of appointments

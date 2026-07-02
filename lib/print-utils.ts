@@ -1,4 +1,5 @@
 import { usePrintStore } from '@/stores/printStore';
+import { formatDoctorName } from '@/lib/utils/name-utils';
 
 export const computeAgeFromDob = (dob: any, fallbackAge: any, fallbackUnit: any) => {
     if (dob) {
@@ -102,7 +103,7 @@ export const generatePayslipHtml = (data: any) => {
     : "Pay Period";
   const fullPeriod =
     rx.startDate && rx.endDate
-      ? `(From ${new Date(rx.startDate).toLocaleDateString("en-GB")} To ${new Date(rx.endDate).toLocaleDateString("en-GB")})`
+      ? `(From ${((d) => String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear())(new Date(rx.startDate))} To ${((d) => String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear())(new Date(rx.endDate))})`
       : "";
 
   // Number to words function
@@ -732,9 +733,9 @@ export const generatePayslipHtml = (data: any) => {
 };
 
 export const generateOPDRegistrationSlipHtml = (data: any) => {
-  const { hospital = {}, patient = {}, appointment = {}, payment = {} } = data;
+  const { hospital = {}, patient = {}, appointment = {}, payment = {}, headerHtml, footerHtml } = data;
   const ageDisplay = computeAgeFromDob(patient.dob, patient.age, patient.ageUnit) || patient.age || "N/A";
-  const doctorTitle = appointment.doctorName?.toLowerCase().startsWith("dr") ? appointment.doctorName : `Dr. ${appointment.doctorName || "Assigned Consultant"}`;
+  const doctorTitle = formatDoctorName(appointment.doctorName);
   
   const rawToken = appointment.tokenNo || appointment.tokenNumber || appointment.token || appointment.queueNumber || appointment.dailyTokenNumber || (appointment.queuePosition !== undefined ? appointment.queuePosition : undefined) || (() => {
     const refStr = String(appointment.appointmentId || patient.mrn || "10");
@@ -749,6 +750,53 @@ export const generateOPDRegistrationSlipHtml = (data: any) => {
   const idLabel = isIPD ? "IPD.No." : "OP.No.";
   const tokenLabel = isIPD ? "Admission Token" : "Today's Token No";
   const visitTypeDisplay = appointment.type || (isIPD ? "IPD Admission" : "Registration");
+
+  // Dynamic follow-up range and expiry validation calculations
+  const visitCalculations = appointment.visitType || appointment.visitCalculations || (() => {
+    const count = appointment.visitCount || appointment.doctorVisitCount || appointment.followUpStatus?.doctorVisitCount || appointment.followUpStatus?.visitCount || (appointment.type?.toLowerCase() === 'follow-up' ? 2 : 1);
+    const ordinals = ["First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh", "Eighth", "Ninth", "Tenth"];
+    return count >= 1 && count <= ordinals.length ? `${ordinals[count - 1]} Visit` : `Visit #${count}`;
+  })();
+  const followUpStatus = appointment.followUpStatus;
+
+  const enableExpiry = hospital.enableFollowUpExpiry ?? true;
+  const opdRange = hospital.opdFollowUpDays ?? 7;
+  const ipdRange = hospital.ipdFollowUpDays ?? 30;
+  const rangeDays = isIPD ? ipdRange : opdRange;
+  
+  let followUpExpiryMsg = "";
+  if (!enableExpiry) {
+    followUpExpiryMsg = "Follow-up validity: Expiry validation disabled (Free follow-up always allowed).";
+  } else {
+    const formatDDMMYYYY = (dateInput: Date | string | undefined): string => {
+      if (!dateInput) return "N/A";
+      const d = new Date(dateInput);
+      if (isNaN(d.getTime())) return "N/A";
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const year = d.getFullYear();
+      return `${day}-${month}-${year}`;
+    };
+
+    // Prefer backend-calculated expiryDate from followUpStatus - it is always correct
+    if (followUpStatus?.expiryDate) {
+      const expiryDateStr = formatDDMMYYYY(followUpStatus.expiryDate);
+      const lastDateStr = followUpStatus.lastAppointmentDate ? formatDDMMYYYY(followUpStatus.lastAppointmentDate) : "N/A";
+      followUpExpiryMsg = `Follow-up validity: ${rangeDays} days after last consultation (${lastDateStr}), expiry date: ${expiryDateStr}.`;
+    } else {
+      // Fallback: calculate from followUpStatus.lastAppointmentDate (ISO string, safe to parse)
+      const baseDate = followUpStatus?.lastAppointmentDate
+        ? new Date(followUpStatus.lastAppointmentDate)
+        : null;
+      if (baseDate && !isNaN(baseDate.getTime())) {
+        const expiryDate = new Date(baseDate);
+        expiryDate.setDate(expiryDate.getDate() + rangeDays);
+        followUpExpiryMsg = `Follow-up validity: ${rangeDays} days after last consultation (${formatDDMMYYYY(baseDate)}), expiry date: ${formatDDMMYYYY(expiryDate)}.`;
+      } else {
+        followUpExpiryMsg = `Follow-up validity: ${rangeDays} days after visit.`;
+      }
+    }
+  }
 
   return `
     <!DOCTYPE html>
@@ -787,7 +835,7 @@ export const generateOPDRegistrationSlipHtml = (data: any) => {
           max-height: 70px;
           width: auto;
           object-fit: contain;
-        }
+          }
         .hospital-title {
           font-size: 24px;
           font-weight: 900;
@@ -891,20 +939,27 @@ export const generateOPDRegistrationSlipHtml = (data: any) => {
       ` : ''}
     </head>
     <body onload="window.print();">
-      <div class="header-container">
-        <div class="hospital-branding">
-          ${hospital.logo ? `<img src="${hospital.logo}" alt="Logo" class="hospital-logo" />` : ""}
-          <div>
-            <h1 class="hospital-title" style="color: #8b0000;">${hospital.name || "SUPER SPECIALITY HOSPITAL"}</h1>
-            ${hospital.address ? `<p class="hospital-subtitle" style="font-size: 11px; color: #555; font-weight: 600;">${hospital.address}</p>` : ""}
-            ${hospital.contact ? `<p style="font-size: 11px; color: #555; margin: 2px 0 0 0; font-weight: 600;">Tel: ${hospital.contact}</p>` : ""}
+      <div class="header-wrapper">
+        ${
+          headerHtml ||
+          `
+          <div class="header-container">
+            <div class="hospital-branding">
+              ${hospital.logo ? `<img src="${hospital.logo}" alt="Logo" class="hospital-logo" />` : ""}
+              <div>
+                <h1 class="hospital-title" style="color: #8b0000;">${hospital.name || "SUPER SPECIALITY HOSPITAL"}</h1>
+                ${hospital.address ? `<p class="hospital-subtitle" style="font-size: 11px; color: #555; font-weight: 600;">${hospital.address}</p>` : ""}
+                ${hospital.contact ? `<p style="font-size: 11px; color: #555; margin: 2px 0 0 0; font-weight: 600;">Tel: ${hospital.contact}</p>` : ""}
+              </div>
+            </div>
+            <div class="doctor-info">
+              <h2 class="doctor-name" style="color: #8b0000;">${doctorTitle}</h2>
+              ${appointment.degree ? `<p class="doctor-deg">${appointment.degree}</p>` : ""}
+              ${appointment.specialization ? `<p class="doctor-spec">${appointment.specialization}</p>` : ""}
+            </div>
           </div>
-        </div>
-        <div class="doctor-info">
-          <h2 class="doctor-name" style="color: #8b0000;">${doctorTitle}</h2>
-          ${appointment.degree ? `<p class="doctor-deg">${appointment.degree}</p>` : ""}
-          ${appointment.specialization ? `<p class="doctor-spec">${appointment.specialization}</p>` : ""}
-        </div>
+          `
+        }
       </div>
 
       <div class="divider-thick"></div>
@@ -943,7 +998,7 @@ export const generateOPDRegistrationSlipHtml = (data: any) => {
         </div>
         <div class="grid-row">
           <span class="label" style="width: 110px;">Visit Date</span><span class="colon">:</span>
-          <span class="value">${appointment.date || new Date().toLocaleDateString("en-GB")} &nbsp; ${appointment.time || ""}</span>
+          <span class="value">${appointment.date || new Date().toLocaleDateString('en-GB')} &nbsp; ${appointment.time || ""}</span>
         </div>
 
         <div class="grid-row">
@@ -953,6 +1008,13 @@ export const generateOPDRegistrationSlipHtml = (data: any) => {
         <div class="grid-row">
           <span class="label" style="width: 125px;">${tokenLabel}</span><span class="colon">:</span>
           <span class="value" style="font-size: 16px; font-weight: 900; color: #0f766e; background: #f0fdf4; padding: 2px 8px; border-radius: 4px; border: 1px solid #ccfbf1;"># ${tokenNoDisplay}</span>
+        </div>
+
+        <!-- Follow-up & Visit Calculations Block -->
+        <div style="grid-column: span 2; margin-top: 15px; padding: 12px; background-color: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 12px; font-family: 'Inter', sans-serif;">
+          <div style="font-weight: 900; text-transform: uppercase; color: #1e293b; letter-spacing: 0.75px; margin-bottom: 6px; font-size: 11px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">Visit Summary & Follow-up Validation</div>
+          <div style="margin-bottom: 4px; color: #334155;"><strong>Visit Type / Ordinal:</strong> ${visitCalculations} (${appointment.type || 'OPD'})</div>
+          <div style="color: #0f766e; font-weight: 800;"><strong>Validity Details:</strong> ${followUpExpiryMsg}</div>
         </div>
       </div>
 
@@ -967,6 +1029,7 @@ export const generateOPDRegistrationSlipHtml = (data: any) => {
         <span>Paid Amount: ₹ ${Math.round(payment.amount || 0).toLocaleString('en-IN')} (${payment.method?.toUpperCase() || 'CASH'})</span>
         <span>Computer Generated Slip</span>
       </div>
+      ${footerHtml ? `<div class="footer-wrapper" style="width: 100%;">${footerHtml}</div>` : ""}
     </body>
     </html>
   `;
@@ -984,6 +1047,53 @@ export const generateClinicalReceiptHtml = (data: any) => {
 
   if (!isDischargeOrDetailed) {
     return generateOPDRegistrationSlipHtml(data);
+  }
+
+  const isIPD = data.registrationType === 'IPD' || (appointment.type && appointment.type.toUpperCase().includes('IPD'));
+  
+  // Dynamic follow-up range and expiry validation calculations
+  const visitCalculations = appointment.visitType || appointment.visitCalculations || (() => {
+    const count = appointment.visitCount || appointment.doctorVisitCount || appointment.followUpStatus?.doctorVisitCount || appointment.followUpStatus?.visitCount || (appointment.type?.toLowerCase() === 'follow-up' ? 2 : 1);
+    const ordinals = ["First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh", "Eighth", "Ninth", "Tenth"];
+    return count >= 1 && count <= ordinals.length ? `${ordinals[count - 1]} Visit` : `Visit #${count}`;
+  })();
+  const followUpStatus = appointment.followUpStatus;
+
+  const enableExpiry = hospital.enableFollowUpExpiry ?? true;
+  const opdRange = hospital.opdFollowUpDays ?? 7;
+  const ipdRange = hospital.ipdFollowUpDays ?? 30;
+  const rangeDays = isIPD ? ipdRange : opdRange;
+  
+  let followUpExpiryMsg = "";
+  if (!enableExpiry) {
+    followUpExpiryMsg = "Follow-up validity: Expiry validation disabled (Free follow-up always allowed).";
+  } else {
+    const formatDDMMYYYY = (dateInput: Date | string | undefined): string => {
+      if (!dateInput) return "N/A";
+      const d = new Date(dateInput);
+      if (isNaN(d.getTime())) return "N/A";
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const year = d.getFullYear();
+      return `${day}-${month}-${year}`;
+    };
+
+    if (followUpStatus?.expiryDate) {
+      const expiryDateStr = formatDDMMYYYY(followUpStatus.expiryDate);
+      const lastDateStr = followUpStatus.lastAppointmentDate ? formatDDMMYYYY(followUpStatus.lastAppointmentDate) : "N/A";
+      followUpExpiryMsg = `Follow-up validity: ${rangeDays} days after last consultation (${lastDateStr}), expiry date: ${expiryDateStr}.`;
+    } else {
+      const baseDate = followUpStatus?.lastAppointmentDate
+        ? new Date(followUpStatus.lastAppointmentDate)
+        : null;
+      if (baseDate && !isNaN(baseDate.getTime())) {
+        const expiryDate = new Date(baseDate);
+        expiryDate.setDate(expiryDate.getDate() + rangeDays);
+        followUpExpiryMsg = `Follow-up validity: ${rangeDays} days after last consultation (${formatDDMMYYYY(baseDate)}), expiry date: ${formatDDMMYYYY(expiryDate)}.`;
+      } else {
+        followUpExpiryMsg = `Follow-up validity: ${rangeDays} days after visit.`;
+      }
+    }
   }
 
   return `
@@ -1363,10 +1473,26 @@ export const generateClinicalReceiptHtml = (data: any) => {
                 <div class="bill-title-row">
                   <div>
                     <div class="bill-title">
-                      ${patient.dischargeType || data.registrationType === "DISCHARGE" ? "DISCHARGE SUMMARY & BILLING STATEMENT" : data.registrationType === "IPD" ? "IPD ADMISSION RECEIPT" : "PATIENT REGISTRATION BILL"}
+                      ${
+                        patient.dischargeType || data.registrationType === "DISCHARGE"
+                          ? "DISCHARGE SUMMARY & BILLING STATEMENT"
+                          : data.registrationType === "IPD"
+                            ? "IPD ADMISSION RECEIPT"
+                            : (appointment.type?.toLowerCase() === 'follow-up'
+                              ? "FOLLOW-UP APPOINTMENT RECEIPT"
+                              : "PATIENT REGISTRATION BILL")
+                      }
                     </div>
                     <div class="bill-subtitle">
-                      ${patient.dischargeType || data.registrationType === "DISCHARGE" ? "Comprehensive Clinical Summary & Final Invoice" : data.registrationType === "IPD" ? "Hospital Admission Document" : "Appointment Receipt"}
+                      ${
+                        patient.dischargeType || data.registrationType === "DISCHARGE"
+                          ? "Comprehensive Clinical Summary & Final Invoice"
+                          : data.registrationType === "IPD"
+                            ? "Hospital Admission Document"
+                            : (appointment.type?.toLowerCase() === 'follow-up'
+                              ? "Follow-up Consultation Slip"
+                              : "Appointment Receipt")
+                      }
                     </div>
                   </div>
                   <div class="bill-meta">
@@ -1428,7 +1554,13 @@ export const generateClinicalReceiptHtml = (data: any) => {
                                 <div style="font-size: 10px; font-weight: 700; color: #0c4a6e;">${appointment.type || "CONSULTATION"}</div>
                             </div>
                         </div>
-                    </div>
+                </div>
+
+                <!-- Visit Summary & Follow-up Validation Block -->
+                <div style="margin-top: 15px; margin-bottom: 15px; padding: 12px; background-color: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 12px; font-family: 'Inter', sans-serif;">
+                  <div style="font-weight: 900; text-transform: uppercase; color: #1e293b; letter-spacing: 0.75px; margin-bottom: 6px; font-size: 11px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">Visit Summary & Follow-up Validation</div>
+                  <div style="margin-bottom: 4px; color: #334155;"><strong>Visit Type / Ordinal:</strong> ${visitCalculations} (${appointment.type || 'OPD'})</div>
+                  <div style="color: #0f766e; font-weight: 800;"><strong>Validity Details:</strong> ${followUpExpiryMsg}</div>
                 </div>
 
                 <!-- Vital Signs -->
@@ -1818,7 +1950,8 @@ export const generatePrescriptionHtml = (data: any) => {
                     
                     @media print {
                         @page { size: A4; margin: 0; }
-                        body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+                        body { print-color-adjust: exact; -webkit-print-color-adjust: exact; margin: 0; padding: 0; }
+                        .container { min-height: 280mm !important; height: auto !important; border: none !important; }
                     }
 
                     html, body {

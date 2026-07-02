@@ -13,6 +13,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useTenantLink } from '@/hooks/useTenantLink';
 import { patientService } from '@/lib/integrations/services/patient.service';
 import { pharmacyService } from '@/lib/integrations/services/pharmacy.service';
+import { usePrintStore } from '@/stores/printStore';
 
 const BillingPage = () => {
     const router = useRouter();
@@ -20,6 +21,7 @@ const BillingPage = () => {
     const hospitalId = params?.hospitalId as string;
     const { user } = useAuthStore();
     const { getPath } = useTenantLink();
+    const { printWithHeader, setPrintWithHeader } = usePrintStore();
 
     // State
     const [patientName, setPatientName] = useState('');
@@ -233,20 +235,28 @@ const BillingPage = () => {
         ? recentPatients.filter(p => p.name.toLowerCase().includes(patientName.toLowerCase())).slice(0, 5)
         : [];
 
-    const subtotal = cart.reduce((sum, item: any) => sum + (item.total || 0), 0);
-    const totalDiscount = discountType === '%' ? (subtotal * discount / 100) : discount;
-    const grandTotal = Math.max(0, subtotal - totalDiscount);
+    // MRP stored in products is GST-INCLUSIVE.
+    // subtotalMRP = sum of (qty × MRP per unit) — the gross amount before any discount.
+    const subtotalMRP = cart.reduce((sum, item: any) => sum + (item.total || 0), 0);
 
+    // Apply discount to the MRP total
+    const totalDiscount = discountType === '%' ? (subtotalMRP * discount / 100) : discount;
+    const grandTotal = Math.max(0, subtotalMRP - totalDiscount);
+
+    // Extract GST from the discounted MRP total (GST is INSIDE the price, not added on top)
+    // For each item: GST share = itemWeight × totalDiscount, then extract GST from net MRP.
     const taxGST = cart.reduce((sum, item: any) => {
-        const itemTotal = item.total || 0;
-        const itemWeight = itemTotal / (subtotal || 1);
+        const itemMRP = item.total || 0;
+        const itemWeight = itemMRP / (subtotalMRP || 1);
         const itemDiscount = totalDiscount * itemWeight;
-        const itemNetMRP = itemTotal - itemDiscount;
-        const gst = item.gstPct || item.gst || 0;
-        const itemTax = itemNetMRP - (itemNetMRP / (1 + (gst / 100)));
+        const itemNetMRP = itemMRP - itemDiscount; // discounted MRP (still GST-inclusive)
+        const gstPct = item.gstPct || item.gst || 0;
+        // GST extracted = NetMRP - (NetMRP / (1 + gst%))  i.e. the tax portion inside MRP
+        const itemTax = itemNetMRP - (itemNetMRP / (1 + gstPct / 100));
         return sum + itemTax;
     }, 0);
 
+    // taxableAmount = base price (excluding GST) = grandTotal - extracted GST
     const taxableAmount = Math.max(0, grandTotal - taxGST);
 
     useEffect(() => {
@@ -361,22 +371,29 @@ const BillingPage = () => {
         }
 
 
+        // safePrice is the per-unit MRP (GST-inclusive). total = qty × MRP.
         const total = safeQty * safePrice;
+        const gstPct = selectedProduct.gst || 0;
+        // Extract base price and GST per unit from the GST-inclusive MRP
+        const basePerUnit = safePrice / (1 + gstPct / 100);
+        const gstPerUnit = safePrice - basePerUnit;
+
         const newItem: BillItem = {
             drug: selectedProduct._id,
             productId: selectedProduct._id,
             productName: `${selectedProduct.brandName} ${selectedProduct.strength} ${selectedProduct.form}`,
             itemName: `${selectedProduct.brandName} ${selectedProduct.strength} ${selectedProduct.form}`,
             qty: safeQty,
-            unitRate: safePrice,
-            rate: safePrice,
+            unitRate: safePrice,   // MRP per unit (GST-inclusive)
+            rate: safePrice,        // MRP per unit (GST-inclusive) — used for total
+            mrp: safePrice,         // explicit MRP field for print receipt
             hsn: selectedProduct.hsnCode,
-            gstPct: selectedProduct.gst || 0,
-            amount: total,
-            total: total,
+            gstPct,
+            amount: total,          // qty × MRP (GST-inclusive)
+            total: total,           // same — GST is extracted at summary level, not added
             batch: selectedProduct.batchNumber,
             expiry: selectedProduct.expiryDate
-        };
+        } as any;
 
         setCart([...cart, newItem]);
 
@@ -437,7 +454,7 @@ const BillingPage = () => {
                 mode: paymentMode.toUpperCase(),
                 status: status.toUpperCase(),
                 paymentSummary: {
-                    subtotal: Number(subtotal) || 0,
+                    subtotal: Number(subtotalMRP) || 0,
                     taxableAmount: Number(taxableAmount) || 0,
                     taxGST: Number(taxGST) || 0,
                     discount: Number(totalDiscount) || 0,
@@ -475,16 +492,22 @@ const BillingPage = () => {
         email: (user as any)?.email || '-',
         gstin: (user as any)?.gstin || '-',
         dlNo: (user as any)?.licenseNo || '',
-        logo: (user as any)?.image || (user as any)?.logo || (user as any)?.avatar || (user as any)?.profilePic
+        logo: (user as any)?.image || (user as any)?.logo || (user as any)?.avatar || (user as any)?.profilePic,
+        pharmacyTerms: user?.pharmacyTerms || []
     };
 
     const handlePreview = () => {
         if (cart.length === 0) return toast.error('Cart is empty');
         if (!patientName || !mobileNumber) return toast.error('Please enter patient details');
 
+        // Generate a realistic-looking preview invoice number (not saved to DB)
+        const now = new Date();
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const previewInvoiceId = `PRV-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+
         const bill: PharmacyBill = {
             _id: 'PREVIEW',
-            invoiceId: 'DRAFT-PREVIEW',
+            invoiceId: previewInvoiceId,
             items: cart,
             patientName,
             customerPhone: mobileNumber,
@@ -493,7 +516,7 @@ const BillingPage = () => {
             patientAddress: patientAddress || undefined,
             doctorName: doctorName || 'Self / Walk-in',
             paymentSummary: {
-                subtotal: Number(subtotal) || 0,
+                subtotal: Number(subtotalMRP) || 0,
                 taxableAmount: Number(taxableAmount) || 0,
                 taxGST: Number(taxGST) || 0,
                 discount: Number(totalDiscount) || 0,
@@ -888,8 +911,9 @@ const BillingPage = () => {
                                                 <td className="px-8 py-5 text-center">
                                                     <input type="number" className="w-16 bg-gray-50 dark:bg-gray-700 border-none rounded-xl px-2 py-2 text-center font-bold outline-none focus:ring-2 focus:ring-teal-500" value={item.qty} min="1" onChange={e => {
                                                         const newQty = Math.max(1, Number(e.target.value));
+                                                        const newTotal = newQty * ((item as any).rate || 0); // rate = MRP per unit (GST-inclusive)
                                                         const newCart = [...cart];
-                                                        newCart[index] = { ...item, qty: newQty, total: newQty * (item.rate || 0) };
+                                                        newCart[index] = { ...item, qty: newQty, total: newTotal, amount: newTotal };
                                                         setCart(newCart);
                                                     }} />
                                                 </td>
@@ -978,13 +1002,27 @@ const BillingPage = () => {
                         </div>
 
                         <div className="space-y-3 pt-6 border-t border-dashed dark:border-gray-700">
+                            {/* MRP Total (GST-inclusive) */}
                             <div className="flex justify-between items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                <span>Subtotal</span>
-                                <span className="text-gray-900 dark:text-white">₹{Math.round(subtotal).toLocaleString()}</span>
+                                <span>MRP Total</span>
+                                <span className="text-gray-900 dark:text-white">₹{subtotalMRP.toFixed(2)}</span>
                             </div>
-                            <div className="flex justify-between items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                <span>Tax (GST)</span>
-                                <span className="text-gray-900 dark:text-white">₹{Math.round(taxGST).toLocaleString()}</span>
+                            {/* Discount on MRP */}
+                            {totalDiscount > 0 && (
+                                <div className="flex justify-between items-center text-xs font-bold text-red-400 uppercase tracking-wider">
+                                    <span>Discount</span>
+                                    <span>− ₹{totalDiscount.toFixed(2)}</span>
+                                </div>
+                            )}
+                            {/* Taxable base (extracted from discounted MRP) */}
+                            <div className="flex justify-between items-center text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                <span>Base Price (excl. GST)</span>
+                                <span>₹{taxableAmount.toFixed(2)}</span>
+                            </div>
+                            {/* GST extracted — already inside MRP */}
+                            <div className="flex justify-between items-center text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                <span>GST (incl. in MRP)</span>
+                                <span>₹{taxGST.toFixed(2)}</span>
                             </div>
                             <div className="flex flex-col gap-1 py-4 border-y border-dashed border-teal-100 dark:border-gray-700 mt-2">
                                 <span className="text-xs font-bold text-teal-500 uppercase tracking-wider">Total Amount</span>
@@ -1014,7 +1052,16 @@ const BillingPage = () => {
                     <div className="bg-white rounded-2xl md:rounded-3xl shadow-2xl w-full max-w-[900px] max-h-[90vh] overflow-auto relative">
                         <div className="sticky top-0 bg-white border-b z-10 p-4 flex justify-between items-center text-black">
                             <h3 className="font-bold uppercase tracking-wider text-sm">Invoice Preview</h3>
-                            <div className="flex gap-3">
+                            <div className="flex items-center gap-3">
+                                <label className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 cursor-pointer text-[10px] font-bold uppercase tracking-wider text-slate-600 transition-all select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={printWithHeader}
+                                        onChange={(e) => setPrintWithHeader(e.target.checked)}
+                                        className="cursor-pointer w-3.5 h-3.5 accent-teal-600"
+                                    />
+                                    <span>Header & Footer</span>
+                                </label>
                                 <button onClick={closePreview} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold uppercase text-black">Close</button>
                                 <button onClick={handleSaveAndPrint} disabled={isGenerating} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold uppercase flex items-center gap-2 disabled:opacity-50">
                                     {isGenerating ? (

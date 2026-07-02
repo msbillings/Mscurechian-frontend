@@ -11,8 +11,10 @@ import {
     Calendar,
     RefreshCcw,
     FileText,
-    Package
+    Package,
+    LayoutTemplate
 } from 'lucide-react';
+import { usePrintStore } from '@/stores/printStore';
 import { PharmacyBillingService } from '@/lib/integrations/services/pharmacyBilling.service';
 import { PharmacyBill } from '@/lib/integrations/types/pharmacyBilling';
 import PharmacyBillPrint, { ShopDetails } from '@/components/pharmacy/billing/PharmacyBillPrint';
@@ -28,6 +30,7 @@ import { PharmacyDashboardService, PharmacyDashboardStats } from '@/lib/integrat
 
 const TransactionsPage = () => {
     const { user } = useAuthStore();
+    const { printWithHeader, setPrintWithHeader } = usePrintStore();
     const [bills, setBills] = useState<PharmacyBill[]>([]);
     const [stats, setStats] = useState<PharmacyDashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
@@ -53,7 +56,8 @@ const TransactionsPage = () => {
         gstin: (user as any)?.gstin || '-',
         dlNo: (user as any)?.licenseNo || (user as any)?.dlNo || '',
         fssai: (user as any)?.fssai || '',
-        logo: (user as any)?.image || (user as any)?.logo || (user as any)?.avatar || (user as any)?.profilePic
+        logo: (user as any)?.image || (user as any)?.logo || (user as any)?.avatar || (user as any)?.profilePic,
+        pharmacyTerms: user?.pharmacyTerms || []
     };
 
     const handlePrint = useReactToPrint({
@@ -407,7 +411,26 @@ const TransactionsPage = () => {
                     <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Sales History</h1>
                     <p className="text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 mt-1 uppercase tracking-wider">Pharmacy Sales Ledger</p>
                 </div>
-                <div className="flex items-center gap-2 md:gap-3">
+                <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+                    {/* Header & Footer Toggle */}
+                    <button
+                        onClick={() => setPrintWithHeader(!printWithHeader)}
+                        className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 md:py-2.5 border rounded-lg text-[10px] md:text-xs font-bold uppercase tracking-wider shadow-sm transition-colors ${
+                            printWithHeader
+                                ? 'bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:border-indigo-900/30'
+                                : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700'
+                        }`}
+                        title={printWithHeader ? 'Header & Footer ON' : 'Header & Footer OFF'}
+                    >
+                        <LayoutTemplate size={14} className="md:w-4 md:h-4" />
+                        <span className="hidden sm:inline">Header &amp; Footer</span>
+                        <span className={`ml-1 px-1.5 py-0.5 rounded text-[9px] font-black ${
+                            printWithHeader ? 'bg-indigo-200 text-indigo-700' : 'bg-gray-200 text-gray-500'
+                        }`}>{printWithHeader ? 'ON' : 'OFF'}</span>
+                    </button>
+
+                    <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 hidden sm:block" />
+
                     <button
                         onClick={handleExportExcel}
                         disabled={isExporting}
@@ -618,14 +641,6 @@ const TransactionsPage = () => {
                                                     >
                                                         <Eye size={16} />
                                                     </button>
-
-                                                    <button
-                                                        onClick={() => onPrintClick(bill)}
-                                                        className="p-2 bg-teal-50 text-teal-600 rounded-xl hover:bg-teal-100"
-                                                        title="Print Invoice"
-                                                    >
-                                                        <Printer size={16} />
-                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -682,14 +697,43 @@ const TransactionsPage = () => {
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
                         <div className="bg-white rounded-2xl md:rounded-3xl shadow-2xl w-full max-w-[900px] max-h-[90vh] flex flex-col relative overflow-hidden">
                             {/* Header */}
-                            <div className="bg-white border-b z-10 p-4 shrink-0 flex justify-between items-center text-black">
+                            <div className="bg-white border-b z-10 p-3 md:p-4 shrink-0 flex flex-wrap justify-between items-center gap-3 text-black">
                                 <h3 className="font-black uppercase tracking-wider text-sm">Invoice Details</h3>
-                                <button
-                                    onClick={() => setSelectedBill(null)}
-                                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-black"
-                                >
-                                    Close
-                                </button>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    {/* Header & Footer Toggle */}
+                                    <button
+                                        onClick={() => setPrintWithHeader(!printWithHeader)}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                                            printWithHeader
+                                                ? 'bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100'
+                                                : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
+                                        }`}
+                                        title={printWithHeader ? 'Header & Footer ON – click to toggle off' : 'Header & Footer OFF – click to toggle on'}
+                                    >
+                                        <LayoutTemplate size={13} />
+                                        <span>Header &amp; Footer</span>
+                                        <span className={`ml-0.5 px-1.5 py-0.5 rounded text-[9px] font-black ${
+                                            printWithHeader ? 'bg-indigo-200 text-indigo-700' : 'bg-gray-200 text-gray-500'
+                                        }`}>{printWithHeader ? 'ON' : 'OFF'}</span>
+                                    </button>
+
+                                    {/* Print Now Button */}
+                                    <button
+                                        onClick={() => { if (selectedBill) onPrintClick(selectedBill); }}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500 hover:bg-teal-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors"
+                                        title="Print Invoice"
+                                    >
+                                        <Printer size={13} />
+                                        <span>Print Now</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setSelectedBill(null)}
+                                        className="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-black"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Scrollable Area */}

@@ -464,6 +464,9 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
                         </h4>
                         <div className="flex items-center gap-2 mt-1 flex-wrap text-[10px] md:text-[11px]">
                           <span className="text-muted uppercase font-bold text-[9px] tracking-tighter bg-muted/10 px-1.5 rounded">{apt.type}</span>
+                          {apt.type?.toLowerCase() === 'follow-up' && (
+                            <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[8px] font-black rounded-md tracking-wider uppercase">Follow-up</span>
+                          )}
                           <span className="text-border-theme opacity-30">•</span>
                           <span className={`font-bold ${apt.status?.toLowerCase() === 'confirmed' ? 'text-green-600' :
                             apt.status?.toLowerCase() === 'booked' ? 'text-blue-600' : 'text-muted'
@@ -525,6 +528,9 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
                               <span className="text-primary-theme font-black bg-primary-theme/10 px-1 rounded">{apt.mrn || 'NO MRN'}</span>
                               <span className="text-border-theme">•</span>
                               <span className="text-muted font-bold truncate max-w-[60px]">{apt.type}</span>
+                              {apt.type?.toLowerCase() === 'follow-up' && (
+                                <span className="px-1 py-0.5 bg-green-100 text-green-700 text-[8px] font-black rounded-md tracking-wider uppercase">Follow-up</span>
+                              )}
                               <span className="text-border-theme">•</span>
                               <span className={`font-black uppercase tracking-wider ${apt.status?.toLowerCase() === 'confirmed' ? 'text-green-600' :
                                 apt.status?.toLowerCase() === 'in-progress' ? 'text-blue-600' : 'text-muted'

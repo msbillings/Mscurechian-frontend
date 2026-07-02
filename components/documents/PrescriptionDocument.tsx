@@ -114,11 +114,12 @@ export const PrescriptionDocument: React.FC<PrescriptionDocumentProps> = ({
 
                 @media print {
                     @page { size: A4; margin: 0; }
-                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
                     .prescription-responsive-container {
                         padding: 10mm 15mm 10mm 20mm !important;
                         width: 210mm !important;
-                        height: 296mm !important;
+                        min-height: 280mm !important;
+                        height: auto !important;
                     }
                 }
 

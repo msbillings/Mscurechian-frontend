@@ -55,7 +55,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onSu
                 schedule: initialData.schedule || 'OTC - Over the Counter',
                 mrp: initialData.mrp || 0,
                 unitCost: initialData.unitCost || 0,
-                gst: initialData.gst || 12,
+                gst: initialData.gst !== undefined ? initialData.gst : 12,
                 currentStock: initialData.currentStock || 0,
                 minStockLevel: initialData.minStockLevel || 10,
                 unitsPerPack: initialData.unitsPerPack || 1,
@@ -101,13 +101,27 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClose, onSu
             return toast.error('Medicine name and brand are required');
         }
 
-        if (formData.mrp <= 0) return toast.error('MRP must be greater than zero');
-        if ((formData.currentStock ?? 0) < 0) return toast.error('Stock cannot be negative');
-        if ((formData.minStockLevel ?? 0) < 0) return toast.error('Min stock level cannot be negative');
+        const mrpValue = Number(formData.mrp) || 0;
+        if (mrpValue <= 0) return toast.error('MRP must be greater than zero');
+        
+        const currentStockValue = Number(formData.currentStock) || 0;
+        if (currentStockValue < 0) return toast.error('Stock cannot be negative');
+        
+        const minStockValue = Number(formData.minStockLevel) || 0;
+        if (minStockValue < 0) return toast.error('Min stock level cannot be negative');
 
         setLoading(true);
         try {
-            await onSubmit(formData);
+            const cleanedData: PharmacyProductPayload = {
+                ...formData,
+                mrp: mrpValue,
+                unitCost: Number(formData.unitCost) || 0,
+                gst: Number(formData.gst) || 0,
+                currentStock: currentStockValue,
+                minStockLevel: minStockValue,
+                unitsPerPack: Number(formData.unitsPerPack) || 1,
+            };
+            await onSubmit(cleanedData);
             onClose();
         } catch (error: any) {
             console.error(error);

@@ -94,7 +94,14 @@ export const CardiologyPrescriptionDocument: React.FC<CardiologyPrescriptionDocu
                 .cardiology-print-container { font-family: 'Outfit', sans-serif !important; }
                 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
                 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-                @media print { @page { size: A4; margin: 0; } }
+                @media print {
+                    @page { size: A4; margin: 0; }
+                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
+                    .cardiology-print-container {
+                        min-height: 280mm !important;
+                        height: auto !important;
+                    }
+                }
             `}</style>
             
             {/* Cardiology Header Header */}

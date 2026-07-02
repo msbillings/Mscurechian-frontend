@@ -31,7 +31,7 @@ import {
 import { AttendanceModal } from "@/components/attendance/AttendanceModal";
 import { HelpdeskDashboardSkeleton } from "@/components/ui/skeletons";
 import { useAuthStore } from "@/stores/authStore";
-import { sanitizePatientName } from "@/lib/utils/name-utils";
+import { sanitizePatientName, formatDoctorName } from "@/lib/utils/name-utils";
 
 function HelpdeskDashboard() {
     const formatTimeTo12h = (timeStr?: string) => {
@@ -882,7 +882,7 @@ function HelpdeskDashboard() {
                                                         <div className="flex items-center gap-2">
                                                             <Stethoscope size={16} className="text-slate-400 shrink-0" />
                                                             <span className="text-xs font-bold text-slate-700 uppercase tracking-tight truncate">
-                                                                {apt.doctorName || apt.doctor?.user?.name || apt.doctor?.name || "Pending Assign"}
+                                                                {formatDoctorName(apt.doctorName || apt.doctor?.user?.name || apt.doctor?.name) || "Pending Assign"}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -953,7 +953,7 @@ function HelpdeskDashboard() {
                                                             <div className="flex items-center justify-end gap-1">
                                                                 <Stethoscope size={10} className="text-slate-400" />
                                                                 <span className="text-[10px] font-bold text-slate-700 uppercase truncate max-w-[100px]">
-                                                                    {apt.doctorName || apt.doctor?.user?.name || apt.doctor?.name || "Pending"}
+                                                                    {formatDoctorName(apt.doctorName || apt.doctor?.user?.name || apt.doctor?.name) || "Pending"}
                                                                 </span>
                                                             </div>
                                                         </div>

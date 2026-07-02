@@ -50,7 +50,7 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
     const { printWithHeader } = usePrintStore();
 
     return (
-        <div style={{ position: 'relative', width: '100%' }}>
+        <div style={{ position: 'relative', width: '100%' }} className="main-header-print-container">
             <PrintSettingsToggle />
             {printWithHeader ? (
                 <div style={{

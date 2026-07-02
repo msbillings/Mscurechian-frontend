@@ -109,8 +109,13 @@ export const DermatologyPrescriptionDocument: React.FC<DermatologyPrescriptionDo
                 @media (min-width: 640px) { .prescription-responsive-container { padding: 10mm 15mm 10mm 20mm; } }
                 @media print {
                     @page { size: A4; margin: 0; }
-                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                    .prescription-responsive-container { padding: 10mm 15mm 10mm 20mm !important; width: 210mm !important; height: 296mm !important; }
+                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
+                    .prescription-responsive-container {
+                        padding: 10mm 15mm 10mm 20mm !important;
+                        width: 210mm !important;
+                        min-height: 280mm !important;
+                        height: auto !important;
+                    }
                 }
                 .print-prescription-document { font-family: 'Outfit', 'Segoe UI', Roboto, sans-serif !important; }
                 .rx-info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #ec4899; }
